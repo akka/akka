@@ -4,8 +4,8 @@
 
 package akka.testkit.javadsl
 
-import java.util.function.{ Supplier, Function ⇒ JFunction }
-import java.util.{ List ⇒ JList }
+import java.util.function.{ Supplier, Function => JFunction }
+import java.util.{ List => JList }
 
 import akka.actor._
 import akka.testkit.{ TestActor, TestDuration, TestProbe }
@@ -59,8 +59,9 @@ class TestKit(system: ActorSystem) {
 
   def duration(s: String): FiniteDuration = {
     Duration.apply(s) match {
-      case fd: FiniteDuration ⇒ fd
-      case _                  ⇒ throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends")
+      case fd: FiniteDuration => fd
+      case _ =>
+        throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends")
     }
   }
 
@@ -427,7 +428,8 @@ class TestKit(system: ActorSystem) {
    *
    * @return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
    */
-  def awaitAssert[A](max: java.time.Duration, interval: java.time.Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max.asScala, interval.asScala)
+  def awaitAssert[A](max: java.time.Duration, interval: java.time.Duration, a: Supplier[A]): A =
+    tp.awaitAssert(a.get, max.asScala, interval.asScala)
 
   /**
    * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
@@ -771,9 +773,10 @@ class TestKit(system: ActorSystem) {
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.13")
   def receiveWhile[T](max: Duration, idle: Duration, messages: Int, f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max, idle, messages)(new CachingPartialFunction[AnyRef, T] {
-      @throws(classOf[Exception])
-      override def `match`(x: AnyRef): T = f.apply(x)
-    }).asJava
+        @throws(classOf[Exception])
+        override def `match`(x: AnyRef): T = f.apply(x)
+      })
+      .asJava
   }
 
   /**
@@ -788,27 +791,34 @@ class TestKit(system: ActorSystem) {
    * certain characteristics are generated at a certain rate:
    *
    */
-  def receiveWhile[T](max: java.time.Duration, idle: java.time.Duration, messages: Int, f: JFunction[AnyRef, T]): JList[T] = {
+  def receiveWhile[T](
+      max: java.time.Duration,
+      idle: java.time.Duration,
+      messages: Int,
+      f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max.asScala, idle.asScala, messages)(new CachingPartialFunction[AnyRef, T] {
-      @throws(classOf[Exception])
-      override def `match`(x: AnyRef): T = f.apply(x)
-    }).asJava
+        @throws(classOf[Exception])
+        override def `match`(x: AnyRef): T = f.apply(x)
+      })
+      .asJava
   }
 
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.13")
   def receiveWhile[T](max: Duration, f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max = max)(new CachingPartialFunction[AnyRef, T] {
-      @throws(classOf[Exception])
-      override def `match`(x: AnyRef): T = f.apply(x)
-    }).asJava
+        @throws(classOf[Exception])
+        override def `match`(x: AnyRef): T = f.apply(x)
+      })
+      .asJava
   }
 
   def receiveWhile[T](max: java.time.Duration, f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max = max.asScala)(new CachingPartialFunction[AnyRef, T] {
-      @throws(classOf[Exception])
-      override def `match`(x: AnyRef): T = f.apply(x)
-    }).asJava
+        @throws(classOf[Exception])
+        override def `match`(x: AnyRef): T = f.apply(x)
+      })
+      .asJava
   }
 
   /**
@@ -843,10 +853,7 @@ object TestKit {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdownActorSystem(
-    actorSystem:          ActorSystem,
-    duration:             Duration,
-    verifySystemShutdown: Boolean): Unit = {
+  def shutdownActorSystem(actorSystem: ActorSystem, duration: Duration, verifySystemShutdown: Boolean): Unit = {
 
     akka.testkit.TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
@@ -900,6 +907,9 @@ private abstract class CachingPartialFunction[A, B] extends scala.runtime.Abstra
   def `match`(x: A): B
 
   var cache: B = _
-  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
+  final def isDefinedAt(x: A): Boolean =
+    try {
+      cache = `match`(x); true
+    } catch { case NoMatch => cache = null.asInstanceOf[B]; false }
   final override def apply(x: A): B = cache
 }

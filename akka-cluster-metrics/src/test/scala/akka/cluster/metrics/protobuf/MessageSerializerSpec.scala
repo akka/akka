@@ -10,8 +10,7 @@ import akka.cluster.MemberStatus
 import akka.cluster.metrics._
 import akka.cluster.TestMember
 
-class MessageSerializerSpec extends AkkaSpec(
-  """
+class MessageSerializerSpec extends AkkaSpec("""
      akka.actor.provider = cluster
      akka.actor.serialize-messages = off
      akka.actor.allow-java-serialization = off
@@ -24,7 +23,7 @@ class MessageSerializerSpec extends AkkaSpec(
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, serializer.manifest(obj))
     obj match {
-      case _ ⇒
+      case _ =>
         ref should ===(obj)
     }
 
@@ -43,15 +42,19 @@ class MessageSerializerSpec extends AkkaSpec(
 
     "be serializable" in {
 
-      val metricsGossip = MetricsGossip(Set(
-        NodeMetrics(a1.address, 4711, Set(Metric("foo", 1.2, None))),
-        NodeMetrics(b1.address, 4712, Set(
-          Metric("foo", 2.1, Some(EWMA(value = 100.0, alpha = 0.18))),
-          Metric("bar1", Double.MinPositiveValue, None),
-          Metric("bar2", Float.MaxValue, None),
-          Metric("bar3", Int.MaxValue, None),
-          Metric("bar4", Long.MaxValue, None),
-          Metric("bar5", BigInt(Long.MaxValue), None)))))
+      val metricsGossip = MetricsGossip(
+        Set(
+          NodeMetrics(a1.address, 4711, Set(Metric("foo", 1.2, None))),
+          NodeMetrics(
+            b1.address,
+            4712,
+            Set(
+              Metric("foo", 2.1, Some(EWMA(value = 100.0, alpha = 0.18))),
+              Metric("bar1", Double.MinPositiveValue, None),
+              Metric("bar2", Float.MaxValue, None),
+              Metric("bar3", Int.MaxValue, None),
+              Metric("bar4", Long.MaxValue, None),
+              Metric("bar5", BigInt(Long.MaxValue), None)))))
 
       checkSerialization(MetricsGossipEnvelope(a1.address, metricsGossip, true))
 
@@ -64,7 +67,8 @@ class MessageSerializerSpec extends AkkaSpec(
       checkSerialization(simplePool)
 
       val complicatedPool = AdaptiveLoadBalancingPool(
-        metricsSelector = MixMetricsSelector(Vector(CpuMetricsSelector, HeapMetricsSelector, SystemLoadAverageMetricsSelector)),
+        metricsSelector =
+          MixMetricsSelector(Vector(CpuMetricsSelector, HeapMetricsSelector, SystemLoadAverageMetricsSelector)),
         nrOfInstances = 7,
         routerDispatcher = "my-dispatcher",
         usePoolDispatcher = true)

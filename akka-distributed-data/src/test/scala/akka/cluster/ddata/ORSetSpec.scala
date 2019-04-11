@@ -115,13 +115,13 @@ class ORSetSpec extends WordSpec with Matchers {
       c2.elements should contain(user4)
 
       // merge both ways
-      val merged1 = c1 merge c2
+      val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
       merged1.elements should contain(user2)
       merged1.elements should not contain (user3)
       merged1.elements should contain(user4)
 
-      val merged2 = c2 merge c1
+      val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
       merged2.elements should contain(user2)
       merged2.elements should not contain (user3)
@@ -145,13 +145,13 @@ class ORSetSpec extends WordSpec with Matchers {
       c2.elements should contain(user4)
 
       // merge both ways
-      val merged1 = c1 merge c2
+      val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
       merged1.elements should contain(user2)
       merged1.elements should not contain (user3)
       merged1.elements should contain(user4)
 
-      val merged2 = c2 merge c1
+      val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
       merged2.elements should contain(user2)
       merged2.elements should not contain (user3)
@@ -172,12 +172,12 @@ class ORSetSpec extends WordSpec with Matchers {
       c2.elements should not contain (user3)
 
       // merge both ways
-      val merged1 = c1 merge c2
+      val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
       merged1.elements should not contain (user2)
       merged1.elements should not contain (user3)
 
-      val merged2 = c2 merge c1
+      val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
       merged2.elements should not contain (user2)
       merged2.elements should not contain (user3)
@@ -185,13 +185,13 @@ class ORSetSpec extends WordSpec with Matchers {
       val c3 = c1.add(node1, user4).remove(node1, user3).add(node1, user2)
 
       // merge both ways
-      val merged3 = c2 merge c3
+      val merged3 = c2.merge(c3)
       merged3.elements should contain(user1)
       merged3.elements should contain(user2)
       merged3.elements should not contain (user3)
       merged3.elements should contain(user4)
 
-      val merged4 = c3 merge c2
+      val merged4 = c3.merge(c2)
       merged4.elements should contain(user1)
       merged4.elements should contain(user2)
       merged4.elements should not contain (user3)
@@ -203,23 +203,23 @@ class ORSetSpec extends WordSpec with Matchers {
       val c2 = c1.remove(node2, user2)
 
       // merge both ways
-      val merged1 = c1 merge c2
+      val merged1 = c1.merge(c2)
       merged1.elements should contain(user1)
       merged1.elements should not contain (user2)
 
-      val merged2 = c2 merge c1
+      val merged2 = c2.merge(c1)
       merged2.elements should contain(user1)
       merged2.elements should not contain (user2)
 
       val c3 = c1.add(node1, user3)
 
       // merge both ways
-      val merged3 = c3 merge c2
+      val merged3 = c3.merge(c2)
       merged3.elements should contain(user1)
       merged3.elements should not contain (user2)
       merged3.elements should contain(user3)
 
-      val merged4 = c2 merge c3
+      val merged4 = c2.merge(c3)
       merged4.elements should contain(user1)
       merged4.elements should not contain (user2)
       merged4.elements should contain(user3)
@@ -234,8 +234,8 @@ class ORSetSpec extends WordSpec with Matchers {
 
     def asAddDeltaOp(delta: Any): ORSet.AddDeltaOp[String] =
       delta match {
-        case d: ORSet.AddDeltaOp[String] @unchecked ⇒ d
-        case _                                      ⇒ throw new IllegalArgumentException("Expected AddDeltaOp")
+        case d: ORSet.AddDeltaOp[String] @unchecked => d
+        case _                                      => throw new IllegalArgumentException("Expected AddDeltaOp")
       }
 
     "work for additions" in {
@@ -289,21 +289,21 @@ class ORSetSpec extends WordSpec with Matchers {
       val d2 = s2.delta.get
       val s3 = s2.resetDelta.add(node1, "b")
       val d3 = s3.delta.get
-      val d4 = d2 merge d3
+      val d4 = d2.merge(d3)
       asAddDeltaOp(d4).underlying.elements should ===(Set("a", "b"))
       s1.mergeDelta(d4) should ===(s3)
       s2.mergeDelta(d4) should ===(s3)
 
       val s5 = s3.resetDelta.remove(node1, "b")
       val d5 = s5.delta.get
-      val d6 = (d4 merge d5).asInstanceOf[ORSet.DeltaGroup[String]]
+      val d6 = d4.merge(d5).asInstanceOf[ORSet.DeltaGroup[String]]
       d6.ops.last.getClass should ===(classOf[ORSet.RemoveDeltaOp[String]])
       d6.ops.size should ===(2)
       s3.mergeDelta(d6) should ===(s5)
 
       val s7 = s5.resetDelta.add(node1, "c")
       val s8 = s7.resetDelta.add(node1, "d")
-      val d9 = (d6 merge s7.delta.get merge s8.delta.get).asInstanceOf[ORSet.DeltaGroup[String]]
+      val d9 = d6.merge(s7.delta.get).merge(s8.delta.get).asInstanceOf[ORSet.DeltaGroup[String]]
       // the add "c" and add "d" are merged into one AddDeltaOp
       asAddDeltaOp(d9.ops.last).underlying.elements should ===(Set("c", "d"))
       d9.ops.size should ===(3)
@@ -335,7 +335,7 @@ class ORSetSpec extends WordSpec with Matchers {
     "work for clear" in {
       val s1 = ORSet.empty[String]
       val s2 = s1.add(node1, "a").add(node1, "b")
-      val s3 = s2.resetDelta.clear(node1)
+      val s3 = s2.resetDelta.clear()
       val s4 = s3.resetDelta.add(node1, "c")
       s2.merge(s3) should ===(s3)
       s2.mergeDelta(s3.delta.get) should ===(s3)
@@ -363,15 +363,15 @@ class ORSetSpec extends WordSpec with Matchers {
       val s4 = s3.resetDelta.add(node1, "a")
       val s5 = s4.resetDelta.remove(node1, "b")
 
-      val deltaGroup1 = s3.delta.get merge s4.delta.get merge s5.delta.get
+      val deltaGroup1 = s3.delta.get.merge(s4.delta.get).merge(s5.delta.get)
 
-      val s7 = s2 mergeDelta deltaGroup1
+      val s7 = s2.mergeDelta(deltaGroup1)
       s7.elements should ===(Set("a"))
       // The above scenario was constructed from failing ReplicatorDeltaSpec,
       // some more checks...
 
       val s8 = s2.resetDelta.add(node2, "z") // concurrent update from node2
-      val s9 = s8 mergeDelta deltaGroup1
+      val s9 = s8.mergeDelta(deltaGroup1)
       s9.elements should ===(Set("a", "z"))
     }
 
@@ -384,7 +384,7 @@ class ORSetSpec extends WordSpec with Matchers {
 
       s5.elements should ===(Set("b"))
 
-      val delta1 = s2.delta.get merge s3.delta.get
+      val delta1 = s2.delta.get.merge(s3.delta.get)
       val delta2 = s4.delta.get
 
       val t1 = ORSet.empty[String]
@@ -406,7 +406,7 @@ class ORSetSpec extends WordSpec with Matchers {
 
       s5.elements should ===(Set("b"))
 
-      val delta1 = s2.delta.get merge s3.delta.get
+      val delta1 = s2.delta.get.merge(s3.delta.get)
 
       val t1 = ORSet.empty[String]
 
@@ -440,14 +440,14 @@ class ORSetSpec extends WordSpec with Matchers {
       val node3_1 = ORSet.empty[String].mergeDelta(delta1_1).mergeDelta(delta2_1).mergeDelta(delta1_2)
 
       // and node3_1 receives full update from node2 via gossip
-      val merged1 = node3_1 merge node2_2
+      val merged1 = node3_1.merge(node2_2)
 
       merged1.contains("a") should be(false)
 
       // and node3_1 receives delta update from node2 (it just needs to get the second delta,
       // as it already got the first delta just a second ago)
 
-      val merged2 = node3_1 mergeDelta delta2_2
+      val merged2 = node3_1.mergeDelta(delta2_2)
 
       val ORSet(mg2) = merged2
       mg2 should be(Set("x")) // !!!
@@ -468,15 +468,15 @@ class ORSetSpec extends WordSpec with Matchers {
       val s21 = s0.resetDelta.add(node2, "d")
 
       // node3 receives delta for "d" and "c", but the delta for "b" is lost
-      val s31 = s0 mergeDelta s21.delta.get mergeDelta s12.delta.get
+      val s31 = s0.mergeDelta(s21.delta.get).mergeDelta(s12.delta.get)
       s31.elements should ===(Set("a", "c", "d"))
 
       // node4 receives all deltas
-      val s41 = s0 mergeDelta s11.delta.get mergeDelta s12.delta.get mergeDelta s21.delta.get
+      val s41 = s0.mergeDelta(s11.delta.get).mergeDelta(s12.delta.get).mergeDelta(s21.delta.get)
       s41.elements should ===(Set("a", "b", "c", "d"))
 
       // node3 and node4 sync with full state gossip
-      val s32 = s31 merge s41
+      val s32 = s31.merge(s41)
       // one would expect elements "a", "b", "c", "d", but "b" is removed
       // because we applied s12.delta without applying s11.delta
       s32.elements should ===(Set("a", "c", "d"))
@@ -486,30 +486,25 @@ class ORSetSpec extends WordSpec with Matchers {
 
   "ORSet unit test" must {
     "verify subtractDots" in {
-      val dot = VersionVector(TreeMap(nodeA → 3L, nodeB → 2L, nodeD → 14L, nodeG → 22L))
-      val vvector = VersionVector(TreeMap(nodeA → 4L, nodeB → 1L, nodeC → 1L, nodeD → 14L, nodeE → 5L, nodeF → 2L))
-      val expected = VersionVector(TreeMap(nodeB → 2L, nodeG → 22L))
+      val dot = VersionVector(TreeMap(nodeA -> 3L, nodeB -> 2L, nodeD -> 14L, nodeG -> 22L))
+      val vvector =
+        VersionVector(TreeMap(nodeA -> 4L, nodeB -> 1L, nodeC -> 1L, nodeD -> 14L, nodeE -> 5L, nodeF -> 2L))
+      val expected = VersionVector(TreeMap(nodeB -> 2L, nodeG -> 22L))
       ORSet.subtractDots(dot, vvector) should be(expected)
     }
 
     "verify mergeCommonKeys" in {
       val commonKeys: Set[String] = Set("K1", "K2")
-      val thisDot1 = VersionVector(TreeMap(nodeA → 3L, nodeD → 7L))
-      val thisDot2 = VersionVector(TreeMap(nodeB → 5L, nodeC → 2L))
-      val thisVvector = VersionVector(TreeMap(nodeA → 3L, nodeB → 5L, nodeC → 2L, nodeD → 7L))
-      val thisSet = new ORSet(
-        elementsMap = Map("K1" → thisDot1, "K2" → thisDot2),
-        vvector = thisVvector)
+      val thisDot1 = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
+      val thisDot2 = VersionVector(TreeMap(nodeB -> 5L, nodeC -> 2L))
+      val thisVvector = VersionVector(TreeMap(nodeA -> 3L, nodeB -> 5L, nodeC -> 2L, nodeD -> 7L))
+      val thisSet = new ORSet(elementsMap = Map("K1" -> thisDot1, "K2" -> thisDot2), vvector = thisVvector)
       val thatDot1 = VersionVector(nodeA, 3L)
       val thatDot2 = VersionVector(nodeB, 6L)
-      val thatVvector = VersionVector(TreeMap(nodeA → 3L, nodeB → 6L, nodeC → 1L, nodeD → 8L))
-      val thatSet = new ORSet(
-        elementsMap = Map("K1" → thatDot1, "K2" → thatDot2),
-        vvector = thatVvector)
+      val thatVvector = VersionVector(TreeMap(nodeA -> 3L, nodeB -> 6L, nodeC -> 1L, nodeD -> 8L))
+      val thatSet = new ORSet(elementsMap = Map("K1" -> thatDot1, "K2" -> thatDot2), vvector = thatVvector)
 
-      val expectedDots = Map(
-        "K1" → VersionVector(nodeA, 3L),
-        "K2" → VersionVector(TreeMap(nodeB → 6L, nodeC → 2L)))
+      val expectedDots = Map("K1" -> VersionVector(nodeA, 3L), "K2" -> VersionVector(TreeMap(nodeB -> 6L, nodeC -> 2L)))
 
       ORSet.mergeCommonKeys(commonKeys, thisSet, thatSet) should be(expectedDots)
     }
@@ -517,14 +512,12 @@ class ORSetSpec extends WordSpec with Matchers {
     "verify mergeDisjointKeys" in {
       val keys: Set[Any] = Set("K3", "K4", "K5")
       val elements: Map[Any, VersionVector] = Map(
-        "K3" → VersionVector(nodeA, 4L),
-        "K4" → VersionVector(TreeMap(nodeA → 3L, nodeD → 8L)),
-        "K5" → VersionVector(nodeA, 2L))
-      val vvector = VersionVector(TreeMap(nodeA → 3L, nodeD → 7L))
-      val acc: Map[Any, VersionVector] = Map("K1" → VersionVector(nodeA, 3L))
-      val expectedDots = acc ++ Map(
-        "K3" → VersionVector(nodeA, 4L),
-        "K4" → VersionVector(nodeD, 8L)) // "a" -> 3 removed, optimized to include only those unseen
+        "K3" -> VersionVector(nodeA, 4L),
+        "K4" -> VersionVector(TreeMap(nodeA -> 3L, nodeD -> 8L)),
+        "K5" -> VersionVector(nodeA, 2L))
+      val vvector = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
+      val acc: Map[Any, VersionVector] = Map("K1" -> VersionVector(nodeA, 3L))
+      val expectedDots = acc ++ Map("K3" -> VersionVector(nodeA, 4L), "K4" -> VersionVector(nodeD, 8L)) // "a" -> 3 removed, optimized to include only those unseen
 
       ORSet.mergeDisjointKeys(keys, elements, vvector, acc) should be(expectedDots)
     }
@@ -607,27 +600,32 @@ class ORSetSpec extends WordSpec with Matchers {
 
     "have unapply extractor" in {
       val s1 = ORSet.empty.add(node1, "a").add(node2, "b")
-      val s2: ORSet[String] = s1
+      val _: ORSet[String] = s1
       val ORSet(elements1) = s1 // `unapply[A](s: ORSet[A])` is used here
       val elements2: Set[String] = elements1
+      elements2 should be(Set("a", "b"))
 
       Changed(ORSetKey[String]("key"))(s1) match {
-        case c @ Changed(ORSetKey("key")) ⇒
-          val x: ORSet[String] = c.dataValue
+        case c @ Changed(ORSetKey("key")) =>
+          val _: ORSet[String] = c.dataValue
           val ORSet(elements3) = c.dataValue
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
 
       val msg: Any = Changed(ORSetKey[String]("key"))(s1)
       msg match {
-        case c @ Changed(ORSetKey("key")) ⇒
+        case c @ Changed(ORSetKey("key")) =>
           val ORSet(elements3) = c.dataValue // `unapply(a: ReplicatedData)` is used here
           // if `unapply(a: ReplicatedData)` isn't defined the next line doesn't compile:
           //   type mismatch; found : scala.collection.immutable.Set[A] where type A required: Set[Any] Note: A <: Any,
           //   but trait Set is invariant in type A. You may wish to investigate a wildcard type such as _ <: Any. (SLS 3.2.10)
           val elements4: Set[Any] = elements3
           elements4 should be(Set("a", "b"))
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

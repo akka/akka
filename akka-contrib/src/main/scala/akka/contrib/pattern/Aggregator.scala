@@ -12,7 +12,7 @@ import scala.annotation.tailrec
  */
 @deprecated("Feel free to copy", "2.5.0")
 trait Aggregator {
-  this: Actor ⇒
+  this: Actor =>
 
   private var processing = false
   private val expectList = WorkList.empty[Actor.Receive]
@@ -46,8 +46,8 @@ trait Aggregator {
    * @return True if the partial function is removed, false if not found.
    */
   def unexpect(fn: Actor.Receive): Boolean = {
-    if (expectList remove fn) true
-    else if (processing && (addBuffer remove fn)) true
+    if (expectList.remove(fn)) true
+    else if (processing && (addBuffer.remove(fn))) true
     else false
   }
 
@@ -55,7 +55,7 @@ trait Aggregator {
    * Receive function for handling the aggregations.
    */
   def receive: Actor.Receive = {
-    case msg if handleMessage(msg) ⇒ // already dealt with in handleMessage
+    case msg if handleMessage(msg) => // already dealt with in handleMessage
   }
 
   /**
@@ -66,14 +66,14 @@ trait Aggregator {
   def handleMessage(msg: Any): Boolean = {
     processing = true
     try {
-      expectList process { fn ⇒
+      expectList.process { fn =>
         var processed = true
-        fn.applyOrElse(msg, (_: Any) ⇒ processed = false)
+        fn.applyOrElse(msg, (_: Any) => processed = false)
         processed
       }
     } finally {
       processing = false
-      expectList addAll addBuffer
+      expectList.addAll(addBuffer)
       addBuffer.removeAll()
     }
   }
@@ -155,7 +155,7 @@ class WorkList[T] {
    * @param processFn The processing function, returns true if processing succeeds.
    * @return true if an entry has been processed, false if no entries are processed successfully.
    */
-  def process(processFn: T ⇒ Boolean): Boolean = {
+  def process(processFn: T => Boolean): Boolean = {
 
     @tailrec
     def process(parent: Entry[T], entry: Entry[T]): Boolean = {

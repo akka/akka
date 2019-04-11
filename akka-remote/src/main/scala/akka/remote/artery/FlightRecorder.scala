@@ -138,18 +138,18 @@ private[remote] object RollingEventLogSection {
  * INTERNAL API
  */
 private[remote] class RollingEventLogSection(
-  fileChannel:   FileChannel,
-  offset:        Long,
-  entryCount:    Long,
-  logBufferSize: Long,
-  recordSize:    Int) {
+    fileChannel: FileChannel,
+    offset: Long,
+    entryCount: Long,
+    logBufferSize: Long,
+    recordSize: Int) {
   import RollingEventLogSection._
 
   require(entryCount > 0, "entryCount must be greater than 0")
   require((entryCount & (entryCount - 1)) == 0, "entryCount must be power of two")
   private[this] val LogMask: Long = entryCount - 1L
 
-  private[this] val buffers: Array[MappedResizeableBuffer] = Array.tabulate(FlightRecorder.SnapshotCount) { logId ⇒
+  private[this] val buffers: Array[MappedResizeableBuffer] = Array.tabulate(FlightRecorder.SnapshotCount) { logId =>
     val buffer = new MappedResizeableBuffer(fileChannel, offset + logId * logBufferSize, logBufferSize)
     // Clear old data
     buffer.setMemory(0, logBufferSize.toInt, 0.toByte)
@@ -210,9 +210,9 @@ private[remote] object FlightRecorder {
     // TODO safer file permissions (e.g. only user readable on POSIX)?
     destination match {
       // not defined, use temporary directory
-      case "" ⇒ Files.createTempFile("artery", ".afr")
+      case "" => Files.createTempFile("artery", ".afr")
 
-      case directory if directory.endsWith(".afr") ⇒
+      case directory if directory.endsWith(".afr") =>
         val path = fs.getPath(directory).toAbsolutePath
         if (!Files.exists(path)) {
           Files.createDirectories(path.getParent)
@@ -220,7 +220,7 @@ private[remote] object FlightRecorder {
         }
         path
 
-      case directory ⇒
+      case directory =>
         val path = fs.getPath(directory).toAbsolutePath
         if (!Files.exists(path)) Files.createDirectories(path)
 
@@ -285,7 +285,8 @@ private[remote] final case class SnapshotInProgress(latch: CountDownLatch) exten
 /**
  * INTERNAL API
  */
-private[remote] class FlightRecorder(val fileChannel: FileChannel) extends AtomicReference[FlightRecorderStatus](Running) {
+private[remote] class FlightRecorder(val fileChannel: FileChannel)
+    extends AtomicReference[FlightRecorderStatus](Running) {
   import FlightRecorder._
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)
@@ -356,8 +357,8 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
 
   def close(): Unit = {
     getAndSet(ShutDown) match {
-      case SnapshotInProgress(latch) ⇒ latch.await(3, TimeUnit.SECONDS)
-      case _                         ⇒ // Nothing to unlock
+      case SnapshotInProgress(latch) => latch.await(3, TimeUnit.SECONDS)
+      case _                         => // Nothing to unlock
     }
     alertLogs.close()
     hiFreqLogs.close()

@@ -41,15 +41,14 @@ object TestSinkStage {
    * This allows for creation of a "normal" stream ending with the sink while still being
    * able to assert internal events.
    */
-  def apply[T, M](
-    stageUnderTest: GraphStageWithMaterializedValue[SinkShape[T], M],
-    probe:          TestProbe): Sink[T, M] = Sink.fromGraph(new TestSinkStage(stageUnderTest, probe))
+  def apply[T, M](stageUnderTest: GraphStageWithMaterializedValue[SinkShape[T], M], probe: TestProbe): Sink[T, M] =
+    Sink.fromGraph(new TestSinkStage(stageUnderTest, probe))
 }
 
 private[testkit] class TestSinkStage[T, M](
-  stageUnderTest: GraphStageWithMaterializedValue[SinkShape[T], M],
-  probe:          TestProbe)
-  extends GraphStageWithMaterializedValue[SinkShape[T], M] {
+    stageUnderTest: GraphStageWithMaterializedValue[SinkShape[T], M],
+    probe: TestProbe)
+    extends GraphStageWithMaterializedValue[SinkShape[T], M] {
 
   val in = Inlet[T]("testSinkStage.in")
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -65,7 +64,7 @@ private[testkit] class TestSinkStage[T, M](
           inHandler.onPush()
           probe.ref ! GraphStageMessages.Push
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Push, ex)
             throw ex
         }
@@ -75,7 +74,7 @@ private[testkit] class TestSinkStage[T, M](
           inHandler.onUpstreamFinish()
           probe.ref ! GraphStageMessages.UpstreamFinish
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.UpstreamFinish, ex)
             throw ex
         }
@@ -86,7 +85,7 @@ private[testkit] class TestSinkStage[T, M](
           inHandler.onUpstreamFailure(ex)
           probe.ref ! GraphStageMessages.Failure(ex)
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Failure(ex), ex)
             throw ex
         }
@@ -106,16 +105,14 @@ object TestSourceStage {
    * This allows for creation of a "normal" stream starting with the source while still being
    * able to assert internal events.
    */
-  def apply[T, M](
-    stageUnderTest: GraphStageWithMaterializedValue[SourceShape[T], M],
-    probe:          TestProbe): Source[T, M] =
+  def apply[T, M](stageUnderTest: GraphStageWithMaterializedValue[SourceShape[T], M], probe: TestProbe): Source[T, M] =
     Source.fromGraph(new TestSourceStage(stageUnderTest, probe))
 }
 
 private[testkit] class TestSourceStage[T, M](
-  stageUnderTest: GraphStageWithMaterializedValue[SourceShape[T], M],
-  probe:          TestProbe)
-  extends GraphStageWithMaterializedValue[SourceShape[T], M] {
+    stageUnderTest: GraphStageWithMaterializedValue[SourceShape[T], M],
+    probe: TestProbe)
+    extends GraphStageWithMaterializedValue[SourceShape[T], M] {
 
   val out = Outlet[T]("testSourceStage.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
@@ -131,7 +128,7 @@ private[testkit] class TestSourceStage[T, M](
           outHandler.onPull()
           probe.ref ! GraphStageMessages.Pull
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Pull, ex)
             throw ex
         }
@@ -141,7 +138,7 @@ private[testkit] class TestSourceStage[T, M](
           outHandler.onDownstreamFinish()
           probe.ref ! GraphStageMessages.DownstreamFinish
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.DownstreamFinish, ex)
             throw ex
         }

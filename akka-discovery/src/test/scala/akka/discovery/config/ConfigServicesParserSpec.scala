@@ -44,8 +44,7 @@ class ConfigServicesParserSpec extends WordSpec with Matchers {
         "service1",
         immutable.Seq(
           ResolvedTarget(host = "cat", port = Some(1233), address = None),
-          ResolvedTarget(host = "dog", port = None, address = None)
-        ))
+          ResolvedTarget(host = "dog", port = None, address = None)))
       result("service2") shouldEqual Resolved("service2", immutable.Seq())
     }
   }

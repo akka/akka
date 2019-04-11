@@ -10,13 +10,13 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.concurrent.{ Await, Future }
-import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.japi.{ Creator, Option => JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.util.Timeout
 import akka.util.Reflect.instantiator
 import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
 import akka.dispatch._
-import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
+import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
 import java.util.concurrent.TimeoutException
 import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
@@ -43,8 +43,8 @@ trait TypedActorFactory {
    * if any, returns whether it could find the find the ActorRef or not
    */
   def stop(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
-    case null ⇒ false
-    case ref  ⇒ ref.asInstanceOf[InternalActorRef].stop; true
+    case null => false
+    case ref  => ref.asInstanceOf[InternalActorRef].stop; true
   }
 
   /**
@@ -52,8 +52,8 @@ trait TypedActorFactory {
    * if any, returns whether it could find the find the ActorRef or not
    */
   def poisonPill(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
-    case null ⇒ false
-    case ref  ⇒ ref ! PoisonPill; true
+    case null => false
+    case ref  => ref ! PoisonPill; true
   }
 
   /**
@@ -129,34 +129,36 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   final case class MethodCall(method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
-    def returnsFuture = classOf[Future[_]] isAssignableFrom method.getReturnType
-    def returnsJOption = classOf[akka.japi.Option[_]] isAssignableFrom method.getReturnType
-    def returnsOption = classOf[scala.Option[_]] isAssignableFrom method.getReturnType
+    def returnsFuture = classOf[Future[_]].isAssignableFrom(method.getReturnType)
+    def returnsJOption = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
+    def returnsOption = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
 
     /**
      * Invokes the Method on the supplied instance
      *
      * Throws the underlying exception if there's an InvocationTargetException thrown on the invocation.
      */
-    def apply(instance: AnyRef): AnyRef = try {
-      parameters match {
-        case null                     ⇒ method.invoke(instance)
-        case args if args.length == 0 ⇒ method.invoke(instance)
-        case args                     ⇒ method.invoke(instance, args: _*)
-      }
-    } catch { case i: InvocationTargetException ⇒ throw i.getTargetException }
+    def apply(instance: AnyRef): AnyRef =
+      try {
+        parameters match {
+          case null                     => method.invoke(instance)
+          case args if args.length == 0 => method.invoke(instance)
+          case args                     => method.invoke(instance, args: _*)
+        }
+      } catch { case i: InvocationTargetException => throw i.getTargetException }
 
     @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef = parameters match {
-      case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
-      case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
-      case ps ⇒
+      case null => SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
+      case ps if ps.length == 0 =>
+        SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
+      case ps =>
         val serialization = SerializationExtension(akka.serialization.JavaSerializer.currentSystem.value)
         val serializedParameters = new Array[(Int, String, Array[Byte])](ps.length)
-        for (i ← 0 until ps.length) {
+        for (i <- 0 until ps.length) {
           val p = ps(i)
           val s = serialization.findSerializerFor(p)
           val m = Serializers.manifestFor(s, p)
-          serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
+          serializedParameters(i) = (s.identifier, m, s.toBinary(parameters(i))) //Mutable for the sake of sanity
         }
 
         SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, serializedParameters)
@@ -168,28 +170,35 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  private[akka] final case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, String, Array[Byte])]) {
+  private[akka] final case class SerializedMethodCall(
+      ownerType: Class[_],
+      methodName: String,
+      parameterTypes: Array[Class[_]],
+      serializedParameters: Array[(Int, String, Array[Byte])]) {
 
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = {
       val system = akka.serialization.JavaSerializer.currentSystem.value
-      if (system eq null) throw new IllegalStateException(
-        "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
+      if (system eq null)
+        throw new IllegalStateException(
+          "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
           " Use akka.serialization.JavaSerializer.currentSystem.withValue(system) { ... }")
       val serialization = SerializationExtension(system)
-      MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
-        case null               ⇒ null
-        case a if a.length == 0 ⇒ Array[AnyRef]()
-        case a ⇒
-          val deserializedParameters: Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
-          for (i ← 0 until a.length) {
-            val (sId, manifest, bytes) = a(i)
-            deserializedParameters(i) = serialization.deserialize(bytes, sId, manifest).get
-          }
+      MethodCall(
+        ownerType.getDeclaredMethod(methodName, parameterTypes: _*),
+        serializedParameters match {
+          case null               => null
+          case a if a.length == 0 => Array[AnyRef]()
+          case a =>
+            val deserializedParameters: Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
+            for (i <- 0 until a.length) {
+              val (sId, manifest, bytes) = a(i)
+              deserializedParameters(i) = serialization.deserialize(bytes, sId, manifest).get
+            }
 
-          deserializedParameters
-      })
+            deserializedParameters
+        })
     }
   }
 
@@ -219,16 +228,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * Throws ClassCastException if the supplied type T isn't the type of the proxy associated with this TypedActor.
    */
   def self[T <: AnyRef] = selfReference.get.asInstanceOf[T] match {
-    case null ⇒ throw new IllegalStateException("Calling TypedActor.self outside of a TypedActor implementation method!")
-    case some ⇒ some
+    case null =>
+      throw new IllegalStateException("Calling TypedActor.self outside of a TypedActor implementation method!")
+    case some => some
   }
 
   /**
    * Returns the ActorContext (for a TypedActor) when inside a method call in a TypedActor.
    */
   def context: ActorContext = currentContext.get match {
-    case null ⇒ throw new IllegalStateException("Calling TypedActor.context outside of a TypedActor implementation method!")
-    case some ⇒ some
+    case null =>
+      throw new IllegalStateException("Calling TypedActor.context outside of a TypedActor implementation method!")
+    case some => some
   }
 
   /**
@@ -241,93 +252,102 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Implementation of TypedActor as an Actor
    */
-  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T, interfaces: immutable.Seq[Class[_]]) extends Actor {
+  private[akka] class TypedActor[R <: AnyRef, T <: R](
+      val proxyVar: AtomVar[R],
+      createInstance: => T,
+      interfaces: immutable.Seq[Class[_]])
+      extends Actor {
     // if we were remote deployed we need to create a local proxy
     if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
-      TypedActor.get(context.system).createActorRefProxy(
-        TypedProps(interfaces, createInstance), proxyVar, context.self)
+      TypedActor.get(context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, context.self)
 
     private val me = withContext[T](createInstance)
 
     override def supervisorStrategy: SupervisorStrategy = me match {
-      case l: Supervisor ⇒ l.supervisorStrategy
-      case _             ⇒ super.supervisorStrategy
+      case l: Supervisor => l.supervisorStrategy
+      case _             => super.supervisorStrategy
     }
 
     override def preStart(): Unit = withContext {
       me match {
-        case l: PreStart ⇒ l.preStart()
-        case _           ⇒ super.preStart()
+        case l: PreStart => l.preStart()
+        case _           => super.preStart()
       }
     }
 
-    override def postStop(): Unit = try {
-      withContext {
-        me match {
-          case l: PostStop ⇒ l.postStop()
-          case _           ⇒ super.postStop()
+    override def postStop(): Unit =
+      try {
+        withContext {
+          me match {
+            case l: PostStop => l.postStop()
+            case _           => super.postStop()
+          }
+        }
+      } finally {
+        TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
+          case null =>
+          case some =>
+            some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
+            proxyVar.set(null.asInstanceOf[R])
         }
       }
-    } finally {
-      TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
-        case null ⇒
-        case some ⇒
-          some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
-          proxyVar.set(null.asInstanceOf[R])
-      }
-    }
 
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = withContext {
       me match {
-        case l: PreRestart ⇒ l.preRestart(reason, message)
-        case _             ⇒ context.children foreach context.stop //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
+        case l: PreRestart => l.preRestart(reason, message)
+        case _ =>
+          context.children
+            .foreach(context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
       }
     }
 
     override def postRestart(reason: Throwable): Unit = withContext {
       me match {
-        case l: PostRestart ⇒ l.postRestart(reason)
-        case _              ⇒ super.postRestart(reason)
+        case l: PostRestart => l.postRestart(reason)
+        case _              => super.postRestart(reason)
       }
     }
 
-    protected def withContext[U](unitOfWork: ⇒ U): U = {
-      TypedActor.selfReference set proxyVar.get
-      TypedActor.currentContext set context
-      try unitOfWork finally {
-        TypedActor.selfReference set null
-        TypedActor.currentContext set null
+    protected def withContext[U](unitOfWork: => U): U = {
+      TypedActor.selfReference.set(proxyVar.get)
+      TypedActor.currentContext.set(context)
+      try unitOfWork
+      finally {
+        TypedActor.selfReference.set(null)
+        TypedActor.currentContext.set(null)
       }
     }
 
     def receive = {
-      case m: MethodCall ⇒ withContext {
-        if (m.isOneWay) m(me)
-        else {
-          try {
-            val s = sender()
-            m(me) match {
-              case f: Future[_] if m.returnsFuture ⇒
-                implicit val dispatcher = context.dispatcher
-                f onComplete {
-                  case Success(null)   ⇒ s ! NullResponse
-                  case Success(result) ⇒ s ! result
-                  case Failure(f)      ⇒ s ! Status.Failure(f)
-                }
-              case null   ⇒ s ! NullResponse
-              case result ⇒ s ! result
+      case m: MethodCall =>
+        withContext {
+          if (m.isOneWay) m(me)
+          else {
+            try {
+              val s = sender()
+              m(me) match {
+                case f: Future[_] if m.returnsFuture =>
+                  implicit val dispatcher = context.dispatcher
+                  f.onComplete {
+                    case Success(null)   => s ! NullResponse
+                    case Success(result) => s ! result
+                    case Failure(f)      => s ! Status.Failure(f)
+                  }
+                case null   => s ! NullResponse
+                case result => s ! result
+              }
+            } catch {
+              case NonFatal(e) =>
+                sender() ! Status.Failure(e)
+                throw e
             }
-          } catch {
-            case NonFatal(e) ⇒
-              sender() ! Status.Failure(e)
-              throw e
           }
         }
-      }
 
-      case msg if me.isInstanceOf[Receiver] ⇒ withContext {
-        me.asInstanceOf[Receiver].onReceive(msg, sender())
-      }
+      case msg if me.isInstanceOf[Receiver] =>
+        withContext {
+          me.asInstanceOf[Receiver].onReceive(msg, sender())
+        }
     }
   }
 
@@ -335,6 +355,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * Mix this into your TypedActor to be able to define supervisor strategy
    */
   trait Supervisor {
+
     /**
      * User overridable definition the strategy to use for supervising
      * child actors.
@@ -353,6 +374,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * Mix this into your TypedActor to be able to hook into its lifecycle
    */
   trait PreStart {
+
     /**
      * User overridable callback.
      * <p/>
@@ -365,6 +387,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * Mix this into your TypedActor to be able to hook into its lifecycle
    */
   trait PostStop {
+
     /**
      * User overridable callback.
      * <p/>
@@ -377,6 +400,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * Mix this into your TypedActor to be able to hook into its lifecycle
    */
   trait PreRestart {
+
     /**
      * User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
      * @param reason the Throwable that caused the restart to happen
@@ -390,6 +414,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   }
 
   trait PostRestart {
+
     /**
      * User overridable callback: By default it calls `preStart()`.
      * @param reason the Throwable that caused the restart to happen
@@ -402,50 +427,67 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * INTERNAL API
    */
-  private[akka] class TypedActorInvocationHandler(@transient val extension: TypedActorExtension, @transient val actorVar: AtomVar[ActorRef], @transient val timeout: Timeout) extends InvocationHandler with Serializable {
+  private[akka] class TypedActorInvocationHandler(
+      @transient val extension: TypedActorExtension,
+      @transient val actorVar: AtomVar[ActorRef],
+      @transient val timeout: Timeout)
+      extends InvocationHandler
+      with Serializable {
 
     def actor = actorVar.get
     @throws(classOf[Throwable])
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
-      case "toString" ⇒ actor.toString
-      case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
-      case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
-      case _ ⇒
+      case "toString" => actor.toString
+      case "equals" =>
+        (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0)))
+          .asInstanceOf[AnyRef] //Force boxing of the boolean
+      case "hashCode" => actor.hashCode.asInstanceOf[AnyRef]
+      case _ =>
         implicit val dispatcher = extension.system.dispatcher
         import akka.pattern.ask
         MethodCall(method, args) match {
-          case m if m.isOneWay ⇒
+          case m if m.isOneWay =>
             actor ! m; null //Null return value
-          case m if m.returnsFuture ⇒ ask(actor, m)(timeout) map {
-            case NullResponse ⇒ null
-            case other        ⇒ other
-          }
-          case m if m.returnsJOption || m.returnsOption ⇒
+          case m if m.returnsFuture =>
+            ask(actor, m)(timeout).map {
+              case NullResponse => null
+              case other        => other
+            }
+          case m if m.returnsJOption || m.returnsOption =>
             val f = ask(actor, m)(timeout)
-            (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Success(NullResponse)) | Some(Failure(_: AskTimeoutException)) ⇒
+            (try {
+              Await.ready(f, timeout.duration).value
+            } catch { case _: TimeoutException => None }) match {
+              case None | Some(Success(NullResponse)) | Some(Failure(_: AskTimeoutException)) =>
                 if (m.returnsJOption) JOption.none[Any] else None
-              case Some(t: Try[_]) ⇒
+              case Some(t: Try[_]) =>
                 t.get.asInstanceOf[AnyRef]
             }
-          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
-            case NullResponse ⇒ null
-            case other        ⇒ other.asInstanceOf[AnyRef]
-          }
+          case m =>
+            Await.result(ask(actor, m)(timeout), timeout.duration) match {
+              case NullResponse => null
+              case other        => other.asInstanceOf[AnyRef]
+            }
         }
     }
-    @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef = SerializedTypedActorInvocationHandler(actor, timeout.duration)
+    @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef =
+      SerializedTypedActorInvocationHandler(actor, timeout.duration)
   }
 
   /**
    * INTERNAL API
    */
-  private[akka] final case class SerializedTypedActorInvocationHandler(val actor: ActorRef, val timeout: FiniteDuration) {
-    @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = JavaSerializer.currentSystem.value match {
-      case null ⇒ throw new IllegalStateException("SerializedTypedActorInvocationHandler.readResolve requires that " +
-        "JavaSerializer.currentSystem.value is set to a non-null value")
-      case some ⇒ toTypedActorInvocationHandler(some)
-    }
+  private[akka] final case class SerializedTypedActorInvocationHandler(
+      val actor: ActorRef,
+      val timeout: FiniteDuration) {
+    @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef =
+      JavaSerializer.currentSystem.value match {
+        case null =>
+          throw new IllegalStateException(
+            "SerializedTypedActorInvocationHandler.readResolve requires that " +
+            "JavaSerializer.currentSystem.value is set to a non-null value")
+        case some => toTypedActorInvocationHandler(some)
+      }
 
     def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
       new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
@@ -497,8 +539,8 @@ object TypedProps {
    *
    * Scala API
    */
-  def apply[T <: AnyRef](interface: Class[_ >: T], creator: ⇒ T): TypedProps[T] =
-    new TypedProps[T](extractInterfaces(interface), () ⇒ creator)
+  def apply[T <: AnyRef](interface: Class[_ >: T], creator: => T): TypedProps[T] =
+    new TypedProps[T](extractInterfaces(interface), () => creator)
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -512,8 +554,8 @@ object TypedProps {
   /**
    * INTERNAL API
    */
-  private[akka] def apply[T <: AnyRef](interfaces: immutable.Seq[Class[_]], creator: ⇒ T): TypedProps[T] =
-    new TypedProps[T](interfaces, () ⇒ creator)
+  private[akka] def apply[T <: AnyRef](interfaces: immutable.Seq[Class[_]], creator: => T): TypedProps[T] =
+    new TypedProps[T](interfaces, () => creator)
 }
 
 /**
@@ -522,12 +564,12 @@ object TypedProps {
  */
 @SerialVersionUID(1L)
 final case class TypedProps[T <: AnyRef] protected[TypedProps] (
-  interfaces: immutable.Seq[Class[_]],
-  creator:    () ⇒ T,
-  dispatcher: String                  = TypedProps.defaultDispatcherId,
-  deploy:     Deploy                  = Props.defaultDeploy,
-  timeout:    Option[Timeout]         = TypedProps.defaultTimeout,
-  loader:     Option[ClassLoader]     = TypedProps.defaultLoader) {
+    interfaces: immutable.Seq[Class[_]],
+    creator: () => T,
+    dispatcher: String = TypedProps.defaultDispatcherId,
+    deploy: Deploy = Props.defaultDeploy,
+    timeout: Option[Timeout] = TypedProps.defaultTimeout,
+    loader: Option[ClassLoader] = TypedProps.defaultLoader) {
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -536,9 +578,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * appended in the sequence of interfaces.
    */
   def this(implementation: Class[T]) =
-    this(
-      interfaces = TypedProps.extractInterfaces(implementation),
-      creator = instantiator(implementation))
+    this(interfaces = TypedProps.extractInterfaces(implementation), creator = instantiator(implementation))
 
   /**
    * Java API: Uses the supplied Creator as the factory for the TypedActor implementation,
@@ -547,9 +587,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * appended in the sequence of interfaces.
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
-    this(
-      interfaces = TypedProps.extractInterfaces(interface),
-      creator = implementation.create _)
+    this(interfaces = TypedProps.extractInterfaces(interface), creator = implementation.create _)
 
   /**
    * Java API: Uses the supplied class as the factory for the TypedActor implementation,
@@ -558,9 +596,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * appended in the sequence of interfaces.
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
-    this(
-      interfaces = TypedProps.extractInterfaces(interface),
-      creator = instantiator(implementation))
+    this(interfaces = TypedProps.extractInterfaces(interface), creator = instantiator(implementation))
 
   /**
    * Returns a new TypedProps with the specified dispatcher set.
@@ -613,7 +649,7 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
    * or if the interface class is not an interface, all the interfaces it implements.
    */
   def withoutInterface(interface: Class[_ >: T]): TypedProps[T] =
-    this.copy(interfaces = interfaces diff TypedProps.extractInterfaces(interface))
+    this.copy(interfaces = interfaces.diff(TypedProps.extractInterfaces(interface)))
 
   /**
    * Returns the akka.actor.Props representation of this TypedProps
@@ -628,7 +664,8 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
  * ContextualTypedActorFactory allows TypedActors to create children, effectively forming the same Actor Supervision Hierarchies
  * as normal Actors can.
  */
-final case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext) extends TypedActorFactory {
+final case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext)
+    extends TypedActorFactory {
   override def getActorRefFor(proxy: AnyRef): ActorRef = typedActor.getActorRefFor(proxy)
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
@@ -650,8 +687,8 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
    * Retrieves the underlying ActorRef for the supplied TypedActor proxy, or null if none found
    */
   def getActorRefFor(proxy: AnyRef): ActorRef = invocationHandlerFor(proxy) match {
-    case null    ⇒ null
-    case handler ⇒ handler.actor
+    case null    => null
+    case handler => handler.actor
   }
 
   /**
@@ -663,20 +700,27 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   /**
    * INTERNAL API
    */
-  private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
+  private[akka] def createActorRefProxy[R <: AnyRef, T <: R](
+      props: TypedProps[T],
+      proxyVar: AtomVar[R],
+      actorRef: => ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
-    val proxy = Proxy.newProxyInstance(
-      (props.loader orElse props.interfaces.collectFirst { case any ⇒ any.getClassLoader }).orNull, //If we have no loader, we arbitrarily take the loader of the first interface
-      props.interfaces.toArray,
-      new TypedActorInvocationHandler(this, actorVar, props.timeout getOrElse DefaultReturnTimeout)).asInstanceOf[R]
+    val proxy = Proxy
+      .newProxyInstance(
+        props.loader
+          .orElse(props.interfaces.collectFirst { case any => any.getClassLoader })
+          .orNull, //If we have no loader, we arbitrarily take the loader of the first interface
+        props.interfaces.toArray,
+        new TypedActorInvocationHandler(this, actorVar, props.timeout.getOrElse(DefaultReturnTimeout)))
+      .asInstanceOf[R]
 
     if (proxyVar eq null) {
-      actorVar set actorRef
+      actorVar.set(actorRef)
       proxy
     } else {
-      proxyVar set proxy // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-      actorVar set actorRef //Make sure the InvocationHandler gets a hold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
+      proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
+      actorVar.set(actorRef) //Make sure the InvocationHandler gets a hold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
       proxyVar.get
     }
   }
@@ -685,13 +729,14 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
    * INTERNAL API
    */
   private[akka] def invocationHandlerFor(typedActor: AnyRef): TypedActorInvocationHandler =
-    if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
-      case null ⇒ null
-      case other ⇒ Proxy.getInvocationHandler(other) match {
-        case null                                 ⇒ null
-        case handler: TypedActorInvocationHandler ⇒ handler
-        case _                                    ⇒ null
-      }
-    }
-    else null
+    if ((typedActor ne null) && classOf[Proxy].isAssignableFrom(typedActor.getClass) && Proxy.isProxyClass(
+          typedActor.getClass)) typedActor match {
+      case null => null
+      case other =>
+        Proxy.getInvocationHandler(other) match {
+          case null                                 => null
+          case handler: TypedActorInvocationHandler => handler
+          case _                                    => null
+        }
+    } else null
 }

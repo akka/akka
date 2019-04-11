@@ -38,10 +38,10 @@ class Listener(iface: String, group: String, port: Int, sink: ActorRef) extends 
   //#bind
 
   def receive = {
-    case b @ Udp.Bound(to) ⇒
+    case b @ Udp.Bound(to) =>
       log.info("Bound to {}", to)
       sink ! (b)
-    case Udp.Received(data, remote) ⇒
+    case Udp.Received(data, remote) =>
       val msg = data.decodeString("utf-8")
       log.info("Received '{}' from {}", msg, remote)
       sink ! msg
@@ -53,7 +53,7 @@ class Sender(iface: String, group: String, port: Int, msg: String) extends Actor
   IO(Udp) ! Udp.SimpleSender(List(Inet6ProtocolFamily()))
 
   def receive = {
-    case Udp.SimpleSenderReady ⇒ {
+    case Udp.SimpleSenderReady => {
       val remote = new InetSocketAddress(s"$group%$iface", port)
       log.info("Sending message to {}", remote)
       sender() ! Udp.Send(ByteString(msg), remote)

@@ -35,10 +35,11 @@ final class AutoDowning(system: ActorSystem) extends DowningProvider {
 
   override def downingActorProps: Option[Props] =
     clusterSettings.AutoDownUnreachableAfter match {
-      case d: FiniteDuration ⇒ Some(AutoDown.props(d))
-      case _ ⇒
+      case d: FiniteDuration => Some(AutoDown.props(d))
+      case _                 =>
         // I don't think this can actually happen
-        throw new ConfigurationException("AutoDowning downing provider selected but 'akka.cluster.auto-down-unreachable-after' not set")
+        throw new ConfigurationException(
+          "AutoDowning downing provider selected but 'akka.cluster.auto-down-unreachable-after' not set")
     }
 }
 
@@ -53,7 +54,8 @@ final class AutoDowning(system: ActorSystem) extends DowningProvider {
  * able to unit test the logic without running cluster.
  */
 private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
-  extends AutoDownBase(autoDownUnreachableAfter) with ActorLogging {
+    extends AutoDownBase(autoDownUnreachableAfter)
+    with ActorLogging {
 
   val cluster = Cluster(context.system)
   import cluster.ClusterLogger._
@@ -64,7 +66,8 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
 
   // re-subscribe when restart
   override def preStart(): Unit = {
-    log.warning("Don't use auto-down feature of Akka Cluster in production. " +
+    log.warning(
+      "Don't use auto-down feature of Akka Cluster in production. " +
       "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.")
     cluster.subscribe(self, classOf[ClusterDomainEvent])
     super.preStart()
@@ -76,9 +79,11 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
 
   override def down(node: Address): Unit = {
     require(leader)
-    logInfo("Leader is auto-downing unreachable node [{}]. " +
+    logInfo(
+      "Leader is auto-downing unreachable node [{}]. " +
       "Don't use auto-down feature of Akka Cluster in production. " +
-      "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.", node)
+      "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.",
+      node)
     cluster.down(node)
   }
 
@@ -109,33 +114,33 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
   var leader = false
 
   override def postStop(): Unit = {
-    scheduledUnreachable.values foreach { _.cancel }
+    scheduledUnreachable.values.foreach { _.cancel }
   }
 
   def receive = {
-    case state: CurrentClusterState ⇒
+    case state: CurrentClusterState =>
       leader = state.leader.exists(_ == selfAddress)
-      state.unreachable foreach unreachableMember
+      state.unreachable.foreach(unreachableMember)
 
-    case UnreachableMember(m) ⇒ unreachableMember(m)
+    case UnreachableMember(m) => unreachableMember(m)
 
-    case ReachableMember(m)   ⇒ remove(m.uniqueAddress)
-    case MemberRemoved(m, _)  ⇒ remove(m.uniqueAddress)
+    case ReachableMember(m)  => remove(m.uniqueAddress)
+    case MemberRemoved(m, _) => remove(m.uniqueAddress)
 
-    case LeaderChanged(leaderOption) ⇒
+    case LeaderChanged(leaderOption) =>
       leader = leaderOption.exists(_ == selfAddress)
       if (leader) {
-        pendingUnreachable.foreach(node ⇒ down(node.address))
+        pendingUnreachable.foreach(node => down(node.address))
         pendingUnreachable = Set.empty
       }
 
-    case UnreachableTimeout(node) ⇒
+    case UnreachableTimeout(node) =>
       if (scheduledUnreachable contains node) {
         scheduledUnreachable -= node
         downOrAddPending(node)
       }
 
-    case _: ClusterDomainEvent ⇒ // not interested in other events
+    case _: ClusterDomainEvent => // not interested in other events
 
   }
 
@@ -148,7 +153,7 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
       downOrAddPending(node)
     } else {
       val task = scheduler.scheduleOnce(autoDownUnreachableAfter, self, UnreachableTimeout(node))
-      scheduledUnreachable += (node → task)
+      scheduledUnreachable += (node -> task)
     }
   }
 
@@ -163,7 +168,7 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
   }
 
   def remove(node: UniqueAddress): Unit = {
-    scheduledUnreachable.get(node) foreach { _.cancel }
+    scheduledUnreachable.get(node).foreach { _.cancel }
     scheduledUnreachable -= node
     pendingUnreachable -= node
   }

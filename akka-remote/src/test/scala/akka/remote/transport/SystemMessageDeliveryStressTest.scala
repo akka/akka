@@ -8,13 +8,13 @@ import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.testkit.TimingTest
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.remote.{ QuarantinedEvent, EndpointException, RARP }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
+import akka.remote.{ EndpointException, QuarantinedEvent, RARP }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
 import scala.concurrent.Await
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -34,7 +34,7 @@ object SystemMessageDeliveryStressTest {
   val burstSize = 100
   val burstDelay = 500.millis
 
-  val baseConfig: Config = ConfigFactory parseString (s"""
+  val baseConfig: Config = ConfigFactory.parseString(s"""
     akka {
       #loglevel = DEBUG
       actor.provider = remote
@@ -71,13 +71,14 @@ object SystemMessageDeliveryStressTest {
 
     override def sendSystemMessage(message: SystemMessage): Unit = {
       message match {
-        case Failed(_, _, seq) ⇒ testActor ! seq
-        case _                 ⇒
+        case Failed(_, _, seq) => testActor ! seq
+        case _                 =>
       }
     }
   }
 
-  class SystemMessageSender(val msgCount: Int, val burstSize: Int, val burstDelay: FiniteDuration, val target: ActorRef) extends Actor {
+  class SystemMessageSender(val msgCount: Int, val burstSize: Int, val burstDelay: FiniteDuration, val target: ActorRef)
+      extends Actor {
     import context.dispatcher
 
     var counter = 0
@@ -88,7 +89,7 @@ object SystemMessageDeliveryStressTest {
     override def preStart(): Unit = self ! "sendnext"
 
     override def receive = {
-      case "sendnext" ⇒
+      case "sendnext" =>
         targetRef.sendSystemMessage(Failed(child, null, counter))
         counter += 1
         burstCounter += 1
@@ -106,9 +107,9 @@ object SystemMessageDeliveryStressTest {
 }
 
 abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
-  extends AkkaSpec(ConfigFactory.parseString(cfg).withFallback(SystemMessageDeliveryStressTest.baseConfig))
-  with ImplicitSender
-  with DefaultTimeout {
+    extends AkkaSpec(ConfigFactory.parseString(cfg).withFallback(SystemMessageDeliveryStressTest.baseConfig))
+    with ImplicitSender
+    with DefaultTimeout {
   import SystemMessageDeliveryStressTest._
 
   override def expectedTestDuration: FiniteDuration = 200.seconds
@@ -130,14 +131,16 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   val targetForB = RARP(systemB).provider.resolveActorRef(RootActorPath(addressA) / "temp" / sysMsgVerifierA.path.name)
 
   override def atStartup() = {
-    systemA.eventStream.publish(TestEvent.Mute(
-      EventFilter[EndpointException](),
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead .*")))
-    systemB.eventStream.publish(TestEvent.Mute(
-      EventFilter[EndpointException](),
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead .*")))
+    systemA.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead .*")))
+    systemB.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead .*")))
 
     systemA.eventStream.subscribe(probeA.ref, classOf[QuarantinedEvent])
     systemB.eventStream.subscribe(probeB.ref, classOf[QuarantinedEvent])
@@ -168,7 +171,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       val toSend = (0 until msgCount).toList
       var maxDelay = 0L
 
-      for (m ← 0 until msgCount) {
+      for (m <- 0 until msgCount) {
         val start = System.currentTimeMillis()
         probeB.expectMsg(10.minutes, m)
         probeA.expectMsg(10.minutes, m)
@@ -178,25 +181,25 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   }
 
   override def beforeTermination(): Unit = {
-    system.eventStream.publish(TestEvent.Mute(
-      EventFilter.warning(source = s"akka://AkkaProtocolStressTest/user/$$a", start = "received dead letter"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
-    systemB.eventStream.publish(TestEvent.Mute(
-      EventFilter[EndpointException](),
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    system.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter.warning(source = s"akka://AkkaProtocolStressTest/user/$$a", start = "received dead letter"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    systemB.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
   override def afterTermination(): Unit = shutdown(systemB)
 
 }
 
-class SystemMessageDeliveryRetryGate extends SystemMessageDeliveryStressTest(
-  "passive connections on",
-  "akka.remote.retry-gate-closed-for = 0.5 s")
-class SystemMessageDeliveryNoPassiveRetryGate extends SystemMessageDeliveryStressTest(
-  "passive connections off",
-  """
+class SystemMessageDeliveryRetryGate
+    extends SystemMessageDeliveryStressTest("passive connections on", "akka.remote.retry-gate-closed-for = 0.5 s")
+class SystemMessageDeliveryNoPassiveRetryGate
+    extends SystemMessageDeliveryStressTest("passive connections off", """
     akka.remote.use-passive-connections = off
     akka.remote.retry-gate-closed-for = 0.5 s
   """)

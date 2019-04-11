@@ -13,8 +13,8 @@ import org.scalatest.WordSpec
 
 class ORMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A ORMap" must {
 
@@ -82,25 +82,32 @@ class ORMapSpec extends WordSpec with Matchers {
       val m2 = ORMap().put(node2, "c", GSet() + "C")
 
       // merge both ways
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
       merged1.entries.keySet should contain("a")
       merged1.entries.keySet should contain("b")
       merged1.entries.keySet should contain("c")
 
-      val merged2 = m2 merge m1
+      val merged2 = m2.merge(m1)
       merged2.entries.keySet should contain("a")
       merged2.entries.keySet should contain("b")
       merged2.entries.keySet should contain("c")
     }
 
     "be able to have its entries correctly merged with another ORMap with overlapping entries" in {
-      val m1 = ORMap().put(node1, "a", GSet() + "A1").put(node1, "b", GSet() + "B1").
-        remove(node1, "a").put(node1, "d", GSet() + "D1")
-      val m2 = ORMap().put(node2, "c", GSet() + "C2").put(node2, "a", GSet() + "A2").
-        put(node2, "b", GSet() + "B2").remove(node2, "b").put(node2, "d", GSet() + "D2")
+      val m1 = ORMap()
+        .put(node1, "a", GSet() + "A1")
+        .put(node1, "b", GSet() + "B1")
+        .remove(node1, "a")
+        .put(node1, "d", GSet() + "D1")
+      val m2 = ORMap()
+        .put(node2, "c", GSet() + "C2")
+        .put(node2, "a", GSet() + "A2")
+        .put(node2, "b", GSet() + "B2")
+        .remove(node2, "b")
+        .put(node2, "d", GSet() + "D2")
 
       // merge both ways
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
       merged1.entries.keySet should contain("a")
       val GSet(a1) = merged1.entries("a")
       a1 should be(Set("A2"))
@@ -112,7 +119,7 @@ class ORMapSpec extends WordSpec with Matchers {
       val GSet(d1) = merged1.entries("d")
       d1 should be(Set("D1", "D2"))
 
-      val merged2 = m2 merge m1
+      val merged2 = m2.merge(m1)
       merged2.entries.keySet should contain("a")
       val GSet(a2) = merged1.entries("a")
       a2 should be(Set("A2"))
@@ -129,12 +136,12 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node1, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.remove(node1, "b").put(node1, "b", GSet.empty + "B2")
       // same thing if only put is used
       //      val m3 = merged1.put(node1, "b", GSet.empty + "B2")
-      val merged2 = merged1 merge m3
+      val merged2 = merged1.merge(m3)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is included, because GSet("B") is merged with GSet("B2")
@@ -146,16 +153,16 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
 
       val deltaVersion = m1.delta.get match {
-        case ORMap.PutDeltaOp(delta, v, dt) ⇒
+        case ORMap.PutDeltaOp(delta, _, _) =>
           delta match {
-            case AddDeltaOp(u) ⇒
+            case AddDeltaOp(u) =>
               if (u.elementsMap.contains("a"))
                 Some(u.elementsMap("a").versionAt(node1))
               else
                 None
-            case _ ⇒ None
+            case _ => None
           }
-        case _ ⇒ None
+        case _ => None
       }
 
       val fullVersion =
@@ -170,19 +177,19 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node1, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b")
       val m4 = merged1.resetDelta.updated(node1, "b", GSet.empty[String])(_.add("B2"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is included, because GSet("B") is merged with GSet("B2")
       merged2.entries("b").elements should be(Set("B", "B2"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       // note that B is included, because GSet("B") is merged with GSet("B2")
@@ -194,19 +201,19 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b")
       val m4 = merged1.resetDelta.remove(node1, "b").updated(node1, "b", ORSet.empty[String])(_.add(node1, "B2"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
       merged2.entries("b").elements should be(Set("B2"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
@@ -218,19 +225,19 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b")
       val m4 = merged1.resetDelta.remove(node2, "b").updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
       merged2.entries("b").elements should be(Set("B2"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
@@ -242,19 +249,19 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b")
       val m4 = merged1.resetDelta.updated(node1, "b", ORSet.empty[String])(_.add(node1, "B2"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is included, because ORSet("B") is merged with ORSet("B2")
       merged2.entries("b").elements should be(Set("B", "B2"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       // note that B is included, because ORSet("B") is merged with ORSet("B2")
@@ -266,19 +273,19 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node1, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b")
       val m4 = merged1.resetDelta.put(node2, "b", GSet.empty + "B2")
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
       merged2.entries("b").elements should be(Set("B2"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
@@ -290,19 +297,21 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "b", ORSet.empty.add(node2, "B3"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b")
-      val m4 = merged1.resetDelta.remove(node2, "b").updated(node2, "b", ORSet.empty[String])(_.add(node2, "B1"))
+      val m4 = merged1.resetDelta
+        .remove(node2, "b")
+        .updated(node2, "b", ORSet.empty[String])(_.add(node2, "B1"))
         .updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
       merged2.entries("b").elements should be(Set("B1", "B2"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       // note that B is not included, because it was removed in both timelines
@@ -310,14 +319,17 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 7" in {
-      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B1")).remove(node1, "b")
+      val m1 = ORMap.empty
+        .put(node1, "a", ORSet.empty.add(node1, "A"))
+        .put(node1, "b", ORSet.empty.add(node1, "B1"))
+        .remove(node1, "b")
       val m2 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B2"))
       val m2d = m2.resetDelta.remove(node1, "b")
-      val m2u = m2.resetDelta.updated(node1, "b", ORSet.empty[String])(_.add(node1, "B3"))
+      val m2u = m2.resetDelta
+        .updated(node1, "b", ORSet.empty[String])(_.add(node1, "B3"))
         .updated(node2, "b", ORSet.empty[String])(_.add(node2, "B4"))
 
-      val merged1 = (m1 merge m2d) mergeDelta m2u.delta.get
+      val merged1 = (m1.merge(m2d)).mergeDelta(m2u.delta.get)
 
       merged1.entries("a").elements should be(Set("A"))
       // note that B1 is lost as it was added and removed earlier in timeline than B2
@@ -325,22 +337,24 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 8" in {
-      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
-        .put(node1, "b", GSet.empty + "B").put(node2, "b", GSet.empty + "B")
+      val m1 = ORMap.empty
+        .put(node1, "a", GSet.empty + "A")
+        .put(node1, "b", GSet.empty + "B")
+        .put(node2, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b").remove(node2, "b")
       val m4 = merged1.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "b", GSet.empty + "B3")
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       merged2.entries("b").elements should be(Set("B3"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = (merged1 mergeDelta m3.delta.get) mergeDelta m4.delta.get
+      val merged3 = (merged1.mergeDelta(m3.delta.get)).mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B3"))
@@ -348,23 +362,26 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 9" in {
-      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
-        .put(node1, "b", GSet.empty + "B").put(node2, "b", GSet.empty + "B")
+      val m1 = ORMap.empty
+        .put(node1, "a", GSet.empty + "A")
+        .put(node1, "b", GSet.empty + "B")
+        .put(node2, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.resetDelta.remove(node1, "b").remove(node2, "b")
-      val m4 = merged1.resetDelta.updated(node2, "b", GSet.empty[String])(_.add("B2"))
+      val m4 = merged1.resetDelta
+        .updated(node2, "b", GSet.empty[String])(_.add("B2"))
         .updated(node2, "b", GSet.empty[String])(_.add("B3"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       merged2.entries("b").elements should be(Set("B2", "B3"))
       merged2.entries("c").elements should be(Set("C"))
 
-      val merged3 = (merged1 mergeDelta m3.delta.get) mergeDelta m4.delta.get
+      val merged3 = (merged1.mergeDelta(m3.delta.get)).mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B2", "B3"))
@@ -372,18 +389,17 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 10" in {
-      val m1 = ORMap.empty.put(node2, "a", GSet.empty + "A")
-        .put(node2, "b", GSet.empty + "B")
+      val m1 = ORMap.empty.put(node2, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
 
       val m3 = m1.resetDelta.remove(node2, "b")
       val m4 = m3.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
 
-      val merged2 = m3 merge m4
+      val merged2 = m3.merge(m4)
 
       merged2.entries("a").elements should be(Set("A"))
       merged2.entries("b").elements should be(Set("B2", "B3"))
 
-      val merged3 = m3 mergeDelta m4.delta.get
+      val merged3 = m3.mergeDelta(m4.delta.get)
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B2", "B3"))
@@ -394,11 +410,11 @@ class ORMapSpec extends WordSpec with Matchers {
 
       val m2 = ORMap.empty.put(node2, "a", GSet.empty[String]).remove(node2, "a")
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       merged1.entries("a").elements should be(Set("A"))
 
-      val merged2 = m1 mergeDelta m2.delta.get
+      val merged2 = m1.mergeDelta(m2.delta.get)
 
       merged2.entries("a").elements should be(Set("A"))
     }
@@ -411,9 +427,9 @@ class ORMapSpec extends WordSpec with Matchers {
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
       // m1 - node1 gets the update from m2
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
       // m2 - node2 gets the update from m1
-      val merged2 = m2 merge m1
+      val merged2 = m2.merge(m1)
 
       // RACE CONDITION ahead!
       val m3 = merged1.resetDelta.remove(node1, "b")
@@ -422,9 +438,9 @@ class ORMapSpec extends WordSpec with Matchers {
       // and the update is propagated before the update from node1 is merged
       val m4 = merged2.resetDelta.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
       // and later merged on node1
-      val merged3 = m3 merge m4
+      val merged3 = m3.merge(m4)
       // and the other way round...
-      val merged4 = m4 merge m3
+      val merged4 = m4.merge(m3)
 
       // result -  the element "B" is kept on both sides...
       merged3.entries("a").elements should be(Set("A"))
@@ -437,9 +453,9 @@ class ORMapSpec extends WordSpec with Matchers {
 
       // but if the timing was slightly different, so that the update from node1
       // would get merged just before update on node2:
-      val merged5 = (m2 merge m3).resetDelta.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
+      val merged5 = m2.merge(m3).resetDelta.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
       // the update propagated ... and merged on node1:
-      val merged6 = m3 merge merged5
+      val merged6 = m3.merge(merged5)
 
       // then the outcome is different... because the vvector of value("b") was lost...
       merged5.entries("a").elements should be(Set("A"))
@@ -457,12 +473,12 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
       val m2 = m1.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       merged1.entries("a").elements should be(Set("A"))
       merged1.entries("b").elements should be(Set("B", "B2", "B3"))
 
-      val merged2 = m1 mergeDelta m2.delta.get
+      val merged2 = m1.mergeDelta(m2.delta.get)
 
       merged2.entries("a").elements should be(Set("A"))
       merged2.entries("b").elements should be(Set("B", "B2", "B3"))
@@ -470,55 +486,63 @@ class ORMapSpec extends WordSpec with Matchers {
       val m3 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
       val m4 = m3.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "b", GSet.empty + "B3")
 
-      val merged3 = m3 merge m4
+      val merged3 = m3.merge(m4)
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B", "B3"))
 
-      val merged4 = m3 mergeDelta m4.delta.get
+      val merged4 = m3.mergeDelta(m4.delta.get)
 
       merged4.entries("a").elements should be(Set("A"))
       merged4.entries("b").elements should be(Set("B", "B3"))
 
       val m5 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
-      val m6 = m5.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
+      val m6 = m5.resetDelta
+        .put(node2, "b", GSet.empty + "B2")
+        .updated(node2, "b", GSet.empty[String])(_.add("B3"))
         .updated(node2, "b", GSet.empty[String])(_.add("B4"))
 
-      val merged5 = m5 merge m6
+      val merged5 = m5.merge(m6)
 
       merged5.entries("a").elements should be(Set("A"))
       merged5.entries("b").elements should be(Set("B", "B2", "B3", "B4"))
 
-      val merged6 = m5 mergeDelta m6.delta.get
+      val merged6 = m5.mergeDelta(m6.delta.get)
 
       merged6.entries("a").elements should be(Set("A"))
       merged6.entries("b").elements should be(Set("B", "B2", "B3", "B4"))
 
       val m7 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
-      val m8 = m7.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "d", GSet.empty + "D").put(node2, "b", GSet.empty + "B3")
+      val m8 = m7.resetDelta
+        .put(node2, "b", GSet.empty + "B2")
+        .put(node2, "d", GSet.empty + "D")
+        .put(node2, "b", GSet.empty + "B3")
 
-      val merged7 = m7 merge m8
+      val merged7 = m7.merge(m8)
 
       merged7.entries("a").elements should be(Set("A"))
       merged7.entries("b").elements should be(Set("B", "B3"))
       merged7.entries("d").elements should be(Set("D"))
 
-      val merged8 = m7 mergeDelta m8.delta.get
+      val merged8 = m7.mergeDelta(m8.delta.get)
 
       merged8.entries("a").elements should be(Set("A"))
       merged8.entries("b").elements should be(Set("B", "B3"))
       merged8.entries("d").elements should be(Set("D"))
 
       val m9 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
-      val m10 = m9.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "d", GSet.empty + "D")
-        .remove(node2, "d").put(node2, "b", GSet.empty + "B3")
+      val m10 = m9.resetDelta
+        .put(node2, "b", GSet.empty + "B2")
+        .put(node2, "d", GSet.empty + "D")
+        .remove(node2, "d")
+        .put(node2, "b", GSet.empty + "B3")
 
-      val merged9 = m9 merge m10
+      val merged9 = m9.merge(m10)
 
       merged9.entries("a").elements should be(Set("A"))
       merged9.entries("b").elements should be(Set("B", "B3"))
 
-      val merged10 = m9 mergeDelta m10.delta.get
+      val merged10 = m9.mergeDelta(m10.delta.get)
 
       merged10.entries("a").elements should be(Set("A"))
       merged10.entries("b").elements should be(Set("B", "B3"))
@@ -543,7 +567,9 @@ class ORMapSpec extends WordSpec with Matchers {
 
     "work with aggregated deltas and updated for GSet elements type" in {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
-      val m2 = m1.resetDelta.updated(node1, "a", GSet.empty[String])(_.add("B")).updated(node1, "a", GSet.empty[String])(_.add("C"))
+      val m2 = m1.resetDelta
+        .updated(node1, "a", GSet.empty[String])(_.add("B"))
+        .updated(node1, "a", GSet.empty[String])(_.add("C"))
       val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
       val GSet(d3) = m3.entries("a")
       d3 should be(Set("A", "B", "C"))
@@ -584,70 +610,76 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "be able to update entry" in {
-      val m1 = ORMap.empty[String, ORSet[String]].put(node1, "a", ORSet.empty.add(node1, "A"))
+      val m1 = ORMap
+        .empty[String, ORSet[String]]
+        .put(node1, "a", ORSet.empty.add(node1, "A"))
         .put(node1, "b", ORSet.empty.add(node1, "B01").add(node1, "B02").add(node1, "B03"))
       val m2 = ORMap.empty[String, ORSet[String]].put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1: ORMap[String, ORSet[String]] = m1 merge m2
+      val merged1: ORMap[String, ORSet[String]] = m1.merge(m2)
 
-      val m3 = merged1.updated(node1, "b", ORSet.empty[String])(_.clear(node1).add(node1, "B2"))
+      val m3 = merged1.updated(node1, "b", ORSet.empty[String])(_.clear().add(node1, "B2"))
 
-      val merged2 = merged1 merge m3
+      val merged2 = merged1.merge(m3)
       merged2.entries("a").elements should be(Set("A"))
       merged2.entries("b").elements should be(Set("B2"))
       merged2.entries("c").elements should be(Set("C"))
 
       val m4 = merged1.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B3"))
-      val merged3 = m3 merge m4
+      val merged3 = m3.merge(m4)
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B2", "B3"))
       merged3.entries("c").elements should be(Set("C"))
     }
 
     "be able to update ORSet entry with remove+put" in {
-      val m1 = ORMap.empty[String, ORSet[String]].put(node1, "a", ORSet.empty.add(node1, "A01"))
+      val m1 = ORMap
+        .empty[String, ORSet[String]]
+        .put(node1, "a", ORSet.empty.add(node1, "A01"))
         .updated(node1, "a", ORSet.empty[String])(_.add(node1, "A02"))
         .updated(node1, "a", ORSet.empty[String])(_.add(node1, "A03"))
         .put(node1, "b", ORSet.empty.add(node1, "B01").add(node1, "B02").add(node1, "B03"))
       val m2 = ORMap.empty[String, ORSet[String]].put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       // note that remove + put work because the new VersionVector version is incremented
       // from a global counter
       val m3 = merged1.remove(node1, "b").put(node1, "b", ORSet.empty.add(node1, "B2"))
 
-      val merged2 = merged1 merge m3
+      val merged2 = merged1.merge(m3)
       merged2.entries("a").elements should be(Set("A01", "A02", "A03"))
       merged2.entries("b").elements should be(Set("B2"))
       merged2.entries("c").elements should be(Set("C"))
 
       val m4 = merged1.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B3"))
-      val merged3 = m3 merge m4
+      val merged3 = m3.merge(m4)
       merged3.entries("a").elements should be(Set("A01", "A02", "A03"))
       merged3.entries("b").elements should be(Set("B2", "B3"))
       merged3.entries("c").elements should be(Set("C"))
     }
 
     "be able to update ORSet entry with remove -> merge -> put" in {
-      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A"))
+      val m1 = ORMap.empty
+        .put(node1, "a", ORSet.empty.add(node1, "A"))
         .put(node1, "b", ORSet.empty.add(node1, "B01").add(node1, "B02").add(node1, "B03"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1 = m1 merge m2
+      val merged1 = m1.merge(m2)
 
       val m3 = merged1.remove(node1, "b")
 
-      val merged2 = merged1 merge m3
+      val merged2 = merged1.merge(m3)
       merged2.entries("a").elements should be(Set("A"))
       merged2.contains("b") should be(false)
       merged2.entries("c").elements should be(Set("C"))
 
       val m4 = merged2.put(node1, "b", ORSet.empty.add(node1, "B2"))
-      val m5 = merged2.updated(node2, "c", ORSet.empty[String])(_.add(node2, "C2"))
+      val m5 = merged2
+        .updated(node2, "c", ORSet.empty[String])(_.add(node2, "C2"))
         .put(node2, "b", ORSet.empty.add(node2, "B3"))
 
-      val merged3 = m5 merge m4
+      val merged3 = m5.merge(m4)
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B2", "B3"))
       merged3.entries("c").elements should be(Set("C", "C2"))
@@ -655,14 +687,18 @@ class ORMapSpec extends WordSpec with Matchers {
 
     "have unapply extractor" in {
       val m1 = ORMap.empty.put(node1, "a", Flag(true)).put(node2, "b", Flag(false))
-      val m2: ORMap[String, Flag] = m1
+      val _: ORMap[String, Flag] = m1
       val ORMap(entries1) = m1
       val entries2: Map[String, Flag] = entries1
+      entries2 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
+
       Changed(ORMapKey[String, Flag]("key"))(m1) match {
-        case c @ Changed(ORMapKey("key")) ⇒
+        case c @ Changed(ORMapKey("key")) =>
           val ORMap(entries3) = c.dataValue
           val entries4: Map[String, ReplicatedData] = entries3
-          entries4 should be(Map("a" → Flag(true), "b" → Flag(false)))
+          entries4 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

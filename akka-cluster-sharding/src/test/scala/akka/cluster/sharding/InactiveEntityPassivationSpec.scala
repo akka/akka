@@ -32,26 +32,28 @@ object InactiveEntityPassivationSpec {
     def id = context.self.path.name
 
     def receive = {
-      case Passivate ⇒
+      case Passivate =>
         probe ! id + " passivating"
         context.stop(self)
-      case msg ⇒ probe ! GotIt(id, msg, System.nanoTime())
+      case msg => probe ! GotIt(id, msg, System.nanoTime())
     }
 
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg: Int ⇒ (msg.toString, msg)
+    case msg: Int => (msg.toString, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg: Int ⇒ (msg % 10).toString
+    case msg: Int => (msg % 10).toString
   }
 
 }
 
 class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSpec.config) {
   import InactiveEntityPassivationSpec._
+
+  val smallTolerance = 300.millis
 
   "Passivation of inactive entities" must {
 
@@ -67,14 +69,11 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
         extractEntityId,
         extractShardId,
         ClusterSharding(system).defaultShardAllocationStrategy(settings),
-        Passivate
-      )
+        Passivate)
 
       region ! 1
       region ! 2
-      val responses = Set(
-        probe.expectMsgType[GotIt],
-        probe.expectMsgType[GotIt])
+      val responses = Set(probe.expectMsgType[GotIt], probe.expectMsgType[GotIt])
       responses.map(_.id) should ===(Set("1", "2"))
       val timeOneSawMessage = responses.find(_.id == "1").get.when
       Thread.sleep(1000)
@@ -86,15 +85,14 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
 
       // make sure "1" hasn't seen a message in 3 seconds and passivates
       val timeSinceOneSawAMessage = (System.nanoTime() - timeOneSawMessage).nanos
-      probe.expectNoMessage(3.seconds - timeSinceOneSawAMessage)
+      val timeUntilPassivate: FiniteDuration = (3.seconds - timeSinceOneSawAMessage) - smallTolerance
+      probe.expectNoMessage(timeUntilPassivate)
       probe.expectMsg("1 passivating")
 
       // but it can be re activated just fine:
       region ! 1
       region ! 2
-      Set(
-        probe.expectMsgType[GotIt],
-        probe.expectMsgType[GotIt]).map(_.id) should ===(Set("1", "2"))
+      Set(probe.expectMsgType[GotIt], probe.expectMsgType[GotIt]).map(_.id) should ===(Set("1", "2"))
 
     }
   }

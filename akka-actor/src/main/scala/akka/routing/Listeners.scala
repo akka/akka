@@ -10,7 +10,7 @@ import java.util.{ Set, TreeSet }
 sealed trait ListenerMessage
 final case class Listen(listener: ActorRef) extends ListenerMessage
 final case class Deafen(listener: ActorRef) extends ListenerMessage
-final case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
+final case class WithListeners(f: (ActorRef) => Unit) extends ListenerMessage
 
 /**
  * Listeners is a generic trait to implement listening capability on an Actor.
@@ -23,7 +23,7 @@ final case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
  * <p/>
  * Send <code>WithListeners(fun)</code> to traverse the current listeners.
  */
-trait Listeners { self: Actor ⇒
+trait Listeners { self: Actor =>
   protected val listeners: Set[ActorRef] = new TreeSet[ActorRef]
 
   /**
@@ -32,9 +32,9 @@ trait Listeners { self: Actor ⇒
    * {{{ def receive = listenerManagement orElse … }}}
    */
   protected def listenerManagement: Actor.Receive = {
-    case Listen(l) ⇒ listeners add l
-    case Deafen(l) ⇒ listeners remove l
-    case WithListeners(f) ⇒
+    case Listen(l) => listeners.add(l)
+    case Deafen(l) => listeners.remove(l)
+    case WithListeners(f) =>
       val i = listeners.iterator
       while (i.hasNext) f(i.next)
   }

@@ -18,11 +18,8 @@ import akka.testkit.TimingTest
 object AutoDownSpec {
   final case class DownCalled(address: Address)
 
-  class AutoDownTestActor(
-    memberA:                  Member,
-    autoDownUnreachableAfter: FiniteDuration,
-    probe:                    ActorRef)
-    extends AutoDownBase(autoDownUnreachableAfter) {
+  class AutoDownTestActor(memberA: Member, autoDownUnreachableAfter: FiniteDuration, probe: ActorRef)
+      extends AutoDownBase(autoDownUnreachableAfter) {
 
     override def selfAddress = memberA.address
     override def scheduler: Scheduler = context.system.scheduler

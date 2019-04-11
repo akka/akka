@@ -43,7 +43,8 @@ object RestartSink {
    *   In order to skip this additional delay pass in `0`.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(sinkFactory: () ⇒ Sink[T, _]): Sink[T, NotUsed] = {
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
+      sinkFactory: () => Sink[T, _]): Sink[T, NotUsed] = {
     Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor, Int.MaxValue))
   }
 
@@ -73,36 +74,45 @@ object RestartSink {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(sinkFactory: () ⇒ Sink[T, _]): Sink[T, NotUsed] = {
+  def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(
+      sinkFactory: () => Sink[T, _]): Sink[T, NotUsed] = {
     Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
   }
 }
 
 private final class RestartWithBackoffSink[T](
-  sinkFactory:  () ⇒ Sink[T, _],
-  minBackoff:   FiniteDuration,
-  maxBackoff:   FiniteDuration,
-  randomFactor: Double,
-  maxRestarts:  Int) extends GraphStage[SinkShape[T]] { self ⇒
+    sinkFactory: () => Sink[T, _],
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    maxRestarts: Int)
+    extends GraphStage[SinkShape[T]] { self =>
 
   val in = Inlet[T]("RestartWithBackoffSink.in")
 
   override def shape = SinkShape(in)
-  override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Sink", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts) {
-    override protected def logSource = self.getClass
+  override def createLogic(inheritedAttributes: Attributes) =
+    new RestartWithBackoffLogic(
+      "Sink",
+      shape,
+      minBackoff,
+      maxBackoff,
+      randomFactor,
+      onlyOnFailures = false,
+      maxRestarts) {
+      override protected def logSource = self.getClass
 
-    override protected def startGraph() = {
-      val sourceOut = createSubOutlet(in)
-      Source.fromGraph(sourceOut.source).runWith(sinkFactory())(subFusingMaterializer)
+      override protected def startGraph() = {
+        val sourceOut = createSubOutlet(in)
+        Source.fromGraph(sourceOut.source).runWith(sinkFactory())(subFusingMaterializer)
+      }
+
+      override protected def backoff() = {
+        setHandler(in, new InHandler {
+          override def onPush() = ()
+        })
+      }
+
+      backoff()
     }
-
-    override protected def backoff() = {
-      setHandler(in, new InHandler {
-        override def onPush() = ()
-      })
-    }
-
-    backoff()
-  }
 }

@@ -38,40 +38,41 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
   sealed trait InternalCommand
   final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends InternalCommand
-  final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]]) extends InternalCommand
+  final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]])
+      extends InternalCommand
 
-  override def behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
+  override def behavior: Behavior[Command] = Behaviors.setup { ctx =>
     ctx.setLoggerClass(classOf[LocalReceptionist])
-    behavior(
-      TypedMultiMap.empty[AbstractServiceKey, KV],
-      TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
-    ).narrow[Command]
+    behavior(TypedMultiMap.empty[AbstractServiceKey, KV], TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
+      .narrow[Command]
   }
 
-  private def behavior(
-    serviceRegistry: LocalServiceRegistry,
-    subscriptions:   SubscriptionRegistry): Behavior[Any] = {
+  private def behavior(serviceRegistry: LocalServiceRegistry, subscriptions: SubscriptionRegistry): Behavior[Any] = {
 
     // Helper to create new state
-    def next(newRegistry: LocalServiceRegistry = serviceRegistry, newSubscriptions: SubscriptionRegistry = subscriptions) =
+    def next(
+        newRegistry: LocalServiceRegistry = serviceRegistry,
+        newSubscriptions: SubscriptionRegistry = subscriptions) =
       behavior(newRegistry, newSubscriptions)
 
     /*
      * Hack to allow multiple termination notifications per target
-     * FIXME: replace by simple map in our state
+     * FIXME #26505: replace by simple map in our state
      */
     def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
-      ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
+      ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
         innerCtx.watch(target)
         Behaviors.receiveSignal[Nothing] {
-          case (_, Terminated(`target`)) ⇒
+          case (_, Terminated(`target`)) =>
             ctx.self ! msg
             Behaviors.stopped
         }
       })
 
     // Helper that makes sure that subscribers are notified when an entry is changed
-    def updateRegistry(changedKeysHint: Set[AbstractServiceKey], f: LocalServiceRegistry ⇒ LocalServiceRegistry): Behavior[Any] = {
+    def updateRegistry(
+        changedKeysHint: Set[AbstractServiceKey],
+        f: LocalServiceRegistry => LocalServiceRegistry): Behavior[Any] = {
       val newRegistry = f(serviceRegistry)
 
       def notifySubscribersFor[T](key: AbstractServiceKey): Unit = {
@@ -79,28 +80,28 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
         subscriptions.get(key).foreach(_ ! ReceptionistMessages.Listing(key.asServiceKey, newListing))
       }
 
-      changedKeysHint foreach notifySubscribersFor
+      changedKeysHint.foreach(notifySubscribersFor)
       next(newRegistry = newRegistry)
     }
 
     def replyWithListing[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Unit =
-      replyTo ! ReceptionistMessages.Listing(key, serviceRegistry get key)
+      replyTo ! ReceptionistMessages.Listing(key, serviceRegistry.get(key))
 
     def onCommand(ctx: ActorContext[Any], cmd: Command): Behavior[Any] = cmd match {
-      case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) ⇒
+      case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
         ctx.log.debug("Actor was registered: {} {}", key, serviceInstance)
         watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
         maybeReplyTo match {
-          case Some(replyTo) ⇒ replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
-          case None          ⇒
+          case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
+          case None          =>
         }
         updateRegistry(Set(key), _.inserted(key)(serviceInstance))
 
-      case ReceptionistMessages.Find(key, replyTo) ⇒
+      case ReceptionistMessages.Find(key, replyTo) =>
         replyWithListing(key, replyTo)
         same
 
-      case ReceptionistMessages.Subscribe(key, subscriber) ⇒
+      case ReceptionistMessages.Subscribe(key, subscriber) =>
         watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
 
         // immediately reply with initial listings to the new subscriber
@@ -110,19 +111,19 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
     }
 
     def onInternal(ctx: ActorContext[Any], cmd: InternalCommand): Behavior[Any] = cmd match {
-      case RegisteredActorTerminated(key, serviceInstance) ⇒
+      case RegisteredActorTerminated(key, serviceInstance) =>
         ctx.log.debug("Registered actor terminated: {} {}", key, serviceInstance)
         updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
-      case SubscriberTerminated(key, subscriber) ⇒
+      case SubscriberTerminated(key, subscriber) =>
         next(newSubscriptions = subscriptions.removed(key)(subscriber))
     }
 
-    receive[Any] { (ctx, msg) ⇒
+    receive[Any] { (ctx, msg) =>
       msg match {
-        case cmd: Command         ⇒ onCommand(ctx, cmd)
-        case cmd: InternalCommand ⇒ onInternal(ctx, cmd)
-        case _                    ⇒ Behaviors.unhandled
+        case cmd: Command         => onCommand(ctx, cmd)
+        case cmd: InternalCommand => onInternal(ctx, cmd)
+        case _                    => Behaviors.unhandled
       }
     }
   }

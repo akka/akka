@@ -89,11 +89,7 @@ object ActorTestKit {
    */
   def shutdown(system: ActorSystem[_]): Unit = {
     val settings = TestKitSettings.create(system)
-    shutdown(
-      system,
-      settings.DefaultActorSystemShutdownTimeout.asJava,
-      settings.ThrowOnShutdownTimeout
-    )
+    shutdown(system, settings.DefaultActorSystemShutdownTimeout.asJava, settings.ThrowOnShutdownTimeout)
   }
 
 }
@@ -136,27 +132,32 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * Spawn a new auto-named actor under the testkit user guardian and return the ActorRef for the spawned actor
    */
   def spawn[T](behavior: Behavior[T]): ActorRef[T] = delegate.spawn(behavior)
+
   /**
    * Spawn a new named actor under the testkit user guardian and return the ActorRef for the spawned actor,
    * note that spawning actors with the same name in multiple test cases will cause failures.
    */
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = delegate.spawn(behavior, name)
+
   /**
    * Spawn a new auto-named actor under the testkit user guardian with the given props
    * and return the ActorRef for the spawned actor
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] = delegate.spawn(behavior, props)
+
   /**
    * Spawn a new named actor under the testkit user guardian with the given props and return the ActorRef
    * for the spawned actor, note that spawning actors with the same name in multiple test cases will cause failures.
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] = delegate.spawn(behavior, name, props)
+
   /**
    * Stop the actor under test and wait until it terminates.
    * It can only be used for actors that were spawned by this `ActorTestKit`.
    * Other actors will not be stopped by this method.
    */
   def stop[T](ref: ActorRef[T]): Unit = delegate.stop(ref)
+
   /**
    * Stop the actor under test and wait `max` until it terminates.
    * It can only be used for actors that were spawned by this `ActorTestKit`.
@@ -169,6 +170,7 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](): TestProbe[M] = TestProbe.create(system)
+
   /**
    * Shortcut for creating a new test probe for the testkit actor system
    * @tparam M the type of messages the probe should accept
@@ -180,6 +182,7 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String): TestProbe[M] = TestProbe.create(name, system)
+
   /**
    * Shortcut for creating a new named test probe for the testkit actor system
    * @tparam M the type of messages the probe should accept

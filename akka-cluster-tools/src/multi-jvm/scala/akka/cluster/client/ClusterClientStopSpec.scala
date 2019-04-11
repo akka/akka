@@ -8,7 +8,7 @@ import akka.actor.{ Actor, Props }
 import akka.cluster.Cluster
 import akka.cluster.pubsub.{ DistributedPubSub, DistributedPubSubMediator }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ EventFilter, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
@@ -34,7 +34,7 @@ object ClusterClientStopSpec extends MultiNodeConfig {
 
   class Service extends Actor {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 }
@@ -51,7 +51,7 @@ class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with ST
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       ClusterClientReceptionist(system)
     }
     enterBarrier(from.name + "-joined")
@@ -64,7 +64,7 @@ class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with ST
     }
   }
 
-  def initialContacts = Set(first, second).map { r ⇒
+  def initialContacts = Set(first, second).map { r =>
     node(r) / "system" / "receptionist"
   }
 
@@ -86,8 +86,9 @@ class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with ST
 
     "stop if re-establish fails for too long time" in within(20.seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client1")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client1")
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[String](3.seconds) should be("hello")
         enterBarrier("was-in-contact")

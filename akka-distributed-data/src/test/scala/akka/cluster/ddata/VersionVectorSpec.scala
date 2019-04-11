@@ -12,13 +12,16 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
-class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+class VersionVectorSpec
+    extends TestKit(ActorSystem("VersionVectorSpec"))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
-  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3)
-  val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
+  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
+  val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4L)
 
   override def afterAll: Unit = {
     shutdown()
@@ -80,7 +83,7 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
     }
 
     "pass misc comparison test 3" in {
-      var vv1_1 = VersionVector()
+      val vv1_1 = VersionVector()
       val vv2_1 = vv1_1 + node1
 
       val vv1_2 = VersionVector()
@@ -170,13 +173,13 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv2_2 = vv1_2 + node2
       val vv3_2 = vv2_2 + node2
 
-      val merged1 = vv3_2 merge vv5_1
+      val merged1 = vv3_2.merge(vv5_1)
       merged1.size should be(3)
       merged1.contains(node1) should be(true)
       merged1.contains(node2) should be(true)
       merged1.contains(node3) should be(true)
 
-      val merged2 = vv5_1 merge vv3_2
+      val merged2 = vv5_1.merge(vv3_2)
       merged2.size should be(3)
       merged2.contains(node1) should be(true)
       merged2.contains(node2) should be(true)
@@ -203,14 +206,14 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv2_2 = vv1_2 + node4
       val vv3_2 = vv2_2 + node4
 
-      val merged1 = vv3_2 merge vv5_1
+      val merged1 = vv3_2.merge(vv5_1)
       merged1.size should be(4)
       merged1.contains(node1) should be(true)
       merged1.contains(node2) should be(true)
       merged1.contains(node3) should be(true)
       merged1.contains(node4) should be(true)
 
-      val merged2 = vv5_1 merge vv3_2
+      val merged2 = vv5_1.merge(vv3_2)
       merged2.size should be(4)
       merged2.contains(node1) should be(true)
       merged2.contains(node2) should be(true)
@@ -250,9 +253,9 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val a1 = a + node1
       val b1 = b + node2
 
-      var a2 = a1 + node1
-      var c = a2.merge(b1)
-      var c1 = c + node3
+      val a2 = a1 + node1
+      val c = a2.merge(b1)
+      val c1 = c + node3
 
       (c1 > a2) should be(true)
       (c1 > b1) should be(true)

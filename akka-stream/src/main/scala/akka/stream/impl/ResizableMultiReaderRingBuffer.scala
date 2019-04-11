@@ -16,9 +16,9 @@ import akka.annotation.InternalApi
  * elements, rather, if full, the buffer tries to grow and rejects further writes if max capacity is reached.
  */
 @InternalApi private[akka] class ResizableMultiReaderRingBuffer[T](
-  initialSize: Int, // constructor param, not field
-  maxSize:     Int, // constructor param, not field
-  val cursors: Cursors) {
+    initialSize: Int, // constructor param, not field
+    maxSize: Int, // constructor param, not field
+    val cursors: Cursors) {
   require(
     Integer.lowestOneBit(maxSize) == maxSize && 0 < maxSize && maxSize <= Int.MaxValue / 2,
     "maxSize must be a power of 2 that is > 0 and < Int.MaxValue/2")
@@ -89,10 +89,10 @@ import akka.annotation.InternalApi
       System.arraycopy(array, r, newArray, 0, array.length - r)
       System.arraycopy(array, 0, newArray, array.length - r, r)
       @tailrec def rebaseCursors(remaining: List[Cursor]): Unit = remaining match {
-        case head :: tail ⇒
+        case head :: tail =>
           head.cursor -= readIx
           rebaseCursors(tail)
-        case _ ⇒ // done
+        case _ => // done
       }
       rebaseCursors(cursors.cursors)
       array = newArray
@@ -125,8 +125,8 @@ import akka.annotation.InternalApi
   private def updateReadIx(): Unit = {
     @tailrec def minCursor(remaining: List[Cursor], result: Int): Int =
       remaining match {
-        case head :: tail ⇒ minCursor(tail, math.min(head.cursor - writeIx, result))
-        case _            ⇒ result
+        case head :: tail => minCursor(tail, math.min(head.cursor - writeIx, result))
+        case _            => result
       }
     val newReadIx = writeIx + minCursor(cursors.cursors, 0)
     while (readIx != newReadIx) {

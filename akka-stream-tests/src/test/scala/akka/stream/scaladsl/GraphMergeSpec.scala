@@ -18,7 +18,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
   override type Outputs = Int
 
   override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
-    val merge = b add Merge[Outputs](2)
+    val merge = b.add(Merge[Outputs](2))
 
     override def left: Inlet[Outputs] = merge.in(0)
     override def right: Inlet[Outputs] = merge.in(1)
@@ -35,23 +35,25 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List[Int]())
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val m1 = b.add(Merge[Int](2))
-        val m2 = b.add(Merge[Int](2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val m1 = b.add(Merge[Int](2))
+          val m2 = b.add(Merge[Int](2))
 
-        source1 ~> m1.in(0)
-        m1.out ~> Flow[Int].map(_ * 2) ~> m2.in(0)
-        m2.out ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink.fromSubscriber(probe)
-        source2 ~> m1.in(1)
-        source3 ~> m2.in(1)
+          source1 ~> m1.in(0)
+          m1.out ~> Flow[Int].map(_ * 2) ~> m2.in(0)
+          m2.out ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink.fromSubscriber(probe)
+          source2 ~> m1.in(1)
+          source3 ~> m2.in(1)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -64,13 +66,15 @@ class GraphMergeSpec extends TwoStreamsSetup {
     }
 
     "work with one-way merge" in {
-      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
-        val merge = b.add(Merge[Int](1))
-        val source = b.add(Source(1 to 3))
+      val result = Source
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val merge = b.add(Merge[Int](1))
+          val source = b.add(Source(1 to 3))
 
-        source ~> merge.in(0)
-        SourceShape(merge.out)
-      }).runFold(Seq[Int]())(_ :+ _)
+          source ~> merge.in(0)
+          SourceShape(merge.out)
+        })
+        .runFold(Seq[Int]())(_ :+ _)
 
       Await.result(result, 3.seconds) should ===(Seq(1, 2, 3))
     }
@@ -85,24 +89,26 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val merge = b.add(Merge[Int](6))
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val merge = b.add(Merge[Int](6))
 
-        source1 ~> merge.in(0)
-        source2 ~> merge.in(1)
-        source3 ~> merge.in(2)
-        source4 ~> merge.in(3)
-        source5 ~> merge.in(4)
-        source6 ~> merge.in(5)
-        merge.out ~> Sink.fromSubscriber(probe)
+          source1 ~> merge.in(0)
+          source2 ~> merge.in(1)
+          source3 ~> merge.in(2)
+          source4 ~> merge.in(3)
+          source5 ~> merge.in(4)
+          source6 ~> merge.in(5)
+          merge.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
       var collected = Set.empty[Int]
-      for (_ ← 1 to 5) {
+      for (_ <- 1 to 5) {
         subscription.request(1)
         collected += probe.expectNext()
       }
@@ -171,13 +177,15 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val src1 = Source.asSubscriber[Int]
       val src2 = Source.asSubscriber[Int]
 
-      val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b ⇒ (s1, s2) ⇒
-        val merge = b.add(Merge[Int](2))
-        s1.out ~> merge.in(0)
-        s2.out ~> merge.in(1)
-        merge.out ~> Sink.fromSubscriber(down)
-        ClosedShape
-      }).run()
+      val (graphSubscriber1, graphSubscriber2) = RunnableGraph
+        .fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b => (s1, s2) =>
+          val merge = b.add(Merge[Int](2))
+          s1.out ~> merge.in(0)
+          s2.out ~> merge.in(1)
+          merge.out ~> Sink.fromSubscriber(down)
+          ClosedShape
+        })
+        .run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()

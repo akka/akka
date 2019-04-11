@@ -13,14 +13,13 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object PersistentShardSpec {
-  class EntityActor(id: String) extends Actor {
+  class EntityActor extends Actor {
     override def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """.stripMargin)
 }
@@ -30,17 +29,12 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with Word
   "Persistent Shard" must {
 
     "remember entities started with StartEntity" in {
-      val props = Props(new PersistentShard(
-        "cats",
-        "shard-1",
-        id ⇒ Props(new EntityActor(id)),
-        ClusterShardingSettings(system),
-        {
-          case _ ⇒ ("entity-1", "msg")
-        },
-        _ ⇒ "shard-1",
-        PoisonPill
-      ))
+      val props =
+        Props(new PersistentShard("cats", "shard-1", _ => Props(new EntityActor), ClusterShardingSettings(system), {
+          case _ => ("entity-1", "msg")
+        }, { _ =>
+          "shard-1"
+        }, PoisonPill))
       val persistentShard = system.actorOf(props)
       watch(persistentShard)
 

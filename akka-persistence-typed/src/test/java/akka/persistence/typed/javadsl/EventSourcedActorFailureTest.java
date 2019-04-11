@@ -9,13 +9,19 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Signal;
 import akka.actor.typed.SupervisorStrategy;
+import akka.japi.function.Effect;
 import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.RecoveryFailed;
+import akka.testkit.EventFilter;
+import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.time.Duration;
 
@@ -39,13 +45,19 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   }
 
   @Override
-  public void onRecoveryCompleted(String s) {
-    probe.tell("starting");
-  }
-
-  @Override
-  public void onRecoveryFailure(Throwable failure) {
-    recoveryFailureProbe.tell(failure);
+  public SignalHandler signalHandler() {
+    return newSignalHandlerBuilder()
+        .onSignal(
+            RecoveryCompleted.instance(),
+            state -> {
+              probe.tell("starting");
+            })
+        .onSignal(
+            RecoveryFailed.class,
+            (state, signal) -> {
+              recoveryFailureProbe.tell(signal.getFailure());
+            })
+        .build();
   }
 
   @Override
@@ -83,6 +95,24 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {
     return fail(pid, probe, testKit.<Throwable>createTestProbe().ref());
+  }
+
+  public EventSourcedActorFailureTest() {
+    // FIXME ##24348 silence logging in a proper way
+    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+        .eventStream()
+        .publish(
+            new TestEvent.Mute(
+                akka.japi.Util.immutableSeq(
+                    new EventFilter[] {
+                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
+                    })));
+    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+        .eventStream()
+        .publish(
+            new TestEvent.Mute(
+                akka.japi.Util.immutableSeq(
+                    new EventFilter[] {EventFilter.error(null, null, "", ".*saw failure.*", 1)})));
   }
 
   @Test

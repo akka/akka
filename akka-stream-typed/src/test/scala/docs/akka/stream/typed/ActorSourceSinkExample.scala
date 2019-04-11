@@ -5,12 +5,13 @@
 package docs.akka.stream.typed
 
 import akka.NotUsed
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ ActorRef, ActorSystem }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.typed.scaladsl.ActorMaterializer
 
 object ActorSourceSinkExample {
 
-  val system: ActorSystem[_] = ???
+  val system: ActorSystem[_] = ActorSystem(Behaviors.empty, "ActorSourceSinkExample")
 
   implicit val mat: ActorMaterializer = ActorMaterializer()(system)
 
@@ -26,20 +27,18 @@ object ActorSourceSinkExample {
     case object Complete extends Protocol
     case class Fail(ex: Exception) extends Protocol
 
-    val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](
-      completionMatcher = {
-        case Complete ⇒
-      },
-      failureMatcher = {
-        case Fail(ex) ⇒ ex
-      },
-      bufferSize = 8,
-      overflowStrategy = OverflowStrategy.fail
-    )
+    val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](completionMatcher = {
+      case Complete =>
+    }, failureMatcher = {
+      case Fail(ex) => ex
+    }, bufferSize = 8, overflowStrategy = OverflowStrategy.fail)
 
-    val ref = source.collect {
-      case Message(msg) ⇒ msg
-    }.to(Sink.foreach(println)).run()
+    val ref = source
+      .collect {
+        case Message(msg) => msg
+      }
+      .to(Sink.foreach(println))
+      .run()
 
     ref ! Message("msg1")
     // ref ! "msg2" Does not compile
@@ -47,6 +46,8 @@ object ActorSourceSinkExample {
   }
 
   {
+    def targetActor(): ActorRef[Protocol] = ???
+
     // #actor-sink-ref
     import akka.actor.typed.ActorRef
     import akka.stream.scaladsl.{ Sink, Source }
@@ -57,19 +58,20 @@ object ActorSourceSinkExample {
     case object Complete extends Protocol
     case class Fail(ex: Throwable) extends Protocol
 
-    val actor: ActorRef[Protocol] = ???
+    val actor: ActorRef[Protocol] = targetActor()
 
-    val sink: Sink[Protocol, NotUsed] = ActorSink.actorRef[Protocol](
-      ref = actor,
-      onCompleteMessage = Complete,
-      onFailureMessage = Fail.apply
-    )
+    val sink: Sink[Protocol, NotUsed] =
+      ActorSink.actorRef[Protocol](ref = actor, onCompleteMessage = Complete, onFailureMessage = Fail.apply)
 
     Source.single(Message("msg1")).runWith(sink)
     // #actor-sink-ref
+
   }
 
   {
+
+    def targetActor(): ActorRef[Protocol] = ???
+
     // #actor-sink-ref-with-ack
     import akka.actor.typed.ActorRef
     import akka.stream.scaladsl.{ Sink, Source }
@@ -84,7 +86,7 @@ object ActorSourceSinkExample {
     case object Complete extends Protocol
     case class Fail(ex: Throwable) extends Protocol
 
-    val actor: ActorRef[Protocol] = ???
+    val actor: ActorRef[Protocol] = targetActor()
 
     val sink: Sink[String, NotUsed] = ActorSink.actorRefWithAck(
       ref = actor,
@@ -92,8 +94,7 @@ object ActorSourceSinkExample {
       onFailureMessage = Fail.apply,
       messageAdapter = Message.apply,
       onInitMessage = Init.apply,
-      ackMessage = Ack
-    )
+      ackMessage = Ack)
 
     Source.single("msg1").runWith(sink)
     // #actor-sink-ref-with-ack

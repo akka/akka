@@ -15,7 +15,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;

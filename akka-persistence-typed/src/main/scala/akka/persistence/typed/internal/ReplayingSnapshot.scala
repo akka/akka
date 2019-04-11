@@ -37,7 +37,9 @@ private[akka] object ReplayingSnapshot {
 
 @InternalApi
 private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup[C, E, S])
-  extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
+    extends JournalInteractions[C, E, S]
+    with SnapshotInteractions[C, E, S]
+    with StashManagement[C, E, S] {
 
   import InternalProtocol._
 
@@ -48,17 +50,27 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
-      Behaviors.receiveMessage[InternalProtocol] {
-        case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r, receivedPoisonPill)
-        case JournalResponse(r)          ⇒ onJournalResponse(r)
-        case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
-        case cmd: IncomingCommand[C] ⇒
-          if (receivedPoisonPill) Behaviors.unhandled
-          else onCommand(cmd)
-        case RecoveryPermitGranted ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.receiveSignal(returnPermitOnStop.orElse {
-        case (_, PoisonPill) ⇒ stay(receivedPoisonPill = true)
-      })
+      Behaviors
+        .receiveMessage[InternalProtocol] {
+          case SnapshotterResponse(r)      => onSnapshotterResponse(r, receivedPoisonPill)
+          case JournalResponse(r)          => onJournalResponse(r)
+          case RecoveryTickEvent(snapshot) => onRecoveryTick(snapshot)
+          case cmd: IncomingCommand[C] =>
+            if (receivedPoisonPill) {
+              if (setup.settings.logOnStashing)
+                setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+              Behaviors.unhandled
+            } else
+              onCommand(cmd)
+          case RecoveryPermitGranted => Behaviors.unhandled // should not happen, we already have the permit
+        }
+        .receiveSignal(returnPermitOnStop.orElse {
+          case (_, PoisonPill) =>
+            stay(receivedPoisonPill = true)
+          case (_, signal) =>
+            setup.onSignal(setup.emptyState, signal, catchAndLog = true)
+            Behaviors.same
+        })
     }
     stay(receivedPoisonPillInPreviousPhase)
   }
@@ -69,26 +81,19 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
    * The actor is always stopped after this method has been invoked.
    *
    * @param cause failure cause.
-   * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
-  private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+  private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
     setup.cancelRecoveryTimer()
-
-    event match {
-      case Some(evt) ⇒
-        setup.log.error(cause, "Exception in receiveRecover when replaying snapshot [{}]", evt.getClass.getName)
-      case _ ⇒
-        setup.log.error(cause, "Persistence failure when replaying snapshot")
-    }
-
+    setup.log.error(cause, s"Persistence failure when replaying snapshot. ${cause.getMessage}")
     Behaviors.stopped
   }
 
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {
       // we know we're in snapshotting mode; snapshot recovery timeout arrived
-      val ex = new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within ${setup.settings.recoveryEventTimeout}")
-      onRecoveryFailure(ex, None)
+      val ex = new RecoveryTimedOut(
+        s"Recovery timed out, didn't get snapshot within ${setup.settings.recoveryEventTimeout}")
+      onRecoveryFailure(ex)
     } else Behaviors.same // ignore, since we received the snapshot already
 
   def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
@@ -98,39 +103,46 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
-    setup.log.debug("Unexpected response from journal: [{}], may be due to an actor restart, ignoring...", response.getClass.getName)
+    setup.log.debug(
+      "Unexpected response from journal: [{}], may be due to an actor restart, ignoring...",
+      response.getClass.getName)
     Behaviors.unhandled
   }
 
-  def onSnapshotterResponse(response: SnapshotProtocol.Response, receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+  def onSnapshotterResponse(
+      response: SnapshotProtocol.Response,
+      receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     response match {
-      case LoadSnapshotResult(sso, toSnr) ⇒
+      case LoadSnapshotResult(sso, toSnr) =>
         var state: S = setup.emptyState
 
         val seqNr: Long = sso match {
-          case Some(SelectedSnapshot(metadata, snapshot)) ⇒
+          case Some(SelectedSnapshot(metadata, snapshot)) =>
             state = snapshot.asInstanceOf[S]
             metadata.sequenceNr
-          case None ⇒ 0 // from the beginning please
+          case None => 0 // from the beginning please
         }
 
         becomeReplayingEvents(state, seqNr, toSnr, receivedPoisonPill)
 
-      case LoadSnapshotFailed(cause) ⇒
-        onRecoveryFailure(cause, event = None)
+      case LoadSnapshotFailed(cause) =>
+        onRecoveryFailure(cause)
 
-      case _ ⇒
+      case _ =>
         Behaviors.unhandled
     }
   }
 
-  private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long, receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+  private def becomeReplayingEvents(
+      state: S,
+      lastSequenceNr: Long,
+      toSnr: Long,
+      receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.cancelRecoveryTimer()
 
     ReplayingEvents[C, E, S](
       setup,
-      ReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill)
-    )
+      ReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill))
   }
 
 }

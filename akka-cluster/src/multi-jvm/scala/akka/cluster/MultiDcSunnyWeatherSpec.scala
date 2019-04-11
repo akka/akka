@@ -21,22 +21,19 @@ object MultiDcSunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  nodeConfig(first, second, third)(ConfigFactory.parseString(
-    """
+  nodeConfig(first, second, third)(ConfigFactory.parseString("""
     akka {
       cluster.multi-data-center.self-data-center = alpha
     }
     """))
 
-  nodeConfig(fourth, fifth)(ConfigFactory.parseString(
-    """
+  nodeConfig(fourth, fifth)(ConfigFactory.parseString("""
     akka {
       cluster.multi-data-center.self-data-center = beta
     }
     """))
 
-  commonConfig(ConfigFactory.parseString(
-    """
+  commonConfig(ConfigFactory.parseString("""
     akka {
       actor.provider = cluster
 
@@ -63,8 +60,9 @@ class MultiDcSunnyWeatherMultiJvmNode3 extends MultiDcSunnyWeatherSpec
 class MultiDcSunnyWeatherMultiJvmNode4 extends MultiDcSunnyWeatherSpec
 class MultiDcSunnyWeatherMultiJvmNode5 extends MultiDcSunnyWeatherSpec
 
-abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeatherMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class MultiDcSunnyWeatherSpec
+    extends MultiNodeSpec(MultiDcSunnyWeatherMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {
@@ -83,7 +81,8 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
       val expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       val expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
-      val expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles union expectedBetaHeartbeaterRoles)
+      val expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles.union(
+          expectedBetaHeartbeaterRoles))
 
       enterBarrier("found-expectations")
 
@@ -123,15 +122,14 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
       implicit val sender = observer.ref
       selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
       observer.expectMsgType[CrossDcHeartbeatSender.MonitoringStateReport](5.seconds) match {
-        case CrossDcHeartbeatSender.MonitoringDormant() ⇒ // ok ...
-        case CrossDcHeartbeatSender.MonitoringActive(state) ⇒
-
+        case CrossDcHeartbeatSender.MonitoringDormant()     => // ok ...
+        case CrossDcHeartbeatSender.MonitoringActive(state) =>
           // must not heartbeat myself
           state.activeReceivers should not contain cluster.selfUniqueAddress
 
           // not any of the members in the same datacenter; it's "cross-dc" after all
           val myDataCenterMembers = state.state.getOrElse(cluster.selfDataCenter, Set.empty)
-          myDataCenterMembers foreach { myDcMember ⇒
+          myDataCenterMembers.foreach { myDcMember =>
             state.activeReceivers should not contain myDcMember.uniqueAddress
           }
 
@@ -149,9 +147,12 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
    * (since marking that transition is a Leader action).
    */
   private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =
-    SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.dataCenter == dataCenter &&
-        m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
+    SortedSet
+      .empty(Member.ageOrdering)
+      .union(
+        cluster.state.members.filter(m =>
+          m.dataCenter == dataCenter &&
+          m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
   @InternalApi
@@ -159,7 +160,7 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
     membersByAge(dataCenter).take(n)
 
   private def membersAsRoles(ms: immutable.Set[Member]): immutable.Set[RoleName] = {
-    val res = ms.flatMap(m ⇒ roleName(m.address))
+    val res = ms.flatMap(m => roleName(m.address))
     require(res.size == ms.size, s"Not all members were converted to roles! Got: ${ms}, found ${res}")
     res
   }

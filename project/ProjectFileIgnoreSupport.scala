@@ -68,22 +68,22 @@ class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
     def getPackageName0(fileType: String): String = {
       import java.io.{File => JFile}
       fileName.split(JFile.separatorChar)
-        .dropWhile(part ⇒ part != fileType)
+        .dropWhile(part => part != fileType)
         .drop(1)
         .dropRight(1)
         .mkString(".")
     }
 
     fileName.split('.').lastOption match {
-      case Some(fileType) ⇒
+      case Some(fileType) =>
         fileType match {
-          case "java" ⇒
+          case "java" =>
             Option(getPackageName0("java"))
-          case "scala" ⇒
+          case "scala" =>
             Option(getPackageName0("scala"))
-          case _ ⇒ None
+          case _ => None
         }
-      case None ⇒ None
+      case None => None
     }
   }
 }

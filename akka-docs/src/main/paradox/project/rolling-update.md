@@ -26,6 +26,9 @@ For example it's possible to update from 2.5.14 to 2.5.16 without intermediate 2
 It's not supported to have a cluster with more than two different versions. Roll out the first
 update completely before starting next update.
 
+Rolling update from classic remoting to Artery is not supported since the protocol
+is completely different. It will require a full cluster shutdown and new startup.
+
 ## Shutdown order
 
 It's best to keep the node that has been running the longest until last. That is because
@@ -71,5 +74,19 @@ This change required a two phase update where the data was duplicated to be comp
 This means that you can't update from 2.5.13 directly to 2.5.17. You must first update to one of the intermediate
 versions 2.5.14, 2.5.15, or 2.5.16.
 
+### 2.5.22 ClusterSharding serializer for `ShardRegionStats`
 
+Issue: [#25348](https://github.com/akka/akka/issues/25348)
+
+Intentional change was done in 2.5.22.
+
+Changed serializer for classes: `GetShardRegionStats`, `ShardRegionStats`, `GetShardStats`, `ShardStats`
+
+This change required a two phase update where new serializer was introduced but not enabled in an earlier version.
+
+* 2.5.18 - serializer was added but not enabled, `JavaSerializer` still used
+* 2.5.22 - `ClusterShardingMessageSerializer` was enabled for these classes
+
+This means that you can't update from 2.5.17 directly to 2.5.22. You must first update to one of the intermediate
+versions 2.5.18, 2.5.19, 2.5.20 or 2.5.21.
 

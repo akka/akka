@@ -5,7 +5,7 @@
 package akka.remote.testconductor
 
 import akka.testkit.AkkaSpec
-import akka.actor.{ PoisonPill, Props, AddressFromURIString }
+import akka.actor.{ AddressFromURIString, PoisonPill, Props }
 import akka.testkit.ImplicitSender
 import akka.remote.testconductor.Controller.NodeInfo
 import java.net.InetSocketAddress

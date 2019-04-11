@@ -14,7 +14,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
 //#imports
-import akka.actor.typed.DispatcherSelector
 import akka.stream.testkit.TestSubscriber
 
 import scala.collection.immutable
@@ -33,18 +32,19 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "ActorFlow" should {
 
     val replier = spawn(Behaviors.receiveMessage[Asking] {
-      case Asking("TERMINATE", _) ⇒
+      case Asking("TERMINATE", _) =>
         Behaviors.stopped
 
-      case asking ⇒
+      case asking =>
         asking.replyTo ! Reply(asking.s + "!!!")
         Behaviors.same
     })
 
     "produce asked elements" in {
       val in: Future[immutable.Seq[Reply]] =
-        Source.repeat("hello")
-          .via(ActorFlow.ask(replier)((el, replyTo: ActorRef[Reply]) ⇒ Asking(el, replyTo)))
+        Source
+          .repeat("hello")
+          .via(ActorFlow.ask(replier)((el, replyTo: ActorRef[Reply]) => Asking(el, replyTo)))
           .take(3)
           .runWith(Sink.seq)
 
@@ -53,7 +53,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "produce asked elements in order" in {
       //#ask-actor
-      val ref = spawn(Behaviors.receiveMessage[Asking] { asking ⇒
+      val ref = spawn(Behaviors.receiveMessage[Asking] { asking =>
         asking.replyTo ! Reply(asking.s + "!!!")
         Behaviors.same
       })
@@ -62,12 +62,13 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       //#ask
       val in: Future[immutable.Seq[Reply]] =
-        Source(1 to 50).map(_.toString)
-          .via(ActorFlow.ask(ref)((el, replyTo: ActorRef[Reply]) ⇒ Asking(el, replyTo)))
+        Source(1 to 50)
+          .map(_.toString)
+          .via(ActorFlow.ask(ref)((el, replyTo: ActorRef[Reply]) => Asking(el, replyTo)))
           .runWith(Sink.seq)
       //#ask
 
-      in.futureValue shouldEqual List.tabulate(51)(i ⇒ Reply(s"$i!!!")).drop(1)
+      in.futureValue shouldEqual List.tabulate(51)(i => Reply(s"$i!!!")).drop(1)
     }
 
     "signal ask timeout failure" in {
@@ -75,20 +76,22 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val dontReply = spawn(Behaviors.ignore[Asking])
 
       val c = TestSubscriber.manualProbe[Reply]()(system.toUntyped)
-      implicit val ec = system.dispatchers.lookup(DispatcherSelector.default())
       implicit val timeout = akka.util.Timeout(10.millis)
 
-      Source(1 to 5).map(_ + " nope")
+      Source(1 to 5)
+        .map(_.toString + " nope")
         .via(ActorFlow.ask[String, Asking, Reply](4)(dontReply)(Asking(_, _)))
-        .to(Sink.fromSubscriber(c)).run()
+        .to(Sink.fromSubscriber(c))
+        .run()
 
       c.expectSubscription().request(10)
       c.expectError().getMessage should startWith("Ask timed out on [Actor")
     }
 
     "signal failure when target actor is terminated" in {
-      val done = Source.maybe[String]
-        .via(ActorFlow.ask(replier)((el, replyTo: ActorRef[Reply]) ⇒ Asking(el, replyTo)))
+      val done = Source
+        .maybe[String]
+        .via(ActorFlow.ask(replier)((el, replyTo: ActorRef[Reply]) => Asking(el, replyTo)))
         .runWith(Sink.ignore)
 
       intercept[RuntimeException] {

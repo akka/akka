@@ -9,6 +9,7 @@ import java.util.Properties
 
 import sbt.Keys._
 import sbt._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 
 import scala.collection.breakOut
 
@@ -18,6 +19,8 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
+  val jdkVersion = sys.props("java.specification.version")
+
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
     // use the same value as in the build scope, so it can be overriden by stampVersion
@@ -25,12 +28,11 @@ object AkkaBuild {
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
-    Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       version in ThisBuild := "2.5-SNAPSHOT"
     )
-
+ 
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
                       |'may change', which means that it is in early
@@ -46,8 +48,8 @@ object AkkaBuild {
 
   val (mavenLocalResolver, mavenLocalResolverSettings) =
     System.getProperty("akka.build.M2Dir") match {
-      case null ⇒ (Resolver.mavenLocal, Seq.empty)
-      case path ⇒
+      case null => (Resolver.mavenLocal, Seq.empty)
+      case path =>
         // Maven resolver settings
         def deliverPattern(outputPath: File): String =
           (outputPath / "[artifact]-[revision](-[classifier]).[ext]").absolutePath
@@ -78,7 +80,7 @@ object AkkaBuild {
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
   } ++ Seq(
-    pomIncludeRepository := (_ ⇒ false) // do not leak internal repositories during staging
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
@@ -107,7 +109,7 @@ object AkkaBuild {
             // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
             Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
+      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       javacOptions in compile ++= DefaultJavacOptions ++ (
         if (System.getProperty("java.version").startsWith("1."))
@@ -139,9 +141,9 @@ object AkkaBuild {
       ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
       licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-      homepage := Some(url("http://akka.io/")),
+      homepage := Some(url("https://akka.io/")),
 
-      apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
+      apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
 
       initialCommands :=
         """|import language.postfixOps
@@ -199,7 +201,7 @@ object AkkaBuild {
         val base = (javaOptions in Test).value
         val akkaSysProps: Seq[String] =
           sys.props.filter(_._1.startsWith("akka"))
-            .map { case (key, value) ⇒ s"-D$key=$value" }(breakOut)
+            .map { case (key, value) => s"-D$key=$value" }(breakOut)
 
         base ++ akkaSysProps
       },
@@ -209,12 +211,12 @@ object AkkaBuild {
       testGrouping in Test := {
         val original: Seq[Tests.Group] = (testGrouping in Test).value
 
-        original.map { group ⇒
+        original.map { group =>
           group.runPolicy match {
-            case Tests.SubProcess(forkOptions) ⇒
+            case Tests.SubProcess(forkOptions) =>
               group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
                 workingDirectory = Some(new File(System.getProperty("user.dir"))))))
-            case _ ⇒ group
+            case _ => group
           }
         }
       },
@@ -231,12 +233,12 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
-
-
-  lazy val noScala211 = Seq(
-    crossScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("2.11"))
+    javacOptions in doc ++= {
+      if (jdkVersion == "1.8") Seq("-Xdoclint:none")
+      else Seq("-Xdoclint:none", "--ignore-source-errors")
+    }
   )
+
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._

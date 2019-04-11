@@ -5,7 +5,7 @@
 package akka.compat
 
 import akka.annotation.InternalApi
-import scala.concurrent.{ ExecutionContext, Future ⇒ SFuture }
+import scala.concurrent.{ ExecutionContext, Future => SFuture }
 
 /**
  * INTERNAL API
@@ -16,12 +16,15 @@ import scala.concurrent.{ ExecutionContext, Future ⇒ SFuture }
  * Remove these classes as soon as support for Scala 2.11 is dropped!
  */
 @InternalApi private[akka] object Future {
-  def fold[T, R](futures: TraversableOnce[SFuture[T]])(zero: R)(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def fold[T, R](futures: TraversableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.fold[T, R](futures)(zero)(op)(executor)
 
-  def reduce[T, R >: T](futures: TraversableOnce[SFuture[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def reduce[T, R >: T](futures: TraversableOnce[SFuture[T]])(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.reduce[T, R](futures)(op)(executor)
 
-  def find[T](futures: TraversableOnce[SFuture[T]])(p: T ⇒ Boolean)(implicit executor: ExecutionContext): SFuture[Option[T]] =
+  def find[T](futures: TraversableOnce[SFuture[T]])(p: T => Boolean)(
+      implicit executor: ExecutionContext): SFuture[Option[T]] =
     SFuture.find[T](futures)(p)(executor)
 }

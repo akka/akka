@@ -26,10 +26,13 @@ import akka.stream.javadsl.Source
  *
  */
 class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal)
-  extends ReadJournal
-  with PersistenceIdsQuery with CurrentPersistenceIdsQuery
-  with EventsByPersistenceIdQuery with CurrentEventsByPersistenceIdQuery
-  with EventsByTagQuery with CurrentEventsByTagQuery {
+    extends ReadJournal
+    with PersistenceIdsQuery
+    with CurrentPersistenceIdsQuery
+    with EventsByPersistenceIdQuery
+    with CurrentEventsByPersistenceIdQuery
+    with EventsByTagQuery
+    with CurrentEventsByTagQuery {
 
   /**
    * `persistenceIds` is used for retrieving all `persistenceIds` of all
@@ -86,8 +89,10 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                     toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
+  override def eventsByPersistenceId(
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   /**
@@ -95,8 +100,10 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                            toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
+  override def currentEventsByPersistenceId(
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     scaladslReadJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   /**
@@ -152,6 +159,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
 }
 
 object LeveldbReadJournal {
+
   /**
    * The default identifier for [[LeveldbReadJournal]] to be used with
    * [[akka.persistence.query.PersistenceQuery#getReadJournalFor]].
@@ -161,4 +169,3 @@ object LeveldbReadJournal {
    */
   final val Identifier = akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.Identifier
 }
-

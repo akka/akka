@@ -13,7 +13,8 @@ import akka.routing._
 import scala.concurrent.duration._
 
 object DeployerSpec {
-  val deployerConf = ConfigFactory.parseString("""
+  val deployerConf = ConfigFactory.parseString(
+    """
       akka.actor.deployment {
         /service1 {
         }
@@ -67,10 +68,11 @@ object DeployerSpec {
           router = round-robin-pool
         }
       }
-      """, ConfigParseOptions.defaults)
+      """,
+    ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
 }
@@ -82,14 +84,15 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       val service = "/service1"
       val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
 
-      deployment should ===(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          NoRouter,
-          NoScopeGiven,
-          Deploy.NoDispatcherGiven,
-          Deploy.NoMailboxGiven)))
+      deployment should ===(
+        Some(
+          Deploy(
+            service,
+            deployment.get.config,
+            NoRouter,
+            NoScopeGiven,
+            Deploy.NoDispatcherGiven,
+            Deploy.NoMailboxGiven)))
     }
 
     "use None deployment for undefined service" in {
@@ -102,40 +105,46 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       val service = "/service3"
       val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
 
-      deployment should ===(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          NoRouter,
-          NoScopeGiven,
-          dispatcher = "my-dispatcher",
-          Deploy.NoMailboxGiven)))
+      deployment should ===(
+        Some(
+          Deploy(
+            service,
+            deployment.get.config,
+            NoRouter,
+            NoScopeGiven,
+            dispatcher = "my-dispatcher",
+            Deploy.NoMailboxGiven)))
     }
 
     "be able to parse 'akka.actor.deployment._' with mailbox config" in {
       val service = "/service4"
       val deployment = system.asInstanceOf[ExtendedActorSystem].provider.deployer.lookup(service.split("/").drop(1))
 
-      deployment should ===(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          NoRouter,
-          NoScopeGiven,
-          Deploy.NoDispatcherGiven,
-          mailbox = "my-mailbox")))
+      deployment should ===(
+        Some(
+          Deploy(
+            service,
+            deployment.get.config,
+            NoRouter,
+            NoScopeGiven,
+            Deploy.NoDispatcherGiven,
+            mailbox = "my-mailbox")))
     }
 
     "detect invalid number-of-instances" in {
       intercept[com.typesafe.config.ConfigException.WrongType] {
-        val invalidDeployerConf = ConfigFactory.parseString("""
+        val invalidDeployerConf = ConfigFactory
+          .parseString(
+            """
             akka.actor.deployment {
               /service-invalid-number-of-instances {
                 router = round-robin-pool
                 nr-of-instances = boom
               }
             }
-            """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
+            """,
+            ConfigParseOptions.defaults)
+          .withFallback(AkkaSpec.testConf)
 
         shutdown(ActorSystem("invalid-number-of-instances", invalidDeployerConf))
       }
@@ -143,14 +152,18 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "detect invalid deployment path" in {
       val e = intercept[InvalidActorNameException] {
-        val invalidDeployerConf = ConfigFactory.parseString("""
+        val invalidDeployerConf = ConfigFactory
+          .parseString(
+            """
             akka.actor.deployment {
               /gul/ubåt {
                 router = round-robin-pool
                 nr-of-instances = 2
               }
             }
-            """, ConfigParseOptions.defaults).withFallback(AkkaSpec.testConf)
+            """,
+            ConfigParseOptions.defaults)
+          .withFallback(AkkaSpec.testConf)
 
         shutdown(ActorSystem("invalid-path", invalidDeployerConf))
       }
@@ -175,7 +188,10 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
-      assertRouting("/service-scatter-gather", ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
+      assertRouting(
+        "/service-scatter-gather",
+        ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds),
+        "/service-scatter-gather")
     }
 
     "be able to parse 'akka.actor.deployment._' with consistent-hashing router" in {
@@ -189,7 +205,10 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to use wildcards" in {
       assertRouting("/some/wildcardmatch", RandomPool(1), "/some/*")
-      assertRouting("/somewildcardmatch/some", ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds), "/*/some")
+      assertRouting(
+        "/somewildcardmatch/some",
+        ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 2 seconds),
+        "/*/some")
     }
 
     "be able to use double wildcards" in {
@@ -227,8 +246,8 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment.get.routerConfig.getClass should ===(expected.getClass)
       deployment.get.scope should ===(NoScopeGiven)
       expected match {
-        case pool: Pool ⇒ deployment.get.routerConfig.asInstanceOf[Pool].resizer should ===(pool.resizer)
-        case _          ⇒
+        case pool: Pool => deployment.get.routerConfig.asInstanceOf[Pool].resizer should ===(pool.resizer)
+        case _          =>
       }
     }
   }

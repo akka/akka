@@ -13,7 +13,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class ClusterClientTest extends JUnitSuite {
 

@@ -22,8 +22,8 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  commonConfig(ConfigFactory.parseString(
-    """
+  commonConfig(
+    ConfigFactory.parseString("""
       akka.loglevel = DEBUG # issue #24955
       akka.cluster.debug.verbose-heartbeat-logging = on
       akka.cluster.debug.verbose-gossip-logging = on
@@ -42,13 +42,11 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
       }
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  nodeConfig(first, second)(ConfigFactory.parseString(
-    """
+  nodeConfig(first, second)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
     """))
 
-  nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
-    """
+  nodeConfig(third, fourth, fifth)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc2"
     """))
 
@@ -61,9 +59,7 @@ class MultiDcSplitBrainMultiJvmNode3 extends MultiDcSplitBrainSpec
 class MultiDcSplitBrainMultiJvmNode4 extends MultiDcSplitBrainSpec
 class MultiDcSplitBrainMultiJvmNode5 extends MultiDcSplitBrainSpec
 
-abstract class MultiDcSplitBrainSpec
-  extends MultiNodeSpec(MultiDcSplitBrainMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class MultiDcSplitBrainSpec extends MultiNodeSpec(MultiDcSplitBrainMultiJvmSpec) with MultiNodeClusterSpec {
 
   import MultiDcSplitBrainMultiJvmSpec._
 
@@ -83,7 +79,7 @@ abstract class MultiDcSplitBrainSpec
     enterBarrier(s"split-$splits")
 
     runOn(first) {
-      for (dc1Node ← dc1; dc2Node ← dc2) {
+      for (dc1Node <- dc1; dc2Node <- dc2) {
         testConductor.blackhole(dc1Node, dc2Node, Direction.Both).await
       }
     }
@@ -119,7 +115,7 @@ abstract class MultiDcSplitBrainSpec
     enterBarrier(s"unsplit-$unsplits")
 
     runOn(first) {
-      for (dc1Node ← dc1; dc2Node ← dc2) {
+      for (dc1Node <- dc1; dc2Node <- dc2) {
         testConductor.passThrough(dc1Node, dc2Node, Direction.Both).await
       }
     }
@@ -156,7 +152,7 @@ abstract class MultiDcSplitBrainSpec
       // split is between dc1 and dc2
       runOn(third, fourth) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up ⇒ m.address
+          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up => m.address
         } should ===(Set(address(third), address(fourth))))
       }
       enterBarrier("dc2-join-completed")
@@ -165,7 +161,7 @@ abstract class MultiDcSplitBrainSpec
 
       runOn(dc1: _*) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up ⇒ m.address
+          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up => m.address
         } should ===(Set(address(third), address(fourth))))
       }
 
@@ -196,7 +192,8 @@ abstract class MultiDcSplitBrainSpec
 
     // forth has left the cluster, fifth is still not a member
 
-    "be able to have data center member restart (same host:port) while there is inter data center split" in within(60.seconds) {
+    "be able to have data center member restart (same host:port) while there is inter data center split" in within(
+      60.seconds) {
       val subscribeProbe = TestProbe()
       runOn(first, second, third, fifth) {
         Cluster(system).subscribe(subscribeProbe.ref, InitialStateAsSnapshot, classOf[MemberUp], classOf[MemberRemoved])
@@ -210,9 +207,11 @@ abstract class MultiDcSplitBrainSpec
       var fifthOriginalUniqueAddress: Option[UniqueAddress] = None
       runOn(first, second, third, fifth) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up ⇒ m.address
+          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up => m.address
         } should ===(Set(address(third), address(fifth))))
-        fifthOriginalUniqueAddress = clusterView.members.collectFirst { case m if m.address == address(fifth) ⇒ m.uniqueAddress }
+        fifthOriginalUniqueAddress = clusterView.members.collectFirst {
+          case m if m.address == address(fifth) => m.uniqueAddress
+        }
       }
       enterBarrier("fifth-joined")
 
@@ -224,7 +223,7 @@ abstract class MultiDcSplitBrainSpec
 
       runOn(third) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" ⇒ m.address
+          case m if m.dataCenter == "dc2" => m.address
         } should ===(Set(address(third))))
       }
 
@@ -240,8 +239,7 @@ abstract class MultiDcSplitBrainSpec
         val port = Cluster(system).selfAddress.port.get
         val restartedSystem = ActorSystem(
           system.name,
-          ConfigFactory.parseString(
-            s"""
+          ConfigFactory.parseString(s"""
             akka.remote.netty.tcp.port = $port
             akka.remote.artery.canonical.port = $port
             akka.coordinated-shutdown.terminate-actor-system = on
@@ -258,7 +256,7 @@ abstract class MultiDcSplitBrainSpec
       }
 
       runOn(first) {
-        for (dc1Node ← dc1; dc2Node ← dc2) {
+        for (dc1Node <- dc1; dc2Node <- dc2) {
           testConductor.passThrough(dc1Node, dc2Node, Direction.Both).await
         }
         testConductor.shutdown(fifth)
@@ -270,7 +268,7 @@ abstract class MultiDcSplitBrainSpec
 
       runOn(first, second, third) {
         awaitAssert(clusterView.members.collectFirst {
-          case m if m.dataCenter == "dc2" && m.address == fifthOriginalUniqueAddress.get.address ⇒ m.uniqueAddress
+          case m if m.dataCenter == "dc2" && m.address == fifthOriginalUniqueAddress.get.address => m.uniqueAddress
         } should not be fifthOriginalUniqueAddress) // different uid
 
         subscribeProbe.expectMsgType[MemberUp].member.uniqueAddress should ===(fifthOriginalUniqueAddress.get)

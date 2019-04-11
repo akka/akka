@@ -25,7 +25,7 @@ akka {
   remote {
     artery {
       enabled = on
-      transport = aeron-udp # See Selecting a transport below
+      transport = tcp # See Selecting a transport below
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
     }
@@ -63,10 +63,9 @@ underlying module that allows for Cluster, it is still useful to understand deta
 @@@ note
 
 This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
-@ref:[old remoting implementation](remoting.md). Artery with the Aeron transport is ready
-to use in production. The TCP based transport is not ready for use in production yet. The module is
-marked @ref:[may change](common/may-change.md) because some configuration will be changed when the API
-becomes stable.
+@ref:[classic remoting implementation](remoting.md). Artery is ready to use in production, but the
+module is still marked @ref:[may change](common/may-change.md) because some configuration will be
+changed when the API becomes stable in Akka 2.6.0.
 
 @@@
 
@@ -99,7 +98,9 @@ The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the
 when encryption is needed, but it can also be used with plain TCP without TLS. It's also
 the obvious choice when UDP can't be used.
 It has very good performance (high throughput and low latency) but latency at high throughput
-might not be as good as the Aeron transport.
+might not be as good as the Aeron transport. It has less operational complexity than the
+Aeron transport and less risk of trouble in container environments. Artery TCP will be
+the default transport in Akka 2.6.0.
 
 @@@ note
 
@@ -110,9 +111,30 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
 
 @@@
 
+## Migrating from classic remoting
 
+Artery TCP will be the default transport in Akka 2.6.0, and the @ref:[classic remoting implementation](remoting.md)
+will be deprecated.
 
-### Canonical address
+Artery has the same functionality as classic remoting and you should normally only have to change the
+configuration to switch.
+
+Enable Artery as shown in above @ref:[configuration](#configuration) with your
+@ref:[selected transport](#selecting-a-transport). `tcp` is a good start.
+
+The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`
+has changed from `akka.tcp` to `akka`. If you have configured or hardcoded any such addresses you have to change
+them to `"akka://actorSystemName@10.0.0.1:2552/user/actorName"`. `akka` is used also when TLS is enabled.
+One typical place where such address is used is in the `seed-nodes` configuration.
+
+The configuration is different, so you might have to revisit any custom configuration. See the full
+@ref:[reference configuration for Artery](general/configuration.md#config-akka-remote-artery) and
+@ref:[reference configuration for classic remoting](general/configuration.md#config-akka-remote).
+
+One thing to be aware of is that rolling update from classic remoting to Artery is not supported since the protocol
+is completely different. It will require a full cluster shutdown and new startup.
+
+## Canonical address
 
 In order to remoting to work properly, where each system can send messages to any other system on the same network
 (for example a system forwards a message to a third system, and the third replies directly to the sender system)
@@ -841,3 +863,32 @@ You can look at the
 @java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
 @scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
 to see what this looks like in practice.
+
+### Running in Docker/Kubernetes
+
+When using `aeron-udp` in a containerized environment special care must be taken that the media driver runs on a ram disk.
+This by default is located in `/dev/shm` which on most physical Linux machines will be mounted as half the size of the system memory.
+
+Docker and Kubernetes mount a 64Mb ram disk. This is unlikely to be large enough. For docker this can be overridden with `--shm-size="512mb"`.
+
+In Kubernetes there is no direct support (yet) for setting `shm` size. Instead mount an `EmptyDir` with type `Memory` to `/dev/shm` for example in a
+deployment.yml:
+
+```
+spec:
+  containers:
+  - name: artery-udp-cluster
+    // rest of container spec...
+    volumeMounts:
+    - mountPath: /dev/shm
+      name: media-driver
+  volumes:
+  - name: media-driver
+    emptyDir:
+      medium: Memory
+      name: media-driver
+```
+
+There is currently no way to limit the size of a memory empty dir but there is a [pull request](https://github.com/kubernetes/kubernetes/pull/63641) for adding it.
+
+Any space used in the mount will count towards your container's memory usage.

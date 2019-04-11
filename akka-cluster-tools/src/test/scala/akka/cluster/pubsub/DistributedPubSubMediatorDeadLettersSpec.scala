@@ -21,17 +21,17 @@ object DistributedPubSubMediatorDeadLettersSpec {
   """
 }
 
-trait DeadLettersProbe { this: TestKitBase ⇒
+trait DeadLettersProbe { this: TestKitBase =>
   val deadLettersProbe = TestProbe()
   system.eventStream.subscribe(deadLettersProbe.ref, classOf[DeadLetter])
 
-  def expectNoDeadLetters(): Unit = deadLettersProbe.expectNoMsg(100.milliseconds)
+  def expectNoDeadLetters(): Unit = deadLettersProbe.expectNoMessage(100.milliseconds)
   def expectDeadLetter(): Unit = deadLettersProbe.expectMsgClass(classOf[DeadLetter])
 }
 
 class DistributedPubSubMediatorSendingToDeadLettersSpec
-  extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = true))
-  with DeadLettersProbe {
+    extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = true))
+    with DeadLettersProbe {
 
   val mediator = DistributedPubSub(system).mediator
   val msg = "hello"
@@ -78,8 +78,8 @@ class DistributedPubSubMediatorSendingToDeadLettersSpec
 }
 
 class DistributedPubSubMediatorNotSendingToDeadLettersSpec
-  extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = false))
-  with DeadLettersProbe {
+    extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = false))
+    with DeadLettersProbe {
 
   val mediator = DistributedPubSub(system).mediator
   val msg = "hello"

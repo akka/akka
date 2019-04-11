@@ -28,7 +28,11 @@ class ForkJoinActorBenchmark {
   @Param(Array(coresStr)) // coresStr, cores2xStr, cores4xStr
   var threads = ""
 
-  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.actor.ManyToOneArrayMailbox", "akka.actor.JCToolsMailbox"))
+  @Param(
+    Array(
+      "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
+      "akka.actor.ManyToOneArrayMailbox",
+      "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
   implicit var system: ActorSystem = _
@@ -38,8 +42,9 @@ class ForkJoinActorBenchmark {
 
     requireRightNumberOfCores(cores)
 
-    system = ActorSystem("ForkJoinActorBenchmark", ConfigFactory.parseString(
-      s"""
+    system = ActorSystem(
+      "ForkJoinActorBenchmark",
+      ConfigFactory.parseString(s"""
         akka {
            log-dead-letters = off
            default-mailbox.mailbox-capacity = 512
@@ -56,8 +61,7 @@ class ForkJoinActorBenchmark {
              }
            }
          }
-      """
-    ))
+      """))
   }
 
   @TearDown(Level.Trial)
@@ -72,7 +76,8 @@ class ForkJoinActorBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(totalMessagesLessThanCores)
-  def pingPongLessActorsThanCores(): Unit = benchmarkPingPongActors(messages, lessThanCoresActors, "fjp-dispatcher", tpt, timeout)
+  def pingPongLessActorsThanCores(): Unit =
+    benchmarkPingPongActors(messages, lessThanCoresActors, "fjp-dispatcher", tpt, timeout)
 
   //  @Benchmark
   //  @OperationsPerInvocation(totalMessagesSameAsCores)
@@ -80,7 +85,8 @@ class ForkJoinActorBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(totalMessagesMoreThanCores)
-  def pingPongMoreActorsThanCores(): Unit = benchmarkPingPongActors(messages, moreThanCoresActors, "fjp-dispatcher", tpt, timeout)
+  def pingPongMoreActorsThanCores(): Unit =
+    benchmarkPingPongActors(messages, moreThanCoresActors, "fjp-dispatcher", tpt, timeout)
 
   //  @Benchmark
   //  @Measurement(timeUnit = TimeUnit.MILLISECONDS)

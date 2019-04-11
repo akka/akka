@@ -190,7 +190,7 @@ public class OOIntroTest {
           .onMessage(
               ChatRoom.SessionDenied.class,
               message -> {
-                System.out.println("cannot start chat room session: " + message.reason);
+                context.getLog().info("cannot start chat room session: {}", message.reason);
                 return Behaviors.stopped();
               })
           .onMessage(
@@ -202,8 +202,10 @@ public class OOIntroTest {
           .onMessage(
               ChatRoom.MessagePosted.class,
               message -> {
-                System.out.println(
-                    "message has been posted by '" + message.screenName + "': " + message.message);
+                context
+                    .getLog()
+                    .info(
+                        "message has been posted by '{}': {}", message.screenName, message.message);
                 return Behaviors.stopped();
               })
           .build();
@@ -215,7 +217,7 @@ public class OOIntroTest {
   }
   // #chatroom-gabbler
 
-  public static void runChatRoom() throws Exception {
+  public static void runChatRoom() {
 
     // #chatroom-main
     Behavior<Void> main =

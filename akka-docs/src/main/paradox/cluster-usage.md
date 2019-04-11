@@ -815,7 +815,7 @@ From JMX you can:
  * mark any node in the cluster as down
  * tell any node in the cluster to leave
 
-Member nodes are identified by their address, in format *akka.<protocol>://<actor-system-name>@<hostname>:<port>*.
+Member nodes are identified by their address, in format *akka.**protocol**://**actor-system-name**@**hostname**:**port***.
 
 <a id="cluster-command-line"></a>
 ### Command Line

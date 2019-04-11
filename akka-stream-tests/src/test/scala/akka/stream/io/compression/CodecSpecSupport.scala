@@ -10,11 +10,12 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.{ BeforeAndAfterAll, Matchers, Suite }
 
-trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite ⇒
+trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite =>
 
-  def readAs(string: String, charset: String = "UTF8") = equal(string).matcher[String] compose { (_: ByteString).decodeString(charset) }
+  def readAs(string: String, charset: String = "UTF8") =
+    equal(string).matcher[String].compose { (_: ByteString).decodeString(charset) }
   def hexDump(bytes: ByteString) = bytes.map("%02x".format(_)).mkString
-  def fromHexDump(dump: String) = dump.grouped(2).toArray.map(chars ⇒ Integer.parseInt(new String(chars), 16).toByte)
+  def fromHexDump(dump: String) = dump.grouped(2).toArray.map(chars => Integer.parseInt(new String(chars), 16).toByte)
 
   def printBytes(i: Int, id: String) = {
     def byte(i: Int) = (i & 0xFF).toHexString
@@ -67,7 +68,9 @@ invidunt ut labore et dolore magna aliquyam erat.
 
 Consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
 voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus
-est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy e""".replace("\r\n", "\n")
+est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy e""".replace(
+      "\r\n",
+      "\n")
 
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()

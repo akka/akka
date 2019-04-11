@@ -30,7 +30,7 @@ cache:
 script:
   - jabba use "adopt@~1.8.202-08"
   # need to override as the default is to test
-  - sbt -jvm-opts .jvmopts-travis ";++$TRAVIS_SCALA_VERSION update ;++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues ;++$TRAVIS_SCALA_VERSION test:compile"
+  - sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
   # make 'git branch' work again
   - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
   # check policies, if on master also upload

@@ -19,8 +19,8 @@ object SystemMessageSerializationSpec {
 
   class TestException(msg: String) extends RuntimeException {
     override def equals(other: Any): Boolean = other match {
-      case e: TestException ⇒ e.getMessage == getMessage
-      case _                ⇒ false
+      case e: TestException => e.getMessage == getMessage
+      case _                => false
     }
   }
 }
@@ -33,27 +33,27 @@ class SystemMessageSerializationSpec extends AkkaSpec(PrimitivesSerializationSpe
 
   "ByteStringSerializer" must {
     Seq(
-      "Create(None)" → Create(None),
-      "Recreate(ex)" → Recreate(new TestException("test2")),
-      "Suspend()" → Suspend(),
-      "Resume(ex)" → Resume(new TestException("test3")),
-      "Terminate()" → Terminate(),
-      "Supervise(ref, async)" → Supervise(testRef, async = true),
-      "Watch(ref, ref)" → Watch(testRef, testRef2),
-      "Unwatch(ref, ref)" → Unwatch(testRef, testRef2),
-      "Failed(ref, ex, uid)" → Failed(testRef, new TestException("test4"), 42),
-      "DeathWatchNotification(ref, confimed, addressTerminated)" →
-        DeathWatchNotification(testRef, existenceConfirmed = true, addressTerminated = true)).foreach {
-        case (scenario, item) ⇒
-          s"resolve serializer for [$scenario]" in {
-            val serializer = SerializationExtension(system)
-            serializer.serializerFor(item.getClass).getClass should ===(classOf[SystemMessageSerializer])
-          }
+      "Create(None)" -> Create(None),
+      "Recreate(ex)" -> Recreate(new TestException("test2")),
+      "Suspend()" -> Suspend(),
+      "Resume(ex)" -> Resume(new TestException("test3")),
+      "Terminate()" -> Terminate(),
+      "Supervise(ref, async)" -> Supervise(testRef, async = true),
+      "Watch(ref, ref)" -> Watch(testRef, testRef2),
+      "Unwatch(ref, ref)" -> Unwatch(testRef, testRef2),
+      "Failed(ref, ex, uid)" -> Failed(testRef, new TestException("test4"), 42),
+      "DeathWatchNotification(ref, confimed, addressTerminated)" ->
+      DeathWatchNotification(testRef, existenceConfirmed = true, addressTerminated = true)).foreach {
+      case (scenario, item) =>
+        s"resolve serializer for [$scenario]" in {
+          val serializer = SerializationExtension(system)
+          serializer.serializerFor(item.getClass).getClass should ===(classOf[SystemMessageSerializer])
+        }
 
-          s"serialize and de-serialize [$scenario]" in {
-            verifySerialization(item)
-          }
-      }
+        s"serialize and de-serialize [$scenario]" in {
+          verifySerialization(item)
+        }
+    }
 
     def verifySerialization(msg: AnyRef): Unit = {
       val serializer = new SystemMessageSerializer(system.asInstanceOf[ExtendedActorSystem])

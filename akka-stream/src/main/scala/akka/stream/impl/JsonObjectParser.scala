@@ -29,11 +29,11 @@ import scala.annotation.switch
   final val Space = 32 // ' '
 
   def isWhitespace(b: Byte): Boolean = (b: @switch) match {
-    case Space      ⇒ true
-    case LineBreak  ⇒ true
-    case LineBreak2 ⇒ true
-    case Tab        ⇒ true
-    case _          ⇒ false
+    case Space      => true
+    case LineBreak  => true
+    case LineBreak2 => true
+    case Tab        => true
+    case _          => false
   }
 
 }
@@ -79,8 +79,8 @@ import scala.annotation.switch
     if (!foundObject) None
     else
       (pos: @switch) match {
-        case -1 | 0 ⇒ None
-        case _ ⇒
+        case -1 | 0 => None
+        case _ =>
           val (emit, buf) = buffer.splitAt(pos)
           buffer = buf.compact
           pos = 0
@@ -101,8 +101,7 @@ import scala.annotation.switch
   private def seekObject(): Boolean = {
     completedObject = false
     val bufSize = buffer.size
-    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject)
-      proceed(buffer(pos))
+    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) proceed(buffer(pos))
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")

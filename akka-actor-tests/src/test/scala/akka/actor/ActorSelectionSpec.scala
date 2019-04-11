@@ -25,12 +25,12 @@ object ActorSelectionSpec {
 
   class Node extends Actor {
     def receive = {
-      case Create(name)       ⇒ sender() ! context.actorOf(p, name)
-      case SelectString(path) ⇒ sender() ! context.actorSelection(path)
-      case SelectPath(path)   ⇒ sender() ! context.actorSelection(path)
-      case GetSender(ref)     ⇒ ref ! sender()
-      case Forward(path, msg) ⇒ context.actorSelection(path).forward(msg)
-      case msg                ⇒ sender() ! msg
+      case Create(name)       => sender() ! context.actorOf(p, name)
+      case SelectString(path) => sender() ! context.actorSelection(path)
+      case SelectPath(path)   => sender() ! context.actorSelection(path)
+      case GetSender(ref)     => ref ! sender()
+      case Forward(path, msg) => context.actorSelection(path).forward(msg)
+      case msg                => sender() ! msg
     }
   }
 
@@ -51,7 +51,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
   def empty(path: String) =
     new EmptyLocalActorRef(sysImpl.provider, path match {
-      case RelativeActorPath(elems) ⇒ sysImpl.lookupRoot.path / elems
+      case RelativeActorPath(elems) => sysImpl.lookupRoot.path / elems
     }, system.eventStream)
 
   val idProbe = TestProbe()
@@ -59,16 +59,15 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
   def identify(selection: ActorSelection): Option[ActorRef] = {
     selection.tell(Identify(selection), idProbe.ref)
     val result = idProbe.expectMsgPF() {
-      case ActorIdentity(`selection`, ref) ⇒ ref
+      case ActorIdentity(`selection`, ref) => ref
     }
     val asked = Await.result((selection ? Identify(selection)).mapTo[ActorIdentity], timeout.duration)
     asked.ref should ===(result)
     asked.correlationId should ===(selection)
 
     implicit val ec = system.dispatcher
-    val resolved = Await.result(
-      selection.resolveOne(timeout.duration).mapTo[ActorRef] recover { case _ ⇒ null },
-      timeout.duration)
+    val resolved =
+      Await.result(selection.resolveOne(timeout.duration).mapTo[ActorRef].recover { case _ => null }, timeout.duration)
     Option(resolved) should ===(result)
 
     result
@@ -79,8 +78,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
   def askNode(node: ActorRef, query: Query): Option[ActorRef] = {
     Await.result(node ? query, timeout.duration) match {
-      case ref: ActorRef             ⇒ Some(ref)
-      case selection: ActorSelection ⇒ identify(selection)
+      case ref: ActorRef             => Some(ref)
+      case selection: ActorSelection => identify(selection)
     }
   }
 
@@ -93,11 +92,11 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       identify(system / "c1") should ===(Some(c1))
       identify(system / "c2") should ===(Some(c2))
       identify(system / "c2" / "c21") should ===(Some(c21))
-      identify(system child "c2" child "c21") should ===(Some(c21)) // test Java API
+      identify(system.child("c2").child("c21")) should ===(Some(c21)) // test Java API
       identify(system / Seq("c2", "c21")) should ===(Some(c21))
 
       import scala.collection.JavaConverters._
-      identify(system descendant Seq("c2", "c21").asJava) // test Java API
+      identify(system.descendant(Seq("c2", "c21").asJava)) // test Java API
     }
 
     "select actors by their string path representation" in {
@@ -188,8 +187,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
         askNode(looker, SelectPath(pathOf.path)) should ===(Some(result))
       }
       for {
-        looker ← all
-        target ← all
+        looker <- all
+        target <- all
       } check(looker, target, target)
     }
 
@@ -200,8 +199,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
         askNode(looker, SelectString(pathOf.path.toStringWithoutAddress + "/")) should ===(Some(result))
       }
       for {
-        looker ← all
-        target ← all
+        looker <- all
+        target <- all
       } check(looker, target, target)
     }
 
@@ -211,20 +210,20 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
         askNode(looker, SelectString(pathOf.path.elements.mkString("/", "/", "/"))) should ===(Some(result))
       }
       for {
-        looker ← all
-        target ← all
+        looker <- all
+        target <- all
       } check(looker, target, target)
     }
 
     "select actors by their relative path" in {
       def check(looker: ActorRef, result: ActorRef, elems: String*): Unit = {
-        askNode(looker, SelectString(elems mkString "/")) should ===(Some(result))
-        askNode(looker, SelectString(elems mkString ("", "/", "/"))) should ===(Some(result))
+        askNode(looker, SelectString(elems.mkString("/"))) should ===(Some(result))
+        askNode(looker, SelectString(elems.mkString("", "/", "/"))) should ===(Some(result))
       }
       check(c1, user, "..")
       for {
-        looker ← Seq(c1, c2)
-        target ← all
+        looker <- Seq(c1, c2)
+        target <- all
       } check(looker, target, Seq("..") ++ target.path.elements.drop(1): _*)
       check(c21, user, "..", "..")
       check(c21, root, "..", "..", "..")
@@ -233,7 +232,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
     "find system-generated actors" in {
       def check(target: ActorRef): Unit = {
-        for (looker ← all) {
+        for (looker <- all) {
           askNode(looker, SelectPath(target.path)) should ===(Some(target))
           askNode(looker, SelectString(target.path.toString)) should ===(Some(target))
           askNode(looker, SelectString(target.path.toString + "/")) should ===(Some(target))
@@ -241,7 +240,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
         if (target != root)
           askNode(c1, SelectString("../.." + target.path.elements.mkString("/", "/", "/"))) should ===(Some(target))
       }
-      for (target ← Seq(root, syst, user)) check(target)
+      for (target <- Seq(root, syst, user)) check(target)
     }
 
     "return deadLetters or ActorIdentity(None), respectively, for non-existing paths" in {
@@ -253,16 +252,15 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       }
       def check(looker: ActorRef): Unit = {
         val lookname = looker.path.elements.mkString("", "/", "/")
-        for (
-          (l, r) ← Seq(
-            SelectString("a/b/c") → None,
-            SelectString("akka://all-systems/Nobody") → None,
-            SelectPath(system / "hallo") → None,
-            SelectPath(looker.path child "hallo") → None, // test Java API
-            SelectPath(looker.path descendant Seq("a", "b").asJava) → None) // test Java API
-        ) checkOne(looker, l, r)
+        for ((l, r) <- Seq(
+               SelectString("a/b/c") -> None,
+               SelectString("akka://all-systems/Nobody") -> None,
+               SelectPath(system / "hallo") -> None,
+               SelectPath(looker.path.child("hallo")) -> None, // test Java API
+               SelectPath(looker.path.descendant(Seq("a", "b").asJava)) -> None) // test Java API
+             ) checkOne(looker, l, r)
       }
-      for (looker ← all) check(looker)
+      for (looker <- all) check(looker)
     }
 
   }
@@ -291,8 +289,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       implicit val sender = c1
       ActorSelection(c21, "../../*") ! GetSender(testActor)
       val actors = Set() ++ receiveWhile(messages = 2) {
-        case `c1` ⇒ lastSender
-      }
+          case `c1` => lastSender
+        }
       actors should ===(Set(c1, c2))
       expectNoMsg(1 second)
     }
@@ -301,7 +299,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       implicit val sender = c2
       ActorSelection(c21, "../../*/c21") ! GetSender(testActor)
       val actors = receiveWhile(messages = 2) {
-        case `c2` ⇒ lastSender
+        case `c2` => lastSender
       }
       actors should ===(Seq(c21))
       expectNoMsg(200.millis)
@@ -341,7 +339,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
     "have a stringly serializable path" in {
       system.actorSelection(system / "c2").toSerializationFormat should ===("akka://ActorSelectionSpec/user/c2")
-      system.actorSelection(system / "c2" / "c21").toSerializationFormat should ===("akka://ActorSelectionSpec/user/c2/c21")
+      system.actorSelection(system / "c2" / "c21").toSerializationFormat should ===(
+        "akka://ActorSelectionSpec/user/c2/c21")
       ActorSelection(c2, "/").toSerializationFormat should ===("akka://ActorSelectionSpec/user/c2")
       ActorSelection(c2, "../*/hello").toSerializationFormat should ===("akka://ActorSelectionSpec/user/c2/../*/hello")
       ActorSelection(c2, "/../*/hello").toSerializationFormat should ===("akka://ActorSelectionSpec/user/c2/../*/hello")
@@ -368,7 +367,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
       val probe = TestProbe()
       system.actorSelection("/user/a/*").tell(Identify(1), probe.ref)
-      probe.receiveN(2).map { case ActorIdentity(1, r) ⇒ r }.toSet should ===(Set[Option[ActorRef]](Some(b1), Some(b2)))
+      probe.receiveN(2).map { case ActorIdentity(1, r) => r }.toSet should ===(
+        Set[Option[ActorRef]](Some(b1), Some(b2)))
       probe.expectNoMsg(200.millis)
 
       system.actorSelection("/user/a/b1/*").tell(Identify(2), probe.ref)

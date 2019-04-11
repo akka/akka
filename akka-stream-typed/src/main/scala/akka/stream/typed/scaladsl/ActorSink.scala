@@ -30,7 +30,7 @@ object ActorSink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting stage in front of this `Sink`.
    */
-  def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: Throwable ⇒ T): Sink[T, NotUsed] =
+  def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: Throwable => T): Sink[T, NotUsed] =
     Sink.actorRef(ref.toUntyped, onCompleteMessage, onFailureMessage)
 
   /**
@@ -47,16 +47,18 @@ object ActorSink {
    * function will be sent to the destination actor.
    */
   def actorRefWithAck[T, M, A](
-    ref:               ActorRef[M],
-    messageAdapter:    (ActorRef[A], T) ⇒ M,
-    onInitMessage:     ActorRef[A] ⇒ M,
-    ackMessage:        A,
-    onCompleteMessage: M,
-    onFailureMessage:  Throwable ⇒ M): Sink[T, NotUsed] =
+      ref: ActorRef[M],
+      messageAdapter: (ActorRef[A], T) => M,
+      onInitMessage: ActorRef[A] => M,
+      ackMessage: A,
+      onCompleteMessage: M,
+      onFailureMessage: Throwable => M): Sink[T, NotUsed] =
     Sink.actorRefWithAck(
       ref.toUntyped,
       messageAdapter.curried.compose(actorRefAdapter),
       onInitMessage.compose(actorRefAdapter),
-      ackMessage, onCompleteMessage, onFailureMessage)
+      ackMessage,
+      onCompleteMessage,
+      onFailureMessage)
 
 }

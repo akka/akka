@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociate, Direction }
+import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.actor.ActorIdentity
@@ -21,8 +21,9 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(
+      ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       ## Keep it tight, otherwise reestablishing a connection takes too much time
@@ -35,8 +36,8 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case msg        ⇒ sender() ! msg
+      case "shutdown" => context.system.terminate()
+      case msg        => sender() ! msg
     }
   }
 
@@ -45,8 +46,7 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
 class RemoteNodeShutdownAndComesBackMultiJvmNode1 extends RemoteNodeShutdownAndComesBackSpec
 class RemoteNodeShutdownAndComesBackMultiJvmNode2 extends RemoteNodeShutdownAndComesBackSpec
 
-abstract class RemoteNodeShutdownAndComesBackSpec
-  extends RemotingMultiNodeSpec(RemoteNodeShutdownAndComesBackSpec) {
+abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(RemoteNodeShutdownAndComesBackSpec) {
 
   import RemoteNodeShutdownAndComesBackSpec._
 
@@ -81,7 +81,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         // Drop all messages from this point so no SHUTDOWN is ever received
         testConductor.blackhole(second, first, Direction.Send).await
         // Shut down all existing connections so that the system can enter recovery mode (association attempts)
-        Await.result(RARP(system).provider.transport.managementCommand(ForceDisassociate(node(second).address)), 3.seconds)
+        Await.result(
+          RARP(system).provider.transport.managementCommand(ForceDisassociate(node(second).address)),
+          3.seconds)
 
         // Trigger reconnect attempt and also queue up a system message to be in limbo state (UID of remote system
         // is unknown, and system message is pending)
@@ -100,7 +102,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec
             val p = TestProbe()
             system.actorSelection(RootActorPath(secondAddress) / "user" / "subject").tell(Identify("subject"), p.ref)
             p.expectMsgPF(1 second) {
-              case ActorIdentity("subject", Some(ref)) ⇒ true
+              case ActorIdentity("subject", Some(ref)) => true
             }
           }
         }
@@ -117,7 +119,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         subjectNew ! "shutdown"
         // we are waiting for a Terminated here, but it is ok if it does not arrive
         receiveWhile(5.seconds) {
-          case _: ActorIdentity ⇒ true
+          case _: ActorIdentity => true
         }
       }
 
@@ -132,7 +134,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec
 
         Await.ready(system.whenTerminated, 30.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
           akka.remote.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))

@@ -34,8 +34,7 @@ object ConsistencySpec {
     var right = new CacheMisaligned(0, 0, 0, 0) //var
     var lastStep = -1L
     def receive = {
-      case step: Long ⇒
-
+      case step: Long =>
         if (lastStep != (step - 1))
           sender() ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 
@@ -48,7 +47,7 @@ object ConsistencySpec {
         }
 
         lastStep = step
-      case "done" ⇒ sender() ! "done"; context.stop(self)
+      case "done" => sender() ! "done"; context.stop(self)
     }
   }
 }
@@ -64,13 +63,13 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
       val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")
       val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
-      for (i ← 0L until 10000L) {
+      for (i <- 0L until 10000L) {
         actors.foreach(_.tell(i, testActor))
       }
 
-      for (a ← actors) { a.tell("done", testActor) }
+      for (a <- actors) { a.tell("done", testActor) }
 
-      for (a ← actors) expectMsg(5 minutes, "done")
+      for (a <- actors) expectMsg(5 minutes, "done")
     }
   }
 }

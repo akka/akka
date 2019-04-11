@@ -65,13 +65,17 @@ private[akka] object FailureDetectorLoader {
    * @return A configured instance of the given [[FailureDetector]] implementation
    */
   def load(fqcn: String, config: Config, system: ActorSystem): FailureDetector = {
-    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, List(
-      classOf[Config] → config,
-      classOf[EventStream] → system.eventStream)).recover({
-      case e ⇒ throw new ConfigurationException(
-        s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
-    }).get
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .dynamicAccess
+      .createInstanceFor[FailureDetector](
+        fqcn,
+        List(classOf[Config] -> config, classOf[EventStream] -> system.eventStream))
+      .recover({
+        case e =>
+          throw new ConfigurationException(s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
+      })
+      .get
   }
 
   /**

@@ -57,7 +57,7 @@ import scala.util.control.NoStackTrace
  * See `akka.stream.materializer.subscription-timeout` for configuration options.
  */
 @InternalApi private[akka] trait StreamSubscriptionTimeoutSupport {
-  this: Actor with ActorLogging ⇒
+  this: Actor with ActorLogging =>
 
   import StreamSubscriptionTimeoutSupport._
 
@@ -72,9 +72,9 @@ import scala.util.control.NoStackTrace
    */
   protected def scheduleSubscriptionTimeout(actor: ActorRef, message: Any): Cancellable =
     subscriptionTimeoutSettings.mode match {
-      case NoopTermination ⇒
+      case NoopTermination =>
         NoopSubscriptionTimeout
-      case _ ⇒
+      case _ =>
         import context.dispatcher
         val cancellable = context.system.scheduler.scheduleOnce(subscriptionTimeoutSettings.timeout, actor, message)
         cancellable
@@ -83,30 +83,38 @@ import scala.util.control.NoStackTrace
   private def cancel(target: Publisher[_], timeout: FiniteDuration): Unit = {
     val millis = timeout.toMillis
     target match {
-      case p: Processor[_, _] ⇒
+      case p: Processor[_, _] =>
         log.debug("Cancelling {} Processor's publisher and subscriber sides (after {} ms)", p, millis)
-        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms") with NoStackTrace)
+        handleSubscriptionTimeout(
+          target,
+          new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms")
+          with NoStackTrace)
 
-      case p: Publisher[_] ⇒
+      case p: Publisher[_] =>
         log.debug("Cancelling {} (after: {} ms)", p, millis)
-        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher ($p) you are trying to subscribe to has been shut-down " +
-          s"because exceeding it's subscription-timeout.") with NoStackTrace)
+        handleSubscriptionTimeout(
+          target,
+          new SubscriptionTimeoutException(
+            s"Publisher ($p) you are trying to subscribe to has been shut-down " +
+            s"because exceeding it's subscription-timeout.") with NoStackTrace)
     }
   }
 
   private def warn(target: Publisher[_], timeout: FiniteDuration): Unit = {
     log.warning(
       "Timed out {} detected (after {} ms)! You should investigate if you either cancel or consume all {} instances",
-      target, timeout.toMillis, target.getClass.getCanonicalName)
+      target,
+      timeout.toMillis,
+      target.getClass.getCanonicalName)
   }
 
   /**
    * Called by the actor when a subscription has timed out. Expects the actual `Publisher` or `Processor` target.
    */
   protected def subscriptionTimedOut(target: Publisher[_]): Unit = subscriptionTimeoutSettings.mode match {
-    case NoopTermination   ⇒ // ignore...
-    case WarnTermination   ⇒ warn(target, subscriptionTimeoutSettings.timeout)
-    case CancelTermination ⇒ cancel(target, subscriptionTimeoutSettings.timeout)
+    case NoopTermination   => // ignore...
+    case WarnTermination   => warn(target, subscriptionTimeoutSettings.timeout)
+    case CancelTermination => cancel(target, subscriptionTimeoutSettings.timeout)
   }
 
   /**

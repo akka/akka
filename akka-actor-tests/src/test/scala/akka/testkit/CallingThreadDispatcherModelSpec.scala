@@ -21,15 +21,16 @@ object CallingThreadDispatcherModelSpec {
         type = PinnedDispatcher
       }
     """ +
-      // use unique dispatcher id for each test, since MessageDispatcherInterceptor holds state
-      (for (n ← 1 to 30) yield """
+    // use unique dispatcher id for each test, since MessageDispatcherInterceptor holds state
+    (for (n <- 1 to 30)
+      yield """
         test-calling-thread-%s {
           type = "akka.testkit.CallingThreadDispatcherModelSpec$CallingThreadDispatcherInterceptorConfigurator"
         }""".format(n)).mkString
   }
 
   class CallingThreadDispatcherInterceptorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-    extends MessageDispatcherConfigurator(config, prerequisites) {
+      extends MessageDispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
       new CallingThreadDispatcher(this) with MessageDispatcherInterceptor {
@@ -49,7 +50,9 @@ class CallingThreadDispatcherModelSpec extends ActorModelSpec(CallingThreadDispa
 
   override def interceptedDispatcher(): MessageDispatcherInterceptor = {
     // use new id for each test, since the MessageDispatcherInterceptor holds state
-    system.dispatchers.lookup("test-calling-thread-" + dispatcherCount.incrementAndGet()).asInstanceOf[MessageDispatcherInterceptor]
+    system.dispatchers
+      .lookup("test-calling-thread-" + dispatcherCount.incrementAndGet())
+      .asInstanceOf[MessageDispatcherInterceptor]
   }
   override def dispatcherType = "Calling Thread Dispatcher"
 

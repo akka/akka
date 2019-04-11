@@ -93,7 +93,11 @@ class PersistencePluginDocSpec extends WordSpec {
         //#snapshot-store-plugin-config
       """
 
-    val system = ActorSystem("PersistencePluginDocSpec", ConfigFactory.parseString(providerConfig).withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config)))
+    val system = ActorSystem(
+      "PersistencePluginDocSpec",
+      ConfigFactory
+        .parseString(providerConfig)
+        .withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config)))
     try {
       Persistence(system)
     } finally {
@@ -129,7 +133,7 @@ object SharedLeveldbPluginDocSpec {
     }
 
     def receive = {
-      case ActorIdentity(1, Some(store)) ⇒
+      case ActorIdentity(1, Some(store)) =>
         SharedLeveldbJournal.setStore(store, context.system)
     }
   }
@@ -159,21 +163,16 @@ class MyJournal extends AsyncWriteJournal {
   //#sync-journal-plugin-api
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = ???
-  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,
-                          toSequenceNr: Long, max: Long)(
-    replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = ???
-  def asyncReadHighestSequenceNr(
-    persistenceId:  String,
-    fromSequenceNr: Long): Future[Long] = ???
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
+  def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = ???
 
   // optionally override:
   override def receivePluginInternal: Receive = super.receivePluginInternal
 }
 
 class MySnapshotStore extends SnapshotStore {
-  def loadAsync(
-    persistenceId: String,
-    criteria:      SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
+  def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
   def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = ???
   def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = ???
@@ -187,9 +186,9 @@ object PersistenceTCKDoc {
     import akka.persistence.journal.JournalSpec
 
     //#journal-tck-scala
-    class MyJournalSpec extends JournalSpec(
-      config = ConfigFactory.parseString(
-        """akka.persistence.journal.plugin = "my.journal.plugin"""")) {
+    class MyJournalSpec
+        extends JournalSpec(
+          config = ConfigFactory.parseString("""akka.persistence.journal.plugin = "my.journal.plugin"""")) {
 
       override def supportsRejectingNonSerializableObjects: CapabilityFlag =
         false // or CapabilityFlag.off
@@ -203,9 +202,9 @@ object PersistenceTCKDoc {
     import akka.persistence.snapshot.SnapshotStoreSpec
 
     //#snapshot-store-tck-scala
-    class MySnapshotStoreSpec extends SnapshotStoreSpec(
-      config = ConfigFactory.parseString(
-        """
+    class MySnapshotStoreSpec
+        extends SnapshotStoreSpec(
+          config = ConfigFactory.parseString("""
         akka.persistence.snapshot-store.plugin = "my.snapshot-store.plugin"
         """)) {
 
@@ -221,9 +220,8 @@ object PersistenceTCKDoc {
     import org.iq80.leveldb.util.FileUtils
 
     //#journal-tck-before-after-scala
-    class MyJournalSpec extends JournalSpec(
-      config = ConfigFactory.parseString(
-        """
+    class MyJournalSpec
+        extends JournalSpec(config = ConfigFactory.parseString("""
         akka.persistence.journal.plugin = "my.journal.plugin"
         """)) {
 
@@ -236,11 +234,11 @@ object PersistenceTCKDoc {
 
       override def beforeAll(): Unit = {
         super.beforeAll()
-        storageLocations foreach FileUtils.deleteRecursively
+        storageLocations.foreach(FileUtils.deleteRecursively)
       }
 
       override def afterAll(): Unit = {
-        storageLocations foreach FileUtils.deleteRecursively
+        storageLocations.foreach(FileUtils.deleteRecursively)
         super.afterAll()
       }
 

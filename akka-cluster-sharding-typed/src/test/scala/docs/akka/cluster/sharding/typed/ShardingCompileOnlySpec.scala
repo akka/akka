@@ -35,9 +35,9 @@ object ShardingCompileOnlySpec {
 
   def counter(entityId: String, value: Int): Behavior[CounterCommand] =
     Behaviors.receiveMessage[CounterCommand] {
-      case Increment ⇒
+      case Increment =>
         counter(entityId, value + 1)
-      case GetValue(replyTo) ⇒
+      case GetValue(replyTo) =>
         replyTo ! value
         Behaviors.same
     }
@@ -46,9 +46,8 @@ object ShardingCompileOnlySpec {
   //#init
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
 
-  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.init(Entity(
-    typeKey = TypeKey,
-    createBehavior = ctx ⇒ counter(ctx.entityId, 0)))
+  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] =
+    sharding.init(Entity(typeKey = TypeKey, createBehavior = ctx => counter(ctx.entityId, 0)))
   //#init
 
   //#send
@@ -64,9 +63,7 @@ object ShardingCompileOnlySpec {
   //#persistence
   val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
 
-  ClusterSharding(system).init(Entity(
-    typeKey = BlogTypeKey,
-    createBehavior = ctx ⇒ behavior(ctx.entityId)))
+  ClusterSharding(system).init(Entity(typeKey = BlogTypeKey, createBehavior = ctx => behavior(ctx.entityId)))
   //#persistence
 
   //#counter-passivate
@@ -75,20 +72,19 @@ object ShardingCompileOnlySpec {
   case object GoodByeCounter extends CounterCommand
 
   def counter2(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[CounterCommand] = {
-    Behaviors.setup { ctx ⇒
-
+    Behaviors.setup { ctx =>
       def become(value: Int): Behavior[CounterCommand] =
         Behaviors.receiveMessage[CounterCommand] {
-          case Increment ⇒
+          case Increment =>
             become(value + 1)
-          case GetValue(replyTo) ⇒
+          case GetValue(replyTo) =>
             replyTo ! value
             Behaviors.same
-          case Idle ⇒
+          case Idle =>
             // after receive timeout
             shard ! ClusterSharding.Passivate(ctx.self)
             Behaviors.same
-          case GoodByeCounter ⇒
+          case GoodByeCounter =>
             // the stopMessage, used for rebalance and passivate
             Behaviors.stopped
         }
@@ -98,10 +94,9 @@ object ShardingCompileOnlySpec {
     }
   }
 
-  sharding.init(Entity(
-    typeKey = TypeKey,
-    createBehavior = ctx ⇒ counter2(ctx.shard, ctx.entityId))
-    .withStopMessage(GoodByeCounter))
+  sharding.init(
+    Entity(typeKey = TypeKey, createBehavior = ctx => counter2(ctx.shard, ctx.entityId))
+      .withStopMessage(GoodByeCounter))
   //#counter-passivate
 
 }

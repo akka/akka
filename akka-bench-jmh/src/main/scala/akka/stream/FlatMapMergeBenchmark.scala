@@ -8,6 +8,7 @@ import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
+import akka.remote.artery.BenchTestSourceSameElement
 import org.openjdk.jmh.annotations._
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -27,17 +28,18 @@ class FlatMapMergeBenchmark {
 
   var graph: RunnableGraph[Future[Done]] = _
 
-  def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = Source.repeat(1).take(count)
+  def createSource(count: Int): Graph[SourceShape[java.lang.Integer], NotUsed] =
+    new BenchTestSourceSameElement(count, 1)
 
   @Setup
   def setup(): Unit = {
     val source = NumberOfStreams match {
       // Base line: process NumberOfElements-many elements from a single source without using flatMapMerge
-      case 0 ⇒ createSource(NumberOfElements)
+      case 0 => createSource(NumberOfElements)
       // Stream merging: process NumberOfElements-many elements from n sources, each producing (NumberOfElements/n)-many elements
-      case n ⇒
+      case n =>
         val subSource = createSource(NumberOfElements / n)
-        Source.repeat(()).take(n).flatMapMerge(n, _ ⇒ subSource)
+        Source.repeat(()).take(n).flatMapMerge(n, _ => subSource)
     }
     graph = Source.fromGraph(source).toMat(Sink.ignore)(Keep.right)
   }

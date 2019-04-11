@@ -21,7 +21,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     Try[Class[_ <: T]]({
       val c = Class.forName(fqcn, false, classLoader).asInstanceOf[Class[_ <: T]]
       val t = implicitly[ClassTag[T]].runtimeClass
-      if (t.isAssignableFrom(c)) c else throw new ClassCastException(t + " is not assignable from " + c)
+      if (t.isAssignableFrom(c)) c else throw new ClassCastException(t.toString + " is not assignable from " + c)
     })
 
   override def createInstanceFor[T: ClassTag](clazz: Class[_], args: immutable.Seq[(Class[_], AnyRef)]): Try[T] =
@@ -32,27 +32,30 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       constructor.setAccessible(true)
       val obj = constructor.newInstance(values: _*)
       val t = implicitly[ClassTag[T]].runtimeClass
-      if (t.isInstance(obj)) obj.asInstanceOf[T] else throw new ClassCastException(clazz.getName + " is not a subtype of " + t)
-    } recover { case i: InvocationTargetException if i.getTargetException ne null ⇒ throw i.getTargetException }
+      if (t.isInstance(obj)) obj.asInstanceOf[T]
+      else throw new ClassCastException(clazz.getName + " is not a subtype of " + t)
+    }.recover { case i: InvocationTargetException if i.getTargetException ne null => throw i.getTargetException }
 
   override def createInstanceFor[T: ClassTag](fqcn: String, args: immutable.Seq[(Class[_], AnyRef)]): Try[T] =
-    getClassFor(fqcn) flatMap { c ⇒ createInstanceFor(c, args) }
+    getClassFor(fqcn).flatMap { c =>
+      createInstanceFor(c, args)
+    }
 
   override def getObjectFor[T: ClassTag](fqcn: String): Try[T] = {
     val classTry =
       if (fqcn.endsWith("$")) getClassFor(fqcn)
-      else getClassFor(fqcn + "$") recoverWith { case _ ⇒ getClassFor(fqcn) }
-    classTry flatMap { c ⇒
+      else getClassFor(fqcn + "$").recoverWith { case _ => getClassFor(fqcn) }
+    classTry.flatMap { c =>
       Try {
         val module = c.getDeclaredField("MODULE$")
         module.setAccessible(true)
         val t = implicitly[ClassTag[T]].runtimeClass
         module.get(null) match {
-          case null                  ⇒ throw new NullPointerException
-          case x if !t.isInstance(x) ⇒ throw new ClassCastException(fqcn + " is not a subtype of " + t)
-          case x: T                  ⇒ x
+          case null                  => throw new NullPointerException
+          case x if !t.isInstance(x) => throw new ClassCastException(fqcn + " is not a subtype of " + t)
+          case x: T                  => x
         }
-      } recover { case i: InvocationTargetException if i.getTargetException ne null ⇒ throw i.getTargetException }
+      }.recover { case i: InvocationTargetException if i.getTargetException ne null => throw i.getTargetException }
     }
   }
 }

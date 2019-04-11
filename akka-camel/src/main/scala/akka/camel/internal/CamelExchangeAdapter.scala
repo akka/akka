@@ -5,8 +5,8 @@
 package akka.camel.internal
 
 import org.apache.camel.util.ExchangeHelper
-import org.apache.camel.{ Exchange, Message ⇒ JCamelMessage }
-import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
+import org.apache.camel.{ Exchange, Message => JCamelMessage }
+import akka.camel.{ AkkaCamelException, CamelMessage, FailureResult }
 
 /**
  * INTERNAL API
@@ -16,6 +16,7 @@ import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
  * to org.apache.camel.Message when using Camel.
  */
 private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
+
   /**
    * Returns the exchange id
    */

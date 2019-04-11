@@ -25,10 +25,10 @@ object EventSourcedActorDeleteFailureSpec {
       Future.failed(new SimulatedException("Boom! Unable to delete events!"))
   }
 
-  class DoesNotHandleDeleteFailureActor(name: String, probe: ActorRef) extends PersistentActor {
+  class DoesNotHandleDeleteFailureActor(name: String) extends PersistentActor {
     override def persistenceId = name
     override def receiveCommand: Receive = {
-      case DeleteTo(n) ⇒ deleteMessages(n)
+      case DeleteTo(n) => deleteMessages(n)
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
@@ -36,25 +36,31 @@ object EventSourcedActorDeleteFailureSpec {
   class HandlesDeleteFailureActor(name: String, probe: ActorRef) extends PersistentActor {
     override def persistenceId = name
     override def receiveCommand: Receive = {
-      case DeleteTo(n)              ⇒ deleteMessages(n)
-      case f: DeleteMessagesFailure ⇒ probe ! f
+      case DeleteTo(n)              => deleteMessages(n)
+      case f: DeleteMessagesFailure => probe ! f
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
 
 }
 
-class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
-  """
+class EventSourcedActorDeleteFailureSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config(
+        "inmem",
+        "SnapshotFailureRobustnessSpec",
+        extraConfig = Some(
+          """
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorDeleteFailureSpec$DeleteFailingInmemJournal"
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
   import EventSourcedActorDeleteFailureSpec._
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
 
   "A persistent actor" must {
     "have default warn logging be triggered, when deletion failed" in {
-      val persistentActor = system.actorOf(Props(classOf[DoesNotHandleDeleteFailureActor], name, testActor))
+      val persistentActor = system.actorOf(Props(classOf[DoesNotHandleDeleteFailureActor], name))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])
       persistentActor ! DeleteTo(Long.MaxValue)
       val message = expectMsgType[Warning].message.toString
@@ -72,4 +78,3 @@ class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec
 
   }
 }
-

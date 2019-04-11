@@ -24,18 +24,18 @@ object TestKitDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case Say42       ⇒ sender() ! 42
-      case "some work" ⇒ sender() ! "some result"
+      case Say42       => sender() ! 42
+      case "some work" => sender() ! "some result"
     }
   }
 
   class TestFsmActor extends Actor with FSM[Int, String] {
     startWith(1, "")
     when(1) {
-      case Event("go", _) ⇒ goto(2) using "go"
+      case Event("go", _) => goto(2).using("go")
     }
     when(2) {
-      case Event("back", _) ⇒ goto(1) using "back"
+      case Event("back", _) => goto(1).using("back")
     }
   }
 
@@ -44,10 +44,10 @@ object TestKitDocSpec {
     var dest1: ActorRef = _
     var dest2: ActorRef = _
     def receive = {
-      case (d1: ActorRef, d2: ActorRef) ⇒
+      case (d1: ActorRef, d2: ActorRef) =>
         dest1 = d1
         dest2 = d2
-      case x ⇒
+      case x =>
         dest1 ! x
         dest2 ! x
     }
@@ -58,13 +58,13 @@ object TestKitDocSpec {
   //#test-probe-forward-actors
   class Source(target: ActorRef) extends Actor {
     def receive = {
-      case "start" ⇒ target ! "work"
+      case "start" => target ! "work"
     }
   }
 
   class Destination extends Actor {
     def receive = {
-      case x ⇒ // Do something..
+      case x => // Do something..
     }
   }
 
@@ -78,7 +78,7 @@ object TestKitDocSpec {
 
   class TestTimerActor extends Actor with Timers {
     override def receive = {
-      case TriggerScheduling(foo) ⇒ triggerScheduling(ScheduledMessage(foo))
+      case TriggerScheduling(foo) => triggerScheduling(ScheduledMessage(foo))
     }
 
     def triggerScheduling(msg: ScheduledMessage) =
@@ -90,10 +90,10 @@ object TestKitDocSpec {
     //#logging-receive
     import akka.event.LoggingReceive
     def receive = LoggingReceive {
-      case msg ⇒ // Do something ...
+      case msg => // Do something ...
     }
     def otherState: Receive = LoggingReceive.withLabel("other") {
-      case msg ⇒ // Do something else ...
+      case msg => // Do something else ...
     }
     //#logging-receive
   }
@@ -191,7 +191,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     val actorRef = TestActorRef(new Actor {
       def receive = {
-        case "hello" ⇒ throw new IllegalArgumentException("boom")
+        case "hello" => throw new IllegalArgumentException("boom")
       }
     })
     intercept[IllegalArgumentException] { actorRef.receive("hello") }
@@ -239,7 +239,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe = new TestProbe(system) {
       def expectUpdate(x: Int) = {
         expectMsgPF() {
-          case Update(id, _) if id == x ⇒ ()
+          case Update(id, _) if id == x => ()
         }
         sender() ! "ACK"
       }
@@ -262,7 +262,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val target = system.actorOf(Props.empty)
     //#test-probe-watch
     val probe = TestProbe()
-    probe watch target
+    probe.watch(target)
     target ! PoisonPill
     probe.expectTerminated(target)
     //#test-probe-watch
@@ -322,12 +322,14 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.EventFilter
     import com.typesafe.config.ConfigFactory
 
-    implicit val system = ActorSystem("testsystem", ConfigFactory.parseString("""
+    implicit val system = ActorSystem(
+      "testsystem",
+      ConfigFactory.parseString("""
       akka.loggers = ["akka.testkit.TestEventListener"]
       """))
     try {
       val actor = system.actorOf(Props.empty)
-      EventFilter[ActorKilledException](occurrences = 1) intercept {
+      EventFilter[ActorKilledException](occurrences = 1).intercept {
         actor ! Kill
       }
     } finally {
@@ -346,7 +348,8 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       //#put-your-test-code-here
       val probe = TestProbe()
       probe.send(testActor, "hello")
-      try expectMsg("hello") catch { case NonFatal(e) ⇒ system.terminate(); throw e }
+      try expectMsg("hello")
+      catch { case NonFatal(e) => system.terminate(); throw e }
       //#put-your-test-code-here
 
       shutdown(system)

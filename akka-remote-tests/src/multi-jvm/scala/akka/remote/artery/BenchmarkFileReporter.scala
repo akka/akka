@@ -66,8 +66,7 @@ object BenchmarkFileReporter {
           "akka.remote.default-remote-dispatcher.throughput",
           "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-factor",
           "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-min",
-          "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-max"
-        )
+          "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-max")
       settingsToReport.foreach(reportSetting)
 
       def reportResults(result: String): Unit = synchronized {

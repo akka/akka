@@ -4,8 +4,11 @@
 
 package akka.actor.typed
 
+import akka.actor
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.scaladsl._
+import akka.testkit.EventFilter
+import akka.actor.typed.scaladsl.adapter._
 import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object OrElseStubbedSpec {
@@ -21,22 +24,22 @@ object OrElseStubbedSpec {
   def ping(counters: Map[String, Int]): Behavior[Ping] = {
 
     val ping1: Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping1(replyTo: ActorRef[Pong]) ⇒
+      case Ping1(replyTo: ActorRef[Pong]) =>
         val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
         replyTo ! Pong(newCounters("ping1"))
         ping(newCounters)
     }
 
     val ping2: Behavior[Ping] = Behaviors.receiveMessage {
-      case Ping2(replyTo: ActorRef[Pong]) ⇒
+      case Ping2(replyTo: ActorRef[Pong]) =>
         val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
         replyTo ! Pong(newCounters("ping2"))
         ping(newCounters)
-      case _ ⇒ Behaviors.unhandled
+      case _ => Behaviors.unhandled
     }
 
     val ping3: Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping3(replyTo: ActorRef[Pong]) ⇒
+      case Ping3(replyTo: ActorRef[Pong]) =>
         val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
         replyTo ! Pong(newCounters("ping3"))
         ping(newCounters)
@@ -78,17 +81,24 @@ class OrElseStubbedSpec extends WordSpec with Matchers {
 
 }
 
-class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class OrElseSpec extends ScalaTestWithActorTestKit("""
+      akka.loglevel = DEBUG # test verifies debug
+      akka.loggers = ["akka.testkit.TestEventListener"]
+    """) with WordSpecLike {
 
   import OrElseStubbedSpec._
 
+  implicit val untyped: actor.ActorSystem = system.toUntyped
+
   "Behavior.orElse" must {
     "work for deferred behavior on the left" in {
-      val orElseDeferred = Behaviors.setup[Ping] { _ ⇒
-        Behaviors.receiveMessage { _ ⇒
-          Behaviors.unhandled
+      val orElseDeferred = Behaviors
+        .setup[Ping] { _ =>
+          Behaviors.receiveMessage { _ =>
+            Behaviors.unhandled
+          }
         }
-      }.orElse(ping(Map.empty))
+        .orElse(ping(Map.empty))
 
       val p = spawn(orElseDeferred)
       val probe = TestProbe[Pong]
@@ -98,11 +108,12 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "work for deferred behavior on the right" in {
-      val orElseDeferred = ping(Map.empty).orElse(Behaviors.setup { _ ⇒
+      val orElseDeferred = ping(Map.empty).orElse(Behaviors.setup { _ =>
         Behaviors.receiveMessage {
-          case PingInfinite(replyTo) ⇒
+          case PingInfinite(replyTo) =>
             replyTo ! Pong(-1)
             Behaviors.same
+          case _ => Behaviors.unhandled
         }
       })
 
@@ -111,51 +122,100 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       p ! PingInfinite(probe.ref)
       probe.expectMessage(Pong(-1))
     }
-  }
 
-  "handle nested OrElse" in {
+    "handle nested OrElse" in {
 
-    sealed trait Parent
-    final case class Add(o: Any) extends Parent
-    final case class Remove(o: Any) extends Parent
-    final case class Stack(s: ActorRef[Array[StackTraceElement]]) extends Parent
-    final case class Get(s: ActorRef[Set[Any]]) extends Parent
+      sealed trait Parent
+      final case class Add(o: Any) extends Parent
+      final case class Remove(o: Any) extends Parent
+      final case class Stack(s: ActorRef[Array[StackTraceElement]]) extends Parent
+      final case class Get(s: ActorRef[Set[Any]]) extends Parent
 
-    def dealer(set: Set[Any]): Behavior[Parent] = {
-      val add = Behaviors.receiveMessage[Parent] {
-        case Add(o) ⇒ dealer(set + o)
-        case _      ⇒ Behaviors.unhandled
+      def dealer(set: Set[Any]): Behavior[Parent] = {
+        val add = Behaviors.receiveMessage[Parent] {
+          case Add(o) => dealer(set + o)
+          case _      => Behaviors.unhandled
+        }
+        val remove = Behaviors.receiveMessage[Parent] {
+          case Remove(o) => dealer(set - o)
+          case _         => Behaviors.unhandled
+        }
+        val getStack = Behaviors.receiveMessagePartial[Parent] {
+          case Stack(sender) =>
+            sender ! Thread.currentThread().getStackTrace
+            Behaviors.same
+        }
+        val getSet = Behaviors.receiveMessagePartial[Parent] {
+          case Get(sender) =>
+            sender ! set
+            Behaviors.same
+        }
+        add.orElse(remove).orElse(getStack).orElse(getSet)
       }
-      val remove = Behaviors.receiveMessage[Parent] {
-        case Remove(o) ⇒ dealer(set - o)
-        case _         ⇒ Behaviors.unhandled
+
+      val y = spawn(dealer(Set.empty))
+
+      (0 to 10000).foreach { i =>
+        y ! Add(i)
       }
-      val getStack = Behaviors.receiveMessagePartial[Parent] {
-        case Stack(sender) ⇒
-          sender ! Thread.currentThread().getStackTrace
-          Behaviors.same
+      (0 to 9999).foreach { i =>
+        y ! Remove(i)
       }
-      val getSet = Behaviors.receiveMessagePartial[Parent] {
-        case Get(sender) ⇒
-          sender ! set
-          Behaviors.same
-      }
-      add.orElse(remove).orElse(getStack).orElse(getSet)
+      val probe = TestProbe[Set[Any]]
+      y ! Get(probe.ref)
+      probe.expectMessage(Set[Any](10000))
+
     }
 
-    val y = spawn(dealer(Set.empty))
+    "pass unhandled Terminated along" in {
+      val probe = TestProbe[String]()
+      spawn(Behaviors.setup[String] { ctx =>
+        // arrange with a deathwatch triggering
+        ctx.watch(ctx.spawnAnonymous(Behavior.stopped[String]))
 
-    (0 to 10000) foreach { i ⇒
-      y ! Add(i)
+        Behaviors
+          .receiveSignal[String] {
+            case (_, PreRestart) =>
+              Behaviors.same
+          }
+          .orElse(Behaviors.receiveSignal {
+            case (_, Terminated(_)) =>
+              probe.ref ! "orElse saw it"
+              Behaviors.same
+          })
+      })
+
+      probe.expectMessage("orElse saw it")
     }
-    (0 to 9999) foreach { i ⇒
-      y ! Remove(i)
+
+    "pass unhandled Terminated along and fail if alternative doesn't handle either" in {
+      val probe = TestProbe[String]()
+
+      val ref =
+        EventFilter[DeathPactException](occurrences = 1).intercept {
+          spawn(Behaviors.setup[String] { ctx =>
+            // arrange with a deathwatch triggering
+            ctx.watch(ctx.spawnAnonymous(Behavior.stopped[String]))
+
+            Behaviors
+              .receiveSignal[String] {
+                case (_, Terminated(_)) =>
+                  probe.ref ! "first handler saw it"
+                  Behavior.unhandled
+              }
+              .orElse(Behaviors.receiveSignal {
+                case (_, Terminated(_)) =>
+                  probe.ref ! "second handler saw it"
+                  Behavior.unhandled
+              })
+          })
+        }
+
+      probe.expectMessage("first handler saw it")
+      probe.expectMessage("second handler saw it")
+      probe.expectTerminated(ref)
     }
-    val probe = TestProbe[Set[Any]]
-    y ! Get(probe.ref)
-    probe.expectMessage(Set[Any](10000))
 
   }
 
 }
-

@@ -5,7 +5,7 @@
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-import java.util.function.{ BiFunction, Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
@@ -282,11 +282,11 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](
-    resClass:        Class[Res],
-    target:          RecipientRef[Req],
-    responseTimeout: Duration,
-    createRequest:   java.util.function.Function[ActorRef[Res], Req],
-    applyToResponse: BiFunction[Res, Throwable, T]): Unit
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: java.util.function.Function[ActorRef[Res], Req],
+      applyToResponse: BiFunction[Res, Throwable, T]): Unit
 
   /**
    * Sends the result of the given `CompletionStage` to this Actor (“`self`”), after adapted it with

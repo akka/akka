@@ -18,7 +18,7 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Behaviors.receiveMessagePartial[Command] {
-          case Command2 ⇒
+          case Command2 =>
             probe.ref ! Command2
             Behaviors.same
         }
@@ -35,7 +35,7 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Behaviors.receivePartial[Command] {
-          case (_, Command2) ⇒
+          case (_, Command2) =>
             probe.ref ! Command2
             Behaviors.same
         }

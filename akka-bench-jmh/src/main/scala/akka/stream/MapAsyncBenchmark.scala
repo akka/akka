@@ -27,16 +27,14 @@ object MapAsyncBenchmark {
 class MapAsyncBenchmark {
   import MapAsyncBenchmark._
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
@@ -70,7 +68,7 @@ class MapAsyncBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .mapAsync(parallelism)(elem ⇒ if (spawn) Future(elem) else Future.successful(elem))
+      .mapAsync(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -82,7 +80,7 @@ class MapAsyncBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .mapAsyncUnordered(parallelism)(elem ⇒ if (spawn) Future(elem) else Future.successful(elem))
+      .mapAsyncUnordered(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)

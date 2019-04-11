@@ -39,7 +39,7 @@ class TypedActorBenchmark {
   @Param(Array("50"))
   var batchSize = 0
 
-  @Param(Array("akka.actor.ManyToOneArrayMailbox")) //  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.actor.ManyToOneArrayMailbox"))
+  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox"))
   var mailbox = ""
 
   @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
@@ -56,8 +56,7 @@ class TypedActorBenchmark {
     system = ActorSystem(
       TypedBenchmarkActors.echoActorsSupervisor(numMessagesPerActorPair, numActors, dispatcher, batchSize, timeout),
       "TypedActorBenchmark",
-      ConfigFactory.parseString(
-        s"""
+      ConfigFactory.parseString(s"""
        akka.actor {
 
          default-mailbox.mailbox-capacity = 512
@@ -86,8 +85,7 @@ class TypedActorBenchmark {
             mailbox-type = "$mailbox"
          }
        }
-      """
-      ))
+      """))
   }
 
   @TearDown(Level.Trial)
@@ -103,4 +101,3 @@ class TypedActorBenchmark {
   }
 
 }
-
