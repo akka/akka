@@ -174,32 +174,6 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](
-    ref: ActorRef,
-    onCompleteMessage: Any,
-    onFailureMessage: Throwable => Any,
-    val attributes: Attributes,
-    shape: SinkShape[In])
-    extends SinkModule[In, NotUsed](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
-    val subscriberRef = actorMaterializer.actorOf(
-      context,
-      ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage, onFailureMessage))
-    (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
-  }
-
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- */
 @InternalApi private[akka] final class TakeLastStage[T](n: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   if (n <= 0)
