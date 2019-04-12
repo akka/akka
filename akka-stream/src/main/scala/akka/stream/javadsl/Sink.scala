@@ -18,6 +18,7 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
+
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -235,10 +236,25 @@ object Sink {
    * of the actor will grow. For potentially slow consumer actors it is recommended
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting operator in front of this `Sink`.
-   *
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
     new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef`.
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully a [[Status.Success]] (with status `Done`) message will be sent to the destination actor.
+   * When the stream is completed with failure a [[akka.actor.Status.Failure]] message will be sent to the destination actor.
+   *
+   * It will request at most `maxInputBufferSize` number of elements from
+   * upstream, but there is no back-pressure signal from the destination actor,
+   * i.e. if the actor is not consuming the messages fast enough the mailbox
+   * of the actor will grow. For potentially slow consumer actors it is recommended
+   * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
+   * limiting operator in front of this `Sink`.
+   */
+  def actorRef[In](ref: ActorRef): Sink[In, NotUsed] =
+    new Sink(scaladsl.Sink.actorRef[In](ref))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.

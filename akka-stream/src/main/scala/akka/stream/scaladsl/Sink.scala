@@ -432,8 +432,7 @@ object Sink {
       ref: ActorRef,
       onCompleteMessage: Any,
       onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(ref, onCompleteMessage, onFailureMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(new ActorRefSink(ref, onCompleteMessage, onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
@@ -451,13 +450,23 @@ object Sink {
    * limiting operator in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(
-        ref,
-        onCompleteMessage,
-        t => Status.Failure(t),
-        DefaultAttributes.actorRefSink,
-        shape("ActorRefSink")))
+    fromGraph(new ActorRefSink(ref, onCompleteMessage, t => Status.Failure(t)))
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef`.
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully a [[Status.Success]] (with status `Done`) message will be sent to the destination actor.
+   * When the stream is completed with failure a [[akka.actor.Status.Failure]] message will be sent to the destination actor.
+   *
+   * It will request at most `maxInputBufferSize` number of elements from
+   * upstream, but there is no back-pressure signal from the destination actor,
+   * i.e. if the actor is not consuming the messages fast enough the mailbox
+   * of the actor will grow. For potentially slow consumer actors it is recommended
+   * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
+   * limiting operator in front of this `Sink`.
+   */
+  def actorRef[T](ref: ActorRef): Sink[T, NotUsed] =
+    fromGraph(new ActorRefSink(ref, Status.Success(Done), t => Status.Failure(t)))
 
   /**
    * INTERNAL API

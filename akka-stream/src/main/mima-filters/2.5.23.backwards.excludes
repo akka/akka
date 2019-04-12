@@ -1,0 +1,9 @@
+# removes obsolete actor ref sink actor #26712
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSinkActor$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.ActorRefSink")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSink.newInstance")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.ActorRefSink.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSink.attributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSink.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSink.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSinkActor")
