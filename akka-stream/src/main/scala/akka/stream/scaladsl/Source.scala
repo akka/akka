@@ -568,15 +568,14 @@ object Source {
       ackMessage: Any,
       completionMatcher: PartialFunction[Any, CompletionStrategy],
       failureMatcher: PartialFunction[Any, Throwable]): Source[T, ActorRef] = {
-    Source
-      .fromGraph(new ActorRefBackpressureSource(ackMessage, completionMatcher, failureMatcher))
-      .withAttributes(DefaultAttributes.actorRefWithAckSource)
+    Source.fromGraph(new ActorRefBackpressureSource(ackMessage, completionMatcher, failureMatcher))
   }
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
    * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
    * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
+   * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,

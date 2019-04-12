@@ -1,4 +1,4 @@
-# actorRef
+# actorRefWithAck
 
 Materialize an `ActorRef`; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.
 

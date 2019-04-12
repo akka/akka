@@ -7,6 +7,7 @@ package akka.stream.impl
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import akka.util.OptionVal
 
@@ -27,6 +28,7 @@ private object ActorRefBackpressureSource {
   val out: Outlet[T] = Outlet[T]("actorRefSource.out")
 
   override val shape: SourceShape[T] = SourceShape.of(out)
+  override def initialAttributes: Attributes = DefaultAttributes.actorRefWithAckSource
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
     throw new IllegalStateException("Not supported")
