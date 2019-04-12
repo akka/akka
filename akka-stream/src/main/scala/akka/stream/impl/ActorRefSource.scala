@@ -53,7 +53,7 @@ private object ActorRefSource {
 
       val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
         case (_, PoisonPill) ⇒
-          log.warning("for backwards compatibility: PoisonPill will note be supported in the future")
+          log.warning("for backwards compatibility: PoisonPill will not be supported in the future")
           completeStage()
         case (_, m) if failureMatcher.isDefinedAt(m) ⇒
           failStage(failureMatcher(m))
