@@ -213,26 +213,54 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "signal NPE when future is completed with null" in {
-      val c = TestSubscriber.manualProbe[String]()
-      val p =
-        Source(List("a", "b")).mapAsyncUnordered(4)(elem => Future.successful(null)).to(Sink.fromSubscriber(c)).run()
-      val sub = c.expectSubscription()
-      sub.request(10)
-      c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
+    "ignore element when future is completed with null" in {
+      val flow = Flow[Int].mapAsyncUnordered[String](2) {
+        case 2 => Future.successful(null)
+        case x => Future.successful(x.toString)
+      }
+      val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
+
+      result.futureValue should contain only ("1", "3")
     }
 
-    "resume when future is completed with null" in {
-      val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b", "c"))
-        .mapAsyncUnordered(4)(elem => if (elem == "b") Future.successful(null) else Future.successful(elem))
-        .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c))
-        .run()
-      val sub = c.expectSubscription()
-      sub.request(10)
-      c.expectNextUnordered("a", "c")
-      c.expectComplete()
+    "continue emitting after a sequence of nulls" in {
+      val flow = Flow[Int].mapAsyncUnordered[String](3) { value =>
+        if (value == 0 || value >= 100) Future.successful(value.toString)
+        else Future.successful(null)
+      }
+
+      val result = Source(0 to 102).via(flow).runWith(Sink.seq)
+
+      result.futureValue should contain only ("0", "100", "101", "102")
+    }
+
+    "complete without emitting any element after a sequence of nulls only" in {
+      val flow = Flow[Int].mapAsyncUnordered[String](3) { _ =>
+        Future.successful(null)
+      }
+
+      val result = Source(0 to 200).via(flow).runWith(Sink.seq)
+
+      result.futureValue shouldBe empty
+    }
+
+    "complete stage if future with null result is completed last" in {
+      import system.dispatcher
+      val latch = TestLatch(2)
+
+      val flow = Flow[Int].mapAsyncUnordered[String](2) {
+        case 2 => Future {
+          Await.ready(latch, 10 seconds)
+          null
+        }
+        case x =>
+          latch.countDown()
+          Future.successful(x.toString)
+      }
+
+      val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
+
+      result.futureValue should contain only ("1", "3")
     }
 
     "handle cancel properly" in assertAllStagesStopped {
