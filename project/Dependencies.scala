@@ -13,23 +13,28 @@ object Dependencies {
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
+  lazy val sslConfigVersion = settingKey[String]("The version of ssl-config to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.3.7"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.15.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.8", "2.13.0-M5"),
+    crossScalaVersions := Seq("2.12.8", "2.13.0-RC1"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
-    scalaTestVersion := "3.0.7",
+    scalaTestVersion := "3.0.8-RC2",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "0.9.0"
+        case Some((2, n)) if n >= 13 => "0.9.1-SNAPSHOT"
         case _                       => "0.8.0"
       }
-    })
+    },
+    sslConfigVersion := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 13 => "0.4.0"
+        case _                       => "0.3.7"
+    }})
 
   object Compile {
     // Compile
@@ -54,7 +59,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
 
     // ssl-config
-    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
+    val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion.value } // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.1" // ApacheV2, OpenLDAP Public License
 
@@ -67,7 +72,7 @@ object Dependencies {
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
 
     object Docs {
-      val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
+      val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
     }
 
@@ -213,7 +218,7 @@ object Dependencies {
 
   // akka stream
 
-  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, Test.scalatest.value)
+  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore.value, Test.scalatest.value)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)
 

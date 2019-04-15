@@ -241,7 +241,7 @@ object MultiNodeSpec {
       """)
 
   private def mapToConfig(map: Map[String, Any]): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     ConfigFactory.parseMap(map.asJava)
   }
 
@@ -467,7 +467,7 @@ abstract class MultiNodeSpec(
               base.replace(tag, replaceWith)
           }
       }
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       ConfigFactory.parseString(deployString).root.asScala.foreach {
         case (key, value: ConfigObject) => deployer.parseConfig(key, value.toConfig).foreach(deployer.deploy)
         case (key, x) =>

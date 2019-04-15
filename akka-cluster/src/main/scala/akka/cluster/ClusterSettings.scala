@@ -166,7 +166,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getInt("min-nr-of-members")
   }.requiring(_ > 0, "min-nr-of-members must be > 0")
   val MinNrOfMembersOfRole: Map[String, Int] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     cc.getConfig("role")
       .root
       .asScala
@@ -186,7 +186,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val ByPassConfigCompatCheck: Boolean = !cc.getBoolean("configuration-compatibility-check.enforce-on-join")
   val ConfigCompatCheckers: Set[String] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     cc.getConfig("configuration-compatibility-check.checkers")
       .root
       .unwrapped
@@ -200,7 +200,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
 
   val SensitiveConfigPaths = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
 
     val sensitiveKeys =
       cc.getConfig("configuration-compatibility-check.sensitive-config-paths")

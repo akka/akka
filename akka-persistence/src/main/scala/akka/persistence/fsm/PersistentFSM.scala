@@ -490,6 +490,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
  * Persistent Finite State Machine actor abstract base class with FSM Logging
  *
  */
+@silent
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSM[S, D, E]
     with LoggingPersistentFSM[S, D, E]

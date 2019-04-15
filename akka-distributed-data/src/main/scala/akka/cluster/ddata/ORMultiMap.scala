@@ -102,7 +102,7 @@ final class ORMultiMap[A, B] private[akka] (
    * Java API: All entries of a multimap where keys are strings and values are sets.
    */
   def getEntries(): java.util.Map[A, java.util.Set[B]] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val result = new java.util.HashMap[A, java.util.Set[B]]
     if (withValueDeltas)
       underlying.entries.foreach {
@@ -165,14 +165,14 @@ final class ORMultiMap[A, B] private[akka] (
    * replicated data set.
    */
   def put(node: SelfUniqueAddress, key: A, value: java.util.Set[B]): ORMultiMap[A, B] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     put(node.uniqueAddress, key, value.asScala.toSet)
   }
 
   @Deprecated
   @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(node: Cluster, key: A, value: java.util.Set[B]): ORMultiMap[A, B] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     put(node.selfUniqueAddress, key, value.asScala.toSet)
   }
 

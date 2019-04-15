@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.javadsl
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function

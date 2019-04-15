@@ -5,7 +5,7 @@
 package akka.persistence.journal.japi
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal => SAsyncWriteJournal }
 import akka.util.ccompat._
@@ -32,5 +32,5 @@ abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal w
     }
 
   final def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) =
-    doAsyncDeleteMessagesTo(persistenceId, toSequenceNr).map(Unit.unbox)
+    doAsyncDeleteMessagesTo(persistenceId, toSequenceNr).map(_ => ())
 }

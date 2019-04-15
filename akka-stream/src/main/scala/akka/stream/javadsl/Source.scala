@@ -19,7 +19,7 @@ import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
@@ -141,9 +141,6 @@ object Source {
     // but there is not anything we can do to prevent that from happening.
     // ConcurrentModificationException will be thrown in some cases.
     val scalaIterable = new immutable.Iterable[O] {
-
-      import collection.JavaConverters._
-
       override def iterator: Iterator[O] = iterable.iterator().asScala
     }
     new Source(scaladsl.Source(scalaIterable))
@@ -538,7 +535,7 @@ object Source {
  */
 final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   override def shape: SourceShape[Out] = delegate.shape
 

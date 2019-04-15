@@ -207,7 +207,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     val ackAndEnvelope = AckAndEnvelopeContainer.parseFrom(raw.toArray)
 
     val ackOption = if (ackAndEnvelope.hasAck) {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       Some(
         Ack(
           SeqNo(ackAndEnvelope.getAck.getCumulativeAck),
