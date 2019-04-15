@@ -6,7 +6,7 @@ package akka.stream.impl
 
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
-import akka.stream.{ Attributes, Inlet, SinkShape }
+import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler }
 
 /**
@@ -24,14 +24,20 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
     private implicit def self: ActorRef = stageActor.ref
+    private var completionSignalled = false
 
     override def preStart(): Unit = {
-      super.preStart()
       getStageActor({
         case (_, Terminated(`ref`)) => completeStage()
         case _                      => //ignore all other messages
       }).watch(ref)
       pull(in)
+    }
+
+    override def postStop(): Unit = {
+      if (!completionSignalled) {
+        ref ! onFailureMessage(new AbruptStageTerminationException(this))
+      }
     }
 
     setHandler(
@@ -45,11 +51,13 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler }
 
         override def onUpstreamFinish(): Unit = {
           ref ! onCompleteMessage
+          completionSignalled = true
           completeStage()
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ref ! onFailureMessage(ex)
+          completionSignalled = true
           failStage(ex)
         }
       })
