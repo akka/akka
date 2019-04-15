@@ -35,7 +35,7 @@ object ServiceDiscovery {
      * Java API
      */
     def getAddresses: java.util.List[ResolvedTarget] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       addresses.asJava
     }
 
@@ -58,6 +58,8 @@ object ServiceDiscovery {
   object ResolvedTarget {
     // Simply compare the bytes of the address.
     // This may not work in exotic cases such as IPv4 addresses encoded as IPv6 addresses.
+    import com.github.ghik.silencer.silent
+    @silent
     private implicit val inetAddressOrdering: Ordering[InetAddress] =
       Ordering.by[InetAddress, Iterable[Byte]](_.getAddress)
 

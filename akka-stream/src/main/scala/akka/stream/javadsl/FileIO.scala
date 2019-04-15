@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage
 import akka.stream.{ javadsl, scaladsl, IOResult }
 import akka.util.ByteString
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Java API: Factories to create sinks and sources from files

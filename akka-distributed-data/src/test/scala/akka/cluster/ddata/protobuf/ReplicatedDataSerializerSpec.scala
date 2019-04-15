@@ -293,12 +293,12 @@ class ReplicatedDataSerializerSpec
 
     "serialize PNCounterMap" in {
       checkSerialization(PNCounterMap())
-      checkSerialization(PNCounterMap().increment(address1, "a", 3))
-      checkSerialization(PNCounterMap().increment(address1, 1, 3))
-      checkSerialization(PNCounterMap().increment(address1, 1L, 3))
-      checkSerialization(PNCounterMap().increment(address1, Flag(), 3))
+      checkSerialization(PNCounterMap[String]().increment(address1, "a", 3))
+      checkSerialization(PNCounterMap[Int]().increment(address1, 1, 3))
+      checkSerialization(PNCounterMap[Long]().increment(address1, 1L, 3))
+      checkSerialization(PNCounterMap[Flag]().increment(address1, Flag(), 3))
       checkSerialization(
-        PNCounterMap().increment(address1, "a", 3).decrement(address2, "a", 2).increment(address2, "b", 5))
+        PNCounterMap[String]().increment(address1, "a", 3).decrement(address2, "a", 2).increment(address2, "b", 5))
     }
 
     "be compatible with old PNCounterMap serialization" in {

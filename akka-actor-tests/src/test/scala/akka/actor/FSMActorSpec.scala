@@ -251,7 +251,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     }
 
     "log events and transitions if asked to do so" in {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val config = ConfigFactory
         .parseMap(Map(
           "akka.loglevel" -> "DEBUG",

@@ -261,18 +261,6 @@ trait ExplicitAskSupport {
 
 object AskableActorRef {
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def ask$extension(actorRef: ActorRef, message: Any, timeout: Timeout): Future[Any] =
-    actorRef.internalAsk(message, timeout, ActorRef.noSender)
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def $qmark$extension(actorRef: ActorRef, message: Any, timeout: Timeout): Future[Any] =
-    actorRef.internalAsk(message, timeout, ActorRef.noSender)
-
   private def messagePartOfException(message: Any, sender: ActorRef): String = {
     val msg = if (message == null) "unknown" else message
     val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"
@@ -400,21 +388,6 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
           if (sender == null) null else messageFactory(sender.asInstanceOf[InternalActorRef].provider.deadLetters)
         Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
     }
-}
-
-object AskableActorSelection {
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def ask$extension(actorSel: ActorSelection, message: Any, timeout: Timeout): Future[Any] =
-    actorSel.internalAsk(message, timeout, ActorRef.noSender)
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def $qmark$extension(actorSel: ActorSelection, message: Any, timeout: Timeout): Future[Any] =
-    actorSel.internalAsk(message, timeout, ActorRef.noSender)
 }
 
 /*

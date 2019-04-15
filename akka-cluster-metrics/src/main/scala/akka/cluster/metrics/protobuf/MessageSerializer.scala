@@ -18,7 +18,7 @@ import akka.util.ccompat._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
+import akka.util.ccompat.JavaConverters._
 import java.io.NotSerializableException
 
 import akka.dispatch.Dispatchers

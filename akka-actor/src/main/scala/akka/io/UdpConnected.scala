@@ -254,7 +254,7 @@ object UdpConnectedMessage {
   def resumeReading: Command = ResumeReading
 
   implicit private def fromJava[T](coll: JIterable[T]): immutable.Iterable[T] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     coll.asScala.to(immutable.Iterable)
   }
 }

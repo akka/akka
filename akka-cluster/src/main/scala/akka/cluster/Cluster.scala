@@ -26,6 +26,8 @@ import scala.util.control.NonFatal
 
 import akka.event.Logging.LogLevel
 
+import com.github.ghik.silencer.silent
+
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
  */
@@ -94,6 +96,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
+  @silent
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 

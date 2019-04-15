@@ -201,7 +201,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * `get` to get the most specific attribute value.
    */
   def getAttributeList(): java.util.List[Attribute] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     attributeList.asJava
   }
 

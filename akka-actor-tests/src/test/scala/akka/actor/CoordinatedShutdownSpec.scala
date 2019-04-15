@@ -15,7 +15,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
 import akka.actor.CoordinatedShutdown.UnknownReason
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.Promise
 import java.util.concurrent.TimeoutException
 

@@ -127,7 +127,7 @@ object PersistenceQueryDocSpec {
     // possibility to add more plugin specific queries
 
     def byTagsWithMeta(tags: java.util.Set[String]): javadsl.Source[RichEvent, QueryMetadata] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       scaladslReadJournal.byTagsWithMeta(tags.asScala.toSet).asJava
     }
   }
