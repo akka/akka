@@ -578,6 +578,8 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
       implicit val dispatcher = interceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
       val a, b = newTestActor(dispatcher.id)
+      probe.watch(a)
+      probe.watch(b)
 
       a ! Meet(aStart, aStop)
       assertCountDown(aStart, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")

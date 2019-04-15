@@ -333,7 +333,6 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
 }
 
 class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
-  import SerializationTests._
 
   val ser = SerializationExtension(system)
   def serializerMustBe(toSerialize: Class[_], expectedSerializer: Class[_]) =

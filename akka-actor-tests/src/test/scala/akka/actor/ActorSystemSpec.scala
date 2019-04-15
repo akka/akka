@@ -65,9 +65,10 @@ object ActorSystemSpec {
     }
   }
 
+  @silent
   final case class FastActor(latch: TestLatch, testActor: ActorRef) extends Actor {
     val ref1 = context.actorOf(Props.empty)
-    val ref2 = context.actorSelection(ref1.path.toString)
+    val ref2 = context.actorFor(ref1.path.toString)
     testActor ! ref2.getClass
     latch.countDown()
 

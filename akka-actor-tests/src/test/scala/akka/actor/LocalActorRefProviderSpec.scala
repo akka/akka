@@ -151,7 +151,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val supervisor = system.actorOf(Props(new Actor {
         def receive = {
           case "" =>
-            val _ = context.actorOf(Props.empty, "duplicate")
+            val a, b = context.actorOf(Props.empty, "duplicate")
         }
       }))
       EventFilter[InvalidActorNameException](occurrences = 1).intercept {
