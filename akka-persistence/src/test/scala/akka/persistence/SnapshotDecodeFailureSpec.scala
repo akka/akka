@@ -55,7 +55,8 @@ class SnapshotDecodeFailureSpec
       system.eventStream.publish(TestEvent.Mute(EventFilter[java.lang.Exception](start = "kanbudong")))
       try {
         val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
-        expectMsgType[Logging.Error].message.toString should startWith("Exception in receiveRecover when replaying")
+        expectMsgType[Logging.Error].message.toString should startWith(
+          "Persistence failure when replaying events for persistenceId")
         watch(lPersistentActor)
         expectTerminated(lPersistentActor)
       } finally {

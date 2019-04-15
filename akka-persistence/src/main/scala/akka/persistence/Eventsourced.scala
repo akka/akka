@@ -652,7 +652,7 @@ private[persistence] trait Eventsourced
                   Eventsourced.super.aroundReceive(recoveryBehavior, offer)
                 } catch {
                   case NonFatal(t) =>
-                    try onRecoveryFailure(t, Some(offer))
+                    try onRecoveryFailure(t, None)
                     finally context.stop(self)
                     returnRecoveryPermit()
                 }
