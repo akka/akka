@@ -21,6 +21,7 @@ import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RARP
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")

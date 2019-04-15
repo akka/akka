@@ -452,7 +452,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
     def doAddRoutees(): Unit = selectDeploymentTarget match {
       case None => // done
       case Some((address, path)) =>
-        val routee = group.routeeFor(address + path, context)
+        val routee = group.routeeFor(address.toString + path, context)
         usedRouteePaths = usedRouteePaths.updated(address, usedRouteePaths.getOrElse(address, Set.empty) + path)
         // must register each one, since registered routees are used in selectDeploymentTarget
         cell.addRoutee(routee)

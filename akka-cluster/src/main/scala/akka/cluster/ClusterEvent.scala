@@ -369,6 +369,7 @@ object ClusterEvent {
    * INTERNAL API
    * The nodes that have seen current version of the Gossip.
    */
+  @ccompatUsedUntil213
   private[cluster] final case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
   /**
@@ -484,7 +485,6 @@ object ClusterEvent {
             if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber =>
           newMember
       }
-      import akka.util.ccompat._
       val memberEvents = (newMembers ++ changedMembers).unsorted.collect {
         case m if m.status == Joining  => MemberJoined(m)
         case m if m.status == WeaklyUp => MemberWeaklyUp(m)

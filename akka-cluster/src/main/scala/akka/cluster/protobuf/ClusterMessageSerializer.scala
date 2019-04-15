@@ -30,6 +30,7 @@ import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
  * INTERNAL API
  */
 @InternalApi
+@ccompatUsedUntil213
 private[akka] object ClusterMessageSerializer {
   // FIXME use short manifests when we can break wire compatibility
   // needs to be full class names for backwards compatibility

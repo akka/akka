@@ -7,6 +7,7 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
+import com.github.ghik.silencer.silent
 
 class ReachabilityPerfSpec extends WordSpec with Matchers {
 
@@ -26,6 +27,7 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
         r.unreachable(observer, subject).reachable(observer, subject)
     }
 
+  @silent
   private def addUnreachable(base: Reachability, count: Int): Reachability = {
     val observers = base.versions.keySet.take(count)
     val subjects = Stream.continually(base.versions.keySet).flatten.iterator

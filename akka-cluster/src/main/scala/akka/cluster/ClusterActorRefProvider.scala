@@ -114,7 +114,6 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
 
 }
 
-@SerialVersionUID(1L)
 abstract class ClusterScope extends Scope
 
 /**
