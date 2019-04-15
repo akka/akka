@@ -314,7 +314,8 @@ public class BehaviorTestKitTest extends JUnitSuite {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     SpawnChildren adaptedMessage = new SpawnChildren(1);
     test.run(new CreateMessageAdapter(String.class, o -> adaptedMessage));
-    Effect.MessageAdapter mAdapter = test.expectEffectClass(Effect.MessageAdapter.class);
+    Effect.MessageAdapter<String, SpawnChildren> mAdapter =
+        test.<Effect.MessageAdapter>expectEffectClass(Effect.MessageAdapter.class);
     assertEquals(String.class, mAdapter.messageClass());
     assertEquals(adaptedMessage, mAdapter.adaptFunction().apply("anything"));
   }

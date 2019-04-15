@@ -26,7 +26,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-contrib",
     // To be reviewed
     "akka-actor-typed",
-    "akka-actor-testkit-typed",
     "akka-actor-typed-tests",
     "akka-cluster",
     "akka-cluster-sharding-typed",
