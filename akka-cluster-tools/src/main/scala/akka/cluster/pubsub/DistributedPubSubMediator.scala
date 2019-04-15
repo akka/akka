@@ -237,7 +237,7 @@ object DistributedPubSubMediator {
      * Java API
      */
     def getTopics(): java.util.Set[String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       topics.asJava
     }
   }

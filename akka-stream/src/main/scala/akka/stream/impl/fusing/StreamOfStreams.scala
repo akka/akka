@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
 import scala.annotation.tailrec
 
 import akka.stream.impl.{ Buffer => BufferImpl }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages.SingleSource

@@ -49,7 +49,7 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     val protoMsg = proto.TestMessage.parseFrom(bytes)
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val items = protoMsg.getItemsList.asScala.map { item =>
       TestMessage.Item(item.getId, item.getName)
     }.toVector

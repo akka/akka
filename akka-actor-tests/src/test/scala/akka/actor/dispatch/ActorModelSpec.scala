@@ -409,7 +409,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                   System.err.println(
                     "Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
 
-                  import scala.collection.JavaConverters._
+                  import akka.util.ccompat.JavaConverters._
                   team.asScala.toList.sortBy(_.self.path).foreach { cell: ActorCell =>
                     System.err.println(
                       " - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
@@ -452,7 +452,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f6 = a ? Reply("bar2")
 
         val c = system.scheduler.scheduleOnce(2.seconds) {
-          import collection.JavaConverters._
+          import akka.util.ccompat.JavaConverters._
           Thread.getAllStackTraces().asScala.foreach {
             case (thread, stack) =>
               println(s"$thread:")

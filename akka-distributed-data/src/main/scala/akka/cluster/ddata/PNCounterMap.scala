@@ -54,7 +54,7 @@ final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A
 
   /** Java API */
   def getEntries: java.util.Map[A, BigInteger] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     underlying.entries.map { case (k, c) => k -> c.value.bigInteger }.asJava
   }
 

@@ -11,7 +11,7 @@ import java.util.Comparator
 import java.util.TreeSet
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 
 import akka.actor.ExtendedActorSystem

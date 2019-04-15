@@ -299,6 +299,7 @@ class FramingSpec extends StreamSpec {
     }
 
     "report truncated frames" taggedAs LongRunningTest in {
+      // 2 * 10 * 4 * (13 minus a few) = 520 iterations
       for {
         //_ <- 1 to 10
         byteOrder <- byteOrders
@@ -306,7 +307,6 @@ class FramingSpec extends StreamSpec {
         fieldLength <- fieldLengths
         frameLength <- frameLengths if frameLength < (1 << (fieldLength * 8)) && (frameLength != 0)
       } {
-
         val fullFrame = encode(referenceChunk.take(frameLength), fieldOffset, fieldLength, byteOrder)
         val partialFrame = fullFrame.dropRight(1)
 

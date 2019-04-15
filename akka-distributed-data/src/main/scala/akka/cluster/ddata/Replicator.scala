@@ -90,7 +90,7 @@ object ReplicatorSettings {
       case _               => config.getDuration("pruning-interval", MILLISECONDS).millis
     }
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     new ReplicatorSettings(
       role = roleOption(config.getString("role")),
       gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis,
@@ -328,7 +328,7 @@ final class ReplicatorSettings(
    * Java API
    */
   def withDurableKeys(durableKeys: java.util.Set[String]): ReplicatorSettings = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     withDurableKeys(durableKeys.asScala.toSet)
   }
 
@@ -467,7 +467,7 @@ object Replicator {
      * Java API
      */
     def getKeyIds: java.util.Set[String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       keyIds.asJava
     }
   }

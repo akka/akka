@@ -282,7 +282,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    * INTERNAL API
    */
   private[akka] def phasesFromConfig(conf: Config): Map[String, Phase] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val defaultPhaseTimeout = conf.getString("default-phase-timeout")
     val phasesConf = conf.getConfig("phases")
     val defaultPhaseConfig = ConfigFactory.parseString(s"""
@@ -575,7 +575,7 @@ final class CoordinatedShutdown private[akka] (
    * Sum of timeouts of all phases that have some task.
    */
   def totalTimeout(): FiniteDuration = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     tasks.keySet.asScala.foldLeft(Duration.Zero) {
       case (acc, phase) => acc + timeout(phase)
     }

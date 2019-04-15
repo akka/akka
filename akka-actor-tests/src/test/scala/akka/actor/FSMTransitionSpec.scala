@@ -27,7 +27,7 @@ object FSMTransitionSpec {
   }
 
   class MyFSM(target: ActorRef) extends Actor with FSM[Int, Unit] {
-    startWith(0, Unit)
+    startWith(0, ())
     when(0) {
       case Event("tick", _) => goto(1)
     }
