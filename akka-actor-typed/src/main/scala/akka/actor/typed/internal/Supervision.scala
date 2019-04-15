@@ -30,12 +30,18 @@ import akka.util.unused
  */
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] = {
+
     strategy match {
       case r: RestartOrBackoff =>
-        Behaviors.intercept[T, T](new RestartSupervisor(initialBehavior, r))(initialBehavior)
+        Behaviors.setup { _ =>
+          // deferred to make sure supervisor instance not shared among instances
+          Behaviors.intercept[T, T](new RestartSupervisor(initialBehavior, r))(initialBehavior)
+        }
       case r: Resume =>
+        // stateless so safe to share
         Behaviors.intercept[T, T](new ResumeSupervisor(r))(initialBehavior)
       case r: Stop =>
+        // stateless so safe to share
         Behaviors.intercept[T, T](new StopSupervisor(initialBehavior, r))(initialBehavior)
     }
   }
