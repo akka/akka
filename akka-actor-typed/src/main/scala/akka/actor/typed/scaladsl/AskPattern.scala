@@ -7,15 +7,15 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
-
-import akka.actor.{ Address, RootActorPath, Scheduler }
+import akka.actor.{Address, RootActorPath, Scheduler}
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.{ adapter => adapt }
+import akka.actor.typed.internal.{adapter => adapt}
 import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
-import akka.util.{ unused, Timeout }
+import akka.util.Timeout
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
+import com.github.ghik.silencer.silent
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -59,7 +59,7 @@ object AskPattern {
      * Note: it is preferrable to use the non-symbolic ask method as it easier allows for wildcards for
      * the `ActorRef`.
      */
-    def ?[U](replyTo: ActorRef[U] => T)(implicit timeout: Timeout, @unused scheduler: Scheduler): Future[U] = {
+    def ?[U](replyTo: ActorRef[U] => T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
       ask(replyTo)(timeout, scheduler)
     }
 
@@ -91,8 +91,9 @@ object AskPattern {
      * // to understand the type of the wildcard
      * }}}
      */
-    def ask[U](replyTo: ActorRef[U] => T)(implicit timeout: Timeout, @unused scheduler: Scheduler): Future[U] = {
-      // We do not currently use the implicit scheduler, but want to require it
+    @silent
+    def ask[U](replyTo: ActorRef[U] => T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
+      // We do not currently use the implicit sched, but want to require it
       // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {
         case a: InternalRecipientRef[_] => askUntyped(a, timeout, replyTo)
