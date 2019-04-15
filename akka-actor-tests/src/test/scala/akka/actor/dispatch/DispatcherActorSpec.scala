@@ -7,8 +7,8 @@ package akka.actor.dispatch
 import language.postfixOps
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import java.util.concurrent.atomic.{ AtomicBoolean }
-import akka.testkit.{ AkkaSpec }
+import java.util.concurrent.atomic.AtomicBoolean
+import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, Props }
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -56,13 +56,11 @@ object DispatcherActorSpec {
 class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with DefaultTimeout {
   import DispatcherActorSpec._
 
-  private val unit = TimeUnit.MILLISECONDS
-
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
       val actor = system.actorOf(Props[OneWayTestActor].withDispatcher("test-dispatcher"))
-      val result = actor ! "OneWay"
+      actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }
@@ -84,7 +82,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
 
       val slowOne = system.actorOf(Props(new Actor {
         def receive = {
-          case "hogexecutor" => { sender() ! "OK"; start.await }
+          case "hogexecutor" => { sender() ! "OK"; start.await() }
           case "ping"        => if (works.get) latch.countDown()
         }
       }).withDispatcher(throughputDispatcher))
@@ -118,7 +116,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
 
       val slowOne = system.actorOf(Props(new Actor {
         def receive = {
-          case "hogexecutor" => { ready.countDown(); start.await }
+          case "hogexecutor" => { ready.countDown(); start.await() }
           case "ping"        => { works.set(false); context.stop(self) }
         }
       }).withDispatcher(throughputDispatcher))

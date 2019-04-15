@@ -71,7 +71,7 @@ object Chameneos {
       case FADED => FADED
     }
 
-    override def toString = cid + "(" + colour + ")"
+    override def toString = s"$cid($colour)"
   }
 
   class Mall(var n: Int, numChameneos: Int) extends Actor {
@@ -92,7 +92,7 @@ object Chameneos {
           context.stop(self)
         }
 
-      case msg @ Meet(a, c) =>
+      case msg: Meet =>
         if (n > 0) {
           waitingChameneo match {
             case Some(chameneo) =>
@@ -112,7 +112,7 @@ object Chameneos {
     //    System.setProperty("akka.config", "akka.conf")
     Chameneos.start = System.currentTimeMillis
     val system = ActorSystem()
-    val actor = system.actorOf(Props(new Mall(1000000, 4)))
+    system.actorOf(Props(new Mall(1000000, 4)))
     Thread.sleep(10000)
     println("Elapsed: " + (end - start))
     system.terminate()

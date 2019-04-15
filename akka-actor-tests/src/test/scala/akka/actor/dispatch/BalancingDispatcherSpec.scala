@@ -7,7 +7,6 @@ package akka.actor.dispatch
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.{ Actor, ActorCell, ActorRefWithCell, Props }
-import akka.dispatch.Mailbox
 import akka.testkit.AkkaSpec
 
 object BalancingDispatcherSpec {
@@ -28,7 +27,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
     var invocationCount = 0
 
     def receive = {
-      case x: Int => {
+      case _: Int => {
         Thread.sleep(delay)
         invocationCount += 1
         finishedCounter.countDown()
@@ -83,11 +82,11 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
       }
 
       finishedCounter.await(5, TimeUnit.SECONDS)
-      fast.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages should ===(false)
-      slow.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages should ===(false)
+      fast.underlying.asInstanceOf[ActorCell].mailbox.hasMessages should ===(false)
+      slow.underlying.asInstanceOf[ActorCell].mailbox.hasMessages should ===(false)
       fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount should be > sentToFast
       fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount should be >
-      (slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount)
+      slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount
       system.stop(slow)
       system.stop(fast)
     }

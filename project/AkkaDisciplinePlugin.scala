@@ -30,7 +30,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-cluster-sharding",
     "akka-stream",
     "akka-cluster-metrics",
-    "akka-slf4j")
+    "akka-slf4j",
+    "akka-remote-tests",
+    "akka-actor-tests")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
@@ -115,6 +117,5 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-unused:_",
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
-
 
 }

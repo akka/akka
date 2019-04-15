@@ -138,9 +138,8 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
     runOn(roles.head) {
       enterBarrier(receiverName + "-started")
-      val ignore = TestProbe()
       val receivers = targetNodes.map(target => identifyReceiver(receiverName, target)).toArray[Target]
-      val senders = for ((target, i) <- targetNodes.zipWithIndex) yield {
+      val senders = for ((_, i) <- targetNodes.zipWithIndex) yield {
         val receiver = receivers(i)
         val plotProbe = TestProbe()
         val snd = system.actorOf(

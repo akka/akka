@@ -5,11 +5,12 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
 
 object ActorLookupSpec {
 
@@ -23,6 +24,7 @@ object ActorLookupSpec {
 
   val p = Props[Node]
 
+  @silent
   class Node extends Actor {
     def receive = {
       case Create(name)       => sender() ! context.actorOf(p, name)
@@ -35,6 +37,7 @@ object ActorLookupSpec {
 
 }
 
+@silent
 class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
   import ActorLookupSpec._
 
@@ -84,7 +87,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       expectTerminated(a1)
 
       // let it be completely removed from user guardian
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
 
       // not equal because it's terminated
       system.actorFor(a1.path.toString) should not be (a1)

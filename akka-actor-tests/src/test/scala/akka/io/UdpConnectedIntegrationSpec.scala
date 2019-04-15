@@ -88,7 +88,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       expectMsg(Udp.Unbound)
 
       // Reusing the address
-      val server2 = bindUdp(serverAddress, testActor)
+      bindUdp(serverAddress, testActor)
 
       client ! UdpConnected.Send(data1)
       expectMsgType[Udp.Received].data should ===(data1)

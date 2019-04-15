@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 
 import akka.Done
 import akka.actor.ExtendedActorSystem

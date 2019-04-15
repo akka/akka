@@ -6,9 +6,12 @@ package akka.actor
 
 import language.postfixOps
 import akka.testkit._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
@@ -30,6 +33,7 @@ object LocalActorRefProviderSpec {
   """
 }
 
+@silent
 class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
   "An LocalActorRefProvider" must {
 
@@ -131,13 +135,13 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       for (i <- 0 until 100) {
         val address = "new-actor" + i
         implicit val timeout = Timeout(5 seconds)
-        val actors = for (j <- 1 to 4)
+        val actors = for (_ <- 1 to 4)
           yield Future(system.actorOf(Props(new Actor { def receive = { case _ => } }), address))
         val set = Set() ++ actors.map(a =>
             Await.ready(a, timeout.duration).value match {
-              case Some(Success(a: ActorRef))                   => 1
-              case Some(Failure(ex: InvalidActorNameException)) => 2
-              case x                                            => x
+              case Some(Success(_: ActorRef))                  => 1
+              case Some(Failure(_: InvalidActorNameException)) => 2
+              case x                                           => x
             })
         set should ===(Set[Any](1, 2))
       }

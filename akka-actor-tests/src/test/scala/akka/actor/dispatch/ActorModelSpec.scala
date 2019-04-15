@@ -5,15 +5,12 @@
 package akka.actor.dispatch
 
 import language.postfixOps
-
 import java.rmi.RemoteException
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong }
 
 import org.scalatest.Assertions._
-
 import com.typesafe.config.Config
-
 import akka.actor._
 import akka.dispatch.sysmsg.SystemMessageList
 import akka.dispatch._
@@ -21,6 +18,8 @@ import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
 import akka.util.Switch
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.annotation.tailrec
@@ -575,9 +574,12 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
 
   "A " + dispatcherType must {
     "process messages in parallel" in {
+      val probe = TestProbe()
       implicit val dispatcher = interceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
       val a, b = newTestActor(dispatcher.id)
+      probe.watch(a)
+      probe.watch(b)
 
       a ! Meet(aStart, aStop)
       assertCountDown(aStart, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
@@ -590,7 +592,8 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
       system.stop(a)
       system.stop(b)
 
-      while (!a.isTerminated && !b.isTerminated) {} //Busy wait for termination
+      probe.expectTerminated(a)
+      probe.expectTerminated(b)
 
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
       assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
@@ -598,6 +601,7 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   }
 }
 
+@silent
 object BalancingDispatcherModelSpec {
   import ActorModelSpec._
 
@@ -636,6 +640,7 @@ object BalancingDispatcherModelSpec {
   }
 }
 
+@silent
 class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherModelSpec.config) {
   import ActorModelSpec._
 

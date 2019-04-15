@@ -42,14 +42,14 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     deadActor ! NormalMsg
 
     deadListener.expectMsg(DeadLetter(NormalMsg, testActor, deadActor))
-    deadListener.expectNoMsg(200.millis)
+    deadListener.expectNoMessage(200.millis)
 
     suppressedListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
-    suppressedListener.expectNoMsg(200.millis)
+    suppressedListener.expectNoMessage(200.millis)
 
     allListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
     allListener.expectMsg(DeadLetter(NormalMsg, testActor, deadActor))
-    allListener.expectNoMsg(200.millis)
+    allListener.expectNoMessage(200.millis)
   }
 
   s"must suppress message from default dead-letters logging (sent to dead: ${Logging.simpleName(system.deadLetters)})" in {
@@ -73,8 +73,8 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     allListener.expectMsg(200.millis, DeadLetter(NormalMsg, testActor, system.deadLetters))
 
     Thread.sleep(200)
-    deadListener.expectNoMsg(Duration.Zero)
-    suppressedListener.expectNoMsg(Duration.Zero)
-    allListener.expectNoMsg(Duration.Zero)
+    deadListener.expectNoMessage(Duration.Zero)
+    suppressedListener.expectNoMessage(Duration.Zero)
+    allListener.expectNoMessage(Duration.Zero)
   }
 }
