@@ -1021,7 +1021,9 @@ trait FlowOps[+Out, +Mat] {
       }
       .map {
         case e: S => e
-        case o => throw new ClassCastException(s"'Flow.ask' failed: expected response of type [$tag], got [${o.getClass}]")
+        case o =>
+          throw new ClassCastException(
+            s"'Flow.ask' failed: expected response of type [${tag.runtimeClass}], got [${o.getClass}]")
       }
       .mapError {
         // the purpose of this recovery is to change the name of the stage in that exception
