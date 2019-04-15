@@ -6,7 +6,7 @@ package akka.osgi
 
 import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, ClasspathScanner, PojoServiceRegistryFactory }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import org.apache.commons.io.IOUtils.copy
 
 import org.osgi.framework._

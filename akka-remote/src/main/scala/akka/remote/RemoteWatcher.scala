@@ -115,10 +115,12 @@ private[akka] class RemoteWatcher(
     }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
+  @silent
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
+  @silent
   val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet

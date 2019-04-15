@@ -599,7 +599,7 @@ class ORSetSpec extends WordSpec with Matchers {
     }
 
     "have unapply extractor" in {
-      val s1 = ORSet.empty.add(node1, "a").add(node2, "b")
+      val s1 = ORSet.empty[String].add(node1, "a").add(node2, "b")
       val _: ORSet[String] = s1
       val ORSet(elements1) = s1 // `unapply[A](s: ORSet[A])` is used here
       val elements2: Set[String] = elements1

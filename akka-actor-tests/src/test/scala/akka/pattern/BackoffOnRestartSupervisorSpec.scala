@@ -161,7 +161,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
       supervisor ! BackoffSupervisor.GetCurrentChild
       // new instance
-      val Some(child) = expectMsgType[BackoffSupervisor.CurrentChild].ref
+      val child = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
 
       child ! "PING"
       expectMsg("PONG")

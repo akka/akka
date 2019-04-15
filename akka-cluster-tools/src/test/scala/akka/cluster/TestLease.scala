@@ -15,7 +15,7 @@ import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ Future, Promise }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): TestLeaseExt = super.get(system)

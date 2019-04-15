@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.internal.TestInboxImpl
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 
 object TestInbox {

@@ -18,6 +18,7 @@ trait ProducerSupport extends Actor with CamelSupport {
   private[this] var messages = Vector.empty[(ActorRef, Any)]
   private[this] var producerChild: Option[ActorRef] = None
 
+  @throws[Exception]
   override def preStart(): Unit = {
     super.preStart()
     register()

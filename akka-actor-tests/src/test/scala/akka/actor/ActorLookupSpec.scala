@@ -68,7 +68,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(system.child("c2").child("c21")) should ===(c21) // test Java API
       system.actorFor(system / Seq("c2", "c21")) should ===(c21)
 
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       system.actorFor(system.descendant(Seq("c2", "c21").asJava)) // test Java API
     }
 
@@ -245,7 +245,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "return deadLetters or EmptyLocalActorRef, respectively, for non-existing paths" in {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
 
       def checkOne(looker: ActorRef, query: Query, result: ActorRef): Unit = {
         val lookup = Await.result(looker ? query, timeout.duration)
