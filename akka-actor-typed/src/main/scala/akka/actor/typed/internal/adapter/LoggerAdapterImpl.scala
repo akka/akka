@@ -7,7 +7,7 @@ package akka.actor.typed.internal.adapter
 import akka.actor.typed.{ LogMarker, Logger }
 import akka.annotation.InternalApi
 import akka.event.Logging._
-import akka.event.{ LoggingBus, LoggingFilter, LoggingFilterWithMarker, LogMarker => UntypedLM }
+import akka.event.{ LoggingBus, LoggingFilterWithMarker, LogMarker => UntypedLM }
 import akka.util.OptionVal
 
 import scala.collection.JavaConverters._
