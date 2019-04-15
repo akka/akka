@@ -28,7 +28,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-actor-typed",
     "akka-actor-testkit-typed",
     "akka-actor-typed-tests",
-    "akka-cluster",
     "akka-cluster-sharding-typed",
     "akka-bench-jmh",
     "akka-bench-jmh-typed",
@@ -41,8 +40,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-stream-testkit",
     "akka-stream-tests",
     "akka-stream-tests-tck",
-    "akka-testkit"
-  )
+    "akka-testkit")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 

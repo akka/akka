@@ -24,6 +24,7 @@ import akka.routing.RouterActor
 import akka.routing.RouterConfig
 import akka.routing.RouterPoolActor
 import akka.routing.RoutingLogic
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -100,6 +101,7 @@ final case class ClusterRouterGroupSettings(
 
   // For binary compatibility
   @deprecated("Use constructor with useRoles instead", since = "2.5.4")
+  @silent
   def copy(
       totalInstances: Int = totalInstances,
       routeesPaths: immutable.Seq[String] = routeesPaths,
@@ -194,6 +196,7 @@ final case class ClusterRouterPoolSettings(
 
   // For binary compatibility
   @deprecated("Use copy with useRoles instead", since = "2.5.4")
+  @silent
   def copy(
       totalInstances: Int = totalInstances,
       maxInstancesPerNode: Int = maxInstancesPerNode,

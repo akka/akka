@@ -12,6 +12,7 @@ import akka.cluster.ClusterEvent._
 
 import scala.concurrent.duration.Duration
 import akka.actor.ActorLogging
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -31,6 +32,7 @@ final class AutoDowning(system: ActorSystem) extends DowningProvider {
 
   private def clusterSettings = Cluster(system).settings
 
+  @silent
   override def downRemovalMargin: FiniteDuration = clusterSettings.DownRemovalMargin
 
   override def downingActorProps: Option[Props] =

@@ -54,7 +54,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
         override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
         override def postStop(): Unit = cluster.unsubscribe(self)
 
-        def receive = {
+        def receive: Receive = {
           case e: ClusterDomainEvent =>
             e match {
               case SeenChanged(_, seenBy) =>
@@ -206,8 +206,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def close(): Unit = {
     _closed = true
     _cachedSelf = OptionVal.Some(self.copy(MemberStatus.Removed))
-    if (!eventBusListener.isTerminated)
-      eventBusListener ! PoisonPill
+    eventBusListener ! PoisonPill
   }
 
 }

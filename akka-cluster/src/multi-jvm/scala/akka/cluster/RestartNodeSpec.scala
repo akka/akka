@@ -49,7 +49,7 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
       case ActorIdentity(None, Some(ref)) =>
         context.watch(ref)
         replyTo ! Done
-      case t: Terminated =>
+      case _: Terminated =>
     }
   }
 }

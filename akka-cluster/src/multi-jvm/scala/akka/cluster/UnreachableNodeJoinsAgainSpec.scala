@@ -89,7 +89,6 @@ abstract class UnreachableNodeJoinsAgainSpec
         within(30 seconds) {
           // victim becomes all alone
           awaitAssert {
-            val members = clusterView.members
             clusterView.unreachableMembers.size should ===(roles.size - 1)
           }
           clusterView.unreachableMembers.map(_.address) should ===(allButVictim.map(address).toSet)
@@ -101,7 +100,6 @@ abstract class UnreachableNodeJoinsAgainSpec
         within(30 seconds) {
           // victim becomes unreachable
           awaitAssert {
-            val members = clusterView.members
             clusterView.unreachableMembers.size should ===(1)
           }
           awaitSeenSameState(allButVictim.map(address): _*)

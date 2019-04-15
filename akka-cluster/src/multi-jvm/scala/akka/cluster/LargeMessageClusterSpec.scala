@@ -5,7 +5,6 @@
 package akka.cluster
 
 import scala.concurrent.duration._
-
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
@@ -17,6 +16,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
+import akka.util.unused
 import com.typesafe.config.ConfigFactory
 
 object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
@@ -61,7 +61,7 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
 
   final case class Slow(payload: Array[Byte])
 
-  class SlowSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+  class SlowSerializer(@unused system: ExtendedActorSystem) extends SerializerWithStringManifest {
     override def identifier = 999
     override def manifest(o: AnyRef) = "a"
     override def toBinary(o: AnyRef) = o match {

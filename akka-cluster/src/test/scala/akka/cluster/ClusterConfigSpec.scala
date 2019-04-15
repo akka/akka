@@ -6,15 +6,13 @@ package akka.cluster
 
 import language.postfixOps
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
-
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
+import com.github.ghik.silencer.silent
 
 class ClusterConfigSpec extends AkkaSpec {
 
@@ -43,7 +41,8 @@ class ClusterConfigSpec extends AkkaSpec {
       UnreachableNodesReaperInterval should ===(1 second)
       PublishStatsInterval should ===(Duration.Undefined)
       AutoDownUnreachableAfter should ===(Duration.Undefined)
-      DownRemovalMargin should ===(Duration.Zero)
+      @silent
+      val _ = DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
       SelfDataCenter should ===("default")

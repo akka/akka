@@ -45,13 +45,13 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
       r2: Reachability,
       thunk: (Reachability, Reachability) => Unit,
       times: Int): Unit = {
-    for (i <- 1 to times) {
+    for (_ <- 1 to times) {
       thunk(Reachability(r1.records, r1.versions), Reachability(r2.records, r2.versions))
     }
   }
 
   private def checkThunkFor(r1: Reachability, thunk: Reachability => Unit, times: Int): Unit = {
-    for (i <- 1 to times) {
+    for (_ <- 1 to times) {
       thunk(Reachability(r1.records, r1.versions))
     }
   }
@@ -71,12 +71,10 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   }
 
   private def allUnreachableOrTerminated(r1: Reachability): Unit = {
-    val record = r1.records.head
     r1.allUnreachableOrTerminated.isEmpty should ===(false)
   }
 
   private def allUnreachable(r1: Reachability): Unit = {
-    val record = r1.records.head
     r1.allUnreachable.isEmpty should ===(false)
   }
 
