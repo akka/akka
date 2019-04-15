@@ -4,7 +4,7 @@ sudo: false
 
 scala:
   - "2.12.8"
-  - "2.13.0-M5"
+  - "2.13.0-RC1"
 
 before_install:
   # using jabba for custom jdk management

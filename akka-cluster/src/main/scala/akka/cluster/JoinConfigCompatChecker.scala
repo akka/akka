@@ -11,7 +11,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.ccompat._
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValue }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.{ immutable => im }
 
 abstract class JoinConfigCompatChecker {

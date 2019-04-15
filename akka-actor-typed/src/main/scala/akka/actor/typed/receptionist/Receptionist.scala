@@ -8,7 +8,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Dispatchers, Extension, Extensi
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
 import akka.annotation.InternalApi
 

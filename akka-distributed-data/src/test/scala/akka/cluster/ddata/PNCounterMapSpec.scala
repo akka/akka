@@ -24,13 +24,13 @@ class PNCounterMapSpec extends WordSpec with Matchers {
     }
 
     "be able to increment and decrement entries" in {
-      val m = PNCounterMap().increment(node1, "a", 2).increment(node1, "b", 3).decrement(node2, "a", 1)
+      val m = PNCounterMap[String]().increment(node1, "a", 2).increment(node1, "b", 3).decrement(node2, "a", 1)
       m.entries should be(Map("a" -> 1, "b" -> 3))
     }
 
     "be able to have its entries correctly merged with another ORMap with other entries" in {
-      val m1 = PNCounterMap().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
-      val m2 = PNCounterMap().increment(node2, "c", 5)
+      val m1 = PNCounterMap[String]().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
+      val m2 = PNCounterMap[String]().increment(node2, "c", 5)
 
       // merge both ways
       val expected = Map("a" -> 1, "b" -> 3, "c" -> 7)
@@ -39,8 +39,8 @@ class PNCounterMapSpec extends WordSpec with Matchers {
     }
 
     "be able to remove entry" in {
-      val m1 = PNCounterMap().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
-      val m2 = PNCounterMap().increment(node2, "c", 5)
+      val m1 = PNCounterMap[String]().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
+      val m2 = PNCounterMap[String]().increment(node2, "c", 5)
 
       val merged1 = m1.merge(m2)
 
@@ -53,8 +53,8 @@ class PNCounterMapSpec extends WordSpec with Matchers {
     }
 
     "be able to work with deltas" in {
-      val m1 = PNCounterMap().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
-      val m2 = PNCounterMap().increment(node2, "c", 5)
+      val m1 = PNCounterMap[String]().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
+      val m2 = PNCounterMap[String]().increment(node2, "c", 5)
 
       val expected = Map("a" -> 1, "b" -> 3, "c" -> 7)
       PNCounterMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get).entries should be(expected)
@@ -71,7 +71,7 @@ class PNCounterMapSpec extends WordSpec with Matchers {
     }
 
     "have unapply extractor" in {
-      val m1 = PNCounterMap.empty.increment(node1, "a", 1).increment(node2, "b", 2)
+      val m1 = PNCounterMap.empty[String].increment(node1, "a", 1).increment(node2, "b", 2)
       val PNCounterMap(entries1) = m1
       val entries2: Map[String, BigInt] = entries1
       entries2 should be(Map("a" -> 1L, "b" -> 2L))

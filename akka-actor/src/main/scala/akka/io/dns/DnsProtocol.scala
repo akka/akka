@@ -9,7 +9,7 @@ import java.util
 import akka.actor.NoSerializationVerificationNeeded
 
 import scala.collection.{ immutable => im }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.

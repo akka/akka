@@ -14,4 +14,10 @@ package akka.util
 package object ccompat {
   private[akka] type Factory[-A, +C] = scala.collection.Factory[A, C]
   private[akka] val Factory = scala.collection.Factory
+
+  // When we drop support for 2.12 we can delete this concept
+  // and import scala.jdk.CollectionConverters.Ops._ instead
+  object JavaConverters
+      extends scala.collection.convert.AsJavaExtensions
+      with scala.collection.convert.AsScalaExtensions
 }

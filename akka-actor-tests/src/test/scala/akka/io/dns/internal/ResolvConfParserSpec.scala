@@ -9,7 +9,7 @@ import org.scalatest.{ Matchers, WordSpec }
 class ResolvConfParserSpec extends WordSpec with Matchers {
 
   private def parse(str: String): ResolvConf = {
-    ResolvConfParser.parseLines(str.lines)
+    ResolvConfParser.parseLines(str.linesIterator)
   }
 
   "The ResolvConfParser" should {

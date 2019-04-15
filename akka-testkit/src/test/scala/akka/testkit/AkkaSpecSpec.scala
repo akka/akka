@@ -35,7 +35,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
 
     "terminate all actors" in {
       // verbose config just for demonstration purposes, please leave in in case of debugging
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val conf = Map(
         "akka.actor.debug.lifecycle" -> true,
         "akka.actor.debug.event-stream" -> true,

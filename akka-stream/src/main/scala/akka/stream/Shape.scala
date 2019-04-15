@@ -6,7 +6,7 @@ package akka.stream
 
 import akka.util.Collections.EmptyImmutableSeq
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import akka.annotation.InternalApi
 

@@ -65,6 +65,8 @@ import akka.event.Logging
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat._
 
+import com.github.ghik.silencer.silent
+
 @ccompatUsedUntil213
 object ReplicatorSettings {
 
@@ -87,7 +89,7 @@ object ReplicatorSettings {
       case _               => config.getDuration("pruning-interval", MILLISECONDS).millis
     }
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     new ReplicatorSettings(
       role = roleOption(config.getString("role")),
       gossipInterval = config.getDuration("gossip-interval", MILLISECONDS).millis,
@@ -325,7 +327,7 @@ final class ReplicatorSettings(
    * Java API
    */
   def withDurableKeys(durableKeys: java.util.Set[String]): ReplicatorSettings = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     withDurableKeys(durableKeys.asScala.toSet)
   }
 
@@ -464,7 +466,7 @@ object Replicator {
      * Java API
      */
     def getKeyIds: java.util.Set[String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       keyIds.asJava
     }
   }
@@ -1329,7 +1331,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   // possibility to disable Gossip for testing purpose
   var fullStateGossipEnabled = true
 
+  @silent
   val subscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
+  @silent
   val newSubscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
   var subscriptionKeys = Map.empty[KeyId, KeyR]
 

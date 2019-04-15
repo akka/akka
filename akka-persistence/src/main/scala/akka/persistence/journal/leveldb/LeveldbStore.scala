@@ -14,7 +14,7 @@ import akka.serialization.SerializationExtension
 import org.iq80.leveldb._
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.util._
 import scala.concurrent.Future
 import scala.util.control.NonFatal
@@ -52,8 +52,11 @@ private[persistence] trait LeveldbStore
   override val compactionIntervals: Map[String, Long] =
     LeveldbStore.toCompactionIntervalMap(config.getObject("compaction-intervals"))
 
+  import com.github.ghik.silencer.silent
+  @silent
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
   with mutable.MultiMap[String, ActorRef]
+  @silent
   private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
   with mutable.MultiMap[String, ActorRef]
   private var allPersistenceIdsSubscribers = Set.empty[ActorRef]

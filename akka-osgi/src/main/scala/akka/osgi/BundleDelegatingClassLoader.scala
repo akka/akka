@@ -9,7 +9,7 @@ import java.util.Enumeration
 import org.osgi.framework.{ Bundle, BundleContext }
 import scala.util.Try
 import org.osgi.framework.wiring.{ BundleRevision, BundleWire, BundleWiring }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.util.Success
 import scala.util.Failure
 import scala.annotation.tailrec
