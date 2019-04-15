@@ -5,12 +5,12 @@
 package akka.osgi
 
 import akka.actor.ActorSystem
-import java.util.{Dictionary, Properties}
+import java.util.{ Dictionary, Properties }
 
 import com.github.ghik.silencer.silent
 import org.osgi.framework._
 import org.osgi.service.log.LogService
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an

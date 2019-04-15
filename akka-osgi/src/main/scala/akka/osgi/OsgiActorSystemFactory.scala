@@ -6,7 +6,7 @@ package akka.osgi
 
 import akka.actor.ActorSystem
 import akka.util.unused
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.osgi.framework.BundleContext
 
 /**
