@@ -43,11 +43,11 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "allow probing for actor stop when actor has not stopped yet" in {
       case object Stop
       val probe = TestProbe()
-      val ref = spawn(Behaviors.receive[Stop.type]((context, message) =>
-        Behaviors.withTimers { (timer) =>
+      val ref = spawn(Behaviors.receive[Stop.type]((_, _) =>
+        Behaviors.withTimers { timer =>
           timer.startSingleTimer("key", Stop, 300.millis)
 
-          Behaviors.receive((context, stop) => Behaviors.stopped)
+          Behaviors.receive((_, _) => Behaviors.stopped)
         }))
       ref ! Stop
       // race, but not sure how to test in any other way
