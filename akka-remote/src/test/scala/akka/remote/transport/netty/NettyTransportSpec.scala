@@ -33,7 +33,7 @@ object NettyTransportSpec {
   }
 
   implicit class RichAkkaAddress(address: Address) {
-    def withProtocol(protocol: String)(implicit system: ActorSystem) =
+    def withProtocol(protocol: String) =
       address.copy(protocol = protocol)
   }
 }

@@ -168,7 +168,6 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       systemB.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForB))
       systemA.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForA))
 
-      val toSend = (0 until msgCount).toList
       var maxDelay = 0L
 
       for (m <- 0 until msgCount) {

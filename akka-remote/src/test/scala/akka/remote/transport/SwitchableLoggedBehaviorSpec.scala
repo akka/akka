@@ -98,7 +98,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
 
     "log calls and parameters" in {
       val logPromise = Promise[Int]()
-      val behavior = new SwitchableLoggedBehavior[Int, Int]((i) => Future.successful(3), (i) => logPromise.success(i))
+      val behavior = new SwitchableLoggedBehavior[Int, Int](_ => Future.successful(3), i => logPromise.success(i))
 
       behavior(11)
       Await.result(logPromise.future, timeout.duration) should ===(11)

@@ -11,6 +11,7 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociate
 import akka.testkit._
 import akka.testkit.TestActors.EchoActor
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
@@ -30,7 +31,7 @@ object ActorsLeakSpec {
       |
       |""".stripMargin)
 
-  def collectLiveActors(root: ActorRef): immutable.Seq[ActorRef] = {
+  def collectLiveActors(root: Option[ActorRef]): immutable.Seq[ActorRef] = {
 
     def recurse(node: ActorRef): List[ActorRef] = {
       val children: List[ActorRef] = node match {
@@ -38,10 +39,10 @@ object ActorsLeakSpec {
           val cell = wc.underlying
 
           cell.childrenRefs match {
-            case ChildrenContainer.TerminatingChildrenContainer(_, toDie, reason)                               => Nil
-            case x @ (ChildrenContainer.TerminatedChildrenContainer | ChildrenContainer.EmptyChildrenContainer) => Nil
-            case n: ChildrenContainer.NormalChildrenContainer                                                   => cell.childrenRefs.children.toList
-            case x                                                                                              => Nil
+            case ChildrenContainer.TerminatingChildrenContainer(_, _, _)                                  => Nil
+            case ChildrenContainer.TerminatedChildrenContainer | ChildrenContainer.EmptyChildrenContainer => Nil
+            case _: ChildrenContainer.NormalChildrenContainer                                             => cell.childrenRefs.children.toList
+            case _                                                                                        => Nil
           }
         case _ => Nil
       }
@@ -49,7 +50,10 @@ object ActorsLeakSpec {
       node :: children.flatMap(recurse)
     }
 
-    recurse(root)
+    root match {
+      case Some(node) => recurse(node)
+      case None       => immutable.Seq.empty
+    }
   }
 
   class StoppableActor extends Actor {
@@ -66,12 +70,12 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
   "Remoting" must {
 
     "not leak actors" in {
-      val ref = system.actorOf(Props[EchoActor], "echo")
+      system.actorOf(Props[EchoActor], "echo")
       val echoPath = RootActorPath(RARP(system).provider.getDefaultAddress) / "user" / "echo"
 
       val targets = List("/system/endpointManager", "/system/transports").map { path =>
         system.actorSelection(path) ! Identify(0)
-        expectMsgType[ActorIdentity].getRef
+        expectMsgType[ActorIdentity].ref
       }
 
       val initialActors = targets.flatMap(collectLiveActors).toSet
@@ -114,8 +118,9 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           val beforeQuarantineActors = targets.flatMap(collectLiveActors).toSet
 
           // it must not quarantine the current connection
-          RARP(system).provider.transport
-            .quarantine(remoteAddress, Some(AddressUidExtension(remoteSystem).addressUid + 1), "test")
+          @silent
+          val addressUid = AddressUidExtension(remoteSystem).addressUid + 1
+          RARP(system).provider.transport.quarantine(remoteAddress, Some(addressUid), "test")
 
           // the message from local to remote should reuse passive inbound connection
           system.actorSelection(RootActorPath(remoteAddress) / "user" / "stoppable") ! Identify(1)

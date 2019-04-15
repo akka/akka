@@ -48,7 +48,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
         ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=OFF").withFallback(conf))
         fail("initialization should fail due to invalid IP address")
       } catch {
-        case NonFatal(e) => {
+        case NonFatal(_) => {
           eventually(timeout(30 seconds), interval(800 milliseconds)) {
             val current = currentThreadIds()
             // no new threads should remain compared to the start state

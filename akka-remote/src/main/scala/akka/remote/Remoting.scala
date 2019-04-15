@@ -524,7 +524,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         settings.QuarantineDuration match {
           case d: FiniteDuration =>
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
-            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
+            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
           case _ => // disabled
         }
         Stop
@@ -653,7 +653,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
           uidOption match {
             case Some(`quarantineUid`) =>
               endpoints.markAsQuarantined(address, quarantineUid, Deadline.now + settings.QuarantineDuration)
-              eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid))
+              eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid.toLong))
               context.stop(endpoint)
             // or it does not match with the UID to be quarantined
             case None if !endpoints.refuseUid(address).contains(quarantineUid) =>
@@ -668,7 +668,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         case (_, Some(quarantineUid))                                                 =>
           // the current state is gated or quarantined, and we know the UID, update
           endpoints.markAsQuarantined(address, quarantineUid, Deadline.now + settings.QuarantineDuration)
-          eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid))
+          eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid.toLong))
         case _ => // the current state is Gated, WasGated or Quarantined, and we don't know the UID, do nothing.
       }
 
@@ -755,7 +755,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         case Some(Pass(endpoint, _)) =>
           if (refuseUidOption.contains(uid)) {
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + settings.QuarantineDuration)
-            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
+            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
             context.stop(endpoint)
           } else endpoints.registerWritableEndpointUid(remoteAddress, uid)
           handleStashedInbound(sender(), writerIsIdle = false)
