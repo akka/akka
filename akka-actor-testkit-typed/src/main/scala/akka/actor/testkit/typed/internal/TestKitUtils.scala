@@ -64,7 +64,7 @@ private[akka] object TestKitUtils {
     }
 
     val startFrom = classToStartFrom.getName
-    val filteredStack = Thread.currentThread.getStackTrace.toIterator
+    val filteredStack = Thread.currentThread.getStackTrace.iterator
       .map(_.getClassName)
       // drop until we find the first occurrence of classToStartFrom
       .dropWhile(!_.startsWith(startFrom))
