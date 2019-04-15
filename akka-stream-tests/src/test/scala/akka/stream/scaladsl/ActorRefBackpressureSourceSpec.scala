@@ -23,9 +23,9 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
 
   private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  "An ActorRefBackpressureSourc" must {
+  "An Source.actorRefWithAck" must {
 
-    "emit received messages to the stream and ack" in {
+    "emit received messages to the stream and ack" in assertAllStagesStopped {
       val probe = TestProbe()
       val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
 
@@ -40,6 +40,9 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       probe.expectMsg(AckMsg)
 
       s.expectNoMessage(50.millis)
+
+      ref ! Status.Success("ok")
+      s.expectComplete()
     }
 
     "fail when consumer does not await ack" in assertAllStagesStopped {
