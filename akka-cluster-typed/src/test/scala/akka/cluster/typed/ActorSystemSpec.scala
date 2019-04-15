@@ -57,7 +57,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       withSystem("a", Behaviors.receiveMessage[Probe] { p =>
         p.replyTo ! p.message
         Behaviors.stopped
-      }, doTerminate = false) { sys ⇒
+      }, doTerminate = false) { sys =>
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {

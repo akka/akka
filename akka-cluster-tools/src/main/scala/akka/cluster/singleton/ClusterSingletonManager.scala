@@ -57,7 +57,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(config: Config): ClusterSingletonManagerSettings = {
     val lease = config.getString("use-lease") match {
-      case s if s.isEmpty ⇒ None
+      case s if s.isEmpty => None
       case leaseConfigPath =>
         Some(new LeaseUsageSettings(leaseConfigPath, config.getDuration("lease-retry-interval").asScala))
     }

@@ -56,7 +56,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "generate a SRV Lookup from a valid SRV String" in {
-      srvWithValidDomainNames.foreach { str ⇒
+      srvWithValidDomainNames.foreach { str =>
         withClue(s"parsing '$str'") {
           val lookup = Lookup.parseSrv(str)
           lookup.portName.value shouldBe "portName"
@@ -117,7 +117,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return true for any valid SRV String" in {
-      srvWithValidDomainNames.foreach { str ⇒
+      srvWithValidDomainNames.foreach { str =>
         withClue(s"parsing '$str'") {
           Lookup.isValidSrv(str) shouldBe true
         }

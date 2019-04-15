@@ -27,7 +27,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
   case class Probe(message: String, replyTo: ActorRef[String])
 
   def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
-      block: ActorSystem[T] ⇒ Unit): Unit = {
+      block: ActorSystem[T] => Unit): Unit = {
     val sys = system(behavior, s"$suite-$name")
     try {
       block(sys)
@@ -47,7 +47,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       withSystem("a", Behaviors.receiveMessage[Probe] { p =>
         p.replyTo ! p.message
         Behaviors.stopped
-      }, doTerminate = false) { sys ⇒
+      }, doTerminate = false) { sys =>
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {

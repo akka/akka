@@ -57,7 +57,7 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
       log.info("Singleton stopping")
     }
     override def receive: Receive = {
-      case msg ⇒
+      case msg =>
         sender() ! Response(msg, selfAddress)
     }
   }
