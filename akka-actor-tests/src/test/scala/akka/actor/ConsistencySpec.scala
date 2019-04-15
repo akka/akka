@@ -38,7 +38,7 @@ object ConsistencySpec {
         if (lastStep != (step - 1))
           sender() ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 
-        var shouldBeFortyTwo = left.value + right.value
+        val shouldBeFortyTwo = left.value + right.value
         if (shouldBeFortyTwo != 42)
           sender() ! "Test failed: 42 failed"
         else {
@@ -69,7 +69,7 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
 
       for (a <- actors) { a.tell("done", testActor) }
 
-      for (a <- actors) expectMsg(5 minutes, "done")
+      for (_ <- actors) expectMsg(5 minutes, "done")
     }
   }
 }

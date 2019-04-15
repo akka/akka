@@ -32,15 +32,13 @@ object PinnedActorSpec {
 class PinnedActorSpec extends AkkaSpec(PinnedActorSpec.config) with BeforeAndAfterEach with DefaultTimeout {
   import PinnedActorSpec._
 
-  private val unit = TimeUnit.MILLISECONDS
-
   "A PinnedActor" must {
 
     "support tell" in {
-      var oneWay = new CountDownLatch(1)
+      val oneWay = new CountDownLatch(1)
       val actor = system.actorOf(
         Props(new Actor { def receive = { case "OneWay" => oneWay.countDown() } }).withDispatcher("pinned-dispatcher"))
-      val result = actor ! "OneWay"
+      actor ! "OneWay"
       assert(oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }

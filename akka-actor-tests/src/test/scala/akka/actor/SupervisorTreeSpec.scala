@@ -36,7 +36,7 @@ class SupervisorTreeSpec
           middleActor ! Kill
           expectMsg(middleActor.path)
           expectMsg(lastActor.path)
-          expectNoMsg(2 seconds)
+          expectNoMessage(2 seconds)
           system.stop(headActor)
         }
       }

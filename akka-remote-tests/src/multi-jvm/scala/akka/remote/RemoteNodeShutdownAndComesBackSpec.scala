@@ -102,7 +102,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
             val p = TestProbe()
             system.actorSelection(RootActorPath(secondAddress) / "user" / "subject").tell(Identify("subject"), p.ref)
             p.expectMsgPF(1 second) {
-              case ActorIdentity("subject", Some(ref)) => true
+              case ActorIdentity("subject", Some(_)) => true
             }
           }
         }
@@ -127,7 +127,6 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         system.actorOf(Props[Subject], "subject")
         system.actorOf(Props[Subject], "sysmsgBarrier")
-        val path = node(first)
         enterBarrier("actors-started")
 
         enterBarrier("watch-established")

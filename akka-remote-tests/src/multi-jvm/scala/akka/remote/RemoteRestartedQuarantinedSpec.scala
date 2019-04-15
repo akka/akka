@@ -40,7 +40,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" => context.system.terminate()
-      case "identify" => sender() ! (AddressUidExtension(context.system).addressUid -> self)
+      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
     }
   }
 
@@ -70,7 +70,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
       runOn(first) {
         val secondAddress = node(second).address
 
-        val (uid, ref) = identifyWithUid(second, "subject")
+        val (uid, _) = identifyWithUid(second, "subject")
 
         RARP(system).provider.transport.quarantine(node(second).address, Some(uid), "test")
 
@@ -108,7 +108,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
         }
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) =>
+          case ThisActorSystemQuarantinedEvent(_, _) =>
         }
 
         enterBarrier("still-quarantined")

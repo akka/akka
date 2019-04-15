@@ -5,12 +5,14 @@
 package akka.dispatch
 
 import language.postfixOps
-
 import java.util.concurrent.{ BlockingQueue, ConcurrentLinkedQueue }
+
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.unused
+
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
@@ -47,7 +49,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
-      for (i <- 1 to config.capacity) q.enqueue(testActor, exampleMessage)
+      for (_ <- 1 to config.capacity) q.enqueue(testActor, exampleMessage)
 
       q.numberOfMessages should ===(config.capacity)
       q.hasMessages should ===(true)
@@ -225,14 +227,14 @@ object CustomMailboxSpec {
     }
     """
 
-  class MyMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
+  class MyMailboxType(@unused settings: ActorSystem.Settings, @unused config: Config) extends MailboxType {
     override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = owner match {
       case Some(o) => new MyMailbox(o)
       case None    => throw new Exception("no mailbox owner given")
     }
   }
 
-  class MyMailbox(owner: ActorRef) extends UnboundedQueueBasedMessageQueue {
+  class MyMailbox(@unused owner: ActorRef) extends UnboundedQueueBasedMessageQueue {
     final val queue = new ConcurrentLinkedQueue[Envelope]()
   }
 }
@@ -255,8 +257,8 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   lazy val name = "The single-consumer-only mailbox implementation"
   override def maxConsumers = 1
   def factory = {
-    case u: UnboundedMailbox             => SingleConsumerOnlyUnboundedMailbox().create(None, None)
-    case b @ BoundedMailbox(capacity, _) => NonBlockingBoundedMailbox(capacity).create(None, None)
+    case _: UnboundedMailbox            => SingleConsumerOnlyUnboundedMailbox().create(None, None)
+    case _ @BoundedMailbox(capacity, _) => NonBlockingBoundedMailbox(capacity).create(None, None)
   }
 }
 

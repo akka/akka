@@ -68,7 +68,7 @@ class ActorLifeCycleSpec
         expectMsg(("OK", id, 3))
         restarter ! Kill
         expectMsg(("postStop", id, 3))
-        expectNoMsg(1 seconds)
+        expectNoMessage(1 seconds)
         system.stop(supervisor)
       }
     }
@@ -100,7 +100,7 @@ class ActorLifeCycleSpec
         expectMsg(("OK", id, 3))
         restarter ! Kill
         expectMsg(("postStop", id, 3))
-        expectNoMsg(1 seconds)
+        expectNoMessage(1 seconds)
         system.stop(supervisor)
       }
     }
@@ -117,7 +117,7 @@ class ActorLifeCycleSpec
       expectMsg(("OK", id, 0))
       system.stop(a)
       expectMsg(("postStop", id, 0))
-      expectNoMsg(1 seconds)
+      expectNoMessage(1 seconds)
       system.stop(supervisor)
     }
 
@@ -136,14 +136,14 @@ class ActorLifeCycleSpec
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case Become(beh) => { context.become(beh(context), discardOld = false); sender() ! "ok" }
-          case x           => sender() ! 42
+          case _           => sender() ! 42
         }
       }))
       a ! "hello"
       expectMsg(42)
       a ! Become(ctx => {
         case "fail" => throw new RuntimeException("buh")
-        case x      => ctx.sender() ! 43
+        case _      => ctx.sender() ! 43
       })
       expectMsg("ok")
       a ! "hello"

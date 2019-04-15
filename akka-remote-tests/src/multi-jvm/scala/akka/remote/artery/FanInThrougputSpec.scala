@@ -141,7 +141,6 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
 
     runOn(sendingNodes: _*) {
       enterBarrier(receiverName + "-started")
-      val ignore = TestProbe()
       val receivers = (1 to sendingNodes.size)
         .map { n =>
           identifyReceiver(receiverName + "-" + n, roles.head)

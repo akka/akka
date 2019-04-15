@@ -80,7 +80,7 @@ class BalancingSpec extends AkkaSpec("""
 
     // all but one worker are blocked
     val replies1 = receiveN(iterationCount - poolSize + 1)
-    expectNoMsg(1.second)
+    expectNoMessage(1.second)
     // all replies from the unblocked worker so far
     replies1.toSet should be(Set(1))
 
@@ -88,7 +88,7 @@ class BalancingSpec extends AkkaSpec("""
     val replies2 = receiveN(poolSize - 1)
     // the remaining replies come from the blocked
     replies2.toSet should be((2 to poolSize).toSet)
-    expectNoMsg(500.millis)
+    expectNoMessage(500.millis)
 
   }
 

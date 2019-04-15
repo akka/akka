@@ -10,7 +10,6 @@ import java.util.concurrent.Executors
 import scala.collection.AbstractIterator
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 
 import akka.actor._
 import akka.remote.testconductor.RoleName
@@ -202,10 +201,9 @@ abstract class AeronStreamMaxThroughputSpec
       enterBarrier(receiverName + "-started")
 
       val payload = ("0" * payloadSize).getBytes("utf-8")
-      val t0 = System.nanoTime()
       Source
         .fromIterator(() => iterate(1, totalMessages))
-        .map { n =>
+        .map { _ =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()
