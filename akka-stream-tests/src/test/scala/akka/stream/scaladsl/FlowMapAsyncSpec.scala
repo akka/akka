@@ -366,10 +366,11 @@ class FlowMapAsyncSpec extends StreamSpec {
       val latch = TestLatch(2)
 
       val flow = Flow[Int].mapAsync[String](2) {
-        case 2 => Future {
-          Await.ready(latch, 10 seconds)
-          null
-        }
+        case 2 =>
+          Future {
+            Await.ready(latch, 10 seconds)
+            null
+          }
         case x =>
           latch.countDown()
           Future.successful(x.toString)
