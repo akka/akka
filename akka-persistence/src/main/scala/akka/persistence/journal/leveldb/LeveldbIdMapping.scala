@@ -5,9 +5,9 @@
 package akka.persistence.journal.leveldb
 
 import org.iq80.leveldb.DBIterator
-
 import akka.actor.Actor
 import akka.util.ByteString.UTF_8
+import akka.util.unused
 
 /**
  * INTERNAL API.
@@ -69,7 +69,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore =
     numericId
   }
 
-  protected def newPersistenceIdAdded(id: String): Unit = ()
+  override protected def newPersistenceIdAdded(@unused id: String): Unit = ()
 
   override def preStart(): Unit = {
     idMap = readIdMap()

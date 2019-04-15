@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
@@ -87,6 +88,7 @@ private[persistence] trait Eventsourced
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
+  @silent
   private val maxMessageBatchSize = {
     val journalPluginConfig = this match {
       case c: RuntimePluginConfig => c.journalPluginConfig
@@ -249,8 +251,8 @@ private[persistence] trait Eventsourced
     require(persistenceId.trim.nonEmpty, s"persistenceId cannot be empty for PersistentActor [${self.path}]")
 
     // Fail fast on missing plugins.
-    val j = journal;
-    val s = snapshotStore
+    journal
+    snapshotStore
     requestRecoveryPermit()
     super.aroundPreStart()
   }

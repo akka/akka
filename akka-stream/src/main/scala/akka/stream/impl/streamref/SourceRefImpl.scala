@@ -196,6 +196,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
                   s"Received UNEXPECTED Terminated($ref) message! " +
                   s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
           }
+
+        case (_, _) => // keep the compiler happy (stage actor receive is total)
       }
 
       def tryPush(): Unit =

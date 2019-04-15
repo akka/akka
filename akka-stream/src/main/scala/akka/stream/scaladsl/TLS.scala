@@ -248,7 +248,7 @@ trait ScalaSessionAPI {
    */
   def peerCertificates: List[Certificate] =
     try Option(session.getPeerCertificates).map(_.toList).getOrElse(Nil)
-    catch { case e: SSLPeerUnverifiedException => Nil }
+    catch { case _: SSLPeerUnverifiedException => Nil }
 
   /**
    * Scala API: Extract the Principal that the peer engine presented during
@@ -256,7 +256,7 @@ trait ScalaSessionAPI {
    */
   def peerPrincipal: Option[Principal] =
     try Option(session.getPeerPrincipal)
-    catch { case e: SSLPeerUnverifiedException => None }
+    catch { case _: SSLPeerUnverifiedException => None }
 }
 
 object ScalaSessionAPI {

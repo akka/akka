@@ -13,7 +13,7 @@ To use Akka TestKit Typed, add the module to your project:
 
 ## Introduction
 
-Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviousTestKit`.
+Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviourTestKit`.
 
 For testing logic in a `Behavior` in isolation synchronous testing is preferred. For testing interactions between multiple
 actors a more realistic asynchronous test is preferred.

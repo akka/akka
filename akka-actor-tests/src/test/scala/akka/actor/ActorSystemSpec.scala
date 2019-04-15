@@ -21,6 +21,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.language.postfixOps
+import scala.util.Properties
 
 object ActorSystemSpec {
 
@@ -133,9 +134,13 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
   "An ActorSystem" must {
 
-    "use scala.concurrent.Future's InternalCallbackEC" in {
-      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should ===(
-        "scala.concurrent.Future$InternalCallbackExecutor$")
+    "use scala.concurrent InternalCallbackExecutor/parasitic" in {
+      val ec = system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext
+      val scalaVersion = Properties.versionNumberString
+      if (scalaVersion.startsWith("2.13") && scalaVersion != "2.13.0-M5")
+        ec.getClass.getName should ===("scala.concurrent.ExecutionContext$parasitic$")
+      else
+        ec.getClass.getName should ===("scala.concurrent.Future$InternalCallbackExecutor$")
     }
 
     "reject invalid names" in {

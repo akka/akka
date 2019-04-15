@@ -8,6 +8,7 @@ import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
+import akka.remote.artery.BenchTestSourceSameElement
 import org.openjdk.jmh.annotations._
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -27,7 +28,8 @@ class FlatMapMergeBenchmark {
 
   var graph: RunnableGraph[Future[Done]] = _
 
-  def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = Source.repeat(1).take(count)
+  def createSource(count: Int): Graph[SourceShape[java.lang.Integer], NotUsed] =
+    new BenchTestSourceSameElement(count, 1)
 
   @Setup
   def setup(): Unit = {

@@ -34,9 +34,9 @@ object SnapshotSpec {
     override def recovery: Recovery = _recovery
 
     override def receiveRecover: Receive = {
-      case payload: String              => probe ! s"${payload}-${lastSequenceNr}"
-      case offer @ SnapshotOffer(md, s) => probe ! offer
-      case other                        => probe ! other
+      case payload: String      => probe ! s"${payload}-${lastSequenceNr}"
+      case offer: SnapshotOffer => probe ! offer
+      case other                => probe ! other
     }
 
     override def receiveCommand = {
@@ -45,8 +45,8 @@ object SnapshotSpec {
         persist(payload) { _ =>
           probe ! s"${payload}-${lastSequenceNr}"
         }
-      case offer @ SnapshotOffer(md, s) => probe ! offer
-      case other                        => probe ! other
+      case offer: SnapshotOffer => probe ! offer
+      case other                => probe ! other
     }
   }
 
@@ -105,7 +105,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
 
   "A persistentActor" must {
     "recover state starting from the most recent snapshot" in {
-      val persistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(), testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(), testActor))
       val persistenceId = name
 
       expectMsgPF() {
@@ -118,9 +118,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       expectMsg(RecoveryCompleted)
     }
     "recover completely if snapshot is not handled" in {
-      val persistentActor =
-        system.actorOf(Props(classOf[IgnoringSnapshotTestPersistentActor], name, Recovery(), testActor))
-      val persistenceId = name
+      system.actorOf(Props(classOf[IgnoringSnapshotTestPersistentActor], name, Recovery(), testActor))
 
       expectMsg("a-1")
       expectMsg("b-2")
@@ -131,8 +129,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       expectMsg(RecoveryCompleted)
     }
     "recover state starting from the most recent snapshot matching an upper sequence number bound" in {
-      val persistentActor =
-        system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(toSequenceNr = 3), testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(toSequenceNr = 3), testActor))
       val persistenceId = name
 
       expectMsgPF() {
@@ -160,7 +157,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
     }
     "recover state starting from the most recent snapshot matching criteria" in {
       val recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 2))
-      val persistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
       val persistenceId = name
 
       expectMsgPF() {
@@ -176,7 +173,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
     }
     "recover state starting from the most recent snapshot matching criteria and an upper sequence number bound" in {
       val recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 2), toSequenceNr = 3)
-      val persistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
       val persistenceId = name
 
       expectMsgPF() {
@@ -189,7 +186,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
     }
     "recover state from scratch if snapshot based recovery is disabled" in {
       val recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria.None, toSequenceNr = 3)
-      val persistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, recovery, testActor))
 
       expectMsg("a-1")
       expectMsg("b-2")
@@ -219,11 +216,10 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
 
       persistentActor1 ! Delete1(metadata)
       deleteProbe.expectMsgType[DeleteSnapshot]
-      expectMsgPF() { case m @ DeleteSnapshotSuccess(SnapshotMetadata(`persistenceId`, 4, _)) => }
+      expectMsgPF() { case DeleteSnapshotSuccess(SnapshotMetadata(`persistenceId`, 4, _)) => }
 
       // recover persistentActor from 2nd snapshot (3rd was deleted) plus replayed messages
-      val persistentActor2 =
-        system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, recovery, testActor))
+      system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, recovery, testActor))
 
       expectMsgPF(hint = "" + SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, 0), null)) {
         case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 2, _), state) =>
@@ -248,7 +244,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       val criteria = SnapshotSelectionCriteria(maxSequenceNr = 4)
       persistentActor1 ! DeleteN(criteria)
       expectMsgPF() {
-        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) =>
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, _), state) =>
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
       expectMsg(RecoveryCompleted)
@@ -256,8 +252,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       expectMsgPF() { case DeleteSnapshotsSuccess(`criteria`) => }
 
       // recover persistentActor from replayed messages (all snapshots deleted)
-      val persistentActor2 =
-        system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, recovery, testActor))
+      system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, recovery, testActor))
 
       expectMsg("a-1")
       expectMsg("b-2")

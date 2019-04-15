@@ -142,7 +142,6 @@ class SnapshotFailureRobustnessSpec
 
     "fail recovery and stop actor when no snapshot could be loaded" in {
       val sPersistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
-      val persistenceId = name
 
       expectMsg(RecoveryCompleted)
       sPersistentActor ! Cmd("ok")
@@ -189,7 +188,6 @@ class SnapshotFailureRobustnessSpec
     }
     "receive failure message when bulk deleting snapshot fails" in {
       val p = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, testActor))
-      val persistenceId = name
 
       expectMsg(RecoveryCompleted)
       p ! Cmd("hello")

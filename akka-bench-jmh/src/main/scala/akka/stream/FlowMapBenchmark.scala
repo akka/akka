@@ -7,13 +7,13 @@ package akka.stream
 import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.remote.artery.BenchTestSource
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 import java.util.concurrent.Semaphore
 import scala.util.Success
 import akka.stream.impl.fusing.GraphStages
-import org.reactivestreams._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -59,7 +59,7 @@ class FlowMapBenchmark {
   final val successFailure = Success(new Exception)
 
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
-  var flow: Source[Int, NotUsed] = _
+  var flow: Source[java.lang.Integer, NotUsed] = _
 
   @Param(Array("8", "32", "128"))
   var initialInputBufferSize = 0
@@ -73,38 +73,11 @@ class FlowMapBenchmark {
 
     materializer = ActorMaterializer(settings)
 
-    // Important to use a synchronous, zero overhead source, otherwise the slowness of the source
-    // might bias the benchmark, since the stream always adjusts the rate to the slowest stage.
-    val syncTestPublisher = new Publisher[Int] {
-      override def subscribe(s: Subscriber[_ >: Int]): Unit = {
-        val sub = new Subscription {
-          var counter = 0 // Piggyback on caller thread, no need for volatile
-
-          override def request(n: Long): Unit = {
-            var i = n
-            while (i > 0) {
-              s.onNext(counter)
-              counter += 1
-              if (counter == 100000) {
-                s.onComplete()
-                return
-              }
-              i -= 1
-            }
-          }
-
-          override def cancel(): Unit = ()
-        }
-
-        s.onSubscribe(sub)
-      }
-    }
-
-    flow = mkMaps(Source.fromPublisher(syncTestPublisher), numberOfMapOps) {
+    flow = mkMaps(Source.fromGraph(new BenchTestSource(100000)), numberOfMapOps) {
       if (UseGraphStageIdentity)
-        GraphStages.identity[Int]
+        GraphStages.identity[java.lang.Integer]
       else
-        Flow[Int].map(identity)
+        Flow[java.lang.Integer].map(identity)
     }
   }
 
