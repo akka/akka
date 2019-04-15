@@ -110,10 +110,12 @@ class PhiAccrualFailureDetector(
   /**
    * Implement using optimistic lockless concurrency, all state is represented
    * by this immutable case class and managed by an AtomicReference.
+   *
+   * Cannot be final due to https://github.com/scala/bug/issues/4440
    */
-  private final class State(val history: HeartbeatHistory, val timestamp: Option[Long])
+  private case class State(history: HeartbeatHistory, timestamp: Option[Long])
 
-  private val state = new AtomicReference[State](new State(history = firstHeartbeat, timestamp = None))
+  private val state = new AtomicReference[State](State(history = firstHeartbeat, timestamp = None))
 
   override def isAvailable: Boolean = isAvailable(clock())
 
@@ -147,7 +149,8 @@ class PhiAccrualFailureDetector(
         } else oldState.history
     }
 
-    val newState = new State(newHistory, Some(timestamp)) // record new timestamp
+    // record new timestamp and possibly-amended history
+    val newState = oldState.copy(history = newHistory, timestamp = Some(timestamp))
 
     // if we won the race then update else try again
     if (!state.compareAndSet(oldState, newState)) heartbeat() // recur
