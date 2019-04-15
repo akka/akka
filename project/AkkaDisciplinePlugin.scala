@@ -105,7 +105,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Yno-adapted-args",
     // end
     "-deprecation",
-    "-Xfuture",
     "-Xlint",
     "-Ywarn-dead-code",
     "-Ywarn-inaccessible",
