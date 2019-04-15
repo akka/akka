@@ -17,22 +17,32 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
 
-  val fatalWarningsFor = Set(
-    "akka-actor",
-    "akka-discovery",
-    "akka-distributed-data",
-    "akka-coordination",
-    "akka-protobuf",
-    "akka-stream-typed",
-    "akka-cluster-typed",
-    "akka-persistence",
-    "akka-cluster-tools",
-    "akka-cluster-sharding",
-    "akka-stream",
-    "akka-cluster-metrics",
-    "akka-slf4j",
-    "akka-remote-tests",
-    "akka-actor-tests")
+  val nonFatalWarningsFor = Set(
+    // We allow warnings in docs to get the 'snippets' right
+    "akka-docs",
+    // To be removed from Akka
+    "akka-agent",
+    "akka-camel",
+    "akka-contrib",
+    // To be reviewed
+    "akka-actor-typed",
+    "akka-actor-testkit-typed",
+    "akka-actor-typed-tests",
+    "akka-cluster",
+    "akka-cluster-sharding-typed",
+    "akka-bench-jmh",
+    "akka-bench-jmh-typed",
+    "akka-multi-node-testkit",
+    "akka-osgi",
+    "akka-persistence-tck",
+    "akka-persistence-typed",
+    "akka-persistence-query",
+    "akka-remote",
+    "akka-stream-testkit",
+    "akka-stream-tests",
+    "akka-stream-tests-tck",
+    "akka-testkit"
+  )
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
@@ -55,7 +65,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (
-          if (!scalaVersion.value.startsWith("2.11") && fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+          if (!scalaVersion.value.startsWith("2.11") && !nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
         ),
       Test / scalacOptions --= testUndicipline,
