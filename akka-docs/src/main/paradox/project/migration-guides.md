@@ -11,7 +11,6 @@
 * [migration-guide-persistence-experimental-2.3.x-2.4.x](migration-guide-persistence-experimental-2.3.x-2.4.x.md)
 * [migration-guide-eventsourced-2.3.x](migration-guide-eventsourced-2.3.x.md)
 * [migration-guide-2.3.x-2.4.x](migration-guide-2.3.x-2.4.x.md)
-* [migration-guide-stream-1.0-2.x](migration-guide-stream-1.0-2.x.md)
 * [migration-guide-stream-2.0-2.4](migration-guide-stream-2.0-2.4.md)
 * [migration-guide-2.4.x-2.5.x](migration-guide-2.4.x-2.5.x.md)
 
