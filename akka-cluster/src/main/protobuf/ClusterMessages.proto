@@ -97,14 +97,28 @@ message CompatibleConfig {
  ****************************************/
 
 /**
- * Heartbeat
- * Sends an Address
+ * Prior to version 2.5.23
+ * Heartbeat sends an Address
+ * Version 2.5.23 can deserialize this message but does not send it.
+ * FIXME: Issue for serializing this message
  */
+message Heartbeat {
+  required Address from = 1;
+  optional int64 sequenceNr = 2;
+  optional int64 sendTime = 3;
+}
 
 /**
- * HeartbeatRsp
- * Sends an UniqueAddress
+ * Prior to version 2.5.23
+ * HeartbeatRsp Sends an UniqueAddress
+ * Version 2.5.23 can deserialize this message but does not send it.
+ * FIXME: Issue for serializing this message
  */
+message HeartBeatResponse {
+  required UniqueAddress from = 1;
+  optional int64 sequenceNr = 2;
+  optional int64 sendTime = 3;
+}
 
 /****************************************
  * Cluster Gossip Messages

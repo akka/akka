@@ -55,7 +55,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
 
   val crossDcFailureDetector = cluster.crossDcFailureDetector
 
-  val selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress)
+  def selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress, ???, ???)
 
   var dataCentersState: CrossDcHeartbeatingState = CrossDcHeartbeatingState.init(
     selfDataCenter,
@@ -108,11 +108,11 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   }
 
   def active: Actor.Receive = {
-    case ClusterHeartbeatSender.HeartbeatTick                => heartbeat()
-    case ClusterHeartbeatSender.HeartbeatRsp(from)           => heartbeatRsp(from)
-    case MemberRemoved(m, _)                                 => removeMember(m)
-    case evt: MemberEvent                                    => addMember(evt.member)
-    case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from) => triggerFirstHeartbeat(from)
+    case ClusterHeartbeatSender.HeartbeatTick                            => heartbeat()
+    case ClusterHeartbeatSender.HeartbeatRsp(from, sequenceNr, sendTime) => heartbeatRsp(from)
+    case MemberRemoved(m, _)                                             => removeMember(m)
+    case evt: MemberEvent                                                => addMember(evt.member)
+    case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from)             => triggerFirstHeartbeat(from)
   }
 
   def introspecting: Actor.Receive = {

@@ -12,11 +12,11 @@ import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
 import akka.serialization._
 import akka.protobuf.{ ByteString, MessageLite }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Deadline
-
 import akka.annotation.InternalApi
 import akka.cluster.InternalClusterAction._
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
@@ -41,8 +41,12 @@ private[akka] object ClusterMessageSerializer {
   val InitJoinManifest = s"akka.cluster.InternalClusterAction$$InitJoin$$"
   val InitJoinAckManifest = s"akka.cluster.InternalClusterAction$$InitJoinAck"
   val InitJoinNackManifest = s"akka.cluster.InternalClusterAction$$InitJoinNack"
-  val HeartBeatManifest = s"akka.cluster.ClusterHeartbeatSender$$Heartbeat"
-  val HeartBeatRspManifest = s"akka.cluster.ClusterHeartbeatSender$$HeartbeatRsp"
+  // FIXME, remove in a later version (2.6?) and make 2.5.23+ a mandatory step for rolling upgrade
+  val HeartBeatManifestPre2523 = s"akka.cluster.ClusterHeartbeatSender$$Heartbeat"
+  val HeartBeatRspManifest2523 = s"akka.cluster.ClusterHeartbeatSender$$HeartbeatRsp"
+
+  val HeartBeatManifest = "HB"
+  val HeartBeatRspManifest = "HBR"
   val ExitingConfirmedManifest = s"akka.cluster.InternalClusterAction$$ExitingConfirmed"
   val GossipStatusManifest = "akka.cluster.GossipStatus"
   val GossipEnvelopeManifest = "akka.cluster.GossipEnvelope"
@@ -71,8 +75,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     case _: InternalClusterAction.InitJoin      => InitJoinManifest
     case _: InternalClusterAction.InitJoinAck   => InitJoinAckManifest
     case _: InternalClusterAction.InitJoinNack  => InitJoinNackManifest
-    case _: ClusterHeartbeatSender.Heartbeat    => HeartBeatManifest
-    case _: ClusterHeartbeatSender.HeartbeatRsp => HeartBeatRspManifest
+    case _: ClusterHeartbeatSender.Heartbeat    => HeartBeatManifestPre2523
+    case _: ClusterHeartbeatSender.HeartbeatRsp => HeartBeatRspManifest2523
     case _: ExitingConfirmed                    => ExitingConfirmedManifest
     case _: GossipStatus                        => GossipStatusManifest
     case _: GossipEnvelope                      => GossipEnvelopeManifest
@@ -82,8 +86,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case ClusterHeartbeatSender.Heartbeat(from)                  => addressToProtoByteArray(from)
-    case ClusterHeartbeatSender.HeartbeatRsp(from)               => uniqueAddressToProtoByteArray(from)
+    case ClusterHeartbeatSender.Heartbeat(from, _, _)            => addressToProtoByteArray(from)
+    case ClusterHeartbeatSender.HeartbeatRsp(from, _, _)         => uniqueAddressToProtoByteArray(from)
     case m: GossipEnvelope                                       => gossipEnvelopeToProto(m).toByteArray
     case m: GossipStatus                                         => gossipStatusToProto(m).toByteArray
     case InternalClusterAction.Join(node, roles)                 => joinToProto(node, roles).toByteArray
@@ -100,8 +104,10 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+    case HeartBeatManifestPre2523  => deserializeHeartBeatAsAddress(bytes)
+    case HeartBeatRspManifest2523  => deserializeHeartBeatRspAsUniqueAddress(bytes)
     case HeartBeatManifest         => deserializeHeartBeat(bytes)
-    case HeartBeatRspManifest      => deserializeHeartBeatRsp(bytes)
+    case HeartBeatRspManifest      => deserializeHeartBeatResponse(bytes)
     case GossipStatusManifest      => deserializeGossipStatus(bytes)
     case GossipEnvelopeManifest    => deserializeGossipEnvelope(bytes)
     case InitJoinManifest          => deserializeInitJoin(bytes)
@@ -153,9 +159,9 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     case _ => throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
   }
 
-  private def addressToProtoByteArray(address: Address): Array[Byte] = addressToProto(address).build.toByteArray
+  private[akka] def addressToProtoByteArray(address: Address): Array[Byte] = addressToProto(address).build.toByteArray
 
-  private def uniqueAddressToProto(uniqueAddress: UniqueAddress): cm.UniqueAddress.Builder = {
+  private[akka] def uniqueAddressToProto(uniqueAddress: UniqueAddress): cm.UniqueAddress.Builder = {
     cm.UniqueAddress
       .newBuilder()
       .setAddress(addressToProto(uniqueAddress.address))
@@ -275,12 +281,22 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     InternalClusterAction.ExitingConfirmed(uniqueAddressFromBinary(bytes))
   }
 
-  private def deserializeHeartBeatRsp(bytes: Array[Byte]): ClusterHeartbeatSender.HeartbeatRsp = {
-    ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes))
+  private def deserializeHeartBeatRspAsUniqueAddress(bytes: Array[Byte]): ClusterHeartbeatSender.HeartbeatRsp = {
+    ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes), -1, -1)
   }
 
-  private def deserializeHeartBeat(bytes: Array[Byte]): ClusterHeartbeatSender.Heartbeat = {
-    ClusterHeartbeatSender.Heartbeat(addressFromBinary(bytes))
+  private def deserializeHeartBeatAsAddress(bytes: Array[Byte]): ClusterHeartbeatSender.Heartbeat = {
+    ClusterHeartbeatSender.Heartbeat(addressFromBinary(bytes), -1, -1)
+  }
+
+  def deserializeHeartBeat(bytes: Array[Byte]): ClusterHeartbeatSender.Heartbeat = {
+    val hb = cm.Heartbeat.parseFrom(bytes)
+    ClusterHeartbeatSender.Heartbeat(addressFromProto(hb.getFrom), hb.getSequenceNr, hb.getSendTime)
+  }
+
+  def deserializeHeartBeatResponse(bytes: Array[Byte]): ClusterHeartbeatSender.HeartbeatRsp = {
+    val hbr = cm.HeartBeatResponse.parseFrom(bytes)
+    ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromProto(hbr.getFrom), hbr.getSequenceNr, hbr.getSendTime)
   }
 
   private def deserializeInitJoinNack(bytes: Array[Byte]): InternalClusterAction.InitJoinNack = {

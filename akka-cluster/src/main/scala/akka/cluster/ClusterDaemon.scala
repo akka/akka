@@ -224,7 +224,7 @@ private[cluster] final class ClusterDaemon(joinConfigCompatChecker: JoinConfigCo
         Props(classOf[ClusterCoreSupervisor], joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
         name = "core"))
     context.actorOf(
-      Props[ClusterHeartbeatReceiver].withDispatcher(context.props.dispatcher),
+      Props(new ClusterHeartbeatReceiver(() => Cluster(context.system))).withDispatcher(context.props.dispatcher),
       name = "heartbeatReceiver")
   }
 

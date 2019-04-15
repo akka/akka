@@ -9,6 +9,7 @@ import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.cluster.InternalClusterAction.CompatibleConfig
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.RoundRobinPool
+import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
 
 import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
@@ -58,8 +59,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(InternalClusterAction.InitJoin(ConfigFactory.empty))
       checkSerialization(InternalClusterAction.InitJoinAck(address, CompatibleConfig(ConfigFactory.empty)))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
-      checkSerialization(ClusterHeartbeatSender.Heartbeat(address))
-      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress))
+      checkSerialization(ClusterHeartbeatSender.Heartbeat(address, 1, System.nanoTime()))
+      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress, 1, System.nanoTime()))
       checkSerialization(InternalClusterAction.ExitingConfirmed(uniqueAddress))
 
       val node1 = VectorClock.Node("node1")
@@ -167,6 +168,47 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       join.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
     }
   }
+
+  "Rolling upgrades for heart beat message changes in 2.5.23" must {
+    // FIXME, add issue for serializing this as the new message type
+
+    "serialize heart beats as Address to support versions prior or 2.5.23" in {
+      serializer.manifest(ClusterHeartbeatSender.Heartbeat(a1.address, -1, -1)) should ===(
+        ClusterMessageSerializer.HeartBeatManifestPre2523)
+    }
+
+    "serialize heart beat responses as UniqueAddress to support versions prior to 2.5.23" in {
+      serializer.manifest(ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, -1, -1)) should ===(
+        ClusterMessageSerializer.HeartBeatRspManifest2523)
+    }
+
+    "be able to deserialize HeartBeat protobuf message" in {
+      val hbProtobuf = cm.Heartbeat
+        .newBuilder()
+        .setFrom(serializer.addressToProto(a1.address))
+        .setSequenceNr(1)
+        .setSendTime(2)
+        .build()
+        .toByteArray
+
+      serializer.fromBinary(hbProtobuf, ClusterMessageSerializer.HeartBeatManifest) should ===(
+        ClusterHeartbeatSender.Heartbeat(a1.address, 1, 2))
+    }
+
+    "be able to deserialize HeartBeatRsp probuf message" in {
+      val hbrProtobuf = cm.HeartBeatResponse
+        .newBuilder()
+        .setFrom(serializer.uniqueAddressToProto(a1.uniqueAddress))
+        .setSequenceNr(1)
+        .setSendTime(2)
+        .build()
+        .toByteArray
+
+      serializer.fromBinary(hbrProtobuf, ClusterMessageSerializer.HeartBeatRspManifest) should ===(
+        ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, 1, 2))
+    }
+  }
+
   "Cluster router pool" must {
     "be serializable with no role" in {
       checkSerialization(
