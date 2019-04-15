@@ -75,8 +75,8 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
         f
     }
     instance match {
-      case Success(value) ⇒ value
-      case Failure(e) ⇒
+      case Success(value) => value
+      case Failure(e) =>
         log.error(
           e,
           "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
