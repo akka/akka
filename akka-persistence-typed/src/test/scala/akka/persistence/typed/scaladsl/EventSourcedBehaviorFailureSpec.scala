@@ -102,7 +102,7 @@ class EventSourcedBehaviorFailureSpec
     EventSourcedBehavior[String, String, String](
       pid,
       "",
-      (_, cmd) ⇒ {
+      (_, cmd) => {
         if (cmd == "wrong")
           throw TestException("wrong command")
         probe.tell("persisting")
@@ -111,17 +111,17 @@ class EventSourcedBehaviorFailureSpec
           if (cmd == "wrong-callback") throw TestException("wrong command")
         }
       },
-      (state, event) ⇒ {
+      (state, event) => {
         if (event == "wrong-event")
           throw TestException("wrong event")
         probe.tell(event)
         state + event
       }).receiveSignal(additionalSignalHandler.orElse {
-      case (_, RecoveryCompleted) ⇒
+      case (_, RecoveryCompleted) =>
         probe.tell("starting")
-      case (_, PostStop) ⇒
+      case (_, PostStop) =>
         probe.tell("stopped")
-      case (_, PreRestart) ⇒
+      case (_, PreRestart) =>
         probe.tell("restarting")
     })
 
@@ -132,7 +132,7 @@ class EventSourcedBehaviorFailureSpec
         val probe = TestProbe[String]()
         val excProbe = TestProbe[Throwable]()
         spawn(failingPersistentActor(PersistenceId("fail-recovery"), probe.ref, {
-          case (_, RecoveryFailed(t)) ⇒
+          case (_, RecoveryFailed(t)) =>
             excProbe.ref ! t
         }))
 
@@ -144,7 +144,7 @@ class EventSourcedBehaviorFailureSpec
     "handle exceptions from RecoveryFailed signal handler" in {
       val probe = TestProbe[String]()
       val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref, {
-        case (_, RecoveryFailed(_)) ⇒
+        case (_, RecoveryFailed(_)) =>
           throw TestException("recovery call back failure")
       }))
       pa ! "one"
@@ -169,7 +169,7 @@ class EventSourcedBehaviorFailureSpec
       EventFilter[JournalFailureException](occurrences = 1).intercept {
         // start again and then the event handler will throw
         spawn(failingPersistentActor(pid, probe.ref, {
-          case (_, RecoveryFailed(t)) ⇒
+          case (_, RecoveryFailed(t)) =>
             excProbe.ref ! t
         }))
 
@@ -184,7 +184,7 @@ class EventSourcedBehaviorFailureSpec
         spawn(
           Behaviors
             .supervise(failingPersistentActor(PersistenceId("recovery-ok"), probe.ref, {
-              case (_, RecoveryCompleted) ⇒
+              case (_, RecoveryCompleted) =>
                 probe.ref.tell("starting")
                 throw TestException("recovery call back failure")
             }))

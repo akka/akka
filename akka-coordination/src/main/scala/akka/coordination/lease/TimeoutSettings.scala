@@ -14,9 +14,9 @@ object TimeoutSettings {
   def apply(config: Config): TimeoutSettings = {
     val heartBeatTimeout = config.getDuration("heartbeat-timeout").asScala
     val heartBeatInterval = config.getValue("heartbeat-interval").valueType() match {
-      case ConfigValueType.STRING if config.getString("heartbeat-interval").isEmpty ⇒
+      case ConfigValueType.STRING if config.getString("heartbeat-interval").isEmpty =>
         (heartBeatTimeout / 10).max(5.seconds)
-      case _ ⇒ config.getDuration("heartbeat-interval").asScala
+      case _ => config.getDuration("heartbeat-interval").asScala
     }
     require(heartBeatInterval < (heartBeatTimeout / 2), "heartbeat-interval must be less than half heartbeat-timeout")
     new TimeoutSettings(heartBeatInterval, heartBeatTimeout, config.getDuration("lease-operation-timeout").asScala)

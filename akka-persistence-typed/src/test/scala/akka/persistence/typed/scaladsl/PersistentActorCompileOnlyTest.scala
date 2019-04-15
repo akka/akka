@@ -90,7 +90,7 @@ object PersistentActorCompileOnlyTest {
                 case IntentRecorded(correlationId, data) =>
                   EventsInFlight(
                     nextCorrelationId = correlationId + 1,
-                    dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
+                    dataByCorrelationId = state.dataByCorrelationId + (correlationId -> data))
                 case SideEffectAcknowledged(correlationId) =>
                   state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
               }).receiveSignal {

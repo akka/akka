@@ -65,7 +65,7 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
 
   private val nextAcquireResult = new AtomicReference[Future[Boolean]](initialPromise.future)
   private val nextCheckLeaseResult = new AtomicReference[Boolean](false)
-  private val currentCallBack = new AtomicReference[Option[Throwable] ⇒ Unit](_ ⇒ ())
+  private val currentCallBack = new AtomicReference[Option[Throwable] => Unit](_ => ())
 
   def setNextAcquireResult(next: Future[Boolean]): Unit =
     nextAcquireResult.set(next)
@@ -73,7 +73,7 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
   def setNextCheckLeaseResult(value: Boolean): Unit =
     nextCheckLeaseResult.set(value)
 
-  def getCurrentCallback(): Option[Throwable] ⇒ Unit = currentCallBack.get()
+  def getCurrentCallback(): Option[Throwable] => Unit = currentCallBack.get()
 
   override def acquire(): Future[Boolean] = {
     log.info("acquire, current response " + nextAcquireResult)
@@ -88,7 +88,7 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
 
   override def checkLease(): Boolean = nextCheckLeaseResult.get
 
-  override def acquire(callback: Option[Throwable] ⇒ Unit): Future[Boolean] = {
+  override def acquire(callback: Option[Throwable] => Unit): Future[Boolean] = {
     currentCallBack.set(callback)
     acquire()
   }

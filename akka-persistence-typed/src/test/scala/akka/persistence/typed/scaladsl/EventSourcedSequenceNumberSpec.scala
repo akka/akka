@@ -31,15 +31,15 @@ class EventSourcedSequenceNumberSpec
   system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.setup(ctx ⇒
+    Behaviors.setup(ctx =>
       EventSourcedBehavior[String, String, String](pid, "", { (_, command) =>
         probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onCommand")
-        Effect.persist(command).thenRun(_ ⇒ probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun"))
-      }, { (state, evt) ⇒
+        Effect.persist(command).thenRun(_ => probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun"))
+      }, { (state, evt) =>
         probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
         state + evt
       }).receiveSignal {
-        case (_, RecoveryCompleted) ⇒
+        case (_, RecoveryCompleted) =>
           probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
       })
 

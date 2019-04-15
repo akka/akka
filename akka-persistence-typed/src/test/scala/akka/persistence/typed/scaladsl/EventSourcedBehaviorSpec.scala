@@ -277,16 +277,16 @@ object EventSourcedBehaviorSpec {
             Effect.none.thenStop()
 
         },
-      eventHandler = (state, evt) ⇒
+      eventHandler = (state, evt) =>
         evt match {
-          case Incremented(delta) ⇒
+          case Incremented(delta) =>
             probe ! ((state, evt))
             State(state.value + delta, state.history :+ state.value)
         }).receiveSignal {
-      case (_, RecoveryCompleted) ⇒ ()
-      case (_, SnapshotCompleted(metadata)) ⇒
+      case (_, RecoveryCompleted) => ()
+      case (_, SnapshotCompleted(metadata)) =>
         snapshotProbe ! Success(metadata)
-      case (_, SnapshotFailed(_, failure)) ⇒
+      case (_, SnapshotFailed(_, failure)) =>
         snapshotProbe ! Failure(failure)
     }
   }

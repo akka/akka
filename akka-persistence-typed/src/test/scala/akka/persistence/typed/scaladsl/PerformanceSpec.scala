@@ -78,11 +78,11 @@ object PerformanceSpec {
           persistenceId = PersistenceId(name),
           "",
           commandHandler = CommandHandler.command {
-            case StopMeasure ⇒
+            case StopMeasure =>
               Effect.none.thenRun(_ => probe.ref ! StopMeasure)
-            case FailAt(sequence) ⇒
+            case FailAt(sequence) =>
               Effect.none.thenRun(_ => parameters.failAt = sequence)
-            case command ⇒ other(command, parameters)
+            case command => other(command, parameters)
           },
           eventHandler = {
             case (state, _) => state
