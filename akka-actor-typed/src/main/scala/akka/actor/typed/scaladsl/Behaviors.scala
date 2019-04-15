@@ -144,6 +144,9 @@ object Behaviors {
    * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
    * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
+   *
+   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
+   * so that a new instance is created per spawned actor rather than shared among actor instance.
    */
   def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(behaviorInterceptor)(behavior)
