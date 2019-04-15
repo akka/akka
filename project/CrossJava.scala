@@ -6,11 +6,12 @@ package akka
 
 import java.io.File
 
-import akka.CrossJava.nullBlank
-import sbt._
-
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
+import sbt._
+import sbt.librarymanagement.SemanticSelector
+import sbt.librarymanagement.VersionNumber
+import akka.CrossJava.nullBlank
 
 /*
  * Tools for discovering different Java versions,
@@ -31,16 +32,22 @@ case class JavaVersion(numbers: Vector[Long], vendor: Option[String]) {
 object JavaVersion {
 
   val specificationVersion: String = sys.props("java.specification.version")
+
   val version: String = sys.props("java.version")
-  val is1x: Boolean = version.startsWith("1.")
+
+  def isJdk8: Boolean =
+    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(s"=1.8"))
+
+  val isJdk11orHigher: Boolean =
+    VersionNumber(specificationVersion).matchesSemVer(SemanticSelector(">=11"))
 
   def apply(version: String): JavaVersion = CrossJava.parseJavaVersion(version)
   def apply(numbers: Vector[Long], vendor: String): JavaVersion = new JavaVersion(numbers, Option(vendor))
 
-  def notOnJdk8[T](values: Seq[T]): Seq[T] = if (is1x) Seq.empty[T] else values
+  def notOnJdk8[T](values: Seq[T]): Seq[T] = if (isJdk8) Seq.empty[T] else values
 
   def sourceAndTarget(fullJavaHome: File): Seq[String] =
-    if (is1x) Seq.empty
+    if (isJdk8) Seq.empty
     else Seq("-source", "8", "-target", "8", "-bootclasspath", fullJavaHome + "/jre/lib/rt.jar")
 }
 

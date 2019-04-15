@@ -42,11 +42,13 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
     })
 
-  val silencerVersion = "1.3.1"
-  lazy val silencerSettings = Seq(
-    libraryDependencies ++= Seq(
-        compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
-        "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided))
+  lazy val silencerSettings = {
+    val silencerVersion = "1.3.1"
+    Seq(
+      libraryDependencies ++= Seq(
+          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided))
+  }
 
   lazy val disciplineSettings =
     scalaFixSettings ++
@@ -115,6 +117,5 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-unused:_",
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
-
 
 }

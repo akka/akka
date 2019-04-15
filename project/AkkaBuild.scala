@@ -98,7 +98,7 @@ object AkkaBuild {
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
       scalacOptions in Compile ++= (
-        if (JavaVersion.is1x)
+        if (JavaVersion.isJdk8)
           Seq("-target:jvm-1.8")
         else
           if (scalaBinaryVersion.value == "2.11")
@@ -222,7 +222,7 @@ object AkkaBuild {
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= {
-      if (JavaVersion.specificationVersion == "1.8") Seq("-Xdoclint:none")
+      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
     }
   )
