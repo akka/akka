@@ -33,7 +33,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-bench-jmh",
     "akka-bench-jmh-typed",
     "akka-multi-node-testkit",
-    "akka-osgi",
     "akka-persistence-tck",
     "akka-persistence-typed",
     "akka-persistence-query",
