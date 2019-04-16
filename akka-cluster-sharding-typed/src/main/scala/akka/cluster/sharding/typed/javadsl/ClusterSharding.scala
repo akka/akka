@@ -22,6 +22,7 @@ import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
 import akka.persistence.typed.PersistenceId
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 @FunctionalInterface
 trait EntityFactory[M] {
@@ -343,6 +344,7 @@ final class EntityContext[M](
   def getActorContext: ActorContext[M] = actorContext
 }
 
+@silent // for unused msgClass to make class type explicit in the Java API. Not using @unused as the user is likely to see it
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
 
@@ -350,7 +352,7 @@ object StartEntity {
    * Returns [[ShardingEnvelope]] which can be sent via Cluster Sharding in order to wake up the
    * specified (by `entityId`) Sharded Entity, ''without'' delivering a real message to it.
    */
-  def create[M](entityId: String): ShardingEnvelope[M] =
+  def create[M](msgClass: Class[M], entityId: String): ShardingEnvelope[M] =
     scaladsl.StartEntity[M](entityId)
 }
 

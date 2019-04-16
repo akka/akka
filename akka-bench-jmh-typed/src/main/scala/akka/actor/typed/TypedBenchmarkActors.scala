@@ -19,7 +19,7 @@ object TypedBenchmarkActors {
   // we pass the respondTo actor ref into the behavior
   final case object Message
 
-  private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receiveMessage { _ =>
+  private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receive { (_, _) =>
     respondTo ! Message
     Behaviors.same
   }

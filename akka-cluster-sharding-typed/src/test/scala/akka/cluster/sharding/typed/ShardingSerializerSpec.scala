@@ -33,7 +33,7 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike
 
     "must serialize and deserialize StartEntity" in {
       checkSerialization(scaladsl.StartEntity[Int]("abc"))
-      checkSerialization(javadsl.StartEntity.create("def"))
+      checkSerialization(javadsl.StartEntity.create(classOf[java.lang.Integer], "def"))
     }
   }
 }
