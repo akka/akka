@@ -31,7 +31,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-bench-jmh-typed",
     "akka-multi-node-testkit",
     "akka-persistence-tck",
-    "akka-persistence-typed",
     "akka-remote",
     "akka-stream-tests",
     "akka-stream-tests-tck",
