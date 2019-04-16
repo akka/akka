@@ -33,7 +33,7 @@ import scala.collection.immutable
  * nodes which aggressively come and go as the traffic in the service changes.
  */
 @InternalApi
-private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogging {
+private[cluster] class CrossDcHeartbeatSender extends Actor with ActorLogging {
   import CrossDcHeartbeatSender._
 
   val cluster = Cluster(context.system)
@@ -55,7 +55,12 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
 
   val crossDcFailureDetector = cluster.crossDcFailureDetector
 
-  def selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress, ???, ???)
+  var sequenceNr: Long = 0
+
+  def nextHeartBeat() = {
+    sequenceNr += 1
+    ClusterHeartbeatSender.Heartbeat(selfAddress, sequenceNr, System.nanoTime())
+  }
 
   var dataCentersState: CrossDcHeartbeatingState = CrossDcHeartbeatingState.init(
     selfDataCenter,
@@ -108,11 +113,11 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   }
 
   def active: Actor.Receive = {
-    case ClusterHeartbeatSender.HeartbeatTick                            => heartbeat()
-    case ClusterHeartbeatSender.HeartbeatRsp(from, sequenceNr, sendTime) => heartbeatRsp(from)
-    case MemberRemoved(m, _)                                             => removeMember(m)
-    case evt: MemberEvent                                                => addMember(evt.member)
-    case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from)             => triggerFirstHeartbeat(from)
+    case ClusterHeartbeatSender.HeartbeatTick                => heartbeat()
+    case ClusterHeartbeatSender.HeartbeatRsp(from, _, _)     => heartbeatRsp(from)
+    case MemberRemoved(m, _)                                 => removeMember(m)
+    case evt: MemberEvent                                    => addMember(evt.member)
+    case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from) => triggerFirstHeartbeat(from)
   }
 
   def introspecting: Actor.Receive = {
@@ -161,7 +166,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ClusterHeartbeatSender.ExpectedFirstHeartbeat(to))
       }
-      heartbeatReceiver(to.address) ! selfHeartbeat
+      heartbeatReceiver(to.address) ! nextHeartBeat()
     }
   }
 

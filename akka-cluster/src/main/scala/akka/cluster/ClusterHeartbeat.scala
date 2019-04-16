@@ -33,6 +33,7 @@ private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster)
 
   def receive: Receive = {
     case hb: Heartbeat =>
+      // TODO log the sequence nr once serialiser is enabled
       if (verboseHeartbeat) cluster.ClusterLogger.logDebug("Heartbeat from [{}]", hb.from)
       sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.sendTimeNanos)
   }
