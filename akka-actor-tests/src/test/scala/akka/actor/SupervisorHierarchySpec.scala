@@ -763,6 +763,8 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
       val workerProps = Props(new CountDownActor(countDown, SupervisorStrategy.defaultStrategy))
       val workerOne = Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration)
+      Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration) // workerTwo
+      Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration) // workerThree
 
       filterException[ActorKilledException] {
         workerOne ! Kill
