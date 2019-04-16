@@ -33,14 +33,14 @@ class EventSourcedSequenceNumberSpec
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup(ctx =>
       EventSourcedBehavior[String, String, String](pid, "", { (_, command) =>
-        probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)}  onCommand"
+        probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onCommand"
         Effect.persist(command).thenRun(_ => probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} thenRun")
       }, { (state, evt) =>
         probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} eventHandler"
         state + evt
       }).receiveSignal {
         case (_, RecoveryCompleted) =>
-          probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)}  onRecoveryComplete"
+          probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onRecoveryComplete"
       })
 
   "The sequence number" must {

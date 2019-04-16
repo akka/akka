@@ -39,7 +39,7 @@ class ColorTagger extends WriteEventAdapter {
   val colors = Set("green", "black", "blue")
   override def toJournal(event: Any): Any = event match {
     case s: String =>
-      var tags = colors.foldLeft(Set.empty[String])((acc, c) => if (s.contains(c)) acc + c else acc)
+      val tags = colors.foldLeft(Set.empty[String])((acc, c) => if (s.contains(c)) acc + c else acc)
       if (tags.isEmpty) event
       else Tagged(event, tags)
     case _ => event
@@ -115,7 +115,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
     "find events from offset (exclusive)" in {
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(2L))
-      val probe = greenSrc
+      greenSrc
         .runWith(TestSink.probe[Any])
         .request(10)
         // note that banana is not included, since exclusive offset
@@ -150,7 +150,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
     "find events from offset (exclusive)" in {
       val greenSrc = queries.eventsByTag(tag = "green", offset = Sequence(2L))
-      val probe = greenSrc
+      greenSrc
         .runWith(TestSink.probe[Any])
         .request(10)
         // note that banana is not included, since exclusive offset
