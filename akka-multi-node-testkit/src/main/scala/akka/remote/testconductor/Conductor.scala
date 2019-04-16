@@ -11,7 +11,7 @@ import akka.actor.{
   ActorRef,
   Address,
   DeadLetterSuppression,
-    Deploy,
+  Deploy,
   LoggingFSM,
   NoSerializationVerificationNeeded,
   OneForOneStrategy,
@@ -440,10 +440,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   override def supervisorStrategy = OneForOneStrategy() {
     case BarrierTimeout(data)             => failBarrier(data)
     case FailedBarrier(data)              => failBarrier(data)
-    case BarrierEmpty(_, _)          => SupervisorStrategy.Resume
+    case BarrierEmpty(_, _)               => SupervisorStrategy.Resume
     case WrongBarrier(name, client, data) => { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
-    case ClientLost(data, _)           => failBarrier(data)
-    case DuplicateNode(data, _)        => failBarrier(data)
+    case ClientLost(data, _)              => failBarrier(data)
+    case DuplicateNode(data, _)           => failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {

@@ -223,14 +223,14 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       channel.write(msg)
       val token = msg match {
         case EnterBarrier(barrier, _) => Some(barrier -> sender())
-        case GetAddress(node)               => Some(node.name -> sender())
-        case _                              => None
+        case GetAddress(node)         => Some(node.name -> sender())
+        case _                        => None
       }
       stay.using(d.copy(runningOp = token))
     case Event(ToServer(op), Data(_, Some((token, _)))) =>
       log.error("cannot write {} while waiting for {}", op, token)
       stay
-    case Event(op: ClientOp, d @ Data(Some(channel@_), runningOp)) =>
+    case Event(op: ClientOp, d @ Data(Some(channel @ _), runningOp)) =>
       op match {
         case BarrierResult(b, success) =>
           runningOp match {
