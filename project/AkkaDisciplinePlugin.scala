@@ -33,8 +33,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-persistence-tck",
     "akka-remote",
     "akka-stream-tests",
-    "akka-stream-tests-tck",
-    "akka-testkit")
+    "akka-stream-tests-tck")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
