@@ -42,19 +42,23 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes" in {
-      val source = Source.setup { (_, attr) ⇒
-        Source.single(attr.nameLifted)
-      }.named("my-name")
+      val source = Source
+        .setup { (_, attr) ⇒
+          Source.single(attr.nameLifted)
+        }
+        .named("my-name")
 
       source.runWith(Sink.head).futureValue shouldBe Some("my-name")
     }
 
     "propagate attributes when nested" in {
-      val source = Source.setup { (_, _) ⇒
-        Source.setup { (_, attr) ⇒
-          Source.single(attr.nameLifted)
+      val source = Source
+        .setup { (_, _) ⇒
+          Source.setup { (_, attr) ⇒
+            Source.single(attr.nameLifted)
+          }
         }
-      }.named("my-name")
+        .named("my-name")
 
       source.runWith(Sink.head).futureValue shouldBe Some("my-name")
     }
@@ -112,19 +116,23 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes" in {
-      val flow = Flow.setup { (_, attr) ⇒
-        Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
-      }.named("my-name")
+      val flow = Flow
+        .setup { (_, attr) ⇒
+          Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
+        }
+        .named("my-name")
 
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
     }
 
     "propagate attributes when nested" in {
-      val flow = Flow.setup { (_, _) ⇒
-        Flow.setup { (_, attr) ⇒
-          Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
+      val flow = Flow
+        .setup { (_, _) ⇒
+          Flow.setup { (_, attr) ⇒
+            Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
+          }
         }
-      }.named("my-name")
+        .named("my-name")
 
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
     }
@@ -180,19 +188,23 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes" in {
-      val sink = Sink.setup { (_, attr) ⇒
-        Sink.fold(attr.nameLifted)(Keep.left)
-      }.named("my-name")
+      val sink = Sink
+        .setup { (_, attr) ⇒
+          Sink.fold(attr.nameLifted)(Keep.left)
+        }
+        .named("my-name")
 
       Source.empty.runWith(sink).flatMap(identity).futureValue shouldBe Some("my-name")
     }
 
     "propagate attributes when nested" in {
-      val sink = Sink.setup { (_, _) ⇒
-        Sink.setup { (_, attr) ⇒
-          Sink.fold(attr.nameLifted)(Keep.left)
+      val sink = Sink
+        .setup { (_, _) ⇒
+          Sink.setup { (_, attr) ⇒
+            Sink.fold(attr.nameLifted)(Keep.left)
+          }
         }
-      }.named("my-name")
+        .named("my-name")
 
       Source.empty.runWith(sink).flatMap(identity).flatMap(identity).futureValue shouldBe Some("my-name")
     }
