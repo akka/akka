@@ -451,7 +451,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
     import testSettings._
     val receiverName = testName + "-rcv"
 
-    runPerfFlames(first, second)(delay = 5.seconds, time = 15.seconds)
+    runPerfFlames(first, second)(delay = 5.seconds)
 
     runOn(second) {
       val rep = reporter(testName)
