@@ -7,8 +7,6 @@ package akka.util
 import akka.testkit.AkkaSpec
 import akka.util.LineNumbers._
 
-import scala.util.Properties
-
 class LineNumberSpec extends AkkaSpec {
 
   "LineNumbers" when {
