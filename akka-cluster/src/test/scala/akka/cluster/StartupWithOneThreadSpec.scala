@@ -60,6 +60,7 @@ class StartupWithOneThreadSpec(startTime: Long) extends AkkaSpec(StartupWithOneT
       system.actorOf(testProps) ! "hello"
       system.actorOf(testProps) ! "hello"
 
+      Cluster(system)
       (System.nanoTime - startTime).nanos.toMillis should be <
       (system.settings.CreationTimeout.duration - 2.second).toMillis
 
