@@ -39,15 +39,6 @@ object MiMa extends AutoPlugin {
       val akka2519NewArtifacts = Seq("akka-discovery")
 
       scalaBinaryVersion match {
-        case "2.11" =>
-          if (akka2519NewArtifacts.contains(projectName))
-            akka25DiscoveryVersions
-          else if (akka250NewArtifacts.contains(projectName)) akka25Versions
-          else {
-            if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
-            else Seq.empty
-          } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
-
         case "2.12" =>
           if (akka2519NewArtifacts.contains(projectName))
             akka25DiscoveryVersions

@@ -9,7 +9,7 @@ exec scala "$0" "$@"
  * or if on non unixy os:
  *    scala authors.scala tag1 tag2
  *
- * requires scala 2.11.x+ and command line git on path
+ * requires scala 2.12.x+ and command line git on path
  */
 
 import scala.sys.process._
