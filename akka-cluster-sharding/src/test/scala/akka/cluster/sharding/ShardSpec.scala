@@ -34,7 +34,7 @@ object ShardSpec {
 
   class EntityActor extends Actor with ActorLogging {
     override def receive: Receive = {
-      case msg ⇒
+      case msg =>
         log.info("Msg {}", msg)
         sender() ! s"ack ${msg}"
     }
@@ -45,11 +45,11 @@ object ShardSpec {
   case class EntityEnvelope(entityId: Int, msg: Any)
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case EntityEnvelope(id, payload) ⇒ (id.toString, payload)
+    case EntityEnvelope(id, payload) => (id.toString, payload)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
+    case EntityEnvelope(id, _) => (id % numberOfShards).toString
   }
 
   case class BadLease(msg: String) extends RuntimeException(msg) with NoStackTrace
@@ -111,7 +111,7 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
       Shard.props(
         typeName,
         shardId,
-        _ ⇒ Props(new EntityActor()),
+        _ => Props(new EntityActor()),
         settings,
         extractEntityId,
         extractShardId,

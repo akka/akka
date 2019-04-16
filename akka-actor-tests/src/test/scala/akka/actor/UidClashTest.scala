@@ -40,9 +40,9 @@ object UidClashTest {
   class RestartedActor extends Actor {
 
     def receive = {
-      case PleaseRestart   => throw new Exception("restart")
-      case Terminated(ref) => throw new TerminatedForNonWatchedActor
-      // This is the tricky part to make this test a positive one (avoid expectNoMsg).
+      case PleaseRestart => throw new Exception("restart")
+      case Terminated(_) => throw new TerminatedForNonWatchedActor
+      // This is the tricky part to make this test a positive one (avoid expectNoMessage).
       // Since anything enqueued in postRestart will arrive before the Terminated
       // the bug triggers, there needs to be a bounce:
       // 1. Ping is sent from postRestart to self

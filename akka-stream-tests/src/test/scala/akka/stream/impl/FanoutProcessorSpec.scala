@@ -96,7 +96,7 @@ class FanoutProcessorSpec extends StreamSpec {
       val (promise, publisher) = Source.repeat(1).toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
       probe.watch(publisherRef)
-      Source.fromPublisher(publisher).map(_ ⇒ throw TE("boom")).runWith(Sink.ignore)
+      Source.fromPublisher(publisher).map(_ => throw TE("boom")).runWith(Sink.ignore)
       probe.expectTerminated(publisherRef)
     }
 

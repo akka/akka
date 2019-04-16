@@ -53,7 +53,7 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
 
   def identify(role: RoleName, actorName: String): ActorRef = {
     system.actorSelection(node(role) / "user" / actorName) ! Identify(0)
-    expectMsgType[ActorIdentity](5.seconds).getRef
+    expectMsgType[ActorIdentity](5.seconds).getActorRef.get
   }
 
   def ping(ref: ActorRef) = {

@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.ExtendedActorSystem
+import akka.util.unused
 
 /**
  * Use for tests only!
@@ -61,13 +62,13 @@ class DummyReadJournalProvider(dummyValue: String) extends ReadJournalProvider {
     new DummyReadJournalForJava(scaladslReadJournal)
 }
 
-class DummyReadJournalProvider2(sys: ExtendedActorSystem) extends DummyReadJournalProvider
+class DummyReadJournalProvider2(@unused sys: ExtendedActorSystem) extends DummyReadJournalProvider
 
-class DummyReadJournalProvider3(sys: ExtendedActorSystem, conf: Config) extends DummyReadJournalProvider
+class DummyReadJournalProvider3(@unused sys: ExtendedActorSystem, @unused conf: Config) extends DummyReadJournalProvider
 
-class DummyReadJournalProvider4(sys: ExtendedActorSystem, conf: Config, confPath: String)
+class DummyReadJournalProvider4(@unused sys: ExtendedActorSystem, @unused conf: Config, @unused confPath: String)
     extends DummyReadJournalProvider
 
-class DummyReadJournalProvider5(sys: ExtendedActorSystem) extends DummyReadJournalProvider
+class DummyReadJournalProvider5(@unused sys: ExtendedActorSystem) extends DummyReadJournalProvider
 
-class CustomDummyReadJournalProvider5(sys: ExtendedActorSystem) extends DummyReadJournalProvider("custom")
+class CustomDummyReadJournalProvider5(@unused sys: ExtendedActorSystem) extends DummyReadJournalProvider("custom")

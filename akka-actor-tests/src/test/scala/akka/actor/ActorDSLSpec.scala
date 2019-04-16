@@ -5,14 +5,16 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor.ActorDSL._
 import akka.event.Logging.Warning
+
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeoutException
+
 import akka.testkit.TimingTest
+import com.github.ghik.silencer.silent
 
 class ActorDSLDummy {
   //#import
@@ -22,6 +24,7 @@ class ActorDSLDummy {
   //#import
 }
 
+@silent
 class ActorDSLSpec extends AkkaSpec {
 
   val echo = system.actorOf(Props(new Actor {
@@ -88,13 +91,13 @@ class ActorDSLSpec extends AkkaSpec {
       system.eventStream.subscribe(testActor, classOf[Warning])
       try {
         for (_ <- 1 to 1000) i.receiver ! 0
-        expectNoMsg(1 second)
+        expectNoMessage(1 second)
         EventFilter.warning(start = "dropping message", occurrences = 1).intercept {
           i.receiver ! 42
         }
         expectMsgType[Warning]
         i.receiver ! 42
-        expectNoMsg(1 second)
+        expectNoMessage(1 second)
         val gotit = for (_ <- 1 to 1000) yield i.receive()
         gotit should ===((1 to 1000).map(_ => 0))
         intercept[TimeoutException] {
@@ -178,7 +181,7 @@ class ActorDSLSpec extends AkkaSpec {
         become {
           case "die" => throw new Exception
         }
-        whenFailing { case m @ (cause, msg) => testActor ! m }
+        whenFailing { case m @ (_, _) => testActor ! m }
         whenRestarted { cause =>
           testActor ! cause
         }
@@ -188,7 +191,7 @@ class ActorDSLSpec extends AkkaSpec {
       EventFilter[Exception](occurrences = 1).intercept {
         a ! "die"
       }
-      expectMsgPF() { case (x: Exception, Some("die")) => }
+      expectMsgPF() { case (_: Exception, Some("die")) => }
       expectMsgPF() { case _: Exception                => }
     }
 
@@ -217,7 +220,7 @@ class ActorDSLSpec extends AkkaSpec {
       EventFilter.warning("hi", occurrences = 1).intercept {
         a ! new Exception("hi")
       }
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
       EventFilter[Exception]("hello", occurrences = 1).intercept {
         a ! new Exception("hello")
       }
@@ -247,7 +250,7 @@ class ActorDSLSpec extends AkkaSpec {
         become {
           case 1 => stash()
           case 2 =>
-            testActor ! 2; unstashAll();
+            testActor ! 2; unstashAll()
             becomeStacked {
               case 1 => testActor ! 1; unbecome()
             }

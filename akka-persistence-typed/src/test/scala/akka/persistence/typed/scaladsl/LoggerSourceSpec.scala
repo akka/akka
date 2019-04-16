@@ -32,18 +32,18 @@ class LoggerSourceSpec
   private val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
 
-  def behavior: Behavior[String] = Behaviors.setup { ctx ⇒
+  def behavior: Behavior[String] = Behaviors.setup { ctx =>
     ctx.log.info("setting-up-behavior")
     EventSourcedBehavior[String, String, String](nextPid(), emptyState = "", commandHandler = (_, _) => {
       ctx.log.info("command-received")
       Effect.persist("evt")
-    }, eventHandler = (state, _) ⇒ {
+    }, eventHandler = (state, _) => {
       ctx.log.info("event-received")
       state
     }).receiveSignal {
-      case (_, RecoveryCompleted) ⇒ ctx.log.info("recovery-completed")
-      case (_, SnapshotCompleted(_)) ⇒
-      case (_, SnapshotFailed(_, _)) ⇒
+      case (_, RecoveryCompleted)    => ctx.log.info("recovery-completed")
+      case (_, SnapshotCompleted(_)) =>
+      case (_, SnapshotFailed(_, _)) =>
     }
   }
 
@@ -91,7 +91,7 @@ class LoggerSourceSpec
   def eventFilterFor(logMsg: String) =
     EventFilter.custom(
       {
-        case l: LogEvent if l.message == logMsg ⇒
+        case l: LogEvent if l.message == logMsg =>
           if (l.logClass == classOf[LoggerSourceSpec]) true
           else fail(s"Unexpected log source: ${l.logClass} for message ${l.message}")
         case _ => false

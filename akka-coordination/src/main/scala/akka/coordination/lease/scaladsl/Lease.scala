@@ -37,7 +37,7 @@ abstract class Lease(val settings: LeaseSettings) {
    * Implementations should not call leaseLostCallback until after the returned future
    * has been completed
    */
-  def acquire(leaseLostCallback: Option[Throwable] ⇒ Unit): Future[Boolean]
+  def acquire(leaseLostCallback: Option[Throwable] => Unit): Future[Boolean]
 
   /**
    * Release the lease so some other owner can acquire it.

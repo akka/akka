@@ -750,7 +750,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
             val singletonProps =
               BackoffOpts
-                .onFailure(
+                .onStop(
                   childProps = coordinatorProps,
                   childName = "coordinator",
                   minBackoff = coordinatorFailureBackoff,

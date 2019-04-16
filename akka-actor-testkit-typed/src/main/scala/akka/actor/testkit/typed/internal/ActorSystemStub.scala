@@ -24,16 +24,17 @@ import akka.util.Timeout
 import akka.{ actor => untyped }
 import akka.Done
 import com.typesafe.config.ConfigFactory
+
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
-
 import akka.actor.ActorRefProvider
 import akka.actor.typed.internal.InternalRecipientRef
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorSystemStub(val name: String)
+@silent @InternalApi private[akka] final class ActorSystemStub(val name: String)
     extends ActorSystem[Nothing]
     with ActorRef[Nothing]
     with ActorRefImpl[Nothing]

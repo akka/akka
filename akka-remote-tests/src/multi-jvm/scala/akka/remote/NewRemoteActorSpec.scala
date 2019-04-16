@@ -10,8 +10,10 @@ import language.postfixOps
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.util.unused
 import testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 
 class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
@@ -46,7 +48,7 @@ object NewRemoteActorSpec {
     }
   }
 
-  class SomeActorWithParam(ignored: String) extends Actor {
+  class SomeActorWithParam(@unused ignored: String) extends Actor {
     def receive = {
       case "identify" => sender() ! self
     }

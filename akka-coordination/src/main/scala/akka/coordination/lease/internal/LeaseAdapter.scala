@@ -26,7 +26,7 @@ final private[akka] class LeaseAdapter(delegate: ScalaLease)(implicit val ec: Ex
   override def acquire(): CompletionStage[java.lang.Boolean] = delegate.acquire().map(Boolean.box).toJava
 
   override def acquire(leaseLostCallback: Consumer[Optional[Throwable]]): CompletionStage[java.lang.Boolean] = {
-    delegate.acquire(o ⇒ leaseLostCallback.accept(o.asJava)).map(Boolean.box).toJava
+    delegate.acquire(o => leaseLostCallback.accept(o.asJava)).map(Boolean.box).toJava
   }
 
   override def release(): CompletionStage[java.lang.Boolean] = delegate.release().map(Boolean.box).toJava

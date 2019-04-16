@@ -64,7 +64,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
       runOn(first) {
         val secondAddress = node(second).address
 
-        val (uid, ref) = identifyWithUid(second, "subject", 5.seconds)
+        val (uid, _) = identifyWithUid(second, "subject", 5.seconds)
 
         enterBarrier("before-quarantined")
         RARP(system).provider.transport.quarantine(node(second).address, Some(uid), "test")
@@ -89,13 +89,13 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
         val firstAddress = node(first).address
         system.eventStream.subscribe(testActor, classOf[ThisActorSystemQuarantinedEvent])
 
-        val (firstUid, ref) = identifyWithUid(first, "subject", 5.seconds)
+        val (firstUid, _) = identifyWithUid(first, "subject", 5.seconds)
 
         enterBarrier("before-quarantined")
         enterBarrier("quarantined")
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) =>
+          case ThisActorSystemQuarantinedEvent(_, _) =>
         }
 
         // check that we quarantine back

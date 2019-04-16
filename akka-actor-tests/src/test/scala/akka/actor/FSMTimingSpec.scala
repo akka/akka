@@ -56,7 +56,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       // the timeout in state TestStateTimeout is 800 ms, then it will change to Initial
       within(400 millis) {
         fsm ! TestStateTimeoutOverride
-        expectNoMsg
+        expectNoMessage
       }
       within(1 second) {
         fsm ! Cancel
@@ -72,7 +72,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
           expectMsg(Tick)
           expectMsg(Transition(fsm, TestSingleTimer, Initial))
         }
-        expectNoMsg
+        expectNoMessage
       }
     }
 
@@ -86,7 +86,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
           expectMsg(Tock)
           expectMsg(Transition(fsm, TestSingleTimerResubmit, Initial))
         }
-        expectNoMsg
+        expectNoMessage
       }
     }
 

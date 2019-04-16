@@ -93,12 +93,12 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       import ChatRoom._
 
       val gabbler =
-        Behaviors.setup[SessionEvent] { context ⇒
+        Behaviors.setup[SessionEvent] { context =>
           Behaviors.receiveMessage[SessionEvent] {
             case SessionDenied(reason) =>
               context.log.info("cannot start chat room session: {}", reason)
               Behaviors.stopped
-            case SessionGranted(handle) ⇒
+            case SessionGranted(handle) =>
               handle ! PostMessage("Hello World!")
               Behaviors.same
             case MessagePosted(screenName, message) =>
@@ -117,7 +117,7 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
           Behaviors
             .receiveMessagePartial[String] {
-              case "go" ⇒
+              case "go" =>
                 chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
                 Behaviors.same
             }

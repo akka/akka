@@ -15,7 +15,7 @@ class DispatcherActorsSpec extends AkkaSpec {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
 
     def receive = {
-      case x: Int => {
+      case _: Int => {
         Thread.sleep(50) // slow actor
         finishedCounter.countDown()
       }
@@ -24,7 +24,7 @@ class DispatcherActorsSpec extends AkkaSpec {
 
   class FastActor(finishedCounter: CountDownLatch) extends Actor {
     def receive = {
-      case x: Int => {
+      case _: Int => {
         finishedCounter.countDown()
       }
     }
@@ -48,9 +48,9 @@ class DispatcherActorsSpec extends AkkaSpec {
       }
 
       // now assert that f is finished while s is still busy
-      fFinished.await
+      fFinished.await()
       assert(sFinished.getCount > 0)
-      sFinished.await
+      sFinished.await()
       assert(sFinished.getCount === 0L)
       system.stop(f)
       system.stop(s)
