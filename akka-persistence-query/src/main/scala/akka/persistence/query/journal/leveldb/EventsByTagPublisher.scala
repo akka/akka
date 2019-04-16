@@ -15,6 +15,7 @@ import akka.persistence.journal.leveldb.LeveldbJournal
 import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayTaggedMessages
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -44,7 +45,7 @@ private[akka] object EventsByTagPublisher {
 /**
  * INTERNAL API
  */
-// FIXME needs a be rewritten as a GraphStage
+@silent // FIXME Re-write as part of https://github.com/akka/akka/issues/26187
 private[akka] abstract class AbstractEventsByTagPublisher(
     val tag: String,
     val fromOffset: Long,
