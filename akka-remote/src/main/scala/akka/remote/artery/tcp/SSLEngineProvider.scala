@@ -35,7 +35,9 @@ import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-@ApiMayChange trait SSLEngineProvider {
+@ApiMayChange
+@ccompatUsedUntil213
+trait SSLEngineProvider {
 
   def createServerSSLEngine(hostname: String, port: Int): SSLEngine
 

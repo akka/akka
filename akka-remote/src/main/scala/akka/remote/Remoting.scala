@@ -16,6 +16,7 @@ import akka.remote.transport._
 import com.typesafe.config.Config
 import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
+
 import scala.collection.immutable.{ HashMap, Seq }
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -23,12 +24,15 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
+
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
+
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -127,6 +131,7 @@ private[remote] object Remoting {
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider) {
 
@@ -768,6 +773,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ShutdownAndFlush =>
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
+      @silent
       def shutdownAll[T](resources: IterableOnce[T])(shutdown: T => Future[Boolean]): Future[Boolean] = {
         Future.sequence(resources.toList.map(shutdown)).map(_.forall(identity)).recover {
           case NonFatal(_) => false

@@ -41,6 +41,7 @@ private[akka] class SSLSettings(config: Config) {
  * Used for adding SSL support to Netty pipeline.
  * The `SSLEngine` is created via the configured [[SSLEngineProvider]].
  */
+@ccompatUsedUntil213
 private[akka] object NettySSLSupport {
 
   /**

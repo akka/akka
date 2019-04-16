@@ -28,6 +28,7 @@ import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.remote.artery.tcp.ArteryTcpTransport
 import akka.serialization.Serialization
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -603,6 +604,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
+  @silent
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {

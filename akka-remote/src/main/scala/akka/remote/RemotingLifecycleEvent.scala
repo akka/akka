@@ -11,11 +11,13 @@ import com.github.ghik.silencer.silent
 
 import scala.runtime.AbstractFunction2
 
+@silent
 @SerialVersionUID(1L)
 sealed trait RemotingLifecycleEvent extends Serializable {
   def logLevel: Logging.LogLevel
 }
 
+@silent
 @SerialVersionUID(1L)
 sealed trait AssociationEvent extends RemotingLifecycleEvent {
   def localAddress: Address
