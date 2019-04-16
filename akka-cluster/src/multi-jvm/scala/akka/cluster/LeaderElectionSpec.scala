@@ -67,7 +67,6 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
       myself match {
 
         case `controller` =>
-          val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n)
           testConductor.exit(leader, 0).await
           enterBarrier("after-shutdown" + n, "after-unavailable" + n, "after-down" + n, "completed" + n)

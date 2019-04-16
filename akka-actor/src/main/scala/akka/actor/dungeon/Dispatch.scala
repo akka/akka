@@ -11,6 +11,7 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
 
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -28,6 +29,10 @@ final case class SerializationCheckFailedException private (msg: Object, cause: 
       "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message",
       cause)
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
   @silent @volatile private var _mailboxDoNotCallMeDirectly
