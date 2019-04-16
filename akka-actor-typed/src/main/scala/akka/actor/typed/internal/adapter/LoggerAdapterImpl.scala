@@ -347,8 +347,8 @@ private[akka] abstract class AbstractLogger extends Logger {
    * there are more than four arguments.
    */
   private def format(t: String, arg1: Any): String = arg1 match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => formatArray(t, a: _*)
-    case a: Array[_]                                             => formatArray(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => formatArrayImpl(t, a.toSeq)
+    case a: Array[_]                                             => formatArrayImpl(t, a.map(_.asInstanceOf[AnyRef]).toSeq)
     case x                                                       => formatArray(t, x)
   }
   private def format(t: String, arg1: Any, arg2: Any): String = formatArray(t, arg1, arg2)
@@ -356,7 +356,10 @@ private[akka] abstract class AbstractLogger extends Logger {
   private def format(t: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): String =
     formatArray(t, arg1, arg2, arg3, arg4)
 
-  private def formatArray(t: String, arg: Any*): String = {
+  private def formatArray(t: String, arg: Any*): String =
+    formatArrayImpl(t, arg)
+
+  private def formatArrayImpl(t: String, arg: Seq[Any]): String = {
     val sb = new java.lang.StringBuilder(64)
     var p = 0
     var startIndex = 0

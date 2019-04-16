@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.routing.GroupRouterBuilder
 import akka.actor.typed.internal.routing.PoolRouterBuilder
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.PoolRouter
 import akka.annotation.DoNotInherit
 
 object Routers {
