@@ -22,7 +22,7 @@ private[remote] final case class DecompressionTable[T](originUid: Long, version:
   }
 
   def invert: CompressionTable[T] =
-    CompressionTable(originUid, version, Map(table.zipWithIndex: _*))
+    CompressionTable(originUid, version, table.zipWithIndex.toMap)
 
   /** Writes complete table as String (heavy operation) */
   override def toString =

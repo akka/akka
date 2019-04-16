@@ -86,7 +86,7 @@ class FlightRecorderSpec extends AkkaSpec {
       checkLogRotated(reader.structure.hiFreqLog, List(Live, Snapshot, Snapshot, Snapshot))
     }
 
-    "properly report zero low frequency events" in withFlightRecorder { (recorder, reader, channel) =>
+    "properly report zero low frequency events" in withFlightRecorder { (_, reader, channel) =>
       channel.force(false)
       reader.rereadStructure()
 
@@ -95,7 +95,7 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.isEmpty should be(true)
     }
 
-    "properly report zero high frequency events" in withFlightRecorder { (recorder, reader, channel) =>
+    "properly report zero high frequency events" in withFlightRecorder { (_, reader, channel) =>
       channel.force(false)
       reader.rereadStructure()
 
@@ -233,7 +233,7 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.sortBy(_.code) should ===(entries.sortBy(_.timeStamp))
     }
 
-    "properly store low frequency events after snapshot" in withFlightRecorder { (recorder, reader, channel) =>
+    "properly store low frequency events after snapshot" in withFlightRecorder { (recorder, reader, _) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
       val hello2Bytes = "Hello2".getBytes("US-ASCII")
@@ -306,7 +306,7 @@ class FlightRecorderSpec extends AkkaSpec {
       liveEntries.sortBy(_.code) should ===(liveEntries.sortBy(_.timeStamp))
     }
 
-    "properly store alerts and make a snapshot" in withFlightRecorder { (recorder, reader, channel) =>
+    "properly store alerts and make a snapshot" in withFlightRecorder { (recorder, reader, _) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
       val alertBytes = "An alert".getBytes("US-ASCII")

@@ -94,7 +94,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   "ThrottlerTransportAdapter" must {
     "maintain average message rate" taggedAs TimingTest in {
       throttle(Direction.Send, TokenBucket(200, 500, 0, 0)) should ===(true)
-      val tester = system.actorOf(Props(classOf[ThrottlingTester], here, self)) ! "start"
+      system.actorOf(Props(classOf[ThrottlingTester], here, self)) ! "start"
 
       val time = NANOSECONDS.toSeconds(expectMsgType[Long]((TotalTime + 3).seconds))
       log.warning("Total time of transmission: " + time)
@@ -112,9 +112,9 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
       throttle(Direction.Both, Blackhole) should ===(true)
 
       here ! Lost("Blackhole 2")
-      expectNoMsg(1.seconds)
+      expectNoMessage(1.seconds)
       disassociate() should ===(true)
-      expectNoMsg(1.seconds)
+      expectNoMessage(1.seconds)
 
       throttle(Direction.Both, Unthrottled) should ===(true)
 
@@ -142,7 +142,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   override def beforeTermination(): Unit = {
     system.eventStream.publish(
       TestEvent.Mute(
-        EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+        EventFilter.warning(source = s"akka://AkkaProtocolStressTest/user/$$a", start = "received dead letter"),
         EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     systemB.eventStream.publish(
       TestEvent.Mute(

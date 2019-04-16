@@ -100,7 +100,7 @@ private[remote] final class SendQueue[T](postStopAction: Vector[T] => Unit)
       }
 
       override def postStop(): Unit = {
-        var pending = Vector.newBuilder[T]
+        val pending = Vector.newBuilder[T]
         if (consumerQueue ne null) {
           var msg = consumerQueue.poll()
           while (msg != null) {

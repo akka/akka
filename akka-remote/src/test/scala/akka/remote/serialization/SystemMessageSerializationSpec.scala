@@ -17,7 +17,7 @@ object SystemMessageSerializationSpec {
 
   val testConfig = ConfigFactory.parseString(serializationTestOverrides).withFallback(AkkaSpec.testConf)
 
-  class TestException(msg: String) extends RuntimeException {
+  class TestException(msg: String) extends RuntimeException(msg) {
     override def equals(other: Any): Boolean = other match {
       case e: TestException => e.getMessage == getMessage
       case _                => false

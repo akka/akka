@@ -16,7 +16,6 @@ import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
@@ -40,15 +39,15 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.MergeHub
 import akka.stream.scaladsl.Source
-import akka.util.{ Unsafe, WildcardIndex }
-import akka.util.OptionVal
+import akka.util.{ OptionVal, Unsafe, WildcardIndex }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.SharedKillSwitch
-import scala.util.control.NoStackTrace
 
+import scala.util.control.NoStackTrace
 import akka.actor.Cancellable
 import akka.stream.StreamTcpException
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -119,6 +118,7 @@ private[remote] object Association {
  * Thread-safe, mutable holder for association state. Main entry point for remote destined message to a specific
  * remote address.
  */
+@ccompatUsedUntil213
 private[remote] class Association(
     val transport: ArteryTransport,
     val materializer: Materializer,
@@ -237,6 +237,7 @@ private[remote] class Association(
    * Holds reference to shared state of Association - *access only via helper methods*
    */
   @volatile
+  @silent
   private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
@@ -326,6 +327,7 @@ private[remote] class Association(
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
     // volatile read to see latest queue array
+    @silent
     val unused = queuesVisibility
 
     def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
@@ -721,6 +723,7 @@ private[remote] class Association(
   }
 
   private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
+    @silent
     val unused = queuesVisibility // volatile read to see latest queues array
     queues(queueIndex) match {
       case existing: QueueWrapper => existing

@@ -26,6 +26,7 @@ import akka.util.ccompat._
  * will be created for each encoder and decoder. It's only called from the operator, so if it doesn't
  * delegate to any shared instance it doesn't have to be thread-safe.
  */
+@ccompatUsedUntil213
 abstract class RemoteInstrument {
 
   /**

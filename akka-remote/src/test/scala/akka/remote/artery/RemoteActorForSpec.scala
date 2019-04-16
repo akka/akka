@@ -10,6 +10,7 @@ import akka.remote.RemoteActorRef
 import akka.remote.RemotingSpec.ActorForReq
 import akka.testkit.{ EventFilter, _ }
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 
@@ -17,6 +18,7 @@ object RemoteActorForSpec {
   final case class ActorForReq(s: String) extends JavaSerializable
 }
 
+@silent
 class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with ImplicitSender with DefaultTimeout {
 
   val remoteSystem = newRemoteSystem()
@@ -94,7 +96,7 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
       // msg to old ActorRef (different uid) should not get through
       child2.path.uid should not be (child.path.uid)
       child ! 46
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       system.actorFor(system / "looker1" / "child") ! 47
       expectMsg(47)
     }

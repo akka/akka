@@ -9,10 +9,11 @@ import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
+
 import scala.collection.mutable
 import scala.concurrent.duration._
-
 import akka.remote.artery.ArteryTransport
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -106,7 +107,12 @@ private[akka] class RemoteWatcher(
 
   val (heartBeatMsg, selfHeartbeatRspMsg) =
     if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
-    else (Heartbeat, HeartbeatRsp(AddressUidExtension(context.system).addressUid))
+    else {
+      // For classic remoting the 'int' part is sufficient
+      @silent
+      val addressUid = AddressUidExtension(context.system).addressUid
+      (Heartbeat, HeartbeatRsp(addressUid))
+    }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()

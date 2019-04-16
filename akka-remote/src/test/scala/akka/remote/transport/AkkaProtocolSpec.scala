@@ -205,8 +205,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, cookie = None)
 
       awaitCond(registry.logSnapshot.exists {
-        case DisassociateAttempt(requester, remote) => true
-        case _                                      => false
+        case DisassociateAttempt(_, _) => true
+        case _                         => false
       })
     }
 
@@ -264,8 +264,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, Some("xyzzy"))
 
       awaitCond(registry.logSnapshot.exists {
-        case DisassociateAttempt(requester, remote) => true
-        case _                                      => false
+        case DisassociateAttempt(_, _) => true
+        case _                         => false
       })
     }
 
@@ -472,7 +472,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
     }
 
     "give up outbound after connection timeout" in {
-      val (failureDetector, registry, transport, handle) = collaborators
+      val (failureDetector, _, transport, handle) = collaborators
       handle.writable = false // nothing will be written
       transport.associateBehavior.pushConstant(handle)
 
@@ -499,7 +499,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
     }
 
     "give up inbound after connection timeout" in {
-      val (failureDetector, registry, _, handle) = collaborators
+      val (failureDetector, _, _, handle) = collaborators
 
       val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
 

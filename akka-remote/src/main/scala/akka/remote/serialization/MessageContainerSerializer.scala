@@ -16,6 +16,7 @@ import akka.remote.ContainerFormats
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   private lazy val serialization = SerializationExtension(system)
