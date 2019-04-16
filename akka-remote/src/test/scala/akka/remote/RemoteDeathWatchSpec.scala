@@ -8,9 +8,11 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
+
 import scala.concurrent.duration._
 import akka.testkit.SocketUtil
 import akka.event.Logging.Warning
+import com.github.ghik.silencer.silent
 
 class RemoteDeathWatchSpec
     extends AkkaSpec(ConfigFactory.parseString("""
@@ -68,17 +70,19 @@ akka {
 
     expectMsg(20.seconds, ref)
     // we don't expect real quarantine when the UID is unknown, i.e. QuarantinedEvent is not published
-    probe.expectNoMsg(3.seconds)
+    probe.expectNoMessage(3.seconds)
     // The following verifies ticket #3870, i.e. make sure that re-delivery of Watch message is stopped.
     // It was observed as periodic logging of "address is now gated" when the gate was lifted.
     system.eventStream.subscribe(probe.ref, classOf[Warning])
-    probe.expectNoMsg(rarp.remoteSettings.RetryGateClosedFor * 2)
+    probe.expectNoMessage(rarp.remoteSettings.RetryGateClosedFor * 2)
   }
 
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address(protocol, system.name, "unknownhost", 2552)) / "user" / "subject"
     system.actorOf(Props(new Actor {
-      context.watch(context.actorFor(path))
+      @silent
+      val watchee = context.actorFor(path)
+      context.watch(watchee)
       def receive = {
         case t: Terminated => testActor ! t.actor.path
       }
@@ -110,9 +114,9 @@ akka {
     probe.watch(extinctRef)
     probe.unwatch(extinctRef)
 
-    probe.expectNoMsg(5.seconds)
+    probe.expectNoMessage(5.seconds)
     system.eventStream.subscribe(probe.ref, classOf[Warning])
-    probe.expectNoMsg(RARP(system).provider.remoteSettings.RetryGateClosedFor * 2)
+    probe.expectNoMessage(RARP(system).provider.remoteSettings.RetryGateClosedFor * 2)
   }
 
 }

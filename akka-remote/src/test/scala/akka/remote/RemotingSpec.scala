@@ -21,6 +21,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.testkit.SocketUtil.temporaryServerAddress
+import com.github.ghik.silencer.silent
 
 object RemotingSpec {
 
@@ -31,11 +32,15 @@ object RemotingSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case (p: Props, n: String) => sender() ! context.actorOf(Props[Echo1], n)
+      case (_: Props, n: String) => sender() ! context.actorOf(Props[Echo1], n)
       case ex: Exception         => throw ex
-      case ActorForReq(s)        => sender() ! context.actorFor(s)
-      case ActorSelReq(s)        => sender() ! context.actorSelection(s)
-      case x                     => target = sender(); sender() ! x
+      case ActorForReq(s) => {
+        @silent
+        val actor = context.actorFor(s)
+        sender() ! actor
+      }
+      case ActorSelReq(s) => sender() ! context.actorSelection(s)
+      case x              => target = sender(); sender() ! x
     }
 
     override def preStart(): Unit = {}
@@ -129,6 +134,7 @@ object RemotingSpec {
   }
 }
 
+@silent
 class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with DefaultTimeout {
 
   import RemotingSpec._
@@ -175,7 +181,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     try {
       bigBounceHere ! msg
       afterSend
-      expectNoMsg(500.millis.dilated)
+      expectNoMessage(500.millis.dilated)
     } finally {
       system.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
       system.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])
@@ -217,7 +223,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
-        case ("pong", s: akka.pattern.PromiseActorRef) => // good
+        case ("pong", _: akka.pattern.PromiseActorRef) => // good
         case m                                         => fail(m + " was not (pong, AskActorRef)")
       }
     }
@@ -298,7 +304,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       echo ! PoisonPill
       expectMsg("postStop")
       echo ! 72
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       val echo2 = remoteSystem.actorOf(Props[Echo1], "otherEcho1")
       echo2 ! 73
@@ -306,7 +312,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // msg to old ActorRef (different uid) should not get through
       echo2.path.uid should not be (echo.path.uid)
       echo ! 74
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       remoteSystem.actorFor("/user/otherEcho1") ! 75
       expectMsg(75)
@@ -325,7 +331,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val l = system.actorOf(Props(new Actor {
         def receive = {
           case (p: Props, n: String) => sender() ! context.actorOf(p, n)
-          case ActorForReq(s)        => sender() ! context.actorFor(s)
+          case ActorForReq(s) => {
+            sender() ! context.actorFor(s)
+          }
         }
       }), "looker1")
       // child is configured to be deployed on remote-sys (remoteSystem)
@@ -361,7 +369,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // msg to old ActorRef (different uid) should not get through
       child2.path.uid should not be (child.path.uid)
       child ! 46
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       system.actorFor(system / "looker1" / "child") ! 47
       expectMsg(47)
     }
@@ -455,7 +463,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // msg to old ActorRef (different uid) should not get through
       child2.path.uid should not be (child.path.uid)
       child ! 56
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       system.actorSelection(system / "looker2" / "child") ! 57
       expectMsg(57)
     }
@@ -518,7 +526,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       object Unserializable
       EventFilter[NotSerializableException](pattern = ".*No configured serialization.*", occurrences = 1).intercept {
         verifySend(Unserializable) {
-          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+          expectNoMessage(1.second) // No AssocitionErrorEvent should be published
         }
       }
     }
@@ -536,7 +544,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload sent.*", occurrences = 1)
         .intercept {
           verifySend(oversized) {
-            expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
     }
@@ -546,7 +554,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1)
         .intercept {
           verifySend(maxPayloadBytes + 1) {
-            expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
     }
@@ -638,7 +646,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val otherSelection =
           thisSystem.actorSelection(ActorPath.fromString(remoteAddress.toString + "/user/noonethere"))
         otherSelection.tell("ping", probe.ref)
-        probe.expectNoMsg(1.second)
+        probe.expectNoMessage(1.second)
 
         terminatedListener.lastMsg should be(null)
 
@@ -678,9 +686,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
               remoteTransportProbe.ref ! ev
           }))
 
-        val outboundHandle =
-          new TestAssociationHandle(rawLocalAddress, rawRemoteAddress, remoteTransport, inbound = false)
-
         // Hijack associations through the test transport
         awaitCond(registry.transportsReady(rawLocalAddress, rawRemoteAddress))
         val testTransport = registry.transportFor(rawLocalAddress).get._1
@@ -719,7 +724,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         inboundHandle.write(brokenPacket)
 
         // No disassociation now, the connection is still stashed
-        inboundHandleProbe.expectNoMsg(1.second)
+        inboundHandleProbe.expectNoMessage(1.second)
 
         // Finish the handshake for the outbound connection. This will unstash the inbound pending connection.
         remoteHandle.association.write(handshakePacket)
@@ -763,9 +768,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
               remoteTransportProbe.ref ! ev
           }))
 
-        val outboundHandle =
-          new TestAssociationHandle(rawLocalAddress, rawRemoteAddress, remoteTransport, inbound = false)
-
         // Hijack associations through the test transport
         awaitCond(registry.transportsReady(rawLocalAddress, rawRemoteAddress))
         val testTransport = registry.transportFor(rawLocalAddress).get._1
@@ -800,11 +802,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         inboundHandle.write(handshakePacket)
 
         // No disassociation now, the connection is still stashed
-        inboundHandleProbe.expectNoMsg(1.second)
+        inboundHandleProbe.expectNoMessage(1.second)
 
         // Quarantine unrelated connection
         RARP(thisSystem).provider.quarantine(remoteAddress, Some(-1), "test")
-        inboundHandleProbe.expectNoMsg(1.second)
+        inboundHandleProbe.expectNoMessage(1.second)
 
         // Quarantine the connection
         RARP(thisSystem).provider.quarantine(remoteAddress, Some(remoteUID.toLong), "test")
@@ -834,11 +836,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val otherSelection =
           thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
         otherSelection.tell("ping", probeSender)
-        probe.expectNoMsg(1.seconds)
+        probe.expectNoMessage(1.seconds)
         val otherSystem = ActorSystem("other-system", otherConfig)
         try {
           muteSystem(otherSystem)
-          probe.expectNoMsg(2.seconds)
+          probe.expectNoMessage(2.seconds)
           otherSystem.actorOf(Props[Echo2], "echo")
           within(5.seconds) {
             awaitAssert {
@@ -873,11 +875,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val otherSelection =
           thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
         otherSelection.tell("ping", thisSender)
-        thisProbe.expectNoMsg(1.seconds)
+        thisProbe.expectNoMessage(1.seconds)
         val otherSystem = ActorSystem("other-system", otherConfig)
         try {
           muteSystem(otherSystem)
-          thisProbe.expectNoMsg(2.seconds)
+          thisProbe.expectNoMessage(2.seconds)
           val otherProbe = new TestProbe(otherSystem)
           val otherSender = otherProbe.ref
           val thisSelection =

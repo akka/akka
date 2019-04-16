@@ -34,7 +34,7 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
         system.actorSelection(rootActorPath(sys) / "user" / "echo")
       }
 
-      val echo = system.actorOf(TestActors.echoActorProps, name = "echo")
+      system.actorOf(TestActors.echoActorProps, name = "echo")
 
       val localSelection = system.actorSelection(rootActorPath(system) / "user" / "echo")
       val n = 100

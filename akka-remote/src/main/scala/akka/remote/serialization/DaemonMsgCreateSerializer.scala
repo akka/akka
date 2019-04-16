@@ -27,6 +27,7 @@ import util.{ Failure, Success }
  *
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef

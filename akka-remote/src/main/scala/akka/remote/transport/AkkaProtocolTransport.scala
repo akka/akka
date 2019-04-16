@@ -27,6 +27,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.{ LogMarker, Logging }
+import com.github.ghik.silencer.silent
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -148,13 +149,15 @@ private[transport] class AkkaProtocolManager(
       val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
       val failureDetector = createTransportFailureDetector()
+
+      // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
+      @silent
+      val addressUid = AddressUidExtension(context.system).addressUid
+
       context.actorOf(
         RARP(context.system).configureDispatcher(
           ProtocolStateActor.inboundProps(
-            HandshakeInfo(
-              stateActorLocalAddress,
-              AddressUidExtension(context.system).addressUid,
-              stateActorSettings.SecureCookie),
+            HandshakeInfo(stateActorLocalAddress, addressUid, stateActorSettings.SecureCookie),
             handle,
             stateActorAssociationHandler,
             stateActorSettings,
@@ -178,13 +181,15 @@ private[transport] class AkkaProtocolManager(
     val stateActorSettings = settings
     val stateActorWrappedTransport = wrappedTransport
     val failureDetector = createTransportFailureDetector()
+
+    // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
+    @silent
+    val addressUid = AddressUidExtension(context.system).addressUid
+
     context.actorOf(
       RARP(context.system).configureDispatcher(
         ProtocolStateActor.outboundProps(
-          HandshakeInfo(
-            stateActorLocalAddress,
-            AddressUidExtension(context.system).addressUid,
-            stateActorSettings.SecureCookie),
+          HandshakeInfo(stateActorLocalAddress, addressUid, stateActorSettings.SecureCookie),
           remoteAddress,
           statusPromise,
           stateActorWrappedTransport,

@@ -62,6 +62,7 @@ private[remote] object ArteryTcpTransport {
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[remote] class ArteryTcpTransport(
     _system: ExtendedActorSystem,
     _provider: RemoteActorRefProvider,

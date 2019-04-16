@@ -138,9 +138,10 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
 
   ("-") must {
     if (cipherConfig.runTest && preCondition) {
-      val ignoreMe = other.actorOf(Props(new Actor {
+      other.actorOf(Props(new Actor {
         def receive = { case ("ping", x) => sender() ! ((("pong", x), sender())) }
       }), "echo")
+
       val otherAddress =
         other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
@@ -149,10 +150,12 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
         val bytes = Array.ofDim[Byte](16)
         // awaitAssert just in case we are very unlucky to get same sequence more than once
         awaitAssert {
-          val randomBytes = (1 to 10).map { n =>
-            rng.nextBytes(bytes)
-            bytes.toVector
-          }.toSet
+          val randomBytes = List
+            .fill(10) {
+              rng.nextBytes(bytes)
+              bytes.toVector
+            }
+            .toSet
           randomBytes.size should ===(10)
         }
       }
@@ -183,7 +186,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
         }
 
         for (i <- 1 to 1000) here ! (("ping", i))
-        for (i <- 1 to 1000) expectMsgPF() { case (("pong", i), `testActor`) => true }
+        for (i <- 1 to 1000) expectMsgPF() { case (("pong", `i`), `testActor`) => true }
       }
 
       "support ask" in within(timeout.duration) {

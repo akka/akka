@@ -20,7 +20,6 @@ import scala.concurrent.blocking
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -39,6 +38,7 @@ import akka.util.Helpers.Requiring
 import akka.util.OptionVal
 import akka.ConfigurationException
 import akka.OnlyCauseStackTrace
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import org.jboss.netty.bootstrap.Bootstrap
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -181,6 +181,7 @@ class NettyTransportSettings(config: Config) {
   val PortSelector: Int = getInt("port")
 
   @deprecated("WARNING: This should only be used by professionals.", "2.4")
+  @silent
   val BindPortSelector: Int = getString("bind-port") match {
     case ""    => PortSelector
     case value => value.toInt
@@ -465,6 +466,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
       if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = false))
+      @silent
       val handler =
         if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
         else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future, log)
@@ -478,6 +480,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       override def getPipeline: ChannelPipeline = {
         val pipeline = newPipeline
         if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
+        @silent
         val handler =
           if (isDatagram) new UdpClientHandler(NettyTransport.this, remoteAddress)
           else new TcpClientHandler(NettyTransport.this, remoteAddress, log)
@@ -530,8 +533,11 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
+    @silent
+    val bindPort = settings.BindPortSelector
+
     for {
-      address <- addressToSocketAddress(Address("", "", settings.BindHostname, settings.BindPortSelector))
+      address <- addressToSocketAddress(Address("", "", settings.BindHostname, bindPort))
     } yield {
       try {
         val newServerChannel = inboundBootstrap match {
@@ -545,12 +551,15 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
+        @silent
+        val port = if (settings.PortSelector == 0) None else Some(settings.PortSelector)
+
         addressFromSocketAddress(
           newServerChannel.getLocalAddress,
           schemeIdentifier,
           system.name,
           Some(settings.Hostname),
-          if (settings.PortSelector == 0) None else Some(settings.PortSelector)) match {
+          port) match {
           case Some(address) =>
             addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, None, None) match {
               case Some(address) => boundTo = address
