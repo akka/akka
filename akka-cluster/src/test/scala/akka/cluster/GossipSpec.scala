@@ -491,7 +491,6 @@ class GossipSpec extends WordSpec with Matchers {
       val g = Gossip(members = SortedSet(dc1a1, joining))
 
       g.member(joining.uniqueAddress).status should ===(Joining)
-      val oldMembers = g.members
 
       val updated = g.update(SortedSet(joining.copy(status = Up)))
 

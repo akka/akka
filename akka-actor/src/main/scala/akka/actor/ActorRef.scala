@@ -6,10 +6,11 @@ package akka.actor
 
 import java.util.concurrent.ConcurrentHashMap
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -138,7 +139,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * The contract is that if this method returns true, then it will never be false again.
    * But you cannot rely on that it is alive if it returns false, since this by nature is a racy method.
    */
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+  @InternalApi
   private[akka] def isTerminated: Boolean
 
   final override def hashCode: Int = {
@@ -337,6 +338,7 @@ private[akka] class LocalActorRef private[akka] (
    * If this method returns true, it will never return false again, but if it
    * returns false, you cannot be sure if it's alive still (race condition)
    */
+  @InternalApi
   override private[akka] def isTerminated: Boolean = actorCell.isTerminated
 
   /**

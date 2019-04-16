@@ -143,9 +143,9 @@ abstract class NodeChurnSpec
         enterBarrier("end-round-" + n)
         log.info("end of round-" + n)
         // log listener will send to testActor if payload size exceed configured log-frame-size-exceeding
-        expectNoMsg(2.seconds)
+        expectNoMessage(2.seconds)
       }
-      expectNoMsg(5.seconds)
+      expectNoMessage(5.seconds)
     }
 
   }

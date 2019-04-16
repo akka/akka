@@ -93,6 +93,7 @@ object JoinConfigCompatChecker {
    * information that users may have added to their configuration.
    */
   @InternalApi
+  @ccompatUsedUntil213
   private[cluster] def filterWithKeys(requiredKeys: im.Seq[String], config: Config): Config = {
 
     val filtered =

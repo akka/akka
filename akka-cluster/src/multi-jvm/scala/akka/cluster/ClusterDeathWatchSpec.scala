@@ -14,8 +14,10 @@ import akka.testkit.TestEvent._
 import akka.actor._
 import akka.remote.RemoteActorRef
 import java.util.concurrent.TimeoutException
+
 import akka.remote.RemoteWatcher
 import akka.cluster.MultiNodeClusterSpec.EndActor
+import org.scalatest.concurrent.ScalaFutures
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -43,7 +45,8 @@ class ClusterDeathWatchMultiJvmNode5 extends ClusterDeathWatchSpec
 abstract class ClusterDeathWatchSpec
     extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
     with MultiNodeClusterSpec
-    with ImplicitSender {
+    with ImplicitSender
+    with ScalaFutures {
 
   import ClusterDeathWatchMultiJvmSpec._
 
@@ -136,23 +139,6 @@ abstract class ClusterDeathWatchSpec
 
       enterBarrier("after-1")
 
-    }
-
-    "receive Terminated when watched path doesn't exist" ignore {
-      Thread.sleep(5000)
-      runOn(first) {
-        val path = RootActorPath(second) / "user" / "non-existing"
-        system.actorOf(Props(new Actor {
-          context.watch(context.actorFor(path))
-          def receive = {
-            case t: Terminated => testActor ! t.actor.path
-          }
-        }).withDeploy(Deploy.local), name = "observer3")
-
-        expectMsg(path)
-      }
-
-      enterBarrier("after-2")
     }
 
     "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(
