@@ -5,10 +5,10 @@
 package docs.akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
-
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.Entity
+import com.github.ghik.silencer.silent
 import docs.akka.persistence.typed.BlogPostExample
 import docs.akka.persistence.typed.BlogPostExample.BlogCommand
 
@@ -71,6 +71,7 @@ object ShardingCompileOnlySpec {
   case object Idle extends CounterCommand
   case object GoodByeCounter extends CounterCommand
 
+  @silent
   def counter2(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[CounterCommand] = {
     Behaviors.setup { ctx =>
       def become(value: Int): Behavior[CounterCommand] =
