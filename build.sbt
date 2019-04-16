@@ -203,7 +203,7 @@ lazy val docs = akkaModule("akka-docs")
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
-        "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&project=%s",
+        "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",
         "extref.ecs.base_url" -> "https://example.lightbend.com/v1/download/%s",
         "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
         "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
