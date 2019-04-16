@@ -124,7 +124,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
 
     val sendingNodes = roles.tail
 
-    runPerfFlames(roles: _*)(delay = 5.seconds, time = 15.seconds)
+    runPerfFlames(roles: _*)(delay = 5.seconds)
 
     runOn(roles.head) {
       val rep = reporter(testName)
