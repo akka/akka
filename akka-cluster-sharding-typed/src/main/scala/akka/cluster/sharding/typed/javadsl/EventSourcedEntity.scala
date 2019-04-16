@@ -7,12 +7,11 @@ package akka.cluster.sharding.typed.javadsl
 import java.util.Optional
 
 import akka.actor.typed.BackoffSupervisorStrategy
-import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.javadsl.EventSourcedBehavior
 
 /**
- * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent
+ * Any [[akka.actor.typed.Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent
  * actors is very common and therefore this `PersistentEntity` class is provided as convenience.
  *
  * It is a [[EventSourcedBehavior]] and is implemented in the same way. It selects the `persistenceId`
