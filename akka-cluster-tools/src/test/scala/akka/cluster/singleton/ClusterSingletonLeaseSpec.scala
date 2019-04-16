@@ -29,7 +29,7 @@ class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLoggi
   }
 
   override def receive: Receive = {
-    case msg ⇒
+    case msg =>
       sender() ! msg
   }
 }

@@ -62,7 +62,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
   }
 
   protected def receivedTerminated(t: Terminated): Unit =
-    terminatedQueued.get(t.actor).foreach { optionalMessage ⇒
+    terminatedQueued.get(t.actor).foreach { optionalMessage =>
       terminatedQueued -= t.actor // here we know that it is the SAME ref which was put in
       receiveMessage(optionalMessage.getOrElse(t))
     }

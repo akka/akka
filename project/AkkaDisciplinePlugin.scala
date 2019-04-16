@@ -25,19 +25,13 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-camel",
     "akka-contrib",
     // To be reviewed
-    "akka-actor-typed",
-    "akka-actor-testkit-typed",
     "akka-actor-typed-tests",
-    "akka-cluster-sharding-typed",
     "akka-bench-jmh",
     "akka-bench-jmh-typed",
     "akka-multi-node-testkit",
-    "akka-osgi",
     "akka-persistence-tck",
     "akka-persistence-typed",
-    "akka-persistence-query",
     "akka-remote",
-    "akka-stream-testkit",
     "akka-stream-tests",
     "akka-stream-tests-tck",
     "akka-testkit")
@@ -52,11 +46,13 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
     })
 
-  val silencerVersion = "1.3.1"
-  lazy val silencerSettings = Seq(
-    libraryDependencies ++= Seq(
-        compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
-        "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided))
+  lazy val silencerSettings = {
+    val silencerVersion = "1.3.1"
+    Seq(
+      libraryDependencies ++= Seq(
+          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided))
+  }
 
   lazy val disciplineSettings =
     scalaFixSettings ++
@@ -115,7 +111,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Yno-adapted-args",
     // end
     "-deprecation",
-    "-Xfuture",
     "-Xlint",
     "-Ywarn-dead-code",
     "-Ywarn-inaccessible",

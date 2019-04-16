@@ -19,8 +19,6 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  val jdkVersion = sys.props("java.specification.version")
-
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
     // use the same value as in the build scope, so it can be overriden by stampVersion
@@ -100,7 +98,7 @@ object AkkaBuild {
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
       scalacOptions in Compile ++= (
-        if (System.getProperty("java.version").startsWith("1."))
+        if (JavaVersion.isJdk8)
           Seq("-target:jvm-1.8")
         else
           if (scalaBinaryVersion.value == "2.11")
@@ -111,18 +109,8 @@ object AkkaBuild {
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      javacOptions in compile ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
-      javacOptions in test ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
+      javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+      javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
@@ -234,7 +222,7 @@ object AkkaBuild {
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= {
-      if (jdkVersion == "1.8") Seq("-Xdoclint:none")
+      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
     }
   )

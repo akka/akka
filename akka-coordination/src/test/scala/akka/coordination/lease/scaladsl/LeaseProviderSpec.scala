@@ -17,7 +17,7 @@ object LeaseProviderSpec {
     override def acquire(): Future[Boolean] = Future.successful(false)
     override def release(): Future[Boolean] = Future.successful(false)
     override def checkLease(): Boolean = false
-    override def acquire(callback: Option[Throwable] ⇒ Unit): Future[Boolean] = Future.successful(false)
+    override def acquire(callback: Option[Throwable] => Unit): Future[Boolean] = Future.successful(false)
   }
 
   class LeaseB(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
@@ -25,7 +25,7 @@ object LeaseProviderSpec {
     override def acquire(): Future[Boolean] = Future.successful(false)
     override def release(): Future[Boolean] = Future.successful(false)
     override def checkLease(): Boolean = false
-    override def acquire(callback: Option[Throwable] ⇒ Unit): Future[Boolean] = Future.successful(false)
+    override def acquire(callback: Option[Throwable] => Unit): Future[Boolean] = Future.successful(false)
   }
 
   val config = ConfigFactory.parseString(s"""

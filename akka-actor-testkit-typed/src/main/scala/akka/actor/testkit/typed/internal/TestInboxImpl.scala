@@ -23,7 +23,7 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
   private val q = new ConcurrentLinkedQueue[T]
 
-  override val ref: ActorRef[T] = new FunctionRef[T](path, (message, self) => q.add(message))
+  override val ref: ActorRef[T] = new FunctionRef[T](path, (message, _) => q.add(message))
   override def getRef() = ref
 
   override def receiveMessage(): T = q.poll() match {

@@ -191,7 +191,16 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val ByPassConfigCompatCheck: Boolean = !cc.getBoolean("configuration-compatibility-check.enforce-on-join")
   val ConfigCompatCheckers: Set[String] = {
     import scala.collection.JavaConverters._
-    cc.getConfig("configuration-compatibility-check.checkers").root.unwrapped.values().asScala.map(_.toString).toSet
+    cc.getConfig("configuration-compatibility-check.checkers")
+      .root
+      .unwrapped
+      .values()
+      .asScala
+      .iterator
+      .collect {
+        case s if s.toString.trim.nonEmpty => s.toString
+      }
+      .toSet
   }
 
   val SensitiveConfigPaths = {

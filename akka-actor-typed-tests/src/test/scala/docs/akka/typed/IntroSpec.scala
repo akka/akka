@@ -192,7 +192,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       import ChatRoom._
 
       val gabbler: Behavior[SessionEvent] =
-        Behaviors.setup { context ⇒
+        Behaviors.setup { context =>
           Behaviors.receiveMessage {
             //#chatroom-gabbler
             // We document that the compiler warns about the missing handler for `SessionDenied`

@@ -13,6 +13,7 @@ import akka.stream.actor.ActorPublisherMessage.Cancel
 import akka.stream.actor.ActorPublisherMessage.Request
 import akka.persistence.journal.leveldb.LeveldbJournal
 import akka.persistence.query.{ EventEnvelope, Sequence }
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -55,7 +56,7 @@ private[akka] object EventsByPersistenceIdPublisher {
 /**
  * INTERNAL API
  */
-// FIXME needs a be rewritten as a GraphStage (since 2.5.0)
+@silent // FIXME Re-write as part of https://github.com/akka/akka/issues/26187
 private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
     val persistenceId: String,
     val fromSequenceNr: Long,

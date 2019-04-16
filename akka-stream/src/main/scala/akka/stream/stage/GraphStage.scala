@@ -220,7 +220,7 @@ object GraphStageLogic {
 
     private val functionRef: FunctionRef = {
       val f: (ActorRef, Any) => Unit = {
-        case (r, PoisonPill) if poisonPillFallback ⇒
+        case (r, PoisonPill) if poisonPillFallback =>
           callback.invoke((r, PoisonPill))
         case (_, m @ (PoisonPill | Kill)) =>
           materializer.logger.warning(
@@ -1234,9 +1234,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   protected[akka] def getEagerStageActor(
       eagerMaterializer: Materializer,
       poisonPillCompatibility: Boolean)( // fallback required for source actor backwards compatibility
-      receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
+      receive: ((ActorRef, Any)) => Unit): StageActor =
     _stageActor match {
-      case null ⇒
+      case null =>
         val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
         _stageActor =
           new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)

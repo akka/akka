@@ -55,9 +55,9 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
   override def initialParticipants = 2
 
-  def identifyWithUid(role: RoleName, actorName: String): (Int, ActorRef) = {
+  def identifyWithUid(role: RoleName, actorName: String): (Long, ActorRef) = {
     system.actorSelection(node(role) / "user" / actorName) ! "identify"
-    expectMsgType[(Int, ActorRef)]
+    expectMsgType[(Long, ActorRef)]
   }
 
   "A restarted quarantined system" must {
