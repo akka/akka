@@ -5,10 +5,12 @@
 package akka.testkit
 
 import language.postfixOps
-
 import akka.actor._
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 
+@silent
 class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
 
   "JavaTestKit" must {

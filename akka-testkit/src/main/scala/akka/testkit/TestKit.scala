@@ -15,12 +15,12 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-
 import akka.actor._
-import akka.util.{ BoxedType, Timeout }
+import akka.util.{BoxedType, Timeout}
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
 import akka.actor.Terminated
+import com.github.ghik.silencer.silent
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -919,6 +919,7 @@ trait TestKitBase {
  *
  * @since 1.1
  */
+@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
 object TestKit {
