@@ -15,7 +15,6 @@ import scala.concurrent.Future
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
-import akka.actor.Scheduler
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -273,16 +272,14 @@ import akka.util.Timeout
     new EntityRefImpl[M](
       untypedSharding.shardRegion(typeKey.name),
       entityId,
-      typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
-      system.scheduler)
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
     new EntityRefImpl[M](
       untypedSharding.shardRegion(typeKey.name),
       entityId,
-      typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
-      system.scheduler)
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -305,8 +302,7 @@ import akka.util.Timeout
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
     entityId: String,
-    typeKey: EntityTypeKeyImpl[M],
-    scheduler: Scheduler)
+    typeKey: EntityTypeKeyImpl[M])
     extends javadsl.EntityRef[M]
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {

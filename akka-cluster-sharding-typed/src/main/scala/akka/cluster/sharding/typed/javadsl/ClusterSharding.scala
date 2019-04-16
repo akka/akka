@@ -350,7 +350,7 @@ object StartEntity {
    * Returns [[ShardingEnvelope]] which can be sent via Cluster Sharding in order to wake up the
    * specified (by `entityId`) Sharded Entity, ''without'' delivering a real message to it.
    */
-  def create[M](msgClass: Class[M], entityId: String): ShardingEnvelope[M] =
+  def create[M](entityId: String): ShardingEnvelope[M] =
     scaladsl.StartEntity[M](entityId)
 }
 
