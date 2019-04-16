@@ -11,8 +11,7 @@ import akka.actor.{
   ActorRef,
   Address,
   DeadLetterSuppression,
-  Deploy,
-  FSM,
+    Deploy,
   LoggingFSM,
   NoSerializationVerificationNeeded,
   OneForOneStrategy,
@@ -441,10 +440,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   override def supervisorStrategy = OneForOneStrategy() {
     case BarrierTimeout(data)             => failBarrier(data)
     case FailedBarrier(data)              => failBarrier(data)
-    case BarrierEmpty(data, msg)          => SupervisorStrategy.Resume
+    case BarrierEmpty(_, _)          => SupervisorStrategy.Resume
     case WrongBarrier(name, client, data) => { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
-    case ClientLost(data, node)           => failBarrier(data)
-    case DuplicateNode(data, node)        => failBarrier(data)
+    case ClientLost(data, _)           => failBarrier(data)
+    case DuplicateNode(data, _)        => failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {
@@ -580,7 +579,6 @@ private[akka] class BarrierCoordinator
     with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
   import Controller._
-  import FSM._
 
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false
@@ -639,7 +637,7 @@ private[akka] class BarrierCoordinator
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else
         handleBarrier(d.copy(arrived = together))
-    case Event(RemoveClient(name), d @ Data(clients, barrier, arrived, _)) =>
+    case Event(RemoveClient(name), d @ Data(clients, _, arrived, _)) =>
       clients.find(_.name == name) match {
         case None => stay
         case Some(client) =>
