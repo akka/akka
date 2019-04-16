@@ -15,7 +15,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val mergePrioritized = b.add(MergePrioritized[Outputs](Seq(2, 8)))
 
     override def left: Inlet[Outputs] = mergePrioritized.in(0)
