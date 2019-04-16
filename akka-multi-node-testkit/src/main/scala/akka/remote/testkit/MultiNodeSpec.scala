@@ -30,6 +30,7 @@ import akka.util.ccompat._
 /**
  * Configure the role names and participants of the test, including configuration settings.
  */
+@ccompatUsedUntil213
 abstract class MultiNodeConfig {
 
   private var _commonConf: Option[Config] = None
@@ -437,7 +438,8 @@ abstract class MultiNodeSpec(
 
   // now add deployments, if so desired
 
-  private final case class Replacement(tag: String, role: RoleName) {
+  // Cannot be final because of https://github.com/scala/bug/issues/4440
+  private case class Replacement(tag: String, role: RoleName) {
     lazy val addr = node(role).address.toString
   }
 
@@ -450,7 +452,7 @@ abstract class MultiNodeSpec(
         case (base, r @ Replacement(tag, _)) =>
           base.indexOf(tag) match {
             case -1 => base
-            case start =>
+            case _ =>
               val replaceWith = try r.addr
               catch {
                 case NonFatal(e) =>
