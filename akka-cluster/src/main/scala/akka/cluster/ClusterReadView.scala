@@ -203,7 +203,6 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * Unsubscribe to cluster events.
    */
-  @silent // for isTerminated while will become un-deprecated for 2.6
   def close(): Unit = {
     _closed = true
     _cachedSelf = OptionVal.Some(self.copy(MemberStatus.Removed))
