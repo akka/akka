@@ -31,7 +31,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
    */
   @InternalApi private[akka] def loadExtensions(): Unit = {
 
-    /**
+    /*
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
