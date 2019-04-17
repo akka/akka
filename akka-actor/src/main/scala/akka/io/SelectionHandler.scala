@@ -36,8 +36,8 @@ abstract class SelectionHandlerSettings(config: Config) {
   val SelectorAssociationRetries: Int =
     getInt("selector-association-retries").requiring(_ >= 0, "selector-association-retries must be >= 0")
 
-  val SelectorDispatcher: String = getString("selector-dispatcher")
-  val WorkerDispatcher: String = getString("worker-dispatcher")
+  val SelectorDispatcher: String = getString("selector-dispatcher").trim
+  val WorkerDispatcher: String = getString("worker-dispatcher").trim
   val TraceLogging: Boolean = getBoolean("trace-logging")
 
   def MaxChannelsPerSelector: Int
@@ -303,9 +303,17 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings)
   private[this] var sequenceNumber = 0L // should be Long to prevent overflow
   private[this] var childCount = 0
   private[this] val registry = {
-    val dispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
+    val dispatcher = context.system.dispatchers.lookup(SelectorDispatcher match {
+      case ""       => context.system.dispatchers.internalDispatcherId
+      case nonEmpty => nonEmpty
+    })
     new ChannelRegistryImpl(SerializedSuspendableExecutionContext(dispatcher.throughput)(dispatcher), settings, log)
   }
+  private[this] val workerDispatcherId =
+    WorkerDispatcher match {
+      case ""       => context.system.dispatchers.internalDispatcherId
+      case nonEmpty => nonEmpty
+    }
 
   def receive: Receive = {
     case cmd: WorkerForCommand => spawnChildWithCapacityProtection(cmd, SelectorAssociationRetries)
@@ -353,7 +361,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings)
       val newName = sequenceNumber.toString
       sequenceNumber += 1
       val child = context.actorOf(
-        props = cmd.childProps(registry).withDispatcher(WorkerDispatcher).withDeploy(Deploy.local),
+        props = cmd.childProps(registry).withDispatcher(workerDispatcherId).withDeploy(Deploy.local),
         name = newName)
       childCount += 1
       if (MaxChannelsPerSelector > 0) context.watch(child) // we don't need to watch if we aren't limited

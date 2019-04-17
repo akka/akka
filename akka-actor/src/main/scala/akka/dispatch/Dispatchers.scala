@@ -11,6 +11,7 @@ import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
 import akka.event.Logging.Warning
 import akka.event.EventStream
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.util.Helpers.ConfigOps
 import com.github.ghik.silencer.silent
 
@@ -46,9 +47,11 @@ object Dispatchers {
 
   /**
    * The id of the default dispatcher, also the full key of the
-   * configuration of the default dispatcher.
+   * configuration of the default dispatcher unless it was passed to the system
+   * with the BootstrapSetup or as a actor system creation parameter.
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
+
 }
 
 /**
@@ -74,6 +77,17 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   def defaultGlobalDispatcher: MessageDispatcher = lookup(DefaultDispatcherId)
 
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
+
+  @InternalApi
+  private[akka] val internalDispatcherId: String = settings.InternalDispatcher
+
+  /**
+   * INTERNAL API
+   *
+   * internal dispatcher for non-user actors etc.
+   */
+  @InternalApi
+  private[akka] val internalDispatcher: MessageDispatcher = lookup(internalDispatcherId)
 
   /**
    * Returns a dispatcher as specified in configuration. Please note that this

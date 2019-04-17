@@ -146,7 +146,7 @@ trait LoggingBus extends ActorEventBus {
                 case UnhandledMessage(msg, sender, rcp) =>
                   publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
               }
-            }), "UnhandledMessageForwarder"),
+            }).withDispatcher(system.dispatchers.internalDispatcherId), "UnhandledMessageForwarder"),
             classOf[UnhandledMessage])
       } catch {
         case _: InvalidActorNameException => // ignore if it is already running

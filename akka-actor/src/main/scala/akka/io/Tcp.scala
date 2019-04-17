@@ -611,7 +611,10 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case "unlimited" => Int.MaxValue
       case _           => getIntBytes("max-received-message-size")
     }
-    val ManagementDispatcher: String = getString("management-dispatcher")
+    val ManagementDispatcher: String = getString("management-dispatcher").trim match {
+      case ""       => system.dispatchers.internalDispatcherId
+      case nonEmpty => nonEmpty
+    }
     val FileIODispatcher: String = getString("file-io-dispatcher")
     val TransferToLimit: Int = getString("file-io-transferTo-limit") match {
       case "unlimited" => Int.MaxValue

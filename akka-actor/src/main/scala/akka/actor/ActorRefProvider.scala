@@ -603,15 +603,14 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  private lazy val defaultDispatcher = system.dispatchers.defaultGlobalDispatcher
-
+  private def internalDispatcher = system.dispatchers.internalDispatcher
   private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
 
   override lazy val rootGuardian: LocalActorRef =
     new LocalActorRef(
       system,
       Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
-      defaultDispatcher,
+      internalDispatcher,
       defaultMailbox,
       theOneWhoWalksTheBubblesOfSpaceTime,
       rootPath) {
@@ -630,10 +629,19 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
+    val dispatcher =
+      system.guardianProps match {
+        case None =>
+          // run on internal dispatcher if user provided the guardian
+          internalDispatcher
+        case Some(props) =>
+          // user provided guardian runs on user specified dispatcher or default dispatcher
+          system.dispatchers.lookup(props.dispatcher)
+      }
     val ref = new LocalActorRef(
       system,
       system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
-      defaultDispatcher,
+      dispatcher,
       defaultMailbox,
       rootGuardian,
       rootPath / "user")
@@ -648,7 +656,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     val ref = new LocalActorRef(
       system,
       Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
-      defaultDispatcher,
+      internalDispatcher,
       defaultMailbox,
       rootGuardian,
       rootPath / "system")

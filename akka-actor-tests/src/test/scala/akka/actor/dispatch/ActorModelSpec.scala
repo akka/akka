@@ -592,8 +592,8 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
       system.stop(a)
       system.stop(b)
 
-      probe.expectTerminated(a)
-      probe.expectTerminated(b)
+      // shutdown ordering is not deterministic
+      (Set(probe.expectMsgType[Terminated], probe.expectMsgType[Terminated]).map(_.actor)) should ===(Set(a, b))
 
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
       assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)

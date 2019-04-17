@@ -454,7 +454,7 @@ final class CoordinatedShutdown private[akka] (
    */
   def run(reason: Reason, fromPhase: Option[String]): Future[Done] = {
     if (runStarted.compareAndSet(None, Some(reason))) {
-      import system.dispatcher
+      implicit val executionContext = system.dispatchers.internalDispatcher
       val debugEnabled = log.isDebugEnabled
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {

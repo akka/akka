@@ -81,7 +81,9 @@ private[akka] object EventStreamUnsubscriber {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system
       .asInstanceOf[ExtendedActorSystem]
-      .systemActorOf(props(stream, debug), "eventStreamUnsubscriber-" + unsubscribersCount.incrementAndGet())
+      .systemActorOf(
+        props(stream, debug).withDispatcher(system.dispatchers.internalDispatcherId),
+        "eventStreamUnsubscriber-" + unsubscribersCount.incrementAndGet())
   }
 
 }

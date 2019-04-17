@@ -127,17 +127,22 @@ final class BootstrapSetup private (
     val actorRefProvider: Option[ProviderSelection] = None)
     extends Setup {
 
-  def withClassloader(classLoader: ClassLoader): BootstrapSetup =
-    new BootstrapSetup(Some(classLoader), config, defaultExecutionContext, actorRefProvider)
+  def withClassloader(classLoader: ClassLoader): BootstrapSetup = copy(classLoader = Some(classLoader))
 
-  def withConfig(config: Config): BootstrapSetup =
-    new BootstrapSetup(classLoader, Some(config), defaultExecutionContext, actorRefProvider)
+  def withConfig(config: Config): BootstrapSetup = copy(config = Some(config))
 
   def withDefaultExecutionContext(executionContext: ExecutionContext): BootstrapSetup =
-    new BootstrapSetup(classLoader, config, Some(executionContext), actorRefProvider)
+    copy(defaultExecutionContext = Some(executionContext))
 
   def withActorRefProvider(name: ProviderSelection): BootstrapSetup =
-    new BootstrapSetup(classLoader, config, defaultExecutionContext, Some(name))
+    copy(actorRefProvider = Some(name))
+
+  private def copy(
+      classLoader: Option[ClassLoader] = classLoader,
+      config: Option[Config] = config,
+      defaultExecutionContext: Option[ExecutionContext] = defaultExecutionContext,
+      actorRefProvider: Option[ProviderSelection] = actorRefProvider) =
+    new BootstrapSetup(classLoader, config, defaultExecutionContext, actorRefProvider)
 
 }
 
@@ -378,6 +383,8 @@ object ActorSystem {
     }
 
     final val SchedulerClass: String = getString("akka.scheduler.implementation")
+    final val InternalDispatcher: String = getString("akka.actor.internal-dispatcher")
+
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
     final val JvmShutdownHooks: Boolean = getBoolean("akka.jvm-shutdown-hooks")
@@ -671,10 +678,13 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def logFilter: LoggingFilter
 
   /**
+   * INTERNAL API
+   *
    * For debugging: traverse actor hierarchy and make string representation.
    * Careful, this may OOM on large actor systems, and it is only meant for
    * helping debugging in case something already went terminally wrong.
    */
+  @InternalApi
   private[akka] def printTree: String
 
 }
@@ -914,7 +924,8 @@ private[akka] class ActorSystemImpl(
     _initialized = true
 
     if (settings.LogDeadLetters > 0)
-      logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
+      logDeadLetterListener = Some(
+        systemActorOf(Props[DeadLetterListener].withDispatcher(dispatchers.internalDispatcherId), "deadLetterListener"))
     eventStream.startUnsubscriber()
     ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
     loadExtensions()

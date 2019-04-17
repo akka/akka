@@ -19,7 +19,7 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ Await, Future }
 import scala.language.postfixOps
 import scala.util.Properties
 
@@ -106,19 +106,6 @@ object ActorSystemSpec {
      * Returns the same dispatcher instance for each invocation
      */
     override def dispatcher(): MessageDispatcher = instance
-  }
-
-  class TestExecutionContext(testActor: ActorRef, underlying: ExecutionContext) extends ExecutionContext {
-
-    def execute(runnable: Runnable): Unit = {
-      testActor ! "called"
-      underlying.execute(runnable)
-    }
-
-    def reportFailure(t: Throwable): Unit = {
-      testActor ! "failed"
-      underlying.reportFailure(t)
-    }
   }
 
   val config = s"""
@@ -240,7 +227,9 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         callbackWasRun = true
       }
       import system.dispatcher
-      system2.scheduler.scheduleOnce(200.millis.dilated) { system2.terminate() }
+      system2.scheduler.scheduleOnce(200.millis.dilated) {
+        system2.terminate()
+      }
 
       Await.ready(system2.whenTerminated, 5 seconds)
       callbackWasRun should ===(true)
@@ -264,7 +253,9 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       Await.ready(system2.terminate(), 10 seconds)
 
       intercept[RejectedExecutionException] {
-        system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
+        system2.registerOnTermination {
+          println("IF YOU SEE THIS THEN THERE'S A BUG HERE")
+        }
       }.getMessage should ===("ActorSystem already terminated.")
     }
 
@@ -275,7 +266,9 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
       try {
         system2.terminate()
-        system2.registerOnTermination { count.incrementAndGet() }
+        system2.registerOnTermination {
+          count.incrementAndGet()
+        }
       } catch {
         case _: RejectedExecutionException => count.incrementAndGet()
       }
@@ -299,7 +292,9 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reliable deny creation of actors while shutting down" in {
       val system = ActorSystem()
       import system.dispatcher
-      system.scheduler.scheduleOnce(100 millis) { system.terminate() }
+      system.scheduler.scheduleOnce(100 millis) {
+        system.terminate()
+      }
       var failing = false
       var created = Vector.empty[ActorRef]
       while (!system.whenTerminated.isCompleted) {
@@ -373,50 +368,6 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       }
     }
 
-    "work with a passed in ExecutionContext" in {
-      val ecProbe = TestProbe()
-      val ec = new ActorSystemSpec.TestExecutionContext(ecProbe.ref, ExecutionContexts.global())
-
-      val system2 = ActorSystem(name = "default", defaultExecutionContext = Some(ec))
-
-      try {
-        val ref = system2.actorOf(Props(new Actor {
-          def receive = {
-            case "ping" => sender() ! "pong"
-          }
-        }))
-
-        val probe = TestProbe()
-
-        ref.tell("ping", probe.ref)
-
-        ecProbe.expectMsg(1.second, "called")
-        probe.expectMsg(1.second, "pong")
-      } finally {
-        shutdown(system2)
-      }
-    }
-
-    "not use passed in ExecutionContext if executor is configured" in {
-      val ecProbe = TestProbe()
-      val ec = new ActorSystemSpec.TestExecutionContext(ecProbe.ref, ExecutionContexts.global())
-
-      val config = ConfigFactory.parseString("akka.actor.default-dispatcher.executor = \"fork-join-executor\"")
-      val system2 = ActorSystem(name = "default", config = Some(config), defaultExecutionContext = Some(ec))
-
-      try {
-        val ref = system2.actorOf(TestActors.echoActorProps)
-        val probe = TestProbe()
-
-        ref.tell("ping", probe.ref)
-
-        ecProbe.expectNoMessage(200.millis)
-        probe.expectMsg(1.second, "ping")
-      } finally {
-        shutdown(system2)
-      }
-    }
-
     "not allow top-level actor creation with custom guardian" in {
       val sys = new ActorSystemImpl(
         "custom",
@@ -436,5 +387,4 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       } finally shutdown(sys)
     }
   }
-
 }

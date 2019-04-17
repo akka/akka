@@ -203,7 +203,10 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
     val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
     val BatchReceiveLimit: Int = getInt("receive-throughput")
 
-    val ManagementDispatcher: String = getString("management-dispatcher")
+    val ManagementDispatcher: Option[String] = getString("management-dispatcher").trim match {
+      case ""       => None
+      case nonEmpty => Some(nonEmpty)
+    }
 
     override val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
 
@@ -222,7 +225,11 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"))
 
   val manager: ActorRef = {
-    system.systemActorOf(props = Props(classOf[UdpManager], this).withDeploy(Deploy.local), name = "IO-UDP-FF")
+    system.systemActorOf(
+      props = Props(classOf[UdpManager], this)
+        .withDispatcher(settings.ManagementDispatcher.getOrElse(system.dispatchers.internalDispatcherId))
+        .withDeploy(Deploy.local),
+      name = "IO-UDP-FF")
   }
 
   /**

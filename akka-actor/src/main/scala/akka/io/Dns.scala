@@ -156,7 +156,10 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
      */
     def this(config: Config) = this(config, config.getString("resolver"))
 
-    val Dispatcher: String = config.getString("dispatcher")
+    val Dispatcher: String = config.getString("dispatcher").trim match {
+      case ""       => system.dispatchers.internalDispatcherId
+      case nonEmpty => nonEmpty
+    }
     val Resolver: String = resolverName
     val ResolverConfig: Config = config.getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
