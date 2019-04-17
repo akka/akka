@@ -59,7 +59,7 @@ class RemoteConfigSpec extends AkkaSpec("""
       WatchFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should ===(10 seconds)
       WatchFailureDetectorConfig.getMillisDuration("min-std-deviation") should ===(100 millis)
 
-      remoteSettings.config.getString("akka.remote.log-frame-size-exceeding") should ===("off")
+      remoteSettings.config.getString("akka.remote.classic.log-frame-size-exceeding") should ===("off")
     }
 
     "be able to parse AkkaProtocol related config elements" in {
@@ -134,7 +134,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "have debug logging of the failure injector turned off in reference.conf" in {
-      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.gremlin")
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.classic.gremlin")
       c.getBoolean("debug") should ===(false)
     }
   }

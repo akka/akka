@@ -2,13 +2,14 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.testkit.{ AkkaSpec, DefaultTimeout }
+import akka.AkkaException
 import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
+
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Failure
-import akka.AkkaException
 import scala.util.control.NoStackTrace
 
 object SwitchableLoggedBehaviorSpec {
@@ -16,7 +17,7 @@ object SwitchableLoggedBehaviorSpec {
 }
 
 class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
-  import akka.remote.transport.SwitchableLoggedBehaviorSpec._
+  import akka.remote.classic.transport.SwitchableLoggedBehaviorSpec._
 
   private def defaultBehavior = new SwitchableLoggedBehavior[Unit, Int]((_) => Future.successful(3), (_) => ())
 

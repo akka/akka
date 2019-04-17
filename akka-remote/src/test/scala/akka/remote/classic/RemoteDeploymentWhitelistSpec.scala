@@ -56,7 +56,7 @@ object RemoteDeploymentWhitelistSpec {
       actor.provider = remote
 
       remote {
-        enabled-transports = [
+        classic.enabled-transports = [
           "akka.remote.test",
           "akka.remote.classic.netty.tcp"
         ]
@@ -107,7 +107,7 @@ class RemoteDeploymentWhitelistSpec
 
   val conf =
     ConfigFactory.parseString("""
-                                 akka.loglevel = DEBUG
+      akka.loglevel = DEBUG
       akka.remote.test {
         local-address = "test://remote-sys@localhost:12346"
         maximum-payload-bytes = 48000 bytes
@@ -119,7 +119,7 @@ class RemoteDeploymentWhitelistSpec
         
         whitelist = [
           "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
-          "akka.remote.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
+          "akka.remote.classic.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
         ]
       }
       //#whitelist-config

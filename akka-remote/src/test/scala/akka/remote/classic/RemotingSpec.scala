@@ -646,11 +646,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val rawRemoteAddress = remoteAddress.copy(protocol = "test")
 
       val config = ConfigFactory.parseString(s"""
-        akka.remote.enabled-transports = ["akka.remote.test"]
-        akka.remote.retry-gate-closed-for = 5s
-        akka.remote.log-remote-lifecycle-events = on
+        akka.remote.classic.enabled-transports = ["akka.remote.classic.test"]
+        akka.remote.classic.retry-gate-closed-for = 5s
+        akka.remote.classic.log-remote-lifecycle-events = on
 
-        akka.remote.test {
+        akka.remote.classic.test {
           registry-key = TRKAzR
           local-address = "test://${localAddress.system}@${localAddress.host.get}:${localAddress.port.get}"
         }
@@ -728,11 +728,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val remoteUID = 16
 
       val config = ConfigFactory.parseString(s"""
-        akka.remote.enabled-transports = ["akka.remote.test"]
-        akka.remote.retry-gate-closed-for = 5s
-        akka.remote.log-remote-lifecycle-events = on
+        akka.remote.classic.enabled-transports = ["akka.remote.classic.test"]
+        akka.remote.classic.retry-gate-closed-for = 5s
+        akka.remote.classic.log-remote-lifecycle-events = on
 
-        akka.remote.test {
+        akka.remote.classic.test {
           registry-key = JMeMndLLsw
           local-address = "test://${localAddress.system}@${localAddress.host.get}:${localAddress.port.get}"
         }

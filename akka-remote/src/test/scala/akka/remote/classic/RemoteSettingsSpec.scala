@@ -18,7 +18,7 @@ class RemoteSettingsSpec extends WordSpec with Matchers {
     "parse akka.remote.classic.log-frame-size-exceeding  value as bytes" in {
       new RemoteSettings(
         ConfigFactory
-          .parseString("akka.remote.log-frame-size-exceeding = 100b")
+          .parseString("akka.remote.classic.log-frame-size-exceeding = 100b")
           .withFallback(ConfigFactory.load())).LogFrameSizeExceeding shouldEqual Some(100)
     }
   }

@@ -35,8 +35,10 @@ object Configuration {
         filter-leeway = 10s
         default-timeout = 10s
       }
+      
+      remote.artery.enabled = off 
 
-      remote.enabled-transports = ["akka.remote.classic.netty.ssl"]
+      remote.classic.enabled-transports = ["akka.remote.classic.netty.ssl"]
 
       remote.classic.netty.ssl {
         hostname = localhost

@@ -2,19 +2,18 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
-import ThrottlerTransportAdapterSpec._
-import scala.concurrent.duration._
-import scala.concurrent.Await
+import akka.remote.classic.transport.ThrottlerTransportAdapterSpec._
 import akka.remote.transport.ThrottlerTransportAdapter._
-import akka.remote.RemoteActorRefProvider
-import akka.testkit.TestEvent
-import akka.testkit.EventFilter
-import akka.remote.EndpointException
+import akka.remote.transport.{ TestTransport, ThrottlerTransportAdapter }
+import akka.remote.{ EndpointException, RemoteActorRefProvider }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object ThrottlerTransportAdapterSpec {
   val configA: Config = ConfigFactory.parseString("""

@@ -2,17 +2,17 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
-import com.typesafe.config.{ Config, ConfigFactory }
-import AkkaProtocolStressTest._
 import akka.actor._
-import scala.concurrent.duration._
-import akka.testkit._
-import akka.remote.{ EndpointException, RARP }
+import akka.remote.classic.transport.AkkaProtocolStressTest._
 import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
+import akka.remote.{ EndpointException, RARP }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest, _ }
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object AkkaProtocolStressTest {
   val configA: Config =
