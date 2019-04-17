@@ -92,7 +92,7 @@ abstract class MultiDcHeartbeatTakingOverSpec
       expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
-      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- expectedAlphaHeartbeaterRoles ++ expectedBetaHeartbeaterRoles
+      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles ++ expectedBetaHeartbeaterRoles)
     }
 
     "collect information on oldest nodes" taggedAs LongRunningTest in {
