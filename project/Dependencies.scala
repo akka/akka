@@ -111,7 +111,7 @@ object Dependencies {
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2" % "test" // CC0
     }
 
-    object  {
+    object Provided {
       // TODO remove from "test" config
       // If changed, update akka-docs/build.sbt as well
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
