@@ -36,8 +36,6 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val camelCore = ("org.apache.camel" % "camel-core" % "2.17.7").exclude("org.slf4j", "slf4j-api") // ApacheV2
-
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config = "com.typesafe" % "config" % "1.3.3" // ApacheV2
     val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
@@ -113,13 +111,11 @@ object Dependencies {
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2" % "test" // CC0
     }
 
-    object Provided {
+    object  {
       // TODO remove from "test" config
       // If changed, update akka-docs/build.sbt as well
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
-      // Non-default module in Java9, removed in Java11. For Camel.
-      val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0" % "provided;test"
       val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
@@ -206,16 +202,6 @@ object Dependencies {
         Provided.levelDBNative)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
-
-  val camel = l ++= Seq(
-        camelCore,
-        Provided.jaxb,
-        Provided.activation,
-        Test.scalatest.value,
-        Test.junit,
-        Test.mockito,
-        Test.logback,
-        Test.commonsIo)
 
   val osgi = l ++= Seq(
         osgiCore,
