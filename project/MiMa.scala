@@ -29,6 +29,7 @@ object MiMa extends AutoPlugin {
       val akka25Versions = (0 to latestPatchOf25).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12).map("2.4." + _)
       val akka25DiscoveryVersions = (19 to latestPatchOf25).map(patch => s"2.5.$patch")
+      val akka25CoordinationVersions = (22 to latestPatchOf25).map(patch => s"2.5.$patch")
       val akka24WithScala212 =
         (13 to latestPatchOf24)
           .map("2.4." + _)
@@ -37,11 +38,14 @@ object MiMa extends AutoPlugin {
       val akka242NewArtifacts = Seq("akka-stream", "akka-stream-testkit")
       val akka250NewArtifacts = Seq("akka-persistence-query")
       val akka2519NewArtifacts = Seq("akka-discovery")
+      val akka2522NewArtifacts = Seq("akka-coordination")
 
       scalaBinaryVersion match {
         case "2.11" =>
           if (akka2519NewArtifacts.contains(projectName))
             akka25DiscoveryVersions
+          else if (akka2522NewArtifacts.contains(projectName))
+            akka25CoordinationVersions
           else if (akka250NewArtifacts.contains(projectName)) akka25Versions
           else {
             if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
@@ -51,6 +55,8 @@ object MiMa extends AutoPlugin {
         case "2.12" =>
           if (akka2519NewArtifacts.contains(projectName))
             akka25DiscoveryVersions
+          else if (akka2522NewArtifacts.contains(projectName))
+            akka25CoordinationVersions
           else if (akka250NewArtifacts.contains(projectName))
             akka25Versions
           else
