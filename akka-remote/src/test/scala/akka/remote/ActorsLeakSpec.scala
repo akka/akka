@@ -22,7 +22,7 @@ object ActorsLeakSpec {
 
   val config = ConfigFactory.parseString("""
       | akka.actor.provider = remote
-      | akka.remote.netty.tcp.applied-adapters = ["trttl"]
+      | akka.remote.classic.netty.tcp.applied-adapters = ["trttl"]
       | #akka.remote.log-lifecycle-events = on
       | akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       | akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
@@ -84,7 +84,9 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       for (_ <- 1 to 3) {
 
         val remoteSystem =
-          ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 0").withFallback(config))
+          ActorSystem(
+            "remote",
+            ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 0").withFallback(config))
 
         try {
           val probe = TestProbe()(remoteSystem)
@@ -103,7 +105,9 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       for (_ <- 1 to 3) {
         //always use the same address
         val remoteSystem =
-          ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 2553").withFallback(config))
+          ActorSystem(
+            "remote",
+            ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 2553").withFallback(config))
 
         try {
           val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
@@ -142,7 +146,9 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       for (_ <- 1 to 3) {
 
         val remoteSystem =
-          ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 0").withFallback(config))
+          ActorSystem(
+            "remote",
+            ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 0").withFallback(config))
         val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
         try {
@@ -165,7 +171,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
 
       // Remote idle for too long case
       val remoteSystem =
-        ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 0").withFallback(config))
+        ActorSystem("remote", ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 0").withFallback(config))
       val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
       remoteSystem.actorOf(Props[StoppableActor], "stoppable")

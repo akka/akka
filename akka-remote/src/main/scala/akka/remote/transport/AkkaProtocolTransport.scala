@@ -46,16 +46,16 @@ private[remote] class AkkaProtocolSettings(config: Config) {
     TransportFailureDetectorConfig.getMillisDuration("heartbeat-interval")
   }.requiring(_ > Duration.Zero, "transport-failure-detector.heartbeat-interval must be > 0")
 
-  val RequireCookie: Boolean = getBoolean("akka.remote.require-cookie")
+  val RequireCookie: Boolean = getBoolean("akka.remote.classic.require-cookie")
 
-  val SecureCookie: Option[String] = if (RequireCookie) Some(getString("akka.remote.secure-cookie")) else None
+  val SecureCookie: Option[String] = if (RequireCookie) Some(getString("akka.remote.classic.secure-cookie")) else None
 
   val HandshakeTimeout: FiniteDuration = {
-    val enabledTransports = config.getStringList("akka.remote.enabled-transports")
-    if (enabledTransports.contains("akka.remote.netty.tcp"))
-      config.getMillisDuration("akka.remote.netty.tcp.connection-timeout")
-    else if (enabledTransports.contains("akka.remote.netty.ssl"))
-      config.getMillisDuration("akka.remote.netty.ssl.connection-timeout")
+    val enabledTransports = config.getStringList("akka.remote.classic.enabled-transports")
+    if (enabledTransports.contains("akka.remote.classic.netty.tcp"))
+      config.getMillisDuration("akka.remote.classic.netty.tcp.connection-timeout")
+    else if (enabledTransports.contains("akka.remote.classic.netty.ssl"))
+      config.getMillisDuration("akka.remote.classic.netty.ssl.connection-timeout")
     else
       config
         .getMillisDuration("akka.remote.handshake-timeout")
@@ -222,7 +222,7 @@ private[remote] class AkkaProtocolHandle(
   def disassociate(info: DisassociateInfo): Unit = stateActor ! DisassociateUnderlying(info)
 }
 
-private[transport] object ProtocolStateActor {
+private[remote] object ProtocolStateActor {
   sealed trait AssociationState
 
   /*
@@ -324,7 +324,7 @@ private[transport] object ProtocolStateActor {
       failureDetector).withDeploy(Deploy.local)
 }
 
-private[transport] class ProtocolStateActor(
+private[remote] class ProtocolStateActor(
     initialData: InitialProtocolStateData,
     private val localHandshakeInfo: HandshakeInfo,
     private val refuseUid: Option[Int],

@@ -1,8 +1,8 @@
-# Remoting (codename Artery)
+# Artery Remoting
 
 ## Dependency
 
-To use Remoting (codename Artery), you must add the following dependency in your project:
+To use Artery Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -24,7 +24,6 @@ akka {
   }
   remote {
     artery {
-      enabled = on
       transport = tcp # See Selecting a transport below
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520

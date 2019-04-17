@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
@@ -60,11 +60,12 @@ object UntrustedSpec {
 }
 
 class UntrustedSpec extends AkkaSpec("""
-akka.actor.provider = remote
-akka.remote.untrusted-mode = on
-akka.remote.trusted-selection-paths = ["/user/receptionist", ]    
-akka.remote.netty.tcp.port = 0
-akka.loglevel = DEBUG # test verifies debug
+  akka.actor.provider = remote
+  akka.remote.artery.enabled = off
+  akka.remote.classic.untrusted-mode = on
+  akka.remote.classic.trusted-selection-paths = ["/user/receptionist", ]    
+  akka.remote.classic.netty.tcp.port = 0
+  akka.loglevel = DEBUG # test verifies debug
 """) with ImplicitSender {
 
   import UntrustedSpec._
@@ -73,7 +74,8 @@ akka.loglevel = DEBUG # test verifies debug
     "UntrustedSpec-client",
     ConfigFactory.parseString("""
       akka.actor.provider = remote
-      akka.remote.netty.tcp.port = 0
+      akka.remote.artery.enabled = off
+      akka.remote.classic.netty.tcp.port = 0
   """))
   val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 

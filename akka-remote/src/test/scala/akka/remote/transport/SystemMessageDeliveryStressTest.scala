@@ -37,10 +37,11 @@ object SystemMessageDeliveryStressTest {
   val baseConfig: Config = ConfigFactory.parseString(s"""
     akka {
       #loglevel = DEBUG
+      remote.artery.enabled = false
       actor.provider = remote
       actor.serialize-messages = off
 
-      remote.log-remote-lifecycle-events = on
+      remote.classic.log-remote-lifecycle-events = on
 
       remote.transport-failure-detector {
         heartbeat-interval = 1 s
@@ -53,7 +54,7 @@ object SystemMessageDeliveryStressTest {
       remote.initial-system-message-delivery-timeout = 10 m
       remote.use-passive-connections = on
 
-      remote.netty.tcp {
+      remote.classic.netty.tcp {
         applied-adapters = ["gremlin", "trttl"]
         port = 0
       }

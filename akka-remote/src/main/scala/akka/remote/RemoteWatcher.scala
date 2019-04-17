@@ -38,6 +38,7 @@ private[akka] object RemoteWatcher {
   final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
 
+  // FIXME, is this used for artery? Uid will get truncated
   @SerialVersionUID(1L) case object Heartbeat extends HeartbeatMessage
   @SerialVersionUID(1L) final case class HeartbeatRsp(addressUid: Int) extends HeartbeatMessage
 

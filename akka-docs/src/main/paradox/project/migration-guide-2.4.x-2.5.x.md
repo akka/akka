@@ -352,12 +352,12 @@ connection will not send over certificates even if asked to.
 
 It is still possible to make a rolling upgrade from a version < 2.4.12 by doing the upgrade stepwise:
 :
- * first, upgrade Akka to the latest version but keep `akka.remote.netty.ssl.require-mutual-authentication` at `off`
+ * first, upgrade Akka to the latest version but keep `akka.remote.classic.netty.ssl.require-mutual-authentication` at `off`
 and do a first rolling upgrade
  * second, turn the setting to `on` and do another rolling upgrade
 
 
-For more information see the documentation for the `akka.remote.netty.ssl.require-mutual-authentication` configuration setting
+For more information see the documentation for the `akka.remote.classic.netty.ssl.require-mutual-authentication` configuration setting
 in @ref:[akka-remote's reference.conf](../general/configuration.md#config-akka-remote).
 
 <a id="mig25-addser"></a>

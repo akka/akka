@@ -100,7 +100,7 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
           system.name,
           ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s
-                    akka.remote.netty.tcp {
+                    akka.remote.classic.netty.tcp {
                       hostname = ${address.host.get}
                       port = ${address.port.get}
                     }

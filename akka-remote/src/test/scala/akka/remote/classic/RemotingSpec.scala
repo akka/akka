@@ -2,26 +2,26 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
+
+import java.io.NotSerializableException
+import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor._
 import akka.event.AddressTerminatedTopic
 import akka.pattern.ask
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
-import akka.remote.transport._
 import akka.remote.transport.Transport.InvalidAssociationException
+import akka.remote.transport._
+import akka.remote._
+import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.testkit._
 import akka.util.ByteString
-import com.typesafe.config._
-import java.io.NotSerializableException
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
-import akka.testkit.SocketUtil.temporaryServerAddress
 import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 
 object RemotingSpec {
 
@@ -90,28 +90,29 @@ object RemotingSpec {
       actor.serialize-messages = off
 
       remote {
-        retry-gate-closed-for = 1 s
-        log-remote-lifecycle-events = on
+        artery.enabled = off
+        classic {
+          retry-gate-closed-for = 1 s
+          log-remote-lifecycle-events = on
 
-        enabled-transports = [
-          "akka.remote.test",
-          "akka.remote.netty.tcp",
-          "akka.remote.netty.udp",
-          "akka.remote.netty.ssl"
-        ]
+          enabled-transports = [
+            "akka.remote.classic.test",
+            "akka.remote.classic.netty.tcp",
+            "akka.remote.classic.netty.ssl"
+          ]
 
-        netty.tcp = $${common-netty-settings}
-        netty.udp = $${common-netty-settings}
-        netty.ssl = $${common-netty-settings}
-        netty.ssl.security = $${common-ssl-settings}
+          netty.tcp = $${common-netty-settings}
+          netty.ssl = $${common-netty-settings}
+          netty.ssl.security = $${common-ssl-settings}
 
-        test {
-          transport-class = "akka.remote.transport.TestTransport"
-          applied-adapters = []
-          registry-key = aX33k0jWKg
-          local-address = "test://RemotingSpec@localhost:12345"
-          maximum-payload-bytes = 32000 bytes
-          scheme-identifier = test
+          test {
+            transport-class = "akka.remote.transport.TestTransport"
+            applied-adapters = []
+            registry-key = aX33k0jWKg
+            local-address = "test://RemotingSpec@localhost:12345"
+            maximum-payload-bytes = 32000 bytes
+            scheme-identifier = test
+          }
         }
       }
 
@@ -140,14 +141,15 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   import RemotingSpec._
 
   val conf = ConfigFactory.parseString("""
-      akka.remote.test {
+      akka.remote.artery.enabled = false
+      akka.remote.classic.test {
         local-address = "test://remote-sys@localhost:12346"
         maximum-payload-bytes = 48000 bytes
       }
     """).withFallback(system.settings.config).resolve()
   val remoteSystem = ActorSystem("remote-sys", conf)
 
-  for ((name, proto) <- Seq("/gonk" -> "tcp", "/zagzag" -> "udp", "/roghtaar" -> "ssl.tcp"))
+  for ((name, proto) <- Seq("/gonk" -> "tcp", "/roghtaar" -> "ssl.tcp"))
     deploy(system, Deploy(name, scope = RemoteScope(getOtherAddress(remoteSystem, proto))))
 
   def getOtherAddress(sys: ActorSystem, proto: String) =
@@ -201,7 +203,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   private def byteStringOfSize(size: Int) = ByteString.fromArray(Array.fill(size)(42: Byte))
 
-  val maxPayloadBytes = system.settings.config.getBytes("akka.remote.test.maximum-payload-bytes").toInt
+  val maxPayloadBytes = system.settings.config.getBytes("akka.remote.classic.test.maximum-payload-bytes").toInt
 
   override def afterTermination(): Unit = {
     shutdown(remoteSystem)
@@ -238,7 +240,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "not be exhausted by sending to broken connections" in {
       val tcpOnlyConfig = ConfigFactory
-        .parseString("""akka.remote.enabled-transports = ["akka.remote.netty.tcp"]""")
+        .parseString("""akka.remote.enabled-transports = ["akka.remote.classic.netty.tcp"]""")
         .withFallback(remoteSystem.settings.config)
       val moreSystems = Vector.fill(5)(ActorSystem(remoteSystem.name, tcpOnlyConfig))
       moreSystems.foreach { sys =>
@@ -490,22 +492,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg("postStop")
     }
 
-    "be able to use multiple transports and use the appropriate one (UDP)" in {
-      val r = system.actorOf(Props[Echo1], "zagzag")
-      r.path.toString should ===(
-        s"akka.udp://remote-sys@localhost:${port(remoteSystem, "udp")}/remote/akka.udp/RemotingSpec@localhost:${port(system, "udp")}/user/zagzag")
-      r ! 42
-      expectMsg(10.seconds, 42)
-      EventFilter[Exception]("crash", occurrences = 1).intercept {
-        r ! new Exception("crash")
-      }
-      expectMsg("preRestart")
-      r ! 42
-      expectMsg(42)
-      system.stop(r)
-      expectMsg("postStop")
-    }
-
     "be able to use multiple transports and use the appropriate one (SSL)" in {
       val r = system.actorOf(Props[Echo1], "roghtaar")
       r.path.toString should ===(
@@ -566,8 +552,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
             # Additional internal serialization verification need so be off, otherwise it triggers two error messages
             # instead of one: one for the internal check, and one for the actual remote send -- tripping off this test
             akka.actor.serialize-messages = off
-            akka.remote.enabled-transports = ["akka.remote.test", "akka.remote.netty.tcp"]
-            akka.remote.test.local-address = "test://other-system@localhost:12347"
+            akka.remote.classic.enabled-transports = ["akka.remote.classic.test", "akka.remote.classic.netty.tcp"]
+            akka.remote.classic.test.local-address = "test://other-system@localhost:12347"
           """)
         .withFallback(remoteSystem.settings.config)
       val otherSystem = ActorSystem("other-system", config)
@@ -602,10 +588,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val remoteAddress = Address("akka.test", "system2", "localhost", 2)
 
       val config = ConfigFactory.parseString(s"""
-            akka.remote.enabled-transports = ["akka.remote.test"]
+            akka.remote.enabled-transports = ["akka.remote.classic.test"]
             akka.remote.retry-gate-closed-for = 5s
 
-            akka.remote.test {
+            akka.remote.classic.test {
               registry-key = tFdVxq
               local-address = "test://${localAddress.system}@${localAddress.host.get}:${localAddress.port.get}"
             }
@@ -820,8 +806,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to connect to system even if it's not there at first" in {
       val config = ConfigFactory.parseString(s"""
-            akka.remote.enabled-transports = ["akka.remote.netty.tcp"]
-            akka.remote.netty.tcp.port = 0
+            akka.remote.enabled-transports = ["akka.remote.classic.netty.tcp"]
+            akka.remote.classic.netty.tcp.port = 0
             akka.remote.retry-gate-closed-for = 5s
             """).withFallback(remoteSystem.settings.config)
       val thisSystem = ActorSystem("this-system", config)
@@ -831,7 +817,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val probeSender = probe.ref
         val otherAddress = temporaryServerAddress()
         val otherConfig = ConfigFactory.parseString(s"""
-              akka.remote.netty.tcp.port = ${otherAddress.getPort}
+              akka.remote.classic.netty.tcp.port = ${otherAddress.getPort}
               """).withFallback(config)
         val otherSelection =
           thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
@@ -858,8 +844,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "allow other system to connect even if it's not there at first" in {
       val config = ConfigFactory.parseString(s"""
-            akka.remote.enabled-transports = ["akka.remote.netty.tcp"]
-            akka.remote.netty.tcp.port = 0
+            akka.remote.enabled-transports = ["akka.remote.classic.netty.tcp"]
+            akka.remote.classic.netty.tcp.port = 0
             akka.remote.retry-gate-closed-for = 5s
             """).withFallback(remoteSystem.settings.config)
       val thisSystem = ActorSystem("this-system", config)
@@ -870,7 +856,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         thisSystem.actorOf(Props[Echo2], "echo")
         val otherAddress = temporaryServerAddress()
         val otherConfig = ConfigFactory.parseString(s"""
-              akka.remote.netty.tcp.port = ${otherAddress.getPort}
+              akka.remote.classic.netty.tcp.port = ${otherAddress.getPort}
               """).withFallback(config)
         val otherSelection =
           thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")

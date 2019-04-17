@@ -21,14 +21,15 @@ object ThrottlerTransportAdapterSpec {
     akka {
       actor.provider = remote
 
-      remote.netty.tcp.hostname = "localhost"
+      remote.artery.enabled = off
+      remote.classic.netty.tcp.hostname = "localhost"
       remote.log-remote-lifecycle-events = off
       remote.retry-gate-closed-for = 1 s
       remote.transport-failure-detector.heartbeat-interval = 1 s
       remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
 
-      remote.netty.tcp.applied-adapters = ["trttl"]
-      remote.netty.tcp.port = 0
+      remote.classic.netty.tcp.applied-adapters = ["trttl"]
+      remote.classic.netty.tcp.port = 0
     }
                                                    """)
 

@@ -20,18 +20,20 @@ import scala.util.control.NonFatal
  * by any network node. Therefore we assume here that the initialization of
  * the ActorSystem with the use of remoting will intentionally fail.
  */
+// FIXME, switch to test artery or move to classic package
 class RemoteInitErrorSpec extends WordSpec with Matchers {
   val conf = ConfigFactory.parseString("""
       akka {
         actor {
           provider = remote
         }
+        remote.artery.enabled = false
         remote {
-          enabled-transports = ["akka.remote.netty.tcp"]
-            netty.tcp {
-              hostname = "192.0.2.1"
-              port = 12344
-            }
+          enabled-transports = ["akka.remote.classic.netty.tcp"]
+          classic.netty.tcp {
+            hostname = "192.0.2.1"
+            port = 12344
+          }
         }
       }
     """).resolve()
@@ -45,7 +47,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
     "shut down properly on RemoteActorRefProvider initialization failure" in {
       val start = currentThreadIds()
       try {
-        ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=OFF").withFallback(conf))
+        ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=DEBUG").withFallback(conf))
         fail("initialization should fail due to invalid IP address")
       } catch {
         case NonFatal(_) => {

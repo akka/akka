@@ -26,7 +26,7 @@ object JoinConfig {
       akka.cluster.configuration-compatibility-check.enforce-on-join = on
       akka.cluster.jmx.enabled = off
       akka.coordinated-shutdown.terminate-actor-system = on
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
     """).withFallback(AkkaSpec.testConf)
 

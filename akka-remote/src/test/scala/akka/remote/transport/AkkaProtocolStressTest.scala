@@ -21,8 +21,9 @@ object AkkaProtocolStressTest {
       #loglevel = DEBUG
       actor.serialize-messages = off
       actor.provider = remote
+      remote.artery.enabled = off
 
-      remote.log-remote-lifecycle-events = on
+      remote.classic.log-remote-lifecycle-events = on
 
       remote.transport-failure-detector {
         max-sample-size = 2
@@ -32,9 +33,9 @@ object AkkaProtocolStressTest {
         acceptable-heartbeat-pause = 1 s
       }
       ## Keep gate duration in this test for a low value otherwise too much messages are dropped
-      remote.retry-gate-closed-for = 100 ms
+      remote.classic.retry-gate-closed-for = 100 ms
 
-      remote.netty.tcp {
+      remote.classic.netty.tcp {
         applied-adapters = ["gremlin"]
         port = 0
       }

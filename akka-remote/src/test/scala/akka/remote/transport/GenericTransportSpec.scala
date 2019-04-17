@@ -15,7 +15,10 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.transport.TestTransport.{ AssociateAttempt, DisassociateAttempt, ListenAttempt, WriteAttempt }
 
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
-    extends AkkaSpec("""akka.actor.provider = remote """)
+    extends AkkaSpec("""
+         akka.remote.artery.enabled = false
+         akka.actor.provider = remote 
+      """)
     with DefaultTimeout
     with ImplicitSender {
 

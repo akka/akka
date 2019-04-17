@@ -2,17 +2,16 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import akka.testkit._
-import akka.actor._
+import akka.actor.{ RootActorPath, _ }
+import akka.event.Logging.Warning
+import akka.remote.{ QuarantinedEvent, RARP, RemoteActorRef }
+import akka.testkit.{ SocketUtil, _ }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
-import akka.actor.RootActorPath
 
 import scala.concurrent.duration._
-import akka.testkit.SocketUtil
-import akka.event.Logging.Warning
-import com.github.ghik.silencer.silent
 
 class RemoteDeathWatchSpec
     extends AkkaSpec(ConfigFactory.parseString("""
@@ -23,11 +22,14 @@ akka {
             /watchers.remote = "akka.tcp://other@localhost:2666"
         }
     }
-    remote.retry-gate-closed-for = 1 s
-    remote.initial-system-message-delivery-timeout = 3 s
-    remote.netty.tcp {
+    remote.artery.enabled = off
+    remote.classic {
+      retry-gate-closed-for = 1 s
+      initial-system-message-delivery-timeout = 3 s
+      netty.tcp {
         hostname = "localhost"
         port = 0
+      }
     }
 }
 """))
@@ -41,7 +43,11 @@ akka {
 
   val other = ActorSystem(
     "other",
-    ConfigFactory.parseString("akka.remote.netty.tcp.port=2666").withFallback(system.settings.config))
+    ConfigFactory.parseString("""
+        akka.loglevel = DEBUG
+        akka.remote.artery.enabled = off
+        akka.remote.classic.netty.tcp.port=2666
+                              """).withFallback(system.settings.config))
 
   override def beforeTermination(): Unit = {
     system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = "received dead letter.*Disassociate")))

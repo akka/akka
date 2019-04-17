@@ -266,6 +266,7 @@ private[remote] class ReliableDeliverySupervisor(
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case _: AssociationProblem => Escalate
     case NonFatal(e) =>
+      log.error(e, "Dog")
       val causedBy = if (e.getCause == null) "" else s"Caused by: [${e.getCause.getMessage}]"
       log.warning(
         "Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
@@ -633,7 +634,7 @@ private[remote] class EndpointWriter(
   private val markLog = Logging.withMarker(this)
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
   val remoteMetrics = RemoteMetricsExtension(extendedSystem)
-  val backoffDispatcher = context.system.dispatchers.lookup("akka.remote.backoff-remote-dispatcher")
+  val backoffDispatcher = context.system.dispatchers.lookup("akka.remote.classic.backoff-remote-dispatcher")
 
   var reader: Option[ActorRef] = None
   var handle: Option[AkkaProtocolHandle] = handleOrActive

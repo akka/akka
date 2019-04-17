@@ -14,7 +14,7 @@ import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
 class RemoteConfigSpec extends AkkaSpec("""
     akka.actor.provider = remote
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
   """) {
 
   "Remoting" should {
@@ -76,7 +76,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "contain correct netty.tcp values in reference.conf" in {
-      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.classic.netty.tcp")
       val s = new NettyTransportSettings(c)
       import s._
 
@@ -100,7 +100,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "contain correct socket worker pool configuration values in reference.conf" in {
-      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.classic.netty.tcp")
 
       // server-socket-worker-pool
       {
@@ -122,7 +122,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "contain correct ssl configuration values in reference.conf" in {
-      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
+      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.classic.netty.ssl.security"))
       sslSettings.SSLKeyStore should ===("keystore")
       sslSettings.SSLKeyStorePassword should ===("changeme")
       sslSettings.SSLKeyPassword should ===("changeme")

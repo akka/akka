@@ -21,7 +21,7 @@ object RemoteDeploymentDocSpec {
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = remote
-    akka.remote.netty.tcp {
+    akka.remote.classic.netty.tcp {
       port = 0
     }
 """) with ImplicitSender {

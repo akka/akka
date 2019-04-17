@@ -10,7 +10,9 @@ import akka.routing.ActorSelectionRoutee
 import akka.routing.ConsistentRoutee
 import akka.routing.ConsistentHash
 
-class RemoteConsistentHashingRouterSpec extends AkkaSpec("""
+class RemoteConsistentHashingRouterSpec
+    extends AkkaSpec("""
+    akka.remote.artery.canonical.port = 0                                                         
     akka.actor.provider = remote """) {
 
   "ConsistentHashingGroup" must {

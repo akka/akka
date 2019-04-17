@@ -33,7 +33,7 @@ class ReplicatedDataSerializerSpec
         ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.actor.provider=cluster
-    akka.remote.netty.tcp.port=0
+    akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
     akka.actor {
       serialize-messages = off

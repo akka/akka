@@ -2,14 +2,14 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport.netty
+package akka.remote.classic.transport.netty
 
 import java.net.{ InetAddress, InetSocketAddress }
 import java.nio.channels.ServerSocketChannel
 
-import akka.testkit.SocketUtil
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.remote.BoundAddressesExtension
+import akka.testkit.SocketUtil
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -39,16 +39,15 @@ object NettyTransportSpec {
 }
 
 class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
-
-  import akka.remote.transport.netty.NettyTransportSpec._
+  import NettyTransportSpec._
 
   "NettyTransport" should {
-    behave.like(theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("tcp"))
-    behave.like(theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("udp"))
+    behave.like(theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress())
 
     "bind to a random port" in {
       val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote.netty.tcp {
+        akka.remote.artery.enabled = false 
+        akka.remote.classic.netty.tcp {
           port = 0
         }
         """)
@@ -65,7 +64,8 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
 
       try {
         val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote.netty.tcp {
+        akka.remote.artery.enabled = false 
+        akka.remote.classic.netty.tcp {
           port = ${address.getPort}
           bind-port = 0
         }
@@ -92,7 +92,8 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
       val address = SocketUtil.temporaryServerAddress(InetAddress.getLocalHost.getHostAddress, udp = false)
 
       val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote.netty.tcp {
+        akka.remote.artery.enabled = false 
+        akka.remote.classic.netty.tcp {
           port = 0
           bind-port = ${address.getPort}
         }
@@ -105,25 +106,10 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
       Await.result(sys.terminate(), Duration.Inf)
     }
 
-    "bind to multiple transports" in {
-      val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote {
-          netty.tcp.port = 0
-          netty.udp.port = 0
-          enabled-transports = ["akka.remote.netty.tcp", "akka.remote.netty.udp"]
-        }
-        """)
-      implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
-
-      getInternal should contain(getExternal.withProtocol("tcp"))
-      getInternal.size should ===(2)
-
-      Await.result(sys.terminate(), Duration.Inf)
-    }
-
     "bind to all interfaces" in {
       val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote {
+        akka.remote.artery.enabled = false 
+        akka.remote.classic {
           netty.tcp.bind-hostname = "0.0.0.0"
         }
         """)
@@ -140,33 +126,35 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
 trait BindBehavior {
   this: WordSpec with Matchers =>
 
-  import akka.remote.transport.netty.NettyTransportSpec._
+  import NettyTransportSpec._
 
-  def theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress(proto: String) = {
-    s"bind to default $proto address" in {
-      val address = SocketUtil.temporaryServerAddress(udp = proto == "udp")
+  // TODO inline
+  def theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress() = {
+    s"bind to default tcp address" in {
+      val address = SocketUtil.temporaryServerAddress()
 
       val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote {
-          netty.$proto {
+        akka.remote.artery.enabled = false 
+        akka.remote.classic {
+          netty.tcp {
             hostname = ${address.getAddress.getHostAddress}
             port = ${address.getPort}
           }
-          enabled-transports = ["akka.remote.netty.$proto"]
+          enabled-transports = ["akka.remote.classic.netty.tcp"]
         }
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress(s"akka.$proto"))
-      getInternal should contain(address.toAkkaAddress(proto))
+      getExternal should ===(address.toAkkaAddress(s"akka.tcp"))
+      getInternal should contain(address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
 
-    s"bind to specified $proto address" in {
-      val address = SocketUtil.temporaryServerAddress(address = "127.0.0.1", udp = proto == "udp")
+    s"bind to specified tcp address" in {
+      val address = SocketUtil.temporaryServerAddress(address = "127.0.0.1")
       val bindAddress =
-        try SocketUtil.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
+        try SocketUtil.temporaryServerAddress(address = "127.0.1.1")
         catch {
           case e: java.net.BindException =>
             info(s"skipping test due to [${e.getMessage}], you probably have to use `ifconfig lo0 alias 127.0.1.1`")
@@ -175,21 +163,22 @@ trait BindBehavior {
         }
 
       val bindConfig = ConfigFactory.parseString(s"""
-        akka.remote {
-          netty.$proto {
+        akka.remote.artery.enabled = false 
+        akka.remote.classic {
+          netty.tcp {
             hostname = ${address.getAddress.getHostAddress}
             port = ${address.getPort}
 
             bind-hostname = ${bindAddress.getAddress.getHostAddress}
             bind-port = ${bindAddress.getPort}
           }
-          enabled-transports = ["akka.remote.netty.$proto"]
+          enabled-transports = ["akka.remote.classic.netty.tcp"]
         }
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress(s"akka.$proto"))
-      getInternal should contain(bindAddress.toAkkaAddress(proto))
+      getExternal should ===(address.toAkkaAddress(s"akka.tcp"))
+      getInternal should contain(bindAddress.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }

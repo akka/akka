@@ -110,7 +110,7 @@ abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestar
         val freshSystem = ActorSystem(
           system.name,
           ConfigFactory.parseString(s"""
-          akka.remote.netty.tcp.port = ${address.port.get}
+          akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")

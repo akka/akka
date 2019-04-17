@@ -2,28 +2,31 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.actor.{ Address }
+import java.util.concurrent.TimeoutException
+
+import akka.actor.Address
+import akka.protobuf.{ ByteString => PByteString }
+import akka.remote.classic.transport.AkkaProtocolSpec.TestFailureDetector
 import akka.remote.transport.AkkaPduCodec.{ Associate, Disassociate, Heartbeat }
-import akka.remote.transport.AkkaProtocolSpec.TestFailureDetector
 import akka.remote.transport.AssociationHandle.{
   ActorHandleEventListener,
   DisassociateInfo,
   Disassociated,
   InboundPayload
 }
+import akka.remote.transport.ProtocolStateActor
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
+import akka.remote.transport.{ AssociationRegistry => _, _ }
 import akka.remote.{ FailureDetector, WireFormats }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import akka.util.ByteString
-import akka.protobuf.{ ByteString => PByteString }
+import akka.util.{ ByteString, OptionVal }
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
-import java.util.concurrent.TimeoutException
-import akka.util.OptionVal
 
 object AkkaProtocolSpec {
 
@@ -51,18 +54,16 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           acceptable-heartbeat-pause = 3 s
           heartbeat-interval = 1 s
         }
+        
+        classic {
+          backoff-interval = 1 s
+          require-cookie = off
+          secure-cookie = "abcde"
+          shutdown-timeout = 5 s
+          startup-timeout = 5 s
+          use-passive-connections = on
+        }
 
-        backoff-interval = 1 s
-
-        require-cookie = off
-
-        secure-cookie = "abcde"
-
-        shutdown-timeout = 5 s
-
-        startup-timeout = 5 s
-
-        use-passive-connections = on
       }
   """).withFallback(system.settings.config)
 
@@ -89,7 +90,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
   def collaborators = {
     val registry = new AssociationRegistry
     val transport: TestTransport = new TestTransport(localAddress, registry)
-    val handle: TestAssociationHandle = new TestAssociationHandle(localAddress, remoteAddress, transport, true)
+    val handle: TestAssociationHandle = TestAssociationHandle(localAddress, remoteAddress, transport, true)
 
     // silently drop writes -- we do not have another endpoint under test, so nobody to forward to
     transport.writeBehavior.pushConstant(true)
@@ -257,7 +258,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
           handle,
           ActorAssociationEventListener(testActor),
-          new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
+          new AkkaProtocolSettings(
+            ConfigFactory.parseString("akka.remote.classic.require-cookie = on").withFallback(conf)),
           codec,
           failureDetector))
 
@@ -277,7 +279,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
           handle,
           ActorAssociationEventListener(testActor),
-          new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
+          new AkkaProtocolSettings(
+            ConfigFactory.parseString("akka.remote.classic.require-cookie = on").withFallback(conf)),
           codec,
           failureDetector))
 
@@ -311,7 +314,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           remoteAddress,
           statusPromise,
           transport,
-          new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
+          new AkkaProtocolSettings(
+            ConfigFactory.parseString("akka.remote.classic.require-cookie = on").withFallback(conf)),
           codec,
           failureDetector,
           refuseUid = None))
@@ -478,7 +482,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
+      val conf2 =
+        ConfigFactory.parseString("akka.remote.classic.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
 
       val stateActor = system.actorOf(
         ProtocolStateActor.outboundProps(
@@ -501,7 +506,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
     "give up inbound after connection timeout" in {
       val (failureDetector, _, _, handle) = collaborators
 
-      val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
+      val conf2 =
+        ConfigFactory.parseString("akka.remote.classic.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
 
       val reader = system.actorOf(
         ProtocolStateActor.inboundProps(

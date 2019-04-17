@@ -7,7 +7,7 @@ package akka.remote.artery
 import akka.actor.{ Actor, ActorRef, ActorRefScope, PoisonPill, Props }
 import akka.pattern.ask
 import akka.remote.RemoteActorRef
-import akka.remote.RemotingSpec.ActorForReq
+import akka.remote.classic.RemotingSpec.ActorForReq
 import akka.testkit.{ EventFilter, _ }
 import akka.util.Timeout
 import com.github.ghik.silencer.silent

@@ -16,7 +16,7 @@ object InactiveEntityPassivationSpec {
   val config = ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.cluster.sharding.passivate-idle-entity-after = 3 s
     akka.actor.serialize-messages = off
