@@ -54,7 +54,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
         serialize-creators = off
         serialize-messages = off
         serialization-bindings {
-          "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$Reply" = test-message-serializer
+          "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$$Reply" = test-message-serializer
         }
 
         deployment {
