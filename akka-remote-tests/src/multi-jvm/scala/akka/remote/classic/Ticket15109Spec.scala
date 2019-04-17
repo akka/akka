@@ -2,20 +2,19 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.actor._
+import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
 import akka.remote.testkit.MultiNodeConfig
-import akka.testkit._
-import akka.actor.ActorIdentity
-import akka.remote.testconductor.RoleName
-import akka.actor.Identify
-import scala.concurrent.Await
 import akka.remote.transport.AssociationHandle
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object Ticket15109Spec extends MultiNodeConfig {
   val first = role("first")
@@ -25,11 +24,12 @@ object Ticket15109Spec extends MultiNodeConfig {
     debugConfig(on = false).withFallback(
       ConfigFactory.parseString("""
       akka.loglevel = INFO
-      akka.remote.log-remote-lifecycle-events = INFO
+      akka.remote.artery.enabled = off
+      akka.remote.classic.log-remote-lifecycle-events = INFO
       ## Keep it tight, otherwise reestablishing a connection takes too much time
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
-      akka.remote.retry-gate-closed-for = 0.5 s
+      akka.remote.classic.retry-gate-closed-for = 0.5 s
                               """)))
 
   testTransport(on = true)

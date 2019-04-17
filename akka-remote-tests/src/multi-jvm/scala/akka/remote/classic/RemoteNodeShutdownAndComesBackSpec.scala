@@ -2,20 +2,19 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import language.postfixOps
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.actor._
+import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
 import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
-import akka.actor.ActorIdentity
-import akka.remote.testconductor.RoleName
-import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
   val first = role("first")
@@ -25,7 +24,8 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
     debugConfig(on = false).withFallback(
       ConfigFactory.parseString("""
       akka.loglevel = INFO
-      akka.remote.log-remote-lifecycle-events = INFO
+      akka.remote.artery.enabled = off
+      akka.remote.classic.log-remote-lifecycle-events = INFO
       ## Keep it tight, otherwise reestablishing a connection takes too much time
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
@@ -81,6 +81,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
         // Drop all messages from this point so no SHUTDOWN is ever received
         testConductor.blackhole(second, first, Direction.Send).await
         // Shut down all existing connections so that the system can enter recovery mode (association attempts)
+        // TODO, should artery support this?
         Await.result(
           RARP(system).provider.transport.managementCommand(ForceDisassociate(node(second).address)),
           3.seconds)

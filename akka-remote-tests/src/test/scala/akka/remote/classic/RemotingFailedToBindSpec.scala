@@ -2,7 +2,7 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
 import akka.actor.ActorSystem
 import akka.testkit.SocketUtil
@@ -20,7 +20,8 @@ class RemotingFailedToBindSpec extends WordSpec with Matchers {
            |  actor {
            |    provider = remote
            |  }
-           |  remote {
+           |  remote.artery.enabled = off
+           |  remote.classic {
            |    netty.tcp {
            |      hostname = "127.0.0.1"
            |      port = $port

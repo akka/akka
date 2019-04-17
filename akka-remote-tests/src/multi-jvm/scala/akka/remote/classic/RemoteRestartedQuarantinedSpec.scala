@@ -2,19 +2,18 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import language.postfixOps
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.actor._
+import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
+import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
 import akka.testkit._
-import akka.actor.ActorIdentity
-import akka.remote.testconductor.RoleName
-import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
@@ -23,12 +22,13 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false).withFallback(ConfigFactory.parseString(
       """
+      akka.remote.artery.enabled = off
       # Keep it long, we don't want reconnects
-      akka.remote.retry-gate-closed-for  = 1 s
+      akka.remote.classic.retry-gate-closed-for  = 1 s
 
       # Important, otherwise it is very racy to get a non-writing endpoint: the only way to do it if the two nodes
       # associate to each other at the same time. Setting this will ensure that the right scenario happens.
-      akka.remote.use-passive-connections = off
+      akka.remote.classic.use-passive-connections = off
 
       # TODO should not be needed, but see TODO at the end of the test
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
@@ -132,7 +132,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
             freshSystem
               .actorSelection(RootActorPath(firstAddress) / "user" / "subject")
               .tell(Identify("subject"), probe.ref)
-            probe.expectMsgType[ActorIdentity](1.second).ref should not be (None)
+            probe.expectMsgType[ActorIdentity](1.second).ref should not be None
           },
           30.seconds)
 
