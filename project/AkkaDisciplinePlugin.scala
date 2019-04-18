@@ -75,12 +75,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
           case _ =>
             Nil
         }).toSeq,
-      Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 11)) =>
-            Seq("-no-link-warnings")
-          case _ =>
-            Seq.empty
-        }),
       Compile / scalacOptions --=
         (if (strictProjects.contains(name.value)) Seq.empty
          else undisciplineScalacOptions.toSeq),
