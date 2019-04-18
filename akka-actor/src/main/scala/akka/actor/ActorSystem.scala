@@ -20,7 +20,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
 import scala.util.{ Failure, Success, Try }
-import scala.util.control.{ ControlThrowable, NonFatal }
+import scala.util.control.NonFatal
 import java.util.Optional
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
@@ -702,60 +702,8 @@ private[akka] class ActorSystemImpl(
   @volatile private var logDeadLetterListener: Option[ActorRef] = None
   final val settings: Settings = new Settings(classLoader, applicationConfig, name, setup)
 
-  protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
-    new Thread.UncaughtExceptionHandler() {
-      def uncaughtException(thread: Thread, cause: Throwable): Unit = {
-        cause match {
-          case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable =>
-            log.error(cause, "Uncaught error from thread [{}]", thread.getName)
-          case _ =>
-            if (cause.isInstanceOf[IncompatibleClassChangeError] && cause.getMessage.startsWith("akka"))
-              System.err.println(
-                s"""Detected ${cause.getClass.getName} error, which MAY be caused by incompatible Akka versions on the classpath.
-                  | Please note that a given Akka version MUST be the same across all modules of Akka that you are using,
-                  | e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core
-                  | Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka
-                  | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
-                 """.stripMargin.replaceAll("[\r\n]", ""))
-
-            if (settings.JvmExitOnFatalError)
-              try logFatalError("shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for", cause, thread)
-              finally System.exit(-1)
-            else
-              try logFatalError("shutting down", cause, thread)
-              finally terminate()
-        }
-      }
-
-      @inline
-      private def logFatalError(message: String, cause: Throwable, thread: Thread): Unit = {
-        // First log to stderr as this has the best chance to get through in an 'emergency panic' situation:
-        import System.err
-        err.print("Uncaught error from thread [")
-        err.print(thread.getName)
-        err.print("]: ")
-        err.print(cause.getMessage)
-        err.print(", ")
-        err.print(message)
-        err.print(" ActorSystem[")
-        err.print(name)
-        err.println("]")
-        System.err.flush()
-        cause.printStackTrace(System.err)
-        System.err.flush()
-
-        // Also log using the normal infrastructure - hope for the best:
-        markerLogging.error(
-          LogMarker.Security,
-          cause,
-          "Uncaught error from thread [{}]: " + cause.getMessage + ", " + message + " ActorSystem[{}]",
-          thread.getName,
-          name)
-      }
-    }
-
-  final val threadFactory: MonitorableThreadFactory =
-    MonitorableThreadFactory(name, settings.Daemonicity, Option(classLoader), uncaughtExceptionHandler)
+  final val threadFactory: ThreadFactory =
+    null
 
   /**
    * This is an extension point: by overriding this method, subclasses can
@@ -966,8 +914,9 @@ private[akka] class ActorSystemImpl(
         settings.SchedulerClass,
         immutable.Seq(
           classOf[Config] -> settings.config,
-          classOf[LoggingAdapter] -> log,
-          classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler")))
+          classOf[LoggingAdapter] -> log
+          // classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler"
+          ))
       .get
   //#create-scheduler
 

@@ -120,7 +120,7 @@ private[akka] trait Dispatch { this: ActorCell =>
   private def handleException: Catcher[Unit] = {
     case e: InterruptedException =>
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
-      Thread.currentThread.interrupt()
+      // Thread.currentThread.interrupt()
     case NonFatal(e) =>
       val message = e match {
         case n: NoStackTrace => "swallowing exception during message send: " + n.getMessage

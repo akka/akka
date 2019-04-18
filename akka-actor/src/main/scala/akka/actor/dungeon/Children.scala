@@ -302,7 +302,7 @@ private[akka] trait Children { this: ActorCell =>
         } catch {
           case e: InterruptedException =>
             unreserveChild(name)
-            Thread.interrupted() // clear interrupted flag before throwing according to java convention
+            // Thread.interrupted() // clear interrupted flag before throwing according to java convention
             throw e
           case NonFatal(e) =>
             unreserveChild(name)

@@ -349,9 +349,9 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
-      case m: MonitorableThreadFactory =>
-        // add the dispatcher id to the thread names
-        m.withName(m.name + "-" + id)
+      // case m: MonitorableThreadFactory =>
+      //   // add the dispatcher id to the thread names
+      //   m.withName(m.name + "-" + id)
       case other => other
     }
 

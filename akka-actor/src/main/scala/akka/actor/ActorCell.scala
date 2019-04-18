@@ -680,7 +680,7 @@ private[akka] class ActorCell(
     } catch {
       case e: InterruptedException =>
         clearOutActorIfNonNull()
-        Thread.currentThread().interrupt()
+        //Thread.currentThread().interrupt()
         throw ActorInitializationException(self, "interruption during creation", e)
       case NonFatal(e) =>
         clearOutActorIfNonNull()

@@ -24,14 +24,14 @@ import scala.util.control.NonFatal
 import akka.event.Logging
 import akka.dispatch.ExecutionContexts
 
-import scala.util.Try
+// import scala.util.Try
 import scala.concurrent.Await
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.Optional
 
 import akka.annotation.InternalApi
-import akka.util.OptionVal
+import akka.util.{ unused, OptionVal }
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
 
@@ -223,15 +223,15 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         // exit the JVM forcefully anyway.
         // We must spawn a separate thread to not block current thread,
         // since that would have blocked the shutdown of the ActorSystem.
-        val timeout = coord.timeout(PhaseActorSystemTerminate)
-        val t = new Thread {
-          override def run(): Unit = {
-            if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
-              System.exit(exitCode)
-          }
-        }
-        t.setName("CoordinatedShutdown-exit")
-        t.start()
+        // val timeout = coord.timeout(PhaseActorSystemTerminate)
+        // val t = new Thread {
+        //   override def run(): Unit = {
+        //     if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
+        //       System.exit(exitCode)
+        //   }
+        // }
+        // t.setName("CoordinatedShutdown-exit")
+        // t.start()
       }
 
       if (terminateActorSystem) {
@@ -601,52 +601,7 @@ final class CoordinatedShutdown private[akka] (
    * For shutdown hooks that does not have any requirements on running before the Akka
    * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
    */
-  @tailrec def addCancellableJvmShutdownHook[T](hook: => T): Cancellable = {
-    if (runStarted.get == None) {
-      val currentLatch = _jvmHooksLatch.get
-      val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
-      if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {
-        val thread = new Thread {
-          override def run(): Unit = {
-            try hook
-            finally _jvmHooksLatch.get.countDown()
-          }
-        }
-        thread.setName(s"${system.name}-shutdown-hook-${newLatch.getCount}")
-        try {
-          Runtime.getRuntime.addShutdownHook(thread)
-          new Cancellable {
-            @volatile var cancelled = false
-            def cancel(): Boolean = {
-              try {
-                if (Runtime.getRuntime.removeShutdownHook(thread)) {
-                  cancelled = true
-                  _jvmHooksLatch.get.countDown()
-                  true
-                } else {
-                  false
-                }
-              } catch {
-                case _: IllegalStateException =>
-                  // shutdown already in progress
-                  false
-              }
-            }
-            def isCancelled: Boolean = cancelled
-          }
-        } catch {
-          case e: IllegalStateException =>
-            // Shutdown in progress, if CoordinatedShutdown is created via a JVM shutdown hook (Artery)
-            log.warning("Could not addJvmShutdownHook, due to: {}", e.getMessage)
-            _jvmHooksLatch.get.countDown()
-            Cancellable.alreadyCancelled
-        }
-      } else
-        addCancellableJvmShutdownHook(hook) // lost CAS, retry
-    } else {
-      Cancellable.alreadyCancelled
-    }
-  }
+  def addCancellableJvmShutdownHook[T](@unused hook: => T): Cancellable = null
 
   /**
    * Java API: Add a JVM shutdown hook that will be run when the JVM process

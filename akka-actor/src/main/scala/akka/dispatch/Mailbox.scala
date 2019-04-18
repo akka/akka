@@ -18,7 +18,7 @@ import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import akka.dispatch.forkjoin.ForkJoinTask
+// import akka.dispatch.forkjoin.ForkJoinTask
 import scala.util.control.NonFatal
 
 /**
@@ -241,14 +241,14 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       run(); false
     } catch {
       case _: InterruptedException =>
-        Thread.currentThread.interrupt()
+        // Thread.currentThread.interrupt()
         false
       case anything: Throwable =>
-        val t = Thread.currentThread
-        t.getUncaughtExceptionHandler match {
-          case null =>
-          case some => some.uncaughtException(t, anything)
-        }
+        // val t = Thread.currentThread
+        // t.getUncaughtExceptionHandler match {
+        //   case null =>
+        //   case some => some.uncaughtException(t, anything)
+        // }
         throw anything
     }
 
@@ -266,8 +266,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       if (next ne null) {
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor.invoke(next)
-        if (Thread.interrupted())
-          throw new InterruptedException("Interrupted while processing actor messages")
+        // if (Thread.interrupted())
+          // throw new InterruptedException("Interrupted while processing actor messages")
         processAllSystemMessages()
         if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
           processMailbox(left - 1, deadlineNs)
@@ -291,8 +291,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
       // we know here that systemInvoke ensures that only "fatal" exceptions get rethrown
       actor.systemInvoke(msg)
-      if (Thread.interrupted())
-        interruption = new InterruptedException("Interrupted while processing system messages")
+      // if (Thread.interrupted())
+        // interruption = new InterruptedException("Interrupted while processing system messages")
       // don’t ever execute normal message when system message present!
       if ((messageList.isEmpty) && !isClosed) messageList = systemDrain(SystemMessageList.LNil)
     }
@@ -322,7 +322,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     }
     // if we got an interrupted exception while handling system messages, then rethrow it
     if (interruption ne null) {
-      Thread.interrupted() // clear interrupted flag before throwing according to java convention
+      // Thread.interrupted() // clear interrupted flag before throwing according to java convention
       throw interruption
     }
   }

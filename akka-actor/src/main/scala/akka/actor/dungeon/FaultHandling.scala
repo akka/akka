@@ -310,7 +310,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
   final protected def handleNonFatalOrInterruptedException(thunk: (Throwable) => Unit): Catcher[Unit] = {
     case e: InterruptedException =>
       thunk(e)
-      Thread.currentThread().interrupt()
+      // Thread.currentThread().interrupt()
     case NonFatal(e) =>
       thunk(e)
   }
