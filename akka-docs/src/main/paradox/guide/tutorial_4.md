@@ -118,7 +118,7 @@ Java
 
 @@@ note
 
-We used the `expectNoMsg()` helper method from @scala[`TestProbe`]@java[`TestKit`]. This assertion waits until the defined time-limit and fails if it receives any messages during this period. If no messages are received during the waiting period, the assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant test execution time.
+We used the `expectNoMessage()` helper method from @scala[`TestProbe`]@java[`TestKit`]. This assertion waits until the defined time-limit and fails if it receives any messages during this period. If no messages are received during the waiting period, the assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant test execution time.
 
 @@@
 
