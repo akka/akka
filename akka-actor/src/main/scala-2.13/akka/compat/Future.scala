@@ -14,7 +14,7 @@ import scala.collection.immutable
  * Compatibility wrapper for `scala.concurrent.Future` to be able to compile the same code
  * against Scala 2.11, 2.12, 2.13
  *
- * Remove these classes as soon as support for Scala 2.13 is dropped!
+ * Remove these classes as soon as support for Scala 2.12 is dropped!
  */
 @InternalApi private[akka] object Future {
   def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
