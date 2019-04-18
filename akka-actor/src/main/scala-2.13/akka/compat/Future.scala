@@ -12,7 +12,7 @@ import scala.collection.immutable
  * INTERNAL API
  *
  * Compatibility wrapper for `scala.concurrent.Future` to be able to compile the same code
- * against Scala 2.11, 2.12, 2.13
+  * against Scala 2.12, 2.13
  *
  * Remove these classes as soon as support for Scala 2.12 is dropped!
  */
