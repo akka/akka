@@ -1,5 +1,14 @@
 # Remoting
 
+@@@ note
+
+Remoting is the mechanism by which Akka nodes talk to each other.
+When building an Akka application, you would usually not use the Remoting concepts
+directly, but instead use the more high-level @ref[Cluster](index-cluster.md)
+utilities.
+
+@@@
+
 ## Dependency
 
 To use Akka Remoting, you must add the following dependency in your project:
