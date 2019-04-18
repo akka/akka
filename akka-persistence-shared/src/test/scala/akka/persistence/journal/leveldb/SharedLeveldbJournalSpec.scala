@@ -27,7 +27,11 @@ object SharedLeveldbJournalSpec {
         }
         remote {
           enabled-transports = ["akka.remote.classic.netty.tcp"]
-          netty.tcp {
+          classic.netty.tcp {
+            hostname = "127.0.0.1"
+            port = 0
+          }
+          artery.canonical {
             hostname = "127.0.0.1"
             port = 0
           }
