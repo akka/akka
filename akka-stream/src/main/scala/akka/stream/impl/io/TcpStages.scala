@@ -74,9 +74,13 @@ import scala.concurrent.{ Future, Promise }
             if (isAvailable(out)) listener ! ResumeAccepting(1)
             val thisStage = self
             bindingPromise.success(ServerBinding(localAddress)(() => {
-              // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
-              // stopped.
-              thisStage.tell(Unbind, thisStage)
+              // To allow unbind() to be invoked multiple times with minimal chance of dead letters, we check if
+              // it's already unbound before sending the message.
+              if (!unbindPromise.isCompleted) {
+                // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
+                // stopped.
+                thisStage.tell(Unbind, thisStage)
+              }
               unbindPromise.future
             }, unbindPromise.future.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)))
           case f: CommandFailed =>
