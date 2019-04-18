@@ -152,8 +152,7 @@ private[akka] class RemoteActorRefProvider(
   if (remoteSettings.WarnAboutDirectUse) {
     log.warning(
       "Using the 'remote' ActorRefProvider directly, which is a low-level feature intended for power users. " +
-      "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead."
-    )
+      "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
   }
 
   override val deployer: Deployer = createDeployer
