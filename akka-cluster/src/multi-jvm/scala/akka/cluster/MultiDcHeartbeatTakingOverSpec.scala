@@ -44,7 +44,7 @@ object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
 
-      remote.log-remote-lifecycle-events = off
+      remote.classic.log-remote-lifecycle-events = off
 
       cluster {
         debug.verbose-heartbeat-logging = off
@@ -92,7 +92,7 @@ abstract class MultiDcHeartbeatTakingOverSpec
       expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
-      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- expectedAlphaHeartbeaterRoles ++ expectedBetaHeartbeaterRoles
+      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles ++ expectedBetaHeartbeaterRoles)
     }
 
     "collect information on oldest nodes" taggedAs LongRunningTest in {
