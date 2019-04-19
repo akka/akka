@@ -208,7 +208,7 @@ object Entity {
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
-   * is very common and therefore the [[Entity.ofPersistentEntity]] is provided as convenience.
+   * is very common and therefore the [[Entity.ofEventSourcedEntity]] is provided as convenience.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
@@ -238,7 +238,7 @@ object Entity {
    * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
    * @tparam Command The type of message the entity accepts
    */
-  def ofPersistentEntity[Command, Event, State](
+  def ofEventSourcedEntity[Command, Event, State](
       typeKey: EntityTypeKey[Command],
       createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]])
       : Entity[Command, ShardingEnvelope[Command]] = {
