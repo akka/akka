@@ -4,7 +4,6 @@ sudo: false
 
 scala:
   - "2.12.8"
-  - "2.11.12"
   - "2.13.0-M5"
 
 before_install:

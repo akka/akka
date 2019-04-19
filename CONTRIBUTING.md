@@ -206,7 +206,7 @@ validate binary compatibility of incoming pull requests. If your PR fails due to
 an error like this:
 
 ```
-[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.11:2.4.2  (filtered 222)
+[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.12:2.4.2  (filtered 222)
 [error]  * method foldAsync(java.lang.Object,scala.Function2)akka.stream.scaladsl.FlowOps in trait akka.stream.scaladsl.FlowOps is present only in current version
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
@@ -439,8 +439,7 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Have methods in the `javadsl` package delegate to the methods in the Scala API, or the common internal implementation. 
    The Akka Stream Scala instances for example have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts.
    
-1. When using Scala `object` instances, offer a `getInstance()` method and add a sealed abstract class 
-   (to support Scala 2.11) to get the return type. See `akka.Done` for an example.
+1. When using Scala `object` instances, offer a `getInstance()` method. See `akka.Done` for an example.
    
 1. When the Scala API contains an `apply` method, use `create` or `of` for Java users.
 
@@ -449,9 +448,6 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Do not define traits nested in other classes or in objects deeper than one level.
 
 1. Be careful to convert values within data structures (eg. for `scala.Long` vs. `java.lang.Long`, use `scala.Long.box(value)`)
-
-1. When compiling with both Scala 2.11 and 2.12, some methods considered overloads in 2.11, become ambiguous in 
-   2.12 as both may be functional interfaces.
 
 1. Complement any methods with Scala collections with a Java collection version
 
@@ -473,8 +469,6 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Place classes not part of the public APIs in a shared `internal` package. This package can contain implementations of 
    both Java and Scala APIs. Make such classes `private[akka]` and also, since that becomes `public` from Java's point of
    view, annotate with `@InternalApi` and add a scaladoc saying `INTERNAL API`
-   
-1. Companion objects (in Scala 2.11) cannot be accessed from Java if their companion is a trait, use an `abstract class` instead 
    
 1. Traits that are part of the Java API should only be used to define pure interfaces, as soon as there are implementations of methods, prefer 
    `abstract class`.

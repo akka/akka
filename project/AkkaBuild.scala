@@ -28,7 +28,7 @@ object AkkaBuild {
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.5-SNAPSHOT"
+      version in ThisBuild := "2.6-SNAPSHOT"
     )
  
   lazy val mayChangeSettings = Seq(
@@ -101,11 +101,8 @@ object AkkaBuild {
         if (JavaVersion.isJdk8)
           Seq("-target:jvm-1.8")
         else
-          if (scalaBinaryVersion.value == "2.11")
-            Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-          else
-            // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-            Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+          // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
+          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),

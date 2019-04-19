@@ -2,7 +2,6 @@
 
 ## Default remoting is now Artery TCP
 
-
 @ref[Artery TCP](../artery-remoting.md) is now the default remoting implementation. 
 Classic remoting has been deprecated and will be removed in `2.7.x`.
 To migrate to Artery a full cluster restart is required. If you've already moved to Artery in 2.5.x
@@ -39,3 +38,6 @@ Classic remoting over UDP has been deprecated since `2.5.0` and now has been rem
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
 
+## Scala 2.11 no longer supported
+
+If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
