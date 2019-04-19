@@ -2,14 +2,14 @@
 
 ## Prerequisites
 
-### JDK 8 and JDK 9
+### JDK 8 and JDK 11
 
-Releasing Akka requires running on at least JDK 9, but also having JDK 8
+Releasing Akka requires running on JDK 11, but also having JDK 8
 installed. The reason for this is that we want the Akka artifacts to be
-usable with JRE 8, but also want to compile some classes with JDK9-specific
+usable with JRE 8, but also want to compile some classes with JDK11-specific
 types.
 
-When we stop supporting Scala 2.11 we might be able to update the build towork
+In the future we might be able to update the build to work
 without having JDK 8 installed, by using the `-release` option.
 
 ### MinGW
