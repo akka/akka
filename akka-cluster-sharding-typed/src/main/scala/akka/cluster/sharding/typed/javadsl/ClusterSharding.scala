@@ -19,9 +19,8 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.japi.function.{Function => JFunction}
+import akka.japi.function.{ Function => JFunction }
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.javadsl.{Effect, ReplyEffect}
 import akka.util.Timeout
 import com.github.ghik.silencer.silent
 
@@ -264,8 +263,8 @@ object Entity {
    * and therefore this factory is provided as convenience.
    *
    * A [[EventSourcedEntityWithEnforcedReplies]] enforces that replies to commands are not forgotten.
-   * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
-   * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
+   * There will be compilation errors if the returned effect isn't a [[akka.persistence.typed.javadsl.ReplyEffect]], which can be
+   * created with `Effects().reply`, `Effects().noReply`, [[akka.persistence.typed.javadsl.Effect.thenReply]], or [[akka.persistence.typed.javadsl.Effect.thenNoReply]].
    *
    * More optional settings can be defined using the `with` methods of the returned [[Entity]].
    *
@@ -275,8 +274,9 @@ object Entity {
    */
   def ofEventSourcedEntityWithEnforcedReplies[Command, Event, State](
       typeKey: EntityTypeKey[Command],
-      createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntityWithEnforcedReplies[Command, Event, State]])
-      : Entity[Command, ShardingEnvelope[Command]] = {
+      createPersistentEntity: JFunction[
+        EntityContext[Command],
+        EventSourcedEntityWithEnforcedReplies[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
 
     of(
       typeKey,
@@ -286,7 +286,7 @@ object Entity {
           if (persistentEntity.entityTypeKey != typeKey)
             throw new IllegalArgumentException(
               s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
-                s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
+              s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
           persistentEntity
         }
       })
