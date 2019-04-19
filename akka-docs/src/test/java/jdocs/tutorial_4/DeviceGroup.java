@@ -90,7 +90,7 @@ public class DeviceGroup extends AbstractActor {
       }
     } else {
       log.warning(
-          "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
+          "Ignoring TrackDevice request for {}. This actor is responsible for {}. ",
               trackMsg.groupId,
           this.groupId);
     }
