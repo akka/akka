@@ -1,2 +1,0 @@
-# #21273 minor cleanup of WildcardIndex
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardIndex.empty")
