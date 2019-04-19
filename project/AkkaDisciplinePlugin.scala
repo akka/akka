@@ -37,10 +37,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   lazy val scalaFixSettings = Seq(Compile / scalacOptions += "-Yrangepos")
 
   lazy val scoverageSettings =
-    Seq(coverageMinimum := 70, coverageFailOnMinimum := false, coverageOutputHTML := true, coverageHighlighting := {
-      import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
-      !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
-    })
+    Seq(coverageMinimum := 70, coverageFailOnMinimum := false, coverageOutputHTML := true, coverageHighlighting := true)
 
   lazy val silencerSettings = {
     val silencerVersion = "1.3.1"
@@ -55,7 +52,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (
-          if (!scalaVersion.value.startsWith("2.11") && !nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+          if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
         ),
       Test / scalacOptions --= testUndicipline,
@@ -74,12 +71,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
           case _ =>
             Nil
         }).toSeq,
-      Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 11)) =>
-            Seq("-no-link-warnings")
-          case _ =>
-            Seq.empty
-        }),
       Compile / scalacOptions --=
         (if (strictProjects.contains(name.value)) Seq.empty
          else undisciplineScalacOptions.toSeq),
