@@ -1,0 +1,6 @@
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.Inbox$")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.Inbox")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL$")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL$*")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.dsl.*")
