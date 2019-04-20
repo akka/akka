@@ -724,14 +724,6 @@ class ActorDocSpec extends AkkaSpec("""
     lastSender.path.toStringWithoutAddress should be("/user")
   }
 
-  "using ActorDSL outside of akka.actor package" in {
-    import akka.actor.ActorDSL._
-    actor(new Act {
-      superviseWith(OneForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
-      superviseWith(AllForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
-    })
-  }
-
   "using CoordinatedShutdown" in {
     val someActor = system.actorOf(Props(classOf[Replier], this))
     //#coordinated-shutdown-addTask
