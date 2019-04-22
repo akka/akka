@@ -484,11 +484,10 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
-    if (settings.passivateIdleEntityAfter > Duration.Zero)
-      log.info(
-        "{}: Idle entities will be passivated after [{}]",
-        typeName,
-        PrettyDuration.format(settings.passivateIdleEntityAfter))
+    log.info(
+      "{}: Idle entities will be passivated after [{}]",
+      typeName,
+      PrettyDuration.format(settings.passivateIdleEntityAfter))
   }
 
   override def postStop(): Unit = {
