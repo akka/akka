@@ -574,12 +574,12 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
 
   "A " + dispatcherType must {
     "process messages in parallel" in {
-      val probe = TestProbe()
+      val probeA, probeB = TestProbe()
       implicit val dispatcher = interceptedDispatcher()
       val aStart, aStop, bParallel = new CountDownLatch(1)
       val a, b = newTestActor(dispatcher.id)
-      probe.watch(a)
-      probe.watch(b)
+      probeA.watch(a)
+      probeB.watch(b)
 
       a ! Meet(aStart, aStop)
       assertCountDown(aStart, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
@@ -592,8 +592,8 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
       system.stop(a)
       system.stop(b)
 
-      probe.expectTerminated(a)
-      probe.expectTerminated(b)
+      probeA.expectTerminated(a)
+      probeB.expectTerminated(b)
 
       assertRefDefaultZero(a)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
       assertRefDefaultZero(b)(registers = 1, unregisters = 1, msgsReceived = 1, msgsProcessed = 1)
