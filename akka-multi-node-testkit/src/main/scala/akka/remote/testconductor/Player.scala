@@ -279,10 +279,10 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           stay
         case TerminateMsg(Left(false)) =>
           context.system.terminate()
-          stay
+          stop()
         case TerminateMsg(Left(true)) =>
           context.system.asInstanceOf[ActorSystemImpl].abort()
-          stay
+          stop()
         case TerminateMsg(Right(exitValue)) =>
           System.exit(exitValue)
           stay // needed because Java doesn’t have Nothing
