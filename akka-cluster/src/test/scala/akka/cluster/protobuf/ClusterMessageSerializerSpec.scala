@@ -60,8 +60,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(InternalClusterAction.InitJoin(ConfigFactory.empty))
       checkSerialization(InternalClusterAction.InitJoinAck(address, CompatibleConfig(ConfigFactory.empty)))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
-      checkSerialization(ClusterHeartbeatSender.Heartbeat(address, 1, System.nanoTime()))
-      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress, 1, System.nanoTime()))
+      checkSerialization(ClusterHeartbeatSender.Heartbeat(address, -1, -1))
+      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress, -1, -1))
       checkSerialization(InternalClusterAction.ExitingConfirmed(uniqueAddress))
 
       val node1 = VectorClock.Node("node1")

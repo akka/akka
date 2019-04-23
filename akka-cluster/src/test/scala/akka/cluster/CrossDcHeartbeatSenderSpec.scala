@@ -5,7 +5,7 @@
 package akka.cluster
 
 import akka.actor.{ ActorSelection, Address, Props }
-import akka.cluster.ClusterEvent.{ CurrentClusterState, MemberUp }
+import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterHeartbeatSender.Heartbeat
 import akka.cluster.CrossDcHeartbeatSenderSpec.TestCrossDcHeartbeatSender
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
