@@ -96,8 +96,8 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
          }
 
          override def onUpstreamFinish(): Unit = {
-           if (outer.staleTupleValues) completeStage()
-           outer.willShutDown = true
+           if (!hasValue || outer.staleTupleValues) completeStage()
+           else outer.willShutDown = true
          }
        }
     }

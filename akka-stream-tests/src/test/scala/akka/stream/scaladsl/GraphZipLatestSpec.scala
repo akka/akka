@@ -180,6 +180,14 @@ class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with S
       }
     }
 
+    // Reproducing #26711
+    "complete when one quickly completes without any elements" in {
+      // not sure quite why, but Source.empty does not trigger this, while Source(List()) does - race condition somehow
+      val immediatelyCompleting = Source.single(3).zipLatest(Source(List[Int]()))
+
+      immediatelyCompleting.runWith(Sink.seq).futureValue should ===(Seq[(Int, Int)]())
+    }
+
     "complete when one source completes and the other continues pushing" in assertAllStagesStopped {
 
       val (probe, bools, ints) = testGraph[Boolean, Int]
