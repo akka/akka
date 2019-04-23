@@ -4,7 +4,6 @@
 
 package akka.discovery
 
-import java.io.NotSerializableException
 import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
