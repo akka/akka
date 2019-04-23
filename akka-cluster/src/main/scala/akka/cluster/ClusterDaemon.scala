@@ -11,7 +11,6 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.Done
-import akka.actor.CoordinatedShutdown.Reason
 import akka.pattern.ask
 import akka.remote.QuarantinedEvent
 import akka.util.Timeout

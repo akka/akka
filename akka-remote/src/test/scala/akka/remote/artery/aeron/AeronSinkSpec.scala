@@ -70,7 +70,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
       val payload = new Array[Byte](100000)
       val done = Source(1 to 1000)
         .map(_ => payload)
-        .map { n =>
+        .map { _ =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()

@@ -14,6 +14,8 @@ import akka.util.ByteString
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
 
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
@@ -35,6 +37,7 @@ private[remote] object FailureInjectorTransportAdapter {
 
   trait FailureInjectorCommand
   @SerialVersionUID(1L)
+  @deprecated("Not implemented", "2.5.22")
   final case class All(mode: GremlinMode)
   @SerialVersionUID(1L)
   final case class One(remoteAddress: Address, mode: GremlinMode)
@@ -67,15 +70,14 @@ private[remote] class FailureInjectorTransportAdapter(
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None
   private[transport] val addressChaosTable = new ConcurrentHashMap[Address, GremlinMode]()
-  @volatile private var allMode: GremlinMode = PassThru
 
   override val addedSchemeIdentifier = FailureInjectorSchemeIdentifier
   protected def maximumOverhead = 0
 
   override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
-    case All(mode) =>
-      allMode = mode
-      Future.successful(true)
+    case All(_) =>
+      Future.failed(
+        new IllegalArgumentException("Setting the mode for all addresses at once is not currently implemented"))
     case One(address, mode) =>
       //  don't care about the protocol part - we are injected in the stack anyway!
       addressChaosTable.put(address.copy(protocol = "", system = ""), mode)
@@ -179,6 +181,10 @@ private[remote] final case class FailureInjectorHandle(
   override def disassociate(reason: String, log: LoggingAdapter): Unit =
     wrappedHandle.disassociate(reason, log)
 
+  @deprecated(
+    message = "Use method that states reasons to make sure disassociation reasons are logged.",
+    since = "2.5.3")
+  @silent
   override def disassociate(): Unit =
     wrappedHandle.disassociate()
 

@@ -1,2 +1,0 @@
-# #21194 renamed internal actor method
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.allocateShardHomes")

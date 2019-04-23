@@ -48,16 +48,13 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(
-    debugConfig(on = false)
-      .withFallback(
-        ConfigFactory.parseString("""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.actor {
         allow-java-serialization = off
         serialize-creators = off
         serialize-messages = off
         serialization-bindings {
-          "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$Reply" = test-message-serializer
+          "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$$Reply" = test-message-serializer
         }
 
         deployment {
@@ -94,8 +91,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
           }
         }
       }
-      """))
-      .withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles =["a", "c"]"""))
   nodeConfig(third)(ConfigFactory.parseString("""akka.cluster.roles =["b", "c"]"""))
@@ -129,9 +125,9 @@ abstract class ClusterRoundRobinSpec
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
-    (receiveWhile(5 seconds, messages = expectedReplies) {
+    receiveWhile(5 seconds, messages = expectedReplies) {
       case Reply(`routeeType`, ref) => fullAddress(ref)
-    }).foldLeft(zero) {
+    }.foldLeft(zero) {
       case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
     }
   }
@@ -162,14 +158,14 @@ abstract class ClusterRoundRobinSpec
         awaitAssert(currentRoutees(router1).size should ===(4))
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router1 ! "hit"
         }
 
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
-        replies(first) should be > (0)
-        replies(second) should be > (0)
+        replies(first) should be > 0
+        replies(second) should be > 0
         replies(third) should ===(0)
         replies(fourth) should ===(0)
         replies.values.sum should ===(iterationCount)
@@ -193,14 +189,14 @@ abstract class ClusterRoundRobinSpec
         }
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router4 ! "hit"
         }
 
         val replies = receiveReplies(GroupRoutee, iterationCount)
 
-        replies(first) should be > (0)
-        replies(second) should be > (0)
+        replies(first) should be > 0
+        replies(second) should be > 0
         replies(third) should ===(0)
         replies(fourth) should ===(0)
         replies.values.sum should ===(iterationCount)
@@ -219,13 +215,13 @@ abstract class ClusterRoundRobinSpec
         awaitAssert(currentRoutees(router1).size should ===(8))
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router1 ! "hit"
         }
 
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
-        replies.values.foreach { _ should be > (0) }
+        replies.values.foreach { _ should be > 0 }
         replies.values.sum should ===(iterationCount)
       }
 
@@ -241,13 +237,13 @@ abstract class ClusterRoundRobinSpec
         awaitAssert(currentRoutees(router4).size should ===(8))
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router4 ! "hit"
         }
 
         val replies = receiveReplies(GroupRoutee, iterationCount)
 
-        replies.values.foreach { _ should be > (0) }
+        replies.values.foreach { _ should be > 0 }
         replies.values.sum should ===(iterationCount)
       }
 
@@ -261,16 +257,16 @@ abstract class ClusterRoundRobinSpec
         awaitAssert(currentRoutees(router3).size should ===(3))
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router3 ! "hit"
         }
 
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
         replies(first) should ===(0)
-        replies(second) should be > (0)
-        replies(third) should be > (0)
-        replies(fourth) should be > (0)
+        replies(second) should be > 0
+        replies(third) should be > 0
+        replies(fourth) should be > 0
         replies.values.sum should ===(iterationCount)
       }
 
@@ -283,14 +279,14 @@ abstract class ClusterRoundRobinSpec
         awaitAssert(currentRoutees(router5).size should ===(2))
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router5 ! "hit"
         }
 
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
-        replies(first) should be > (0)
-        replies(second) should be > (0)
+        replies(first) should be > 0
+        replies(second) should be > 0
         replies(third) should ===(0)
         replies(fourth) should ===(0)
         replies.values.sum should ===(iterationCount)
@@ -308,7 +304,7 @@ abstract class ClusterRoundRobinSpec
         awaitAssert(currentRoutees(router2).size should ===(3))
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router2 ! "hit"
         }
 
@@ -339,7 +335,7 @@ abstract class ClusterRoundRobinSpec
         testConductor.blackhole(first, second, Direction.Both).await
 
         awaitAssert(routees.size should ===(6))
-        routeeAddresses should not contain (address(second))
+        routeeAddresses should not contain address(second)
 
         testConductor.passThrough(first, second, Direction.Both).await
         awaitAssert(routees.size should ===(8))
@@ -368,11 +364,11 @@ abstract class ClusterRoundRobinSpec
         expectMsgType[Terminated](15.seconds).actor should ===(downRouteeRef)
         awaitAssert {
           routeeAddresses should contain(notUsedAddress)
-          routeeAddresses should not contain (downAddress)
+          routeeAddresses should not contain downAddress
         }
 
         val iterationCount = 10
-        for (i <- 0 until iterationCount) {
+        for (_ <- 0 until iterationCount) {
           router2 ! "hit"
         }
 

@@ -17,8 +17,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 

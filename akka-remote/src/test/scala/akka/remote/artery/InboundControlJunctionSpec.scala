@@ -47,7 +47,6 @@ class InboundControlJunctionSpec
 
     "be emitted via side channel" in {
       val observerProbe = TestProbe()
-      val inboundContext = new TestInboundContext(localAddress = addressB)
       val recipient = OptionVal.None // not used
 
       val ((upstream, controlSubject), downstream) = TestSource

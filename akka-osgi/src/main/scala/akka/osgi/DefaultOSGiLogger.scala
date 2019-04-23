@@ -30,7 +30,7 @@ class DefaultOSGiLogger extends DefaultLogger {
     context.system.eventStream.subscribe(self, classOf[LogService])
     context.system.eventStream.unsubscribe(self, UnregisteringLogService.getClass)
 
-    /**
+    /*
      * Logs every already received LogEvent and set the logger ready to log every incoming LogEvent.
      *
      * @param logService OSGi LogService that has been registered,

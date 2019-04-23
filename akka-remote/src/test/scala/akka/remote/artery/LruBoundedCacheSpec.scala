@@ -6,9 +6,11 @@ package akka.remote.artery
 
 import akka.testkit.AkkaSpec
 import akka.util.Unsafe
+import com.github.ghik.silencer.silent
 
 import scala.util.Random
 
+@silent
 class LruBoundedCacheSpec extends AkkaSpec {
 
   class TestCache(_capacity: Int, threshold: Int, hashSeed: String = "")
@@ -217,6 +219,7 @@ class LruBoundedCacheSpec extends AkkaSpec {
         // Have not seen lower than 890
         stats.entries should be > 750
         // Have not seen higher than 1.8
+
         stats.averageProbeDistance should be < 2.5
         // Have not seen higher than 15
         stats.maxProbeDistance should be < 25

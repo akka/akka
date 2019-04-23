@@ -65,7 +65,7 @@ abstract class NodeUpSpec extends MultiNodeSpec(NodeUpMultiJvmSpec) with MultiNo
       enterBarrier("joined-again")
 
       // let it run for a while to make sure that nothing bad happens
-      for (n <- 1 to 20) {
+      for (_ <- 1 to 20) {
         Thread.sleep(100.millis.dilated.toMillis)
         unexpected.get should ===(SortedSet.empty)
         clusterView.members.forall(_.status == MemberStatus.Up) should ===(true)

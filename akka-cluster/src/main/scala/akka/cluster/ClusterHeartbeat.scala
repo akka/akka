@@ -22,6 +22,7 @@ import akka.util.ccompat._
  * Receives Heartbeat messages and replies.
  */
 @InternalApi
+@ccompatUsedUntil213
 private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster) extends Actor with ActorLogging {
   import ClusterHeartbeatSender._
 

@@ -41,7 +41,7 @@ private[akka] trait MemoryUsageSnapshotting extends MetricsPrefix {
       metrics.get(key("non-heap-usage")).asInstanceOf[RatioGauge].getValue)
   }
 
-  private def key(k: String) = prefix + "." + k
+  private def key(k: String) = prefix.toString + "." + k
 
 }
 

@@ -154,7 +154,7 @@ class RemoteDeploymentWhitelistSpec
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
       r ! 42
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       system.stop(r)
     }
   }

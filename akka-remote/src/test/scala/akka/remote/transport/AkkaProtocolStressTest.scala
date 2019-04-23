@@ -100,8 +100,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   val rootB = RootActorPath(addressB)
   val here = {
-    val path =
-      system.actorSelection(rootB / "user" / "echo") ! Identify(None)
+    system.actorSelection(rootB / "user" / "echo") ! Identify(None)
     expectMsgType[ActorIdentity].ref.get
   }
 
@@ -111,7 +110,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
       systemB.eventStream.publish(TestEvent.Mute(DeadLettersFilter[Any]))
       Await.result(RARP(system).provider.transport.managementCommand(One(addressB, Drop(0.1, 0.1))), 3.seconds.dilated)
 
-      val tester = system.actorOf(Props(classOf[SequenceVerifier], here, self)) ! "start"
+      system.actorOf(Props(classOf[SequenceVerifier], here, self)) ! "start"
 
       expectMsgPF(60.seconds) {
         case (received: Int, lost: Int) =>
@@ -123,7 +122,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   override def beforeTermination(): Unit = {
     system.eventStream.publish(
       TestEvent.Mute(
-        EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+        EventFilter.warning(source = s"akka://AkkaProtocolStressTest/user/$$a", start = "received dead letter"),
         EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     systemB.eventStream.publish(
       TestEvent.Mute(

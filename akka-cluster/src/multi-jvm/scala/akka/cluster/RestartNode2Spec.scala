@@ -20,6 +20,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
   val seed2 = role("seed2")

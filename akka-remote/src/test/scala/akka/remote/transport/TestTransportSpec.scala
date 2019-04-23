@@ -56,7 +56,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
     "fail to associate with nonexisting address" in {
       val registry = new AssociationRegistry
-      var transportA = new TestTransport(addressA, registry)
+      val transportA = new TestTransport(addressA, registry)
 
       Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
@@ -127,7 +127,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       awaitCond(registry.existsAssociation(addressA, addressB))
 
-      handleA.disassociate()
+      handleA.disassociate("Test disassociation", log)
 
       expectMsgPF(timeout.duration) {
         case Disassociated(_) =>

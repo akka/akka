@@ -23,12 +23,14 @@ import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.Pool
 import akka.util.ccompat._
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
 
 /**
  * INTERNAL API
  */
 @InternalApi
+@ccompatUsedUntil213
 private[akka] object ClusterMessageSerializer {
   // FIXME use short manifests when we can break wire compatibility
   // needs to be full class names for backwards compatibility
@@ -197,7 +199,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .addAllUseRoles(settings.useRoles.asJava)
 
     // for backwards compatibility
-    settings.useRole.foreach(builder.setUseRole)
+    @silent
+    val _ = settings.useRole.foreach(builder.setUseRole)
 
     builder.build()
   }

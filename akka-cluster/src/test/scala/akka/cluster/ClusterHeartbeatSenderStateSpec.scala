@@ -202,7 +202,6 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
             case HeartbeatRsp =>
               if (node != selfUniqueAddress && state.ring.nodes.contains(node)) {
                 val oldUnreachable = state.oldReceiversNowUnreachable
-                val oldReceivers = state.activeReceivers
                 val oldRingReceivers = state.ring.myReceivers
                 state = state.heartbeatRsp(node)
 

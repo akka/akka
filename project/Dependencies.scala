@@ -24,18 +24,12 @@ object Dependencies {
     crossScalaVersions := Seq("2.12.8", "2.13.0-M5"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.9"),
-    scalaCheckVersion := sys.props
-        .get("akka.build.scalaCheckVersion")
-        .getOrElse(CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, n)) if n >= 12 => "1.14.0" // does not work for 2.11
-          case _                       => "1.13.2"
-        }),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
     scalaTestVersion := "3.0.7",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 => "0.9.0"
-        case Some((2, n)) if n == 12 => "0.8.0"
-        case _                       => "0.7.0"
+        case _                       => "0.8.0"
       }
     })
 

@@ -21,6 +21,7 @@ import akka.cluster.MemberStatus._
 import akka.actor.Deploy
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
   val seed2 = role("seed2")
