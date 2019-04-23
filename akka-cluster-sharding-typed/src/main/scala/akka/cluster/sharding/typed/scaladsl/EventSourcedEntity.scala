@@ -3,10 +3,7 @@
  */
 
 package akka.cluster.sharding.typed.scaladsl
-
-import akka.actor.typed.internal.LoggerClass
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl
-import akka.persistence.typed.{ ExpectingReply, PersistenceId }
+import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplyEffect }
 
 object EventSourcedEntity {
