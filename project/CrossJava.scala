@@ -56,6 +56,7 @@ object CrossJava {
     val discoveredJavaHomes = settingKey[Map[String, File]]("Discovered Java home directories")
     val javaHomes = settingKey[Map[String, File]]("The user-defined additional Java home directories")
     val fullJavaHomes = settingKey[Map[String, File]]("Combines discoveredJavaHomes and custom javaHomes.")
+    val useSystemJdk = settingKey[Boolean]("Override to allow compilation against system default JDK instead of building against JDK 8 (but resulting artifacts may not work on JDK 8!)")
   }
 
   import Keys._
@@ -63,7 +64,8 @@ object CrossJava {
   val crossJavaSettings = Seq(
     discoveredJavaHomes := CrossJava.discoverJavaHomes,
     javaHomes := ListMap.empty,
-    fullJavaHomes := CrossJava.expandJavaHomes(discoveredJavaHomes.value ++ javaHomes.value))
+    fullJavaHomes := CrossJava.expandJavaHomes(discoveredJavaHomes.value ++ javaHomes.value),
+    useSystemJdk := false)
 
   // parses jabaa style version number adopt@1.8
   def parseJavaVersion(version: String): JavaVersion = {
