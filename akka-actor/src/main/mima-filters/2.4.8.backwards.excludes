@@ -1,7 +1,0 @@
-# #20994 adding new decode method, since we're on JDK7+ now
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString")
-
-# #19872 double wildcard for actor deployment config
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Deployer.lookup")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.apply")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardTree.find")
