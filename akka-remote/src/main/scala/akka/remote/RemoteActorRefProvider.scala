@@ -271,7 +271,7 @@ private[akka] class RemoteActorRefProvider(
   protected def showDirectUseWarningIfRequired() = {
     if (remoteSettings.WarnAboutDirectUse) {
       log.warning(
-        "Using the 'remote' ActorRefProvider directly, which is a low-level feature intended for power users. " +
+        "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
         "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
     }
   }
