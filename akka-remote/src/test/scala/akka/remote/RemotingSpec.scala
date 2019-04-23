@@ -23,6 +23,8 @@ import java.util.concurrent.ThreadLocalRandom
 import akka.testkit.SocketUtil.temporaryServerAddress
 import com.github.ghik.silencer.silent
 
+import scala.util.control.NonFatal
+
 object RemotingSpec {
 
   final case class ActorForReq(s: String)
@@ -818,6 +820,31 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     }
 
+    // retry a few times as the temporaryServerAddress can be taken by the time the new actor system
+    // binds
+    def selectionAndBind(
+        config: Config,
+        thisSystem: ActorSystem,
+        probe: TestProbe,
+        retries: Int = 3): (ActorSystem, ActorSelection) = {
+      val otherAddress = temporaryServerAddress()
+      val otherConfig = ConfigFactory.parseString(s"""
+              akka.remote.netty.tcp.port = ${otherAddress.getPort}
+              """).withFallback(config)
+      val otherSelection =
+        thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
+      otherSelection.tell("ping", probe.ref)
+      probe.expectNoMessage(1.seconds)
+      try {
+        (ActorSystem("other-system", otherConfig), otherSelection)
+      } catch {
+        case NonFatal(ex) if ex.getMessage.contains("Failed to bind") && retries > 0 =>
+          selectionAndBind(config, thisSystem, probe, retries = retries - 1)
+        case other =>
+          throw other
+      }
+    }
+
     "be able to connect to system even if it's not there at first" in {
       val config = ConfigFactory.parseString(s"""
             akka.remote.enabled-transports = ["akka.remote.netty.tcp"]
@@ -828,23 +855,14 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       try {
         muteSystem(thisSystem)
         val probe = new TestProbe(thisSystem)
-        val probeSender = probe.ref
-        val otherAddress = temporaryServerAddress()
-        val otherConfig = ConfigFactory.parseString(s"""
-              akka.remote.netty.tcp.port = ${otherAddress.getPort}
-              """).withFallback(config)
-        val otherSelection =
-          thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
-        otherSelection.tell("ping", probeSender)
-        probe.expectNoMessage(1.seconds)
-        val otherSystem = ActorSystem("other-system", otherConfig)
+        val (otherSystem, otherSelection) = selectionAndBind(config, thisSystem, probe)
         try {
           muteSystem(otherSystem)
           probe.expectNoMessage(2.seconds)
           otherSystem.actorOf(Props[Echo2], "echo")
           within(5.seconds) {
             awaitAssert {
-              otherSelection.tell("ping", probeSender)
+              otherSelection.tell("ping", probe.ref)
               assert(probe.expectMsgType[(String, ActorRef)](500.millis)._1 == "pong")
             }
           }
