@@ -981,9 +981,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
-    case Event(_: OldestChanged, _) =>
+    case Event(_: OldestChanged | HandOverToMe, _) =>
       // not interested anymore - waiting for removal
-      stay
+      stay()
   }
 
   def selfMemberExited(): Unit = {
