@@ -1,0 +1,8 @@
+# 26757 add timings to cluster heart beat messages
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ClusterHeartbeatSender$Heartbeat$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ClusterHeartbeatSender$HeartbeatRsp$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterHeartbeatSender*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterHeartbeatReceiver.selfHeartbeatRsp")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterHeartbeatReceiver.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterHeartbeatSender.heartbeatRsp")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.CrossDcHeartbeatSender.selfHeartbeat")
