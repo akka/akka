@@ -1,8 +1,5 @@
-Akka [![scaladex-badge]][scaladex]
+Akka [![Latest version](https://index.scala-lang.org/akka/akka/akka-actor/latest.svg)](https://index.scala-lang.org/akka/akka/akka-actor)[![Build Status](https://travis-ci.org/akka/akka.svg?branch=master)](https://travis-ci.org/akka/akka) 
 ====
-
-[scaladex]:       https://index.scala-lang.org/akka/akka
-[scaladex-badge]: https://index.scala-lang.org/akka/akka/latest.svg
 
 We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
 Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
