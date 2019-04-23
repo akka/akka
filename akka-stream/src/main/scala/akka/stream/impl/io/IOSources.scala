@@ -151,7 +151,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val attributes: Attributes,
     shape: SourceShape[ByteString])
     extends SourceModule[ByteString, Future[IOResult]](shape) {
-  override def create(context: MaterializationContext) = {
+  override def create(context: MaterializationContext): (Publisher[ByteString], Future[IOResult]) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val ioResultPromise = Promise[IOResult]()
 
