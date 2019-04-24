@@ -8,6 +8,7 @@ import akka.actor.typed.*;
 import akka.actor.typed.TypedActorContext;
 
 import java.time.Duration;
+import java.util.concurrent.CompletionStage;
 
 import static akka.actor.typed.javadsl.Behaviors.*;
 
@@ -65,6 +66,21 @@ public class ActorCompile {
       Behaviors.receive((context, message) -> stopped(() -> {}), (context, signal) -> same());
 
   ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
+
+  {
+    ActorRef<MyMsg> recipient = null;
+
+    CompletionStage<String> reply =
+        AskPattern.ask(
+            recipient, replyTo -> new MyMsgA(replyTo), Duration.ofSeconds(3), system.scheduler());
+
+    AskPattern.ask(
+            recipient,
+            (ActorRef<String> replyTo) -> new MyMsgA(replyTo),
+            Duration.ofSeconds(3),
+            system.scheduler())
+        .thenApply(rsp -> rsp.toUpperCase());
+  }
 
   {
     Behaviors.<MyMsg>receive(

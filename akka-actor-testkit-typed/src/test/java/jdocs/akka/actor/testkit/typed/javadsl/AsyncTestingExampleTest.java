@@ -18,9 +18,6 @@ import org.junit.AfterClass;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import scala.util.Success;
-import scala.util.Try;
-
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
@@ -82,9 +79,9 @@ public class AsyncTestingExampleTest
 
   static class Message {
     int i;
-    ActorRef<Try<Integer>> replyTo;
+    ActorRef<Integer> replyTo;
 
-    Message(int i, ActorRef<Try<Integer>> replyTo) {
+    Message(int i, ActorRef<Integer> replyTo) {
       this.i = i;
       this.replyTo = replyTo;
     }
@@ -104,10 +101,10 @@ public class AsyncTestingExampleTest
       IntStream.range(0, messages).forEach(this::publish);
     }
 
-    private CompletionStage<Try<Integer>> publish(int i) {
+    private CompletionStage<Integer> publish(int i) {
       return AskPattern.ask(
           publisher,
-          (ActorRef<Try<Integer>> ref) -> new Message(i, ref),
+          (ActorRef<Integer> ref) -> new Message(i, ref),
           Duration.ofSeconds(3),
           scheduler);
     }
@@ -165,7 +162,7 @@ public class AsyncTestingExampleTest
     Behavior<Message> mockedBehavior =
         Behaviors.receiveMessage(
             message -> {
-              message.replyTo.tell(new Success<>(message.i));
+              message.replyTo.tell(message.i);
               return Behaviors.same();
             });
     TestProbe<Message> probe = testKit.createTestProbe();
