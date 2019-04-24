@@ -47,13 +47,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
   val conf = ConfigFactory.parseString("""
       akka.remote {
 
-        transport-failure-detector {
-          implementation-class = "akka.remote.PhiAccrualFailureDetector"
-          max-sample-size = 100
-          min-std-deviation = 100 ms
-          acceptable-heartbeat-pause = 3 s
-          heartbeat-interval = 1 s
-        }
+        
         
         classic {
           backoff-interval = 1 s
@@ -62,6 +56,13 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           shutdown-timeout = 5 s
           startup-timeout = 5 s
           use-passive-connections = on
+          transport-failure-detector {
+            implementation-class = "akka.remote.PhiAccrualFailureDetector"
+            max-sample-size = 100
+            min-std-deviation = 100 ms
+            acceptable-heartbeat-pause = 3 s
+            heartbeat-interval = 1 s
+          }
         }
 
       }

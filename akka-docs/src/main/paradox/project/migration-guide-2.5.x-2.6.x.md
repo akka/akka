@@ -14,15 +14,8 @@ remains under `akka.remote`.
 ### Switching to Artery
 
 To switch to Artery a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
-The most likely are:
+The most likely are. See [migrating from classic remoting to Artery](../remoting-artery.md#migrating-from-classic-remoting)
 
-Hostname and port for binding:
-
-* `akka.remote.netty.tcp.hostname` => `akka.remote.artery.canonical.hostname`
-* `akka.remote.netty.tcp.port`=> `akka.remote.artery.canonical.port`
-
-If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
-for how to do this.
 
 ### Migration from 2.5.x Artery to 2.6.x Artery
 

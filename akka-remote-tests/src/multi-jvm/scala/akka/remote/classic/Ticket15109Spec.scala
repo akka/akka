@@ -27,8 +27,8 @@ object Ticket15109Spec extends MultiNodeConfig {
       akka.remote.artery.enabled = off
       akka.remote.classic.log-remote-lifecycle-events = INFO
       ## Keep it tight, otherwise reestablishing a connection takes too much time
-      akka.remote.transport-failure-detector.heartbeat-interval = 1 s
-      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+      akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+      akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.classic.retry-gate-closed-for = 0.5 s
                               """)))
 

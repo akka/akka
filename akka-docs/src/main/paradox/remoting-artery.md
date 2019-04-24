@@ -112,14 +112,14 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
 
 ## Migrating from classic remoting
 
-Artery TCP will be the default transport in Akka 2.6.0, and the @ref:[classic remoting implementation](remoting.md)
-will be deprecated.
+Artery TCP was made the default transport in Akka 2.6.0, and the @ref:[classic remoting implementation](remoting.md)
+has been deprecated.
 
 Artery has the same functionality as classic remoting and you should normally only have to change the
 configuration to switch.
 
-Enable Artery as shown in above @ref:[configuration](#configuration) with your
-@ref:[selected transport](#selecting-a-transport). `tcp` is a good start.
+Artery defaults to TCP (see @ref:[selected transport](#selecting-a-transport)) which is a good start
+when migrating from classic remoting.
 
 The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`
 has changed from `akka.tcp` to `akka`. If you have configured or hardcoded any such addresses you have to change
@@ -130,8 +130,19 @@ The configuration is different, so you might have to revisit any custom configur
 @ref:[reference configuration for Artery](general/configuration.md#config-akka-remote-artery) and
 @ref:[reference configuration for classic remoting](general/configuration.md#config-akka-remote).
 
+Configuration that is likely required to be ported:
+
+* `akka.remote.netty.tcp.hostname` => `akka.remote.artery.canonical.hostname`
+* `akka.remote.netty.tcp.port`=> `akka.remote.artery.canonical.port`
+
 One thing to be aware of is that rolling update from classic remoting to Artery is not supported since the protocol
 is completely different. It will require a full cluster shutdown and new startup.
+
+
+If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
+for how to do this.
+
+
 
 ## Canonical address
 

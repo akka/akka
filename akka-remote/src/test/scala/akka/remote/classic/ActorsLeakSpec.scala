@@ -26,8 +26,8 @@ object ActorsLeakSpec {
        akka.remote.artery.enabled = false
        akka.remote.classic.netty.tcp.applied-adapters = ["trttl"]
        #akka.remote.log-lifecycle-events = on
-       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
-       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+       akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+       akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
        akka.remote.classic.quarantine-after-silence = 3 s
        akka.test.filter-leeway = 12 s
       """)

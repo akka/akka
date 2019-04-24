@@ -36,12 +36,14 @@ object SystemMessageDeliveryStressTest {
         initial-system-message-delivery-timeout = 10 m
         ## Keep this setting tight, otherwise the test takes a long time or times out
         system-message-ack-piggyback-timeout = 100 ms // Force heavy Ack traffic
+        
+        transport-failure-detector {
+          heartbeat-interval = 1 s
+          acceptable-heartbeat-pause = 5 s
+       }
       }
 
-      remote.transport-failure-detector {
-        heartbeat-interval = 1 s
-        acceptable-heartbeat-pause = 5 s
-      }
+      
 
       remote.classic.netty.tcp {
         applied-adapters = ["gremlin", "trttl"]

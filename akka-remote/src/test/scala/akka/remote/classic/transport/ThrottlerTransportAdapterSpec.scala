@@ -16,7 +16,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object ThrottlerTransportAdapterSpec {
-  val configA: Config = ConfigFactory.parseString("""
+  val configA: Config =
+    ConfigFactory.parseString("""
     akka {
       actor.provider = remote
 
@@ -24,8 +25,8 @@ object ThrottlerTransportAdapterSpec {
       remote.classic.netty.tcp.hostname = "localhost"
       remote.log-remote-lifecycle-events = off
       remote.retry-gate-closed-for = 1 s
-      remote.transport-failure-detector.heartbeat-interval = 1 s
-      remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+      remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+      remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
 
       remote.classic.netty.tcp.applied-adapters = ["trttl"]
       remote.classic.netty.tcp.port = 0

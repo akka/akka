@@ -31,8 +31,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       akka.remote.classic.use-passive-connections = off
 
       # TODO should not be needed, but see TODO at the end of the test
-      akka.remote.transport-failure-detector.heartbeat-interval = 1 s
-      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 10 s
+      akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+      akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 10 s
                               """)))
 
   testTransport(on = true)

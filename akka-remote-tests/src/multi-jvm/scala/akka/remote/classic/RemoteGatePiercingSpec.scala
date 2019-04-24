@@ -21,12 +21,12 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
   val second = role("second")
 
   commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
+    debugConfig(on = false).withFallback(
+      ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.artery.enabled = false
       akka.remote.classic.log-remote-lifecycle-events = INFO
-      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 5 s
+      akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 5 s
     """)))
 
   nodeConfig(first)(ConfigFactory.parseString("akka.remote.classic.retry-gate-closed-for  = 1 d # Keep it long"))

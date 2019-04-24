@@ -25,7 +25,7 @@ object AkkaProtocolStressTest {
 
       remote.classic.log-remote-lifecycle-events = on
 
-      remote.transport-failure-detector {
+      remote.classic.transport-failure-detector {
         max-sample-size = 2
         min-std-deviation = 1 ms
         ## We want lots of lost connections in this test, keep it sensitive

@@ -191,13 +191,16 @@ private[akka] final class ArterySettings private (config: Config) {
       val config: Config = getConfig("aeron")
 
       val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
-      val EmbeddedMediaDriver: Boolean = getBoolean("embedded-media-driver")
-      val AeronDirectoryName: String = getString("aeron-dir").requiring(
-        dir => EmbeddedMediaDriver || dir.nonEmpty,
-        "aeron-dir must be defined when using external media driver")
-      val DeleteAeronDirectory: Boolean = getBoolean("delete-aeron-dir")
+      val EmbeddedMediaDriver: Boolean = config.getBoolean("embedded-media-driver")
+      val AeronDirectoryName: String = config
+        .getString("aeron-dir")
+        .requiring(
+          dir => EmbeddedMediaDriver || dir.nonEmpty,
+          "aeron-dir must be defined when using external media driver")
+      val DeleteAeronDirectory: Boolean = config.getBoolean("delete-aeron-dir")
       val IdleCpuLevel: Int =
-        getInt("idle-cpu-level")
+        config
+          .getInt("idle-cpu-level")
           .requiring(level => 1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
       val GiveUpMessageAfter: FiniteDuration = config
         .getMillisDuration("give-up-message-after")

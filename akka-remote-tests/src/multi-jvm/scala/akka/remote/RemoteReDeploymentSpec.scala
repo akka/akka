@@ -24,7 +24,7 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
   val second = role("second")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""akka.remote.transport-failure-detector {
+    debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""akka.remote.classic.transport-failure-detector {
          threshold=0.1
          heartbeat-interval=0.1s
          acceptable-heartbeat-pause=1s
