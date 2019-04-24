@@ -14,8 +14,6 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import EventStreamSpec._
 
   "system event stream".can {
-    testKit.system.receptionist
-    testKit.system.receptionist
     val eventObjListener: TestProbe[EventObj.type] = testKit.createTestProbe()
     val eventClassListener: TestProbe[EventClass] = testKit.createTestProbe()
 
