@@ -4,21 +4,15 @@
 
 package akka.stream.impl.io
 
-import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.channels.{ CompletionHandler, FileChannel }
 import java.nio.file.{ Files, NoSuchFileException, Path, StandardOpenOption }
 
 import akka.Done
-import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.Attributes.InputBuffer
-import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.stream.stage._
 import akka.stream.{ IOResult, _ }
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Publisher
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
@@ -139,42 +133,4 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
   }
 
   override def toString = s"FileSource($path, $chunkSize)"
-}
-
-/**
- * INTERNAL API
- * Source backed by the given input stream.
- */
-@InternalApi private[akka] final class InputStreamSource(
-    createInputStream: () => InputStream,
-    chunkSize: Int,
-    val attributes: Attributes,
-    shape: SourceShape[ByteString])
-    extends SourceModule[ByteString, Future[IOResult]](shape) {
-  override def create(context: MaterializationContext) = {
-    val materializer = ActorMaterializerHelper.downcast(context.materializer)
-    val ioResultPromise = Promise[IOResult]()
-
-    @silent
-    val pub = try {
-      val is = createInputStream() // can throw, i.e. FileNotFound
-
-      val props = InputStreamPublisher.props(is, ioResultPromise, chunkSize).withDispatcher(Dispatcher.resolve(context))
-
-      val ref = materializer.actorOf(context, props)
-      akka.stream.actor.ActorPublisher[ByteString](ref)
-    } catch {
-      case ex: Exception =>
-        ioResultPromise.failure(ex)
-        ErrorPublisher(ex, attributes.nameOrDefault("inputStreamSource")).asInstanceOf[Publisher[ByteString]]
-    }
-
-    (pub, ioResultPromise.future)
-  }
-
-  override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[IOResult]] =
-    new InputStreamSource(createInputStream, chunkSize, attributes, shape)
-
-  override def withAttributes(attr: Attributes): SourceModule[ByteString, Future[IOResult]] =
-    new InputStreamSource(createInputStream, chunkSize, attr, amendShape(attr))
 }
