@@ -746,7 +746,7 @@ To use the external media driver from the Akka application you need to define th
 configuration properties:
 
 ```
-akka.remote.artery.advanced {
+akka.remote.artery.advanced.aeron {
   embedded-media-driver = off
   aeron-dir = /dev/shm/aeron
 }
@@ -772,7 +772,7 @@ usage and latency with the following configuration:
 ```
 # Values can be from 1 to 10, where 10 strongly prefers low latency
 # and 1 strongly prefers less CPU usage
-akka.remote.artery.advanced.idle-cpu-level = 1
+akka.remote.artery.advanced.aeron.idle-cpu-level = 1
 ```
 
 By setting this value to a lower number, it tells Akka to do longer "sleeping" periods on its thread dedicated

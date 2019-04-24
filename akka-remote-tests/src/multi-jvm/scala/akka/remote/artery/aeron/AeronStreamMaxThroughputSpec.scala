@@ -96,7 +96,7 @@ abstract class AeronStreamMaxThroughputSpec
     Aeron.connect(ctx)
   }
 
-  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.idle-cpu-level")
+  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.aeron.idle-cpu-level")
   val taskRunner = {
     val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()

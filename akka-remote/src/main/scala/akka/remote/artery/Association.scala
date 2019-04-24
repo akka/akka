@@ -600,7 +600,7 @@ private[remote] class Association(
       val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
       val QuarantineIdleOutboundAfter = settings.Advanced.QuarantineIdleOutboundAfter
       val interval = StopIdleOutboundAfter / 2
-      val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
+      val initialDelay = settings.Advanced.Tcp.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
       val task = transport.system.scheduler.schedule(initialDelay, interval) {
         val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
         if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {

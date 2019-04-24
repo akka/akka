@@ -266,7 +266,6 @@ private[remote] class ReliableDeliverySupervisor(
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case _: AssociationProblem => Escalate
     case NonFatal(e) =>
-      log.error(e, "Dog")
       val causedBy = if (e.getCause == null) "" else s"Caused by: [${e.getCause.getMessage}]"
       log.warning(
         "Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",

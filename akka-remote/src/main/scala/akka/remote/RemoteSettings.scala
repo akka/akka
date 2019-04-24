@@ -49,7 +49,7 @@ final class RemoteSettings(val config: Config) {
       }
   }
 
-  val Dispatcher: String = getString("akka.remote.use-dispatcher")
+  val Dispatcher: String = getString("akka.remote.classic.use-dispatcher")
 
   def configureDispatcher(props: Props): Props = if (Dispatcher.isEmpty) props else props.withDispatcher(Dispatcher)
 

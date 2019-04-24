@@ -39,7 +39,7 @@ private[remote] class AkkaProtocolSettings(config: Config) {
   import akka.util.Helpers.ConfigOps
   import config._
 
-  val TransportFailureDetectorConfig: Config = getConfig("akka.remote.transport-failure-detector")
+  val TransportFailureDetectorConfig: Config = getConfig("akka.remote.classic.transport-failure-detector")
   val TransportFailureDetectorImplementationClass: String =
     TransportFailureDetectorConfig.getString("implementation-class")
   val TransportHeartBeatInterval: FiniteDuration = {

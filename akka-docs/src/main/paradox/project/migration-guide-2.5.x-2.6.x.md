@@ -5,7 +5,7 @@
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
 Classic remoting has been deprecated and will be removed in `2.7.x`.
 To migrate to Artery a full cluster restart is required. If you've already moved to Artery in 2.5.x
-then no changes are required and a normal rolling restart is possible.
+then a normal rolling restart is supported but some configuration properties have moved (see below).
 
 Configuration for artery is under `akka.remote.artery` configuration for classic remoting in
 `2.6` has moved from `akka.remote` to `akka.remote.classic`. Configuration that is used for both
@@ -23,6 +23,26 @@ Hostname and port for binding:
 
 If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
 for how to do this.
+
+### Migration from 2.5.x Artery to 2.6.x Artery
+
+The following properties have moved. If you don't adjust these from their defaults no changes are required:
+
+For Aeron-UDP:
+
+* `akka.remote.artery.log-aeron-counters` to `akka.remote.artery.advanced.aeron.log-aeron-counters`
+* `akka.remote.artery.advanced.embedded-media-driver` to `akka.remote.artery.advanced.aeron.embedded-media-driver`
+* `akka.remote.artery.advanced.aeron-dir` to `akka.remote.artery.advanced.aeron.aeron-dir`
+* `akka.remote.artery.advanced.delete-aeron-dir` to `akka.remote.artery.advanced.aeron.aeron-delete-dir`
+* `akka.remote.artery.advanced.idle-cpu-level` to `akka.remote.artery.advanced.aeron.idle-cpu-level`
+* `akka.remote.artery.advanced.give-up-message-after` to `akka.remote.artery.advanced.aeron.give-up-message-after`
+* `akka.remote.artery.advanced.client-liveness-timeout` to `akka.remote.artery.advanced.aeron.client-liveness-timeout`
+* `akka.remote.artery.advanced.image-liveless-timeout` to `akka.remote.artery.advanced.aeron.image-liveness-timeout`
+* `akka.remote.artery.advanced.driver-timeout` to `akka.remote.artery.advanced.aeron.driver-timeout`
+
+For TCP:
+
+* `akka.remote.artery.advanced.connection-timeout` to `akka.remote.artery.advanced.tcp.connection-timeout`
 
 
 ### Remaining with Classic remoting (not recommended)
