@@ -163,7 +163,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   /**
    * Return a reference to this system’s [[akka.actor.typed.eventstream.EventStream]].
    */
-  def eventStream: ActorRef[EventStream.Command] =
+  val eventStream: ActorRef[EventStream.Command] =
     SystemEventStream.eventStreamRef(this)
 
 }
