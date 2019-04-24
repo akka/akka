@@ -8,7 +8,6 @@ import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.testkit.AkkaSpec
-import akka.dispatch.Dispatchers
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
@@ -19,7 +18,7 @@ class ClusterConfigSpec extends AkkaSpec {
   "Clustering" must {
 
     "be able to parse generic cluster config elements" in {
-      val settings = new ClusterSettings(system.settings.config, system.name)
+      val settings = new ClusterSettings(system.settings.config, system.name, system)
       import settings._
       LogInfo should ===(true)
       FailureDetectorConfig.getDouble("threshold") should ===(8.0 +- 0.0001)
@@ -48,7 +47,7 @@ class ClusterConfigSpec extends AkkaSpec {
       SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
-      UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      UseDispatcher should ===(system.dispatchers.internalDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)
@@ -65,7 +64,8 @@ class ClusterConfigSpec extends AkkaSpec {
           |  }
           |}
         """.stripMargin).withFallback(ConfigFactory.load()),
-        system.name)
+        system.name,
+        system)
       import settings._
       Roles should ===(Set("hamlet", ClusterSettings.DcRolePrefix + "blue"))
       SelfDataCenter should ===("blue")

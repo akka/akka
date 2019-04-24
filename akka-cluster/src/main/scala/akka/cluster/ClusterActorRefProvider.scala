@@ -45,16 +45,18 @@ private[akka] class ClusterActorRefProvider(
 
   override protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
     // make sure Cluster extension is initialized/loaded from init thread
-    Cluster(system)
+    val cluster = Cluster(system)
 
     import remoteSettings._
     val failureDetector = createRemoteWatcherFailureDetector(system)
     system.systemActorOf(
-      ClusterRemoteWatcher.props(
-        failureDetector,
-        heartbeatInterval = WatchHeartBeatInterval,
-        unreachableReaperInterval = WatchUnreachableReaperInterval,
-        heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter),
+      ClusterRemoteWatcher
+        .props(
+          failureDetector,
+          heartbeatInterval = WatchHeartBeatInterval,
+          unreachableReaperInterval = WatchUnreachableReaperInterval,
+          heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter)
+        .withDispatcher(cluster.settings.UseDispatcher),
       "remote-watcher")
   }
 

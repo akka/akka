@@ -9,10 +9,8 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigObject
 
 import scala.concurrent.duration.Duration
-import akka.actor.Address
-import akka.actor.AddressFromURIString
+import akka.actor.{ ActorSystem, Address, AddressFromURIString }
 import akka.annotation.InternalApi
-import akka.dispatch.Dispatchers
 import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,7 +33,10 @@ object ClusterSettings {
 
 }
 
-final class ClusterSettings(val config: Config, val systemName: String) {
+/**
+ * Not for user instantiation.
+ */
+final class ClusterSettings private[akka] (val config: Config, val systemName: String, system: ActorSystem) {
   import ClusterSettings._
   private val cc = config.getConfig("akka.cluster")
 
@@ -180,7 +181,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
   val JmxMultiMbeansInSameEnabled: Boolean = cc.getBoolean("jmx.multi-mbeans-in-same-jvm")
   val UseDispatcher: String = cc.getString("use-dispatcher") match {
-    case "" => Dispatchers.DefaultDispatcherId
+    case "" => system.dispatchers.internalDispatcherId
     case id => id
   }
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")

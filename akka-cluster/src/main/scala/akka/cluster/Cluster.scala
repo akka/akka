@@ -59,7 +59,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   import ClusterEvent._
 
-  val settings = new ClusterSettings(system.settings.config, system.name)
+  val settings = new ClusterSettings(system.settings.config, system.name, system)
   import ClusterLogger._
   import settings._
 

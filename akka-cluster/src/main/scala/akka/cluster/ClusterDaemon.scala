@@ -233,9 +233,15 @@ private[cluster] final class ClusterDaemon(joinConfigCompatChecker: JoinConfigCo
         createChildren()
       coreSupervisor.foreach(_.forward(msg))
     case AddOnMemberUpListener(code) =>
-      context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Up).withDeploy(Deploy.local))
+      context.actorOf(
+        Props(classOf[OnMemberStatusChangedListener], code, Up)
+          .withDispatcher(context.props.dispatcher)
+          .withDeploy(Deploy.local))
     case AddOnMemberRemovedListener(code) =>
-      context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Removed).withDeploy(Deploy.local))
+      context.actorOf(
+        Props(classOf[OnMemberStatusChangedListener], code, Removed)
+          .withDispatcher(context.props.dispatcher)
+          .withDeploy(Deploy.local))
     case CoordinatedShutdownLeave.LeaveReq =>
       val ref = context.actorOf(CoordinatedShutdownLeave.props().withDispatcher(context.props.dispatcher))
       // forward the ask request
