@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadFactory
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import akka.Done
-import akka.{actor => untyped}
+import akka.{ actor => untyped }
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
@@ -161,8 +161,8 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
     Receptionist(this).ref
 
   /**
-    * Return a reference to this system’s [[akka.actor.typed.eventstream.EventStream]].
-    */
+   * Return a reference to this system’s [[akka.actor.typed.eventstream.EventStream]].
+   */
   def eventStream: ActorRef[EventStream.Command] =
     SystemEventStream.eventStreamRef(this)
 

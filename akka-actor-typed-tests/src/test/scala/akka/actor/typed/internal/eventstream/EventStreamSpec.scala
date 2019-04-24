@@ -4,7 +4,7 @@
 
 package akka.actor.typed.internal.eventstream
 
-import akka.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, TestProbe}
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.eventstream.EventStream.Unsubscribe
 import org.scalatest.WordSpecLike
@@ -13,7 +13,7 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import EventStreamSpec._
 
-  "system event stream" can {
+  "system event stream".can {
     val eventStream = testKit.spawn(SystemEventStream.behavior)
     val eventObjListener: TestProbe[EventObj.type] = testKit.createTestProbe()
     val eventClassListener: TestProbe[EventClass] = testKit.createTestProbe()
