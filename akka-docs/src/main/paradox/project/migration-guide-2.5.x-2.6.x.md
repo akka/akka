@@ -2,7 +2,7 @@
 
 ## akka-camel removed
 
-After being deprecated in 2.5, the akka-camel module has been removed in 2.6.
+After being deprecated in 2.5.0, the akka-camel module has been removed in 2.6.
 As an alternative we recommend [Alpakka](https://doc.akka.io/docs/alpakka/current/).
 
 This is of course not a drop-in replacement. If there is community interest we
