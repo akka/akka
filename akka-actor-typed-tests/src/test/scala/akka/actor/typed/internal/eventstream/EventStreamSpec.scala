@@ -14,29 +14,30 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import EventStreamSpec._
 
   "system event stream".can {
-    val eventStream = testKit.spawn(SystemEventStream.behavior)
+    testKit.system.receptionist
+    testKit.system.receptionist
     val eventObjListener: TestProbe[EventObj.type] = testKit.createTestProbe()
     val eventClassListener: TestProbe[EventClass] = testKit.createTestProbe()
 
     "register subscribers" in {
-      eventStream ! EventStream.Subscribe(eventObjListener.ref)
-      eventStream ! EventStream.Subscribe(eventClassListener.ref)
+      testKit.system.eventStream ! EventStream.Subscribe(eventObjListener.ref)
+      testKit.system.eventStream ! EventStream.Subscribe(eventClassListener.ref)
     }
 
     "accept published events" in {
-      eventStream ! EventStream.Publish(EventObj)
+      testKit.system.eventStream ! EventStream.Publish(EventObj)
     }
     "dispatch events to subscribers of that type" in {
       eventObjListener.expectMessage(EventObj)
       eventClassListener.expectNoMessage()
-      eventStream ! EventStream.Publish(EventClass())
+      testKit.system.eventStream ! EventStream.Publish(EventClass())
       eventClassListener.expectMessage(EventClass())
       eventObjListener.expectNoMessage()
     }
 
     "unsubscribe subscribers" in {
-      eventStream ! Unsubscribe(eventObjListener.ref)
-      eventStream ! EventStream.Publish(EventObj)
+      testKit.system.eventStream ! Unsubscribe(eventObjListener.ref)
+      testKit.system.eventStream ! EventStream.Publish(EventObj)
       eventObjListener.expectNoMessage()
     }
 
