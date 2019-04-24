@@ -4,28 +4,21 @@
 
 package akka.actor.typed
 
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.ThreadFactory
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.Future
-import akka.Done
-import akka.{ actor => untyped }
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.internal.adapter.GuardianStartupBehavior
-import akka.actor.typed.internal.adapter.PropsAdapter
-import akka.actor.typed.internal.eventstream.SystemEventStream
+import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.util.Helpers.Requiring
 import akka.util.Timeout
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.{ Done, actor => untyped }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -163,8 +156,8 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   /**
    * Return a reference to this system’s [[akka.actor.typed.eventstream.EventStream]].
    */
-  lazy val eventStream: ActorRef[EventStream.Command] =
-    SystemEventStream.eventStreamRef(this)
+  def eventStream: ActorRef[EventStream.Command] =
+    EventStream(this).ref
 
 }
 
