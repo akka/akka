@@ -1,5 +1,11 @@
 # Classic Remoting (Deprecated)
 
+@@@ warning
+
+Classic remoting has been deprecated and will be removed in Akka 2.7.0. Please use @ref[Artery](remoting-artery.md) instead.
+
+@@@
+
 ## Dependency
 
 To use Akka Remoting, you must add the following dependency in your project:

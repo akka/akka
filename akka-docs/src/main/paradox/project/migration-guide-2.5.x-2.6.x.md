@@ -3,7 +3,7 @@
 ## Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
-Classic remoting has been deprecated and will be removed in `2.7.x`.
+Classic remoting has been deprecated and will be removed in `2.7.0`.
 To migrate to Artery a full cluster restart is required. If you've already moved to Artery in 2.5.x
 then a normal rolling restart is supported but some configuration properties have moved (see below).
 
@@ -13,7 +13,7 @@ remains under `akka.remote`.
 
 ### Switching to Artery
 
-To switch to Artery any overrides for classic remoting need to be ported to Artery configuration.
+To switch to Artery a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
 The most likely are:
 
 Hostname and port for binding:

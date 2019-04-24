@@ -103,7 +103,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
       val system = ActorSystem(
         "DaemonMsgCreateSerializer-old-wire-format",
         ConfigFactory.parseString("""
-          // TODO, why does this make a difference?
+          # old hex bytes contain actor ref with akka.tcp
           akka.remote.artery.enabled = off
           # in 2.4 this is off by default, but in 2.5+ its on so we wouldn't
           # get the right set of serializers (and since the old wire protocol doesn't
