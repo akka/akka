@@ -10,13 +10,15 @@ import java.util.concurrent.ThreadFactory
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import akka.Done
-import akka.{ actor => untyped }
+import akka.{actor => untyped}
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.internal.adapter.GuardianStartupBehavior
 import akka.actor.typed.internal.adapter.PropsAdapter
+import akka.actor.typed.internal.eventstream.SystemEventStream
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
@@ -157,6 +159,13 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    */
   def receptionist: ActorRef[Receptionist.Command] =
     Receptionist(this).ref
+
+  /**
+    * Return a reference to this system’s [[akka.actor.typed.eventstream.EventStream]].
+    */
+  def eventStream: ActorRef[EventStream.Command] =
+    SystemEventStream.eventStreamRef(this)
+
 }
 
 object ActorSystem {
