@@ -534,7 +534,6 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
   .settings(AkkaBuild.mayChangeSettings)
-  .disablePlugins(MimaPlugin)
 
 
 def akkaModule(name: String): Project =
