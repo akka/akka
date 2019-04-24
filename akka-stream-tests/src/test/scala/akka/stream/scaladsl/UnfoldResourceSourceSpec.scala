@@ -147,7 +147,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
-    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
+    "use dedicated blocking0 dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
@@ -163,7 +163,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           .supervisor
           .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSource").get
-        try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+        try assertDispatcher(ref, system.dispatchers.blockingDispatcherId)
         finally p.cancel()
       } finally shutdown(sys)
     }

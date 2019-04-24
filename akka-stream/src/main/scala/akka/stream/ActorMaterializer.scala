@@ -648,6 +648,11 @@ final class ActorMaterializerSettings @InternalApi private (
     if (streamRefSettings == this.streamRefSettings) this
     else copy(streamRefSettings = streamRefSettings)
 
+  /**
+   * Operators that are doing blocking operations or have the [[akka.stream.ActorAttributes#IODispatcher()]] assigned
+   * will use the dispatcher that this full config path points to. If set to an empty string the
+   * 'akka.actor.blocking-dispatcher' setting is used.
+   */
   def withBlockingIoDispatcher(newBlockingIoDispatcher: String): ActorMaterializerSettings =
     if (newBlockingIoDispatcher == blockingIoDispatcher) this
     else copy(blockingIoDispatcher = newBlockingIoDispatcher)

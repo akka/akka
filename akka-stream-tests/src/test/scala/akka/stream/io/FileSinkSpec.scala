@@ -155,7 +155,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
     }
 
-    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
+    "use dedicated blocking dispatcher by default" in assertAllStagesStopped {
       targetFile { f =>
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val materializer = ActorMaterializer()(sys)
@@ -167,7 +167,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .supervisor
             .tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
-          assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+          assertDispatcher(ref, system.dispatchers.blockingDispatcherId)
         } finally shutdown(sys)
       }
     }

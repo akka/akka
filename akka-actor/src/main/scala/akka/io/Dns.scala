@@ -161,7 +161,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
       case "" =>
         Resolver match {
           case "async-dns"    => system.dispatchers.internalDispatcherId
-          case "inet-address" => system.dispatchers.blockingIODispatcherId
+          case "inet-address" => system.dispatchers.blockingDispatcherId
           case unknown =>
             throw new IllegalArgumentException(
               s"Unknown type of dns resolver: [$unknown], please specify dispatcher explicitly with 'akka.io.dns.dispatcher'")

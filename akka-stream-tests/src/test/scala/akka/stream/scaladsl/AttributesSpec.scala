@@ -507,12 +507,12 @@ class AttributesSpec
       try {
         val dispatcher =
           Source
-            .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+            .fromGraph(new ThreadNameSnitchingStage(system.dispatchers.blockingDispatcherId))
             .runWith(Sink.head)(myDispatcherMaterializer)
             .futureValue
 
         // should not override stage specific dispatcher
-        dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+        dispatcher should startWith(s"AttributesSpec-${system.dispatchers.blockingDispatcherId}")
 
       } finally {
         myDispatcherMaterializer.shutdown()
@@ -565,7 +565,7 @@ class AttributesSpec
       val threadName =
         Source.fromGraph(new ThreadNameSnitchingStage(None).addAttributes(Attributes(IODispatcher))).runWith(Sink.head)
 
-      threadName.futureValue should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+      threadName.futureValue should startWith(s"AttributesSpec-${system.dispatchers.blockingDispatcherId}")
     }
 
     "allow for specifying a custom default io-dispatcher" in {
@@ -590,14 +590,15 @@ class AttributesSpec
     "resolve the dispatcher attribute" in {
       import ActorAttributes._
 
-      Dispatcher.resolve(dispatcher("my-dispatcher"), materializer.settings) should be("my-dispatcher")
+      Dispatcher.resolve(dispatcher("my-dispatcher"), materializer.settings, materializer.system) should be(
+        "my-dispatcher")
     }
 
     "resolve the blocking io dispatcher attribute" in {
       import ActorAttributes._
 
-      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings) should be(
-        "akka.stream.default-blocking-io-dispatcher")
+      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings, materializer.system) should be(
+        "akka.actor.default-blocking-io-dispatcher")
     }
   }
 

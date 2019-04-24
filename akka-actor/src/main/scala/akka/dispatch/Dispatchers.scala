@@ -92,7 +92,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * Dispatcher ID for blocking tasks
    */
   @InternalApi
-  private[akka] val blockingIODispatcherId: String = settings.BlockingIODispatcher
+  private[akka] val blockingDispatcherId: String = settings.BlockingDispatcher
 
   /**
    * INTERNAL API
@@ -108,7 +108,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * Dispatcher for blocking tasks
    */
   @InternalApi
-  private[akka] val blockingIODispatcher: MessageDispatcher = lookup(settings.BlockingIODispatcher)
+  private[akka] val blockingDispatcher: MessageDispatcher = lookup(settings.BlockingDispatcher)
 
   /**
    * Returns a dispatcher as specified in configuration. Please note that this

@@ -71,6 +71,7 @@ import akka.event.LoggingFilterWithMarker
       selector match {
         case DispatcherDefault(_)         => untypedSystem.dispatcher
         case DispatcherFromConfig(str, _) => untypedSystem.dispatchers.lookup(str)
+        case BlockingDispatcher(_)        => untypedSystem.dispatchers.blockingDispatcher
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }

@@ -384,7 +384,7 @@ object ActorSystem {
 
     final val SchedulerClass: String = getString("akka.scheduler.implementation")
     final val InternalDispatcher: String = getString("akka.actor.internal-dispatcher")
-    final val BlockingIODispatcher: String = getString("akka.actor.blocking-io-dispatcher")
+    final val BlockingDispatcher: String = getString("akka.actor.blocking-dispatcher")
 
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")

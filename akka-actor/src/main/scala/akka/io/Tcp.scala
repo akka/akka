@@ -616,7 +616,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case nonEmpty => nonEmpty
     }
     val FileIODispatcher: String = getString("file-io-dispatcher").trim match {
-      case ""       => system.dispatchers.blockingIODispatcherId
+      case ""       => system.dispatchers.blockingDispatcherId
       case nonEmpty => nonEmpty
     }
     val TransferToLimit: Int = getString("file-io-transferTo-limit") match {

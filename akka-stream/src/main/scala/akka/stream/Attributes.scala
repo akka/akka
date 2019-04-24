@@ -13,6 +13,7 @@ import scala.reflect.{ classTag, ClassTag }
 import akka.japi.function
 import java.net.URLEncoder
 
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
@@ -414,9 +415,18 @@ object ActorAttributes {
      * is not easily accessible, instead the name is taken from `settings.blockingIoDispatcher`
      */
     @InternalApi
-    private[akka] def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
+    private[akka] def resolve(
+        attributes: Attributes,
+        settings: ActorMaterializerSettings,
+        system: ActorSystem): String =
       attributes.mandatoryAttribute[Dispatcher] match {
-        case IODispatcher           => settings.blockingIoDispatcher
+        case IODispatcher =>
+          settings.blockingIoDispatcher match {
+            case "" => system.dispatchers.blockingDispatcherId
+            // if empty we default to the global default
+            case nonEmpty => nonEmpty
+
+          }
         case Dispatcher(dispatcher) => dispatcher
       }
 
@@ -425,8 +435,10 @@ object ActorAttributes {
      * Resolves the dispatcher name with a fallback to the default blocking IO dispatcher.
      */
     @InternalApi
-    private[akka] def resolve(context: MaterializationContext): String =
-      resolve(context.effectiveAttributes, ActorMaterializerHelper.downcast(context.materializer).settings)
+    private[akka] def resolve(context: MaterializationContext): String = {
+      val am = ActorMaterializerHelper.downcast(context.materializer)
+      resolve(context.effectiveAttributes, am.settings, am.system)
+    }
   }
 
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
