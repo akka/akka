@@ -21,7 +21,10 @@ public class DispatchersDocTest {
             context.spawn(yourBehavior, "DefaultDispatcher");
             context.spawn(
                 yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.defaultDispatcher());
-            context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking());
+            context.spawn(
+                yourBehavior,
+                "BlockingDispatcher",
+                context.getSystem().dispatchers().blockingDispatcherSelector());
             context.spawn(
                 yourBehavior,
                 "DispatcherFromConfig",

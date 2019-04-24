@@ -167,13 +167,16 @@ object DispatcherSelector {
 
   /**
    *  Run the actor on the default blocking dispatcher that is
-   *  configured under blocking-dispatcher.
+   *  configured under 'akka.actor.blocking-dispatcher'.
    *
    *  Note that for optimal handling of blocking it may make sense
    *  to create resource specific dispatchers and tune them to the
    *  individual resource instead of using the globally shared blocking dispatcher.
    */
-  def blocking(): DispatcherSelector = BlockingDispatcher()
+  @deprecated("Use syste.dispatchers.blockingDispatcherSelector instead", "2.6.0")
+  def blocking(): DispatcherSelector =
+    // will not adhere to changes to 'akka.actor.blocking-dispatcher'
+    DispatcherFromConfig("akka.actor.default-blocking-dispatcher")
 
   /**
    * Look up an executor definition in the [[ActorSystem]] configuration.
@@ -202,19 +205,6 @@ object DispatcherDefault {
    * Retrieve an instance for this configuration node with empty `next` reference.
    */
   def apply(): DispatcherDefault = empty
-}
-
-/**
- * Indirectly looks up an executor definition id in the [[ActorSystem]] configuration
- * and then uses the dispatcher that id points to
- * ExecutorServices created in this fashion will be shut down when the
- * ActorSystem terminates.
- *
- * INTERNAL API
- */
-@InternalApi
-private[akka] final case class BlockingDispatcher(next: Props = Props.empty) extends DispatcherSelector {
-  override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**

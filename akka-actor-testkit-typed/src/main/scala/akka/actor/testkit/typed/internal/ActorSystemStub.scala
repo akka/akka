@@ -11,6 +11,7 @@ import akka.actor.typed.{
   ActorRef,
   ActorSystem,
   Behavior,
+  DispatcherDefault,
   DispatcherSelector,
   Dispatchers,
   Extension,
@@ -65,7 +66,8 @@ import com.github.ghik.silencer.silent
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = controlledExecutor
   override def dispatchers: akka.actor.typed.Dispatchers = new Dispatchers {
     def lookup(selector: DispatcherSelector): ExecutionContextExecutor = controlledExecutor
-    def shutdown(): Unit = ()
+    override private[akka] def internalDispatcherSelector: DispatcherSelector = DispatcherDefault(Props.empty)
+    override def blockingDispatcherSelector: DispatcherSelector = DispatcherDefault(Props.empty)
   }
 
   override def dynamicAccess: untyped.DynamicAccess = new untyped.ReflectiveDynamicAccess(getClass.getClassLoader)

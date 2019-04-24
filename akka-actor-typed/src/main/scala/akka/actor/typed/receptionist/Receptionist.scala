@@ -4,14 +4,12 @@
 
 package akka.actor.typed.receptionist
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, ExtensionSetup }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
+
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
-
-import akka.actor.typed.ExtensionSetup
-import akka.actor.typed.Props
 import akka.annotation.InternalApi
 
 /**
@@ -51,7 +49,7 @@ abstract class Receptionist extends Extension {
       } else LocalReceptionist
 
     import akka.actor.typed.scaladsl.adapter._
-    system.internalSystemActorOf(provider.behavior, "receptionist", Props.empty)
+    system.internalSystemActorOf(provider.behavior, "receptionist", system.dispatchers.internalDispatcherSelector)
   }
 }
 

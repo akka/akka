@@ -45,7 +45,7 @@ object DispatchersDocSpec {
 
     context.spawn(yourBehavior, "DefaultDispatcher")
     context.spawn(yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.default())
-    context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking())
+    context.spawn(yourBehavior, "BlockingDispatcher", context.system.dispatchers.blockingDispatcherSelector)
     context.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"))
     //#spawn-dispatcher
 
@@ -65,7 +65,8 @@ class DispatchersDocSpec extends ScalaTestWithActorTestKit(DispatchersDocSpec.co
       withDefault ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "akka.actor.default-dispatcher"
 
-      val withBlocking = actor.ask(Spawn(giveMeYourDispatcher, "default", DispatcherSelector.blocking())).futureValue
+      val withBlocking =
+        actor.ask(Spawn(giveMeYourDispatcher, "default", system.dispatchers.blockingDispatcherSelector)).futureValue
       withBlocking ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "akka.actor.default-blocking-io-dispatcher"
 

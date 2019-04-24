@@ -71,9 +71,14 @@ import akka.event.LoggingFilterWithMarker
       selector match {
         case DispatcherDefault(_)         => untypedSystem.dispatcher
         case DispatcherFromConfig(str, _) => untypedSystem.dispatchers.lookup(str)
-        case BlockingDispatcher(_)        => untypedSystem.dispatchers.blockingDispatcher
       }
-    override def shutdown(): Unit = () // there was no shutdown in untyped Akka
+
+    override private[akka] def internalDispatcherSelector: DispatcherSelector =
+      DispatcherFromConfig(untypedSystem.dispatchers.internalDispatcherId)
+
+    override def blockingDispatcherSelector: DispatcherSelector =
+      DispatcherFromConfig(untypedSystem.dispatchers.blockingDispatcherId)
+
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
