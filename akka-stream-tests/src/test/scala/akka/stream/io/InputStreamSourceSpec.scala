@@ -27,7 +27,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   private def inputStreamFor(bytes: List[Byte]): InputStream =
     new InputStream {
-      @volatile var buf = List("a", "b", "c").map(_.charAt(0).toInt)
+      @volatile var buf = bytes.map(_.toInt)
 
       override def read(): Int = {
         buf match {
