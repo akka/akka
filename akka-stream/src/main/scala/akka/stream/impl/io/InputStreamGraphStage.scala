@@ -24,9 +24,6 @@ private[akka] class InputStreamGraphStage(factory: () => InputStream, chunkSize:
 
   val out: Outlet[ByteString] = Outlet("InputStreamSource")
 
-  /**
-   * The shape of a graph is all that is externally visible: its inlets and outlets.
-   */
   override def shape: SourceShape[ByteString] = SourceShape(out)
 
   override protected def initialAttributes: Attributes = DefaultAttributes.inputStreamSource
@@ -36,7 +33,17 @@ private[akka] class InputStreamGraphStage(factory: () => InputStream, chunkSize:
     val logic = new GraphStageLogicWithLogging(shape) with OutHandler {
       val buffer = new Array[Byte](chunkSize)
       var readBytesTotal = 0L
-      val inputStream = factory()
+      var inputStream: InputStream = _
+
+      override def preStart(): Unit = {
+        try {
+          inputStream = factory()
+        } catch {
+          case NonFatal(t) =>
+            mat.complete(Success(IOResult(0, Failure(t))))
+            failStage(t)
+        }
+      }
 
       override def onPull(): Unit = {
         tryRead()
@@ -66,7 +73,6 @@ private[akka] class InputStreamGraphStage(factory: () => InputStream, chunkSize:
         try {
           if (inputStream != null)
             inputStream.close()
-
           mat.trySuccess(IOResult(readBytesTotal, Success(Done)))
         } catch {
           case ex: Exception =>

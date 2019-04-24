@@ -80,6 +80,17 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .futureValue shouldEqual IOResult(0, Failure(fail))
     }
 
+    "return IOResult with failire if creation fails" in {
+      val fail = new RuntimeException("oh dear indeed")
+      val f = StreamConverters
+        .fromInputStream(() => {
+          throw fail
+        })
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+      f.futureValue shouldEqual IOResult(0, Failure(fail))
+    }
+
     "emit as soon as read" in assertAllStagesStopped {
       val latch = new CountDownLatch(1)
       val probe = StreamConverters
