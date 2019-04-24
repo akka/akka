@@ -39,7 +39,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "allow probing for actor stop when actor already stopped" in {
       val probe = TestProbe()
       val ref = spawn(Behaviors.stopped)
-      probe.expectTerminated(ref, shortDuration)
+      probe.expectTerminated(ref)
     }
 
     "allow probing for actor stop when actor has not stopped yet" in {
