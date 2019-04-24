@@ -14,6 +14,7 @@ import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 
@@ -195,7 +196,12 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
 
   }
 
-  private[io] class UdpSettings(_config: Config) extends SelectionHandlerSettings(_config) {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[io] class UdpSettings(_config: Config, _system: ActorSystem)
+      extends SelectionHandlerSettings(_config, _system) {
     import _config._
 
     val NrOfSelectors: Int = getInt("nr-of-selectors").requiring(_ > 0, "nr-of-selectors must be > 0")
@@ -222,7 +228,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
 
   import Udp.UdpSettings
 
-  val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"))
+  val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"), system)
 
   val manager: ActorRef = {
     system.systemActorOf(

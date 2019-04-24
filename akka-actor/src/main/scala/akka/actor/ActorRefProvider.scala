@@ -632,7 +632,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     val dispatcher =
       system.guardianProps match {
         case None =>
-          // run on internal dispatcher if user provided the guardian
+          // run on internal dispatcher if user didn't provide the guardian
           internalDispatcher
         case Some(props) =>
           // user provided guardian runs on user specified dispatcher or default dispatcher

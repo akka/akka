@@ -156,11 +156,18 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
      */
     def this(config: Config) = this(config, config.getString("resolver"))
 
+    val Resolver: String = resolverName
     val Dispatcher: String = config.getString("dispatcher").trim match {
-      case ""       => system.dispatchers.internalDispatcherId
+      case "" =>
+        Resolver match {
+          case "async-dns"    => system.dispatchers.internalDispatcherId
+          case "inet-address" => system.dispatchers.blockingIODispatcherId
+          case unknown =>
+            throw new IllegalArgumentException(
+              s"Unknown type of dns resolver: [$unknown], please specify dispatcher explicitly with 'akka.io.dns.dispatcher'")
+        }
       case nonEmpty => nonEmpty
     }
-    val Resolver: String = resolverName
     val ResolverConfig: Config = config.getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
 

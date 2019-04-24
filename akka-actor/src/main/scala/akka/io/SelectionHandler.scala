@@ -4,29 +4,31 @@
 
 package akka.io
 
-import java.util.{ Iterator => JIterator }
-import java.util.concurrent.atomic.AtomicBoolean
-import java.nio.channels.{ CancelledKeyException, SelectableChannel, SelectionKey }
 import java.nio.channels.SelectionKey._
 import java.nio.channels.spi.SelectorProvider
+import java.nio.channels.{ CancelledKeyException, ClosedChannelException, SelectableChannel, SelectionKey }
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.{ Iterator => JIterator }
 
+import akka.actor._
+import akka.annotation.DoNotInherit
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.routing.RandomPool
+import akka.util.Helpers.Requiring
+import akka.util.SerializedSuspendableExecutionContext
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
-import scala.util.control.NonFatal
 import scala.concurrent.ExecutionContext
-import akka.event.LoggingAdapter
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.Helpers.Requiring
-import akka.util.SerializedSuspendableExecutionContext
-import akka.actor._
-import akka.routing.RandomPool
-import akka.event.Logging
-import java.nio.channels.ClosedChannelException
-
 import scala.util.Try
+import scala.util.control.NonFatal
 
-abstract class SelectionHandlerSettings(config: Config) {
+/**
+ * Not for user extension
+ */
+@DoNotInherit
+abstract class SelectionHandlerSettings private[akka] (config: Config, system: ActorSystem) {
   import config._
 
   val MaxChannels: Int = getString("max-channels") match {
@@ -36,7 +38,10 @@ abstract class SelectionHandlerSettings(config: Config) {
   val SelectorAssociationRetries: Int =
     getInt("selector-association-retries").requiring(_ >= 0, "selector-association-retries must be >= 0")
 
-  val SelectorDispatcher: String = getString("selector-dispatcher").trim
+  val SelectorDispatcher: String = getString("selector-dispatcher").trim match {
+    case ""       => system.dispatchers.internalDispatcherId
+    case nonEmpty => nonEmpty
+  }
   val WorkerDispatcher: String = getString("worker-dispatcher").trim
   val TraceLogging: Boolean = getBoolean("trace-logging")
 
@@ -303,10 +308,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings)
   private[this] var sequenceNumber = 0L // should be Long to prevent overflow
   private[this] var childCount = 0
   private[this] val registry = {
-    val dispatcher = context.system.dispatchers.lookup(SelectorDispatcher match {
-      case ""       => context.system.dispatchers.internalDispatcherId
-      case nonEmpty => nonEmpty
-    })
+    val dispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
     new ChannelRegistryImpl(SerializedSuspendableExecutionContext(dispatcher.throughput)(dispatcher), settings, log)
   }
   private[this] val workerDispatcherId =

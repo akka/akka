@@ -594,7 +594,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
 class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
   val Settings = new Settings(system.settings.config.getConfig("akka.io.tcp"))
-  class Settings private[TcpExt] (_config: Config) extends SelectionHandlerSettings(_config) {
+  class Settings private[TcpExt] (_config: Config) extends SelectionHandlerSettings(_config, system) {
     import akka.util.Helpers.ConfigOps
     import _config._
 
@@ -615,7 +615,10 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       case ""       => system.dispatchers.internalDispatcherId
       case nonEmpty => nonEmpty
     }
-    val FileIODispatcher: String = getString("file-io-dispatcher")
+    val FileIODispatcher: String = getString("file-io-dispatcher").trim match {
+      case ""       => system.dispatchers.blockingIODispatcherId
+      case nonEmpty => nonEmpty
+    }
     val TransferToLimit: Int = getString("file-io-transferTo-limit") match {
       case "unlimited" => Int.MaxValue
       case _           => getIntBytes("file-io-transferTo-limit")

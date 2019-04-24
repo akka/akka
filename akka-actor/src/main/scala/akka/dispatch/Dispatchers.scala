@@ -78,8 +78,21 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
 
+  /**
+   * INTERNAL API
+   *
+   * Dispatcher ID for internal actors
+   */
   @InternalApi
   private[akka] val internalDispatcherId: String = settings.InternalDispatcher
+
+  /**
+   * INTERNAL API
+   *
+   * Dispatcher ID for blocking tasks
+   */
+  @InternalApi
+  private[akka] val blockingIODispatcherId: String = settings.BlockingIODispatcher
 
   /**
    * INTERNAL API
@@ -88,6 +101,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   @InternalApi
   private[akka] val internalDispatcher: MessageDispatcher = lookup(internalDispatcherId)
+
+  /**
+   * INTERNAL API
+   *
+   * Dispatcher for blocking tasks
+   */
+  @InternalApi
+  private[akka] val blockingIODispatcher: MessageDispatcher = lookup(settings.BlockingIODispatcher)
 
   /**
    * Returns a dispatcher as specified in configuration. Please note that this
