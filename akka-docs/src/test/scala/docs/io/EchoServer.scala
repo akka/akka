@@ -6,13 +6,25 @@ package docs.io
 
 import java.net.InetSocketAddress
 
-import scala.concurrent.duration.DurationInt
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props, SupervisorStrategy }
 import akka.io.{ IO, Tcp }
 import akka.util.ByteString
+
+import scala.io.StdIn
+
+object EchoServer extends App {
+
+  val config = ConfigFactory.parseString("akka.loglevel = DEBUG")
+  implicit val system = ActorSystem("EchoServer", config)
+
+  system.actorOf(Props(classOf[EchoManager], classOf[EchoHandler]), "echo")
+  system.actorOf(Props(classOf[EchoManager], classOf[SimpleEchoHandler]), "simple")
+
+  println("Press enter to exit...")
+  StdIn.readLine()
+  system.terminate()
+}
 
 class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
 
