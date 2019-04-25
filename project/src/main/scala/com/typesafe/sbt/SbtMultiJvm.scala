@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2011-2012 Typesafe Inc. <http://www.typesafe.com>
+/*
+ * Copyright (C) 2011-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.typesafe.sbt
