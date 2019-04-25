@@ -12,11 +12,11 @@ import Keys._
 import java.io.File
 import java.lang.Boolean.getBoolean
 
-import scala.Console.{ GREEN, RESET }
-
+import scala.Console.{GREEN, RESET}
 import sbtassembly.AssemblyPlugin.assemblySettings
-import sbtassembly.{MergeStrategy, AssemblyKeys}
+import sbtassembly.{AssemblyKeys, MergeStrategy}
 import AssemblyKeys._
+import sbt.testing.Framework
 
 object MultiJvmPlugin extends AutoPlugin {
 
@@ -198,8 +198,26 @@ object MultiJvmPlugin extends AutoPlugin {
     (mainClass: String) => Seq("-cp", cp, mainClass)
   }
 
-  def multiJvmExecuteTests: Def.Initialize[sbt.Task[Tests.Output]] = Def.task {
-    runMultiJvmTests(multiJvmTests.value, multiJvmMarker.value, multiJvmJavaCommand.value, multiTestOptions.value, sourceDirectory.value, multiJvmCreateLogger.value, streams.value.log)
+  def multiJvmExecuteTests: Def.Initialize[sbt.Task[Tests.Output]] = Def.taskDyn {
+    runMultiJvmTests(
+    testRunnerArgsTask.value,
+    multiJvmTests.value,
+    multiJvmMarker.value,
+    multiJvmJavaCommand.value,
+    multiTestOptions.value,
+    sourceDirectory.value,
+    multiJvmCreateLogger.value,
+    streams.value.log)
+  }
+
+  def testRunnerArgsTask: Def.Initialize[sbt.Task[TestRunnerArgs]] = Def.task {
+    TestRunnerArgs(
+      loadedTestFrameworks.value,
+      (testLoader in test).value,
+      (testExecution in test).value,
+      (fullClasspath in test).value,
+      (forkOptions in test).value
+    )
   }
 
   def multiJvmTestOnly: Def.Initialize[sbt.InputTask[Unit]] = InputTask.createDyn(
@@ -211,22 +229,41 @@ object MultiJvmPlugin extends AutoPlugin {
       val opts = options.copy(extra = (s: String) => { options.extra(s) ++ _extraOptions })
       val filters = selection.map(GlobFilter(_))
       val tests = multiJvmTests.value.filterKeys(name => filters.exists(_.accept(name)))
-      Def.task {
-        val results = runMultiJvmTests(tests, multiJvmMarker.value, multiJvmJavaCommand.value, opts, sourceDirectory.value, multiJvmCreateLogger.value, s.log)
+      runMultiJvmTests(testRunnerArgsTask.value, tests, multiJvmMarker.value, multiJvmJavaCommand.value, opts, sourceDirectory.value, multiJvmCreateLogger.value, s.log).map { results =>
         showResults(s.log, results, "No tests to run for MultiJvm")
+        ()
       }
     }
   }
 
-  def runMultiJvmTests(tests: Map[String, Seq[TestDefinition]], marker: String, javaBin: File, options: Options,
-                       srcDir: File, createLogger: String => Logger, log: Logger): Tests.Output = {
-    val results =
-      if (tests.isEmpty)
-        List()
-      else tests.map {
-        case (_name, testDefs) => multiTest(_name, testDefs, marker, javaBin, options, srcDir, false, createLogger, log)
+  case class TestRunnerArgs(
+    frameworks: Map[TestFramework, Framework],
+    classLoader: ClassLoader,
+    config: Tests.Execution,
+    classpath: Classpath,
+    forkOptions: ForkOptions
+  ) {
+    lazy val runner = Defaults.createTestRunners(frameworks, classLoader, config)
+  }
+
+  def runMultiJvmTests(testRunner: TestRunnerArgs, tests: Map[String, Seq[TestDefinition]], marker: String, javaBin: File, options: Options,
+                       srcDir: File, createLogger: String => Logger, log: Logger): Def.Initialize[Task[Tests.Output]] = Def.value {
+    def reduced(outputs: Seq[Tests.Output]): Tests.Output =
+      outputs.reduce { (a, b) =>
+        (a,b) match {
+          case (Tests.Output(ov1, ev1, sum1), Tests.Output(ov2, ev2, sum2)) =>
+            Tests.Output(Tests.overall(Seq(ov1, ov2)), ev1 ++ ev2, sum1 ++ sum2)
+        }
       }
-    Tests.Output(Tests.overall(results.map(_._2)), Map.empty, results.map(result => Tests.Summary("multi-jvm", result._1)))
+
+    import sbt.std.TaskExtra._
+    val testResults: Task[Seq[Tests.Output]] =
+      tests.toSeq.map {
+          case (_name, testDefs) => multiTest(testRunner, _name, testDefs, marker, javaBin, options, srcDir, false, createLogger, log)
+      }.join.map(_.flatten)
+
+    testResults.map(reduced)
+    //Tests.Output(Tests.overall(results.map(_._2)), Map.empty, results.map(result => Tests.Summary("multi-jvm", result._1)))
   }
 
   def multiJvmRun: Def.Initialize[sbt.InputTask[Unit]] = InputTask.createDyn(
@@ -257,15 +294,16 @@ object MultiJvmPlugin extends AutoPlugin {
     (state, appClasses) => Space ~> token(NotSpace examples appClasses.toSet)
   }
 
-  def multiTest(name: String, testDefs: Seq[TestDefinition], marker: String, javaBin: File, options: Options, srcDir: File,
-            input: Boolean, createLogger: String => Logger, log: Logger): (String, TestResultValue) = {
+  def multiTest(testRunner: TestRunnerArgs, name: String, testDefs: Seq[TestDefinition], marker: String, javaBin: File, options: Options, srcDir: File,
+            input: Boolean, createLogger: String => Logger, log: Logger): Task[Seq[Tests.Output]] = {
     val classes = testDefs.map(_.name)
     val logName = "* " + name
     log.info(if (log.ansiCodesSupported) GREEN + logName + RESET else logName)
     val classesHostsJavas = getClassesHostsJavas(classes, IndexedSeq.empty, IndexedSeq.empty, "")
     val hosts = classesHostsJavas.map(_._2)
-    val processes = classes.zipWithIndex map {
-      case (testClass, index) =>
+    val tasks: Seq[Task[Tests.Output]] = testDefs.zipWithIndex map {
+      case (testDefinition, index) =>
+        val testClass = testDefinition.name
         val className = multiSimpleName(testClass)
         val jvmName = "JVM-" + (index + 1) + "-" + className
         val jvmLogger = createLogger(jvmName)
@@ -282,9 +320,20 @@ object MultiJvmPlugin extends AutoPlugin {
         val result =
           Fork.java(forkOptions)*/
 
-        (testClass, Jvm.startJvm(javaBin, allJvmOptions, runOptions, jvmLogger, connectInput))
+        sbt.multijvmaccess.Access.ForkTests(
+          testRunner.runner,
+          testDefs.toVector,
+          testRunner.config,
+          testRunner.classpath.map(_.data),
+          testRunner.forkOptions,
+          jvmLogger,
+          Tags.ForkedTestGroup
+        )
+
+        //(testClass, Jvm.startJvm(javaBin, allJvmOptions, runOptions, jvmLogger, connectInput))
     }
-    processExitCodes(name, processes, log)
+    tasks.join
+    //processExitCodes(name, processes, log)
   }
 
   def multi(name: String, classes: Seq[String], marker: String, javaBin: File, options: Options, srcDir: File,
