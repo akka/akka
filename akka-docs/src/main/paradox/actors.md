@@ -292,42 +292,6 @@ are described in more depth in the
 [Using Akka with Dependency Injection](http://letitcrash.com/post/55958814293/akka-dependency-injection)
 guideline and the [Akka Java Spring](https://github.com/typesafehub/activator-akka-java-spring) tutorial.
 
-### The Inbox
-
-When writing code outside of actors which shall communicate with actors, the
-`ask` pattern can be a solution (see below), but there are two things it
-cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
-to a notification service) and watching other actors’ lifecycle. For these
-purposes there is the `Inbox` class:
-
-Scala
-:  @@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
-
-Java
-:  @@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #inbox }
-
-
-@@@ div { .group-scala }
-
-There is an implicit conversion from inbox to actor reference which means that
-in this example the sender reference will be that of the actor hidden away
-within the inbox. This allows the reply to be received on the last line.
-Watching an actor is quite simple as well:
-
-@@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
-
-@@@
-
-@@@ div { .group-java }
-
-The `send` method wraps a normal `tell` and supplies the internal
-actor’s reference as the sender. This allows the reply to be received on the
-last line.  Watching an actor is quite simple as well:
-
-@@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #watch }
-
-@@@
-
 ## Actor API
 
 @scala[The `Actor` trait defines only one abstract method, the above mentioned
