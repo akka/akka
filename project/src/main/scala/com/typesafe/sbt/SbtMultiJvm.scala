@@ -257,13 +257,22 @@ object MultiJvmPlugin extends AutoPlugin {
       }
 
     import sbt.std.TaskExtra._
-    val testResults: Task[Seq[Tests.Output]] =
-      tests.toSeq.map {
-          case (_name, testDefs) => multiTest(testRunner, _name, testDefs, marker, javaBin, options, srcDir, false, createLogger, log)
-      }.join.map(_.flatten)
+    def runOne(name: String, testDefs: Seq[TestDefinition]): Task[Tests.Output] =
+        multiTest(testRunner, name, testDefs, marker, javaBin, options, srcDir, false, createLogger, log)
+        .map(reduced)
 
-    testResults.map(reduced)
-    //Tests.Output(Tests.overall(results.map(_._2)), Map.empty, results.map(result => Tests.Summary("multi-jvm", result._1)))
+    tests.toSeq.foldLeft(Option.empty[Task[Tests.Output]]) { (curResult, nextSet) =>
+      curResult match {
+        case None => Some(runOne(nextSet._1, nextSet._2))
+        case Some(prevTask) =>
+          Some(
+            prevTask.flatMap { lastResult =>
+              runOne(nextSet._1, nextSet._2)
+                .map(n => reduced(lastResult :: n :: Nil))
+            }
+          )
+      }
+    }.get
   }
 
   def multiJvmRun: Def.Initialize[sbt.InputTask[Unit]] = InputTask.createDyn(
@@ -319,15 +328,19 @@ object MultiJvmPlugin extends AutoPlugin {
         /*val forkOptions = ForkOptions()
         val result =
           Fork.java(forkOptions)*/
+        val allOptions = testRunner.forkOptions.runJVMOptions ++ multiNodeOptions
+        println(s"All options: ${allOptions.mkString(" ")}")
+        val forkOptions =
+          testRunner.forkOptions.withRunJVMOptions(allOptions)
 
         sbt.multijvmaccess.Access.ForkTests(
           testRunner.runner,
-          testDefs.toVector,
+          Vector(testDefinition),
           testRunner.config,
           testRunner.classpath.map(_.data),
-          testRunner.forkOptions,
+          forkOptions,
           jvmLogger,
-          Tags.ForkedTestGroup
+          Tags.Untagged
         )
 
         //(testClass, Jvm.startJvm(javaBin, allJvmOptions, runOptions, jvmLogger, connectInput))
