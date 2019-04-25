@@ -6,11 +6,12 @@ package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
 import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
 import akka.event.Logging.Warning
-import akka.event.EventStream
+import akka.event.{ EventStream, LoggingAdapter }
 import akka.ConfigurationException
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.Helpers.ConfigOps
 import com.github.ghik.silencer.silent
 
@@ -32,6 +33,7 @@ trait DispatcherPrerequisites {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] final case class DefaultDispatcherPrerequisites(
     threadFactory: ThreadFactory,
     eventStream: EventStream,
@@ -49,6 +51,8 @@ object Dispatchers {
    * configuration of the default dispatcher.
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
+
+  final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 }
 
 /**
@@ -56,10 +60,19 @@ object Dispatchers {
  * for different environments. Use the `lookup` method to create
  * a dispatcher as specified in configuration.
  *
+ * A dispatcher config can also be an alias, in that case it is a config string value pointing
+ * to the actual dispatcher config.
+ *
  * Look in `akka.actor.default-dispatcher` section of the reference.conf
  * for documentation of dispatcher options.
+ *
+ * Not for user instantiation or extension
  */
-class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
+@DoNotInherit
+class Dispatchers(
+    val settings: ActorSystem.Settings,
+    val prerequisites: DispatcherPrerequisites,
+    logger: LoggingAdapter) {
 
   import Dispatchers._
 
@@ -77,7 +90,12 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   /**
    * Returns a dispatcher as specified in configuration. Please note that this
-   * method _may_ create and return a NEW dispatcher, _every_ call.
+   * method _may_ create and return a NEW dispatcher, _every_ call (depending on the `MessageDispatcherConfigurator` /
+   * dispatcher config the id points to).
+   *
+   * A dispatcher id can also be an alias. In the case it is a string value in the config it is treated as the id
+   * of the actual dispatcher config to use. If several ids leading to the same actual dispatcher config is used only one
+   * instance is created. This means that for dispatchers you expect to be shared they will be.
    *
    * Throws ConfigurationException if the specified dispatcher cannot be found in the configuration.
    */
@@ -97,9 +115,27 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         // It doesn't matter if we create a dispatcher configurator that isn't used due to concurrent lookup.
         // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
-        val newConfigurator =
-          if (cachingConfig.hasPath(id)) configuratorFrom(config(id))
-          else throw new ConfigurationException(s"Dispatcher [$id] not configured")
+
+        val newConfigurator: MessageDispatcherConfigurator =
+          if (cachingConfig.hasPath(id)) {
+            val valueAtPath = cachingConfig.getValue(id)
+            valueAtPath.valueType() match {
+              case ConfigValueType.STRING =>
+                // a dispatcher key can be an alias of another dispatcher, if it is a string
+                // we treat that string value as the id of a dispatcher to lookup, it will be stored
+                // both under the actual id and the alias id in the 'dispatcherConfigurators' cache
+                val actualId = valueAtPath.unwrapped().asInstanceOf[String]
+                logger.debug("Dispatcher id [{}] is an alias, actual dispatcher will be [{}]", id, actualId)
+                lookupConfigurator(actualId)
+
+              case ConfigValueType.OBJECT =>
+                configuratorFrom(config(id))
+              case unexpected =>
+                throw new ConfigurationException(
+                  s"Expected either a dispatcher config or an alias at [$id] but found [$unexpected]")
+
+            }
+          } else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
           case null     => newConfigurator

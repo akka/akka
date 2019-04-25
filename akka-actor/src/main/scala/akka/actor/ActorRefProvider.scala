@@ -5,21 +5,20 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{ Dispatchers, Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
 import akka.util.Helpers
 import akka.util.Collections.EmptyImmutableSeq
+
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
-
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.dispatch.Mailboxes
 import akka.serialization.Serialization
 import akka.util.OptionVal
 
@@ -484,7 +483,7 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  private lazy val defaultDispatcher = system.dispatchers.defaultGlobalDispatcher
+  private lazy val internalDispatcher = system.dispatchers.lookup(Dispatchers.InternalDispatcherId)
 
   private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
 
@@ -492,7 +491,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     new LocalActorRef(
       system,
       Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
-      defaultDispatcher,
+      internalDispatcher,
       defaultMailbox,
       theOneWhoWalksTheBubblesOfSpaceTime,
       rootPath) {
@@ -511,10 +510,19 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
+    val dispatcher =
+      system.guardianProps match {
+        case None =>
+          // run on internal dispatcher if user didn't provide the guardian
+          internalDispatcher
+        case Some(props) =>
+          // user provided guardian runs on user specified dispatcher or default dispatcher
+          system.dispatchers.lookup(props.dispatcher)
+      }
     val ref = new LocalActorRef(
       system,
       system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
-      defaultDispatcher,
+      dispatcher,
       defaultMailbox,
       rootGuardian,
       rootPath / "user")
@@ -529,7 +537,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     val ref = new LocalActorRef(
       system,
       Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
-      defaultDispatcher,
+      internalDispatcher,
       defaultMailbox,
       rootGuardian,
       rootPath / "system")
