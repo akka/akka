@@ -261,6 +261,11 @@ object MultiJvmPlugin extends AutoPlugin {
         multiTest(testRunner, name, testDefs, marker, javaBin, options, srcDir, false, createLogger, log)
         .map(reduced)
 
+    // the magic sauce
+    // The sequencing is the important part here, runOne will create parallel tasks for ABCMultiJvmN instances
+    // classes for one test case.
+    // To prevent that more than one test case is submitted to the task engine (which is synchronous and only has a certain number of slots),
+    // `tests` are folded over and chained with `flatMap` to introduce a synthetic dependency between different test runs.
     tests.toSeq.foldLeft(Option.empty[Task[Tests.Output]]) { (curResult, nextSet) =>
       curResult match {
         case None => Some(runOne(nextSet._1, nextSet._2))
