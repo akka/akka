@@ -80,8 +80,8 @@ object StreamConverters {
    * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
   def fromOutputStream(out: () => OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph(
-      new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
+    Sink.fromGraph()
+)
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible
