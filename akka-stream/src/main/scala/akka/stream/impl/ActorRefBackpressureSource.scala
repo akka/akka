@@ -57,11 +57,11 @@ private object ActorRefBackpressureSource {
             case CompletionStrategy.Immediately =>
               completeStage()
           }
-        case (sender, m: T @unchecked) ⇒
+        case e: (ActorRef, T) @unchecked ⇒
           if (element.isDefined) {
             failStage(new IllegalStateException("Received new element before ack was signaled back"))
           } else {
-            element = OptionVal.Some((sender, m))
+            element = OptionVal.Some(e)
             tryPush()
           }
       }.ref

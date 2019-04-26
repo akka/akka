@@ -46,21 +46,24 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
     }
 
     "fail when consumer does not await ack" in assertAllStagesStopped {
-      val (ref, s) = Source
-        .actorRefWithAck[Int](AckMsg)
-        .toMat(TestSink.probe[Int].addAttributes(Attributes.inputBuffer(initial = 1, max = 1)))(Keep.both)
-        .run()
+      val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
 
       val sub = s.expectSubscription()
       for (n <- 1 to 20) ref ! n
       sub.request(1)
 
-      var e: Either[Throwable, Int] = null
-      do {
-        e = s.expectNextOrError()
-        if (e.right.exists(_ > 10)) fail("Must not drain all remaining elements: " + e)
-      } while (e.isRight)
-      e.left.get.getMessage shouldBe "Received new element before ack was signaled back"
+      @scala.annotation.tailrec
+      def verifyNext(n: Int): Unit = {
+        if (n > 10)
+          s.expectComplete()
+        else
+          s.expectNextOrError() match {
+            case Right(`n`) => verifyNext(n + 1)
+            case Right(x)   => fail(s"expected $n, got $x")
+            case Left(t)    => t.getMessage shouldBe "Received new element before ack was signaled back"
+          }
+      }
+      verifyNext(1)
     }
 
     "complete after receiving Status.Success" in assertAllStagesStopped {
