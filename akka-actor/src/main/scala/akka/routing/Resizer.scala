@@ -128,13 +128,13 @@ case object DefaultResizer {
  */
 @SerialVersionUID(1L)
 case class DefaultResizer(
-    val lowerBound: Int = 1,
-    val upperBound: Int = 10,
-    val pressureThreshold: Int = 1,
-    val rampupRate: Double = 0.2,
-    val backoffThreshold: Double = 0.3,
-    val backoffRate: Double = 0.1,
-    val messagesPerResize: Int = 10)
+    lowerBound: Int = 1,
+    upperBound: Int = 10,
+    pressureThreshold: Int = 1,
+    rampupRate: Double = 0.2,
+    backoffThreshold: Double = 0.3,
+    backoffRate: Double = 0.1,
+    messagesPerResize: Int = 10)
     extends Resizer {
 
   /**

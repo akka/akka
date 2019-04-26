@@ -33,13 +33,13 @@ trait DispatcherPrerequisites {
  * INTERNAL API
  */
 private[akka] final case class DefaultDispatcherPrerequisites(
-    val threadFactory: ThreadFactory,
-    val eventStream: EventStream,
-    val scheduler: Scheduler,
-    val dynamicAccess: DynamicAccess,
-    val settings: ActorSystem.Settings,
-    val mailboxes: Mailboxes,
-    val defaultExecutionContext: Option[ExecutionContext])
+    threadFactory: ThreadFactory,
+    eventStream: EventStream,
+    scheduler: Scheduler,
+    dynamicAccess: DynamicAccess,
+    settings: ActorSystem.Settings,
+    mailboxes: Mailboxes,
+    defaultExecutionContext: Option[ExecutionContext])
     extends DispatcherPrerequisites
 
 object Dispatchers {
@@ -190,14 +190,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[MessageDispatcherConfigurator](fqn, args)
-          .recover({
+          .recover {
             case exception =>
               throw new ConfigurationException(
                 ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
                 "make sure it has constructor with [com.typesafe.config.Config] and " +
                 "[akka.dispatch.DispatcherPrerequisites] parameters").format(fqn, cfg.getString("id")),
                 exception)
-          })
+          }
           .get
     }
   }

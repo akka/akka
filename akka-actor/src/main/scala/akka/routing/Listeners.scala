@@ -42,8 +42,8 @@ trait Listeners { self: Actor =>
   /**
    * Sends the supplied message to all current listeners using the provided sender() as sender.
    *
-   * @param msg
-   * @param sender
+   * @param msg    supplied message
+   * @param sender the sender
    */
   protected def gossip(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     val i = listeners.iterator
