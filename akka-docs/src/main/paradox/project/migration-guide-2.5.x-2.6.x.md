@@ -1,5 +1,23 @@
 # Migration Guide 2.5.x to 2.6.x
 
+## akka-camel removed
+
+After being deprecated in 2.5.0, the akka-camel module has been removed in 2.6.
+As an alternative we recommend [Alpakka](https://doc.akka.io/docs/alpakka/current/).
+
+This is of course not a drop-in replacement. If there is community interest we
+are open to setting up akka-camel as a separate community-maintained
+repository.
+
+## Scala 2.11 no longer supported
+
+If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
+
+### Actor DSL removal
+
+Actor DSL is a rarely used feature and has been deprecated since `2.5.0`.
+Use plain `system.actorOf` instead of the DSL to create Actors if you have been using it.
+
 ## Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
@@ -49,7 +67,3 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed. 
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
-
-## Scala 2.11 no longer supported
-
-If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13

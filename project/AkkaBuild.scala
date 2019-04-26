@@ -133,7 +133,6 @@ object AkkaBuild {
       initialCommands :=
         """|import language.postfixOps
          |import akka.actor._
-         |import ActorDSL._
          |import scala.concurrent._
          |import com.typesafe.config.ConfigFactory
          |import scala.concurrent.duration._

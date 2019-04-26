@@ -133,7 +133,7 @@ public class ShardingCompileOnlyTest {
     // #init
 
     // #send
-    EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-`");
+    EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-1");
     counterOne.tell(new Increment());
 
     shardRegion.tell(new ShardingEnvelope<>("counter-1", new Increment()));

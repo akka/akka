@@ -1,5 +1,0 @@
-# #21290 new zipWithIndex flow op
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipWithIndex")
-
-# class akka.stream.impl.fusing.Map is declared final in current version
-ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.Map")
