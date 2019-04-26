@@ -139,7 +139,7 @@ One thing to be aware of is that rolling update from classic remoting to Artery 
 is completely different. It will require a full cluster shutdown and new startup.
 
 
-If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
+If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
 for how to do this.
 
 
