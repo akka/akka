@@ -869,7 +869,6 @@ private[akka] class ActorSystemImpl(
       "akka-actor",
       "akka-actor-testkit-typed",
       "akka-actor-typed",
-      "akka-agent",
       "akka-cluster",
       "akka-cluster-metrics",
       "akka-cluster-sharding",

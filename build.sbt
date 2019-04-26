@@ -40,7 +40,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   actorTestkitTyped,
   actorTyped,
   actorTypedTests,
-  agent,
   benchJmh,
   benchJmhTyped,
   cluster,
@@ -96,16 +95,8 @@ lazy val actorTests = akkaModule("akka-actor-tests")
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
-lazy val agent = akkaModule("akka-agent")
-  .dependsOn(actor, testkit % "test->test")
-  .settings(Dependencies.agent)
-  .settings(AutomaticModuleName.settings("akka.agent"))
-  .settings(OSGi.agent)
-  .enablePlugins(ScaladocNoVerificationOfDiagrams)
-
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
-// remove dependencies that we have to build ourselves (Scala STM)
-  .aggregate(aggregatedProjects.diff(List[ProjectReference](agent, docs)): _*)
+  .aggregate(aggregatedProjects: _*)
   .disablePlugins(MimaPlugin)
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
@@ -206,7 +197,6 @@ lazy val docs = akkaModule("akka-docs")
     cluster,
     clusterMetrics,
     slf4j,
-    agent,
     osgi,
     persistenceTck,
     persistenceQuery,
