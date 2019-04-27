@@ -168,7 +168,7 @@ The easiest way to run this example yourself is to download the ready to run
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
 The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
+@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
 
 ## Joining to Seed Nodes
 
@@ -528,7 +528,7 @@ The easiest way to run **Worker Dial-in Example** example yourself is to downloa
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
 The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
+@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
 
 ## Node Roles
 

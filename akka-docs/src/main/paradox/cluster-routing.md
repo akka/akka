@@ -148,7 +148,7 @@ The easiest way to run **Router Example with Group of Routees** example yourself
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Router Example with Group of Routees** sample.
 The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
+@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
 
 ## Router with Pool of Remote Deployed Routees
 
@@ -249,5 +249,4 @@ The easiest way to run **Router Example with Pool of Remote Deployed Routees** e
 @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
 together with the tutorial. It contains instructions on how to run the **Router Example with Pool of Remote Deployed Routees** sample.
 The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
