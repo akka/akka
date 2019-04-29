@@ -185,11 +185,9 @@ Scala
 Java
 :  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
 
-The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
-The source code of this sample can be found in the 
-@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
+The easiest way to run the **Adaptive Load Balancing** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Adaptive Load Balancing** sample.
 
 ## Subscribe to Metrics Events
 

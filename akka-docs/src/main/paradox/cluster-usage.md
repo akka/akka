@@ -163,12 +163,9 @@ Java
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
+The easiest way to run this example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the `SimpleClusterApp`.
 
 ## Joining to Seed Nodes
 
@@ -523,13 +520,10 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the `Terminated` message to the watching actor when the
 unreachable cluster node has been downed and removed.
 
-The easiest way to run **Worker Dial-in Example** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-samples-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-cluster-java)].
-
+The easiest way to run **Worker Dial-in Example** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Worker Dial-in Example** sample.
+ 
 ## Node Roles
 
 Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
