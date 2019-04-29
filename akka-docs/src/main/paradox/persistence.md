@@ -927,17 +927,17 @@ and set it with `withPolicy()` method.
 
 Message storage has the following operations:
 
- * `Read` Read the messages from the storage.
- * `Write` Write messages to the storage.
- * `Delete` Delete messages from the storage.
+ * `ReadMessages` Read the messages from the storage.
+ * `WriteMessages` Write messages to the storage.
+ * `DeleteMessages` Delete messages from the storage.
  * `ReadSeqNum` Read the highest sequence number for particular persistence id.
 
 Snapshot storage has the following operations:
 
- * `Read` Read the snapshot from the storage.
- * `Write` Writhe the snapshot to the storage.
- * `DeleteByCriteria` Delete snapshots in the storage by criteria.
- * `DeleteSnapshot` Delete particular snapshot from the storage by its metadata.
+ * `ReadSnapshot` Read the snapshot from the storage.
+ * `WriteSnapshot` Writhe the snapshot to the storage.
+ * `DeleteSnapshotsByCriteria` Delete snapshots in the storage by criteria.
+ * `DeleteSnapshotByMeta` Delete particular snapshot from the storage by its metadata.
 
 The `tryProcess()` method must return one of the processing results:
  

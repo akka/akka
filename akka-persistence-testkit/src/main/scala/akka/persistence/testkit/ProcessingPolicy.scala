@@ -13,8 +13,6 @@ import akka.annotation.InternalApi
  */
 trait ProcessingPolicy[U] {
 
-  import ProcessingPolicy._
-
   /**
    * Emulates behavior of the storage.
    * The function is invoked when any of the plugin's operations is executed.
@@ -82,69 +80,79 @@ object ProcessingPolicy {
 
   }
 
-  sealed trait ProcessingResult
+}
 
-  /**
-   * Emulates successful processing of some operation.
-   */
-  object ProcessingSuccess extends ProcessingResult {
+/**
+  * INTERNAL API
+  */
+@InternalApi
+sealed trait ProcessingResult
 
-    def getInstance() = this
+sealed abstract class ProcessingSuccess extends ProcessingResult
 
-  }
+/**
+  * Emulates successful processing of some operation.
+  */
+case object ProcessingSuccess extends ProcessingSuccess {
 
-  sealed trait ProcessingFailure extends ProcessingResult {
-
-    def error: Throwable
-
-  }
-
-  object ExpectedRejection extends Throwable {
-
-    def getInstance() = this
-
-  }
-  object ExpectedFailure extends Throwable {
-
-    def getInstance() = this
-
-  }
-
-  /**
-   * Emulates rejection of operation by the journal with `error` exception.
-   * Has the same meaning as `StorageFailure` for snapshot storage,
-   * because it does not support rejections.
-   */
-  sealed case class Reject(error: Throwable = ExpectedRejection) extends ProcessingFailure {
-
-    def getError() = error
-
-  }
-
-  object Reject {
-
-    def create(error: Throwable) = Reject(error)
-
-    def create() = Reject(ExpectedRejection)
-
-  }
-
-  /**
-   * Emulates exception thrown by the storage on the attempt to perform some operation.
-   */
-  sealed case class StorageFailure(error: Throwable = ExpectedFailure) extends ProcessingFailure {
-
-    def getError() = error
-
-  }
-
-  object StorageFailure {
-
-    def create(error: Throwable) = StorageFailure(error)
-
-    def create() = StorageFailure(ExpectedFailure)
-
-  }
+  def getInstance(): ProcessingSuccess = this
 
 }
 
+sealed trait ProcessingFailure extends ProcessingResult {
+
+  def error: Throwable
+
+}
+
+sealed abstract class ExpectedRejection extends Throwable
+
+object ExpectedRejection extends ExpectedRejection {
+
+  def getInstance(): ExpectedRejection = this
+
+}
+
+sealed abstract class ExpectedFailure extends Throwable
+
+object ExpectedFailure extends ExpectedFailure {
+
+  def getInstance(): ExpectedFailure = this
+
+}
+
+/**
+  * Emulates rejection of operation by the journal with `error` exception.
+  * Has the same meaning as `StorageFailure` for snapshot storage,
+  * because it does not support rejections.
+  */
+final case class Reject(error: Throwable = ExpectedRejection) extends ProcessingFailure {
+
+  def getError(): Throwable = error
+
+}
+
+object Reject {
+
+  def create(error: Throwable): Reject = Reject(error)
+
+  def create(): Reject = Reject(ExpectedRejection)
+
+}
+
+/**
+  * Emulates exception thrown by the storage on the attempt to perform some operation.
+  */
+final case class StorageFailure(error: Throwable = ExpectedFailure) extends ProcessingFailure {
+
+  def getError(): Throwable = error
+
+}
+
+object StorageFailure {
+
+  def create(error: Throwable): StorageFailure = StorageFailure(error)
+
+  def create(): StorageFailure = StorageFailure(ExpectedFailure)
+
+}

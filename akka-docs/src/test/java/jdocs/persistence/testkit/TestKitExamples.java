@@ -8,10 +8,22 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.persistence.AbstractPersistentActor;
-import akka.persistence.testkit.MessageStorage;
+import akka.persistence.testkit.DeleteMessages;
+import akka.persistence.testkit.DeleteSnapshotsByCriteria;
+import akka.persistence.testkit.DeleteSnapshotByMeta;
+import akka.persistence.testkit.JournalOperation;
 import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.ProcessingPolicy;
-import akka.persistence.testkit.SnapshotStorage;
+import akka.persistence.testkit.ProcessingResult;
+import akka.persistence.testkit.ProcessingSuccess;
+import akka.persistence.testkit.ReadMessages;
+import akka.persistence.testkit.ReadSeqNum;
+import akka.persistence.testkit.ReadSnapshot;
+import akka.persistence.testkit.Reject;
+import akka.persistence.testkit.SnapshotOperation;
+import akka.persistence.testkit.StorageFailure;
+import akka.persistence.testkit.WriteMessages;
+import akka.persistence.testkit.WriteSnapshot;
 import akka.persistence.testkit.javadsl.PersistenceTestKit;
 import com.typesafe.config.ConfigFactory;
 import jdocs.AbstractJavaTest;
@@ -48,30 +60,29 @@ public class TestKitExamples {
   // #testkit-usecase
 
   // #set-message-storage-policy
-  class SampleMessageStoragePolicy implements ProcessingPolicy<MessageStorage.JournalOperation> {
+  class SampleMessageStoragePolicy implements ProcessingPolicy<JournalOperation> {
 
     // you can use internal state, it need not to be thread safe
     int count = 1;
 
     @Override
-    public ProcessingResult tryProcess(
-        String persistenceId, MessageStorage.JournalOperation processingUnit) {
+    public ProcessingResult tryProcess(String persistenceId, JournalOperation processingUnit) {
       // check the type of operation and react with success or with reject or with failure.
       // if you return ProcessingSuccess the operation will be performed, otherwise not.
       if (count < 10) {
         count += 1;
-        if (processingUnit instanceof MessageStorage.Read) {
-          MessageStorage.Read read = (MessageStorage.Read) processingUnit;
+        if (processingUnit instanceof ReadMessages) {
+          ReadMessages read = (ReadMessages) processingUnit;
           if (read.batch().nonEmpty()) {
             ProcessingSuccess.getInstance();
           } else {
             return StorageFailure.create();
           }
-        } else if (processingUnit instanceof MessageStorage.Write) {
+        } else if (processingUnit instanceof WriteMessages) {
           return ProcessingSuccess.getInstance();
-        } else if (processingUnit instanceof MessageStorage.Delete) {
+        } else if (processingUnit instanceof DeleteMessages) {
           return ProcessingSuccess.getInstance();
-        } else if (processingUnit.equals(MessageStorage.ReadSeqNum.getInstance())) {
+        } else if (processingUnit.equals(ReadSeqNum.getInstance())) {
           return Reject.create();
         }
         // you can set your own exception
@@ -84,30 +95,29 @@ public class TestKitExamples {
   // #set-message-storage-policy
 
   // #set-snapshot-storage-policy
-  class SnapshotStoragePolicy implements ProcessingPolicy<SnapshotStorage.SnapshotOperation> {
+  class SnapshotStoragePolicy implements ProcessingPolicy<SnapshotOperation> {
 
     // you can use internal state, it need not to be thread safe
     int count = 1;
 
     @Override
-    public ProcessingResult tryProcess(
-        String persistenceId, SnapshotStorage.SnapshotOperation processingUnit) {
+    public ProcessingResult tryProcess(String persistenceId, SnapshotOperation processingUnit) {
       // check the type of operation and react with success or with failure.
       // if you return ProcessingSuccess the operation will be performed, otherwise not.
       if (count < 10) {
         count += 1;
-        if (processingUnit instanceof SnapshotStorage.Read) {
-          SnapshotStorage.Read read = (SnapshotStorage.Read) processingUnit;
+        if (processingUnit instanceof ReadSnapshot) {
+          ReadSnapshot read = (ReadSnapshot) processingUnit;
           if (read.getSnapshot().isPresent()) {
             ProcessingSuccess.getInstance();
           } else {
             return StorageFailure.create();
           }
-        } else if (processingUnit instanceof SnapshotStorage.Write) {
+        } else if (processingUnit instanceof WriteSnapshot) {
           return ProcessingSuccess.getInstance();
-        } else if (processingUnit instanceof SnapshotStorage.DeleteByCriteria) {
+        } else if (processingUnit instanceof DeleteSnapshotsByCriteria) {
           return ProcessingSuccess.getInstance();
-        } else if (processingUnit instanceof SnapshotStorage.DeleteSnapshot) {
+        } else if (processingUnit instanceof DeleteSnapshotByMeta) {
           return ProcessingSuccess.getInstance();
         }
         // you can set your own exception

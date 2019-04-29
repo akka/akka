@@ -5,16 +5,15 @@
 package akka.persistence.testkit.javadsl
 
 import akka.actor.ActorSystem
-import akka.persistence.testkit.scaladsl.{ PersistenceTestKit ⇒ ScalaTestKit }
+import akka.persistence.testkit.scaladsl.{PersistenceTestKit => ScalaTestKit}
 import akka.util.JavaDurationConverters._
 
 import scala.collection.JavaConverters._
 import java.time.Duration
-import java.util.{ List ⇒ JList }
-import java.util.{ function ⇒ jf }
+import java.util.{List => JList}
+import java.util.{function => jf}
 
-import akka.persistence.testkit.MessageStorage
-import akka.persistence.testkit.ProcessingPolicy.{ ExpectedFailure, ExpectedRejection }
+import akka.persistence.testkit.{ExpectedFailure, ExpectedRejection, JournalOperation, MessageStorage}
 import akka.testkit.javadsl.CachingPartialFunction
 
 class PersistenceTestKit(system: ActorSystem) {
@@ -343,7 +342,7 @@ class PersistenceTestKit(system: ActorSystem) {
    * Rejection triggers, when `cond` returns true, .
    * Reject events with default `ExpectedRejection` exception.
    */
-  def rejectNextNOpsCond(cond: jf.BiFunction[String, MessageStorage.JournalOperation, Boolean], n: Int): Unit =
+  def rejectNextNOpsCond(cond: jf.BiFunction[String, JournalOperation, Boolean], n: Int): Unit =
     rejectNextNOpsCond(cond, n, ExpectedRejection)
 
   /**
@@ -351,7 +350,7 @@ class PersistenceTestKit(system: ActorSystem) {
    * Rejection triggers, when `cond` returns true, .
    * Rejects events with the `cause` exception.
    */
-  def rejectNextNOpsCond(cond: jf.BiFunction[String, MessageStorage.JournalOperation, Boolean], n: Int, cause: Throwable): Unit =
+  def rejectNextNOpsCond(cond: jf.BiFunction[String, JournalOperation, Boolean], n: Int, cause: Throwable): Unit =
     scalaTestkit.rejectNextNOpsCond(cond, n, cause)
 
   /**
@@ -413,7 +412,7 @@ class PersistenceTestKit(system: ActorSystem) {
    * Failure triggers, when `cond` returns true, .
    * Fails events with default `ExpectedFailure` exception.
    */
-  def failNextNOpsCond(cond: jf.BiFunction[String, MessageStorage.JournalOperation, Boolean], n: Int): Unit =
+  def failNextNOpsCond(cond: jf.BiFunction[String, JournalOperation, Boolean], n: Int): Unit =
     failNextNOpsCond(cond, n, ExpectedFailure)
 
   /**
@@ -421,7 +420,7 @@ class PersistenceTestKit(system: ActorSystem) {
    * Failure triggers, when `cond` returns true, .
    * Fails events with the `cause` exception.
    */
-  def failNextNOpsCond(cond: jf.BiFunction[String, MessageStorage.JournalOperation, Boolean], n: Int, cause: Throwable): Unit =
+  def failNextNOpsCond(cond: jf.BiFunction[String, JournalOperation, Boolean], n: Int, cause: Throwable): Unit =
     scalaTestkit.failNextNOpsCond(cond, n, cause)
 
   /**

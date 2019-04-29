@@ -5,10 +5,8 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
-import akka.persistence.testkit.MessageStorage.JournalOperation
-import akka.persistence.testkit.ProcessingPolicy.{ ExpectedFailure, ExpectedRejection }
+import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection }
 import akka.persistence.testkit._
-import akka.persistence.testkit.SnapshotStorage.SnapshotOperation
 import akka.persistence.{ Persistence, PersistentRepr, SnapshotMetadata }
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
@@ -310,7 +308,6 @@ class SnapshotTestKit(implicit val system: ActorSystem)
   with HasStorage[SnapshotOperation, (SnapshotMetadata, Any)] {
   require(Try(Persistence(system).journalFor(PersistenceTestKitSnapshotPlugin.PluginId)).isSuccess, "The test persistence plugin for snapshots is not configured.")
 
-  import SnapshotStorage._
   import SnapshotTestKit._
 
   override protected val storage: SnapshotStorage = SnapshotStorageEmulatorExtension(system)
@@ -326,22 +323,22 @@ class SnapshotTestKit(implicit val system: ActorSystem)
   override private[testkit] val Policies = SnapshotStorage.SnapshotPolicies
 
   override def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Write], n, cause)
+    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[WriteSnapshot], n, cause)
 
   override def failNextNPersisted(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[Write], n, cause)
+    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[WriteSnapshot], n, cause)
 
   override def failNextNReads(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[Read], n, cause)
+    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[ReadSnapshot], n, cause)
 
   override def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Read], n, cause)
+    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[ReadSnapshot], n, cause)
 
   override def failNextNDeletes(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[Delete], n, cause)
+    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[DeleteSnapshot], n, cause)
 
   override def failNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Delete], n, cause)
+    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[DeleteSnapshot], n, cause)
 
   /**
    * Persist `elems` pairs of (snapshot metadata, snapshot payload) into storage.
@@ -408,7 +405,6 @@ class PersistenceTestKit(implicit val system: ActorSystem)
   require(Try(Persistence(system).journalFor(PersistenceTestKitPlugin.PluginId)).isSuccess, "The test persistence plugin is not configured.")
 
   import PersistenceTestKit._
-  import MessageStorage._
 
   override protected val storage = InMemStorageExtension(system)
 
@@ -423,40 +419,40 @@ class PersistenceTestKit(implicit val system: ActorSystem)
   override private[testkit] val maxTimeout: FiniteDuration = settings.assertTimeout
 
   override def rejectNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Write], n, cause)
+    rejectNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[WriteMessages], n, cause)
 
   override def rejectNextNPersisted(n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[Write], n, cause)
+    rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[WriteMessages], n, cause)
 
   override def rejectNextNReads(n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[Read] || op.isInstanceOf[ReadSeqNum.type], n, cause)
+    rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type], n, cause)
 
   override def rejectNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[Read] || op.isInstanceOf[ReadSeqNum.type]), n, cause)
+    rejectNextNOpsCond((pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]), n, cause)
 
   override def rejectNextNDeletes(n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[Delete], n, cause)
+    rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[DeleteMessages], n, cause)
 
   override def rejectNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Delete], n, cause)
+    rejectNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[DeleteMessages], n, cause)
 
   override def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Write], n, cause)
+    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[WriteMessages], n, cause)
 
   override def failNextNPersisted(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[Write], n, cause)
+    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[WriteMessages], n, cause)
 
   override def failNextNReads(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[Read] || op.isInstanceOf[ReadSeqNum.type], n, cause)
+    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type], n, cause)
 
   override def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[Read] || op.isInstanceOf[ReadSeqNum.type]), n, cause)
+    failNextNOpsCond((pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]), n, cause)
 
   override def failNextNDeletes(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[Delete], n, cause)
+    failNextNOpsCond((_, op) ⇒ op.isInstanceOf[DeleteMessages], n, cause)
 
   override def failNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Delete], n, cause)
+    failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[DeleteMessages], n, cause)
 
   def persistForRecovery(persistenceId: String, elems: immutable.Seq[Any]): Unit = {
     storage.addAny(persistenceId, elems)

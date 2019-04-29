@@ -181,7 +181,6 @@ lazy val docs = akkaModule("akka-docs")
     osgi,
     persistenceTck,
     persistenceQuery,
-    persistenceTestKit,
     distributedData,
     stream,
     stream % "TestJdk9->CompileJdk9",
@@ -196,7 +195,8 @@ lazy val docs = akkaModule("akka-docs")
     clusterTyped % "compile->compile;test->test",
     clusterShardingTyped % "compile->compile;test->test",
     actorTypedTests % "compile->compile;test->test",
-    streamTestkit % "compile->compile;test->test")
+    streamTestkit % "compile->compile;test->test",
+    persistenceTestKit % "compile->compile;test->test")
   .settings(Dependencies.docs)
   .settings(Paradox.settings)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)

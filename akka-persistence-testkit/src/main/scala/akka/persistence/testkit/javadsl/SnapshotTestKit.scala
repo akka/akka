@@ -5,18 +5,16 @@
 package akka.persistence.testkit.javadsl
 
 import akka.actor.ActorSystem
-import akka.persistence.testkit.scaladsl.{ SnapshotTestKit ⇒ ScalaTestKit }
-import akka.persistence.testkit.SnapshotStorage
+import akka.persistence.testkit.scaladsl.{SnapshotTestKit => ScalaTestKit}
+import akka.persistence.testkit.{ExpectedFailure, SnapshotMeta, SnapshotOperation, SnapshotStorage}
 import akka.util.JavaDurationConverters._
 
 import scala.collection.JavaConverters._
 import java.time.Duration
-import java.util.{ List ⇒ JList }
-import java.util.{ function ⇒ jf }
+import java.util.{List => JList}
+import java.util.{function => jf}
 
 import akka.japi.Pair
-import akka.persistence.testkit.ProcessingPolicy.ExpectedFailure
-import akka.persistence.testkit.SnapshotStorage.SnapshotMeta
 import akka.testkit.javadsl.CachingPartialFunction
 
 class SnapshotTestKit(system: ActorSystem) {
@@ -247,7 +245,7 @@ class SnapshotTestKit(system: ActorSystem) {
    * Failure triggers, when `cond` returns true, .
    * Fails events with default `ExpectedFailure` exception.
    */
-  def failNextNOpsCond(cond: jf.BiFunction[String, SnapshotStorage.SnapshotOperation, Boolean], n: Int): Unit =
+  def failNextNOpsCond(cond: jf.BiFunction[String, SnapshotOperation, Boolean], n: Int): Unit =
     failNextNOpsCond(cond, n, ExpectedFailure)
 
   /**
@@ -255,7 +253,7 @@ class SnapshotTestKit(system: ActorSystem) {
    * Failure triggers, when `cond` returns true, .
    * Fails events with the `cause` exception.
    */
-  def failNextNOpsCond(cond: jf.BiFunction[String, SnapshotStorage.SnapshotOperation, Boolean], n: Int, cause: Throwable): Unit =
+  def failNextNOpsCond(cond: jf.BiFunction[String, SnapshotOperation, Boolean], n: Int, cause: Throwable): Unit =
     scalaTestkit.failNextNOpsCond(cond, n, cause)
 
   /**

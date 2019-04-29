@@ -9,19 +9,18 @@ import java.io.NotSerializableException
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import akka.persistence.snapshot.SnapshotStoreSpec
-import akka.persistence.testkit.{ InMemStorageExtension, PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin, ProcessingPolicy }
-import akka.persistence.testkit.MessageStorage.{ JournalOperation, JournalPolicies, Write }
-import akka.persistence.testkit.ProcessingPolicy.ProcessingSuccess
-import akka.persistence.testkit.ProcessingPolicy.Reject
+import akka.persistence.testkit._
+import akka.persistence.testkit.MessageStorage.JournalPolicies
+import akka.persistence.testkit.Reject
 
 class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = PersistenceTestKitPlugin.config) {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     InMemStorageExtension(system).setPolicy(new JournalPolicies.PolicyType {
-      override def tryProcess(persistenceId: String, op: JournalOperation): ProcessingPolicy.ProcessingResult = {
+      override def tryProcess(persistenceId: String, op: JournalOperation): ProcessingResult = {
         op match {
-          case Write(batch) ⇒
+          case WriteMessages(batch) ⇒
             val allSerializable =
               batch
                 .filter(_.isInstanceOf[AnyRef])

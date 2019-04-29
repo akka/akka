@@ -4,8 +4,8 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.persistence.testkit.ProcessingPolicy.{ DefaultPolicies, ExpectedFailure, ExpectedRejection }
-import akka.persistence.testkit.TestKitStorage
+import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
+import akka.persistence.testkit.{ExpectedFailure, ExpectedRejection, TestKitStorage}
 import akka.testkit.TestKitBase
 
 import scala.collection.immutable

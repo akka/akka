@@ -4,10 +4,10 @@
 
 package docs.persistence.testkit
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.{ActorSystem, Props}
 import akka.persistence.PersistentActor
-import akka.persistence.testkit.ProcessingPolicy.{ ProcessingSuccess, Reject, StorageFailure }
-import akka.persistence.testkit.{ MessageStorage, PersistenceTestKitPlugin, ProcessingPolicy, SnapshotStorage }
+import akka.persistence.testkit.{ProcessingSuccess, Reject, StorageFailure}
+import akka.persistence.testkit._
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -52,18 +52,18 @@ class TestKitExamples {
 
     override def tryProcess(
       persistenceId:  String,
-      processingUnit: MessageStorage.JournalOperation
-    ): ProcessingPolicy.ProcessingResult =
+      processingUnit: JournalOperation
+    ): ProcessingResult =
       if (count < 10) {
         count += 1
         //check the type of operation and react with success or with reject or with failure.
         //if you return ProcessingSuccess the operation will be performed, otherwise not.
         processingUnit match {
-          case MessageStorage.Read(batch) if batch.nonEmpty ⇒ ProcessingSuccess
-          case MessageStorage.Write(batch) if batch.size > 1 ⇒
+          case ReadMessages(batch) if batch.nonEmpty ⇒ ProcessingSuccess
+          case WriteMessages(batch) if batch.size > 1 ⇒
             ProcessingSuccess
-          case MessageStorage.ReadSeqNum ⇒ StorageFailure()
-          case MessageStorage.Delete(_)  ⇒ Reject()
+          case ReadSeqNum ⇒ StorageFailure()
+          case DeleteMessages(_)  ⇒ Reject()
           case _                         ⇒ StorageFailure()
         }
       } else {
@@ -81,19 +81,19 @@ class TestKitExamples {
 
     override def tryProcess(
       persistenceId:  String,
-      processingUnit: SnapshotStorage.SnapshotOperation
-    ): ProcessingPolicy.ProcessingResult =
+      processingUnit: SnapshotOperation
+    ): ProcessingResult =
       if (count < 10) {
         count += 1
         //check the type of operation and react with success or with reject or with failure.
         //if you return ProcessingSuccess the operation will be performed, otherwise not.
         processingUnit match {
-          case SnapshotStorage.Read(_, payload) if payload.nonEmpty ⇒
+          case ReadSnapshot(_, payload) if payload.nonEmpty ⇒
             ProcessingSuccess
-          case SnapshotStorage.Write(meta, payload) if meta.sequenceNr > 10 ⇒
+          case WriteSnapshot(meta, payload) if meta.sequenceNr > 10 ⇒
             ProcessingSuccess
-          case SnapshotStorage.DeleteByCriteria(_) ⇒ StorageFailure()
-          case SnapshotStorage.DeleteSnapshot(meta) if meta.sequenceNr < 10 ⇒
+          case DeleteSnapshotsByCriteria(_) ⇒ StorageFailure()
+          case DeleteSnapshotByMeta(meta) if meta.sequenceNr < 10 ⇒
             ProcessingSuccess
           case _ ⇒ StorageFailure()
         }

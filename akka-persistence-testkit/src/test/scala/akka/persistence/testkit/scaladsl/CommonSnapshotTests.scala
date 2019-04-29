@@ -6,9 +6,8 @@ package akka.persistence.testkit.scaladsl
 
 import akka.actor.{ ActorSystem, Props }
 import akka.persistence._
-import akka.persistence.testkit.{ CommonUtils, ProcessingPolicy, SnapshotStorage }
-import akka.persistence.testkit.ProcessingPolicy.{ ExpectedFailure, ProcessingSuccess, StorageFailure }
-import akka.persistence.testkit.SnapshotStorage.{ SnapshotMeta, Write }
+import akka.persistence.testkit.{ CommonUtils, SnapshotStorage }
+import akka.persistence.testkit.{ ExpectedFailure, ProcessingSuccess, StorageFailure }
 import akka.persistence.testkit._
 import akka.testkit.{ EventFilter, TestKitBase }
 import org.scalatest.WordSpecLike
@@ -87,9 +86,9 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val err = new Exception("BOOM!")
 
       val newPolicy = new SnapshotStorage.SnapshotPolicies.PolicyType {
-        override def tryProcess(persistenceId: String, processingUnit: SnapshotStorage.SnapshotOperation): ProcessingPolicy.ProcessingResult = {
+        override def tryProcess(persistenceId: String, processingUnit: SnapshotOperation): ProcessingResult = {
           processingUnit match {
-            case Write(_, msgs) ⇒
+            case WriteSnapshot(_, msgs) ⇒
               val ex = msgs match {
                 case 777 ⇒ true
                 case _   ⇒ false

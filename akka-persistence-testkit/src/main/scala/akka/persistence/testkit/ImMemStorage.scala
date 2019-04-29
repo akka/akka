@@ -6,25 +6,23 @@ package akka.persistence.testkit
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.{ List ⇒ JList }
+import java.util.{List => JList}
 
 import scala.collection.JavaConverters._
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.annotation.InternalApi
-import akka.persistence.testkit.MessageStorage.JournalOperation
 import akka.persistence.testkit.ProcessingPolicy._
-import akka.persistence.testkit.SnapshotStorage.SnapshotOperation
 import akka.persistence._
-import akka.serialization.{ Serialization, SerializationExtension, Serializers }
-import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
+import akka.serialization.{Serialization, SerializationExtension, Serializers}
+import akka.persistence.testkit.scaladsl.{PersistenceTestKit, SnapshotTestKit}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait InternalReprSupport[R] {
 
@@ -37,8 +35,8 @@ sealed trait InternalReprSupport[R] {
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
@@ -69,17 +67,17 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
     add(key, List(p))
 
   /**
-   *
-   * Note! `elems` is call by name to preserve atomicity
-   *
-   * @param elems elements to insert
-   */
+    *
+    * Note! `elems` is call by name to preserve atomicity
+    *
+    * @param elems elements to insert
+    */
   def add(key: K, elems: ⇒ immutable.Seq[R]): Unit =
     eventsMap.compute(
       key,
       (_: K, value: Vector[InternalRepr]) ⇒
         value match {
-          case null     ⇒ elems.map(toInternal).toVector
+          case null ⇒ elems.map(toInternal).toVector
           case existing ⇒ existing ++ elems.map(toInternal)
         }
     )
@@ -111,15 +109,15 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
     Option(eventsMap.remove(key)).getOrElse(Vector.empty).map(toRepr)
 
   protected def removeKeyInternal(
-    key:   K,
-    value: Vector[InternalRepr]): Boolean =
+                                   key: K,
+                                   value: Vector[InternalRepr]): Boolean =
     eventsMap.remove(key, value)
 
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
 
@@ -130,10 +128,10 @@ sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
   def reprToSeqNum(repr: R): Long
 
   def read(
-    key:           K,
-    fromInclusive: Long,
-    toInclusive:   Long,
-    maxNumber:     Long): immutable.Seq[R] =
+            key: K,
+            fromInclusive: Long,
+            toInclusive: Long,
+            maxNumber: Long): immutable.Seq[R] =
     read(key)
       .getOrElse(Vector.empty)
       .dropWhile(reprToSeqNum(_) < fromInclusive)
@@ -197,8 +195,8 @@ sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait PolicyOps[U] {
 
@@ -221,17 +219,17 @@ sealed trait PolicyOps[U] {
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait TestKitStorage[P, R]
   extends HighestSeqNumSupportStorage[String, R]
-  with PolicyOps[P]
-  with Extension
+    with PolicyOps[P]
+    with Extension
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait MessageStorage
   extends TestKitStorage[JournalOperation, PersistentRepr] {
@@ -239,8 +237,8 @@ sealed trait MessageStorage
   import MessageStorage._
 
   def mapAny(
-    key:   String,
-    elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
+              key: String,
+              elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
     val sn = reloadHighestSequenceNum(key) + 1
     elems.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + sn, key))
   }
@@ -261,13 +259,13 @@ sealed trait MessageStorage
   override protected val DefaultPolicy = JournalPolicies.PassAll
 
   /**
-   * @throws Exception from StorageFailure in the current writing policy
-   */
+    * @throws Exception from StorageFailure in the current writing policy
+    */
   def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
     val grouped = elems.groupBy(_.persistenceId)
 
     val processed = grouped.map {
-      case (pid, els) ⇒ currentPolicy.tryProcess(pid, Write(els.map(_.payload)))
+      case (pid, els) ⇒ currentPolicy.tryProcess(pid, WriteMessages(els.map(_.payload)))
     }
 
     val reduced: ProcessingResult =
@@ -275,10 +273,10 @@ sealed trait MessageStorage
         (left: ProcessingResult, right: ProcessingResult) ⇒
           (left, right) match {
             case (ProcessingSuccess, ProcessingSuccess) ⇒ ProcessingSuccess
-            case (f: StorageFailure, _)                 ⇒ f
-            case (_, f: StorageFailure)                 ⇒ f
-            case (r: Reject, _)                         ⇒ r
-            case (_, r: Reject)                         ⇒ r
+            case (f: StorageFailure, _) ⇒ f
+            case (_, f: StorageFailure) ⇒ f
+            case (r: Reject, _) ⇒ r
+            case (_, r: Reject) ⇒ r
           }
       )
 
@@ -286,36 +284,36 @@ sealed trait MessageStorage
       case ProcessingSuccess ⇒
         add(elems)
         Success(())
-      case Reject(ex)         ⇒ Failure(ex)
+      case Reject(ex) ⇒ Failure(ex)
       case StorageFailure(ex) ⇒ throw ex
     }
   }
 
   def tryRead(
-    persistenceId:  String,
-    fromSequenceNr: Long,
-    toSequenceNr:   Long,
-    max:            Long): immutable.Seq[PersistentRepr] = {
+               persistenceId: String,
+               fromSequenceNr: Long,
+               toSequenceNr: Long,
+               max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
-    currentPolicy.tryProcess(persistenceId, Read(batch)) match {
-      case ProcessingSuccess  ⇒ batch
-      case Reject(ex)         ⇒ throw ex
+    currentPolicy.tryProcess(persistenceId, ReadMessages(batch)) match {
+      case ProcessingSuccess ⇒ batch
+      case Reject(ex) ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
     }
   }
 
   def tryReadSeqNumber(persistenceId: String): Long = {
     currentPolicy.tryProcess(persistenceId, ReadSeqNum) match {
-      case ProcessingSuccess  ⇒ reloadHighestSequenceNum(persistenceId)
-      case Reject(ex)         ⇒ throw ex
+      case ProcessingSuccess ⇒ reloadHighestSequenceNum(persistenceId)
+      case Reject(ex) ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
     }
   }
 
   def tryDelete(persistenceId: String, toSeqNumber: Long): Unit = {
-    currentPolicy.tryProcess(persistenceId, Delete(toSeqNumber)) match {
-      case ProcessingSuccess  ⇒ deleteToSeqNumber(persistenceId, toSeqNumber)
-      case Reject(ex)         ⇒ throw ex
+    currentPolicy.tryProcess(persistenceId, DeleteMessages(toSeqNumber)) match {
+      case ProcessingSuccess ⇒ deleteToSeqNumber(persistenceId, toSeqNumber)
+      case Reject(ex) ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
     }
   }
@@ -324,57 +322,60 @@ sealed trait MessageStorage
 
 object MessageStorage {
 
-  /**
-   * Persistent journal operations.
-   */
-  trait JournalOperation
-
-  /**
-   * Read from journal operation with messages that were read.
-   */
-  case class Read(batch: immutable.Seq[Any]) extends JournalOperation {
-
-    def getBatch(): JList[Any] = batch.asJava
-
-  }
-
-  /**
-   * Write in journal operation with messages to be written.
-   */
-  case class Write(batch: immutable.Seq[Any]) extends JournalOperation {
-
-    def getBatch(): JList[Any] = batch.asJava
-
-  }
-
-  /**
-   * Read persistent actor's sequence number operation.
-   */
-  case object ReadSeqNum extends JournalOperation {
-
-    /**
-     * Java API: the singleton instance.
-     */
-    def getInstance() = this
-
-  }
-
-  /**
-   * Delete messages in journal up to `toSeqNumber` operation.
-   */
-  case class Delete(toSeqNumber: Long) extends JournalOperation {
-
-    def getToSeqNumber() = toSeqNumber
-
-  }
-
   object JournalPolicies extends DefaultPolicies[JournalOperation]
 
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  *
+  * Persistent journal operations.
+  */
+@InternalApi
+sealed trait JournalOperation
+
+/**
+  * Read from journal operation with messages that were read.
+  */
+final case class ReadMessages(batch: immutable.Seq[Any]) extends JournalOperation {
+
+  def getBatch(): JList[Any] = batch.asJava
+
+}
+
+/**
+  * Write in journal operation with messages to be written.
+  */
+final case class WriteMessages(batch: immutable.Seq[Any]) extends JournalOperation {
+
+  def getBatch(): JList[Any] = batch.asJava
+
+}
+
+/**
+  * Read persistent actor's sequence number operation.
+  */
+case object ReadSeqNum extends JournalOperation {
+
+  /**
+    * Java API: the singleton instance.
+    */
+  def getInstance() = this
+
+}
+
+/**
+  * Delete messages in journal up to `toSeqNumber` operation.
+  */
+final case class DeleteMessages(toSeqNumber: Long) extends JournalOperation {
+
+  def getToSeqNumber() = toSeqNumber
+
+}
+
+/**
+  * INTERNAL API
+  */
 @InternalApi
 private[testkit] class SimpleMessageStorageImpl extends MessageStorage {
 
@@ -387,8 +388,8 @@ private[testkit] class SimpleMessageStorageImpl extends MessageStorage {
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 private[testkit] class SerializedMessageStorageImpl(system: ActorSystem)
   extends MessageStorage {
@@ -398,19 +399,19 @@ private[testkit] class SerializedMessageStorageImpl(system: ActorSystem)
   private lazy val serialization = SerializationExtension(system)
 
   /**
-   * @return (serializer id, serialized bytes)
-   */
+    * @return (serializer id, serialized bytes)
+    */
   override def toInternal(repr: PersistentRepr): (Int, Array[Byte]) =
     Serialization.withTransportInformation(
       system.asInstanceOf[ExtendedActorSystem]
     ) { () ⇒
-        val s = serialization.findSerializerFor(repr)
-        (s.identifier, s.toBinary(repr))
-      }
+      val s = serialization.findSerializerFor(repr)
+      (s.identifier, s.toBinary(repr))
+    }
 
   /**
-   * @param internal (serializer id, serialized bytes)
-   */
+    * @param internal (serializer id, serialized bytes)
+    */
   override def toRepr(internal: (Int, Array[Byte])): PersistentRepr =
     serialization
       .deserialize(internal._2, internal._1, Some(classOf[PersistentRepr]))
@@ -419,8 +420,8 @@ private[testkit] class SerializedMessageStorageImpl(system: ActorSystem)
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 sealed trait SnapshotStorage
   extends TestKitStorage[SnapshotOperation, (SnapshotMetadata, Any)] {
@@ -435,19 +436,19 @@ sealed trait SnapshotStorage
   def tryAdd(meta: SnapshotMetadata, payload: Any): Unit = {
     currentPolicy.tryProcess(
       meta.persistenceId,
-      Write(SnapshotMeta(meta.sequenceNr, meta.timestamp), payload)
+      WriteSnapshot(SnapshotMeta(meta.sequenceNr, meta.timestamp), payload)
     ) match {
-        case ProcessingSuccess ⇒
-          add(meta.persistenceId, (meta, payload))
-          Success(())
-        case f: ProcessingFailure ⇒ throw f.error
+      case ProcessingSuccess ⇒
+        add(meta.persistenceId, (meta, payload))
+        Success(())
+      case f: ProcessingFailure ⇒ throw f.error
 
-      }
+    }
   }
 
   def tryRead(
-    persistenceId: String,
-    criteria:      SnapshotSelectionCriteria): Option[SelectedSnapshot] = {
+               persistenceId: String,
+               criteria: SnapshotSelectionCriteria): Option[SelectedSnapshot] = {
     val selectedSnapshot =
       read(persistenceId)
         .flatMap(
@@ -457,17 +458,17 @@ sealed trait SnapshotStorage
         )
     currentPolicy.tryProcess(
       persistenceId,
-      Read(criteria, selectedSnapshot.map(_.snapshot))
+      ReadSnapshot(criteria, selectedSnapshot.map(_.snapshot))
     ) match {
-        case ProcessingSuccess    ⇒ selectedSnapshot
-        case f: ProcessingFailure ⇒ throw f.error
-      }
+      case ProcessingSuccess ⇒ selectedSnapshot
+      case f: ProcessingFailure ⇒ throw f.error
+    }
   }
 
   def tryDelete(
-    persistenceId:     String,
-    selectionCriteria: SnapshotSelectionCriteria): Unit = {
-    currentPolicy.tryProcess(persistenceId, DeleteByCriteria(selectionCriteria)) match {
+                 persistenceId: String,
+                 selectionCriteria: SnapshotSelectionCriteria): Unit = {
+    currentPolicy.tryProcess(persistenceId, DeleteSnapshotsByCriteria(selectionCriteria)) match {
       case ProcessingSuccess ⇒
         delete(persistenceId, v ⇒ selectionCriteria.matches(v._1))
       case f: ProcessingFailure ⇒ throw f.error
@@ -477,123 +478,129 @@ sealed trait SnapshotStorage
   def tryDelete(meta: SnapshotMetadata): Unit = {
     currentPolicy.tryProcess(
       meta.persistenceId,
-      DeleteSnapshot(SnapshotMeta(meta.sequenceNr, meta.timestamp))
+      DeleteSnapshotByMeta(SnapshotMeta(meta.sequenceNr, meta.timestamp))
     ) match {
-        case ProcessingSuccess ⇒
-          delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
-        case f: ProcessingFailure ⇒ throw f.error
-      }
+      case ProcessingSuccess ⇒
+        delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
+      case f: ProcessingFailure ⇒ throw f.error
+    }
   }
 
 }
 
 object SnapshotStorage {
 
-  /**
-   * Snapshot metainformation.
-   */
-  case class SnapshotMeta(sequenceNr: Long, timestamp: Long = 0L) {
-
-    def getSequenceNr() = sequenceNr
-
-    def getTimestamp() = timestamp
-
-  }
-
-  case object SnapshotMeta {
-
-    def create(sequenceNr: Long, timestamp: Long) =
-      SnapshotMeta(sequenceNr, timestamp)
-
-    def create(sequenceNr: Long) = SnapshotMeta(sequenceNr)
-
-  }
-
-  /**
-   * Operations supported by snapshot plugin
-   */
-  trait SnapshotOperation
-
-  /**
-   *
-   * Storage read operation for recovery of the persistent actor.
-   *
-   * @param criteria criteria with which snapshot is searched
-   * @param snapshot snapshot found by criteria
-   */
-  case class Read(criteria: SnapshotSelectionCriteria, snapshot: Option[Any])
-    extends SnapshotOperation {
-
-    def getSnapshotSelectionCriteria() = criteria
-
-    def getSnapshot(): java.util.Optional[Any] =
-      snapshot
-        .map(java.util.Optional.of[Any])
-        .getOrElse(java.util.Optional.empty[Any]())
-
-  }
-
-  /**
-   * Storage write operation to persist snapshot in the storage.
-   *
-   * @param metadata snapshot metadata
-   * @param snapshot snapshot payload
-   */
-  case class Write(metadata: SnapshotMeta, snapshot: Any)
-    extends SnapshotOperation {
-
-    def getMetadata() = metadata
-
-    def getSnapshot() = snapshot
-
-  }
-
-  abstract class Delete extends SnapshotOperation
-
-  /**
-   * Delete snapshots from storage by criteria.
-   */
-  case class DeleteByCriteria(criteria: SnapshotSelectionCriteria)
-    extends Delete {
-
-    def getCriteria() = criteria
-
-  }
-
-  /**
-   * Delete particular snapshot from storage by its metadata.
-   */
-  case class DeleteSnapshot(metadata: SnapshotMeta) extends Delete {
-
-    def getMetadata() = metadata
-
-  }
-
   object SnapshotPolicies extends DefaultPolicies[SnapshotOperation]
 
 }
 
 /**
- * INTERNAL API
- */
+  * Snapshot metainformation.
+  */
+final case class SnapshotMeta(sequenceNr: Long, timestamp: Long = 0L) {
+
+  def getSequenceNr() = sequenceNr
+
+  def getTimestamp() = timestamp
+
+}
+
+case object SnapshotMeta {
+
+  def create(sequenceNr: Long, timestamp: Long) =
+    SnapshotMeta(sequenceNr, timestamp)
+
+  def create(sequenceNr: Long) = SnapshotMeta(sequenceNr)
+
+}
+
+/**
+  * INTERNAL API
+  * Operations supported by snapshot plugin
+  */
+@InternalApi
+sealed trait SnapshotOperation
+
+/**
+  *
+  * Storage read operation for recovery of the persistent actor.
+  *
+  * @param criteria criteria with which snapshot is searched
+  * @param snapshot snapshot found by criteria
+  */
+final case class ReadSnapshot(criteria: SnapshotSelectionCriteria, snapshot: Option[Any])
+  extends SnapshotOperation {
+
+  def getSnapshotSelectionCriteria() = criteria
+
+  def getSnapshot(): java.util.Optional[Any] =
+    snapshot
+      .map(java.util.Optional.of[Any])
+      .getOrElse(java.util.Optional.empty[Any]())
+
+}
+
+/**
+  * Storage write operation to persist snapshot in the storage.
+  *
+  * @param metadata snapshot metadata
+  * @param snapshot snapshot payload
+  */
+final case class WriteSnapshot(metadata: SnapshotMeta, snapshot: Any)
+  extends SnapshotOperation {
+
+  def getMetadata() = metadata
+
+  def getSnapshot() = snapshot
+
+}
+
+/**
+  * INTERNAL API
+  */
+@InternalApi
+sealed abstract class DeleteSnapshot extends SnapshotOperation
+
+/**
+  * Delete snapshots from storage by criteria.
+  */
+final case class DeleteSnapshotsByCriteria(criteria: SnapshotSelectionCriteria)
+  extends DeleteSnapshot {
+
+  def getCriteria() = criteria
+
+}
+
+/**
+  * Delete particular snapshot from storage by its metadata.
+  */
+final case class DeleteSnapshotByMeta(metadata: SnapshotMeta) extends DeleteSnapshot {
+
+  def getMetadata() = metadata
+
+}
+
+/**
+  * INTERNAL API
+  */
 @InternalApi
 private[testkit] class SimpleSnapshotStorageImpl extends SnapshotStorage {
 
   override type InternalRepr = (SnapshotMetadata, Any)
 
   override def toRepr(
-    internal: (SnapshotMetadata, Any)
-  ): (SnapshotMetadata, Any) = identity(internal)
+                       internal: (SnapshotMetadata, Any)
+                     ): (SnapshotMetadata, Any) = identity(internal)
 
   override def toInternal(
-    repr: (SnapshotMetadata, Any)
-  ): (SnapshotMetadata, Any) = identity(repr)
+                           repr: (SnapshotMetadata, Any)
+                         ): (SnapshotMetadata, Any) = identity(repr)
 
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 private[testkit] class SerializedSnapshotStorageImpl(system: ActorSystem)
   extends SnapshotStorage {
@@ -603,34 +610,34 @@ private[testkit] class SerializedSnapshotStorageImpl(system: ActorSystem)
   private lazy val serialization = SerializationExtension(system)
 
   override def toRepr(
-    internal: (SnapshotMetadata, String, Int, Array[Byte])
-  ): (SnapshotMetadata, Any) =
+                       internal: (SnapshotMetadata, String, Int, Array[Byte])
+                     ): (SnapshotMetadata, Any) =
     (
       internal._1,
       serialization.deserialize(internal._4, internal._3, internal._2).get
     )
 
   override def toInternal(
-    repr: (SnapshotMetadata, Any)
-  ): (SnapshotMetadata, String, Int, Array[Byte]) =
+                           repr: (SnapshotMetadata, Any)
+                         ): (SnapshotMetadata, String, Int, Array[Byte]) =
     Serialization.withTransportInformation(
       system.asInstanceOf[ExtendedActorSystem]
     ) { () ⇒
-        val payload = repr._2.asInstanceOf[AnyRef]
-        val s = serialization.findSerializerFor(payload)
-        val manifest = Serializers.manifestFor(s, payload)
-        (repr._1, manifest, s.identifier, s.toBinary(payload))
-      }
+      val payload = repr._2.asInstanceOf[AnyRef]
+      val s = serialization.findSerializerFor(payload)
+      val manifest = Serializers.manifestFor(s, payload)
+      (repr._1, manifest, s.identifier, s.toBinary(payload))
+    }
 
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 object SnapshotStorageEmulatorExtension
   extends ExtensionId[SnapshotStorage]
-  with ExtensionIdProvider {
+    with ExtensionIdProvider {
 
   override def get(system: ActorSystem): SnapshotStorage = super.get(system)
 
@@ -646,12 +653,12 @@ object SnapshotStorageEmulatorExtension
 }
 
 /**
- * INTERNAL API
- */
+  * INTERNAL API
+  */
 @InternalApi
 object InMemStorageExtension
   extends ExtensionId[MessageStorage]
-  with ExtensionIdProvider {
+    with ExtensionIdProvider {
 
   override def get(system: ActorSystem): MessageStorage = super.get(system)
 
