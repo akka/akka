@@ -11,7 +11,7 @@ import java.util.stream.{ Collector, StreamSupport }
 import akka.stream.{ Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamSink, OutputStreamSourceStage }
+import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamGraphStage, OutputStreamSourceStage }
 import akka.util.ByteString
 
 import scala.concurrent.duration.Duration._
@@ -25,7 +25,6 @@ import akka.NotUsed
 object StreamConverters {
 
   import Source.{ shape => sourceShape }
-  import Sink.{ shape => sinkShape }
 
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
@@ -80,8 +79,7 @@ object StreamConverters {
    * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
   def fromOutputStream(out: () => OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph()
-)
+    Sink.fromGraph(new OutputStreamGraphStage(out, autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible

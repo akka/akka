@@ -1,10 +1,14 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.impl.io
 
 import java.io.OutputStream
 
 import akka.Done
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ AbruptIOTerminationException, Attributes, IOResult, Inlet, Materializer, SinkShape }
+import akka.stream.{ AbruptIOTerminationException, Attributes, IOResult, Inlet, SinkShape }
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
 import akka.util.ByteString
 
@@ -14,7 +18,6 @@ import scala.util.control.NonFatal
 
 class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[IOResult]] {
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Nothing) = ???
 
   val in = Inlet[ByteString]("OutputStreamSink")
 
@@ -22,22 +25,20 @@ class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
 
   override protected def initialAttributes: Attributes = DefaultAttributes.outputStreamSink
 
-  override def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, Future[IOResult]) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
     val mat = Promise[IOResult]
     val logic = new GraphStageLogicWithLogging(shape) with InHandler {
       var outputStream: OutputStream = _
-      val maxInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].max
       var bytesWritten = 0
       override def preStart(): Unit = {
         try {
           outputStream = factory()
+          pull(in)
         } catch {
           case NonFatal(t) =>
-          // FIXME
+            mat.success(IOResult(bytesWritten, Failure(t)))
+            failStage(t)
         }
-        pull(in)
       }
 
       override def onPush(): Unit = {
@@ -45,6 +46,9 @@ class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
         try {
           outputStream.write(next.toArray)
           if (autoFlush) outputStream.flush()
+
+          bytesWritten += next.size
+          pull(in)
         } catch {
           case NonFatal(t) =>
             mat.success(IOResult(bytesWritten, Failure(t)))
