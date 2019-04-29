@@ -46,10 +46,6 @@ object OSGi {
 
   val actorTyped = exports(Seq("akka.actor.typed.*"))
 
-  val agent = exports(Seq("akka.agent.*"))
-
-  val camel = exports(Seq("akka.camel.*"))
-
   val cluster = exports(Seq("akka.cluster.*"))
 
   val clusterTools = exports(Seq("akka.cluster.singleton.*", "akka.cluster.client.*", "akka.cluster.pubsub.*"))
