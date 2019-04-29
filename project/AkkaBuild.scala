@@ -120,22 +120,16 @@ object AkkaBuild {
     // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
     // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
     scalacOptions in Compile ++= (
-      if (CrossJava.Keys.useSystemJdk.value) {
-        Nil
-      } else if (JavaVersion.isJdk8) {
+      if (JavaVersion.isJdk8)
         Seq("-target:jvm-1.8")
-      } else {
+      else
         // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-        if (CrossJava.Keys.fullJavaHomes.value.contains("8"))
-          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-        else
-          throw new IllegalStateException("JDK 8 is not installed - to build against system default `set every akka.CrossJava.Keys.useSystemJdk := true` (but resulting artifacts may not work on JDK 8!)")
-      }),
+        Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
       opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-    javacOptions in compile ++= DefaultJavacOptions ++ (if  (!CrossJava.Keys.useSystemJdk.value) JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")) else Nil),
-    javacOptions in test ++= DefaultJavacOptions ++ (if (!CrossJava.Keys.useSystemJdk.value) JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")) else Nil),
+    javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+    javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq(),
 
