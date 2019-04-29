@@ -61,3 +61,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatest")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWithGraph")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
+
+#26187 Remove ActorPublisher/Subscriber
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSink")
