@@ -85,6 +85,16 @@ public class LambdaPersistenceDocTest {
                     })
                 .build();
           }
+
+          @Override
+          public boolean recoveryRunning() {
+            return super.recoveryRunning();
+          }
+
+          @Override
+          public boolean recoveryFinished() {
+            return super.recoveryFinished();
+          }
         }
 
         // #recovery-completed

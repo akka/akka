@@ -33,8 +33,7 @@ object Dependencies {
     scalaTestVersion := "3.0.8-RC2",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        // FIXME depends on https://github.com/scala/scala-java8-compat/pull/139
-        case Some((2, n)) if n >= 13 => "0.9.1-SNAPSHOT"
+        case Some((2, n)) if n >= 13 => "0.9.0"
         case Some((2, n)) if n == 12 => "0.8.0"
         case _                       => "0.7.0"
       }
