@@ -52,7 +52,11 @@ object Dispatchers {
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
 
-  final val InternalDispatcherId = "akka.actor.internal-dispatcher"
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 }
 
 /**
@@ -69,7 +73,7 @@ object Dispatchers {
  * Not for user instantiation or extension
  */
 @DoNotInherit
-class Dispatchers(
+class Dispatchers @InternalApi private[akka] (
     val settings: ActorSystem.Settings,
     val prerequisites: DispatcherPrerequisites,
     logger: LoggingAdapter) {
@@ -87,6 +91,11 @@ class Dispatchers(
   def defaultGlobalDispatcher: MessageDispatcher = lookup(DefaultDispatcherId)
 
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] val internalDispatcher = lookup(Dispatchers.InternalDispatcherId)
 
   /**
    * Returns a dispatcher as specified in configuration. Please note that this

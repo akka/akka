@@ -81,7 +81,7 @@ object ReplicatorSettings {
    */
   def apply(config: Config): ReplicatorSettings = {
     val dispatcher = config.getString("use-dispatcher") match {
-      case "" => Dispatchers.DefaultDispatcherId
+      case "" => Dispatchers.InternalDispatcherId
       case id => id
     }
 
@@ -299,7 +299,7 @@ final class ReplicatorSettings(
 
   def withDispatcher(dispatcher: String): ReplicatorSettings = {
     val d = dispatcher match {
-      case "" => Dispatchers.DefaultDispatcherId
+      case "" => Dispatchers.InternalDispatcherId
       case id => id
     }
     copy(dispatcher = d)
