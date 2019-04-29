@@ -68,8 +68,7 @@ object ActorSystemSpec {
   @silent
   final case class FastActor(latch: TestLatch, testActor: ActorRef) extends Actor {
     val ref1 = context.actorOf(Props.empty)
-    val ref2 = context.actorFor(ref1.path.toString)
-    testActor ! ref2.getClass
+    context.actorSelection(ref1.path.toString).tell(Identify(ref1), testActor)
     latch.countDown()
 
     def receive = {
@@ -293,7 +292,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "find actors that just have been created" in {
       system.actorOf(Props(new FastActor(TestLatch(), testActor)).withDispatcher("slow"))
-      expectMsgType[Class[_]] should ===(classOf[LocalActorRef])
+      expectMsgType[ActorIdentity].ref should !==(None)
     }
 
     "reliable deny creation of actors while shutting down" in {

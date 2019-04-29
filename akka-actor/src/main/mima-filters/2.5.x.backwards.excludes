@@ -4,3 +4,12 @@ ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL$")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL$*")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.dsl.*")
+
+# #26190 remove actorFor
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.actorFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorRefProvider.actorFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.LocalActorRefProvider.actorFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorRefFactory.actorFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.actorFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ChildActorPath.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.dungeon.UndefinedUidActorRef")
