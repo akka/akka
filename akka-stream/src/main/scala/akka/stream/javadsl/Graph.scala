@@ -215,6 +215,8 @@ object Broadcast {
  * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
  * to the partitioner function applied to the element
  *
+ * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+ *
  * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
  *
  * '''Backpressures when''' one of the outputs backpressure

@@ -10,6 +10,10 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
+import akka.stream.testkit.Utils.TE
+
 class GraphPartitionSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
@@ -218,6 +222,77 @@ class GraphPartitionSpec extends StreamSpec {
       c1.expectError(
         Partition.PartitionOutOfBoundsException(
           "partitioner must return an index in the range [0,1]. returned: [-1] for input [java.lang.Integer]."))
+    }
+
+    "partition to three subscribers, with Resume supervision" in assertAllStagesStopped {
+
+      val (s1, s2, s3) = RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+          implicit b => (sink1, sink2, sink3) =>
+            val partition = b.add(Partition[Int](3, {
+              case g if g > 3  => 0
+              case l if l < 3  => 1
+              case e if e == 3 => throw TE("Resume")
+            }))
+            Source(List(1, 2, 3, 4, 5)) ~> partition.in
+            partition.out(0) ~> sink1.in
+            partition.out(1) ~> sink2.in
+            partition.out(2) ~> sink3.in
+            ClosedShape
+        })
+        .withAttributes(ActorAttributes.supervisionStrategy(_ => Supervision.Resume))
+        .run()
+
+      s1.futureValue.toSet should ===(Set(4, 5))
+      s2.futureValue.toSet should ===(Set(1, 2))
+      s3.futureValue.toSet should ===(Set())
+    }
+
+    "partition to three subscribers, with Restart supervision" in assertAllStagesStopped {
+      val (s1, s2, s3) = RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+          implicit b => (sink1, sink2, sink3) =>
+            val partition = b.add(Partition[Int](3, {
+              case g if g > 3  => 0
+              case l if l < 3  => 1
+              case e if e == 3 => throw TE("Restart")
+            }))
+            Source(List(1, 2, 3, 4, 5)) ~> partition.in
+            partition.out(0) ~> sink1.in
+            partition.out(1) ~> sink2.in
+            partition.out(2) ~> sink3.in
+            ClosedShape
+        })
+        .withAttributes(ActorAttributes.supervisionStrategy(_ => Supervision.Restart))
+        .run()
+
+      s1.futureValue.toSet should ===(Set(4, 5))
+      s2.futureValue.toSet should ===(Set(1, 2))
+      s3.futureValue.toSet should ===(Set())
+    }
+
+    "support supervision for PartitionOutOfBoundsException" in assertAllStagesStopped {
+
+      val (s1, s2, s3) = RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) {
+          implicit b => (sink1, sink2, sink3) =>
+            val partition = b.add(Partition[Int](3, {
+              case g if g > 3  => 0
+              case l if l < 3  => 1
+              case e if e == 3 => -1 // out of bounds
+            }))
+            Source(List(1, 2, 3, 4, 5)) ~> partition.in
+            partition.out(0) ~> sink1.in
+            partition.out(1) ~> sink2.in
+            partition.out(2) ~> sink3.in
+            ClosedShape
+        })
+        .withAttributes(ActorAttributes.supervisionStrategy(_ => Supervision.Resume))
+        .run()
+
+      s1.futureValue.toSet should ===(Set(4, 5))
+      s2.futureValue.toSet should ===(Set(1, 2))
+      s3.futureValue.toSet should ===(Set())
     }
 
   }
