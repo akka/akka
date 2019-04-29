@@ -40,10 +40,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   actorTestkitTyped,
   actorTyped,
   actorTypedTests,
-  agent,
   benchJmh,
   benchJmhTyped,
-  camel,
   cluster,
   clusterMetrics,
   clusterSharding,
@@ -97,16 +95,8 @@ lazy val actorTests = akkaModule("akka-actor-tests")
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
-lazy val agent = akkaModule("akka-agent")
-  .dependsOn(actor, testkit % "test->test")
-  .settings(Dependencies.agent)
-  .settings(AutomaticModuleName.settings("akka.agent"))
-  .settings(OSGi.agent)
-  .enablePlugins(ScaladocNoVerificationOfDiagrams)
-
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
-// remove dependencies that we have to build ourselves (Scala STM)
-  .aggregate(aggregatedProjects.diff(List[ProjectReference](agent, docs)): _*)
+  .aggregate(aggregatedProjects: _*)
   .disablePlugins(MimaPlugin)
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
@@ -124,12 +114,6 @@ lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
-
-lazy val camel = akkaModule("akka-camel")
-  .dependsOn(actor, slf4j, testkit % "test->test")
-  .settings(Dependencies.camel)
-  .settings(AutomaticModuleName.settings("akka.camel"))
-  .settings(OSGi.camel)
 
 lazy val cluster = akkaModule("akka-cluster")
   .dependsOn(remote, remoteTests % "test->test", testkit % "test->test")
@@ -213,14 +197,12 @@ lazy val docs = akkaModule("akka-docs")
     cluster,
     clusterMetrics,
     slf4j,
-    agent,
     osgi,
     persistenceTck,
     persistenceQuery,
     distributedData,
     stream,
     actorTyped,
-    camel % "compile->compile;test->test",
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
@@ -488,7 +470,6 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
   .settings(AkkaBuild.mayChangeSettings)
-  .disablePlugins(MimaPlugin)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

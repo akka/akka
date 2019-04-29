@@ -533,8 +533,8 @@ object Sink {
   }
 
   /**
-   * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueue]].
-   * [[akka.stream.scaladsl.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
+   * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueueWithCancel]].
+   * [[akka.stream.scaladsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
    * `Future` completes when element is available.
    *
    * Before calling pull method second time you need to wait until previous Future completes.
@@ -544,7 +544,7 @@ object Sink {
    * upstream and then stop back pressure.  You can configure size of input
    * buffer by using [[Sink.withAttributes]] method.
    *
-   * For stream completion you need to pull all elements from [[akka.stream.scaladsl.SinkQueue]] including last None
+   * For stream completion you need to pull all elements from [[akka.stream.scaladsl.SinkQueueWithCancel]] including last None
    * as completion marker
    *
    * See also [[akka.stream.scaladsl.SinkQueueWithCancel]]

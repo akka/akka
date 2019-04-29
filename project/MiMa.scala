@@ -32,6 +32,7 @@ object MiMa extends AutoPlugin {
         case "2.12" =>
           val firstPatchOf25 =
             if (projectName.contains("discovery")) 19
+            else if (projectName.contains("coordination")) 22
             else 0
 
           expandVersions(2, 5, firstPatchOf25 to latestPatchOf25) ++

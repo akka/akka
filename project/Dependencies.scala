@@ -11,7 +11,6 @@ object Dependencies {
   import DependencyHelpers._
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
-  lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
@@ -23,7 +22,6 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.8", "2.13.0-M5"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.9"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
     scalaTestVersion := "3.0.7",
     java8CompatVersion := {
@@ -36,12 +34,9 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val camelCore = ("org.apache.camel" % "camel-core" % "2.17.7").exclude("org.slf4j", "slf4j-api") // ApacheV2
-
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config = "com.typesafe" % "config" % "1.3.3" // ApacheV2
     val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
-    val scalaStm = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
     val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
@@ -118,8 +113,6 @@ object Dependencies {
       // If changed, update akka-docs/build.sbt as well
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
-      // Non-default module in Java9, removed in Java11. For Camel.
-      val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0" % "provided;test"
       val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
@@ -181,8 +174,6 @@ object Dependencies {
 
   val slf4j = l ++= Seq(slf4jApi, Test.logback)
 
-  val agent = l ++= Seq(scalaStm.value, Test.scalatest.value, Test.junit)
-
   val persistence = l ++= Seq(
         Provided.levelDB,
         Provided.levelDBNative,
@@ -206,16 +197,6 @@ object Dependencies {
         Provided.levelDBNative)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
-
-  val camel = l ++= Seq(
-        camelCore,
-        Provided.jaxb,
-        Provided.activation,
-        Test.scalatest.value,
-        Test.junit,
-        Test.mockito,
-        Test.logback,
-        Test.commonsIo)
 
   val osgi = l ++= Seq(
         osgiCore,
