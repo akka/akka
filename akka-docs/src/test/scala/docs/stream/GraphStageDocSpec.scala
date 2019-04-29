@@ -349,7 +349,7 @@ class GraphStageDocSpec extends AkkaSpec {
 
     out.expectNext(1)
 
-    switch.success(Unit)
+    switch.success(())
 
     out.expectComplete()
   }
