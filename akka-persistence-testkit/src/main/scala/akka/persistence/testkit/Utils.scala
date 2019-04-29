@@ -21,7 +21,7 @@ private[testkit] object Utils {
   private[testkit] object JavaCollectionConversions {
 
     implicit def listConversion[A](jlist: JList[A]): immutable.Seq[A] =
-      immutable.Seq(jlist.asScala: _*)
+      immutable.Seq(jlist.asScala.toSeq: _*)
 
   }
 
