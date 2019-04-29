@@ -22,8 +22,8 @@ object InactiveEntityPassivationSpec {
     akka.remote.artery.canonical.port = 0
     akka.actor.serialize-messages = off
     """)
- s
-  val defaultConfig = ConfigFactory.parseString("""
+
+  val enabledConfig = ConfigFactory.parseString("""
     akka.cluster.sharding.passivate-idle-entity-after = 3 s
     """).withFallback(config)
 
@@ -41,7 +41,6 @@ object InactiveEntityPassivationSpec {
 
     def receive = {
       case Passivate =>
-        probe ! id + " passivating"
         context.stop(self)
       case msg => probe ! GotIt(id, msg, System.nanoTime())
     }
@@ -61,10 +60,11 @@ abstract class AbstractInactiveEntityPassivationSpec(c: Config) extends AkkaSpec
 
   private val smallTolerance = 300.millis
 
+  private val settings = ClusterShardingSettings(system)
+
   def start(probe: TestProbe): ActorRef = {
     // single node cluster
     Cluster(system).join(Cluster(system).selfAddress)
-    val settings = ClusterShardingSettings(system)
     ClusterSharding(system).start(
       "myType",
       InactiveEntityPassivationSpec.Entity.props(probe.ref),
@@ -89,12 +89,12 @@ abstract class AbstractInactiveEntityPassivationSpec(c: Config) extends AkkaSpec
     probe.expectMsgType[GotIt].id should ===("2")
 
     val timeSinceOneSawAMessage = (System.nanoTime() - timeOneSawMessage).nanos
-    (3.seconds - timeSinceOneSawAMessage) - smallTolerance
+    (settings.passivateIdleEntityAfter - timeSinceOneSawAMessage) + smallTolerance
   }
 }
 
 class InactiveEntityPassivationSpec
-    extends AbstractInactiveEntityPassivationSpec(InactiveEntityPassivationSpec.defaultConfig) {
+    extends AbstractInactiveEntityPassivationSpec(InactiveEntityPassivationSpec.enabledConfig) {
   "Passivation of inactive entities" must {
     "passivate entities when they haven't seen messages for the configured duration" in {
       val probe = TestProbe()
@@ -102,7 +102,6 @@ class InactiveEntityPassivationSpec
 
       // make sure "1" hasn't seen a message in 3 seconds and passivates
       probe.expectNoMessage(timeUntilPassivate(region, probe))
-      probe.expectMsg("1 passivating")
 
       // but it can be re activated
       region ! 1
