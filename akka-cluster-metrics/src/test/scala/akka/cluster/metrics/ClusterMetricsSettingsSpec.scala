@@ -19,7 +19,7 @@ class ClusterMetricsSettingsSpec extends AkkaSpec {
       import settings._
 
       // Extension.
-      MetricsDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      MetricsDispatcher should ===(Dispatchers.InternalDispatcherId)
       PeriodicTasksInitialDelay should ===(1 second)
       NativeLibraryExtractFolder should ===(System.getProperty("user.dir") + "/native")
 
