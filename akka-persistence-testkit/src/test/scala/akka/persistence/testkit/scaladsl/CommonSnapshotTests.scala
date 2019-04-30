@@ -91,7 +91,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
             case WriteSnapshot(_, msgs) ⇒
               val ex = msgs match {
                 case 777 ⇒ true
-                case _   ⇒ false
+                case _ ⇒ false
               }
               if (ex) {
                 ProcessingSuccess
@@ -255,11 +255,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
     "recover last persisted snapshot" in {
 
       val pid = randomPid()
-      val preload = List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      )
+      val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
 
       persistForRecovery(pid, preload)
 
@@ -273,11 +269,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      val preload = List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      )
+      val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
 
       persistForRecovery(pid, preload)
 
@@ -294,11 +286,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      val preload = List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      )
+      val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
 
       val err = new Exception("Custom ERROR!")
 
@@ -317,11 +305,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
     "fail to recover persisted snapshots for actor with particular persistenceId" in {
 
       val pid = randomPid()
-      val preload = List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      )
+      val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
 
       persistForRecovery(pid, preload)
 
@@ -338,11 +322,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      val preload = List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      )
+      val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
 
       persistForRecovery(pid, preload)
 
@@ -360,17 +340,13 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      val saved = List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      )
+      val saved = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
 
       persistForRecovery(pid, saved)
 
       val li = persistedInStorage(pid)
 
-      li should contain theSameElementsInOrderAs saved
+      (li should contain).theSameElementsInOrderAs(saved)
 
     }
 
@@ -378,9 +354,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1)))
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -402,9 +376,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1)))
 
       val err = new Exception("Custom ERROR!")
 
@@ -428,11 +400,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3)))
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -454,11 +422,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3)))
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -477,11 +441,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3)))
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -503,11 +463,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3)))
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -529,11 +485,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(
-        (SnapshotMeta(0), 1),
-        (SnapshotMeta(1), 2),
-        (SnapshotMeta(2), 3)
-      ))
+      persistForRecovery(pid, List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3)))
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 

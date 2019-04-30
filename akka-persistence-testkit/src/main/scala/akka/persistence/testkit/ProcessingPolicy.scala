@@ -42,15 +42,41 @@ object ProcessingPolicy {
 
     }
 
-    class RejectNextNCond(_numberToFail: Int, _failureException: Throwable, cond: (String, U) ⇒ Boolean, onLimitExceed: ⇒ Unit = ()) extends CountNextNCond(_numberToFail, Reject(_failureException), ProcessingSuccess, cond, onLimitExceed)
+    class RejectNextNCond(
+        _numberToFail: Int,
+        _failureException: Throwable,
+        cond: (String, U) ⇒ Boolean,
+        onLimitExceed: ⇒ Unit = ())
+        extends CountNextNCond(_numberToFail, Reject(_failureException), ProcessingSuccess, cond, onLimitExceed)
 
-    class FailNextNCond(_numberToFail: Int, _failureException: Throwable, cond: (String, U) ⇒ Boolean, onLimitExceed: ⇒ Unit = ()) extends CountNextNCond(_numberToFail, StorageFailure(_failureException), ProcessingSuccess, cond, onLimitExceed)
+    class FailNextNCond(
+        _numberToFail: Int,
+        _failureException: Throwable,
+        cond: (String, U) ⇒ Boolean,
+        onLimitExceed: ⇒ Unit = ())
+        extends CountNextNCond(_numberToFail, StorageFailure(_failureException), ProcessingSuccess, cond, onLimitExceed)
 
-    class FailNextN(_numberToFail: Int, _failureException: Throwable, onLimitExceed: ⇒ Unit = ()) extends CountNextNCond(_numberToFail, StorageFailure(_failureException), ProcessingSuccess, (_, _) ⇒ true, onLimitExceed)
+    class FailNextN(_numberToFail: Int, _failureException: Throwable, onLimitExceed: ⇒ Unit = ())
+        extends CountNextNCond(
+          _numberToFail,
+          StorageFailure(_failureException),
+          ProcessingSuccess,
+          (_, _) ⇒ true,
+          onLimitExceed)
 
-    class RejectNextN(_numberToReject: Int, _rejectionException: Throwable, onLimitExceed: ⇒ Unit = ()) extends CountNextNCond(_numberToReject, Reject(_rejectionException), ProcessingSuccess, (_, _) ⇒ true, onLimitExceed)
+    class RejectNextN(_numberToReject: Int, _rejectionException: Throwable, onLimitExceed: ⇒ Unit = ())
+        extends CountNextNCond(
+          _numberToReject,
+          Reject(_rejectionException),
+          ProcessingSuccess,
+          (_, _) ⇒ true,
+          onLimitExceed)
 
-    class ReturnAfterNextNCond(returnOnTrigger: ⇒ ProcessingResult, returnNonTrigger: ⇒ ProcessingResult, cond: (String, U) ⇒ Boolean) extends PolicyType {
+    class ReturnAfterNextNCond(
+        returnOnTrigger: ⇒ ProcessingResult,
+        returnNonTrigger: ⇒ ProcessingResult,
+        cond: (String, U) ⇒ Boolean)
+        extends PolicyType {
 
       override def tryProcess(persistenceId: String, processingUnit: U): ProcessingResult = {
         if (cond(persistenceId, processingUnit)) {
@@ -62,37 +88,43 @@ object ProcessingPolicy {
 
     }
 
-    class CountNextNCond(numberToCount: Int, returnOnTrigger: ⇒ ProcessingResult, returnNonTrigger: ⇒ ProcessingResult, cond: (String, U) ⇒ Boolean, onLimitExceed: ⇒ Unit) extends ReturnAfterNextNCond(returnOnTrigger, returnNonTrigger, new Function2[String, U, Boolean] {
+    class CountNextNCond(
+        numberToCount: Int,
+        returnOnTrigger: ⇒ ProcessingResult,
+        returnNonTrigger: ⇒ ProcessingResult,
+        cond: (String, U) ⇒ Boolean,
+        onLimitExceed: ⇒ Unit)
+        extends ReturnAfterNextNCond(returnOnTrigger, returnNonTrigger, new Function2[String, U, Boolean] {
 
-      var counter = 0
+          var counter = 0
 
-      override def apply(persistenceId: String, v1: U): Boolean = {
-        val intRes = cond(persistenceId, v1)
-        if (intRes && counter < numberToCount) {
-          counter += 1
-          if (counter == numberToCount) onLimitExceed
-          intRes
-        } else {
-          false
-        }
-      }
-    })
+          override def apply(persistenceId: String, v1: U): Boolean = {
+            val intRes = cond(persistenceId, v1)
+            if (intRes && counter < numberToCount) {
+              counter += 1
+              if (counter == numberToCount) onLimitExceed
+              intRes
+            } else {
+              false
+            }
+          }
+        })
 
   }
 
 }
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi
 sealed trait ProcessingResult
 
 sealed abstract class ProcessingSuccess extends ProcessingResult
 
 /**
-  * Emulates successful processing of some operation.
-  */
+ * Emulates successful processing of some operation.
+ */
 case object ProcessingSuccess extends ProcessingSuccess {
 
   def getInstance(): ProcessingSuccess = this
@@ -122,10 +154,10 @@ object ExpectedFailure extends ExpectedFailure {
 }
 
 /**
-  * Emulates rejection of operation by the journal with `error` exception.
-  * Has the same meaning as `StorageFailure` for snapshot storage,
-  * because it does not support rejections.
-  */
+ * Emulates rejection of operation by the journal with `error` exception.
+ * Has the same meaning as `StorageFailure` for snapshot storage,
+ * because it does not support rejections.
+ */
 final case class Reject(error: Throwable = ExpectedRejection) extends ProcessingFailure {
 
   def getError(): Throwable = error
@@ -141,8 +173,8 @@ object Reject {
 }
 
 /**
-  * Emulates exception thrown by the storage on the attempt to perform some operation.
-  */
+ * Emulates exception thrown by the storage on the attempt to perform some operation.
+ */
 final case class StorageFailure(error: Throwable = ExpectedFailure) extends ProcessingFailure {
 
   def getError(): Throwable = error

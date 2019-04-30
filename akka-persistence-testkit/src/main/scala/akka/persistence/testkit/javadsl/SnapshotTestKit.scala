@@ -5,14 +5,14 @@
 package akka.persistence.testkit.javadsl
 
 import akka.actor.ActorSystem
-import akka.persistence.testkit.scaladsl.{SnapshotTestKit => ScalaTestKit}
-import akka.persistence.testkit.{ExpectedFailure, SnapshotMeta, SnapshotOperation, SnapshotStorage}
+import akka.persistence.testkit.scaladsl.{ SnapshotTestKit => ScalaTestKit }
+import akka.persistence.testkit.{ ExpectedFailure, SnapshotMeta, SnapshotOperation, SnapshotStorage }
 import akka.util.JavaDurationConverters._
 
 import scala.collection.JavaConverters._
 import java.time.Duration
-import java.util.{List => JList}
-import java.util.{function => jf}
+import java.util.{ List => JList }
+import java.util.{ function => jf }
 
 import akka.japi.Pair
 import akka.testkit.javadsl.CachingPartialFunction
@@ -31,7 +31,8 @@ class SnapshotTestKit(system: ActorSystem) {
   /**
    * Check for `max` time that nothing has been saved in the storage.
    */
-  def expectNothingPersisted(persistenceId: String, max: Duration): Unit = scalaTestkit.expectNothingPersisted(persistenceId, max.asScala)
+  def expectNothingPersisted(persistenceId: String, max: Duration): Unit =
+    scalaTestkit.expectNothingPersisted(persistenceId, max.asScala)
 
   /**
    * Check that `msg` message has been saved in the storage.
@@ -41,7 +42,8 @@ class SnapshotTestKit(system: ActorSystem) {
   /**
    * Check for `max` time that `msg` message has been saved in the storage.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A, max: Duration): A = scalaTestkit.expectNextPersisted(persistenceId, msg, max.asScala)
+  def expectNextPersisted[A](persistenceId: String, msg: A, max: Duration): A =
+    scalaTestkit.expectNextPersisted(persistenceId, msg, max.asScala)
 
   /**
    * Check that next persisted in storage for particular persistence id message matches partial function `pf`.
@@ -76,7 +78,8 @@ class SnapshotTestKit(system: ActorSystem) {
   /**
    * Fail next `n` persisted messages with the `cause` exception for particular persistence id.
    */
-  def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit = scalaTestkit.failNextNPersisted(persistenceId, n, cause)
+  def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
+    scalaTestkit.failNextNPersisted(persistenceId, n, cause)
 
   /**
    * Fail next `n` persisted messages for particular persistence id.
@@ -146,7 +149,8 @@ class SnapshotTestKit(system: ActorSystem) {
   /**
    * Fail next n read from storage (recovery) attempts with `cause` exception for particular persistence id.
    */
-  def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit = scalaTestkit.failNextNReads(persistenceId, n, cause)
+  def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
+    scalaTestkit.failNextNReads(persistenceId, n, cause)
 
   /**
    * Fail next n read from storage (recovery) attempts with default exception for particular persistence id.

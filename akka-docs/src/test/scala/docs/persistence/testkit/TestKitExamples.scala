@@ -4,9 +4,9 @@
 
 package docs.persistence.testkit
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ ActorSystem, Props }
 import akka.persistence.PersistentActor
-import akka.persistence.testkit.{ProcessingSuccess, Reject, StorageFailure}
+import akka.persistence.testkit.{ ProcessingSuccess, Reject, StorageFailure }
 import akka.persistence.testkit._
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import com.typesafe.config.ConfigFactory
@@ -18,11 +18,7 @@ class TestKitExamples {
   class SampleSpec extends WordSpecLike {
 
     implicit val system: ActorSystem =
-      ActorSystem(
-        "example",
-        PersistenceTestKitPlugin.config
-          .withFallback(ConfigFactory.defaultApplication())
-      )
+      ActorSystem("example", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication()))
 
     val testKit = new PersistenceTestKit
 
@@ -50,10 +46,7 @@ class TestKitExamples {
     //you can use internal state, it need not to be thread safe
     var count = 1
 
-    override def tryProcess(
-      persistenceId:  String,
-      processingUnit: JournalOperation
-    ): ProcessingResult =
+    override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult =
       if (count < 10) {
         count += 1
         //check the type of operation and react with success or with reject or with failure.
@@ -63,8 +56,8 @@ class TestKitExamples {
           case WriteMessages(batch) if batch.size > 1 ⇒
             ProcessingSuccess
           case ReadSeqNum ⇒ StorageFailure()
-          case DeleteMessages(_)  ⇒ Reject()
-          case _                         ⇒ StorageFailure()
+          case DeleteMessages(_) ⇒ Reject()
+          case _ ⇒ StorageFailure()
         }
       } else {
         ProcessingSuccess
@@ -79,10 +72,7 @@ class TestKitExamples {
     //you can use internal state, it need not to be thread safe
     var count = 1
 
-    override def tryProcess(
-      persistenceId:  String,
-      processingUnit: SnapshotOperation
-    ): ProcessingResult =
+    override def tryProcess(persistenceId: String, processingUnit: SnapshotOperation): ProcessingResult =
       if (count < 10) {
         count += 1
         //check the type of operation and react with success or with reject or with failure.

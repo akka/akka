@@ -74,4 +74,3 @@ class A(pid: String, notifyOnStateChange: Option[ActorRef]) extends PersistentAc
 
   override def persistenceId = pid
 }
-

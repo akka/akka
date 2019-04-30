@@ -21,10 +21,10 @@ class TestKitNOTSerializeSpec extends WordSpecLike with CommonTestkitTests {
       s"persistence-testkit-${UUID.randomUUID()}",
       PersistenceTestKitPlugin.config
         .withFallback(
-          ConfigFactory.parseMap(Map(
-            "akka.persistence.testkit.messages.serialize" -> false,
-            "akka.persistence.testkit.snapshots.serialize" -> false
-          ).asJava))
+          ConfigFactory.parseMap(
+            Map(
+              "akka.persistence.testkit.messages.serialize" -> false,
+              "akka.persistence.testkit.snapshots.serialize" -> false).asJava))
         .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
         .withFallback(ConfigFactory.defaultApplication()))
 
@@ -45,4 +45,3 @@ class TestKitNOTSerializeSpec extends WordSpecLike with CommonTestkitTests {
   }
 
 }
-

@@ -97,7 +97,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
             case WriteMessages(msgs) ⇒
               val ex = msgs.exists({
                 case B(666) ⇒ true
-                case _      ⇒ false
+                case _ ⇒ false
               })
               if (ex) {
                 ProcessingSuccess
@@ -368,7 +368,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val li = persistedInStorage(pid).asScala
 
-      li should contain theSameElementsInOrderAs saved.asScala
+      (li should contain).theSameElementsInOrderAs(saved.asScala)
 
     }
 
@@ -570,4 +570,3 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
   }
 
 }
-

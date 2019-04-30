@@ -30,7 +30,8 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     Future.fromTry(Try(storage.tryDelete(persistenceId, toSequenceNr)))
 
-  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit] =
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
@@ -52,9 +53,7 @@ object PersistenceTestKitPlugin {
   val config: Config = ConfigFactory.parseMap(
     Map(
       "akka.persistence.journal.plugin" -> PluginId,
-      s"$PluginId.class" -> s"${classOf[PersistenceTestKitPlugin].getName}"
-    ).asJava
-  )
+      s"$PluginId.class" -> s"${classOf[PersistenceTestKitPlugin].getName}").asJava)
 
 }
 
@@ -93,9 +92,6 @@ object PersistenceTestKitSnapshotPlugin {
   val config: Config = ConfigFactory.parseMap(
     Map(
       "akka.persistence.snapshot-store.plugin" -> PluginId,
-      s"$PluginId.class" -> classOf[PersistenceTestKitSnapshotPlugin].getName
-    ).asJava
-  )
+      s"$PluginId.class" -> classOf[PersistenceTestKitSnapshotPlugin].getName).asJava)
 
 }
-

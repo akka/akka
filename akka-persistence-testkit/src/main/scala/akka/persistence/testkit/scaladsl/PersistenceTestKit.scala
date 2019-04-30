@@ -160,7 +160,10 @@ private[testkit] trait CommonTestKitOps[S, P] extends ClearOps with PolicyOpsTes
 
 }
 
-private[testkit] trait PersistenceTestKitOps[S, P] extends RejectSupport[P] with ClearPreservingSeqNums with CommonTestKitOps[S, P] {
+private[testkit] trait PersistenceTestKitOps[S, P]
+    extends RejectSupport[P]
+    with ClearPreservingSeqNums
+    with CommonTestKitOps[S, P] {
   this: HasStorage[P, S] ⇒
 
   /**
@@ -171,7 +174,8 @@ private[testkit] trait PersistenceTestKitOps[S, P] extends RejectSupport[P] with
   /**
    * Reject next n save in storage operations for particular persistence id with default exception.
    */
-  def rejectNextNPersisted(persistenceId: String, n: Int): Unit = rejectNextNPersisted(persistenceId, n, ExpectedRejection)
+  def rejectNextNPersisted(persistenceId: String, n: Int): Unit =
+    rejectNextNPersisted(persistenceId, n, ExpectedRejection)
 
   /**
    * Reject next n save in storage operations for any persistence id with default exception.
@@ -302,11 +306,13 @@ private[testkit] trait PersistenceTestKitOps[S, P] extends RejectSupport[P] with
  * The configuration can be retrieved with [[PersistenceTestKitSnapshotPlugin.config]].
  */
 class SnapshotTestKit(implicit val system: ActorSystem)
-  extends CommonTestKitOps[(SnapshotMetadata, Any), SnapshotOperation]
-  with PolicyOpsTestKit[SnapshotOperation]
-  with ExpectOps[(SnapshotMetadata, Any)]
-  with HasStorage[SnapshotOperation, (SnapshotMetadata, Any)] {
-  require(Try(Persistence(system).journalFor(PersistenceTestKitSnapshotPlugin.PluginId)).isSuccess, "The test persistence plugin for snapshots is not configured.")
+    extends CommonTestKitOps[(SnapshotMetadata, Any), SnapshotOperation]
+    with PolicyOpsTestKit[SnapshotOperation]
+    with ExpectOps[(SnapshotMetadata, Any)]
+    with HasStorage[SnapshotOperation, (SnapshotMetadata, Any)] {
+  require(
+    Try(Persistence(system).journalFor(PersistenceTestKitSnapshotPlugin.PluginId)).isSuccess,
+    "The test persistence plugin for snapshots is not configured.")
 
   import SnapshotTestKit._
 
@@ -353,13 +359,15 @@ class SnapshotTestKit(implicit val system: ActorSystem)
   /**
    * Persist a pair of (snapshot metadata, snapshot payload) into storage.
    */
-  def persistForRecovery(persistenceId: String, elem: (SnapshotMeta, Any)): Unit = persistForRecovery(persistenceId, immutable.Seq(elem))
+  def persistForRecovery(persistenceId: String, elem: (SnapshotMeta, Any)): Unit =
+    persistForRecovery(persistenceId, immutable.Seq(elem))
 
   /**
    * Retrieve snapshots and their metadata from storage by persistence id.
    */
   def persistedInStorage(persistenceId: String): immutable.Seq[(SnapshotMeta, Any)] =
-    storage.read(persistenceId)
+    storage
+      .read(persistenceId)
       .map(_.map(m ⇒ (SnapshotMeta(m._1.sequenceNr, m._1.timestamp), m._2)))
       .getOrElse(Vector.empty)
 
@@ -399,10 +407,12 @@ object SnapshotTestKit {
  * The configuration can be retrieved with [[PersistenceTestKitPlugin.config]].
  */
 class PersistenceTestKit(implicit val system: ActorSystem)
-  extends PersistenceTestKitOps[PersistentRepr, JournalOperation]
-  with ExpectOps[PersistentRepr]
-  with HasStorage[JournalOperation, PersistentRepr] {
-  require(Try(Persistence(system).journalFor(PersistenceTestKitPlugin.PluginId)).isSuccess, "The test persistence plugin is not configured.")
+    extends PersistenceTestKitOps[PersistentRepr, JournalOperation]
+    with ExpectOps[PersistentRepr]
+    with HasStorage[JournalOperation, PersistentRepr] {
+  require(
+    Try(Persistence(system).journalFor(PersistenceTestKitPlugin.PluginId)).isSuccess,
+    "The test persistence plugin is not configured.")
 
   import PersistenceTestKit._
 
@@ -428,7 +438,10 @@ class PersistenceTestKit(implicit val system: ActorSystem)
     rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type], n, cause)
 
   override def rejectNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]), n, cause)
+    rejectNextNOpsCond(
+      (pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]),
+      n,
+      cause)
 
   override def rejectNextNDeletes(n: Int, cause: Throwable): Unit =
     rejectNextNOpsCond((_, op) ⇒ op.isInstanceOf[DeleteMessages], n, cause)
@@ -446,7 +459,10 @@ class PersistenceTestKit(implicit val system: ActorSystem)
     failNextNOpsCond((_, op) ⇒ op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type], n, cause)
 
   override def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]), n, cause)
+    failNextNOpsCond(
+      (pid, op) ⇒ (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]),
+      n,
+      cause)
 
   override def failNextNDeletes(n: Int, cause: Throwable): Unit =
     failNextNOpsCond((_, op) ⇒ op.isInstanceOf[DeleteMessages], n, cause)

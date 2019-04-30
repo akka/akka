@@ -24,10 +24,10 @@ class SnapshotSerializeSpec extends WordSpecLike with CommonSnapshotTests {
       PersistenceTestKitSnapshotPlugin.config
         .withFallback(PersistenceTestKitPlugin.config)
         .withFallback(
-          ConfigFactory.parseMap(Map(
-            "akka.persistence.testkit.messages.serialize" -> true,
-            "akka.persistence.testkit.snapshots.serialize" -> true
-          ).asJava))
+          ConfigFactory.parseMap(
+            Map(
+              "akka.persistence.testkit.messages.serialize" -> true,
+              "akka.persistence.testkit.snapshots.serialize" -> true).asJava))
         .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
         .withFallback(ConfigFactory.defaultApplication()))
 

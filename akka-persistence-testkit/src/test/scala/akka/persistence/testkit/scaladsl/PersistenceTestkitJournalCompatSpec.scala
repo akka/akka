@@ -22,9 +22,7 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
         op match {
           case WriteMessages(batch) ⇒
             val allSerializable =
-              batch
-                .filter(_.isInstanceOf[AnyRef])
-                .forall(_.isInstanceOf[java.io.Serializable])
+              batch.filter(_.isInstanceOf[AnyRef]).forall(_.isInstanceOf[java.io.Serializable])
             if (allSerializable) {
               ProcessingSuccess
             } else {
@@ -40,4 +38,5 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
   override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = true
 }
 
-class PersistenceTestKitSnapshotStoreCompatSpec extends SnapshotStoreSpec(config = PersistenceTestKitSnapshotPlugin.config)
+class PersistenceTestKitSnapshotStoreCompatSpec
+    extends SnapshotStoreSpec(config = PersistenceTestKitSnapshotPlugin.config)

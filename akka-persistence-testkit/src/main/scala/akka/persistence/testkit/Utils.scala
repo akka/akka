@@ -29,8 +29,8 @@ private[testkit] object Utils {
 
     import java.util.{ function ⇒ jf }
 
-    implicit def javaBiFunToScala[A, B, R](javaFun: jf.BiFunction[A, B, R]): (A, B) ⇒ R = {
-      (a: A, b: B) ⇒ javaFun.apply(a, b)
+    implicit def javaBiFunToScala[A, B, R](javaFun: jf.BiFunction[A, B, R]): (A, B) ⇒ R = { (a: A, b: B) ⇒
+      javaFun.apply(a, b)
     }
 
     implicit def scalaFun1ToJava[I, Re](f: I ⇒ Re): jf.Function[I, Re] = new jf.Function[I, Re] {

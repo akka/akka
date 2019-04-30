@@ -17,8 +17,7 @@ class TestKitSerializeSpec extends CommonTestkitTests {
       s"persistence-testkit-${UUID.randomUUID()}",
       PersistenceTestKitPlugin.config
         .withFallback(ConfigFactory.defaultApplication())
-        .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
-    )
+        .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]")))
 
   override def specificTests(): Unit = "fail next nonserializable persisted" in {
 

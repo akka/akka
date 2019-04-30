@@ -5,7 +5,7 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
-import akka.persistence.testkit.{ExpectedFailure, ExpectedRejection, TestKitStorage}
+import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection, TestKitStorage }
 import akka.testkit.TestKitBase
 
 import scala.collection.immutable
@@ -160,7 +160,8 @@ private[testkit] trait ExpectOps[U] {
   /**
    * Check for `max` time that next persisted in storage for particular persistence id message matches partial function `pf`.
    */
-  def expectNextPersistedPF[A](persistenceId: String, max: FiniteDuration, hint: String = "")(pf: PartialFunction[Any, A]): A = {
+  def expectNextPersistedPF[A](persistenceId: String, max: FiniteDuration, hint: String = "")(
+      pf: PartialFunction[Any, A]): A = {
     val nextInd = nextIndex(persistenceId)
     val res = awaitAssert({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
@@ -195,18 +196,26 @@ private[testkit] trait ExpectOps[U] {
   /**
    * Check for `max` time that `msgs` messages have been persisted in the storage in order.
    */
-  def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A] = {
+  def expectPersistedInOrder[A](
+      persistenceId: String,
+      msgs: immutable.Seq[A],
+      max: FiniteDuration): immutable.Seq[A] = {
     val nextInd = nextIndex(persistenceId)
-    val res = awaitAssert({
-      val actual = storage.findMany(persistenceId, nextInd, msgs.size)
-      actual match {
-        case Some(reprs) ⇒
-          val ls = reprs.map(reprToAny)
-          assert(ls.size == msgs.size && ls.zip(msgs).forall(e ⇒ e._1 == e._2), "Persisted messages do not correspond to expected ones")
-        case None ⇒ assert(false, "No messages were persisted")
-      }
-      actual.get.map(reprToAny)
-    }, max = max.dilated, interval = pollInterval)
+    val res = awaitAssert(
+      {
+        val actual = storage.findMany(persistenceId, nextInd, msgs.size)
+        actual match {
+          case Some(reprs) ⇒
+            val ls = reprs.map(reprToAny)
+            assert(
+              ls.size == msgs.size && ls.zip(msgs).forall(e ⇒ e._1 == e._2),
+              "Persisted messages do not correspond to expected ones")
+          case None ⇒ assert(false, "No messages were persisted")
+        }
+        actual.get.map(reprToAny)
+      },
+      max = max.dilated,
+      interval = pollInterval)
 
     setIndex(persistenceId, nextInd + msgs.size)
     res.asInstanceOf[immutable.Seq[A]]
@@ -221,18 +230,26 @@ private[testkit] trait ExpectOps[U] {
   /**
    * Check for `max` time that `msgs` messages have been persisted in the storage regardless of order.
    */
-  def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A] = {
+  def expectPersistedInAnyOrder[A](
+      persistenceId: String,
+      msgs: immutable.Seq[A],
+      max: FiniteDuration): immutable.Seq[A] = {
     val nextInd = nextIndex(persistenceId)
-    val res = probe.awaitAssert({
-      val actual = storage.findMany(persistenceId, nextInd, msgs.size)
-      actual match {
-        case Some(reprs) ⇒
-          val ls = reprs.map(reprToAny)
-          assert(ls.size == msgs.size && ls.diff(msgs).isEmpty, "Persisted messages do not correspond to the expected ones.")
-        case None ⇒ assert(false, "No messages were persisted.")
-      }
-      actual.get.map(reprToAny)
-    }, max = max.dilated, interval = pollInterval)
+    val res = probe.awaitAssert(
+      {
+        val actual = storage.findMany(persistenceId, nextInd, msgs.size)
+        actual match {
+          case Some(reprs) ⇒
+            val ls = reprs.map(reprToAny)
+            assert(
+              ls.size == msgs.size && ls.diff(msgs).isEmpty,
+              "Persisted messages do not correspond to the expected ones.")
+          case None ⇒ assert(false, "No messages were persisted.")
+        }
+        actual.get.map(reprToAny)
+      },
+      max = max.dilated,
+      interval = pollInterval)
 
     setIndex(persistenceId, nextInd + msgs.size)
     res.asInstanceOf[immutable.Seq[A]]

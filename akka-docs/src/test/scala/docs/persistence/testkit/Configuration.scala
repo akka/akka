@@ -4,8 +4,8 @@
 
 package docs.persistence.testkit
 import akka.actor.ActorSystem
-import akka.persistence.testkit.{PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin}
-import akka.persistence.testkit.scaladsl.{PersistenceTestKit, SnapshotTestKit}
+import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin }
+import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
 import com.typesafe.config.ConfigFactory
 
 object TestKitConf {
@@ -14,10 +14,7 @@ object TestKitConf {
 
   val yourConfiguration = ConfigFactory.defaultApplication()
 
-  implicit val system = ActorSystem("test-system",
-    PersistenceTestKitPlugin.config
-      .withFallback(yourConfiguration)
-  )
+  implicit val system = ActorSystem("test-system", PersistenceTestKitPlugin.config.withFallback(yourConfiguration))
 
   val testKit = new PersistenceTestKit
 
@@ -31,11 +28,8 @@ object SnapshotConf {
 
   val yourConfiguration = ConfigFactory.defaultApplication()
 
-  implicit val system = ActorSystem(
-    "test-system",
-    PersistenceTestKitSnapshotPlugin.config
-      .withFallback(yourConfiguration)
-  )
+  implicit val system =
+    ActorSystem("test-system", PersistenceTestKitSnapshotPlugin.config.withFallback(yourConfiguration))
 
   val testKit = new SnapshotTestKit
 
