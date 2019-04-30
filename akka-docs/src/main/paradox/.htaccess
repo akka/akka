@@ -1,5 +1,6 @@
 RedirectMatch 301 ^(.*)/scala/(.*) $1/$2?language=scala
 RedirectMatch 301 ^(.*)/java/(.*) $1/$2?language=java
+
 RedirectMatch 301 ^(.*)/stream/stages-overview\.html.* $1/stream/operators/index.html
 RedirectMatch 301 ^(.*)/project/migration-guide-1\.3\.x-2\.0\.x\.html.* $1/project/migration-guide-old.html
 RedirectMatch 301 ^(.*)/project/migration-guide-2\.0\.x-2\.1\.x.html.* $1/project/migration-guide-old.html
@@ -10,3 +11,6 @@ RedirectMatch 301 ^(.*)/project/migration-guide-2\.3\.x-2\.4\.x.html.* $1/projec
 RedirectMatch 301 ^(.*)/project/migration-guide-eventsourced-2\.3\.x.html.* $1/project/migration-guide-old.html
 RedirectMatch 301 ^(.*)/project/migration-guide-persistence-experimental-2\.3\.x-2\.4\.x.html.* $1/project/migration-guide-old.html
 RedirectMatch 301 ^(.*)/project/migration-guide-stream-2\.0-2\.4.html.* $1/project/migration-guide-old.html
+
+RedirectMatch 301 ^(.*)/stream/stages-overview\.html$ $1/stream/operators/index.html
+RedirectMatch 301 ^(.*)/agents\.html$ $1/project/migration-guide-2.5.x-2.6.x.html

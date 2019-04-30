@@ -24,6 +24,8 @@ final class RemoteSettings(val config: Config) {
 
   val Artery = ArterySettings(getConfig("akka.remote.artery"))
 
+  val WarnAboutDirectUse: Boolean = getBoolean("akka.remote.warn-about-direct-use")
+
   val LogReceive: Boolean = getBoolean("akka.remote.classic.log-received-messages")
 
   val LogSend: Boolean = getBoolean("akka.remote.classic.log-sent-messages")
