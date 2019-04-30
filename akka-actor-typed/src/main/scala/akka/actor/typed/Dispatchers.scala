@@ -13,6 +13,8 @@ object Dispatchers {
    * configuration of the default dispatcher.
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
+
+  final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 }
 
 /**
