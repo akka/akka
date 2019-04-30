@@ -94,7 +94,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           val pool = c.getConfig("fork-join-executor")
           pool.getInt("parallelism-min") should ===(8)
-          pool.getDouble("parallelism-factor") should ===(3.0)
+          pool.getDouble("parallelism-factor") should ===(1.0)
           pool.getInt("parallelism-max") should ===(64)
           pool.getString("task-peeking-mode") should be("FIFO")
         }
