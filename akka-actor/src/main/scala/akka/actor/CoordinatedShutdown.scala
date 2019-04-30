@@ -121,9 +121,19 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   def unknownReason: Reason = UnknownReason
 
   /**
+   * Scala API: The shutdown was initiated by ActorSystem.terminate.
+   */
+  case object ActorSystemTerminateReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by ActorSystem.terminate.
+   */
+  def actorSystemTerminateReason: Reason = ActorSystemTerminateReason
+
+  /**
    * Scala API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
    */
-  object JvmExitReason extends Reason
+  case object JvmExitReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
@@ -133,7 +143,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * Scala API: The shutdown was initiated by Cluster downing.
    */
-  object ClusterDowningReason extends Reason
+  case object ClusterDowningReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by Cluster downing.
@@ -143,7 +153,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * Scala API: The shutdown was initiated by a failure to join a seed node.
    */
-  object ClusterJoinUnsuccessfulReason extends Reason
+  case object ClusterJoinUnsuccessfulReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by a failure to join a seed node.
@@ -163,7 +173,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * Scala API: The shutdown was initiated by Cluster leaving.
    */
-  object ClusterLeavingReason extends Reason
+  case object ClusterLeavingReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by Cluster leaving.
@@ -456,6 +466,7 @@ final class CoordinatedShutdown private[akka] (
     if (runStarted.compareAndSet(None, Some(reason))) {
       implicit val ec = system.dispatchers.internalDispatcher
       val debugEnabled = log.isDebugEnabled
+      log.debug("Running CoordinatedShutdown with reason [{}]", reason)
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
           case Nil => Future.successful(Done)
@@ -602,7 +613,7 @@ final class CoordinatedShutdown private[akka] (
    * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
    */
   @tailrec def addCancellableJvmShutdownHook[T](hook: => T): Cancellable = {
-    if (runStarted.get == None) {
+    if (runStarted.get.isEmpty) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {

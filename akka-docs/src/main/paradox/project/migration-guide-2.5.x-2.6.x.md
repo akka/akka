@@ -153,3 +153,18 @@ The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no
 The configuration `akka.cluster.sharding.passivate-idle-entity-after` is now enabled by default.
 Sharding will passivate entities when they have not received any messages after this duration.
 Set
+
+## CoordinatedShutdown is run from ActorSystem.terminate
+
+No migration is needed but it is mentioned here because it is a change in behavior.
+
+When `ActorSystem.terminate()` is called @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown)
+will be run in Akka 2.6.x, which wasn't the case in 2.5.x. For example, if using Akka Cluster this means that
+member will attempt to leave the cluster gracefully.
+
+If this is not desired behavior, for example in tests, you can disable this feature with the following configuration
+and then it will behave as in Akka 2.5.x:
+
+```
+akka.coordinated-shutdown.run-by-actor-system-terminate = off
+```

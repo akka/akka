@@ -15,7 +15,6 @@ import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
 import akka.util._
 import akka.util.Helpers.toRootLowerCase
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
@@ -25,9 +24,11 @@ import java.util.Optional
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
-
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
+
+import akka.Done
+import akka.actor.CoordinatedShutdown.PhaseActorSystemTerminate
 
 object BootstrapSetup {
 
@@ -387,6 +388,11 @@ object ActorSystem {
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
     final val JvmShutdownHooks: Boolean = getBoolean("akka.jvm-shutdown-hooks")
 
+    final val CoordinatedShutdownTerminateActorSystem: Boolean = getBoolean(
+      "akka.coordinated-shutdown.terminate-actor-system")
+    final val CoordinatedShutdownRunByActorSystemTerminate: Boolean = getBoolean(
+      "akka.coordinated-shutdown.run-by-actor-system-terminate")
+
     final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
     if (ConfigVersion != Version)
@@ -571,12 +577,19 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination(code: Runnable): Unit
 
   /**
-   * Terminates this actor system. This will stop the guardian actor, which in turn
+   * Terminates this actor system by running [[CoordinatedShutdown]] with reason
+   * [[CoordinatedShutdown.ActorSystemTerminateReason]].
+   *
+   * If `akka.coordinated-shutdown.run-by-actor-system-terminate` is configured to `off`
+   * it will not run `CoordinatedShutdown`, but the `ActorSystem` and its actors
+   * will still be terminated.
+   *
+   * This will stop the guardian actor, which in turn
    * will recursively stop all its child actors, the system guardian
    * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future
-   * using the `dispatcher` of this actor system as it will have been shut down before the
+   * using the dispatcher of this actor system as it will have been shut down before the
    * future completes.
    */
   def terminate(): Future[Terminated]
@@ -936,8 +949,23 @@ private[akka] class ActorSystemImpl(
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {
-    if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
-    guardian.stop()
+    val coordinatedShutdown = CoordinatedShutdown(this)
+    if (settings.CoordinatedShutdownRunByActorSystemTerminate &&
+        coordinatedShutdown.shutdownReason().isEmpty && !aborting) {
+
+      if (!settings.CoordinatedShutdownTerminateActorSystem) {
+        // Configured to not terminate ActorSystem from CoordinatedShutdown, but now it's an explicit call
+        // to ActorSystem.terminate so adding that task so that the ActorSystem is terminated at the end of
+        // the CoordinatedShutdown phases.
+        coordinatedShutdown.addTask(PhaseActorSystemTerminate, "terminate-actor-system") { () =>
+          terminate().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+        }
+      }
+      coordinatedShutdown.run(CoordinatedShutdown.ActorSystemTerminateReason)
+    } else {
+      if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
+      guardian.stop()
+    }
     whenTerminated
   }
 
@@ -946,8 +974,8 @@ private[akka] class ActorSystemImpl(
   /**
    * This kind of shutdown attempts to bring the system down and release its
    * resources more forcefully than plain shutdown. For example it will not
-   * wait for remote-deployed child actors to terminate before terminating their
-   * parents.
+   * run CoordinatedShutdown and not wait for remote-deployed child actors to
+   * terminate before terminating their parents.
    */
   def abort(): Unit = {
     aborting = true

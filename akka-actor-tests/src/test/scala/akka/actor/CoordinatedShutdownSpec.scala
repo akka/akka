@@ -320,11 +320,56 @@ class CoordinatedShutdownSpec
       confWithOverrides.getInt("exit-code") should ===(-1)
     }
 
-    // this must be the last test, since it terminates the ActorSystem
     "terminate ActorSystem" in {
-      Await.result(CoordinatedShutdown(system).run(CustomReason), 10.seconds) should ===(Done)
-      system.whenTerminated.isCompleted should ===(true)
-      CoordinatedShutdown(system).shutdownReason() === (Some(CustomReason))
+      val sys = ActorSystem(system.name, system.settings.config)
+      try {
+        Await.result(CoordinatedShutdown(sys).run(CustomReason), 10.seconds) should ===(Done)
+        sys.whenTerminated.isCompleted should ===(true)
+        CoordinatedShutdown(sys).shutdownReason() should ===(Some(CustomReason))
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "be run by ActorSystem.terminate" in {
+      val sys = ActorSystem(system.name, system.settings.config)
+      try {
+        Await.result(sys.terminate(), 10.seconds)
+        sys.whenTerminated.isCompleted should ===(true)
+        CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "not be run by ActorSystem.terminate when run-by-actor-system-terminate=off" in {
+      val sys = ActorSystem(
+        system.name,
+        ConfigFactory
+          .parseString("akka.coordinated-shutdown.run-by-actor-system-terminate = off")
+          .withFallback(system.settings.config))
+      try {
+        Await.result(sys.terminate(), 10.seconds)
+        sys.whenTerminated.isCompleted should ===(true)
+        CoordinatedShutdown(sys).shutdownReason() should ===(None)
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "be run by ActorSystem.terminate when terminate-actor-system=off" in {
+      val sys = ActorSystem(
+        system.name,
+        ConfigFactory
+          .parseString("akka.coordinated-shutdown.terminate-actor-system = off")
+          .withFallback(system.settings.config))
+      try {
+        Await.result(sys.terminate(), 10.seconds)
+        sys.whenTerminated.isCompleted should ===(true)
+        CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
+      } finally {
+        shutdown(sys)
+      }
     }
 
     "add and remove user JVM hooks with run-by-jvm-shutdown-hook = off, terminate-actor-system = off" in new JvmHookTest {
