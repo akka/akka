@@ -6,11 +6,23 @@ package akka.dispatch
 
 import java.util.Collection
 
-import scala.concurrent.{BlockContext, CanAwait}
+import scala.concurrent.{ BlockContext, CanAwait }
 import scala.concurrent.duration.Duration
 import akka.dispatch.forkjoin._
-import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, Callable, ExecutorService, LinkedBlockingQueue, RejectedExecutionException, RejectedExecutionHandler, SynchronousQueue, ThreadFactory, ThreadPoolExecutor, TimeUnit}
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.{
+  ArrayBlockingQueue,
+  BlockingQueue,
+  Callable,
+  ExecutorService,
+  LinkedBlockingQueue,
+  RejectedExecutionException,
+  RejectedExecutionHandler,
+  SynchronousQueue,
+  ThreadFactory,
+  ThreadPoolExecutor,
+  TimeUnit
+}
+import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 object ThreadPoolConfig {
   type QueueFactory = () => BlockingQueue[Runnable]
@@ -168,7 +180,7 @@ object MonitorableThreadFactory {
   }
 
   private[akka] class JVMForkJoinWorkerThread(_pool: java.util.concurrent.ForkJoinPool)
-    extends java.util.concurrent.ForkJoinWorkerThread(_pool)
+      extends java.util.concurrent.ForkJoinWorkerThread(_pool)
       with BlockContext {
     override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
       val result = new AtomicReference[Option[T]](None)

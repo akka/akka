@@ -15,16 +15,16 @@ object JVMForkJoinExecutorConfigurator {
    * INTERNAL AKKA USAGE ONLY
    */
   final class JVMForkJoinPool(
-                                parallelism: Int,
-                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler,
-                                asyncMode: Boolean)
-    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, asyncMode)
+      parallelism: Int,
+      threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+      unhandledExceptionHandler: Thread.UncaughtExceptionHandler,
+      asyncMode: Boolean)
+      extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, asyncMode)
       with LoadMetrics {
     def this(
-              parallelism: Int,
-              threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-              unhandledExceptionHandler: Thread.UncaughtExceptionHandler) =
+        parallelism: Int,
+        threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+        unhandledExceptionHandler: Thread.UncaughtExceptionHandler) =
       this(parallelism, threadFactory, unhandledExceptionHandler, asyncMode = true)
 
     override def execute(r: Runnable): Unit =
@@ -63,7 +63,7 @@ object JVMForkJoinExecutorConfigurator {
 }
 
 class JVMForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
-  extends ExecutorServiceConfigurator(config, prerequisites) {
+    extends ExecutorServiceConfigurator(config, prerequisites) {
   import JVMForkJoinExecutorConfigurator._
 
   def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = t match {
@@ -74,10 +74,10 @@ class JVMForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherP
   }
 
   class JVMForkJoinExecutorServiceFactory(
-                                        val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
-                                        val parallelism: Int,
-                                        val asyncMode: Boolean)
-    extends ExecutorServiceFactory {
+      val threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
+      val parallelism: Int,
+      val asyncMode: Boolean)
+      extends ExecutorServiceFactory {
     def this(threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory, parallelism: Int) =
       this(threadFactory, parallelism, asyncMode = true)
     def createExecutorService: ExecutorService =
