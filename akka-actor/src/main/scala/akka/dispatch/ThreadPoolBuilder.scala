@@ -5,23 +5,12 @@
 package akka.dispatch
 
 import java.util.Collection
-import scala.concurrent.{ BlockContext, CanAwait }
+
+import scala.concurrent.{BlockContext, CanAwait}
 import scala.concurrent.duration.Duration
 import akka.dispatch.forkjoin._
-import java.util.concurrent.{
-  ArrayBlockingQueue,
-  BlockingQueue,
-  Callable,
-  ExecutorService,
-  LinkedBlockingQueue,
-  RejectedExecutionException,
-  RejectedExecutionHandler,
-  SynchronousQueue,
-  ThreadFactory,
-  ThreadPoolExecutor,
-  TimeUnit
-}
-import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
+import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, Callable, ExecutorService, LinkedBlockingQueue, RejectedExecutionException, RejectedExecutionHandler, SynchronousQueue, ThreadFactory, ThreadPoolExecutor, TimeUnit}
+import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
 object ThreadPoolConfig {
   type QueueFactory = () => BlockingQueue[Runnable]
@@ -177,6 +166,22 @@ object MonitorableThreadFactory {
       result.get.get // Exception intended if None
     }
   }
+
+  private[akka] class JVMForkJoinWorkerThread(_pool: java.util.concurrent.ForkJoinPool)
+    extends java.util.concurrent.ForkJoinWorkerThread(_pool)
+      with BlockContext {
+    override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
+      val result = new AtomicReference[Option[T]](None)
+      java.util.concurrent.ForkJoinPool.managedBlock(new java.util.concurrent.ForkJoinPool.ManagedBlocker {
+        def block(): Boolean = {
+          result.set(Some(thunk))
+          true
+        }
+        def isReleasable = result.get.isDefined
+      })
+      result.get.get // Exception intended if None
+    }
+  }
 }
 
 final case class MonitorableThreadFactory(
@@ -186,10 +191,18 @@ final case class MonitorableThreadFactory(
     exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing,
     protected val counter: AtomicLong = new AtomicLong)
     extends ThreadFactory
-    with ForkJoinPool.ForkJoinWorkerThreadFactory {
+    with ForkJoinPool.ForkJoinWorkerThreadFactory
+    with java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory {
 
   def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
     val t = wire(new MonitorableThreadFactory.AkkaForkJoinWorkerThread(pool))
+    // Name of the threads for the ForkJoinPool are not customizable. Change it here.
+    t.setName(name + "-" + counter.incrementAndGet())
+    t
+  }
+
+  def newThread(pool: java.util.concurrent.ForkJoinPool): java.util.concurrent.ForkJoinWorkerThread = {
+    val t = wire(new MonitorableThreadFactory.JVMForkJoinWorkerThread(pool))
     // Name of the threads for the ForkJoinPool are not customizable. Change it here.
     t.setName(name + "-" + counter.incrementAndGet())
     t

@@ -341,6 +341,8 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
   def configureExecutor(): ExecutorServiceConfigurator = {
     def configurator(executor: String): ExecutorServiceConfigurator = executor match {
       case null | "" | "fork-join-executor" =>
+        new JVMForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
+      case "fork-join-executor-akka" =>
         new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor" =>
         new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
