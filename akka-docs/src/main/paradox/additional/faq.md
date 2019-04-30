@@ -137,10 +137,10 @@ system’s network location, e.g. because `host` was configured to be `0.0.0.0`,
 `localhost` or a NAT’ed IP address.
 
 If you are running an ActorSystem under a NAT or inside a docker container, make sure to
-set *akka.remote.classic.netty.tcp.hostname* and *akka.remote.classic.netty.tcp.port* to the address
+set *akka.remote.artery.hostname* and *akka.remote.artery.canonical.port* to the address
 it is reachable at from other ActorSystems. If you need to bind your network interface
-to a different address - use *akka.remote.classic.netty.tcp.bind-hostname* and
-*akka.remote.classic.netty.tcp.bind-port* settings. Also make sure your network is configured
+to a different address - use *akka.remote.artery.bind.hostname* and
+*akka.remote.artery.bind.port* settings. Also make sure your network is configured
 to translate from the address your ActorSystem is reachable at to the address your
 ActorSystem network interface is bound to.
 

@@ -28,12 +28,6 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
 Classic remoting has been deprecated and will be removed in `2.7.0`.
-To migrate to Artery a full cluster restart is required. If you've already moved to Artery in 2.5.x
-then a normal rolling restart is supported but some configuration properties have moved (see below).
-
-Configuration for artery is under `akka.remote.artery` configuration for classic remoting in
-`2.6` has moved from `akka.remote` to `akka.remote.classic`. Configuration that is used for both
-remains under `akka.remote`. 
 
 ### Switching to Artery
 
@@ -42,6 +36,10 @@ The most likely are. See [migrating from classic remoting to Artery](../remoting
 
 
 ### Migration from 2.5.x Artery to 2.6.x Artery
+
+The following defaults have changed:
+
+* `akka.remote.artery.transport` default has changed from `aeron-udp` to `tcp` 
 
 The following properties have moved. If you don't adjust these from their defaults no changes are required:
 

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
@@ -20,7 +20,6 @@ import scala.util.control.NonFatal
  * by any network node. Therefore we assume here that the initialization of
  * the ActorSystem with the use of remoting will intentionally fail.
  */
-// FIXME, switch to test artery or move to classic package
 class RemoteInitErrorSpec extends WordSpec with Matchers {
   val conf = ConfigFactory.parseString("""
       akka {
@@ -47,7 +46,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
     "shut down properly on RemoteActorRefProvider initialization failure" in {
       val start = currentThreadIds()
       try {
-        ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=DEBUG").withFallback(conf))
+        ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=OFF").withFallback(conf))
         fail("initialization should fail due to invalid IP address")
       } catch {
         case NonFatal(_) => {
