@@ -1,0 +1,2 @@
+# Protect internals against starvation #23576
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Dispatchers.this")
