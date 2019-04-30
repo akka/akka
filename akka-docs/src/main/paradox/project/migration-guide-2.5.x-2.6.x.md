@@ -53,6 +53,13 @@ dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` 
 
 For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
 
+### Default dispatcher size
+
+Previously the factor for the default dispatcher was set a bit high (`3.0`) to give some extra threads in case of accidental
+blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher
+the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
+`8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
+
 ## Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
