@@ -49,7 +49,9 @@ This reinstantiates the behavior from previous Akka versions but also removes th
 user and Akka internals. So, use at your own risk!
 
 Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
-dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty string as value.
+dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty 
+string as value. If such an empty value is used in your `application.conf` the same result is achieved by simply removing
+that entry completely and having the default apply.
 
 For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
 

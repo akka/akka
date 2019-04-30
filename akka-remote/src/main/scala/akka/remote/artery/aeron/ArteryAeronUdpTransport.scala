@@ -255,7 +255,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   private def startAeronErrorLog(): Unit = {
     aeronErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
     val lastTimestamp = new AtomicLong(0L)
-    import system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
     aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
       if (!isShutdown) {
         val newLastTimestamp = aeronErrorLog.logErrors(log, lastTimestamp.get)
@@ -265,7 +265,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   private def startAeronCounterLog(): Unit = {
-    import system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
     aeronCounterTask = system.scheduler.schedule(5.seconds, 5.seconds) {
       if (!isShutdown && log.isDebugEnabled) {
         aeron.countersReader.forEach(new MetaData() {
@@ -379,7 +379,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
             }
             .to(immutable.Vector)
 
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
@@ -420,19 +420,20 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   override protected def shutdownTransport(): Future[Done] = {
-    import system.dispatcher
-    taskRunner.stop().map { _ =>
-      topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
-      if (aeronErrorLogTask != null) {
-        aeronErrorLogTask.cancel()
-        topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
-      }
-      if (aeron != null) aeron.close()
-      if (aeronErrorLog != null) aeronErrorLog.close()
-      if (mediaDriver.get.isDefined) stopMediaDriver()
+    taskRunner
+      .stop()
+      .map { _ =>
+        topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
+        if (aeronErrorLogTask != null) {
+          aeronErrorLogTask.cancel()
+          topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
+        }
+        if (aeron != null) aeron.close()
+        if (aeronErrorLog != null) aeronErrorLog.close()
+        if (mediaDriver.get.isDefined) stopMediaDriver()
 
-      Done
-    }
+        Done
+      }(system.dispatchers.internalDispatcher)
   }
 
 }

@@ -80,10 +80,7 @@ object ReplicatorSettings {
    * the default configuration `akka.cluster.distributed-data`.
    */
   def apply(config: Config): ReplicatorSettings = {
-    val dispatcher = config.getString("use-dispatcher") match {
-      case "" => Dispatchers.InternalDispatcherId
-      case id => id
-    }
+    val dispatcher = config.getString("use-dispatcher")
 
     val pruningInterval = toRootLowerCase(config.getString("pruning-interval")) match {
       case "off" | "false" => Duration.Zero

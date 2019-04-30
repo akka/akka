@@ -29,7 +29,7 @@ gives excellent performance in most cases.
 
 To protect the internal Actors that is spawned by the various Akka modules, a separate internal dispatcher is used by default.
 The internal dispatcher can be tuned in a fine grained way with the setting `akka.actor.internal-dispatcher`, it can also
-be replaced by another dispatcher by making `akka.actor.internal-dispatcher` an alias.
+be replaced by another dispatcher by making `akka.actor.internal-dispatcher` an @ref[alias](#dispatcher-aliases).
  
 
 <a id="dispatcher-lookup"></a>
@@ -197,6 +197,12 @@ When a dispatcher is looked up, and the given setting contains a string rather t
 the lookup will treat it as an alias, and follow that string to an alternate location for a dispatcher config.
 If the dispatcher config is referenced both through an alias and through the absolute path only one dispatcher will
 be used and shared among the two ids.
+
+Example: configuring `internal-dispatcher` to be an alias for `default-dispatcher`: 
+
+```
+akka.actor.internal-dispatcher = akka.actor.default-dispatcher
+``` 
 
 ## Blocking Needs Careful Management
 

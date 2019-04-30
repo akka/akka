@@ -389,7 +389,7 @@ private[remote] class ArteryTcpTransport(
             }
             .to(immutable.Vector)
 
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
@@ -433,7 +433,7 @@ private[remote] class ArteryTcpTransport(
   }
 
   override protected def shutdownTransport(): Future[Done] = {
-    import system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
     inboundKillSwitch.shutdown()
     unbind().map { _ =>
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
@@ -444,7 +444,7 @@ private[remote] class ArteryTcpTransport(
   private def unbind(): Future[Done] = {
     serverBinding match {
       case Some(binding) =>
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
         for {
           b <- binding
           _ <- b.unbind()

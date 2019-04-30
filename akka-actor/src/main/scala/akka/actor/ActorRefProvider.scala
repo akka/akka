@@ -5,7 +5,7 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ Dispatchers, Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
 import akka.util.Helpers
@@ -483,7 +483,7 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  private lazy val internalDispatcher = system.dispatchers.lookup(Dispatchers.InternalDispatcherId)
+  private val internalDispatcher = system.dispatchers.internalDispatcher
 
   private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
 
