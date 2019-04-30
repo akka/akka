@@ -510,14 +510,11 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
+    // make user provided guardians not run on internal dispatcher
     val dispatcher =
       system.guardianProps match {
-        case None =>
-          // run on internal dispatcher if user didn't provide the guardian
-          internalDispatcher
-        case Some(props) =>
-          // user provided guardian runs on user specified dispatcher or default dispatcher
-          system.dispatchers.lookup(props.dispatcher)
+        case None        => internalDispatcher
+        case Some(props) => system.dispatchers.lookup(props.dispatcher)
       }
     val ref = new LocalActorRef(
       system,

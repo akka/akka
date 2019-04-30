@@ -877,7 +877,7 @@ akka.cluster.log-info-verbose = on
 <a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
-Under the hood the cluster extension is implemented with actors, to protect them against
+Under the hood the cluster extension is implemented with actors. To protect them against
 disturbance from user actors they are by default run on the internal dispatcher configured
 under `akka.actor.internal-dispatcher`. The cluster actors can potentially be isolated even
 further onto their own dispatcher using the setting `akka.cluster.use-dispatcher`.

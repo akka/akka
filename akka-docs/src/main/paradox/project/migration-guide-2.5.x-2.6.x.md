@@ -37,15 +37,16 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 ### Internal dispatcher introduced
 
 To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
-use of blocking APIs from actors) a new internal dispatcher has been added. All internal actors that Akka uses that are non blocking
-are now by default run on this separate dispatcher.
+use of blocking APIs from actors) a new internal dispatcher has been added. All of Akka's internal, non-blocking actors
+now run on the internal dispatcher by default.
 
 The dispatcher can be configured through `akka.actor.internal-dispatcher`.
 
-For systems where you want to keep running the internal actors on a single dispatcher, for example to keep the resource
-usage as low as possible you can configure the `akka.actor.internal-dispatcher` with a string value of
-`akka.actor.default-dispatcher` instead of a dispatcher config block, which globally will make every use of the internal
- dispatcher instead use the default dispatcher.
+For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
+asynchronous actors, user actors and Akka internal actors. In that case, can configure the
+`akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
+This reinstantiates the behavior from previous Akka versions but also removes the isolation between
+user and Akka internals. So, use at your own risk!
 
 Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
 dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty string as value.

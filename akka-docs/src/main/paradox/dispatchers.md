@@ -28,7 +28,8 @@ gives excellent performance in most cases.
 ## Internal dispatcher
 
 To protect the internal Actors that is spawned by the various Akka modules, a separate internal dispatcher is used by default.
-The internal dispatcher can be customized with the setting `akka.actor.internal-dispatcher`.
+The internal dispatcher can be tuned in a fine grained way with the setting `akka.actor.internal-dispatcher`, it can also
+be replaced by another dispatcher by making `akka.actor.internal-dispatcher` an alias.
  
 
 <a id="dispatcher-lookup"></a>

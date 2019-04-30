@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.ConfigurationException
 import akka.actor.setup.ActorSystemSetup
 import akka.dispatch.{ Dispatchers, ExecutionContexts }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestActors, TestProbe }
@@ -29,7 +30,10 @@ object ActorSystemDispatchersSpec {
 
 }
 
-class ActorSystemDispatchersSpec extends AkkaSpec with ImplicitSender {
+class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
+    dispatcher-loop-1 = "dispatcher-loop-2"
+    dispatcher-loop-2 = "dispatcher-loop-1"
+  """)) with ImplicitSender {
 
   import ActorSystemDispatchersSpec._
 
@@ -150,6 +154,12 @@ class ActorSystemDispatchersSpec extends AkkaSpec with ImplicitSender {
       try {
         userGuardianDispatcher(sys) should ===("akka.actor.default-dispatcher")
       } finally shutdown(sys)
+    }
+
+    "provide a good error on an dispatcher alias loop in the config" in {
+      intercept[ConfigurationException] {
+        system.dispatchers.lookup("dispatcher-loop-1")
+      }
     }
 
   }

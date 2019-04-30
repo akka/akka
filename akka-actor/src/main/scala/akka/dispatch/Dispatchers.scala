@@ -64,6 +64,8 @@ object Dispatchers {
    */
   @InternalApi
   private[akka] final val InternalDispatcherId = "akka.actor.internal-dispatcher"
+
+  private val MaxDispatcherAliasDepth = 20
 }
 
 /**
@@ -115,7 +117,7 @@ class Dispatchers @InternalApi private[akka] (
    *
    * Throws ConfigurationException if the specified dispatcher cannot be found in the configuration.
    */
-  def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
+  def lookup(id: String): MessageDispatcher = lookupConfigurator(id, 0).dispatcher()
 
   /**
    * Checks that the configuration provides a section for the given dispatcher.
@@ -125,7 +127,11 @@ class Dispatchers @InternalApi private[akka] (
    */
   def hasDispatcher(id: String): Boolean = dispatcherConfigurators.containsKey(id) || cachingConfig.hasPath(id)
 
-  private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
+  private def lookupConfigurator(id: String, depth: Int): MessageDispatcherConfigurator = {
+    if (depth > MaxDispatcherAliasDepth)
+      throw new ConfigurationException(
+        s"Didn't find a concrete dispatcher config after following $MaxDispatcherAliasDepth, " +
+        s"is there a loop in your config? last looked for id was $id")
     dispatcherConfigurators.get(id) match {
       case null =>
         // It doesn't matter if we create a dispatcher configurator that isn't used due to concurrent lookup.
@@ -142,7 +148,7 @@ class Dispatchers @InternalApi private[akka] (
                 // both under the actual id and the alias id in the 'dispatcherConfigurators' cache
                 val actualId = valueAtPath.unwrapped().asInstanceOf[String]
                 logger.debug("Dispatcher id [{}] is an alias, actual dispatcher will be [{}]", id, actualId)
-                lookupConfigurator(actualId)
+                lookupConfigurator(actualId, depth + 1)
 
               case ConfigValueType.OBJECT =>
                 configuratorFrom(config(id))
