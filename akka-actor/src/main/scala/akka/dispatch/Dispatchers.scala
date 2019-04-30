@@ -53,6 +53,13 @@ object Dispatchers {
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
 
   /**
+   * The id of a default dispatcher to use for operations known to be blocking. Note that
+   * for optimal performance you will want to isolate different blocking resources
+   * on different thread pools.
+   */
+  final val DefaultBlockingDispatcherId: String = "akka.actor.default-blocking-io-dispatcher"
+
+  /**
    * INTERNAL API
    */
   @InternalApi

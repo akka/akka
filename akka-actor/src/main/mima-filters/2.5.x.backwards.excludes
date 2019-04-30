@@ -1,3 +1,5 @@
+# excludes for 2.6
+
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.Inbox$")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.Inbox")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL$")
@@ -13,3 +15,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorRefFactory.a
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.actorFor")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ChildActorPath.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.dungeon.UndefinedUidActorRef")
+
+# Protect internals against starvation #23576
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Dispatchers.this")
