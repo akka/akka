@@ -8,8 +8,13 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
+import akka.annotation.InternalApi
 
-private[akka] object SystemEventStream {
+/**
+ * INTERNAL API
+ * Encapsulates the [[akka.actor.ActorSystem.eventStream]] in a [[Behavior]]
+ */
+@InternalApi private[akka] object SystemEventStream {
 
   private[akka] val behavior: Behavior[EventStream.Command] =
     Behaviors.setup { ctx =>

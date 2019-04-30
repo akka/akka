@@ -2,11 +2,9 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed.internal.eventstream
+package akka.actor.typed.eventstream
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.eventstream.EventStream.Unsubscribe
 import org.scalatest.WordSpecLike
 
 class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
@@ -34,7 +32,7 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "unsubscribe subscribers" in {
-      testKit.system.eventStream ! Unsubscribe(eventObjListener.ref)
+      testKit.system.eventStream ! EventStream.Unsubscribe(eventObjListener.ref)
       testKit.system.eventStream ! EventStream.Publish(EventObj)
       eventObjListener.expectNoMessage()
     }
