@@ -29,10 +29,35 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
-### Switching to Artery
+<a id="classic-to-artery"></a>
+### Migrating from classic remoting to Artery
 
-To switch to Artery a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
-The most likely are. See [migrating from classic remoting to Artery](../remoting-artery.md#migrating-from-classic-remoting)
+Artery has the same functionality as classic remoting and you should normally only have to change the
+configuration to switch.
+To switch a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
+
+Artery defaults to TCP (see @ref:[selected transport](#selecting-a-transport)) which is a good start
+when migrating from classic remoting.
+
+The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`
+has changed from `akka.tcp` to `akka`. If you have configured or hardcoded any such addresses you have to change
+them to `"akka://actorSystemName@10.0.0.1:2552/user/actorName"`. `akka` is used also when TLS is enabled.
+One typical place where such address is used is in the `seed-nodes` configuration.
+
+The configuration is different, so you might have to revisit any custom configuration. See the full
+@ref:[reference configuration for Artery](../general/configuration.md#config-akka-remote-artery) and
+@ref:[reference configuration for classic remoting](../general/configuration.md#config-akka-remote).
+
+Configuration that is likely required to be ported:
+
+* `akka.remote.netty.tcp.hostname` => `akka.remote.artery.canonical.hostname`
+* `akka.remote.netty.tcp.port`=> `akka.remote.artery.canonical.port`
+
+One thing to be aware of is that rolling update from classic remoting to Artery is not supported since the protocol
+is completely different. It will require a full cluster shutdown and new startup.
+
+If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
+for how to do this.
 
 
 ### Migration from 2.5.x Artery to 2.6.x Artery
