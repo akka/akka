@@ -344,12 +344,12 @@ are thereafter delivered to a new incarnation of the entity.
 
 ### Automatic Passivation
 
-The entities can be configured to be automatically passivated if they haven't received
-a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
+The entities are automatically passivated if they haven't received a message within the duration configured in
+`akka.cluster.sharding.passivate-idle-entity-after` 
 or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
 time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity. 
-By default automatic passivation is disabled. 
+to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
+Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
 
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
