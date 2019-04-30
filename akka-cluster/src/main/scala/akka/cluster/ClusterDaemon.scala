@@ -826,33 +826,36 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     logInfo("Exiting completed")
     // ExitingCompleted sent via CoordinatedShutdown to continue the leaving process.
     exitingTasksInProgress = false
-    // mark as seen
-    membershipState = membershipState.seen()
-    assertLatestGossip()
-    publishMembershipState()
+    // status Removed also before joining
+    if (membershipState.selfMember.status != MemberStatus.Removed) {
+      // mark as seen
+      membershipState = membershipState.seen()
+      assertLatestGossip()
+      publishMembershipState()
 
-    // Let others know (best effort) before shutdown. Otherwise they will not see
-    // convergence of the Exiting state until they have detected this node as
-    // unreachable and the required downing has finished. They will still need to detect
-    // unreachable, but Exiting unreachable will be removed without downing, i.e.
-    // normally the leaving of a leader will be graceful without the need
-    // for downing. However, if those final gossip messages never arrive it is
-    // alright to require the downing, because that is probably caused by a
-    // network failure anyway.
-    gossipRandomN(NumberOfGossipsBeforeShutdownWhenLeaderExits)
+      // Let others know (best effort) before shutdown. Otherwise they will not see
+      // convergence of the Exiting state until they have detected this node as
+      // unreachable and the required downing has finished. They will still need to detect
+      // unreachable, but Exiting unreachable will be removed without downing, i.e.
+      // normally the leaving of a leader will be graceful without the need
+      // for downing. However, if those final gossip messages never arrive it is
+      // alright to require the downing, because that is probably caused by a
+      // network failure anyway.
+      gossipRandomN(NumberOfGossipsBeforeShutdownWhenLeaderExits)
 
-    // send ExitingConfirmed to two potential leaders
-    val membersExceptSelf = latestGossip.members.filter(_.uniqueAddress != selfUniqueAddress)
+      // send ExitingConfirmed to two potential leaders
+      val membersExceptSelf = latestGossip.members.filter(_.uniqueAddress != selfUniqueAddress)
 
-    membershipState.leaderOf(membersExceptSelf) match {
-      case Some(node1) =>
-        clusterCore(node1.address) ! ExitingConfirmed(selfUniqueAddress)
-        membershipState.leaderOf(membersExceptSelf.filterNot(_.uniqueAddress == node1)) match {
-          case Some(node2) =>
-            clusterCore(node2.address) ! ExitingConfirmed(selfUniqueAddress)
-          case None => // no more potential leader
-        }
-      case None => // no leader
+      membershipState.leaderOf(membersExceptSelf) match {
+        case Some(node1) =>
+          clusterCore(node1.address) ! ExitingConfirmed(selfUniqueAddress)
+          membershipState.leaderOf(membersExceptSelf.filterNot(_.uniqueAddress == node1)) match {
+            case Some(node2) =>
+              clusterCore(node2.address) ! ExitingConfirmed(selfUniqueAddress)
+            case None => // no more potential leader
+          }
+        case None => // no leader
+      }
     }
 
     shutdown()
