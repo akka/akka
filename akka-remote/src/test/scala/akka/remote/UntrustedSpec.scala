@@ -61,6 +61,7 @@ object UntrustedSpec {
 
 class UntrustedSpec extends AkkaSpec("""
 akka.actor.provider = remote
+akka.remote.warn-about-direct-use = off
 akka.remote.untrusted-mode = on
 akka.remote.trusted-selection-paths = ["/user/receptionist", ]    
 akka.remote.netty.tcp.port = 0
@@ -73,6 +74,7 @@ akka.loglevel = DEBUG # test verifies debug
     "UntrustedSpec-client",
     ConfigFactory.parseString("""
       akka.actor.provider = remote
+      akka.remote.warn-about-direct-use = off
       akka.remote.netty.tcp.port = 0
   """))
   val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress

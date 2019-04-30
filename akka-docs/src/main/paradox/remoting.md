@@ -1,5 +1,19 @@
 # Remoting
 
+@@@ note
+
+Remoting is the mechanism by which Actors on different nodes talk to each
+other internally.
+
+When building an Akka application, you would usually not use the Remoting concepts
+directly, but instead use the more high-level
+@ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
+such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
+[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) etc.
+
+
+@@@
+
 ## Dependency
 
 To use Akka Remoting, you must add the following dependency in your project:
