@@ -83,7 +83,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
     - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
 1. If the code change needs to be applied to other branches as well (for example a bugfix needing to be backported to a previous version), one of the team will either ask you to submit a PR with the same commit to the old branch, or do this for you.
-   - Backport pull requests such as these are marked using the phrase `for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if there are no conflicts).
+   - Follow the [backporting steps](#backporting) below.
 1. Once everything is said and done, your pull request gets merged :tada: Your feature will be available with the next “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release). And of course you will be given credit for the fix in the release stats during the release's announcement. You've made it!
 
 The TL;DR; of the above very precise workflow version is:
@@ -95,6 +95,22 @@ The TL;DR; of the above very precise workflow version is:
 5. Sign the CLA if necessary
 6. Keep polishing it until received enough LGTM
 7. Profit!
+
+### Backporting
+Backport pull requests such as these are marked using the phrase `for validation` in the title to make the purpose clear in the pull request list. 
+They can be merged once validation passes without additional review (if there are no conflicts). 
+Using, for example: current.version 2.5.22, previous.version 2.5, milestone.version 2.6.0-M1    
+1. Label this PR with `to-be-backported`
+1. Mark this PR with Milestone `${milestone.version}`
+1. Mark the issue with Milestone `${current.version}`
+1. `cherry-pick to release-${previous.version}`
+1. `git checkout release-${previous.version}`
+1. `git pull`
+1. `git cherry-pick <commit>`
+1. Open PR, target `release-${previous.version}`
+1. Label that PR with `backport`
+1. Merge backport PR after validation (no need for full PR reviews)
+1. Close issue
 
 ## sbt
 
