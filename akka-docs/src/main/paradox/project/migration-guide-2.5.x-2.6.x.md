@@ -96,3 +96,10 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed. 
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
+
+## Cluster Sharding
+
+### Passivate idle entity
+The configuration `akka.cluster.sharding.passivate-idle-entity-after` is now enabled by default.
+Sharding will passivate entities when they have not received any messages after this duration.
+Set

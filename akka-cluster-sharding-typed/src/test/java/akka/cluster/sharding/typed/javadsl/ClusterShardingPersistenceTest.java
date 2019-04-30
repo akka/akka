@@ -68,10 +68,6 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
   }
 
-  static enum StopPlz implements Command {
-    INSTANCE
-  }
-
   static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
@@ -132,9 +128,8 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
       sharding.init(
           Entity.ofPersistentEntity(
-                  TestPersistentEntity.ENTITY_TYPE_KEY,
-                  entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
-              .withStopMessage(StopPlz.INSTANCE));
+              TestPersistentEntity.ENTITY_TYPE_KEY,
+              entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
 
       _sharding = sharding;
     }
