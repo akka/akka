@@ -6,13 +6,11 @@ package akka.stream.scaladsl
 
 import scala.annotation.unchecked.uncheckedVariance
 
-import akka.annotation.ApiMayChange
 import akka.stream._
 
 /**
  * API MAY CHANGE
  */
-@ApiMayChange
 object SourceWithContext {
 
   /**
@@ -32,7 +30,6 @@ object SourceWithContext {
  *
  * API MAY CHANGE
  */
-@ApiMayChange
 final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Source[(Out, Ctx), Mat])
     extends GraphDelegate(delegate)
     with FlowWithContextOps[Out, Ctx, Mat] {

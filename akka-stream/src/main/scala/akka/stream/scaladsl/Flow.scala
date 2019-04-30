@@ -29,7 +29,7 @@ import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -322,7 +322,6 @@ final class Flow[-In, +Out, +Mat](
    *
    * API MAY CHANGE
    */
-  @ApiMayChange
   def asFlowWithContext[U, CtxU, CtxOut](collapseContext: (U, CtxU) => In)(
       extractContext: Out => CtxOut): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
     new FlowWithContext(

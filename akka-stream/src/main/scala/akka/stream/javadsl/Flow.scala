@@ -20,7 +20,6 @@ import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
-import akka.annotation.ApiMayChange
 import akka.util.unused
 import com.github.ghik.silencer.silent
 
@@ -3404,7 +3403,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * API MAY CHANGE
    */
-  @ApiMayChange
   def asFlowWithContext[U, CtxU, CtxOut](
       collapseContext: function.Function2[U, CtxU, In],
       extractContext: function.Function[Out, CtxOut]): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =

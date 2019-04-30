@@ -4,7 +4,6 @@
 
 package akka.stream.javadsl
 
-import akka.annotation.ApiMayChange
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
 import akka.event.LoggingAdapter
@@ -19,7 +18,6 @@ import scala.compat.java8.FutureConverters._
 /**
  * API MAY CHANGE
  */
-@ApiMayChange
 object FlowWithContext {
 
   def create[In, Ctx](): FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] = {
@@ -50,7 +48,6 @@ object FlowWithContext {
  *
  * API MAY CHANGE
  */
-@ApiMayChange
 final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
     delegate: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat])
     extends GraphDelegate(delegate) {

@@ -4,7 +4,6 @@
 
 package akka.stream.scaladsl
 
-import akka.annotation.ApiMayChange
 import akka.stream.{ SinkRef, SourceRef }
 import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
 import akka.util.OptionVal
@@ -18,7 +17,6 @@ import scala.concurrent.Future
  *
  * Factories for creating stream refs.
  */
-@ApiMayChange
 object StreamRefs {
 
   /**
@@ -29,7 +27,6 @@ object StreamRefs {
    *
    * See more detailed documentation on [[SourceRef]].
    */
-  @ApiMayChange
   def sourceRef[T](): Sink[T, Future[SourceRef[T]]] =
     Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None))
 
@@ -41,7 +38,6 @@ object StreamRefs {
    *
    * See more detailed documentation on [[SinkRef]].
    */
-  @ApiMayChange
   def sinkRef[T](): Source[T, Future[SinkRef[T]]] =
     Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None))
 }

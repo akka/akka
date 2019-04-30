@@ -6,7 +6,6 @@ package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.annotation.ApiMayChange
 import akka.stream._
 
 /**
@@ -16,7 +15,6 @@ import akka.stream._
  *
  * Factories for creating stream refs.
  */
-@ApiMayChange
 object StreamRefs {
   import scala.compat.java8.FutureConverters._
 
@@ -28,7 +26,6 @@ object StreamRefs {
    *
    * See more detailed documentation on [[SourceRef]].
    */
-  @ApiMayChange
   def sourceRef[T](): javadsl.Sink[T, CompletionStage[SourceRef[T]]] =
     scaladsl.StreamRefs.sourceRef[T]().mapMaterializedValue(_.toJava).asJava
 
@@ -40,7 +37,6 @@ object StreamRefs {
    *
    * See more detailed documentation on [[SinkRef]].
    */
-  @ApiMayChange
   def sinkRef[T](): javadsl.Source[T, CompletionStage[SinkRef[T]]] =
     scaladsl.StreamRefs.sinkRef[T]().mapMaterializedValue(_.toJava).asJava
 
