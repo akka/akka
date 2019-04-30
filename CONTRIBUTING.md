@@ -106,6 +106,7 @@ Using, for example: current.version 2.5.22, previous.version 2.5, milestone.vers
 1. `cherry-pick to release-${previous.version}`
 1. `git checkout release-${previous.version}`
 1. `git pull`
+1. Create wip branch
 1. `git cherry-pick <commit>`
 1. Open PR, target `release-${previous.version}`
 1. Label that PR with `backport`
