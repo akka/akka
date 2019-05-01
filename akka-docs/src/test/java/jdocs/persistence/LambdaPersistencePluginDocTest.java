@@ -127,82 +127,83 @@ public class LambdaPersistencePluginDocTest {
     }
   }
 
-  static Object o2 = new Object() {
-        // https://github.com/akka/akka/issues/26826
+  static Object o2 =
+      new Object() {
         // #journal-tck-java
-        // class MyJournalSpecTest extends JavaJournalSpec {
+        class MyJournalSpecTest extends JavaJournalSpec {
 
-        //   public MyJournalSpecTest() {
-        //     super(
-        //         ConfigFactory.parseString(
-        //             "persistence.journal.plugin = "
-        //                 + "\"akka.persistence.journal.leveldb-shared\""));
-        //   }
+          public MyJournalSpecTest() {
+            super(
+                ConfigFactory.parseString(
+                    "persistence.journal.plugin = "
+                        + "\"akka.persistence.journal.leveldb-shared\""));
+          }
 
-        //   @Override
-        //   public CapabilityFlag supportsRejectingNonSerializableObjects() {
-        //     return CapabilityFlag.off();
-        //   }
-        // }
+          @Override
+          public CapabilityFlag supportsRejectingNonSerializableObjects() {
+            return CapabilityFlag.off();
+          }
+        }
         // #journal-tck-java
       };
 
-  static Object o3 = new Object() {
-        // https://github.com/akka/akka/issues/26826
+  static Object o3 =
+      new Object() {
         // #snapshot-store-tck-java
-        // class MySnapshotStoreTest extends JavaSnapshotStoreSpec {
+        class MySnapshotStoreTest extends JavaSnapshotStoreSpec {
 
-        //   public MySnapshotStoreTest() {
-        //     super(
-        //         ConfigFactory.parseString(
-        //             "akka.persistence.snapshot-store.plugin = "
-        //                 + "\"akka.persistence.snapshot-store.local\""));
-        //   }
-        // }
+          public MySnapshotStoreTest() {
+            super(
+                ConfigFactory.parseString(
+                    "akka.persistence.snapshot-store.plugin = "
+                        + "\"akka.persistence.snapshot-store.local\""));
+          }
+        }
         // #snapshot-store-tck-java
       };
 
-  static Object o4 = new Object() {
+  static Object o4 =
+      new Object() {
         // https://github.com/akka/akka/issues/26826
         // #journal-tck-before-after-java
-        // class MyJournalSpecTest extends JavaJournalSpec {
+        class MyJournalSpecTest extends JavaJournalSpec {
 
-        //   List<File> storageLocations = new ArrayList<File>();
+          List<File> storageLocations = new ArrayList<File>();
 
-        //   public MyJournalSpecTest() {
-        //     super(
-        //         ConfigFactory.parseString(
-        //             "persistence.journal.plugin = "
-        //                 + "\"akka.persistence.journal.leveldb-shared\""));
+          public MyJournalSpecTest() {
+            super(
+                ConfigFactory.parseString(
+                    "persistence.journal.plugin = "
+                        + "\"akka.persistence.journal.leveldb-shared\""));
 
-        //     Config config = system().settings().config();
-        //     storageLocations.add(
-        //         new File(config.getString("akka.persistence.journal.leveldb.dir")));
-        //     storageLocations.add(
-        //         new File(config.getString("akka.persistence.snapshot-store.local.dir")));
-        //   }
+            Config config = system().settings().config();
+            storageLocations.add(
+                new File(config.getString("akka.persistence.journal.leveldb.dir")));
+            storageLocations.add(
+                new File(config.getString("akka.persistence.snapshot-store.local.dir")));
+          }
 
-        //   @Override
-        //   public CapabilityFlag supportsRejectingNonSerializableObjects() {
-        //     return CapabilityFlag.on();
-        //   }
+          @Override
+          public CapabilityFlag supportsRejectingNonSerializableObjects() {
+            return CapabilityFlag.on();
+          }
 
-        //   @Override
-        //   public void beforeAll() {
-        //     for (File storageLocation : storageLocations) {
-        //       FileUtils.deleteRecursively(storageLocation);
-        //     }
-        //     super.beforeAll();
-        //   }
+          @Override
+          public void beforeAll() {
+            for (File storageLocation : storageLocations) {
+              FileUtils.deleteRecursively(storageLocation);
+            }
+            super.beforeAll();
+          }
 
-        //   @Override
-        //   public void afterAll() {
-        //     super.afterAll();
-        //     for (File storageLocation : storageLocations) {
-        //       FileUtils.deleteRecursively(storageLocation);
-        //     }
-        //   }
-        // }
+          @Override
+          public void afterAll() {
+            super.afterAll();
+            for (File storageLocation : storageLocations) {
+              FileUtils.deleteRecursively(storageLocation);
+            }
+          }
+        }
         // #journal-tck-before-after-java
       };
 }
