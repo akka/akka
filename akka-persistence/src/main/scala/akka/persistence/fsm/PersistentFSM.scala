@@ -483,8 +483,10 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
    */
   def domainEventClass: Class[E]
 
+  // FIXME workaround, possibly for https://github.com/scala/bug/issues/11512
   override def receive: Receive = super.receive
 
+  // FIXME workaround, possibly for https://github.com/scala/bug/issues/11512
   @throws[Exception]
   override def postStop(): Unit = super.postStop()
 }
