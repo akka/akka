@@ -2,15 +2,17 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.testkit._
-import scala.concurrent._
 import akka.actor.Address
-import akka.remote.transport.Transport._
-import akka.remote.transport.TestTransport._
-import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
+import akka.remote.transport.TestTransport._
+import akka.remote.transport.Transport._
+import akka.remote.transport.{ AssociationHandle, TestTransport }
+import akka.testkit._
+import akka.util.ByteString
+
+import scala.concurrent._
 
 class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 

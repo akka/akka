@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
@@ -26,12 +26,13 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
         actor {
           provider = remote
         }
+        remote.artery.enabled = false
         remote {
-          enabled-transports = ["akka.remote.netty.tcp"]
-            netty.tcp {
-              hostname = "192.0.2.1"
-              port = 12344
-            }
+          enabled-transports = ["akka.remote.classic.netty.tcp"]
+          classic.netty.tcp {
+            hostname = "192.0.2.1"
+            port = 12344
+          }
         }
       }
     """).resolve()

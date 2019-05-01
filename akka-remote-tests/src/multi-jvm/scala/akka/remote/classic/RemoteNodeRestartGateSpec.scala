@@ -2,21 +2,19 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import akka.remote.transport.AssociationHandle
-
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.actor._
+import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
 import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
-import akka.actor.ActorIdentity
-import akka.remote.testconductor.RoleName
-import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object RemoteNodeRestartGateSpec extends MultiNodeConfig {
   val first = role("first")
@@ -25,9 +23,10 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
+      akka.remote.artery.enabled = off
       akka.loglevel = INFO
-      akka.remote.log-remote-lifecycle-events = INFO
-      akka.remote.retry-gate-closed-for  = 1d # Keep it long
+      akka.remote.classic.log-remote-lifecycle-events = INFO
+      akka.remote.classic.retry-gate-closed-for  = 1d # Keep it long
                               """)))
 
   testTransport(on = true)
@@ -100,7 +99,7 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
           system.name,
           ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s
-                    akka.remote.netty.tcp {
+                    akka.remote.classic.netty.tcp {
                       hostname = ${address.host.get}
                       port = ${address.port.get}
                     }

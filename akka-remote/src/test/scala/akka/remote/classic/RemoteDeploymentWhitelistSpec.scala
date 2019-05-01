@@ -2,15 +2,17 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
 import akka.actor._
+import akka.remote.EndpointException
 import akka.remote.transport._
 import akka.testkit._
 import com.typesafe.config._
 
 import scala.concurrent.duration._
 
+// relies on test transport
 object RemoteDeploymentWhitelistSpec {
 
   class EchoWhitelisted extends Actor {
@@ -54,16 +56,22 @@ object RemoteDeploymentWhitelistSpec {
       actor.provider = remote
 
       remote {
-        enabled-transports = [
+        classic.enabled-transports = [
           "akka.remote.test",
-          "akka.remote.netty.tcp"
+          "akka.remote.classic.netty.tcp"
         ]
-
-        netty.tcp = {
-          port = 0
-          hostname = "localhost"
+        
+        classic {
+          netty.tcp = {
+            port = 0
+            hostname = "localhost"
+          }
         }
-
+        
+        artery {
+          enabled = off
+        }
+      
         test {
           transport-class = "akka.remote.transport.TestTransport"
           applied-adapters = []
@@ -99,6 +107,7 @@ class RemoteDeploymentWhitelistSpec
 
   val conf =
     ConfigFactory.parseString("""
+      akka.loglevel = DEBUG
       akka.remote.test {
         local-address = "test://remote-sys@localhost:12346"
         maximum-payload-bytes = 48000 bytes
@@ -110,7 +119,7 @@ class RemoteDeploymentWhitelistSpec
         
         whitelist = [
           "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
-          "akka.remote.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
+          "akka.remote.classic.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
         ]
       }
       //#whitelist-config

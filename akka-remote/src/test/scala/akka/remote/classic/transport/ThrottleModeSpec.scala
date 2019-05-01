@@ -2,11 +2,12 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.testkit.AkkaSpec
-import akka.remote.transport.ThrottlerTransportAdapter.{ TokenBucket, Unthrottled }
 import java.util.concurrent.TimeUnit
+
+import akka.remote.transport.ThrottlerTransportAdapter.{ TokenBucket, Unthrottled }
+import akka.testkit.AkkaSpec
 
 class ThrottleModeSpec extends AkkaSpec {
 

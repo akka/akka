@@ -14,7 +14,7 @@ import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
 class RemoteConfigSpec extends AkkaSpec("""
     akka.actor.provider = remote
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
   """) {
 
   "Remoting" should {
@@ -59,7 +59,7 @@ class RemoteConfigSpec extends AkkaSpec("""
       WatchFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should ===(10 seconds)
       WatchFailureDetectorConfig.getMillisDuration("min-std-deviation") should ===(100 millis)
 
-      remoteSettings.config.getString("akka.remote.log-frame-size-exceeding") should ===("off")
+      remoteSettings.config.getString("akka.remote.classic.log-frame-size-exceeding") should ===("off")
     }
 
     "be able to parse AkkaProtocol related config elements" in {
@@ -76,7 +76,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "contain correct netty.tcp values in reference.conf" in {
-      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.classic.netty.tcp")
       val s = new NettyTransportSettings(c)
       import s._
 
@@ -100,7 +100,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "contain correct socket worker pool configuration values in reference.conf" in {
-      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.classic.netty.tcp")
 
       // server-socket-worker-pool
       {
@@ -122,7 +122,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "contain correct ssl configuration values in reference.conf" in {
-      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
+      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.classic.netty.ssl.security"))
       sslSettings.SSLKeyStore should ===("keystore")
       sslSettings.SSLKeyStorePassword should ===("changeme")
       sslSettings.SSLKeyPassword should ===("changeme")
@@ -134,7 +134,7 @@ class RemoteConfigSpec extends AkkaSpec("""
     }
 
     "have debug logging of the failure injector turned off in reference.conf" in {
-      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.gremlin")
+      val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.classic.gremlin")
       c.getBoolean("debug") should ===(false)
     }
   }

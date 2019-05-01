@@ -2,17 +2,17 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
-import com.typesafe.config.{ Config, ConfigFactory }
-import AkkaProtocolStressTest._
 import akka.actor._
-import scala.concurrent.duration._
-import akka.testkit._
-import akka.remote.{ EndpointException, RARP }
+import akka.remote.classic.transport.AkkaProtocolStressTest._
 import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
+import akka.remote.{ EndpointException, RARP }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest, _ }
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object AkkaProtocolStressTest {
   val configA: Config =
@@ -21,10 +21,11 @@ object AkkaProtocolStressTest {
       #loglevel = DEBUG
       actor.serialize-messages = off
       actor.provider = remote
+      remote.artery.enabled = off
 
-      remote.log-remote-lifecycle-events = on
+      remote.classic.log-remote-lifecycle-events = on
 
-      remote.transport-failure-detector {
+      remote.classic.transport-failure-detector {
         max-sample-size = 2
         min-std-deviation = 1 ms
         ## We want lots of lost connections in this test, keep it sensitive
@@ -32,9 +33,9 @@ object AkkaProtocolStressTest {
         acceptable-heartbeat-pause = 1 s
       }
       ## Keep gate duration in this test for a low value otherwise too much messages are dropped
-      remote.retry-gate-closed-for = 100 ms
+      remote.classic.retry-gate-closed-for = 100 ms
 
-      remote.netty.tcp {
+      remote.classic.netty.tcp {
         applied-adapters = ["gremlin"]
         port = 0
       }

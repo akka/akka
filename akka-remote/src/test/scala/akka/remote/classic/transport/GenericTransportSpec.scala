@@ -2,20 +2,24 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
 import akka.actor.{ Address, ExtendedActorSystem }
+import akka.remote.RemoteActorRefProvider
 import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
-import akka.remote.transport.TestTransport._
+import akka.remote.transport.TestTransport.{ AssociateAttempt, DisassociateAttempt, ListenAttempt, WriteAttempt, _ }
 import akka.remote.transport.Transport._
+import akka.remote.transport.{ AssociationRegistry => _, _ }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.util.ByteString
+
 import scala.concurrent.{ Await, Future }
-import akka.remote.RemoteActorRefProvider
-import akka.remote.transport.TestTransport.{ AssociateAttempt, DisassociateAttempt, ListenAttempt, WriteAttempt }
 
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
-    extends AkkaSpec("""akka.actor.provider = remote """)
+    extends AkkaSpec("""
+         akka.remote.artery.enabled = false
+         akka.actor.provider = remote 
+      """)
     with DefaultTimeout
     with ImplicitSender {
 

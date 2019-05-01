@@ -124,13 +124,13 @@ private[remote] class ArteryTcpTransport(
         Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
-          connectTimeout = settings.Advanced.ConnectionTimeout,
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)))
       } else {
         Tcp().outgoingConnection(
           remoteAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-          connectTimeout = settings.Advanced.ConnectionTimeout)
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout)
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {

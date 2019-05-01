@@ -2,15 +2,16 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
 import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.actor.dungeon.ChildrenContainer
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociate
-import akka.testkit._
+import akka.remote.{ AddressUidExtension, RARP }
 import akka.testkit.TestActors.EchoActor
+import akka.testkit._
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
@@ -21,15 +22,15 @@ import scala.concurrent.duration._
 object ActorsLeakSpec {
 
   val config = ConfigFactory.parseString("""
-      | akka.actor.provider = remote
-      | akka.remote.netty.tcp.applied-adapters = ["trttl"]
-      | #akka.remote.log-lifecycle-events = on
-      | akka.remote.transport-failure-detector.heartbeat-interval = 1 s
-      | akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
-      | akka.remote.quarantine-after-silence = 3 s
-      | akka.test.filter-leeway = 12 s
-      |
-      |""".stripMargin)
+       akka.actor.provider = remote
+       akka.remote.artery.enabled = false
+       akka.remote.classic.netty.tcp.applied-adapters = ["trttl"]
+       #akka.remote.log-lifecycle-events = on
+       akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+       akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+       akka.remote.classic.quarantine-after-silence = 3 s
+       akka.test.filter-leeway = 12 s
+      """)
 
   def collectLiveActors(root: Option[ActorRef]): immutable.Seq[ActorRef] = {
 
@@ -84,7 +85,9 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       for (_ <- 1 to 3) {
 
         val remoteSystem =
-          ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 0").withFallback(config))
+          ActorSystem(
+            "remote",
+            ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 0").withFallback(config))
 
         try {
           val probe = TestProbe()(remoteSystem)
@@ -103,7 +106,12 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       for (_ <- 1 to 3) {
         //always use the same address
         val remoteSystem =
-          ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 2553").withFallback(config))
+          ActorSystem(
+            "remote",
+            ConfigFactory.parseString("""
+                akka.remote.artery.enabled = false
+                akka.remote.classic.netty.tcp.port = 2553
+              """.stripMargin).withFallback(config))
 
         try {
           val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
@@ -142,7 +150,12 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       for (_ <- 1 to 3) {
 
         val remoteSystem =
-          ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 0").withFallback(config))
+          ActorSystem(
+            "remote",
+            ConfigFactory.parseString("""
+                 akka.remote.artery.enabled = off
+                 akka.remote.classic.netty.tcp.port = 0
+              """.stripMargin).withFallback(config))
         val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
         try {
@@ -165,7 +178,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
 
       // Remote idle for too long case
       val remoteSystem =
-        ActorSystem("remote", ConfigFactory.parseString("akka.remote.netty.tcp.port = 0").withFallback(config))
+        ActorSystem("remote", ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 0").withFallback(config))
       val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
       remoteSystem.actorOf(Props[StoppableActor], "stoppable")

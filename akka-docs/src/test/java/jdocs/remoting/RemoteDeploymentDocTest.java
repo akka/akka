@@ -72,7 +72,7 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateProgrammaticConfig() {
     // #programmatic
-    ConfigFactory.parseString("akka.remote.netty.tcp.hostname=\"1.2.3.4\"")
+    ConfigFactory.parseString("akka.remote.classic.netty.tcp.hostname=\"1.2.3.4\"")
         .withFallback(ConfigFactory.load());
     // #programmatic
 

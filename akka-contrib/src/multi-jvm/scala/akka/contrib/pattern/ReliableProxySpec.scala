@@ -19,10 +19,15 @@ import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
 import akka.actor.ActorIdentity
 import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
 
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")
   val remote = role("remote")
+
+  commonConfig(ConfigFactory.parseString("""
+     akka.remote.artery.enabled = false 
+    """))
 
   testTransport(on = true)
 }

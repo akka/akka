@@ -2,33 +2,34 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
-import ThrottlerTransportAdapterSpec._
-import scala.concurrent.duration._
-import scala.concurrent.Await
+import akka.remote.classic.transport.ThrottlerTransportAdapterSpec._
 import akka.remote.transport.ThrottlerTransportAdapter._
-import akka.remote.RemoteActorRefProvider
-import akka.testkit.TestEvent
-import akka.testkit.EventFilter
-import akka.remote.EndpointException
+import akka.remote.transport.{ TestTransport, ThrottlerTransportAdapter }
+import akka.remote.{ EndpointException, RemoteActorRefProvider }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object ThrottlerTransportAdapterSpec {
-  val configA: Config = ConfigFactory.parseString("""
+  val configA: Config =
+    ConfigFactory.parseString("""
     akka {
       actor.provider = remote
 
-      remote.netty.tcp.hostname = "localhost"
+      remote.artery.enabled = off
+      remote.classic.netty.tcp.hostname = "localhost"
       remote.log-remote-lifecycle-events = off
       remote.retry-gate-closed-for = 1 s
-      remote.transport-failure-detector.heartbeat-interval = 1 s
-      remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+      remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+      remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
 
-      remote.netty.tcp.applied-adapters = ["trttl"]
-      remote.netty.tcp.port = 0
+      remote.classic.netty.tcp.applied-adapters = ["trttl"]
+      remote.classic.netty.tcp.port = 0
     }
                                                    """)
 

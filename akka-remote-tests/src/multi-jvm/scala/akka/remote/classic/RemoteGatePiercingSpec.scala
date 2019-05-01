@@ -2,37 +2,36 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import akka.remote.transport.AssociationHandle
-
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.actor._
+import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
 import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
-import akka.actor.ActorIdentity
-import akka.remote.testconductor.RoleName
-import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object RemoteGatePiercingSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
   commonConfig(
-    debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
+    debugConfig(on = false).withFallback(
+      ConfigFactory.parseString("""
       akka.loglevel = INFO
-      akka.remote.log-remote-lifecycle-events = INFO
-      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 5 s
+      akka.remote.artery.enabled = false
+      akka.remote.classic.log-remote-lifecycle-events = INFO
+      akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 5 s
     """)))
 
-  nodeConfig(first)(ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 d # Keep it long"))
+  nodeConfig(first)(ConfigFactory.parseString("akka.remote.classic.retry-gate-closed-for  = 1 d # Keep it long"))
 
-  nodeConfig(second)(ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 s # Keep it short"))
+  nodeConfig(second)(ConfigFactory.parseString("akka.remote.classic.retry-gate-closed-for  = 1 s # Keep it short"))
 
   testTransport(on = true)
 

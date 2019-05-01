@@ -2,32 +2,19 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.transport
+package akka.remote.classic.transport
 
-import akka.remote.transport.ThrottlerTransportAdapter._
-import akka.testkit.TimingTest
-import akka.testkit.DefaultTimeout
-import akka.testkit.ImplicitSender
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor._
-import scala.concurrent.duration._
-import akka.testkit._
-import akka.remote.{ EndpointException, QuarantinedEvent, RARP }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
-import scala.concurrent.Await
-import akka.actor.ActorRef
-import akka.actor.Actor
-import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.actor.ExtendedActorSystem
-import akka.actor.RootActorPath
-import akka.remote.transport.FailureInjectorTransportAdapter.One
-import akka.remote.transport.FailureInjectorTransportAdapter.Drop
-import akka.testkit.TestEvent
-import akka.testkit.EventFilter
+import akka.actor.{ Actor, ActorRef, ActorSystem, ExtendedActorSystem, Props, RootActorPath, _ }
 import akka.dispatch.sysmsg.{ Failed, SystemMessage }
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
+import akka.remote.transport.ThrottlerTransportAdapter._
+import akka.remote.{ EndpointException, QuarantinedEvent, RARP }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest, _ }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object SystemMessageDeliveryStressTest {
   val msgCount = 5000
@@ -37,23 +24,28 @@ object SystemMessageDeliveryStressTest {
   val baseConfig: Config = ConfigFactory.parseString(s"""
     akka {
       #loglevel = DEBUG
+      remote.artery.enabled = false
       actor.provider = remote
       actor.serialize-messages = off
 
-      remote.log-remote-lifecycle-events = on
-
-      remote.transport-failure-detector {
-        heartbeat-interval = 1 s
-        acceptable-heartbeat-pause = 5 s
+      remote.classic {
+        log-remote-lifecycle-events = on
+        system-message-buffer-size = $msgCount
+        resend-interval = 2 s
+        use-passive-connections = on
+        initial-system-message-delivery-timeout = 10 m
+        ## Keep this setting tight, otherwise the test takes a long time or times out
+        system-message-ack-piggyback-timeout = 100 ms // Force heavy Ack traffic
+        
+        transport-failure-detector {
+          heartbeat-interval = 1 s
+          acceptable-heartbeat-pause = 5 s
+       }
       }
-      remote.system-message-buffer-size = $msgCount
-      ## Keep this setting tight, otherwise the test takes a long time or times out
-      remote.resend-interval = 2 s
-      remote.system-message-ack-piggyback-timeout = 100 ms // Force heavy Ack traffic
-      remote.initial-system-message-delivery-timeout = 10 m
-      remote.use-passive-connections = on
 
-      remote.netty.tcp {
+      
+
+      remote.classic.netty.tcp {
         applied-adapters = ["gremlin", "trttl"]
         port = 0
       }
@@ -196,9 +188,11 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
 }
 
 class SystemMessageDeliveryRetryGate
-    extends SystemMessageDeliveryStressTest("passive connections on", "akka.remote.retry-gate-closed-for = 0.5 s")
+    extends SystemMessageDeliveryStressTest(
+      "passive connections on",
+      """akka.remote.classic.retry-gate-closed-for = 0.5 s""")
 class SystemMessageDeliveryNoPassiveRetryGate
     extends SystemMessageDeliveryStressTest("passive connections off", """
-    akka.remote.use-passive-connections = off
-    akka.remote.retry-gate-closed-for = 0.5 s
+    akka.remote.classic.use-passive-connections = off
+    akka.remote.classic.retry-gate-closed-for = 0.5 s
   """)

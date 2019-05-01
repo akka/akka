@@ -2,13 +2,15 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote
+package akka.remote.classic
 
-import language.postfixOps
-import scala.concurrent.duration._
-import akka.testkit._
 import akka.actor._
+import akka.remote._
+import akka.testkit._
 import com.github.ghik.silencer.silent
+
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object RemoteWatcherSpec {
 
@@ -69,14 +71,15 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
        loglevel = INFO
        log-dead-letters-during-shutdown = false
        actor.provider = remote
-       remote.netty.tcp {
+       remote.classic.netty.tcp {
          hostname = localhost
          port = 0
        }
+       remote.artery.enabled = off
      }""") with ImplicitSender {
 
-  import RemoteWatcherSpec._
   import RemoteWatcher._
+  import RemoteWatcherSpec._
 
   override def expectedTestDuration = 2.minutes
 
