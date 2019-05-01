@@ -4,70 +4,47 @@
 
 package akka.stream.io
 
-import java.io.InputStream
+import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
 import akka.Done
+import akka.stream.impl.io.DownstreamFinishedException
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOResult }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException, IOResult }
 import akka.util.ByteString
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
+import scala.util.Success
 
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  private def inputStreamFor(bytes: List[Byte]): InputStream =
-    new InputStream {
-      @volatile var buf = bytes.map(_.toInt)
-
-      override def read(): Int = {
-        buf match {
-          case head :: tail =>
-            buf = tail
-            head
-          case Nil =>
-            -1
-        }
-
-      }
-    }
+  private def inputStreamFor(bytes: Array[Byte]): InputStream =
+    new ByteArrayInputStream(bytes)
 
   "InputStream Source" must {
 
-    "not signal when no demand" in {
-      val f = StreamConverters.fromInputStream(() =>
-        new InputStream {
-          override def read(): Int = 42
-        })
-
-      Await.result(f.takeWithin(1.seconds).runForeach(it => ()), 2.seconds)
-    }
-
     "read bytes from InputStream" in assertAllStagesStopped {
       val f =
-        StreamConverters.fromInputStream(() => inputStreamFor(List('a', 'b', 'c').map(_.toByte))).runWith(Sink.head)
+        StreamConverters.fromInputStream(() => inputStreamFor(Array('a', 'b', 'c').map(_.toByte))).runWith(Sink.head)
 
       f.futureValue should ===(ByteString("abc"))
     }
 
     "record number of bytes read" in assertAllStagesStopped {
       StreamConverters
-        .fromInputStream(() => inputStreamFor(List(1, 2, 3)))
+        .fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
         .toMat(Sink.ignore)(Keep.left)
         .run
         .futureValue shouldEqual IOResult(3, Success(Done))
     }
 
-    "return IOResult with failure if close fails" in {
+    "return fail if close fails" in assertAllStagesStopped {
       val fail = new RuntimeException("oh dear")
       StreamConverters
         .fromInputStream(() =>
@@ -77,18 +54,42 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           })
         .toMat(Sink.ignore)(Keep.left)
         .run
-        .futureValue shouldEqual IOResult(0, Failure(fail))
+        .failed
+        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
     }
 
-    "return IOResult with failire if creation fails" in {
+    "return failure if creation fails" in {
       val fail = new RuntimeException("oh dear indeed")
-      val f = StreamConverters
+      StreamConverters
         .fromInputStream(() => {
           throw fail
         })
         .toMat(Sink.ignore)(Keep.left)
         .run
-      f.futureValue shouldEqual IOResult(0, Failure(fail))
+        .failed
+        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+    }
+
+    "handle failure on read" in assertAllStagesStopped {
+      val fail = new RuntimeException("oh dear indeed")
+      StreamConverters
+        .fromInputStream(() => () => throw fail)
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .failed
+        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+    }
+
+    "fail materialized value if downstream doesn't read all of it" in {
+      StreamConverters
+        .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
+        .take(1) // stream is not completely read
+        .log("cats")
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .failed
+        .futureValue
+        .getCause shouldEqual DownstreamFinishedException()
     }
 
     "emit as soon as read" in assertAllStagesStopped {

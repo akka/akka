@@ -11,7 +11,7 @@ import java.util.stream.{ Collector, StreamSupport }
 import akka.stream.{ Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.io.{ InputStreamGraphStage, InputStreamSinkStage, OutputStreamSink, OutputStreamSourceStage }
+import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamSink, OutputStreamSourceStage }
 import akka.util.ByteString
 
 import scala.concurrent.duration.Duration._
@@ -45,7 +45,7 @@ object StreamConverters {
    * @param chunkSize the size of each read operation, defaults to 8192
    */
   def fromInputStream(in: () => InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] = {
-    Source.fromGraph(new InputStreamGraphStage(in, chunkSize))
+    Source.fromGraph(new InputStreamSource(in, chunkSize))
   }
 
   /**

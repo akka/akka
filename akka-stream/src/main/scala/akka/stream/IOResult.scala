@@ -5,6 +5,7 @@
 package akka.stream
 
 import akka.Done
+import com.github.ghik.silencer.silent
 
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
@@ -15,9 +16,14 @@ import scala.util.{ Failure, Success, Try }
  * @param count Numeric value depending on context, for example IO operations performed or bytes processed.
  * @param status Status of the result. Can be either [[akka.Done]] or an exception.
  */
-final case class IOResult(count: Long, status: Try[Done]) {
+@silent // deprecated success
+final case class IOResult(
+    count: Long,
+    @deprecated("status is always set to Success(Done)", "2.6.0") status: Try[Done]) {
 
   def withCount(value: Long): IOResult = copy(count = value)
+
+  @deprecated("status is always set to Success(Done)", "2.6.0")
   def withStatus(value: Try[Done]): IOResult = copy(status = value)
 
   /**
@@ -28,12 +34,14 @@ final case class IOResult(count: Long, status: Try[Done]) {
   /**
    * Java API: Indicates whether IO operation completed successfully or not.
    */
+  @deprecated("status is always set to Success(Done)", "2.6.0")
   def wasSuccessful: Boolean = status.isSuccess
 
   /**
    * Java API: If the IO operation resulted in an error, returns the corresponding [[Throwable]]
    * or throws [[UnsupportedOperationException]] otherwise.
    */
+  @deprecated("status is always set to Success(Done)", "2.6.0")
   def getError: Throwable = status match {
     case Failure(t) => t
     case Success(_) => throw new UnsupportedOperationException("IO operation was successful.")
@@ -42,6 +50,8 @@ final case class IOResult(count: Long, status: Try[Done]) {
 }
 
 object IOResult {
+
+  def apply(count: Long): IOResult = IOResult(count, Success(Done))
 
   /** JAVA API: Creates successful IOResult */
   def createSuccessful(count: Long): IOResult =
@@ -56,6 +66,18 @@ object IOResult {
  * This exception signals that a stream has been completed by an onError signal
  * while there was still IO operations in progress.
  */
+@deprecated("use IOOperationIncompleteException", "2.6.0")
 final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwable)
     extends RuntimeException("Stream terminated without completing IO operation.", cause)
+    with NoStackTrace
+
+/**
+ * This exception signals that a stream has been completed or has an error while
+ * there was still IO operations in progress
+ *
+ * @param count The number of bytes read/written up until the error
+ * @param cause cause
+ */
+final case class IOOperationIncompleteException(count: Long, cause: Throwable)
+    extends RuntimeException(cause)
     with NoStackTrace
