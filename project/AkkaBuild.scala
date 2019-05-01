@@ -112,8 +112,7 @@ object AkkaBuild {
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
   } ++ Seq(
-    pomIncludeRepository := (_ => false), // do not leak internal repositories during staging
-    resolvers += "java8 compat staging" at "https://oss.sonatype.org/content/repositories/orgscala-lang-1731"
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
