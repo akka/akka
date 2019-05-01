@@ -248,9 +248,7 @@ private[akka] class AffinityPool(
   override def toString: String =
     s"${Logging.simpleName(this)}(id = $id, parallelism = $parallelism, affinityGroupSize = $affinityGroupSize, threadFactory = $threadFactory, idleCpuLevel = $idleCpuLevel, queueSelector = $queueSelector, rejectionHandler = $rejectionHandler)"
 
-  private[this] final class AffinityPoolWorker(
-      val q: BoundedAffinityTaskQueue,
-      val idleStrategy: IdleStrategy)
+  private[this] final class AffinityPoolWorker(val q: BoundedAffinityTaskQueue, val idleStrategy: IdleStrategy)
       extends Runnable {
     val thread: Thread = threadFactory.newThread(this)
 
