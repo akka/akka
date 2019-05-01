@@ -19,8 +19,12 @@ class PNCounterMapSpec extends WordSpec with Matchers {
 
     "be able to increment and decrement entries with implicit SelfUniqueAddress" in {
       implicit val node = SelfUniqueAddress(node1)
-      PNCounterMap().incrementBy("a", 2).incrementBy("b", 1).incrementBy("b", 2).decrementBy("a", 1).entries should be(
-        Map("a" -> 1, "b" -> 3))
+      PNCounterMap[String]()
+        .incrementBy("a", 2)
+        .incrementBy("b", 1)
+        .incrementBy("b", 2)
+        .decrementBy("a", 1)
+        .entries should be(Map("a" -> 1, "b" -> 3))
     }
 
     "be able to increment and decrement entries" in {
