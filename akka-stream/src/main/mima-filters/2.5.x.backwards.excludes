@@ -63,6 +63,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
 
 #26187 - Re-write ActorPublisher/Subscribers as GraphStages
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamSource.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.InputStreamSource")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamSource")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$Continue$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher")
