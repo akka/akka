@@ -221,7 +221,10 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       .getOrElse(conf)
   }
 
-  private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
+  private def initPhaseActorSystemTerminate(
+      system: ExtendedActorSystem,
+      conf: Config,
+      coord: CoordinatedShutdown): Unit = {
     coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () =>
       val confForReason = confWithOverrides(conf, coord.shutdownReason())
       val terminateActorSystem = confForReason.getBoolean("terminate-actor-system")
@@ -245,12 +248,11 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       }
 
       if (terminateActorSystem) {
-        system
-          .terminate()
-          .map { _ =>
-            if (exitJvm && !runningJvmHook) System.exit(exitCode)
-            Done
-          }(ExecutionContexts.sameThreadExecutionContext)
+        system.finalTerminate()
+        system.whenTerminated.map { _ =>
+          if (exitJvm && !runningJvmHook) System.exit(exitCode)
+          Done
+        }(ExecutionContexts.sameThreadExecutionContext)
       } else if (exitJvm) {
         System.exit(exitCode)
         Future.successful(Done)

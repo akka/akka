@@ -21,6 +21,7 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Pr
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ ControlThrowable, NonFatal }
 import java.util.Optional
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
@@ -695,6 +696,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
    */
   private[akka] def printTree: String
 
+  /**
+   * INTERNAL API: final step of `terminate()`
+   */
+  @InternalApi private[akka] def finalTerminate(): Unit
+
 }
 
 /**
@@ -719,6 +725,8 @@ private[akka] class ActorSystemImpl(
 
   @volatile private var logDeadLetterListener: Option[ActorRef] = None
   final val settings: Settings = new Settings(classLoader, applicationConfig, name, setup)
+
+  private val terminating = new AtomicBoolean(false)
 
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
     new Thread.UncaughtExceptionHandler() {
@@ -949,24 +957,39 @@ private[akka] class ActorSystemImpl(
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {
-    val coordinatedShutdown = CoordinatedShutdown(this)
-    if (settings.CoordinatedShutdownRunByActorSystemTerminate &&
-        coordinatedShutdown.shutdownReason().isEmpty && !aborting) {
+    if (terminating.compareAndSet(false, true)) {
+      val coordinatedShutdown = CoordinatedShutdown(this)
+      if (settings.CoordinatedShutdownRunByActorSystemTerminate &&
+          coordinatedShutdown.shutdownReason().isEmpty && !aborting) {
 
-      if (!settings.CoordinatedShutdownTerminateActorSystem) {
-        // Configured to not terminate ActorSystem from CoordinatedShutdown, but now it's an explicit call
-        // to ActorSystem.terminate so adding that task so that the ActorSystem is terminated at the end of
-        // the CoordinatedShutdown phases.
-        coordinatedShutdown.addTask(PhaseActorSystemTerminate, "terminate-actor-system") { () =>
-          terminate().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+        if (!settings.CoordinatedShutdownTerminateActorSystem) {
+          // Configured to not terminate ActorSystem from CoordinatedShutdown, but now it's an explicit call
+          // to ActorSystem.terminate so adding that task so that the ActorSystem.finalTerminate is called at the end of
+          // the CoordinatedShutdown phases.
+          coordinatedShutdown.addTask(PhaseActorSystemTerminate, "terminate-actor-system") { () =>
+            finalTerminate()
+            whenTerminated.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+          }
         }
+
+        if (!settings.CoordinatedShutdownTerminateActorSystem && coordinatedShutdown.shutdownReason().nonEmpty) {
+          // another thread has started CoordinatedShutdown and then it's not certain that the task added above
+          // made it and will be run, only safe option is to call finalTerminate() right away
+          finalTerminate()
+        } else
+          coordinatedShutdown.run(CoordinatedShutdown.ActorSystemTerminateReason)
+
+      } else {
+        finalTerminate()
       }
-      coordinatedShutdown.run(CoordinatedShutdown.ActorSystemTerminateReason)
-    } else {
-      if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
-      guardian.stop()
     }
     whenTerminated
+  }
+
+  override private[akka] def finalTerminate(): Unit = {
+    // these actions are idempotent
+    if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
+    guardian.stop()
   }
 
   @volatile var aborting = false
