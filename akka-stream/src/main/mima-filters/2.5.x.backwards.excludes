@@ -61,3 +61,17 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatest")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWithGraph")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
+
+#26187 Remove ActorPublisher/Subscriber
+
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnboundedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnrestrictedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
