@@ -319,7 +319,12 @@ object ActorSystem {
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
-      config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
+
+      config.checkValid(
+        ConfigFactory
+          .defaultReference(classLoader)
+          .withoutPath(Dispatchers.InternalDispatcherId), // allow this to be both string and config object
+        "akka")
       config
     }
 
@@ -840,7 +845,8 @@ private[akka] class ActorSystemImpl(
       dynamicAccess,
       settings,
       mailboxes,
-      defaultExecutionContext))
+      defaultExecutionContext),
+    log)
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 

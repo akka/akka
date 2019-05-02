@@ -48,7 +48,7 @@ class ClusterConfigSpec extends AkkaSpec {
       SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
-      UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      UseDispatcher should ===(Dispatchers.InternalDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)

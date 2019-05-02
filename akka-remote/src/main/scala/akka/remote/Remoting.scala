@@ -146,6 +146,8 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
+  private implicit val ec = system.dispatchers.lookup(Dispatcher)
+
   val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
 
   override def localAddressForRemote(remote: Address): Address =
@@ -167,7 +169,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           endpointManager = None
         }
 
-        import system.dispatcher
         (manager ? ShutdownAndFlush)
           .mapTo[Boolean]
           .andThen {
@@ -252,7 +253,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
     case Some(manager) =>
-      import system.dispatcher
       implicit val timeout = CommandAckTimeout
       (manager ? ManagementCommand(cmd)).map { case ManagementCommandAck(status) => status }
     case None =>

@@ -34,6 +34,34 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
+## Internal dispatcher introduced
+
+To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
+use of blocking APIs from actors) a new internal dispatcher has been added. All of Akka's internal, non-blocking actors
+now run on the internal dispatcher by default.
+
+The dispatcher can be configured through `akka.actor.internal-dispatcher`.
+
+For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
+asynchronous actors, user actors and Akka internal actors. In that case, can configure the
+`akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
+This reinstantiates the behavior from previous Akka versions but also removes the isolation between
+user and Akka internals. So, use at your own risk!
+
+Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
+dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty 
+string as value. If such an empty value is used in your `application.conf` the same result is achieved by simply removing
+that entry completely and having the default apply.
+
+For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
+
+## Default dispatcher size
+
+Previously the factor for the default dispatcher was set a bit high (`3.0`) to give some extra threads in case of accidental
+blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher
+the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
+`8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
+
 ## Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.

@@ -34,6 +34,7 @@ import akka.coordination.lease.LeaseUsageSettings
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
+import akka.dispatch.Dispatchers
 import com.github.ghik.silencer.silent
 
 import scala.util.control.NonFatal
@@ -163,7 +164,9 @@ object ClusterSingletonManager {
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
    */
   def props(singletonProps: Props, terminationMessage: Any, settings: ClusterSingletonManagerSettings): Props =
-    Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings)).withDeploy(Deploy.local)
+    Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   /**
    * INTERNAL API

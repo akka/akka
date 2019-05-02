@@ -61,7 +61,7 @@ private[remote] object FailureInjectorTransportAdapter {
 private[remote] class FailureInjectorTransportAdapter(
     wrappedTransport: Transport,
     val extendedSystem: ExtendedActorSystem)
-    extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher)
+    extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatchers.internalDispatcher)
     with AssociationEventListener {
 
   private def rng = ThreadLocalRandom.current()

@@ -84,7 +84,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
   // (eventually visible)
   private var asyncDnsCache: OptionVal[AsyncDnsCache] = OptionVal.None
 
-  import system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   dns.ask(AsyncDnsManager.GetCache)(Timeout(30.seconds)).onComplete {
     case Success(cache: AsyncDnsCache) =>
