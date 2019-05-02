@@ -54,7 +54,7 @@ akka {
 As you can see in the example above there are five things you need to add to get started:
 
  * Change provider from `local` to `remote`
- * Disable artery remoting. Artery become the default remoting implementation in `2.6.0`
+ * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
 system and consequently used for connecting back to this system if need be,
