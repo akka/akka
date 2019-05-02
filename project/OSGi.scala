@@ -56,8 +56,6 @@ object OSGi {
 
   val distributedData = exports(Seq("akka.cluster.ddata.*"))
 
-  val contrib = exports(Seq("akka.contrib.*"))
-
   val osgi = exports(Seq("akka.osgi.*"))
 
   val protobuf = exports(Seq("akka.protobuf.*"))

@@ -66,7 +66,7 @@ private[remote] class FailureInjectorTransportAdapter(
 
   private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, getClass.getName)
-  private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.gremlin.debug")
+  private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.classic.gremlin.debug")
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None
   private[transport] val addressChaosTable = new ConcurrentHashMap[Address, GremlinMode]()

@@ -668,7 +668,7 @@ private[akka] class ShardRegion(
 
       tryCompleteGracefulShutdown()
 
-    case RegisterRetry ⇒
+    case RegisterRetry =>
       if (coordinator.isEmpty) {
         register()
         scheduleNextRegistration()

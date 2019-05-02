@@ -14,22 +14,25 @@ object MessageLoggingSpec {
      akka.loglevel = info // debug makes this test fail intentionally
      akka.actor.provider = remote
      akka.remote {
+     
+      classic {
         log-received-messages = on
         log-sent-messages = on
-
         netty.tcp {
           hostname = localhost
           port = 0
         }
 
-       artery {
-         enabled = $artery
-         transport = aeron-udp
-         canonical.hostname = localhost
-         canonical.port = 0
-         log-received-messages = on
-         log-sent-messages = on
-       }
+      } 
+     
+      artery {
+        enabled = $artery
+        transport = aeron-udp
+        canonical.hostname = localhost
+        canonical.port = 0
+        log-received-messages = on
+        log-sent-messages = on
+      }
      }
     """.stripMargin)
 

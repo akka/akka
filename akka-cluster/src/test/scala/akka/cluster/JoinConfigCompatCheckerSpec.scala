@@ -16,7 +16,7 @@ object JoinConfigCompatCheckerSpec {
     ConfigFactory.parseString("""
      akka.actor.provider = "cluster"
      akka.coordinated-shutdown.terminate-actor-system = on
-     akka.remote.netty.tcp.port = 0
+     akka.remote.classic.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
      akka.cluster.jmx.multi-mbeans-in-same-jvm = on
      """)

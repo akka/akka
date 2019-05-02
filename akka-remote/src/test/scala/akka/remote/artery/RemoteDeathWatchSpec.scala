@@ -33,7 +33,7 @@ object RemoteDeathWatchSpec {
         # must still be longer than failure detection
         remote.artery.advanced {
           handshake-timeout = 10 s
-          image-liveness-timeout = 9 seconds
+          aeron.image-liveness-timeout = 9 seconds
         }
     }
     """).withFallback(ArterySpecSupport.defaultConfig)

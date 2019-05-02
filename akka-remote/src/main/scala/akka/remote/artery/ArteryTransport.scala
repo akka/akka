@@ -538,7 +538,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         else
           log.debug("Shutting down [{}] via shutdownHook", localAddress)
         if (hasBeenShutdown.compareAndSet(false, true)) {
-          Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
+          Await.result(internalShutdown(), settings.Advanced.Aeron.DriverTimeout + 3.seconds)
         }
       }
     }

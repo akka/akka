@@ -4,15 +4,12 @@
 
 package akka.stream.javadsl
 
-import java.util.concurrent.CompletionStage
-
 import akka.stream._
 
 /**
  * Factories for creating stream refs.
  */
 object StreamRefs {
-  import scala.compat.java8.FutureConverters._
 
   /**
    * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
@@ -22,8 +19,8 @@ object StreamRefs {
    *
    * See more detailed documentation on [[SourceRef]].
    */
-  def sourceRef[T](): javadsl.Sink[T, CompletionStage[SourceRef[T]]] =
-    scaladsl.StreamRefs.sourceRef[T]().mapMaterializedValue(_.toJava).asJava
+  def sourceRef[T](): javadsl.Sink[T, SourceRef[T]] =
+    scaladsl.StreamRefs.sourceRef[T]().asJava
 
   /**
    * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
@@ -33,7 +30,7 @@ object StreamRefs {
    *
    * See more detailed documentation on [[SinkRef]].
    */
-  def sinkRef[T](): javadsl.Source[T, CompletionStage[SinkRef[T]]] =
-    scaladsl.StreamRefs.sinkRef[T]().mapMaterializedValue(_.toJava).asJava
+  def sinkRef[T](): javadsl.Source[T, SinkRef[T]] =
+    scaladsl.StreamRefs.sinkRef[T]().asJava
 
 }

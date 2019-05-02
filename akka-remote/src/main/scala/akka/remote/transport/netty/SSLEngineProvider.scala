@@ -36,7 +36,7 @@ trait SSLEngineProvider {
 }
 
 /**
- * Config in akka.remote.netty.ssl.security
+ * Config in akka.remote.classic.netty.ssl.security
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
@@ -46,7 +46,7 @@ class ConfigSSLEngineProvider(protected val log: MarkerLoggingAdapter, private v
   def this(system: ActorSystem) =
     this(
       Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
-      new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security")))
+      new SSLSettings(system.settings.config.getConfig("akka.remote.classic.netty.ssl.security")))
 
   import settings._
 

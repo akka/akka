@@ -1,4 +1,10 @@
-# Remoting
+# Classic Remoting (Deprecated)
+
+@@@ warning
+
+Classic remoting has been deprecated and will be removed in Akka 2.7.0. Please use @ref[Artery](remoting-artery.md) instead.
+
+@@@
 
 @@@ note
 
@@ -35,7 +41,7 @@ akka {
     provider = remote
   }
   remote {
-    enabled-transports = ["akka.remote.netty.tcp"]
+    enabled-transports = ["akka.remote.classic.netty.tcp"]
     netty.tcp {
       hostname = "127.0.0.1"
       port = 2552
@@ -258,7 +264,7 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
@@ -445,13 +451,13 @@ its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Resea
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
 
-SSL can be used as the remote transport by adding `akka.remote.netty.ssl` to the `enabled-transport` configuration section.
+SSL can be used as the remote transport by adding `akka.remote.classic.netty.ssl` to the `enabled-transport` configuration section.
 An example of setting up the default Netty based SSL driver as default:
 
 ```
 akka {
   remote {
-    enabled-transports = [akka.remote.netty.ssl]
+    enabled-transports = [akka.remote.classic.netty.ssl]
   }
 }
 ```
