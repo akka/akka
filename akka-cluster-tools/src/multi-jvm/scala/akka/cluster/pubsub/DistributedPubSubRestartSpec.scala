@@ -34,6 +34,7 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
     akka.actor.provider = cluster
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = off
+    akka.coordinated-shutdown.run-by-actor-system-terminate = off
     """))
 
   testTransport(on = true)
