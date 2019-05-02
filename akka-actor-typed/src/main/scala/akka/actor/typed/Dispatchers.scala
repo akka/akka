@@ -4,6 +4,8 @@
 
 package akka.actor.typed
 
+import akka.annotation.InternalApi
+
 import scala.concurrent.ExecutionContextExecutor
 
 object Dispatchers {
@@ -14,7 +16,10 @@ object Dispatchers {
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
 
-  final val InternalDispatcherId = "akka.actor.internal-dispatcher"
+  /**
+   * INTERNAL API
+   */
+  @InternalApi final val InternalDispatcherId = "akka.actor.internal-dispatcher"
 }
 
 /**

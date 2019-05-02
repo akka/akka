@@ -483,7 +483,7 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  private val internalDispatcher = system.dispatchers.internalDispatcher
+  private def internalDispatcher = system.dispatchers.internalDispatcher
 
   private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
 
