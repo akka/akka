@@ -4,8 +4,8 @@
 
 package akka.actor.typed.eventstream
 
-import akka.actor.typed.internal.eventstream.SystemEventStream
 import akka.actor.typed._
+import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.{ DoNotInherit, InternalApi }
 
@@ -20,7 +20,7 @@ import scala.reflect.ClassTag
  */
 @InternalApi private[akka] final class EventStream(actorSystem: ActorSystem[_]) extends Extension {
   val ref: ActorRef[EventStream.Command] =
-    actorSystem.internalSystemActorOf(SystemEventStream.behavior, "eventstream", Props.empty)
+    actorSystem.internalSystemActorOf(EventStreamAdapter.behavior, "eventstream", Props.empty)
 }
 
 object EventStream extends ExtensionId[EventStream] {
@@ -60,10 +60,10 @@ object EventStream extends ExtensionId[EventStream] {
   }
 
   /**
-    * Unsubscribe an actor ref from the event stream
-    * @param subscriber
-    * @tparam E
-    */
+   * Unsubscribe an actor ref from the event stream
+   * @param subscriber
+   * @tparam E
+   */
   final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
 
   override def createExtension(system: ActorSystem[_]): EventStream = new EventStream(system)

@@ -2,7 +2,7 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed.internal.eventstream
+package akka.actor.typed.internal.adapter
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
@@ -14,7 +14,7 @@ import akka.annotation.InternalApi
  * INTERNAL API
  * Encapsulates the [[akka.actor.ActorSystem.eventStream]] in a [[Behavior]]
  */
-@InternalApi private[akka] object SystemEventStream {
+@InternalApi private[akka] object EventStreamAdapter {
 
   private[akka] val behavior: Behavior[EventStream.Command] =
     Behaviors.setup { ctx =>
