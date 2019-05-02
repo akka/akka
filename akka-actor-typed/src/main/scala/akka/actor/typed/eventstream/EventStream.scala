@@ -59,6 +59,11 @@ object EventStream extends ExtensionId[EventStream] {
     private[akka] def topic: Class[_] = classTag.runtimeClass
   }
 
+  /**
+    * Unsubscribe an actor ref from the event stream
+    * @param subscriber
+    * @tparam E
+    */
   final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
 
   override def createExtension(system: ActorSystem[_]): EventStream = new EventStream(system)
