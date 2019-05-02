@@ -78,4 +78,4 @@ final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwab
  * @param count The number of bytes read/written up until the error
  * @param cause cause
  */
-final case class IOOperationIncompleteException(count: Long, cause: Throwable) extends RuntimeException(cause)
+final class IOOperationIncompleteException(val count: Long, cause: Throwable) extends RuntimeException(cause)

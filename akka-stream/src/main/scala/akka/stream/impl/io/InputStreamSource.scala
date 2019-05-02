@@ -22,9 +22,6 @@ import akka.util.ByteString
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 
-case class DownstreamFinishedException()
-    extends RuntimeException("Downstream Finished before stream was fully consumed")
-
 /**
  * INTERNAL API
  */
@@ -46,14 +43,14 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
       private val buffer = new Array[Byte](chunkSize)
       private var readBytesTotal = 0L
       private var inputStream: InputStream = _
-      private var closed = false
+      private def isClosed = mat.isCompleted
 
       override def preStart(): Unit = {
         try {
           inputStream = factory()
         } catch {
           case NonFatal(t) =>
-            mat.failure(IOOperationIncompleteException(0, t))
+            mat.failure(new IOOperationIncompleteException(0, t))
             failStage(t)
         }
       }
@@ -63,7 +60,6 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
           val readBytes = inputStream.read(buffer)
           readBytes match {
             case -1 =>
-              closed = true
               closeStage()
             case _ =>
               readBytesTotal += readBytes
@@ -77,27 +73,27 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
       }
 
       override def onDownstreamFinish(): Unit = {
-        if (!closed) {
+        if (!isClosed) {
           closeInputStream()
-          mat.tryFailure(IOOperationIncompleteException(readBytesTotal, DownstreamFinishedException()))
+          mat.trySuccess(IOResult(readBytesTotal))
         }
       }
 
       override def postStop(): Unit = {
-        if (!closed) {
+        if (!isClosed) {
           mat.tryFailure(new AbruptStageTerminationException(this))
         }
       }
 
       private def closeStage(): Unit = {
         closeInputStream()
-        mat.success(IOResult(readBytesTotal))
+        mat.trySuccess(IOResult(readBytesTotal))
         completeStage()
       }
 
       private def failStream(reason: Throwable): Unit = {
         closeInputStream()
-        mat.tryFailure(IOOperationIncompleteException(readBytesTotal, reason))
+        mat.tryFailure(new IOOperationIncompleteException(readBytesTotal, reason))
       }
 
       private def closeInputStream(): Unit = {
@@ -105,8 +101,8 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
           if (inputStream != null)
             inputStream.close()
         } catch {
-          case ex: Exception =>
-            mat.tryFailure(IOOperationIncompleteException(readBytesTotal, ex))
+          case NonFatal(ex) =>
+            mat.tryFailure(new IOOperationIncompleteException(readBytesTotal, ex))
             failStage(ex)
         }
       }

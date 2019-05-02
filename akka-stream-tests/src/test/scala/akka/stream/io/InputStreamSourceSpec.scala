@@ -8,7 +8,6 @@ import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
 import akka.Done
-import akka.stream.impl.io.DownstreamFinishedException
 import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -62,7 +61,8 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .toMat(Sink.ignore)(Keep.left)
         .run
         .failed
-        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+        .futureValue
+        .getCause shouldEqual fail
     }
 
     "return failure if creation fails" in {
@@ -74,7 +74,8 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .toMat(Sink.ignore)(Keep.left)
         .run
         .failed
-        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+        .futureValue
+        .getCause shouldEqual fail
     }
 
     "handle failure on read" in assertAllStagesStopped {
@@ -84,18 +85,20 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .toMat(Sink.ignore)(Keep.left)
         .run
         .failed
-        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+        .futureValue
+        .getCause shouldEqual fail
     }
 
-    "fail materialized value if downstream doesn't read all of it" in {
-      StreamConverters
+    "include number of bytes when downstream doesn't read all of it" in {
+      val f = StreamConverters
         .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
         .take(1) // stream is not completely read
         .toMat(Sink.ignore)(Keep.left)
         .run
-        .failed
         .futureValue
-        .getCause shouldEqual DownstreamFinishedException()
+
+      f.status shouldEqual Success(Done)
+      f.count shouldBe >=(1L)
     }
 
     "handle actor materializer shutdown" in {
