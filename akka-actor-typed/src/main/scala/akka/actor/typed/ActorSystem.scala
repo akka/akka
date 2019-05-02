@@ -154,7 +154,8 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
     Receptionist(this).ref
 
   /**
-   * Return a reference to this system’s [[akka.actor.typed.eventstream.EventStream]].
+   * Main event bus of this actor system, used for example for logging.
+   * Accepts [[akka.actor.typed.eventstream.EventStream.Command]].
    */
   def eventStream: ActorRef[EventStream.Command] =
     EventStream(this).ref
