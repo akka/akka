@@ -4,8 +4,7 @@
 
 package docs.persistence.query
 
-import akka.persistence.PersistentRepr
-import akka.persistence.query.{ EventEnvelope, Sequence }
+import akka.persistence.query.{ EventEnvelope, Offset }
 import akka.serialization.SerializationExtension
 import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic }
@@ -31,6 +30,7 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
       private val connection: java.sql.Connection = ???
       private var currentOffset = offset
       private var buf = Vector.empty[EventEnvelope]
+      private val serialization = SerializationExtension(system)
 
       override def preStart(): Unit = {
         schedulePeriodically(Continue, refreshInterval)
@@ -48,15 +48,7 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
       private def query(): Unit = {
         if (buf.isEmpty) {
           try {
-            val result = Select.run(tag, currentOffset, Limit)
-            currentOffset = if (result.nonEmpty) result.last._1 else currentOffset
-            val serialization = SerializationExtension(system)
-
-            buf = result.map {
-              case (id, bytes) =>
-                val p = serialization.deserialize(bytes, classOf[PersistentRepr]).get
-                EventEnvelope(offset = Sequence(id), p.persistenceId, p.sequenceNr, p.payload)
-            }
+            buf = Select.run(tag, currentOffset, Limit)
           } catch {
             case NonFatal(e) =>
               failStage(e)
@@ -66,7 +58,7 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
 
       private def tryPush(): Unit = {
         if (buf.nonEmpty && isAvailable(out)) {
-          push(out, out)
+          push(out, buf.head)
           buf = buf.tail
         }
       }
@@ -78,13 +70,14 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
       }
 
       object Select {
-        private def statement() = connection.prepareStatement("""
-        SELECT id, persistent_repr FROM journal
-        WHERE tag = ? AND id > ?
-        ORDER BY id LIMIT ?
+        private def statement() =
+          connection.prepareStatement("""
+            SELECT id, persistence_id, seq_nr, serializer_id, serializer_manifest, payload 
+            FROM journal WHERE tag = ? AND id > ? 
+            ORDER BY id LIMIT ?
       """)
 
-        def run(tag: String, from: Long, limit: Int): Vector[(Long, Array[Byte])] = {
+        def run(tag: String, from: Long, limit: Int): Vector[EventEnvelope] = {
           val s = statement()
           try {
             s.setString(1, tag)
@@ -92,8 +85,18 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
             s.setLong(3, limit)
             val rs = s.executeQuery()
 
-            val b = Vector.newBuilder[(Long, Array[Byte])]
-            while (rs.next()) b += (rs.getLong(1) -> rs.getBytes(2))
+            val b = Vector.newBuilder[EventEnvelope]
+            while (rs.next()) {
+              val deserialized = serialization
+                .deserialize(rs.getBytes("payload"), rs.getInt("serializer_id"), rs.getString("serializer_manifest"))
+                .get
+              currentOffset = rs.getLong("id")
+              b += EventEnvelope(
+                Offset.sequence(currentOffset),
+                rs.getString("persistence_id"),
+                rs.getLong("seq_nr"),
+                deserialized)
+            }
             b.result()
           } finally s.close()
         }

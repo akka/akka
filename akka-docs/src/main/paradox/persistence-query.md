@@ -300,7 +300,7 @@ Scala
 Java
 :  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
 
-And the `eventsByTag` could be backed by such an Actor for example:
+And the `eventsByTag` could be backed by a GraphStage for example:
 
 Scala
 :  @@snip [MyEventsByTagSource.scala](/akka-docs/src/test/scala/docs/persistence/query/MyEventsByTagSource.scala) { #events-by-tag-publisher }
