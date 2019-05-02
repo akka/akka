@@ -586,7 +586,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * will still be terminated.
    *
    * This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, the system guardian
+   * will recursively stop all its child actors, and finally the system guardian
    * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future

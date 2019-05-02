@@ -158,7 +158,7 @@ Set
 
 No migration is needed but it is mentioned here because it is a change in behavior.
 
-When `ActorSystem.terminate()` is called @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown)
+When `ActorSystem.terminate()` is called, @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown)
 will be run in Akka 2.6.x, which wasn't the case in 2.5.x. For example, if using Akka Cluster this means that
 member will attempt to leave the cluster gracefully.
 

@@ -112,7 +112,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * will still be terminated.
    *
    * This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, the system guardian
+   * will recursively stop all its child actors, and finally the system guardian
    * (below which the logging actors reside).
    *
    * This is an asynchronous operation and completion of the termination can
