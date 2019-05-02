@@ -97,6 +97,13 @@ Classic remoting over UDP has been deprecated since `2.5.0` and now has been rem
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
 
+## Streams
+
+### StreamRefs
+
+The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
+`Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
+
 ## Cluster Sharding
 
 ### Passivate idle entity

@@ -55,10 +55,9 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
 
     private void handleRequestLogs(RequestLogs requestLogs) {
       Source<String, NotUsed> logs = streamLogs(requestLogs.streamId);
-      CompletionStage<SourceRef<String>> logsRef = logs.runWith(StreamRefs.sourceRef(), mat);
+      SourceRef<String> logsRef = logs.runWith(StreamRefs.sourceRef(), mat);
 
-      Patterns.pipe(logsRef.thenApply(ref -> new LogsOffer(ref)), context().dispatcher())
-          .to(sender());
+      getSender().tell(new LogsOffer(logsRef), getSelf());
     }
 
     private Source<String, NotUsed> streamLogs(long streamId) {
@@ -111,13 +110,9 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
               PrepareUpload.class,
               prepare -> {
                 Sink<String, NotUsed> sink = logsSinkFor(prepare.id);
-                CompletionStage<SinkRef<String>> sinkRef =
-                    StreamRefs.<String>sinkRef().to(sink).run(mat);
+                SinkRef<String> sinkRef = StreamRefs.<String>sinkRef().to(sink).run(mat);
 
-                Patterns.pipe(
-                        sinkRef.thenApply(ref -> new MeasurementsSinkReady(prepare.id, ref)),
-                        context().dispatcher())
-                    .to(sender());
+                getSender().tell(new MeasurementsSinkReady(prepare.id, sinkRef), getSelf());
               })
           .build();
     }
