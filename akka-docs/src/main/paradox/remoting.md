@@ -32,7 +32,7 @@ To use Akka Remoting, you must add the following dependency in your project:
 
 ## Configuration
 
-To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+To enable classic remoting in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
 
 ```
@@ -40,7 +40,8 @@ akka {
   actor {
     provider = remote
   }
-  remote {
+  remote.artery.enabled = false
+  remote.classic {
     enabled-transports = ["akka.remote.classic.netty.tcp"]
     netty.tcp {
       hostname = "127.0.0.1"
@@ -50,9 +51,10 @@ akka {
 }
 ```
 
-As you can see in the example above there are four things you need to add to get started:
+As you can see in the example above there are five things you need to add to get started:
 
  * Change provider from `local` to `remote`
+ * Disable artery remoting. Artery become the default remoting implementation in `2.6.0`
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
 system and consequently used for connecting back to this system if need be,
@@ -408,8 +410,8 @@ finished.
 
 @@@ note
 
-In order to switch off the logging, set
-`akka.remote.log-remote-lifecycle-events = off` in your
+In order to switch of the logging, set
+`akka.remote.classic.log-remote-lifecycle-events = off` in your
 `application.conf`.
 
 @@@
@@ -456,7 +458,7 @@ An example of setting up the default Netty based SSL driver as default:
 
 ```
 akka {
-  remote {
+  remote.classic {
     enabled-transports = [akka.remote.classic.netty.ssl]
   }
 }
@@ -466,7 +468,7 @@ Next the actual SSL/TLS parameters have to be configured:
 
 ```
 akka {
-  remote {
+  remote.classic {
     netty.ssl {
       hostname = "127.0.0.1"
       port = "3553"
@@ -540,7 +542,7 @@ that system down. This is not always desired, and it can be disabled with the
 following setting:
 
 ```
-akka.remote.untrusted-mode = on
+akka.remote.classsic.untrusted-mode = on
 ```
 
 This disallows sending of system messages (actor life-cycle commands,
@@ -566,7 +568,7 @@ permission to receive actor selection messages can be granted to specific actors
 defined in configuration:
 
 ```
-akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+akka.remote.classic.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
 ```
 
 The actual message must still not be of type `PossiblyHarmful`.
@@ -619,17 +621,13 @@ containers the hostname and port pair that Akka binds to will be different than 
 host name and port pair that is used to connect to the system from the outside. This requires
 special configuration that sets both the logical and the bind pairs for remoting.
 
-```ruby
-akka {
-  remote {
-    netty.tcp {
+```
+akka.remote.clasic.netty.tcp {
       hostname = my.domain.com      # external (logical) hostname
       port = 8000                   # external (logical) port
 
       bind-hostname = local.address # internal (bind) hostname
       bind-port = 2552              # internal (bind) port
-    }
- }
 }
 ```
 
