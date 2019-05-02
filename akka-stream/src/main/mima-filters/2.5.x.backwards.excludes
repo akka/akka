@@ -62,5 +62,23 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWithGraph")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
 
+## 2.6
+
 # #24372 No Future/CompletionStage in StreamRefs
 # FIXME why was change not detected?
+
+# 26188 remove Timed
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedFlowContext")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StartTimed")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.TimedOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedFlowDsl")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedSourceDsl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.TimedIntervalBetweenOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedSourceDsl")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedFlowDsl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedInterval")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StopTimed")
