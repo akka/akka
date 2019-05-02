@@ -527,7 +527,7 @@ private[akka] class LocalActorRefProvider private[akka] (
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    def isWalking = causeOfTermination.future.isCompleted == false
+    def isWalking = !causeOfTermination.future.isCompleted
 
     override def stop(): Unit = {
       causeOfTermination.trySuccess(
