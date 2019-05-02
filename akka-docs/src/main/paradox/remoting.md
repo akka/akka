@@ -410,7 +410,7 @@ finished.
 
 @@@ note
 
-In order to switch of the logging, set
+In order to disable the logging, set
 `akka.remote.classic.log-remote-lifecycle-events = off` in your
 `application.conf`.
 
