@@ -1127,6 +1127,7 @@ used in the test:
 ```
 # Don't terminate ActorSystem via CoordinatedShutdown in tests
 akka.coordinated-shutdown.terminate-actor-system = off
+akka.coordinated-shutdown.run-by-actor-system-terminate = off
 akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
 akka.cluster.run-coordinated-shutdown-when-down = off
 ```

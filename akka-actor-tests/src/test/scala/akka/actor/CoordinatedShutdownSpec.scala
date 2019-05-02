@@ -9,15 +9,17 @@ import java.util
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
+
 import akka.Done
 import akka.testkit.{ AkkaSpec, EventFilter, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
 import akka.actor.CoordinatedShutdown.UnknownReason
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Promise
 import java.util.concurrent.TimeoutException
+
+import akka.ConfigurationException
 
 class CoordinatedShutdownSpec
     extends AkkaSpec(ConfigFactory.parseString("""
@@ -357,17 +359,14 @@ class CoordinatedShutdownSpec
       }
     }
 
-    "be run by ActorSystem.terminate when terminate-actor-system=off" in {
-      val sys = ActorSystem(
-        system.name,
-        ConfigFactory
-          .parseString("akka.coordinated-shutdown.terminate-actor-system = off")
-          .withFallback(system.settings.config))
-      try {
-        Await.result(sys.terminate(), 10.seconds)
-        sys.whenTerminated.isCompleted should ===(true)
-        CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
-      } finally {
+    "not allow terminate-actor-system=off && run-by-actor-system-terminate=on" in {
+      intercept[ConfigurationException] {
+        val sys = ActorSystem(
+          system.name,
+          ConfigFactory
+            .parseString("akka.coordinated-shutdown.terminate-actor-system = off")
+            .withFallback(system.settings.config))
+        // will only get here if test is failing
         shutdown(sys)
       }
     }
@@ -377,6 +376,7 @@ class CoordinatedShutdownSpec
       lazy val systemConfig = ConfigFactory.parseString("""
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
           akka.coordinated-shutdown.terminate-actor-system = off
+          akka.coordinated-shutdown.run-by-actor-system-terminate = off
         """)
 
       override def withSystemRunning(newSystem: ActorSystem): Unit = {
@@ -392,6 +392,7 @@ class CoordinatedShutdownSpec
       lazy val systemConfig = ConfigFactory.parseString("""
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
           akka.coordinated-shutdown.terminate-actor-system = off
+          akka.coordinated-shutdown.run-by-actor-system-terminate = off
         """)
 
       override def withSystemRunning(newSystem: ActorSystem): Unit = {

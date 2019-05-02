@@ -42,7 +42,6 @@ object ClusterClientSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.coordinated-shutdown.run-by-actor-system-terminate = off
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
     akka.cluster.client.heartbeat-interval = 1s

@@ -9,6 +9,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
 import com.typesafe.config.{ Config, ConfigFactory }
+import akka.ConfigurationException
 import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
@@ -21,15 +22,11 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Pr
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ ControlThrowable, NonFatal }
 import java.util.Optional
-import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
-
-import akka.Done
-import akka.actor.CoordinatedShutdown.PhaseActorSystemTerminate
 
 object BootstrapSetup {
 
@@ -393,6 +390,10 @@ object ActorSystem {
       "akka.coordinated-shutdown.terminate-actor-system")
     final val CoordinatedShutdownRunByActorSystemTerminate: Boolean = getBoolean(
       "akka.coordinated-shutdown.run-by-actor-system-terminate")
+    if (CoordinatedShutdownRunByActorSystemTerminate && !CoordinatedShutdownTerminateActorSystem)
+      throw new ConfigurationException(
+        "akka.coordinated-shutdown.terminate-actor-system=on and " +
+        "akka.coordinated-shutdown.run-by-actor-system-terminate=off is not a supported configuration combination.")
 
     final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
@@ -726,8 +727,6 @@ private[akka] class ActorSystemImpl(
   @volatile private var logDeadLetterListener: Option[ActorRef] = None
   final val settings: Settings = new Settings(classLoader, applicationConfig, name, setup)
 
-  private val terminating = new AtomicBoolean(false)
-
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
     new Thread.UncaughtExceptionHandler() {
       def uncaughtException(thread: Thread, cause: Throwable): Unit = {
@@ -957,31 +956,17 @@ private[akka] class ActorSystemImpl(
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {
-    if (terminating.compareAndSet(false, true)) {
-      val coordinatedShutdown = CoordinatedShutdown(this)
-      if (settings.CoordinatedShutdownRunByActorSystemTerminate &&
-          coordinatedShutdown.shutdownReason().isEmpty && !aborting) {
+    if (settings.CoordinatedShutdownRunByActorSystemTerminate && !aborting) {
+      // Note that the combination CoordinatedShutdownRunByActorSystemTerminate==true &&
+      // CoordinatedShutdownTerminateActorSystem==false is disallowed, checked in Settings.
+      // It's not a combination that isn't valuable to support and it would be complicated to
+      // protect against concurrency race conditions between calls to ActorSystem.terminate()
+      // and CoordinateShutdown.run()
 
-        if (!settings.CoordinatedShutdownTerminateActorSystem) {
-          // Configured to not terminate ActorSystem from CoordinatedShutdown, but now it's an explicit call
-          // to ActorSystem.terminate so adding that task so that the ActorSystem.finalTerminate is called at the end of
-          // the CoordinatedShutdown phases.
-          coordinatedShutdown.addTask(PhaseActorSystemTerminate, "terminate-actor-system") { () =>
-            finalTerminate()
-            whenTerminated.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
-          }
-        }
-
-        if (!settings.CoordinatedShutdownTerminateActorSystem && coordinatedShutdown.shutdownReason().nonEmpty) {
-          // another thread has started CoordinatedShutdown and then it's not certain that the task added above
-          // made it and will be run, only safe option is to call finalTerminate() right away
-          finalTerminate()
-        } else
-          coordinatedShutdown.run(CoordinatedShutdown.ActorSystemTerminateReason)
-
-      } else {
-        finalTerminate()
-      }
+      // it will call finalTerminate() at the end
+      CoordinatedShutdown(this).run(CoordinatedShutdown.ActorSystemTerminateReason)
+    } else {
+      finalTerminate()
     }
     whenTerminated
   }
