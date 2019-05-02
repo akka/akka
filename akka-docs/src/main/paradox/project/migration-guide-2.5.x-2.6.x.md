@@ -25,14 +25,18 @@ and include them in your own project or library under your own package name.
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
 
-### Actor DSL removal
+## Actor DSL removal
 
 Actor DSL is a rarely used feature and has been deprecated since `2.5.0`.
 Use plain `system.actorOf` instead of the DSL to create Actors if you have been using it.
 
+## actorFor removal
+
+`actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
+
 ## Default remoting is now Artery TCP
 
-@ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
+@ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
 <a id="classic-to-artery"></a>
@@ -70,7 +74,7 @@ for how to do this.
 
 The following defaults have changed:
 
-* `akka.remote.artery.transport` default has changed from `aeron-udp` to `tcp` 
+* `akka.remote.artery.transport` default has changed from `aeron-udp` to `tcp`
 
 The following properties have moved. If you don't adjust these from their defaults no changes are required:
 
@@ -93,13 +97,13 @@ For TCP:
 
 ### Remaining with Classic remoting (not recommended)
 
-Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is 
+Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
 ## Netty UDP has been removed
 
-Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed. 
+Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
 

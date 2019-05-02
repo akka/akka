@@ -156,8 +156,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   }
 
   override def toString: String =
-    if (path.uid == ActorCell.undefinedUid) s"Actor[${path}]"
-    else s"Actor[${path}#${path.uid}]"
+    if (path.uid == ActorCell.undefinedUid) s"Actor[$path]"
+    else s"Actor[$path#${path.uid}]"
 }
 
 /**

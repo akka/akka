@@ -26,8 +26,7 @@ class AskSpec extends AkkaSpec {
     }
 
     "return broken promises on DeadLetters" in {
-      val dead = system.actorFor("/system/deadLetters")
-      val f = dead.ask(42)(1 second)
+      val f = system.deadLetters.ask(42)(1 second)
       f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) =>
@@ -37,7 +36,7 @@ class AskSpec extends AkkaSpec {
 
     "return broken promises on EmptyLocalActorRefs" in {
       implicit val timeout = Timeout(5 seconds)
-      val empty = system.actorFor("unknown")
+      val empty = system.asInstanceOf[ExtendedActorSystem].provider.resolveActorRef("/user/unknown")
       val f = empty ? 3.14
       f.isCompleted should ===(true)
       f.value.get match {

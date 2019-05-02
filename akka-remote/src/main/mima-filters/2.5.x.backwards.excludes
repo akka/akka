@@ -1,3 +1,6 @@
+# #26190 remove actorFor
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider.actorFor")
+
 # Make artery default and remove netty udp #26179
 ProblemFilters.exclude[MissingClassProblem]("akka.remote.transport.netty.UdpClientHandler")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettyTransportSettings.TransportMode")
