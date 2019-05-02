@@ -34,7 +34,7 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
-### Internal dispatcher introduced
+## Internal dispatcher introduced
 
 To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
 use of blocking APIs from actors) a new internal dispatcher has been added. All of Akka's internal, non-blocking actors
@@ -55,7 +55,7 @@ that entry completely and having the default apply.
 
 For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
 
-### Default dispatcher size
+## Default dispatcher size
 
 Previously the factor for the default dispatcher was set a bit high (`3.0`) to give some extra threads in case of accidental
 blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher

@@ -8,16 +8,7 @@ import java.util
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
-import akka.actor.{
-  ActorContext,
-  ActorRef,
-  ActorRefFactory,
-  ActorSystem,
-  Cancellable,
-  Deploy,
-  ExtendedActorSystem,
-  PoisonPill
-}
+import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, ExtendedActorSystem, PoisonPill }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
@@ -421,14 +412,10 @@ private final case class SavedIslandData(
     Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
       ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
-      ActorAttributes.Dispatcher(if (settings.dispatcher == Deploy.NoDispatcherGiven) Dispatchers.DefaultDispatcherId
-      else settings.dispatcher) :: Nil)
+      ActorAttributes.Dispatcher(settings.dispatcher) :: Nil)
   }
 
-  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
-    case Deploy.NoDispatcherGiven => Dispatchers.DefaultDispatcherId
-    case other                    => other
-  })
+  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher)
 
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
