@@ -110,6 +110,11 @@ A full cluster restart is required to change to Artery.
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
 
+### Timing operator removed
+
+`akka.stream.extra.Timing` has been removed. If you need it you can now find it in `akka.stream.contrib.Timed` from
+ [Akka Stream Contrib](https://github.com/akka/akka-stream-contrib/blob/master/contrib/src/main/scala/akka/stream/contrib/Timed.scala).
+
 ## Cluster Sharding
 
 ### Passivate idle entity
