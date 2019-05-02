@@ -8,7 +8,14 @@ import java.io.InputStream
 
 import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Outlet, SourceShape }
+import akka.stream.{
+  AbruptStageTerminationException,
+  Attributes,
+  IOOperationIncompleteException,
+  IOResult,
+  Outlet,
+  SourceShape
+}
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, OutHandler }
 import akka.util.ByteString
 
@@ -73,6 +80,12 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
         if (!closed) {
           closeInputStream()
           mat.tryFailure(IOOperationIncompleteException(readBytesTotal, DownstreamFinishedException()))
+        }
+      }
+
+      override def postStop(): Unit = {
+        if (!closed) {
+          mat.tryFailure(new AbruptStageTerminationException(this))
         }
       }
 
