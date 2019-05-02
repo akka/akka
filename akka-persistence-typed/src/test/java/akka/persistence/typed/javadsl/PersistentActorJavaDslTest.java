@@ -461,7 +461,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
     c.tell(StopThenLog.INSTANCE);
-    probe.expectTerminated(c, Duration.ofSeconds(3));
+    probe.expectTerminated(c);
   }
 
   @Test
