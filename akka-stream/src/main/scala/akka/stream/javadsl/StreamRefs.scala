@@ -9,10 +9,6 @@ import java.util.concurrent.CompletionStage
 import akka.stream._
 
 /**
- * API MAY CHANGE: The functionality of stream refs is working, however it is expected that the materialized value
- * will eventually be able to remove the Future wrapping the stream references. For this reason the API is now marked
- * as API may change. See ticket https://github.com/akka/akka/issues/24372 for more details.
- *
  * Factories for creating stream refs.
  */
 object StreamRefs {

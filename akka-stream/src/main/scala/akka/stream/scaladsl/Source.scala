@@ -222,9 +222,6 @@ final class Source[+Out, +Mat](
       combineRest(2, rest.iterator)
     })
 
-  /**
-   * API MAY CHANGE
-   */
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 }

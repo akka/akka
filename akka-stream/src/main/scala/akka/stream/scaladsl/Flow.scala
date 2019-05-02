@@ -319,8 +319,6 @@ final class Flow[-In, +Out, +Mat](
    *
    * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
    * @param extractContext turn each outgoing element of this Flow into an outgoing context value
-   *
-   * API MAY CHANGE
    */
   def asFlowWithContext[U, CtxU, CtxOut](collapseContext: (U, CtxU) => In)(
       extractContext: Out => CtxOut): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =

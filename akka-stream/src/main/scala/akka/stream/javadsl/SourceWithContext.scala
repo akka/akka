@@ -15,9 +15,6 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
 
-/**
- * API MAY CHANGE
- */
 object SourceWithContext {
 
   /**
@@ -35,8 +32,6 @@ object SourceWithContext {
  * operations.
  *
  * Can be created by calling [[Source.asSourceWithContext()]]
- *
- * API MAY CHANGE
  */
 final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithContext[Out, Ctx, Mat])
     extends GraphDelegate(delegate) {

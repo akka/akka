@@ -3400,8 +3400,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
    * @param extractContext turn each outgoing element of this Flow into an outgoing context value
-   *
-   * API MAY CHANGE
    */
   def asFlowWithContext[U, CtxU, CtxOut](
       collapseContext: function.Function2[U, CtxU, In],

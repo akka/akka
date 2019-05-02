@@ -8,9 +8,6 @@ import scala.annotation.unchecked.uncheckedVariance
 
 import akka.stream._
 
-/**
- * API MAY CHANGE
- */
 object SourceWithContext {
 
   /**
@@ -27,8 +24,6 @@ object SourceWithContext {
  * operations.
  *
  * Can be created by calling [[Source.asSourceWithContext()]]
- *
- * API MAY CHANGE
  */
 final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Source[(Out, Ctx), Mat])
     extends GraphDelegate(delegate)
