@@ -542,7 +542,7 @@ that system down. This is not always desired, and it can be disabled with the
 following setting:
 
 ```
-akka.remote.classsic.untrusted-mode = on
+akka.remote.classic.untrusted-mode = on
 ```
 
 This disallows sending of system messages (actor life-cycle commands,
@@ -622,7 +622,7 @@ host name and port pair that is used to connect to the system from the outside. 
 special configuration that sets both the logical and the bind pairs for remoting.
 
 ```
-akka.remote.clasic.netty.tcp {
+akka.remote.classic.netty.tcp {
       hostname = my.domain.com      # external (logical) hostname
       port = 8000                   # external (logical) port
 
