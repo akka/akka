@@ -959,7 +959,7 @@ private[akka] class ActorSystemImpl(
     if (settings.CoordinatedShutdownRunByActorSystemTerminate && !aborting) {
       // Note that the combination CoordinatedShutdownRunByActorSystemTerminate==true &&
       // CoordinatedShutdownTerminateActorSystem==false is disallowed, checked in Settings.
-      // It's not a combination that isn't valuable to support and it would be complicated to
+      // It's not a combination that is valuable to support and it would be complicated to
       // protect against concurrency race conditions between calls to ActorSystem.terminate()
       // and CoordinateShutdown.run()
 
