@@ -9,6 +9,8 @@ import akka.actor.setup.ActorSystemSetup
 import akka.remote.RARP
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.Outcome
+import org.scalatest.Pending
 
 /**
  * Base class for remoting tests what needs to test interaction between a "local" actor system
@@ -37,6 +39,15 @@ abstract class ArteryMultiNodeSpec(config: Config)
   }
 
   private var remoteSystems: Vector[ActorSystem] = Vector.empty
+
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    // note that withFixture is also used in FlightRecorderSpecIntegration
+    if (!RARP(system).provider.remoteSettings.Artery.Enabled) {
+      info(s"${getClass.getName} is only enabled for Artery")
+      Pending
+    } else
+      super.withFixture(test)
+  }
 
   /**
    * @return A new actor system configured with artery enabled. The system will
