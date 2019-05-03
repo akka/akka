@@ -593,6 +593,9 @@ object Flow {
   /**
    * Turn a `Future[Flow]` into a flow that will consume the values of the source when the future completes successfully.
    * If the `Future` is completed with a failure the stream is failed.
+   *
+   * The materialized future value is completed with the materialized value of the future flow or failed with a
+   * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
    */
   def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
     lazyFutureFlow(() => flow)
@@ -600,6 +603,12 @@ object Flow {
   /**
    * Defers invoking the `create` function to create a future flow until there is downstream demand and passing
    * that downstream demand upstream triggers the first element.
+   *
+   * The materialized future value is completed with the materialized value of the created flow when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns a future that fails the stream is failed, in this case the materialized
+   * future value is failed with a [[NeverMaterializedException]].
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
    * the lazyness and can trigger the factory earlier than expected.

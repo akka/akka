@@ -278,6 +278,9 @@ object Flow {
   /**
    * Turn a `Future[Flow]` into a flow that will consume the values of the source when the future completes successfully.
    * If the `Future` is completed with a failure the stream is failed.
+   *
+   * The materialized completion stage value is completed with the materialized value of the future flow or failed with a
+   * [[NeverMaterializedException]] if upstream fails or downstream cancels before the completion stage has completed.
    */
   def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
     lazyCompletionStageFlow(() => flow)
