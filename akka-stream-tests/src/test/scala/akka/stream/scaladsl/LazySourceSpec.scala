@@ -18,9 +18,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.collection.immutable.Seq
 import scala.concurrent.{ Future, Promise }
 
-class LazySourceSpec extends StreamSpec("""
-    
-  """) with DefaultTimeout with ScalaFutures {
+class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()
 
