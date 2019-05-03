@@ -241,10 +241,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       run(); false
     } catch {
       case _: InterruptedException =>
-        Thread.currentThread.interrupt()
+        Thread.currentThread().interrupt()
         false
       case anything: Throwable =>
-        val t = Thread.currentThread
+        val t = Thread.currentThread()
         t.getUncaughtExceptionHandler match {
           case null =>
           case some => some.uncaughtException(t, anything)

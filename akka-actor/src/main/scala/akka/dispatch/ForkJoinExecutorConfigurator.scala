@@ -52,7 +52,7 @@ object ForkJoinExecutorConfigurator {
           Thread.currentThread.interrupt()
           false
         case anything: Throwable =>
-          val t = Thread.currentThread
+          val t = Thread.currentThread()
           t.getUncaughtExceptionHandler match {
             case null =>
             case some => some.uncaughtException(t, anything)

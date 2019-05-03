@@ -605,11 +605,13 @@ private[akka] final class PromiseActorRef private (
     case Stopped | _: StoppedWithPath => provider.deadLetters ! message
     case _ =>
       if (message == null) throw InvalidMessageException("Message is null")
-      if (!(result.tryComplete(message match {
-            case Status.Success(r) => Success(r)
-            case Status.Failure(f) => Failure(f)
-            case other             => Success(other)
-          }))) provider.deadLetters ! message
+      val promiseResult = message match {
+        case Status.Success(r) => Success(r)
+        case Status.Failure(f) => Failure(f)
+        case other             => Success(other)
+      }
+      if (!result.tryComplete(promiseResult))
+        provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -639,7 +641,7 @@ private[akka] final class PromiseActorRef private (
     def ensureCompleted(): Unit = {
       result.tryComplete(ActorStopResult)
       val watchers = clearWatchers()
-      if (!watchers.isEmpty) {
+      if (watchers.nonEmpty) {
         watchers.foreach { watcher =>
           // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watcher

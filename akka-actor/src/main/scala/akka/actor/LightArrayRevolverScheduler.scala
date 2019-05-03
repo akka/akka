@@ -86,7 +86,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     val sleepMs = if (Helpers.isWindows) (nanos + 4999999) / 10000000 * 10 else (nanos + 999999) / 1000000
     try Thread.sleep(sleepMs)
     catch {
-      case _: InterruptedException => Thread.currentThread.interrupt() // we got woken up
+      case _: InterruptedException => Thread.currentThread().interrupt() // we got woken up
     }
   }
 
@@ -163,11 +163,11 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
 
   private def schedule(ec: ExecutionContext, r: Runnable, delay: FiniteDuration): TimerTask =
     if (delay <= Duration.Zero) {
-      if (stopped.get != null) throw new SchedulerException("cannot enqueue after timer shutdown")
+      if (stopped.get != null) throw SchedulerException("cannot enqueue after timer shutdown")
       ec.execute(r)
       NotCancellable
     } else if (stopped.get != null) {
-      throw new SchedulerException("cannot enqueue after timer shutdown")
+      throw SchedulerException("cannot enqueue after timer shutdown")
     } else {
       val delayNanos = delay.toNanos
       checkMaxDelay(delayNanos)
@@ -176,7 +176,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       val task = new TaskHolder(r, ticks, ec)
       queue.add(task)
       if (stopped.get != null && task.cancel())
-        throw new SchedulerException("cannot enqueue after timer shutdown")
+        throw SchedulerException("cannot enqueue after timer shutdown")
       task
     }
 
@@ -212,7 +212,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
           case x    => collect(q, acc :+ x)
         }
       }
-      ((0 until WheelSize).flatMap(i => collect(wheel(i), Vector.empty))) ++ collect(queue, Vector.empty)
+      (0 until WheelSize).flatMap(i => collect(wheel(i), Vector.empty)) ++ collect(queue, Vector.empty)
     }
 
     @tailrec
@@ -237,7 +237,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         checkQueue(time)
     }
 
-    override final def run =
+    override final def run(): Unit =
       try nextTick()
       catch {
         case t: Throwable =>
@@ -334,8 +334,8 @@ object LightArrayRevolverScheduler {
           executionContext.execute(other)
           true
         } catch {
-          case _: InterruptedException => { Thread.currentThread.interrupt(); false }
-          case NonFatal(e)             => { executionContext.reportFailure(e); false }
+          case _: InterruptedException => Thread.currentThread().interrupt(); false
+          case NonFatal(e)             => executionContext.reportFailure(e); false
         }
     }
 
