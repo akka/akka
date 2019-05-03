@@ -21,7 +21,11 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       "toString",
       "getClass",
       "shape",
-      "identityTraversalBuilder")
+      "identityTraversalBuilder",
+      // Futures are for Scala
+      "lazyFutureSource",
+      "futureSource",
+      "lazyFuture")
 
   val javaIgnore =
     Set("adapt") // the scaladsl -> javadsl bridge
