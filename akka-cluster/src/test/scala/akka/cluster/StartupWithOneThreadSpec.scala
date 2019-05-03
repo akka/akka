@@ -25,6 +25,7 @@ object StartupWithOneThreadSpec {
         fixed-pool-size = 1
       }
     }
+    akka.actor.internal-dispatcher = akka.actor.default-dispatcher 
     """
 
   final case class GossipTo(address: Address)
