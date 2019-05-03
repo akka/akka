@@ -392,8 +392,8 @@ object ActorSystem {
       "akka.coordinated-shutdown.run-by-actor-system-terminate")
     if (CoordinatedShutdownRunByActorSystemTerminate && !CoordinatedShutdownTerminateActorSystem)
       throw new ConfigurationException(
-        "akka.coordinated-shutdown.terminate-actor-system=on and " +
-        "akka.coordinated-shutdown.run-by-actor-system-terminate=off is not a supported configuration combination.")
+        "akka.coordinated-shutdown.run-by-actor-system-terminate=on and " +
+        "akka.coordinated-shutdown.terminate-actor-system=off is not a supported configuration combination.")
 
     final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
