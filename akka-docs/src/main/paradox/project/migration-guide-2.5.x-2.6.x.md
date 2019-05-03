@@ -1,6 +1,12 @@
 # Migration Guide 2.5.x to 2.6.x
 
-## akka-camel removed
+## Scala 2.11 no longer supported
+
+If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
+
+## Removed features that were deprecated
+
+### akka-camel removed
 
 After being deprecated in 2.5.0, the akka-camel module has been removed in 2.6.
 As an alternative we recommend [Alpakka](https://doc.akka.io/docs/alpakka/current/).
@@ -9,28 +15,29 @@ This is of course not a drop-in replacement. If there is community interest we
 are open to setting up akka-camel as a separate community-maintained
 repository.
 
-## akka-agent removed
+### akka-agent removed
 
 After being deprecated in 2.5.0, the akka-agent module has been removed in 2.6.
 If there is interest it may be moved to a separate, community-maintained
 repository.
 
-## akka-contrib removed
+### akka-contrib removed
 
 The akka-contrib module was deprecated in 2.5 and has been removed in 2.6.
 To migrate, take the components you are using from [Akka 2.5](https://github.com/akka/akka/tree/release-2.5/akka-contrib)
 and include them in your own project or library under your own package name.
 
-## Scala 2.11 no longer supported
-
-If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
-
-## Actor DSL removal
+### Actor DSL removed
 
 Actor DSL is a rarely used feature and has been deprecated since `2.5.0`.
 Use plain `system.actorOf` instead of the DSL to create Actors if you have been using it.
 
-## actorFor removal
+### Timing operator removed
+
+`akka.stream.extra.Timing` has been removed. If you need it you can now find it in `akka.stream.contrib.Timed` from
+ [Akka Stream Contrib](https://github.com/akka/akka-stream-contrib/blob/master/src/main/scala/akka/stream/contrib/Timed.scala).
+
+### actorFor removed
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
@@ -142,17 +149,16 @@ A full cluster restart is required to change to Artery.
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
 
-### Timing operator removed
-
-`akka.stream.extra.Timing` has been removed. If you need it you can now find it in `akka.stream.contrib.Timed` from
- [Akka Stream Contrib](https://github.com/akka/akka-stream-contrib/blob/master/contrib/src/main/scala/akka/stream/contrib/Timed.scala).
-
 ## Cluster Sharding
 
 ### Passivate idle entity
 The configuration `akka.cluster.sharding.passivate-idle-entity-after` is now enabled by default.
 Sharding will passivate entities when they have not received any messages after this duration.
-Set
+To disable passivation you can use configuration:
+
+```
+akka.cluster.sharding.passivate-idle-entity-after = off
+```
 
 ## CoordinatedShutdown is run from ActorSystem.terminate
 
