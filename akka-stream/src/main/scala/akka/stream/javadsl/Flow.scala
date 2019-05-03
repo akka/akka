@@ -230,10 +230,7 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  @Deprecated
-  @deprecated(
-    "Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)",
-    "2.5.12")
+  @deprecated("Use 'Flow.lazyCompletionStageFlow' in combination with 'Flow.prefixAndTail(1)' instead", "2.6.0")
   def lazyInit[I, O, M](
       flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]],
       fallback: function.Creator[M]): Flow[I, O, M] = {
@@ -262,6 +259,7 @@ object Flow {
    * '''Cancels when''' downstream cancels
    */
   @silent
+  @deprecated("Use 'Flow.lazyCompletionStageFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](
       flowFactory: function.Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
     import scala.compat.java8.FutureConverters._
