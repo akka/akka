@@ -62,7 +62,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWithGraph")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
 
- dispatcher aliases made internal streams dispatcher resolve superfluous #26775
+# dispatcher aliases made internal streams dispatcher resolve superfluous #26775
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorAttributes#Dispatcher.resolve")
 
 # #24372 No Future/CompletionStage in StreamRefs

@@ -52,6 +52,11 @@ public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> 
   }
 
   @Override
+  public Attributes initialAttributes() {
+    return Attributes.apply(ActorAttributes.IODispatcher());
+  }
+
+  @Override
   public SourceShape<EventEnvelope> shape() {
     return SourceShape.of(out);
   }

@@ -6,7 +6,7 @@ package docs.persistence.query
 
 import akka.persistence.query.{ EventEnvelope, Offset }
 import akka.serialization.SerializationExtension
-import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
+import akka.stream.{ ActorAttributes, ActorMaterializer, Attributes, Outlet, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic }
 
 import scala.concurrent.duration.FiniteDuration
@@ -19,6 +19,9 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
   private case object Continue
   val out: Outlet[EventEnvelope] = Outlet("MyEventByTagSource.out")
   override def shape: SourceShape[EventEnvelope] = SourceShape(out)
+
+  override protected def initialAttributes: Attributes = Attributes(ActorAttributes.IODispatcher)
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with OutHandler {
       lazy val system = materializer match {
