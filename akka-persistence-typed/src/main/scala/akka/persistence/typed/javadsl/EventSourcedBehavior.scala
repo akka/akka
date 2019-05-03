@@ -12,12 +12,14 @@ import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
 import akka.util.unused
 
+@ApiMayChange
 abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val persistenceId: PersistenceId,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
@@ -203,6 +205,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
  * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
+@ApiMayChange
 abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
     persistenceId: PersistenceId,
     backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
