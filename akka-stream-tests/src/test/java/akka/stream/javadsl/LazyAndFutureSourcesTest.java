@@ -36,13 +36,6 @@ public class LazyAndFutureSourcesTest extends StreamTest {
     super(actorSystemResource);
   }
 
-  /*
-    public static void api() {
-
-
-    Source.lazyCompletionStageSource();
-    }
-  */
   // note these are minimal happy path tests to cover API, more thorough tests are on the Scala side
 
   @Test

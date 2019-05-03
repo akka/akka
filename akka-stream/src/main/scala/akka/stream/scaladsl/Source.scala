@@ -535,7 +535,7 @@ object Source {
     fromGraph(new LazySource(create))
 
   /**
-   *  Defers invoking the `create` function to create a future source until there is downstream demand.
+   * Defers invoking the `create` function to create a future source until there is downstream demand.
    *
    * The returned future source will emit downstream and behave just like it was the outer source when the future completes
    * successfully. Downstream completes when the created source completes and fails when the created source fails.

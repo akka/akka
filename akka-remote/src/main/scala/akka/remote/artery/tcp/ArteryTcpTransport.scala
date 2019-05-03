@@ -138,7 +138,7 @@ private[remote] class ArteryTcpTransport(
 
         def flow(controlIdleKillSwitch: OptionVal[SharedKillSwitch]) =
           Flow[ByteString]
-            .via(Flow.lazyInitAsync(() => {
+            .via(Flow.lazyFlow(() => {
               // only open the actual connection if any new messages are sent
               afr.loFreq(
                 TcpOutbound_Connected,
@@ -146,10 +146,8 @@ private[remote] class ArteryTcpTransport(
                 s"/ ${streamName(streamId)}")
               if (controlIdleKillSwitch.isDefined)
                 outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(controlIdleKillSwitch)
-              Future.successful(
-                Flow[ByteString]
-                  .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
-                  .via(connectionFlow))
+
+              Flow[ByteString].prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId))).via(connectionFlow)
             }))
             .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal => Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
