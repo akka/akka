@@ -12,7 +12,7 @@ import akka.annotation.ApiMayChange
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
-import akka.stream.impl.{ LinearTraversalBuilder }
+import akka.stream.impl.LinearTraversalBuilder
 import akka.util.{ ConstantFun, Timeout }
 import akka.util.JavaDurationConverters._
 import akka.{ Done, NotUsed }
@@ -28,6 +28,8 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 import java.util.function.Supplier
 
+import akka.dispatch.ExecutionContexts
+import akka.japi.function.Creator
 import akka.util.unused
 import com.github.ghik.silencer.silent
 
@@ -179,6 +181,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
+  @deprecated("Use 'Source.future' instead", "2.6.0")
   def fromFuture[O](future: Future[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.future(future))
 
@@ -188,6 +191,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
    */
+  @deprecated("Use 'Source.completionStage' instead", "2.6.0")
   def fromCompletionStage[O](future: CompletionStage[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.completionStage(future))
 
@@ -197,6 +201,7 @@ object Source {
    * stream completes the materialized [[Future]] will be failed with a [[StreamDetachedException]].
    */
   @silent
+  @deprecated("Use 'Source.futureSource' (potentially together with `Source.fromGraph`) instead", "2.6.0")
   def fromFutureSource[T, M](future: Future[_ <: Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] =
     new Source(scaladsl.Source.fromFutureSource(future))
 
@@ -206,6 +211,7 @@ object Source {
    * If downstream cancels before the stream completes the materialized [[CompletionStage]] will be failed
    * with a [[StreamDetachedException]]
    */
+  @deprecated("Use 'Source.completionStageSource' (potentially together with `Source.fromGraph`) instead", "2.6.0")
   def fromSourceCompletionStage[T, M](
       completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] =
     new Source(scaladsl.Source.fromSourceCompletionStage(completion))
@@ -271,7 +277,7 @@ object Source {
    * the materialized future is completed with its value, if downstream cancels or fails without any demand the
    * `create` factory is never called and the materialized `CompletionStage` is failed.
    */
-  @silent
+  @deprecated("Use 'Source.lazySource' instead", "2.6.0")
   def lazily[T, M](create: function.Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source.lazily[T, M](() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
 
@@ -282,9 +288,116 @@ object Source {
    *
    * @see [[Source.lazily]]
    */
-  @silent
+  @deprecated("Use 'Source.lazyFuture' instead", "2.6.0")
   def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, Future[NotUsed]] =
     scaladsl.Source.lazilyAsync[T](() => create.create().toScala).asJava
+
+  /**
+   * Emits a single value when the given Scala `Future` is successfully completed and then completes the stream.
+   * The stream fails if the `Future` is completed with a failure.
+   *
+   * Here for Java interoperability, the normal use from Java should be [[Source.completionStage]]
+   */
+  def future[T](futureElement: Future[T]): Source[T, NotUsed] =
+    scaladsl.Source.future(futureElement).asJava
+
+  /**
+   * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
+   * If the `CompletionStage` is completed with a failure the stream is failed.
+   */
+  def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
+    future(completionStage.toScala)
+
+  /**
+   * Turn a `CompletionStage[Source]` into a source that will emit the values of the source when the future completes successfully.
+   * If the `CompletionStage` is completed with a failure the stream is failed.
+   */
+  def completionStageSource[T, M](completionStageSource: CompletionStage[Source[T, M]]): Source[T, CompletionStage[M]] =
+    scaladsl.Source
+      .futureSource(completionStageSource.toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.toJava)
+      .asJava
+
+  /**
+   * Defers invoking the `create` function to create a single element until there is downstream demand.
+   *
+   * If the `create` function fails when invoked the stream is failed.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and will trigger the factory immediately.
+   *
+   * The materialized future `Done` value is completed when the `create` function has successfully been invoked,
+   * if the function throws the future materialized value is failed with that exception.
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazySingle[T](create: Creator[T]): Source[T, CompletionStage[Done]] =
+    lazySource(() => single(create.create()).mapMaterializedValue(_ => Done))
+
+  /**
+   * Defers invoking the `create` function to create a future element until there is downstream demand.
+   *
+   * The returned future element will be emitted downstream when it completes, or fail the stream if the future
+   * is failed or the `create` function itself fails.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and will trigger the factory immediately.
+   *
+   * The materialized future `Done` value is completed when the `create` function has successfully been invoked and the future completes,
+   * if the function throws or the future fails the future materialized value is failed with that exception.
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazyCompletionStage[T](create: Creator[CompletionStage[T]]): Source[T, CompletionStage[Done]] =
+    scaladsl.Source
+      .lazySource { () =>
+        val f = create.create().toScala
+        scaladsl.Source
+          .future(f)
+          .mapMaterializedValue(_ => f.map(_ => Done: Done)(ExecutionContexts.sameThreadExecutionContext))
+      }
+      .mapMaterializedValue(_.flatten.toJava)
+      .asJava
+
+  /**
+   * Defers invoking the `create` function to create a future source until there is downstream demand.
+   *
+   * The returned source will emit downstream and behave just like it was the outer source. Downstream completes
+   * when the created source completes and fails when the created source fails.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and will trigger the factory immediately.
+   *
+   * The materialized future value is completed with the materialized value of the created source when
+   * it has been materialized. If the function throws or the source materialization fails the future materialized value
+   * is failed with the thrown exception.
+   *
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazySource[T, M](create: Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
+    scaladsl.Source.lazySource(() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
+
+  /**
+   *  Defers invoking the `create` function to create a future source until there is downstream demand.
+   *
+   * The returned future source will emit downstream and behave just like it was the outer source when the `CompletionStage` completes
+   * successfully. Downstream completes when the created source completes and fails when the created source fails.
+   * If the `CompletionStage` or the `create` function fails the stream is failed.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and triggers the factory immediately.
+   *
+   * The materialized `CompletionStage` value is completed with the materialized value of the created source when
+   * it has been materialized. If the function throws or the source materialization fails the future materialized value
+   * is failed with the thrown exception.
+   *
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazyCompletionStageSource[T, M](create: Creator[CompletionStage[Source[T, M]]]): Source[T, CompletionStage[M]] =
+    lazySource[T, CompletionStage[M]](() => completionStageSource(create.create()))
+      .mapMaterializedValue(_.thenCompose(csm => csm))
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]

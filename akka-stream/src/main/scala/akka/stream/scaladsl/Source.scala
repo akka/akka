@@ -464,8 +464,8 @@ object Source {
     fromGraph(new FutureSource[T](futureElement))
 
   /**
-   * Emits a single value when the given `Future` is successfully completed and then completes the stream.
-   * If the `Future` is completed with a failure the stream is failed.
+   * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
+   * If the `CompletionStage` is completed with a failure the stream is failed.
    *
    * Here for Java interoperability, the normal use from Scala should be [[Source.future]]
    */
