@@ -84,3 +84,17 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedInterval")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StopTimed")
+
+#26187 Remove ActorPublisher/Subscriber
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnboundedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnrestrictedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
+
