@@ -20,6 +20,7 @@ object ClusterSingletonPersistenceSpec {
       akka.remote.artery.canonical.hostname = 127.0.0.1
 
       akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
       akka.actor {
         serialize-messages = off

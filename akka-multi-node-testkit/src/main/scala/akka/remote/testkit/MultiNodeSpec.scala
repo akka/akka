@@ -225,6 +225,7 @@ object MultiNodeSpec {
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         coordinated-shutdown.terminate-actor-system = off
+        coordinated-shutdown.run-by-actor-system-terminate = off
         coordinated-shutdown.run-by-jvm-shutdown-hook = off
         actor {
           default-dispatcher {

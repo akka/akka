@@ -5,6 +5,9 @@
 package akka.actor.typed.internal.adapter
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.BehaviorInterceptor
+import akka.actor.typed.Signal
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
@@ -37,10 +40,50 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.setup(ctx => stash.unstashAll(ctx.asInstanceOf[ActorContext[T]], guardianBehavior).unsafeCast[Any])
+        Behaviors.setup(
+          ctx =>
+            stash
+              .unstashAll(
+                ctx.asInstanceOf[ActorContext[T]],
+                Behaviors.intercept(new GuardianStopInterceptor[T])(guardianBehavior))
+              .unsafeCast[Any])
       case other =>
         stash.stash(other.asInstanceOf[T])
         this
     }
 
+}
+
+/**
+ * INTERNAL API
+ *
+ * When the user guardian is stopped the ActorSystem is terminated, but to run CoordinatedShutdown
+ * as part of that we must intercept when the guardian is stopped and call ActorSystem.terminate()
+ * explicitly.
+ */
+@InternalApi private[akka] final class GuardianStopInterceptor[T] extends BehaviorInterceptor[T, T] {
+  override def aroundReceive(
+      ctx: TypedActorContext[T],
+      msg: T,
+      target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
+    val next = target(ctx, msg)
+    interceptStopped(ctx, next)
+  }
+
+  override def aroundSignal(
+      ctx: TypedActorContext[T],
+      signal: Signal,
+      target: BehaviorInterceptor.SignalTarget[T]): Behavior[T] = {
+    val next = target(ctx, signal)
+    interceptStopped(ctx, next)
+  }
+
+  private def interceptStopped(ctx: TypedActorContext[T], next: Behavior[T]): Behavior[T] = {
+    if (Behavior.isAlive(next))
+      next
+    else {
+      ctx.asScala.system.terminate()
+      Behaviors.ignore
+    }
+  }
 }

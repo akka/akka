@@ -23,6 +23,7 @@ object ClusterApiSpec {
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
       akka.actor {
         serialize-messages = off
         allow-java-serialization = off

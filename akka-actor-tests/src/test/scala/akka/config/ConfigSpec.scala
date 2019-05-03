@@ -67,6 +67,12 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getBoolean("akka.log-dead-letters-during-shutdown") should ===(true)
         settings.LogDeadLettersDuringShutdown should ===(true)
+
+        getBoolean("akka.coordinated-shutdown.terminate-actor-system") should ===(true)
+        settings.CoordinatedShutdownTerminateActorSystem should ===(true)
+
+        getBoolean("akka.coordinated-shutdown.run-by-actor-system-terminate") should ===(true)
+        settings.CoordinatedShutdownRunByActorSystemTerminate should ===(true)
       }
 
       {

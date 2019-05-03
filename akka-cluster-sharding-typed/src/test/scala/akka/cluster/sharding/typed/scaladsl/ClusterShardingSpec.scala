@@ -47,6 +47,7 @@ object ClusterShardingSpec {
       akka.cluster.sharding.number-of-shards = 10
 
       akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
       akka.actor {
         serialize-messages = off

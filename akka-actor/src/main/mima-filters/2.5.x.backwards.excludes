@@ -7,6 +7,9 @@ ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.ActorDSL$*")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.dsl.*")
 
+# #25213 CoordinatedShutdown from ActorSystem.terminate
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ExtendedActorSystem.finalTerminate")
+
 # #26190 remove actorFor
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.actorFor")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorRefProvider.actorFor")
