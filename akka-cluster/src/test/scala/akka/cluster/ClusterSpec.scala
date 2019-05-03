@@ -193,7 +193,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         probe.expectMsgType[MemberUp]
         val mat = ActorMaterializer()(sys2)
-        val sink = Await.result(StreamRefs.sinkRef[String]().to(Sink.ignore).run()(mat), 10.seconds)
+        val sink = StreamRefs.sinkRef[String]().to(Sink.ignore).run()(mat)
         Source.tick(1.milli, 10.millis, "tick").to(sink).run()(mat)
 
         CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)

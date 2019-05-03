@@ -122,16 +122,16 @@ trait LoggingBus extends ActorEventBus {
         } yield {
           system.dynamicAccess
             .getClassFor[Actor](loggerName)
-            .map({
-              case actorClass => addLogger(system, actorClass, level, logName)
-            })
-            .recover({
+            .map { actorClass =>
+              addLogger(system, actorClass, level, logName)
+            }
+            .recover {
               case e =>
                 throw new ConfigurationException(
                   "Logger specified in config can't be loaded [" + loggerName +
                   "] due to [" + e.toString + "]",
                   e)
-            })
+            }
             .get
         }
       guard.withGuard {
@@ -1064,7 +1064,7 @@ object Logging {
       val size = mdc.size
       if (size == 0) ""
       else if (size == 1) s"[${mdc.head._1}:${mdc.head._2}]"
-      else mdc.map({ case (k, v) => s"$k:$v" }).mkString("[", "][", "]")
+      else mdc.map { case (k, v) => s"$k:$v" }.mkString("[", "][", "]")
     }
   }
   object StdOutLogger {

@@ -15,18 +15,56 @@ After being deprecated in 2.5.0, the akka-agent module has been removed in 2.6.
 If there is interest it may be moved to a separate, community-maintained
 repository.
 
+## akka-contrib removed
+
+The akka-contrib module was deprecated in 2.5 and has been removed in 2.6.
+To migrate, take the components you are using from [Akka 2.5](https://github.com/akka/akka/tree/release-2.5/akka-contrib)
+and include them in your own project or library under your own package name.
+
 ## Scala 2.11 no longer supported
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
 
-### Actor DSL removal
+## Actor DSL removal
 
 Actor DSL is a rarely used feature and has been deprecated since `2.5.0`.
 Use plain `system.actorOf` instead of the DSL to create Actors if you have been using it.
 
+## actorFor removal
+
+`actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
+
+## Internal dispatcher introduced
+
+To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
+use of blocking APIs from actors) a new internal dispatcher has been added. All of Akka's internal, non-blocking actors
+now run on the internal dispatcher by default.
+
+The dispatcher can be configured through `akka.actor.internal-dispatcher`.
+
+For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
+asynchronous actors, user actors and Akka internal actors. In that case, can configure the
+`akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
+This reinstantiates the behavior from previous Akka versions but also removes the isolation between
+user and Akka internals. So, use at your own risk!
+
+Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
+dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty 
+string as value. If such an empty value is used in your `application.conf` the same result is achieved by simply removing
+that entry completely and having the default apply.
+
+For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
+
+## Default dispatcher size
+
+Previously the factor for the default dispatcher was set a bit high (`3.0`) to give some extra threads in case of accidental
+blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher
+the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
+`8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
+
 ## Default remoting is now Artery TCP
 
-@ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation. 
+@ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
 <a id="classic-to-artery"></a>
@@ -64,7 +102,7 @@ for how to do this.
 
 The following defaults have changed:
 
-* `akka.remote.artery.transport` default has changed from `aeron-udp` to `tcp` 
+* `akka.remote.artery.transport` default has changed from `aeron-udp` to `tcp`
 
 The following properties have moved. If you don't adjust these from their defaults no changes are required:
 
@@ -87,15 +125,27 @@ For TCP:
 
 ### Remaining with Classic remoting (not recommended)
 
-Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is 
+Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
 ## Netty UDP has been removed
 
-Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed. 
+Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
+
+## Streams
+
+### StreamRefs
+
+The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
+`Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
+
+### Timing operator removed
+
+`akka.stream.extra.Timing` has been removed. If you need it you can now find it in `akka.stream.contrib.Timed` from
+ [Akka Stream Contrib](https://github.com/akka/akka-stream-contrib/blob/master/contrib/src/main/scala/akka/stream/contrib/Timed.scala).
 
 ## Cluster Sharding
 

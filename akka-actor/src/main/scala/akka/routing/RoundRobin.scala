@@ -69,7 +69,7 @@ final class RoundRobinRoutingLogic extends RoutingLogic {
  */
 @SerialVersionUID(1L)
 final case class RoundRobinPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
@@ -134,7 +134,7 @@ final case class RoundRobinPool(
  */
 @SerialVersionUID(1L)
 final case class RoundRobinGroup(
-    val paths: immutable.Iterable[String],
+    paths: immutable.Iterable[String],
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {
 

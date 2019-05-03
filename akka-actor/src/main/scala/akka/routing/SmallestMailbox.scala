@@ -182,7 +182,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
 @silent
 @SerialVersionUID(1L)
 final case class SmallestMailboxPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,

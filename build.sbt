@@ -48,7 +48,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   clusterShardingTyped,
   clusterTools,
   clusterTyped,
-  contrib,
   coordination,
   discovery,
   distributedData,
@@ -162,26 +161,6 @@ lazy val clusterTools = akkaModule("akka-cluster-tools")
   .configs(MultiJvm)
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
 
-lazy val contrib = akkaModule("akka-contrib")
-  .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile")
-  .settings(Dependencies.contrib)
-  .settings(AutomaticModuleName.settings("akka.contrib"))
-  .settings(OSGi.contrib)
-  .settings(description :=
-    """|
-         |This subproject provides a home to modules contributed by external
-         |developers which may or may not move into the officially supported code
-         |base over time. A module in this subproject doesn't have to obey the rule
-         |of staying binary compatible between minor releases. Breaking API changes
-         |may be introduced in minor releases without notice as we refine and
-         |simplify based on your feedback. A module may be dropped in any release
-         |without prior deprecation. The Lightbend subscription does not cover
-         |support for these modules.
-         |""".stripMargin)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
-  .disablePlugins(MimaPlugin)
-
 lazy val distributedData = akkaModule("akka-distributed-data")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   .settings(Dependencies.distributedData)
@@ -224,7 +203,7 @@ lazy val docs = akkaModule("akka-docs")
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
-        "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&project=%s",
+        "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",
         "extref.ecs.base_url" -> "https://example.lightbend.com/v1/download/%s",
         "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
         "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",

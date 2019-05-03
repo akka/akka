@@ -375,52 +375,6 @@ private[akka] class RemoteActorRefProvider(
       }
     }
 
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  override private[akka] def actorFor(path: ActorPath): InternalActorRef = {
-    if (hasAddress(path.address)) actorFor(rootGuardian, path.elements)
-    else
-      try {
-        new RemoteActorRef(
-          transport,
-          transport.localAddressForRemote(path.address),
-          path,
-          Nobody,
-          props = None,
-          deploy = None)
-      } catch {
-        case NonFatal(e) =>
-          log.error(e, "Error while looking up address [{}]", path.address)
-          new EmptyLocalActorRef(this, path, eventStream)
-      }
-  }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  override private[akka] def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
-    case ActorPathExtractor(address, elems) =>
-      if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else {
-        val rootPath = RootActorPath(address) / elems
-        try {
-          new RemoteActorRef(
-            transport,
-            transport.localAddressForRemote(address),
-            rootPath,
-            Nobody,
-            props = None,
-            deploy = None)
-        } catch {
-          case NonFatal(e) =>
-            log.error(e, "Error while looking up address [{}]", rootPath.address)
-            new EmptyLocalActorRef(this, rootPath, eventStream)
-        }
-      }
-    case _ => local.actorFor(ref, path)
-  }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  override private[akka] def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
-    local.actorFor(ref, path)
-
   def rootGuardianAt(address: Address): ActorRef = {
     if (hasAddress(address)) rootGuardian
     else
@@ -641,17 +595,11 @@ private[akka] class RemoteActorRef private[akka] (
   /**
    * Determine if a watch/unwatch message must be handled by the remoteWatcher actor, or sent to this remote ref
    */
-  def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) =
-    if (watchee.path.uid == akka.actor.ActorCell.undefinedUid) {
-      provider.log.debug(
-        "actorFor is deprecated, and watching a remote ActorRef acquired with actorFor is not reliable: [{}]",
-        watchee.path)
-      false // Not managed by the remote watcher, so not reliable to communication failure or remote system crash
-    } else {
-      // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
-      // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-      watcher != provider.remoteWatcher && watchee == this
-    }
+  def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) = {
+    // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
+    // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
+    watcher != provider.remoteWatcher && watchee == this
+  }
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {

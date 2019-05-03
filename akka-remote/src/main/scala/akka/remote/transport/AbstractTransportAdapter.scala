@@ -156,7 +156,7 @@ object ActorTransportAdapter {
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
-    extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
+    extends AbstractTransportAdapter(wrappedTransport)(system.dispatchers.internalDispatcher) {
 
   import ActorTransportAdapter._
 

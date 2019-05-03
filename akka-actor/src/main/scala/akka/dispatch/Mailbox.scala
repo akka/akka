@@ -645,7 +645,7 @@ final case class UnboundedMailbox() extends MailboxType with ProducesMessageQueu
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
-  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new UnboundedMailbox.MessageQueue
 }
 
@@ -678,7 +678,7 @@ final case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with P
  *
  * NOTE: NonBlockingBoundedMailbox does not use `mailbox-push-timeout-time` as it is non-blocking.
  */
-case class NonBlockingBoundedMailbox(val capacity: Int)
+case class NonBlockingBoundedMailbox(capacity: Int)
     extends MailboxType
     with ProducesMessageQueue[BoundedNodeMessageQueue] {
 
@@ -693,7 +693,7 @@ case class NonBlockingBoundedMailbox(val capacity: Int)
 /**
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
-final case class BoundedMailbox(val capacity: Int, override val pushTimeOut: FiniteDuration)
+final case class BoundedMailbox(capacity: Int, override val pushTimeOut: FiniteDuration)
     extends MailboxType
     with ProducesMessageQueue[BoundedMailbox.MessageQueue]
     with ProducesPushTimeoutSemanticsMailbox {
@@ -704,7 +704,7 @@ final case class BoundedMailbox(val capacity: Int, override val pushTimeOut: Fin
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new BoundedMailbox.MessageQueue(capacity, pushTimeOut)
 }
 
@@ -821,7 +821,7 @@ final case class UnboundedDequeBasedMailbox()
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
-  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new UnboundedDequeBasedMailbox.MessageQueue
 }
 
