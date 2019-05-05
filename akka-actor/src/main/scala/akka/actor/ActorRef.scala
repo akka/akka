@@ -948,7 +948,7 @@ private[akka] final class FunctionRef(
         // AddressTerminatedTopic update not needed
         block
       case _ =>
-        def hasNonLocalAddress: Boolean = (watching.exists(isNonLocal)) || (watchedByOrEmpty.exists(isNonLocal))
+        def hasNonLocalAddress: Boolean = watching.exists(isNonLocal) || watchedByOrEmpty.exists(isNonLocal)
 
         val had = hasNonLocalAddress
         val result = block
