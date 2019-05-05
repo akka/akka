@@ -8,10 +8,10 @@ import akka.testkit._
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import java.nio.charset.StandardCharsets
-import java.util.{Calendar, Date, GregorianCalendar, TimeZone}
+import java.util.{ Calendar, Date, GregorianCalendar, TimeZone }
 
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
@@ -21,7 +21,7 @@ import akka.util.Helpers
 import akka.event.Logging.InitializeLogger
 import akka.event.Logging.Warning
 import java.text.SimpleDateFormat
-import java.time.{LocalDateTime, ZoneOffset}
+import java.time.{ LocalDateTime, ZoneOffset }
 import java.util.concurrent.TimeUnit
 
 object LoggerSpec {
