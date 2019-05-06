@@ -258,7 +258,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   @tailrec private final def processMailbox(
       left: Int = java.lang.Math.max(dispatcher.throughput, 1),
       deadlineNs: Long =
-        if (dispatcher.isThroughputDeadlineTimeDefined == true)
+        if (dispatcher.isThroughputDeadlineTimeDefined)
           System.nanoTime + dispatcher.throughputDeadlineTime.toNanos
         else 0L): Unit =
     if (shouldProcessMessage) {
@@ -269,7 +269,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
         processAllSystemMessages()
-        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+        if ((left > 1) && (!dispatcher.isThroughputDeadlineTimeDefined || (System.nanoTime - deadlineNs) < 0))
           processMailbox(left - 1, deadlineNs)
       }
     }
@@ -284,7 +284,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def processAllSystemMessages(): Unit = {
     var interruption: Throwable = null
     var messageList = systemDrain(SystemMessageList.LNil)
-    while ((messageList.nonEmpty) && !isClosed) {
+    while (messageList.nonEmpty && !isClosed) {
       val msg = messageList.head
       messageList = messageList.tail
       msg.unlink()
@@ -294,7 +294,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       if (Thread.interrupted())
         interruption = new InterruptedException("Interrupted while processing system messages")
       // don’t ever execute normal message when system message present!
-      if ((messageList.isEmpty) && !isClosed) messageList = systemDrain(SystemMessageList.LNil)
+      if (messageList.isEmpty && !isClosed) messageList = systemDrain(SystemMessageList.LNil)
     }
     /*
      * if we closed the mailbox, we must dump the remaining system messages

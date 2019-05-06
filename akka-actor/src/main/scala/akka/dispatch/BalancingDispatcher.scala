@@ -103,7 +103,7 @@ private[akka] class BalancingDispatcher(
         if (messageQueue.hasMessages
             && i.hasNext
             && (executorService.executor match {
-              case lm: LoadMetrics => lm.atFullThrottle == false
+              case lm: LoadMetrics => !lm.atFullThrottle
               case _               => true
             })
             && !registerForExecution(i.next.mailbox, false, false))
