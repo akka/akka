@@ -581,5 +581,14 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
       }
     }
 
+    "not conflict with the ClusterClient receptionist default name" in {
+      val testKit = ActorTestKit(s"ClusterReceptionistSpec-test-9", ClusterReceptionistSpec.config)
+      try {
+        testKit.system.systemActorOf(Behaviors.ignore, "receptionist")(3.seconds)
+      } finally {
+        testKit.shutdownTestKit()
+      }
+    }
+
   }
 }
