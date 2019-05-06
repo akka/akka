@@ -43,7 +43,7 @@ object LatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
-           advanced.idle-cpu-level = 7
+           advanced.aeron.idle-cpu-level = 7
 
            advanced.inbound-lanes = 1
 
