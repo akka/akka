@@ -3,3 +3,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Rememb
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RememberEntityStarter.props")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData.remove")
+
+# #26877 Performance improvements of DDataShard
+ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
