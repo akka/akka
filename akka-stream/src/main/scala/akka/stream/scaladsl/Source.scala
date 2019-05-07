@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
@@ -222,6 +222,10 @@ final class Source[+Out, +Mat](
       combineRest(2, rest.iterator)
     })
 
+  /**
+   * API MAY CHANGE
+   */
+  @ApiMayChange
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 }
