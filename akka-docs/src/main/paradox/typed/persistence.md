@@ -345,11 +345,14 @@ Java
 
 The `RecoveryCompleted` contains the current `State`.
 
-@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
+@ref[Snapshots](persistence-snapshot.md) can be used for optimizing recovery times.
 
 ## Tagging
 
-Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
+Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence
+
+
+#event-adapters):
 
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging }
