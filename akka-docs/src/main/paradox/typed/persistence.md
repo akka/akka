@@ -349,10 +349,7 @@ The `RecoveryCompleted` contains the current `State`.
 
 ## Tagging
 
-Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence
-
-
-#event-adapters):
+Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence#event-adapters):
 
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging }
