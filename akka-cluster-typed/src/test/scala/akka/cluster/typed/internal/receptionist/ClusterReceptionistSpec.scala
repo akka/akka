@@ -41,8 +41,8 @@ object ClusterReceptionistSpec {
           "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$Perish$$" = test
         }
       }
-      akka.remote.netty.tcp.port = 0
-      akka.remote.netty.tcp.host = 127.0.0.1
+      akka.remote.classic.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.host = 127.0.0.1
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
 
@@ -345,7 +345,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         val testKit3 = ActorTestKit(
           system1.name,
           ConfigFactory.parseString(s"""
-            akka.remote.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
+            akka.remote.classic.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
             # retry joining when existing member removed
             akka.cluster.retry-unsuccessful-join-after = 1s
@@ -456,7 +456,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         val testKit3 = ActorTestKit(
           system1.name,
           ConfigFactory.parseString(s"""
-            akka.remote.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
+            akka.remote.classic.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
           """).withFallback(config))
 

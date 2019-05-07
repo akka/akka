@@ -31,7 +31,7 @@ object LotsOfDataBot {
     ports.foreach { port =>
       // Override the configuration of the port
       val config = ConfigFactory
-        .parseString("akka.remote.netty.tcp.port=" + port)
+        .parseString("akka.remote.classic.netty.tcp.port=" + port)
         .withFallback(
           ConfigFactory.load(ConfigFactory.parseString("""
             passive = off

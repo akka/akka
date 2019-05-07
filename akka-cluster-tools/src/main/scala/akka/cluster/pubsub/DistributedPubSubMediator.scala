@@ -29,7 +29,6 @@ import akka.routing.BroadcastRoutingLogic
 
 import scala.collection.immutable.TreeMap
 import com.typesafe.config.Config
-import akka.dispatch.Dispatchers
 
 object DistributedPubSubSettings {
 
@@ -930,10 +929,7 @@ class DistributedPubSub(system: ExtendedActorSystem) extends Extension {
       system.deadLetters
     else {
       val name = system.settings.config.getString("akka.cluster.pub-sub.name")
-      val dispatcher = system.settings.config.getString("akka.cluster.pub-sub.use-dispatcher") match {
-        case "" => Dispatchers.DefaultDispatcherId
-        case id => id
-      }
+      val dispatcher = system.settings.config.getString("akka.cluster.pub-sub.use-dispatcher")
       system.systemActorOf(DistributedPubSubMediator.props(settings).withDispatcher(dispatcher), name)
     }
   }

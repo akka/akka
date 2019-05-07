@@ -47,7 +47,7 @@ class SourceRefBenchmark {
 
   @Setup(Level.Invocation)
   def setup(): Unit = {
-    sourceRef = Await.result(Source.fromGraph(new BenchTestSource(100000)).runWith(StreamRefs.sourceRef()), 10.seconds)
+    sourceRef = Source.fromGraph(new BenchTestSource(100000)).runWith(StreamRefs.sourceRef())
   }
 
   @TearDown

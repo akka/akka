@@ -9,13 +9,13 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
 import com.typesafe.config.{ Config, ConfigFactory }
+import akka.ConfigurationException
 import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
 import akka.util._
 import akka.util.Helpers.toRootLowerCase
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
@@ -25,7 +25,6 @@ import java.util.Optional
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
-
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
 
@@ -319,7 +318,12 @@ object ActorSystem {
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
-      config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
+
+      config.checkValid(
+        ConfigFactory
+          .defaultReference(classLoader)
+          .withoutPath(Dispatchers.InternalDispatcherId), // allow this to be both string and config object
+        "akka")
       config
     }
 
@@ -381,6 +385,15 @@ object ActorSystem {
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
     final val JvmShutdownHooks: Boolean = getBoolean("akka.jvm-shutdown-hooks")
+
+    final val CoordinatedShutdownTerminateActorSystem: Boolean = getBoolean(
+      "akka.coordinated-shutdown.terminate-actor-system")
+    final val CoordinatedShutdownRunByActorSystemTerminate: Boolean = getBoolean(
+      "akka.coordinated-shutdown.run-by-actor-system-terminate")
+    if (CoordinatedShutdownRunByActorSystemTerminate && !CoordinatedShutdownTerminateActorSystem)
+      throw new ConfigurationException(
+        "akka.coordinated-shutdown.run-by-actor-system-terminate=on and " +
+        "akka.coordinated-shutdown.terminate-actor-system=off is not a supported configuration combination.")
 
     final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
@@ -566,12 +579,19 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination(code: Runnable): Unit
 
   /**
-   * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, the system guardian
+   * Terminates this actor system by running [[CoordinatedShutdown]] with reason
+   * [[CoordinatedShutdown.ActorSystemTerminateReason]].
+   *
+   * If `akka.coordinated-shutdown.run-by-actor-system-terminate` is configured to `off`
+   * it will not run `CoordinatedShutdown`, but the `ActorSystem` and its actors
+   * will still be terminated.
+   *
+   * This will stop the guardian actor, which in turn
+   * will recursively stop all its child actors, and finally the system guardian
    * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future
-   * using the `dispatcher` of this actor system as it will have been shut down before the
+   * using the dispatcher of this actor system as it will have been shut down before the
    * future completes.
    */
   def terminate(): Future[Terminated]
@@ -676,6 +696,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * helping debugging in case something already went terminally wrong.
    */
   private[akka] def printTree: String
+
+  /**
+   * INTERNAL API: final step of `terminate()`
+   */
+  @InternalApi private[akka] def finalTerminate(): Unit
 
 }
 
@@ -840,7 +865,8 @@ private[akka] class ActorSystemImpl(
       dynamicAccess,
       settings,
       mailboxes,
-      defaultExecutionContext))
+      defaultExecutionContext),
+    log)
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
@@ -930,9 +956,25 @@ private[akka] class ActorSystemImpl(
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {
+    if (settings.CoordinatedShutdownRunByActorSystemTerminate && !aborting) {
+      // Note that the combination CoordinatedShutdownRunByActorSystemTerminate==true &&
+      // CoordinatedShutdownTerminateActorSystem==false is disallowed, checked in Settings.
+      // It's not a combination that is valuable to support and it would be complicated to
+      // protect against concurrency race conditions between calls to ActorSystem.terminate()
+      // and CoordinateShutdown.run()
+
+      // it will call finalTerminate() at the end
+      CoordinatedShutdown(this).run(CoordinatedShutdown.ActorSystemTerminateReason)
+    } else {
+      finalTerminate()
+    }
+    whenTerminated
+  }
+
+  override private[akka] def finalTerminate(): Unit = {
+    // these actions are idempotent
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
     guardian.stop()
-    whenTerminated
   }
 
   @volatile var aborting = false
@@ -940,8 +982,8 @@ private[akka] class ActorSystemImpl(
   /**
    * This kind of shutdown attempts to bring the system down and release its
    * resources more forcefully than plain shutdown. For example it will not
-   * wait for remote-deployed child actors to terminate before terminating their
-   * parents.
+   * run CoordinatedShutdown and not wait for remote-deployed child actors to
+   * terminate before terminating their parents.
    */
   def abort(): Unit = {
     aborting = true

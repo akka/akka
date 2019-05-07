@@ -89,7 +89,7 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template="Akka" layout="v75" minheight="400px" }
 
 @@@
 
@@ -1095,6 +1095,8 @@ To enable a hard `System.exit` as a final action you can configure:
 akka.coordinated-shutdown.exit-jvm = on
 ```
 
+The coordinated shutdown process can also be started by calling `ActorSystem.terminate()`.
+
 When using @ref:[Akka Cluster](cluster-usage.md) the `CoordinatedShutdown` will automatically run
 when the cluster node sees itself as `Exiting`, i.e. leaving from another node will trigger
 the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
@@ -1125,6 +1127,7 @@ used in the test:
 ```
 # Don't terminate ActorSystem via CoordinatedShutdown in tests
 akka.coordinated-shutdown.terminate-actor-system = off
+akka.coordinated-shutdown.run-by-actor-system-terminate = off
 akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
 akka.cluster.run-coordinated-shutdown-when-down = off
 ```

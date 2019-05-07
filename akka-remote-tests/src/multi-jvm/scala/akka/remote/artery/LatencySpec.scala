@@ -43,17 +43,17 @@ object LatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
-           advanced.idle-cpu-level = 7
+           advanced.aeron.idle-cpu-level = 7
 
            advanced.inbound-lanes = 1
 
            # for serious measurements when running this test on only one machine
            # it is recommended to use external media driver
            # See akka-remote/src/test/resources/aeron.properties
-           # advanced.embedded-media-driver = off
-           # advanced.aeron-dir = "akka-remote/target/aeron"
+           # advanced.aeron.embedded-media-driver = off
+           # advanced.aeron.aeron-dir = "akka-remote/target/aeron"
            # on linux, use directory on ram disk, instead
-           # advanced.aeron-dir = "/dev/shm/aeron"
+           # advanced.aeron.aeron-dir = "/dev/shm/aeron"
 
            advanced.compression {
              actor-refs.advertisement-interval = 2 second

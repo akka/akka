@@ -119,7 +119,7 @@ Observe all the parts you need here:
  Most of the cases this is *tcp*.
  * `system` is the remote system’s name (must match exactly, case-sensitive!)
  * `host` is the remote system’s IP address or DNS name, and it must match that
-system’s configuration (i.e. *akka.remote.netty.tcp.hostname*)
+system’s configuration (i.e. *akka.remote.classic.netty.tcp.hostname*)
  * `1234` is the port number on which the remote system is listening for
 connections and receiving messages
  * `/user/my/actor/hierarchy/path` is the absolute path of the remote actor in
@@ -137,10 +137,10 @@ system’s network location, e.g. because `host` was configured to be `0.0.0.0`,
 `localhost` or a NAT’ed IP address.
 
 If you are running an ActorSystem under a NAT or inside a docker container, make sure to
-set *akka.remote.netty.tcp.hostname* and *akka.remote.netty.tcp.port* to the address
+set *akka.remote.artery.hostname* and *akka.remote.artery.canonical.port* to the address
 it is reachable at from other ActorSystems. If you need to bind your network interface
-to a different address - use *akka.remote.netty.tcp.bind-hostname* and
-*akka.remote.netty.tcp.bind-port* settings. Also make sure your network is configured
+to a different address - use *akka.remote.artery.bind.hostname* and
+*akka.remote.artery.bind.port* settings. Also make sure your network is configured
 to translate from the address your ActorSystem is reachable at to the address your
 ActorSystem network interface is bound to.
 

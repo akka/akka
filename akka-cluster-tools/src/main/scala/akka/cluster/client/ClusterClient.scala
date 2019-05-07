@@ -36,7 +36,6 @@ import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
 import com.typesafe.config.Config
 import akka.remote.DeadlineFailureDetector
-import akka.dispatch.Dispatchers
 import akka.util.MessageBuffer
 import akka.util.ccompat._
 import scala.collection.immutable.{ HashMap, HashSet }
@@ -596,10 +595,7 @@ final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Exten
       system.deadLetters
     else {
       val name = config.getString("name")
-      val dispatcher = config.getString("use-dispatcher") match {
-        case "" => Dispatchers.DefaultDispatcherId
-        case id => id
-      }
+      val dispatcher = config.getString("use-dispatcher")
       // important to use val mediator here to activate it outside of ClusterReceptionist constructor
       val mediator = pubSubMediator
       system.systemActorOf(

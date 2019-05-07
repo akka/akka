@@ -128,7 +128,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 
-    akka.remote.artery.advanced {
+    akka.remote.artery.advanced.aeron {
       idle-cpu-level = 1
       embedded-media-driver = off
       aeron-dir = "target/aeron-StressSpec"

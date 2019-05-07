@@ -62,7 +62,41 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWithGraph")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
 
-#26187 - Re-write ActorPublisher/Subscribers as GraphStages
+# dispatcher aliases made internal streams dispatcher resolve superfluous #26775
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorAttributes#Dispatcher.resolve")
+
+# #24372 No Future/CompletionStage in StreamRefs
+# no filter because MiMa doesn't check the generic signature
+# https://github.com/lightbend/migration-manager/issues/40
+
+# 26188 remove Timed
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedFlowContext")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StartTimed")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.TimedOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedFlowDsl")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedSourceDsl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.TimedIntervalBetweenOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedSourceDsl")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedFlowDsl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedInterval")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StopTimed")
+
+#26187 Remove ActorPublisher/Subscriber
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnboundedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnrestrictedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamSource.withAttributes")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamSource.*")
 ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.InputStreamSource")

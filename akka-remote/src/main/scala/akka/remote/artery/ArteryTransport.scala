@@ -504,7 +504,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     system.scheduler.schedule(removeAfter, interval) {
       if (!isShutdown)
         associationRegistry.removeUnusedQuarantined(removeAfter)
-    }(system.dispatcher)
+    }(system.dispatchers.internalDispatcher)
   }
 
   // Select inbound lane based on destination to preserve message order,
@@ -538,7 +538,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         else
           log.debug("Shutting down [{}] via shutdownHook", localAddress)
         if (hasBeenShutdown.compareAndSet(false, true)) {
-          Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
+          Await.result(internalShutdown(), settings.Advanced.Aeron.DriverTimeout + 3.seconds)
         }
       }
     }
@@ -559,11 +559,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                     val a = association(from.address)
                     // make sure uid is same for active association
                     if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
-                      import system.dispatcher
-                      a.changeActorRefCompression(table).foreach { _ =>
-                        a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
-                        system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
-                      }
+
+                      a.changeActorRefCompression(table)
+                        .foreach { _ =>
+                          a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
+                          system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
+                        }(system.dispatchers.internalDispatcher)
                     }
                   } else
                     log.debug(
@@ -590,11 +591,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                     val a = association(from.address)
                     // make sure uid is same for active association
                     if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
-                      import system.dispatcher
-                      a.changeClassManifestCompression(table).foreach { _ =>
-                        a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
-                        system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
-                      }
+                      a.changeClassManifestCompression(table)
+                        .foreach { _ =>
+                          a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
+                          system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
+                        }(system.dispatchers.internalDispatcher)
                     }
                   } else
                     log.debug(
@@ -681,7 +682,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
             "remoteFlushOnShutdown")
           flushingPromise.future
         }
-      implicit val ec = system.dispatcher
+      implicit val ec = system.dispatchers.internalDispatcher
       flushing.recover { case _ => Done }.flatMap(_ => internalShutdown())
     } else {
       Future.successful(Done)
@@ -689,7 +690,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   private def internalShutdown(): Future[Done] = {
-    import system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
 
     killSwitch.abort(ShutdownSignal)
     topLevelFlightRecorder.loFreq(Transport_KillSwitchPulled, NoMetaData)
@@ -722,7 +723,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
    * Will complete successfully even if one of the stream completion futures failed
    */
   private def streamsCompleted: Future[Done] = {
-    implicit val ec = system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
     for {
       _ <- Future.traverse(associationRegistry.allAssociations)(_.streamsCompleted)
       _ <- Future.sequence(streamMatValues.get().valuesIterator.map {
