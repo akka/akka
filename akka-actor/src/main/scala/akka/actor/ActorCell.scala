@@ -571,22 +571,20 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = {
-    val influenceReceiveTimeout = !messageHandle.message.isInstanceOf[NotInfluenceReceiveTimeout]
+    val msg = messageHandle.message
     try {
       currentMessage = messageHandle
-      if (influenceReceiveTimeout)
-        cancelReceiveTimeout()
-      messageHandle.message match {
+      cancelReceiveTimeoutIfNeeded(msg)
+      msg match {
         case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
         case msg                    => receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e =>
       handleInvokeFailure(Nil, e)
-    } finally {
-      // Schedule or reschedule receive timeout
-      checkReceiveTimeout(reschedule = influenceReceiveTimeout)
-    }
+    } finally
+    // Schedule or reschedule receive timeout
+    checkReceiveTimeoutIfNeeded(msg)
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
