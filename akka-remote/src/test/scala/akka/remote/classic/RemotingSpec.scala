@@ -534,7 +534,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       }
     }
 
-    "should not publish AddressTerminated even on InvalidAssociationExecptions" in {
+    "should not publish AddressTerminated even on InvalidAssociationExceptions" in {
       val localAddress = Address("akka.test", "system1", "localhost", 1)
       val rawLocalAddress = localAddress.copy(protocol = "test")
       val remoteAddress = Address("akka.test", "system2", "localhost", 2)
@@ -770,7 +770,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val otherSelection =
         thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
       otherSelection.tell("ping", probe.ref)
-      probe.expectNoMessage(1.seconds)
+      probe.expectNoMessage(200.millis)
       try {
         (ActorSystem("other-system", otherConfig), otherSelection)
       } catch {
@@ -783,9 +783,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to connect to system even if it's not there at first" in {
       val config = ConfigFactory.parseString(s"""
-            akka.remote.enabled-transports = ["akka.remote.classic.netty.tcp"]
+            akka.remote.classic.enabled-transports = ["akka.remote.classic.netty.tcp"]
             akka.remote.classic.netty.tcp.port = 0
-            akka.remote.retry-gate-closed-for = 5s
+            akka.remote.classic.retry-gate-closed-for = 5s
             """).withFallback(remoteSystem.settings.config)
       val thisSystem = ActorSystem("this-system", config)
       try {
@@ -812,9 +812,9 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "allow other system to connect even if it's not there at first" in {
       val config = ConfigFactory.parseString(s"""
-            akka.remote.enabled-transports = ["akka.remote.classic.netty.tcp"]
+            akka.remote.classic.enabled-transports = ["akka.remote.classic.netty.tcp"]
             akka.remote.classic.netty.tcp.port = 0
-            akka.remote.retry-gate-closed-for = 5s
+            akka.remote.classic.retry-gate-closed-for = 5s
             """).withFallback(remoteSystem.settings.config)
       val thisSystem = ActorSystem("this-system", config)
       try {
