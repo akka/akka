@@ -30,7 +30,7 @@ public class StatsSampleOneMasterMain {
     for (String port : ports) {
       // Override the configuration of the port
       Config config =
-          ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)
+          ConfigFactory.parseString("akka.remote.classic.netty.tcp.port=" + port)
               .withFallback(ConfigFactory.parseString("akka.cluster.roles = [compute]"))
               .withFallback(ConfigFactory.load("stats2"));
 

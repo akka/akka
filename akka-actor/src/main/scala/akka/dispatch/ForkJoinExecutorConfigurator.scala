@@ -44,7 +44,7 @@ object ForkJoinExecutorConfigurator {
   final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
     override def getRawResult(): Unit = ()
     override def setRawResult(unit: Unit): Unit = ()
-    final override def exec(): Boolean =
+    override def exec(): Boolean =
       try {
         runnable.run(); true
       } catch {

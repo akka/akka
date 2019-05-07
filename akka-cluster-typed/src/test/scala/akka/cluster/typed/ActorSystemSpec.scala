@@ -10,24 +10,28 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 import akka.Done
+import akka.actor.CoordinatedShutdown
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
+import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.Span
 
 class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
 
-  override implicit val patienceConfig = PatienceConfig(1.second)
+  implicit val patience: PatienceConfig = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
+
   val config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
     """)
@@ -65,6 +69,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
         }
         inbox.receiveAll() should ===("hello" :: Nil)
         sys.whenTerminated.futureValue
+        CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+          Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
     }
 
@@ -99,6 +105,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       // now we know that the guardian has started, and should receive PostStop
       sys.terminate()
       sys.whenTerminated.futureValue
+      CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+        Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
     }
 

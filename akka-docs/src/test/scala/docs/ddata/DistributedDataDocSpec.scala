@@ -19,7 +19,7 @@ object DistributedDataDocSpec {
   val config =
     """
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
 
     #//#serializer-config
     akka.actor {

@@ -169,7 +169,7 @@ abstract class UnreachableNodeJoinsAgainSpec
                 }
                """
               else s"""
-              akka.remote.netty.tcp {
+              akka.remote.classic.netty.tcp {
                 hostname = ${victimAddress.host.get}
                 port = ${victimAddress.port.get}
               }""")

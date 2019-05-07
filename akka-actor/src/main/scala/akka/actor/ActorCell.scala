@@ -420,7 +420,7 @@ private[akka] object ActorCell {
     // Note that this uid is also used as hashCode in ActorRef, so be careful
     // to not break hashing if you change the way uid is generated
     val uid = ThreadLocalRandom.current.nextInt()
-    if (uid == undefinedUid) newUid
+    if (uid == undefinedUid) newUid()
     else uid
   }
 

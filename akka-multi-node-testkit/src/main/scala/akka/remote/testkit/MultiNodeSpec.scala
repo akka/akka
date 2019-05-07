@@ -110,7 +110,7 @@ abstract class MultiNodeConfig {
   private[akka] def config: Config = {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString("""
-           akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
+           akka.remote.classic.netty.tcp.applied-adapters = [trttl, gremlin]
            akka.remote.artery.advanced.test-mode = on
         """)
       else ConfigFactory.empty
@@ -214,8 +214,8 @@ object MultiNodeSpec {
     Map(
       "akka.actor.provider" -> "remote",
       "akka.remote.artery.canonical.hostname" -> selfName,
-      "akka.remote.netty.tcp.hostname" -> selfName,
-      "akka.remote.netty.tcp.port" -> selfPort,
+      "akka.remote.classic.netty.tcp.hostname" -> selfName,
+      "akka.remote.classic.netty.tcp.port" -> selfPort,
       "akka.remote.artery.canonical.port" -> selfPort))
 
   private[testkit] val baseConfig: Config =
@@ -225,6 +225,7 @@ object MultiNodeSpec {
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         coordinated-shutdown.terminate-actor-system = off
+        coordinated-shutdown.run-by-actor-system-terminate = off
         coordinated-shutdown.run-by-jvm-shutdown-hook = off
         actor {
           default-dispatcher {
@@ -495,7 +496,7 @@ abstract class MultiNodeSpec(
    */
   protected def startNewSystem(): ActorSystem = {
     val config = ConfigFactory
-      .parseString(s"akka.remote.netty.tcp{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
+      .parseString(s"akka.remote.classic.netty.tcp{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
       .withFallback(system.settings.config)
     val sys = ActorSystem(system.name, config)
     injectDeployments(sys, myself)

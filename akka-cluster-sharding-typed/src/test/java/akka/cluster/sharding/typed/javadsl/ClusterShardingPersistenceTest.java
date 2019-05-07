@@ -28,7 +28,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
   public static final Config config =
       ConfigFactory.parseString(
           "akka.actor.provider = cluster \n"
-              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
               + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
@@ -66,10 +66,6 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     Get(ActorRef<String> replyTo) {
       this.replyTo = replyTo;
     }
-  }
-
-  static enum StopPlz implements Command {
-    INSTANCE
   }
 
   static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
@@ -132,9 +128,8 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
       sharding.init(
           Entity.ofPersistentEntity(
-                  TestPersistentEntity.ENTITY_TYPE_KEY,
-                  entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
-              .withStopMessage(StopPlz.INSTANCE));
+              TestPersistentEntity.ENTITY_TYPE_KEY,
+              entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
 
       _sharding = sharding;
     }

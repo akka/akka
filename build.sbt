@@ -40,17 +40,14 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   actorTestkitTyped,
   actorTyped,
   actorTypedTests,
-  agent,
   benchJmh,
   benchJmhTyped,
-  camel,
   cluster,
   clusterMetrics,
   clusterSharding,
   clusterShardingTyped,
   clusterTools,
   clusterTyped,
-  contrib,
   coordination,
   discovery,
   distributedData,
@@ -97,16 +94,8 @@ lazy val actorTests = akkaModule("akka-actor-tests")
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
-lazy val agent = akkaModule("akka-agent")
-  .dependsOn(actor, testkit % "test->test")
-  .settings(Dependencies.agent)
-  .settings(AutomaticModuleName.settings("akka.agent"))
-  .settings(OSGi.agent)
-  .enablePlugins(ScaladocNoVerificationOfDiagrams)
-
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
-// remove dependencies that we have to build ourselves (Scala STM)
-  .aggregate(aggregatedProjects.diff(List[ProjectReference](agent, docs)): _*)
+  .aggregate(aggregatedProjects: _*)
   .disablePlugins(MimaPlugin)
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
@@ -124,12 +113,6 @@ lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
-
-lazy val camel = akkaModule("akka-camel")
-  .dependsOn(actor, slf4j, testkit % "test->test")
-  .settings(Dependencies.camel)
-  .settings(AutomaticModuleName.settings("akka.camel"))
-  .settings(OSGi.camel)
 
 lazy val cluster = akkaModule("akka-cluster")
   .dependsOn(remote, remoteTests % "test->test", testkit % "test->test")
@@ -178,26 +161,6 @@ lazy val clusterTools = akkaModule("akka-cluster-tools")
   .configs(MultiJvm)
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
 
-lazy val contrib = akkaModule("akka-contrib")
-  .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile")
-  .settings(Dependencies.contrib)
-  .settings(AutomaticModuleName.settings("akka.contrib"))
-  .settings(OSGi.contrib)
-  .settings(description :=
-    """|
-         |This subproject provides a home to modules contributed by external
-         |developers which may or may not move into the officially supported code
-         |base over time. A module in this subproject doesn't have to obey the rule
-         |of staying binary compatible between minor releases. Breaking API changes
-         |may be introduced in minor releases without notice as we refine and
-         |simplify based on your feedback. A module may be dropped in any release
-         |without prior deprecation. The Lightbend subscription does not cover
-         |support for these modules.
-         |""".stripMargin)
-  .configs(MultiJvm)
-  .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
-  .disablePlugins(MimaPlugin)
-
 lazy val distributedData = akkaModule("akka-distributed-data")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
   .settings(Dependencies.distributedData)
@@ -213,14 +176,12 @@ lazy val docs = akkaModule("akka-docs")
     cluster,
     clusterMetrics,
     slf4j,
-    agent,
     osgi,
     persistenceTck,
     persistenceQuery,
     distributedData,
     stream,
     actorTyped,
-    camel % "compile->compile;test->test",
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
@@ -242,7 +203,7 @@ lazy val docs = akkaModule("akka-docs")
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
-        "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&project=%s",
+        "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",
         "extref.ecs.base_url" -> "https://example.lightbend.com/v1/download/%s",
         "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
         "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
@@ -488,7 +449,6 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
   .settings(AkkaBuild.mayChangeSettings)
-  .disablePlugins(MimaPlugin)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

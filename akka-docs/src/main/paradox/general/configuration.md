@@ -424,16 +424,6 @@ Each Akka module has a reference configuration file with the default values.
 
 @@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
 
-<a id="config-akka-agent"></a>
-### akka-agent
-
-@@snip [reference.conf](/akka-agent/src/main/resources/reference.conf)
-
-<a id="config-akka-camel"></a>
-### akka-camel
-
-@@snip [reference.conf](/akka-camel/src/main/resources/reference.conf)
-
 <a id="config-akka-cluster"></a>
 ### akka-cluster
 

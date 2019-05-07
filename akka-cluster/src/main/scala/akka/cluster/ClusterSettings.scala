@@ -12,7 +12,6 @@ import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
-import akka.dispatch.Dispatchers
 import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
 
 import scala.concurrent.duration.FiniteDuration
@@ -179,10 +178,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val RunCoordinatedShutdownWhenDown: Boolean = cc.getBoolean("run-coordinated-shutdown-when-down")
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
   val JmxMultiMbeansInSameEnabled: Boolean = cc.getBoolean("jmx.multi-mbeans-in-same-jvm")
-  val UseDispatcher: String = cc.getString("use-dispatcher") match {
-    case "" => Dispatchers.DefaultDispatcherId
-    case id => id
-  }
+  val UseDispatcher: String = cc.getString("use-dispatcher")
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
   val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = cc.getMillisDuration("scheduler.tick-duration")

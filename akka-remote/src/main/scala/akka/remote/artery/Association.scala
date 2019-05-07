@@ -196,7 +196,7 @@ private[remote] class Association(
     updateOutboundCompression(c => c.clearCompression())
 
   private def updateOutboundCompression(action: OutboundCompressionAccess => Future[Done]): Future[Done] = {
-    import transport.system.dispatcher
+    implicit val ec = transport.system.dispatchers.internalDispatcher
     val c = outboundCompressionAccess
     if (c.isEmpty) Future.successful(Done)
     else if (c.size == 1) action(c.head)
@@ -276,7 +276,7 @@ private[remote] class Association(
         // clear outbound compression, it's safe to do that several times if someone else
         // completes handshake at same time, but it's important to clear it before
         // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
-        import transport.system.dispatcher
+        implicit val ec = transport.system.dispatchers.internalDispatcher
         clearOutboundCompression().map { _ =>
           current.uniqueRemoteAddressPromise.trySuccess(peer)
           current.uniqueRemoteAddressValue() match {
@@ -572,7 +572,7 @@ private[remote] class Association(
     stopQuarantinedTimer.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
       if (associationState.isQuarantined())
         abortQuarantined()
-    }(transport.system.dispatcher)))
+    }(transport.system.dispatchers.internalDispatcher)))
   }
 
   private def abortQuarantined(): Unit = {
@@ -600,7 +600,7 @@ private[remote] class Association(
       val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
       val QuarantineIdleOutboundAfter = settings.Advanced.QuarantineIdleOutboundAfter
       val interval = StopIdleOutboundAfter / 2
-      val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
+      val initialDelay = settings.Advanced.Tcp.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
       val task = transport.system.scheduler.schedule(initialDelay, interval) {
         val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
         if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {
@@ -803,7 +803,7 @@ private[remote] class Association(
 
       val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 
-      import transport.system.dispatcher
+      implicit val ec = transport.system.dispatchers.internalDispatcher
 
       // tear down all parts if one part fails or completes
       Future.firstCompletedOf(laneCompletedValues).failed.foreach { reason =>

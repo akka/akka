@@ -20,6 +20,9 @@ import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.runner.RunWith;
+import org.scalatest.junit.JUnitRunner;
 import scala.concurrent.Future;
 import java.util.function.Consumer;
 import org.iq80.leveldb.util.FileUtils;
@@ -130,6 +133,7 @@ public class LambdaPersistencePluginDocTest {
   static Object o2 =
       new Object() {
         // #journal-tck-java
+        @RunWith(JUnitRunner.class)
         class MyJournalSpecTest extends JavaJournalSpec {
 
           public MyJournalSpecTest() {
@@ -150,6 +154,7 @@ public class LambdaPersistencePluginDocTest {
   static Object o3 =
       new Object() {
         // #snapshot-store-tck-java
+        @RunWith(JUnitRunner.class)
         class MySnapshotStoreTest extends JavaSnapshotStoreSpec {
 
           public MySnapshotStoreTest() {
@@ -165,6 +170,7 @@ public class LambdaPersistencePluginDocTest {
   static Object o4 =
       new Object() {
         // #journal-tck-before-after-java
+        @RunWith(JUnitRunner.class)
         class MyJournalSpecTest extends JavaJournalSpec {
 
           List<File> storageLocations = new ArrayList<File>();

@@ -35,7 +35,7 @@ object ClusterSpec {
     }
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     """
 
@@ -118,7 +118,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         "ClusterSpec2",
         ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         """))
       try {
@@ -152,7 +152,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         "ClusterSpec2",
         ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         """))
       try {
@@ -182,7 +182,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         "ClusterSpec2",
         ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
         """))
@@ -193,7 +193,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         probe.expectMsgType[MemberUp]
         val mat = ActorMaterializer()(sys2)
-        val sink = Await.result(StreamRefs.sinkRef[String]().to(Sink.ignore).run()(mat), 10.seconds)
+        val sink = StreamRefs.sinkRef[String]().to(Sink.ignore).run()(mat)
         Source.tick(1.milli, 10.millis, "tick").to(sink).run()(mat)
 
         CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)
@@ -220,7 +220,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         "ClusterSpec2",
         ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.cluster.min-nr-of-members = 2
         """))
@@ -251,7 +251,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         "ClusterSpec2",
         ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
         """))
@@ -285,7 +285,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         "ClusterSpec3",
         ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
         akka.cluster.run-coordinated-shutdown-when-down = on
@@ -311,7 +311,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     "register multiple cluster JMX MBeans with akka.cluster.jmx.multi-mbeans-in-same-jvm = on" in {
       def getConfig = (port: Int) => ConfigFactory.parseString(s"""
              akka.cluster.jmx.multi-mbeans-in-same-jvm = on
-             akka.remote.netty.tcp.port = ${port}
+             akka.remote.classic.netty.tcp.port = ${port}
              akka.remote.artery.canonical.port = ${port}
           """).withFallback(ConfigFactory.parseString(ClusterSpec.config))
 

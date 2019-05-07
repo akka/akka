@@ -39,7 +39,7 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
   // note that no fixed host names and ports are used
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = cluster
-    akka.remote.log-remote-lifecycle-events = off
+    akka.remote.classic.log-remote-lifecycle-events = off
     akka.cluster.roles = [compute]
     #//#router-lookup-config
     akka.actor.deployment {

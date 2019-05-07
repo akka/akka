@@ -8,16 +8,7 @@ import java.util
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
-import akka.actor.{
-  ActorContext,
-  ActorRef,
-  ActorRefFactory,
-  ActorSystem,
-  Cancellable,
-  Deploy,
-  ExtendedActorSystem,
-  PoisonPill
-}
+import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, ExtendedActorSystem, PoisonPill }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
@@ -421,14 +412,10 @@ private final case class SavedIslandData(
     Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
       ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
-      ActorAttributes.Dispatcher(if (settings.dispatcher == Deploy.NoDispatcherGiven) Dispatchers.DefaultDispatcherId
-      else settings.dispatcher) :: Nil)
+      ActorAttributes.Dispatcher(settings.dispatcher) :: Nil)
   }
 
-  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
-    case Deploy.NoDispatcherGiven => Dispatchers.DefaultDispatcherId
-    case other                    => other
-  })
+  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher)
 
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
@@ -782,7 +769,7 @@ private final case class SavedIslandData(
       case _ =>
         val props = ActorGraphInterpreter
           .props(shell)
-          .withDispatcher(ActorAttributes.Dispatcher.resolve(effectiveAttributes, settings))
+          .withDispatcher(effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
 
         val actorName = fullIslandName match {
           case OptionVal.Some(n) => n
@@ -933,7 +920,7 @@ private final case class SavedIslandData(
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
-    val dispatcher = ActorAttributes.Dispatcher.resolve(attributes, materializer.settings)
+    val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =

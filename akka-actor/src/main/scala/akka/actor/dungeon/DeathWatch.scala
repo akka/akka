@@ -6,10 +6,9 @@ package akka.actor.dungeon
 
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Unwatch, Watch }
 import akka.event.Logging.{ Debug, Warning }
-import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, MinimalActorRef, Terminated }
+import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, Terminated }
 import akka.event.AddressTerminatedTopic
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 private[akka] trait DeathWatch { this: ActorCell =>
 
@@ -26,7 +25,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef =>
       if (a != self) {
-        if (!watchingContains(a))
+        if (!watching.contains(a))
           maintainAddressTerminatedSubscription(a) {
             a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
             updateWatching(a, None)
@@ -39,7 +38,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
   override final def watchWith(subject: ActorRef, msg: Any): ActorRef = subject match {
     case a: InternalActorRef =>
       if (a != self) {
-        if (!watchingContains(a))
+        if (!watching.contains(a))
           maintainAddressTerminatedSubscription(a) {
             a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
             updateWatching(a, Some(msg))
@@ -51,13 +50,13 @@ private[akka] trait DeathWatch { this: ActorCell =>
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef =>
-      if (a != self && watchingContains(a)) {
+      if (a != self && watching.contains(a)) {
         a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         maintainAddressTerminatedSubscription(a) {
-          watching = removeFromMap(a, watching)
+          watching -= a
         }
       }
-      terminatedQueued = removeFromMap(a, terminatedQueued)
+      terminatedQueued -= a
       a
   }
 
@@ -75,11 +74,11 @@ private[akka] trait DeathWatch { this: ActorCell =>
       actor: ActorRef,
       existenceConfirmed: Boolean,
       addressTerminated: Boolean): Unit = {
-    watchingGet(actor) match {
+    watching.get(actor) match {
       case None => // We're apparently no longer watching this actor.
       case Some(optionalMessage) =>
         maintainAddressTerminatedSubscription(actor) {
-          watching = removeFromMap(actor, watching)
+          watching -= actor
         }
         if (!isTerminating) {
           self.tell(Terminated(actor)(existenceConfirmed, addressTerminated), actor)
@@ -92,31 +91,6 @@ private[akka] trait DeathWatch { this: ActorCell =>
   private[akka] def terminatedQueuedFor(subject: ActorRef, customMessage: Option[Any]): Unit =
     if (!terminatedQueued.contains(subject))
       terminatedQueued += subject -> customMessage
-
-  // TODO this should be removed and be replaced with `watching.contains(subject)`
-  //   when all actor references have uid, i.e. actorFor is removed
-  private def watchingContains(subject: ActorRef): Boolean =
-    watching.contains(subject) || (subject.path.uid != ActorCell.undefinedUid &&
-    watching.contains(new UndefinedUidActorRef(subject)))
-
-  // TODO this should be removed and be replaced with `watching.get(subject)`
-  //   when all actor references have uid, i.e. actorFor is removed
-  // Returns None when the subject is not being watched.
-  // If the subject is being matched, the inner option is the optional custom termination
-  // message that should be sent instead of the default Terminated.
-  private def watchingGet(subject: ActorRef): Option[Option[Any]] =
-    watching
-      .get(subject)
-      .orElse(
-        if (subject.path.uid == ActorCell.undefinedUid) None
-        else watching.get(new UndefinedUidActorRef(subject)))
-
-  // TODO this should be removed and be replaced with `set - subject`
-  //   when all actor references have uid, i.e. actorFor is removed
-  @silent
-  private def removeFromMap[T](subject: ActorRef, map: Map[ActorRef, T]): Map[ActorRef, T] =
-    if (subject.path.uid != ActorCell.undefinedUid) (map - subject) - new UndefinedUidActorRef(subject)
-    else map.filterKeys(_.path != subject.path).toMap
 
   private def updateWatching(ref: InternalActorRef, newMessage: Option[Any]): Unit =
     watching = watching.updated(ref, newMessage)
@@ -262,9 +236,4 @@ private[akka] trait DeathWatch { this: ActorCell =>
 
   private def subscribeAddressTerminated(): Unit = AddressTerminatedTopic(system).subscribe(self)
 
-}
-
-private[akka] class UndefinedUidActorRef(ref: ActorRef) extends MinimalActorRef {
-  override val path = ref.path.withUid(ActorCell.undefinedUid)
-  override def provider = throw new UnsupportedOperationException("UndefinedUidActorRef does not provide")
 }
