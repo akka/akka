@@ -12,7 +12,7 @@ import akka.annotation.ApiMayChange
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
-import akka.stream.impl.{ LinearTraversalBuilder }
+import akka.stream.impl.LinearTraversalBuilder
 import akka.util.{ ConstantFun, Timeout }
 import akka.util.JavaDurationConverters._
 import akka.{ Done, NotUsed }
