@@ -4,9 +4,10 @@
 
 package akka.actor.typed.internal.routing
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
-import akka.dispatch.forkjoin.ThreadLocalRandom
 
 /**
  * Kept in the behavior, not shared between instances, meant to be stateful.

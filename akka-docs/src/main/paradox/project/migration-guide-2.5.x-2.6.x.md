@@ -74,6 +74,11 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
+## Akka now uses Fork Join Pool from JDK
+
+Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
+keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
+
 <a id="classic-to-artery"></a>
 ### Migrating from classic remoting to Artery
 
