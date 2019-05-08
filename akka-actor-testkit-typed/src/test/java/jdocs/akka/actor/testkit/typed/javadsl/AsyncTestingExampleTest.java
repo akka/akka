@@ -189,6 +189,6 @@ public class AsyncTestingExampleTest extends JUnitSuite {
   public void systemNameShouldComeFromTestClass() {
     assertEquals(testKit.system().name(), "AsyncTestingExampleTest");
   }
-// #test-header
+  // #test-header
 }
 // #test-header
