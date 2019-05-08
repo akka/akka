@@ -571,20 +571,28 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = {
-    val msg = messageHandle.message
+    currentMessage = messageHandle
+    val message = messageHandle.message
+
     try {
-      currentMessage = messageHandle
-      cancelReceiveTimeoutIfNeeded(msg)
-      msg match {
+      cancelReceiveTimeoutIfNeeded(message)
+      message match {
         case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
-        case msg                    => receiveMessage(msg)
+        case msg                    =>
+          // If receiveTimeout is changed during handling a NotInfluenceReceiveTimeout
+          // the new timeout is not applied immediately but only after
+          // a regular message has been handled
+          if (changedDuringNotInfluence(message)) {
+            // TODO now we have historic: current vs prev
+            // but how would it not have been applied
+          }
+
+          receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e =>
       handleInvokeFailure(Nil, e)
-    } finally
-    // Schedule or reschedule receive timeout
-    checkReceiveTimeoutIfNeeded(msg)
+    } finally rescheduleOrCancelReceiveTimeoutIfNeeded(message) // Schedule or reschedule receive timeout
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
@@ -672,7 +680,7 @@ private[akka] class ActorCell(
       val created = newActor()
       actor = created
       created.aroundPreStart()
-      checkReceiveTimeout()
+      rescheduleOrCancelReceiveTimeout(reschedule = true)
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
