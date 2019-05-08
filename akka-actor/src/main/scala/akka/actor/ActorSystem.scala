@@ -1055,7 +1055,7 @@ private[akka] class ActorSystemImpl(
                 extensions.replace(ext, inProcessOfRegistration, t) //In case shit hits the fan, remove the inProcess signal
                 throw t //Escalate to caller
             } finally {
-              inProcessOfRegistration.countDown //Always notify listeners of the inProcess signal
+              inProcessOfRegistration.countDown() //Always notify listeners of the inProcess signal
             }
           case _ =>
             registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry

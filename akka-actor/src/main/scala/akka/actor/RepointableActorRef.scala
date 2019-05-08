@@ -272,7 +272,7 @@ private[akka] class UnstartedCell(
   }
 
   def sendSystemMessage(msg: SystemMessage): Unit = {
-    lock.lock // we cannot lose system messages, ever, and we cannot throw an Error from here as well
+    lock.lock() // we cannot lose system messages, ever, and we cannot throw an Error from here as well
     try {
       val cell = self.underlying
       if (cellIsReady(cell))

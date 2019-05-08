@@ -382,7 +382,7 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
   private def addressStringLengthDiff(address: Address): Int = {
     val r = root
     if (r.address.host.isDefined) 0
-    else (address.toString.length - r.address.toString.length)
+    else address.toString.length - r.address.toString.length
   }
 
   /**
