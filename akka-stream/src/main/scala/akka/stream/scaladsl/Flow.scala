@@ -1014,7 +1014,13 @@ trait FlowOps[+Out, +Mat] {
     val askFlow = Flow[Out]
       .watch(ref)
       .mapAsync(parallelism) { el =>
-        akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
+        akka.pattern.ask(ref).?(el)(timeout)
+      }
+      .map {
+        case e: S => e
+        case o =>
+          throw new ClassCastException(
+            s"'Flow.ask' failed: expected response of type [${tag.runtimeClass}], got [${o.getClass}]")
       }
       .mapError {
         // the purpose of this recovery is to change the name of the stage in that exception
