@@ -11,6 +11,19 @@ To use Akka TestKit Typed, add the module to your project:
   scope=test
 }
 
+@@@div { .group-scala }
+
+We recommend using Akka TestKit Typed with ScalaTest:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=org.scalatest
+  artifact=scalatest_$scala.binary_version$
+  version=$scalatest.version$
+  scope=test
+}
+
+@@@
+
 ## Introduction
 
 Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviourTestKit`.
