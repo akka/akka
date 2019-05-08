@@ -9,11 +9,17 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.actor.typed.javadsl.Behaviors;
+// #test-header
 import akka.actor.testkit.typed.javadsl.ActorTestKit;
+
+// #test-header
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
+// #test-header
 import org.scalatest.junit.JUnitSuite;
+
+// #test-header
 import scala.util.Success;
 import scala.util.Try;
 
@@ -183,4 +189,6 @@ public class AsyncTestingExampleTest extends JUnitSuite {
   public void systemNameShouldComeFromTestClass() {
     assertEquals(testKit.system().name(), "AsyncTestingExampleTest");
   }
+// #test-header
 }
+// #test-header
