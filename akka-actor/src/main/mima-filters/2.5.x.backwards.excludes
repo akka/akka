@@ -21,3 +21,8 @@ ProblemFilters.exclude[MissingClassProblem]("akka.actor.dungeon.UndefinedUidActo
 
 # Protect internals against starvation #23576
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Dispatchers.this")
+
+# New ReceiveTimeout not applied if it was set while handling a `NotInfluenceReceiveTimeout` message #26880
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.akka$actor$dungeon$ReceiveTimeout$$value_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.akka$actor$dungeon$ReceiveTimeout$$value")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.emptyReceiveTimeoutData")
