@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -17,20 +17,20 @@ class PipeToSpec extends AkkaSpec {
 
     "work" in {
       val p = TestProbe()
-      Future(42) pipeTo p.ref
+      Future(42).pipeTo(p.ref)
       p.expectMsg(42)
     }
 
     "signal failure" in {
       val p = TestProbe()
-      Future.failed(new Exception("failed")) pipeTo p.ref
+      Future.failed(new Exception("failed")).pipeTo(p.ref)
       p.expectMsgType[Status.Failure].cause.getMessage should ===("failed")
     }
 
     "pick up an implicit sender()" in {
       val p = TestProbe()
       implicit val s = testActor
-      Future(42) pipeTo p.ref
+      Future(42).pipeTo(p.ref)
       p.expectMsg(42)
       p.lastSender should ===(s)
     }
@@ -55,14 +55,14 @@ class PipeToSpec extends AkkaSpec {
     "work" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
-      Future(42) pipeToSelection sel
+      Future(42).pipeToSelection(sel)
       p.expectMsg(42)
     }
 
     "signal failure" in {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
-      Future.failed(new Exception("failed")) pipeToSelection sel
+      Future.failed(new Exception("failed")).pipeToSelection(sel)
       p.expectMsgType[Status.Failure].cause.getMessage should ===("failed")
     }
 
@@ -70,7 +70,7 @@ class PipeToSpec extends AkkaSpec {
       val p = TestProbe()
       val sel = system.actorSelection(p.ref.path)
       implicit val s = testActor
-      Future(42) pipeToSelection sel
+      Future(42).pipeToSelection(sel)
       p.expectMsg(42)
       p.lastSender should ===(s)
     }

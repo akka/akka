@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -35,8 +35,7 @@ object AeronStreamConsistencySpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        akka {
          loglevel = INFO
          actor {
@@ -51,8 +50,9 @@ class AeronStreamConsistencySpecMultiJvmNode1 extends AeronStreamConsistencySpec
 class AeronStreamConsistencySpecMultiJvmNode2 extends AeronStreamConsistencySpec
 
 abstract class AeronStreamConsistencySpec
-  extends MultiNodeSpec(AeronStreamConsistencySpec)
-  with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(AeronStreamConsistencySpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import AeronStreamConsistencySpec._
 
@@ -64,7 +64,7 @@ abstract class AeronStreamConsistencySpec
     Aeron.connect(ctx)
   }
 
-  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.idle-cpu-level")
+  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.aeron.idle-cpu-level")
   val taskRunner = {
     val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()
@@ -106,8 +106,10 @@ abstract class AeronStreamConsistencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+        Source
+          .fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+          .runWith(
+            new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
       }
       enterBarrier("echo-started")
     }
@@ -120,9 +122,10 @@ abstract class AeronStreamConsistencySpec
         val killSwitch = KillSwitches.shared("test")
         val started = TestProbe()
         val startMsg = "0".getBytes("utf-8")
-        Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+        Source
+          .fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
           .via(killSwitch.flow)
-          .runForeach { envelope ⇒
+          .runForeach { envelope =>
             val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
             if (bytes.length == 1 && bytes(0) == startMsg(0))
               started.ref ! Done
@@ -136,31 +139,34 @@ abstract class AeronStreamConsistencySpec
                 done.countDown()
             }
             pool.release(envelope)
-          }.onFailure {
-            case e ⇒ e.printStackTrace
           }
+          .failed
+          .foreach { _.printStackTrace }
 
         within(10.seconds) {
-          Source(1 to 100).map { _ ⇒
-            val envelope = pool.acquire()
-            envelope.byteBuffer.put(startMsg)
-            envelope.byteBuffer.flip()
-            envelope
-          }
+          Source(1 to 100)
+            .map { _ =>
+              val envelope = pool.acquire()
+              envelope.byteBuffer.put(startMsg)
+              envelope.byteBuffer.flip()
+              envelope
+            }
             .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-            .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+            .runWith(
+              new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
           started.expectMsg(Done)
         }
 
         Source(1 to totalMessages)
           .throttle(10000, 1.second, 1000, ThrottleMode.Shaping)
-          .map { n ⇒
+          .map { n =>
             val envelope = pool.acquire()
             envelope.byteBuffer.put(n.toString.getBytes("utf-8"))
             envelope.byteBuffer.flip()
             envelope
           }
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+          .runWith(
+            new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
 
         Await.ready(done, 20.seconds)
         killSwitch.shutdown()

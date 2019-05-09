@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -20,8 +20,8 @@ private[akka] object RecordTypeSerializer {
   def parse(it: ByteIterator): RecordType = {
     val id = it.getShort
     RecordType(id) match {
-      case OptionVal.None    ⇒ throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
-      case OptionVal.Some(t) ⇒ t
+      case OptionVal.None    => throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
+      case OptionVal.Some(t) => t
     }
   }
 

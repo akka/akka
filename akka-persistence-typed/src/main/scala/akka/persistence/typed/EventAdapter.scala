@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed
@@ -7,10 +7,12 @@ package akka.persistence.typed
 import akka.annotation.InternalApi
 
 abstract class EventAdapter[E, P] {
+
   /**
    * Type of the event to persist
    */
   type Per = P
+
   /**
    * Transform event on the way to the journal
    */
@@ -39,4 +41,3 @@ abstract class EventAdapter[E, P] {
   override def toJournal(e: E): Any = e
   override def fromJournal(p: Any): E = p.asInstanceOf[E]
 }
-

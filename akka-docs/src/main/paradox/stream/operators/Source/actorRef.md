@@ -24,3 +24,11 @@ elements or failing the stream; the strategy is chosen by the user.
 
 @@@
 
+## Examples
+
+
+Scala
+:  @@snip [actorRef.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOperators.scala) { #actorRef }
+
+Java
+:  @@snip [actorRef.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #actor-ref-imports #actor-ref }

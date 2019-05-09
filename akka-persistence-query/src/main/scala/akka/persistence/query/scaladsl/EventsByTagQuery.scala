@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.scaladsl
@@ -39,4 +39,3 @@ trait EventsByTagQuery extends ReadJournal {
   def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed]
 
 }
-

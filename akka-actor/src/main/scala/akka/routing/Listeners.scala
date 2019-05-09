@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -10,7 +10,7 @@ import java.util.{ Set, TreeSet }
 sealed trait ListenerMessage
 final case class Listen(listener: ActorRef) extends ListenerMessage
 final case class Deafen(listener: ActorRef) extends ListenerMessage
-final case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
+final case class WithListeners(f: (ActorRef) => Unit) extends ListenerMessage
 
 /**
  * Listeners is a generic trait to implement listening capability on an Actor.
@@ -23,7 +23,7 @@ final case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
  * <p/>
  * Send <code>WithListeners(fun)</code> to traverse the current listeners.
  */
-trait Listeners { self: Actor ⇒
+trait Listeners { self: Actor =>
   protected val listeners: Set[ActorRef] = new TreeSet[ActorRef]
 
   /**
@@ -32,18 +32,15 @@ trait Listeners { self: Actor ⇒
    * {{{ def receive = listenerManagement orElse … }}}
    */
   protected def listenerManagement: Actor.Receive = {
-    case Listen(l) ⇒ listeners add l
-    case Deafen(l) ⇒ listeners remove l
-    case WithListeners(f) ⇒
+    case Listen(l) => listeners.add(l)
+    case Deafen(l) => listeners.remove(l)
+    case WithListeners(f) =>
       val i = listeners.iterator
       while (i.hasNext) f(i.next)
   }
 
   /**
    * Sends the supplied message to all current listeners using the provided sender() as sender.
-   *
-   * @param msg
-   * @param sender
    */
   protected def gossip(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     val i = listeners.iterator

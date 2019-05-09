@@ -6,6 +6,7 @@
 
 * [common/cluster](common/cluster.md)
 * [cluster-usage](cluster-usage.md)
+* [cluster-routing](cluster-routing.md)
 * [cluster-singleton](cluster-singleton.md)
 * [distributed-pub-sub](distributed-pub-sub.md)
 * [cluster-client](cluster-client.md)
@@ -15,5 +16,8 @@
 * [cluster-dc](cluster-dc.md)
 * [multi-jvm-testing](multi-jvm-testing.md)
 * [multi-node-testing](multi-node-testing.md)
+* [remoting](remoting.md)
+* [remoting-artery](remoting-artery.md)
+* [serialization](serialization.md)
 
 @@@

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -21,7 +21,7 @@ object TimeStampede extends AutoPlugin {
 
   final val Snapshot = "-SNAPSHOT"
 
-  def stampVersion = Command.command("stampVersion") { state ⇒
+  def stampVersion = Command.command("stampVersion") { state =>
     val extracted = Project.extract(state)
     extracted.appendWithSession(List(version in ThisBuild ~= stamp), state)
   }

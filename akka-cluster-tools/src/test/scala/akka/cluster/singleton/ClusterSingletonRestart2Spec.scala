@@ -1,11 +1,10 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.PoisonPill
@@ -22,7 +21,7 @@ object ClusterSingletonRestart2Spec {
 
   class Singleton extends Actor {
     def receive = {
-      case _ ⇒ sender() ! Cluster(context.system).selfUniqueAddress
+      case _ => sender() ! Cluster(context.system).selfUniqueAddress
     }
   }
 }
@@ -32,6 +31,7 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
   akka.cluster.roles = [singleton]
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.auto-down-unreachable-after = 2s
+  akka.cluster.singleton.min-number-of-hand-over-retries = 5
   akka.remote {
     netty.tcp {
       hostname = "127.0.0.1"
@@ -51,6 +51,8 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
     ConfigFactory.parseString("akka.cluster.roles = [other]").withFallback(system.settings.config))
   var sys4: ActorSystem = null
 
+  import akka.util.ccompat._
+  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     if (Cluster(from).selfRoles.contains("singleton"))
       from.actorOf(
@@ -62,9 +64,9 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
 
     within(45.seconds) {
       awaitAssert {
-        Cluster(from) join Cluster(to).selfAddress
+        Cluster(from).join(Cluster(to).selfAddress)
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
-        Cluster(from).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
     }
   }
@@ -75,9 +77,9 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
       join(sys2, sys1)
       join(sys3, sys1)
 
-      val proxy3 = sys3.actorOf(ClusterSingletonProxy.props(
-        "user/echo",
-        ClusterSingletonProxySettings(sys3).withRole("singleton")), "proxy3")
+      val proxy3 = sys3.actorOf(
+        ClusterSingletonProxy.props("user/echo", ClusterSingletonProxySettings(sys3).withRole("singleton")),
+        "proxy3")
 
       within(5.seconds) {
         awaitAssert {
@@ -98,10 +100,9 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
         val sys2port = Cluster(sys2).selfAddress.port.get
 
         val sys4Config =
-          ConfigFactory.parseString(
-            s"""
+          ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$sys2port
-            akka.remote.netty.tcp.port=$sys2port
+            akka.remote.classic.netty.tcp.port=$sys2port
             """).withFallback(system.settings.config)
 
         ActorSystem(system.name, sys4Config)
@@ -132,4 +133,3 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
       shutdown(sys4)
   }
 }
-

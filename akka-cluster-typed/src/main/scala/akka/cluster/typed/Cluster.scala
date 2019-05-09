@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -10,10 +10,10 @@ import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
 import akka.cluster._
 import akka.japi.Util
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
-import akka.cluster.typed.internal.AdapterClusterImpl
-import scala.collection.immutable
-
 import akka.actor.typed.ExtensionSetup
+import akka.cluster.typed.internal.AdapterClusterImpl
+
+import scala.collection.immutable
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -32,11 +32,11 @@ sealed trait ClusterStateSubscription
  *                   `ReachabilityEvent` or one of the common supertypes, such as `MemberEvent` to get
  *                   all the subtypes of events.
  */
-final case class Subscribe[A <: ClusterDomainEvent](
-  subscriber: ActorRef[A],
-  eventClass: Class[A]) extends ClusterStateSubscription
+final case class Subscribe[A <: ClusterDomainEvent](subscriber: ActorRef[A], eventClass: Class[A])
+    extends ClusterStateSubscription
 
 object Subscribe {
+
   /**
    * Java API
    */
@@ -84,6 +84,7 @@ sealed trait ClusterCommand
 final case class Join(address: Address) extends ClusterCommand
 
 object Join {
+
   /**
    * Java API
    */
@@ -129,6 +130,7 @@ final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends Cluste
 final case class Leave(address: Address) extends ClusterCommand
 
 object Leave {
+
   /**
    * Java API
    */
@@ -188,7 +190,7 @@ abstract class Cluster extends Extension {
 }
 
 object ClusterSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Cluster): ClusterSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => Cluster): ClusterSetup =
     new ClusterSetup(new java.util.function.Function[ActorSystem[_], Cluster] {
       override def apply(sys: ActorSystem[_]): Cluster = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12
@@ -201,4 +203,4 @@ object ClusterSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class ClusterSetup(createExtension: java.util.function.Function[ActorSystem[_], Cluster])
-  extends ExtensionSetup[Cluster](Cluster, createExtension)
+    extends ExtensionSetup[Cluster](Cluster, createExtension)

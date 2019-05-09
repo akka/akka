@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -17,15 +17,15 @@ private[akka] object PrettyByteString {
   }
 
   def formatBytes(bs: ByteString, maxBytes: Int = 16 * 5): Iterator[String] = {
-    def asHex(b: Byte): String = b formatted "%02X"
+    def asHex(b: Byte): String = b.formatted("%02X")
     def asASCII(b: Byte): Char =
       if (b >= 0x20 && b < 0x7f) b.toChar
       else '.'
 
     def formatLine(bs: ByteString): String = {
       val data = bs.toSeq
-      val hex = data.map(asHex).mkString(" ")
-      val ascii = data.map(asASCII).mkString
+      val hex = data.map(asHex _).mkString(" ")
+      val ascii = data.map(asASCII _).mkString
       f"$indent%s  $hex%-48s | $ascii"
     }
     def formatBytes(bs: ByteString): String =

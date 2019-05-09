@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
@@ -35,8 +35,10 @@ trait ActorSystemLifecycle {
     try {
       Await.ready(system.terminate(), shutdownTimeout)
     } catch {
-      case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, shutdownTimeout,
+      case _: TimeoutException =>
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(
+          system.name,
+          shutdownTimeout,
           system.asInstanceOf[ActorSystemImpl].printTree)
         throw new RuntimeException(msg)
     }

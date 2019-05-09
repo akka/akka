@@ -8,6 +8,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 | |Operator|Description|
 |--|--|--|
 |Source|<a name="actorref"></a>@ref[actorRef](Source/actorRef.md)|Materialize an `ActorRef`; sending messages to it will emit them on the stream.|
+|Source|<a name="assourcewithcontext"></a>@ref[asSourceWithContext](Source/asSourceWithContext.md)|Turns a Source into a SourceWithContext which can propagate a context per element along a stream.|
 |Source|<a name="assubscriber"></a>@ref[asSubscriber](Source/asSubscriber.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Subscriber`.|
 |Source|<a name="combine"></a>@ref[combine](Source/combine.md)|Combine several sources, using a given strategy such as merge or concat, into one source.|
 |Source|<a name="cycle"></a>@ref[cycle](Source/cycle.md)|Stream iterator in cycled manner.|
@@ -74,20 +75,21 @@ dispatcher configured through the `akka.stream.blocking-io-dispatcher`.
 @@@ warning
 
 Be aware that `asInputStream` and `asOutputStream` materialize `InputStream` and `OutputStream` respectively as
-blocking API implementation. They will block tread until data will be available from upstream.
+blocking API implementation. They will block the thread until data will be available from upstream.
 Because of blocking nature these objects cannot be used in `mapMaterializeValue` section as it causes deadlock
 of the stream materialization process.
 For example, following snippet will fall with timeout exception:
 
 ```scala
 ...
-.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream ⇒
+.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream =>
         inputStream.read()  // this could block forever
         ...
 }).run()
 ```
 
 @@@
+
 
 | |Operator|Description|
 |--|--|--|
@@ -106,7 +108,9 @@ Sources and sinks for reading and writing files can be found on `FileIO`.
 
 | |Operator|Description|
 |--|--|--|
-|FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emit the contents of a file.|
+|FileIO|<a name="fromfile"></a>@ref[fromFile](FileIO/fromFile.md)|Emits the contents of a file.|
+|FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emits the contents of a file from the given path.|
+|FileIO|<a name="tofile"></a>@ref[toFile](FileIO/toFile.md)|Create a sink which will write incoming `ByteString` s to a given file.|
 |FileIO|<a name="topath"></a>@ref[toPath](FileIO/toPath.md)|Create a sink which will write incoming `ByteString` s to a given file path.|
 
 ## Simple operators
@@ -120,6 +124,7 @@ depending on being backpressured by downstream or not.
 | |Operator|Description|
 |--|--|--|
 |Source/Flow|<a name="alsoto"></a>@ref[alsoTo](Source-or-Flow/alsoTo.md)|Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.|
+|Flow|<a name="asflowwithcontext"></a>@ref[asFlowWithContext](Flow/asFlowWithContext.md)|Turns a Flow into a FlowWithContext which can propagate a context per element along a stream.|
 |Source/Flow|<a name="collect"></a>@ref[collect](Source-or-Flow/collect.md)|Apply a partial function to each incoming element, if the partial function is defined for a value the returned value is passed downstream.|
 |Source/Flow|<a name="collecttype"></a>@ref[collectType](Source-or-Flow/collectType.md)|Transform this stream by testing the type of each of the elements on which the element is an instance of the provided type as they pass through this processing step.|
 |Source/Flow|<a name="detach"></a>@ref[detach](Source-or-Flow/detach.md)|Detach upstream demand from downstream demand without detaching the stream rates.|
@@ -243,6 +248,8 @@ the inputs in different ways.
 |Source/Flow|<a name="orelse"></a>@ref[orElse](Source-or-Flow/orElse.md)|If the primary source completes without emitting any elements, the elements from the secondary source are emitted.|
 |Source/Flow|<a name="prepend"></a>@ref[prepend](Source-or-Flow/prepend.md)|Prepends the given source to the flow, consuming it until completion before the original source is consumed.|
 |Source/Flow|<a name="zip"></a>@ref[zip](Source-or-Flow/zip.md)|Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.|
+|Source/Flow|<a name="ziplatest"></a>@ref[zipLatest](Source-or-Flow/zipLatest.md)|Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream, picking always the latest element of each.|
+|Source/Flow|<a name="ziplatestwith"></a>@ref[zipLatestWith](Source-or-Flow/zipLatestWith.md)|Combines elements from multiple sources through a `combine` function and passes the returned value downstream, picking always the latest element of each.|
 |Source/Flow|<a name="zipwith"></a>@ref[zipWith](Source-or-Flow/zipWith.md)|Combines elements from multiple sources through a `combine` function and passes the returned value downstream.|
 |Source/Flow|<a name="zipwithindex"></a>@ref[zipWithIndex](Source-or-Flow/zipWithIndex.md)|Zips elements of current flow with its indices.|
 
@@ -265,9 +272,22 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |ActorSink|<a name="actorref"></a>@ref[actorRef](ActorSink/actorRef.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the `AskPattern` to send each element as an `ask` to the target actor, and expect a reply back that will be sent further downstream.|
 
+## Error handling
+
+For more background see the @ref[Error Handling in Streams](../stream-error.md) section.
+
+| |Operator|Description|
+|--|--|--|
+|RestartSource|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)|Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails using an exponential backoff.|
+|RestartFlow|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)|Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails using an exponential backoff. Notice that this @apidoc[Flow] will not restart on completion of the wrapped flow.|
+|RestartSource|<a name="withbackoff"></a>@ref[withBackoff](RestartSource/withBackoff.md)|Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails or complete using an exponential backoff.|
+|RestartFlow|<a name="withbackoff"></a>@ref[withBackoff](RestartFlow/withBackoff.md)|Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails or complete using an exponential backoff.|
+|RestartSink|<a name="withbackoff"></a>@ref[withBackoff](RestartSink/withBackoff.md)|Wrap the given @apidoc[Sink] with a @apidoc[Sink] that will restart it when it fails or complete using an exponential backoff.|
+
 @@@ index
 
 * [combine](Source/combine.md)
+* [asSourceWithContext](Source/asSourceWithContext.md)
 * [fromPublisher](Source/fromPublisher.md)
 * [fromIterator](Source/fromIterator.md)
 * [cycle](Source/cycle.md)
@@ -304,7 +324,9 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [merge](Source-or-Flow/merge.md)
 * [mergeSorted](Source-or-Flow/mergeSorted.md)
 * [zip](Source-or-Flow/zip.md)
+* [zipLatest](Source-or-Flow/zipLatest.md)
 * [zipWith](Source-or-Flow/zipWith.md)
+* [zipLatestWith](Source-or-Flow/zipLatestWith.md)
 * [zipWithIndex](Source-or-Flow/zipWithIndex.md)
 * [map](Source-or-Flow/map.md)
 * [recover](Source-or-Flow/recover.md)
@@ -364,6 +386,7 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [monitor](Source-or-Flow/monitor.md)
 * [initialDelay](Source-or-Flow/initialDelay.md)
 * [log](Source-or-Flow/log.md)
+* [asFlowWithContext](Flow/asFlowWithContext.md)
 * [fromSinkAndSource](Flow/fromSinkAndSource.md)
 * [fromSinkAndSourceCoupled](Flow/fromSinkAndSourceCoupled.md)
 * [lazyInitAsync](Flow/lazyInitAsync.md)
@@ -397,8 +420,15 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [javaCollectorParallelUnordered](StreamConverters/javaCollectorParallelUnordered.md)
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [fromJavaStream](StreamConverters/fromJavaStream.md)
+* [fromFile](FileIO/fromFile.md)
 * [fromPath](FileIO/fromPath.md)
+* [toFile](FileIO/toFile.md)
 * [toPath](FileIO/toPath.md)
+* [withBackoff](RestartSource/withBackoff.md)
+* [onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)
+* [withBackoff](RestartFlow/withBackoff.md)
+* [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
+* [withBackoff](RestartSink/withBackoff.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)
 

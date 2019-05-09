@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -33,9 +33,9 @@ object SpawnProtocolDocSpec {
   //#main
   object HelloWorldMain {
     val main: Behavior[SpawnProtocol] =
-      Behaviors.setup { ctx ⇒
+      Behaviors.setup { context =>
         // Start initial tasks
-        // ctx.spawn(...)
+        // context.spawn(...)
 
         SpawnProtocol.behavior
       }
@@ -61,17 +61,17 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
-        system ? SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty)
+        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty))
 
-      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (ctx, msg) ⇒
-        ctx.log.info("Greeting for {} from {}", msg.whom, msg.from)
+      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
+        context.log.info("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
 
       val greetedReplyTo: Future[ActorRef[HelloWorld.Greeted]] =
-        system ? SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty)
+        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty))
 
-      for (greeterRef ← greeter; replyToRef ← greetedReplyTo) {
+      for (greeterRef <- greeter; replyToRef <- greetedReplyTo) {
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)
       }
 

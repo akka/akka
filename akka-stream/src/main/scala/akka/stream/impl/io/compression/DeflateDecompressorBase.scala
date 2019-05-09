@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io.compression
@@ -13,7 +13,7 @@ import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int)
-  extends ByteStringParser[ByteString] {
+    extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
     val inflater: Inflater

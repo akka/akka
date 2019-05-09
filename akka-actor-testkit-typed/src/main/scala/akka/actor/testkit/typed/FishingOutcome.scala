@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
@@ -16,8 +16,9 @@ import akka.annotation.DoNotInherit
 
 object FishingOutcome {
 
-  case object Continue extends FishingOutcome
-  case object ContinueAndIgnore extends FishingOutcome
+  sealed trait ContinueOutcome extends FishingOutcome
+  case object Continue extends ContinueOutcome
+  case object ContinueAndIgnore extends ContinueOutcome
   case object Complete extends FishingOutcome
   final case class Fail(error: String) extends FishingOutcome
 }

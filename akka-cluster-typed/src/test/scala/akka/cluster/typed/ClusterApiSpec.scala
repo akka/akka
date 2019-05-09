@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -15,15 +15,15 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
 object ClusterApiSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config =
+    ConfigFactory.parseString("""
       akka.actor.provider = cluster
-      akka.remote.artery.enabled = true
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
       akka.actor {
         serialize-messages = off
         allow-java-serialization = off
@@ -51,8 +51,8 @@ class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) wi
       try {
         val clusterNode2 = Cluster(adaptedSystem2)
 
-        val node1Probe = TestProbe[AnyRef]()(system)
-        val node2Probe = TestProbe[AnyRef]()(adaptedSystem2)
+        val node1Probe = TestProbe[ClusterDomainEvent]()(system)
+        val node2Probe = TestProbe[ClusterDomainEvent]()(adaptedSystem2)
 
         // initial cached selfMember
         clusterNode1.selfMember.status should ===(MemberStatus.Removed)

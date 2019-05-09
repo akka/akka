@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -13,13 +13,14 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.remote.RemoteActorRefProvider
 import akka.remote.artery.LruBoundedCache
-import akka.util.Unsafe
+import akka.util.{ unused, Unsafe }
 
 /**
  * INTERNAL API: Thread local cache per actor system
  */
 private[akka] object ActorRefResolveThreadLocalCache
-  extends ExtensionId[ActorRefResolveThreadLocalCache] with ExtensionIdProvider {
+    extends ExtensionId[ActorRefResolveThreadLocalCache]
+    with ExtensionIdProvider {
 
   override def get(system: ActorSystem): ActorRefResolveThreadLocalCache = super.get(system)
 
@@ -35,9 +36,10 @@ private[akka] object ActorRefResolveThreadLocalCache
 private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSystem) extends Extension {
 
   private val provider = system.provider match {
-    case r: RemoteActorRefProvider ⇒ r
-    case _ ⇒ throw new IllegalArgumentException(
-      "ActorRefResolveThreadLocalCache can only be used with RemoteActorRefProvider, " +
+    case r: RemoteActorRefProvider => r
+    case _ =>
+      throw new IllegalArgumentException(
+        "ActorRefResolveThreadLocalCache can only be used with RemoteActorRefProvider, " +
         s"not with ${system.provider.getClass}")
   }
 
@@ -45,7 +47,7 @@ private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSys
     override def initialValue: ActorRefResolveCache = new ActorRefResolveCache(provider)
   }
 
-  def threadLocalCache(provider: RemoteActorRefProvider): ActorRefResolveCache =
+  def threadLocalCache(@unused provider: RemoteActorRefProvider): ActorRefResolveCache =
     current.get
 
 }
@@ -54,7 +56,7 @@ private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSys
  * INTERNAL API
  */
 private[akka] final class ActorRefResolveCache(provider: RemoteActorRefProvider)
-  extends LruBoundedCache[String, ActorRef](capacity = 1024, evictAgeThreshold = 600) {
+    extends LruBoundedCache[String, ActorRef](capacity = 1024, evictAgeThreshold = 600) {
 
   override protected def compute(k: String): ActorRef =
     provider.internalResolveActorRef(k)

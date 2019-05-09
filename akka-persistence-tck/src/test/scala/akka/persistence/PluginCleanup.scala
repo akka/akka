@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -8,10 +8,10 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 
-trait PluginCleanup extends BeforeAndAfterAll { _: PluginSpec ⇒
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+trait PluginCleanup extends BeforeAndAfterAll { _: PluginSpec =>
+  val storageLocations =
+    List("akka.persistence.journal.leveldb.dir", "akka.persistence.snapshot-store.local.dir").map(s =>
+      new File(system.settings.config.getString(s)))
 
   override def beforeAll(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)

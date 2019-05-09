@@ -1,0 +1,108 @@
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.stream.scaladsl
+
+import akka.stream._
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+
+trait ZipLatestWithApply {
+
+  [2..22#/**
+   * Create a new `ZipLatestWith` specialized for 1 inputs.
+   *
+   * @param zipper zipping-function from the input values to the output value
+   */
+  def apply[[#A1#], O](zipper: ([#A1#]) => O): ZipLatestWith1[[#A1#], O] =
+    new ZipLatestWith1(zipper)
+  #
+
+  ]
+
+}
+
+[2..22#/** `ZipLatestWith` specialized for 1 inputs */
+class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[FanInShape1[[#A1#], O]] {
+  override def initialAttributes = Attributes.name("ZipLatestWith1")
+  override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipLatestWith1")
+  def out: Outlet[O] = shape.out
+  [#val in0: Inlet[A1] = shape.in0#
+  ]
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) { outer =>
+      // Without this field the completion signalling would take one extra pull
+      var willShutDown = false
+
+      [#val inlet0 = new ZipLatestInlet(in0)#
+      ]
+      var waitingForTuple = false
+      var staleTupleValues = true
+
+      override def preStart(): Unit = {
+        [#pull(in0)#
+        ]
+      }
+
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = {
+            if (hasAllValues) {
+                if (staleTupleValues) {
+                    waitingForTuple = true
+                } else {
+                    pushOutput()
+                }
+            } else {
+                waitingForTuple = true
+            }
+            tryPullAllIfNeeded()
+          }
+        }
+      )
+
+      [#setHandler(in0, inlet0)#
+      ]
+
+      private def hasAllValues = [#inlet0.hasValue#&&]
+
+      private def pushOutput(): Unit = {
+        push(out, zipper([#inlet0.value#,]))
+        if (willShutDown) completeStage()
+        staleTupleValues = true
+      }
+
+      private def tryPullAllIfNeeded(): Unit = {
+        [#if (!hasBeenPulled(in0)) {
+          tryPull(in0)
+        }#
+        ]
+      }
+
+      private class ZipLatestInlet[T](in: Inlet[T]) extends InHandler {
+         var value: T = _
+         var hasValue = false
+
+         override def onPush() = {
+              value = outer.grab(in)
+              hasValue = true
+              outer.staleTupleValues = false
+              if (outer.waitingForTuple && outer.hasAllValues) {
+                  outer.pushOutput()
+                  outer.waitingForTuple = false
+                  outer.tryPullAllIfNeeded()
+              }
+         }
+
+         override def onUpstreamFinish(): Unit = {
+           if (outer.staleTupleValues) completeStage()
+           outer.willShutDown = true
+         }
+       }
+    }
+
+    override def toString = "ZipLatestWith1"
+}
+#
+]

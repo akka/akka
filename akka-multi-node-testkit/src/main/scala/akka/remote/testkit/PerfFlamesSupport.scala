@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testkit
@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
  */
-private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
+private[akka] trait PerfFlamesSupport { _: MultiNodeSpec =>
 
   /**
    * Runs `perf-java-flames` script on given node (JVM process).
@@ -22,12 +22,12 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
    *
    * Options are currently to be passed in via `export PERF_MAP_OPTIONS` etc.
    */
-  def runPerfFlames(nodes: RoleName*)(delay: FiniteDuration, time: FiniteDuration = 15.seconds): Unit = {
+  def runPerfFlames(nodes: RoleName*)(delay: FiniteDuration): Unit = {
     if (isPerfJavaFlamesAvailable && isNode(nodes: _*)) {
       import scala.concurrent.ExecutionContext.Implicits.global
 
       val afterDelay = akka.pattern.after(delay, system.scheduler)(Future.successful("GO!"))
-      afterDelay onComplete { it ⇒
+      afterDelay.onComplete { _ =>
         import java.lang.management._
         val name = ManagementFactory.getRuntimeMXBean.getName
         val pid = name.substring(0, name.indexOf('@')).toInt
@@ -37,9 +37,9 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
 
         import scala.sys.process._
         perfCommand.run(new ProcessLogger {
-          override def buffer[T](f: ⇒ T): T = f
-          override def out(s: ⇒ String): Unit = println(s"[perf @ $myself($pid)][OUT] " + s)
-          override def err(s: ⇒ String): Unit = println(s"[perf @ $myself($pid)][ERR] " + s)
+          override def buffer[T](f: => T): T = f
+          override def out(s: => String): Unit = println(s"[perf @ $myself($pid)][OUT] " + s)
+          override def err(s: => String): Unit = println(s"[perf @ $myself($pid)][ERR] " + s)
         })
       }
     }

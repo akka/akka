@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed;
@@ -11,29 +11,31 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 public class ClusterApiTest extends JUnitSuite {
 
   @Test
   public void joinLeaveAndObserve() throws Exception {
-    Config config = ConfigFactory.parseString(
-        "akka.actor.provider = cluster \n" +
-        "akka.remote.artery.enabled = true \n"+
-        "akka.remote.netty.tcp.port = 0 \n"+
-        "akka.remote.artery.canonical.port = 0 \n"+
-        "akka.remote.artery.canonical.hostname = 127.0.0.1 \n" +
-        "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"+
-        "akka.coordinated-shutdown.terminate-actor-system = off \n"+
-        "akka.actor { \n"+
-        "  serialize-messages = off \n"+
-        "  allow-java-serialization = off \n"+
-        "}"
-    );
+    Config config =
+        ConfigFactory.parseString(
+            "akka.actor.provider = cluster \n"
+                + "akka.remote.classic.netty.tcp.port = 0 \n"
+                + "akka.remote.artery.canonical.port = 0 \n"
+                + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
+                + "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"
+                + "akka.coordinated-shutdown.terminate-actor-system = off \n"
+                + "akka.coordinated-shutdown.run-by-actor-system-terminate = off \n"
+                + "akka.actor { \n"
+                + "  serialize-messages = off \n"
+                + "  allow-java-serialization = off \n"
+                + "}");
 
-    ActorSystem<?> system1 = ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
-    ActorSystem<?> system2 = ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
+    ActorSystem<?> system1 =
+        ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
+    ActorSystem<?> system2 =
+        ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
 
     try {
       Cluster cluster1 = Cluster.get(system1);
@@ -50,16 +52,15 @@ public class ClusterApiTest extends JUnitSuite {
       cluster2.manager().tell(new Join(cluster1.selfMember().address()));
       probe2.expectMessageClass(SelfUp.class);
 
-
       cluster2.subscriptions().tell(new Subscribe<>(probe2.ref().narrow(), SelfRemoved.class));
       cluster2.manager().tell(new Leave(cluster2.selfMember().address()));
 
       probe2.expectMessageClass(SelfRemoved.class);
     } finally {
-      // TODO no java API to terminate actor system
-      Await.result(system1.terminate().zip(system2.terminate()), Duration.create("5 seconds"));
+      system1.terminate();
+      system1.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+      system2.terminate();
+      system2.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
     }
-
   }
-
 }

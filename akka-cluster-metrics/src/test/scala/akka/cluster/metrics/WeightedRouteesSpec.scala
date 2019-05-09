@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -15,7 +15,7 @@ import scala.Vector
 
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       """)) {
 
@@ -37,12 +37,12 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
   "WeightedRoutees" must {
 
     "allocate weighted routees" in {
-      val weights = Map(a1 → 1, b1 → 3, c1 → 10)
+      val weights = Map(a1 -> 1, b1 -> 3, c1 -> 10)
       val weighted = new WeightedRoutees(routees, a1, weights)
 
       weighted(1) should ===(routeeA)
-      2 to 4 foreach { weighted(_) should ===(routeeB) }
-      5 to 14 foreach { weighted(_) should ===(routeeC) }
+      (2 to 4).foreach { weighted(_) should ===(routeeB) }
+      (5 to 14).foreach { weighted(_) should ===(routeeC) }
       weighted.total should ===(14)
     }
 
@@ -53,7 +53,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
         empty.total
       }
 
-      val empty2 = new WeightedRoutees(Vector(routeeA), a1, Map(a1 → 0))
+      val empty2 = new WeightedRoutees(Vector(routeeA), a1, Map(a1 -> 0))
       empty2.isEmpty should ===(true)
       intercept[IllegalArgumentException] {
         empty2.total
@@ -73,30 +73,30 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
     }
 
     "allocate routees for undefined weight" in {
-      val weights = Map(a1 → 1, b1 → 7)
+      val weights = Map(a1 -> 1, b1 -> 7)
       val weighted = new WeightedRoutees(routees, a1, weights)
 
       weighted(1) should ===(routeeA)
-      2 to 8 foreach { weighted(_) should ===(routeeB) }
+      (2 to 8).foreach { weighted(_) should ===(routeeB) }
       // undefined, uses the mean of the weights, i.e. 4
-      9 to 12 foreach { weighted(_) should ===(routeeC) }
+      (9 to 12).foreach { weighted(_) should ===(routeeC) }
       weighted.total should ===(12)
     }
 
     "allocate weighted local routees" in {
-      val weights = Map(a1 → 2, b1 → 1, c1 → 10)
+      val weights = Map(a1 -> 2, b1 -> 1, c1 -> 10)
       val routees2 = Vector(testActorRoutee, routeeB, routeeC)
       val weighted = new WeightedRoutees(routees2, a1, weights)
 
-      1 to 2 foreach { weighted(_) should ===(testActorRoutee) }
-      3 to weighted.total foreach { weighted(_) should not be (testActorRoutee) }
+      (1 to 2).foreach { weighted(_) should ===(testActorRoutee) }
+      (3 to weighted.total).foreach { weighted(_) should not be (testActorRoutee) }
     }
 
     "not allocate ref with weight zero" in {
-      val weights = Map(a1 → 0, b1 → 2, c1 → 10)
+      val weights = Map(a1 -> 0, b1 -> 2, c1 -> 10)
       val weighted = new WeightedRoutees(routees, a1, weights)
 
-      1 to weighted.total foreach { weighted(_) should not be (routeeA) }
+      (1 to weighted.total).foreach { weighted(_) should not be (routeeA) }
     }
 
   }

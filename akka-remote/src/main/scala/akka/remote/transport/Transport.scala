@@ -1,18 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NoStackTrace
 import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
-import akka.util.ByteString
+import akka.util.{ unused, ByteString }
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
-
-import scala.util.control.NoStackTrace
 import akka.actor.DeadLetterSuppression
 import akka.event.LoggingAdapter
+import com.github.ghik.silencer.silent
 
 object Transport {
 
@@ -23,7 +23,9 @@ object Transport {
    * hostname, etc.).
    */
   @SerialVersionUID(1L)
-  final case class InvalidAssociationException(msg: String, cause: Throwable = null) extends AkkaException(msg, cause) with NoStackTrace
+  final case class InvalidAssociationException(msg: String, cause: Throwable = null)
+      extends AkkaException(msg, cause)
+      with NoStackTrace
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
@@ -143,7 +145,7 @@ trait Transport {
    * @param cmd Command message to the transport
    * @return Future that succeeds when the command was handled or dropped
    */
-  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
+  def managementCommand(@unused cmd: Any): Future[Boolean] = { Future.successful(false) }
 
 }
 
@@ -187,6 +189,7 @@ object AssociationHandle {
    * to listen to association events.
    */
   trait HandleEventListener {
+
     /**
      * Called by the transport to notify the listener about a HandleEvent
      * @param ev The HandleEvent of the handle
@@ -264,7 +267,9 @@ trait AssociationHandle {
    * could be called arbitrarily many times.
    *
    */
-  @deprecated(message = "Use method that states reasons to make sure disassociation reasons are logged.", since = "2.5.3")
+  @deprecated(
+    message = "Use method that states reasons to make sure disassociation reasons are logged.",
+    since = "2.5.3")
   def disassociate(): Unit
 
   /**
@@ -273,13 +278,15 @@ trait AssociationHandle {
    * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
    * could be called arbitrarily many times.
    */
+  @silent
   def disassociate(reason: String, log: LoggingAdapter): Unit = {
     if (log.isDebugEnabled)
       log.debug(
         "Association between local [{}] and remote [{}] was disassociated because {}",
-        localAddress, remoteAddress, reason)
+        localAddress,
+        remoteAddress,
+        reason)
 
     disassociate()
   }
 }
-

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testkit
@@ -22,8 +22,6 @@ class MultiNodeSpecSpecMultiJvmNode3 extends MultiNodeSpecSpec
 class MultiNodeSpecSpecMultiJvmNode4 extends MultiNodeSpecSpec
 
 class MultiNodeSpecSpec extends RemotingMultiNodeSpec(MultiNodeSpecMultiJvmSpec) {
-
-  import MultiNodeSpecMultiJvmSpec._
 
   def initialParticipants = 4
 

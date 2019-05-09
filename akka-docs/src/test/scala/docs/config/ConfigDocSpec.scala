@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.config
@@ -34,7 +34,8 @@ class ConfigDocSpec extends WordSpec with Matchers {
   }
 
   "deployment section" in {
-    val conf = ConfigFactory.parseString("""
+    val conf =
+      ConfigFactory.parseString("""
   #//#deployment-section
   akka.actor.deployment {
   

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -7,12 +7,14 @@ package akka.routing
 import scala.annotation.tailrec
 import scala.collection.immutable
 import java.util.concurrent.ThreadLocalRandom
+
 import com.typesafe.config.Config
 import akka.actor.ActorCell
 import akka.actor.ActorRefWithCell
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Dispatchers
 import akka.actor.ActorSystem
+import com.github.ghik.silencer.silent
 
 object SmallestMailboxRoutingLogic {
   def apply(): SmallestMailboxRoutingLogic = new SmallestMailboxRoutingLogic
@@ -29,6 +31,7 @@ object SmallestMailboxRoutingLogic {
  *     since their mailbox size is unknown</li>
  * </ul>
  */
+@silent
 @SerialVersionUID(1L)
 class SmallestMailboxRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
@@ -47,11 +50,11 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
   // 5. An ActorRef with a known mailbox size
   // 6. An ActorRef without any messages
   @tailrec private def selectNext(
-    targets:        immutable.IndexedSeq[Routee],
-    proposedTarget: Routee                       = NoRoutee,
-    currentScore:   Long                         = Long.MaxValue,
-    at:             Int                          = 0,
-    deep:           Boolean                      = false): Routee = {
+      targets: immutable.IndexedSeq[Routee],
+      proposedTarget: Routee = NoRoutee,
+      currentScore: Long = Long.MaxValue,
+      at: Int = 0,
+      deep: Boolean = false): Routee = {
     if (targets.isEmpty)
       NoRoutee
     else if (at >= targets.size) {
@@ -61,12 +64,14 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
     } else {
       val target = targets(at)
       val newScore: Long =
-        if (isSuspended(target)) Long.MaxValue - 1 else { //Just about better than the DeadLetters
-          (if (isProcessingMessage(target)) 1l else 0l) +
-            (if (!hasMessages(target)) 0l else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
-              val noOfMsgs: Long = if (deep) numberOfMessages(target) else 0
-              if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 3 //Just better than a suspended actorref
-            })
+        if (isSuspended(target)) Long.MaxValue - 1
+        else { //Just about better than the DeadLetters
+          (if (isProcessingMessage(target)) 1L else 0L) +
+          (if (!hasMessages(target)) 0L
+           else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
+             val noOfMsgs: Long = if (deep) numberOfMessages(target) else 0
+             if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 3 //Just better than a suspended actorref
+           })
         }
 
       if (newScore == 0) target
@@ -75,9 +80,11 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
     }
   }
 
+  // TODO should we rewrite this not to use isTerminated?
+  @silent
   protected def isTerminated(a: Routee): Boolean = a match {
-    case ActorRefRoutee(ref) ⇒ ref.isTerminated
-    case _                   ⇒ false
+    case ActorRefRoutee(ref) => ref.isTerminated
+    case _                   => false
   }
 
   /**
@@ -87,12 +94,12 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
    * routers based on mailbox and actor internal state.
    */
   protected def isProcessingMessage(a: Routee): Boolean = a match {
-    case ActorRefRoutee(x: ActorRefWithCell) ⇒
+    case ActorRefRoutee(x: ActorRefWithCell) =>
       x.underlying match {
-        case cell: ActorCell ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
-        case _               ⇒ false
+        case cell: ActorCell => cell.mailbox.isScheduled && cell.currentMessage != null
+        case _               => false
       }
-    case _ ⇒ false
+    case _ => false
   }
 
   /**
@@ -103,8 +110,8 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
    * routers based on mailbox and actor internal state.
    */
   protected def hasMessages(a: Routee): Boolean = a match {
-    case ActorRefRoutee(x: ActorRefWithCell) ⇒ x.underlying.hasMessages
-    case _                                   ⇒ false
+    case ActorRefRoutee(x: ActorRefWithCell) => x.underlying.hasMessages
+    case _                                   => false
   }
 
   /**
@@ -114,12 +121,12 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
    * routers based on mailbox and actor internal state.
    */
   protected def isSuspended(a: Routee): Boolean = a match {
-    case ActorRefRoutee(x: ActorRefWithCell) ⇒
+    case ActorRefRoutee(x: ActorRefWithCell) =>
       x.underlying match {
-        case cell: ActorCell ⇒ cell.mailbox.isSuspended
-        case _               ⇒ true
+        case cell: ActorCell => cell.mailbox.isSuspended
+        case _               => true
       }
-    case _ ⇒ false
+    case _ => false
   }
 
   /**
@@ -129,8 +136,8 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
    * routers based on mailbox and actor internal state.
    */
   protected def numberOfMessages(a: Routee): Int = a match {
-    case ActorRefRoutee(x: ActorRefWithCell) ⇒ x.underlying.numberOfMessages
-    case _                                   ⇒ 0
+    case ActorRefRoutee(x: ActorRefWithCell) => x.underlying.numberOfMessages
+    case _                                   => 0
   }
 }
 
@@ -172,13 +179,16 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
  *   supervision, death watch and router management messages
  */
+@silent
 @SerialVersionUID(1L)
 final case class SmallestMailboxPool(
-  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
-  override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher:  Boolean            = false)
-  extends Pool with PoolOverrideUnsetConfig[SmallestMailboxPool] {
+    nrOfInstances: Int,
+    override val resizer: Option[Resizer] = None,
+    override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+    override val usePoolDispatcher: Boolean = false)
+    extends Pool
+    with PoolOverrideUnsetConfig[SmallestMailboxPool] {
 
   def this(config: Config) =
     this(

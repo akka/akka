@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io.compression
@@ -35,7 +35,7 @@ class GzipWithCustomCompressionLevelSpec extends GzipSpec {
     }
     "throw early if header is corrupt" in {
       val cause = (the[RuntimeException] thrownBy ourDecode(ByteString(0, 1, 2, 3, 4))).ultimateCause
-      cause should (be(a[ZipException]) and have message "Not in GZIP format")
+      cause should ((be(a[ZipException]) and have).message("Not in GZIP format"))
     }
   }
 

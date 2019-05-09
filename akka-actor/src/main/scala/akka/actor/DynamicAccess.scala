@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -17,6 +17,7 @@ import scala.util.Try
  * unless they are extending Akka in ways which go beyond simple Extensions.
  */
 abstract class DynamicAccess {
+
   /**
    * Convenience method which given a `Class[_]` object and a constructor description
    * will create a new instance of that class.

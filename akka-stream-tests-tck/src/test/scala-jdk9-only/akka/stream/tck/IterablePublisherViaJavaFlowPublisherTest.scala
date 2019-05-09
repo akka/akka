@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import java.util.concurrent.{ Flow ⇒ JavaFlow }
+import java.util.concurrent.{ Flow => JavaFlow }
 
 import akka.NotUsed
 import akka.stream.scaladsl.{ Flow, JavaFlowSupport, Sink, Source }

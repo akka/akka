@@ -160,7 +160,15 @@ with different settings if needed.
 
 ## Supervision
 
-Sometimes it is useful to add supervision for the Cluster Singleton itself. To accomplish this you need to add a parent supervisor actor which will be used to create the 'real' singleton instance. Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
+There are two actors that could potentially be supervised. For the `consumer` singleton created above these would be: 
+
+* Cluster singleton manager e.g. `/user/consumer` which runs on every node in the cluster
+* The user actor e.g. `/user/consumer/singleton` which the manager starts on the oldest node
+
+The Cluster singleton manager actor should not have its supervision strategy changed as it should always be running.
+However it is sometimes useful to add supervision for the user actor. 
+To accomplish this add a parent supervisor actor which will be used to create the 'real' singleton instance. 
+Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
 
 Scala
 :  @@snip [ClusterSingletonSupervision.scala](/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor }
@@ -176,3 +184,23 @@ Scala
 Java
 :  @@snip [ClusterSingletonSupervision.java](/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage-imports }
 @@snip [ClusterSingletonSupervision.java](/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage }
+
+## Lease
+
+A @ref[lease](coordination.md) can be used as an additional safety measure to ensure that two singletons 
+don't run at the same time. Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+
+A lease can be a final backup that means that the singleton actor won't be created unless
+the lease can be acquired. 
+
+To use a lease for singleton set `akka.cluster.singleton.use-lease` to the configuration location
+of the lease to use. A lease with with the name `<actor system name>-singleton-<singleton actor path>` is used and
+the owner is set to the @scala[`Cluster(system).selfAddress.hostPort`]@java[`Cluster.get(system).selfAddress().hostPort()`].
+
+If the cluster singleton manager can't acquire the lease it will keep retrying while it is the oldest node in the cluster.
+If the lease is lost then the singleton actor will be terminated then the lease will be re-tried.
+

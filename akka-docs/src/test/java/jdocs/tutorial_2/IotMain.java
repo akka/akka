@@ -1,9 +1,9 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-//#iot-app
-package com.lightbend.akka.sample;
+// #iot-app
+package com.example;
 
 import java.io.IOException;
 
@@ -25,6 +25,5 @@ public class IotMain {
       system.terminate();
     }
   }
-
 }
-//#iot-app
+// #iot-app

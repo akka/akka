@@ -2,14 +2,14 @@
 
 ## Prerequisites
 
-### JDK 8 and JDK 9
+### JDK 8 and JDK 11
 
-Releasing Akka requires running on at least JDK 9, but also having JDK 8
+Releasing Akka requires running on JDK 11, but also having JDK 8
 installed. The reason for this is that we want the Akka artifacts to be
-usable with JRE 8, but also want to compile some classes with JDK9-specific
+usable with JRE 8, but also want to compile some classes with JDK11-specific
 types.
 
-When we stop supporting Scala 2.11 we might be able to update the build towork
+In the future we might be able to update the build to work
 without having JDK 8 installed, by using the `-release` option.
 
 ### MinGW
@@ -25,6 +25,17 @@ otherwise git might convert line endings in some cases.
 
 Make sure you have the Lightbend Whitesource credentials configured in
 your `~/.sbt/1.0/private-credentials.sbt`.
+
+## Snapshot releases
+
+Nightly snapshot releases are created from master and published to
+https://repo.akka.io/snapshots by https://jenkins.akka.io:8498/job/akka-publish-nightly/
+
+To create snapshot versions manually, use `sbt clean stampVersion publish`.
+The release artifacts are created in `akka-*/target/repository` and can be
+copied over to a maven server. If you have access, the Jenkins job at
+https://jenkins.akka.io:8498/job/akka-publish-wip/ can be used to publish
+a snapshot to https://repo.akka.io/snapshots from any branch.
 
 ## Release steps
 

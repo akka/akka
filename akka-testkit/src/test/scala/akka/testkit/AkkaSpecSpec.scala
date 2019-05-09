@@ -1,20 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
 import language.postfixOps
-
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor._
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.DeadLetter
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
 
+@silent
 class AkkaSpecSpec extends WordSpec with Matchers {
 
   "An AkkaSpec" must {
@@ -23,7 +25,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
       implicit val system = ActorSystem("AkkaSpec0", AkkaSpec.testConf)
       try {
         val a = system.actorOf(Props.empty)
-        EventFilter.warning(start = "unhandled message", occurrences = 1) intercept {
+        EventFilter.warning(start = "unhandled message", occurrences = 1).intercept {
           a ! 42
         }
       } finally {
@@ -35,19 +37,21 @@ class AkkaSpecSpec extends WordSpec with Matchers {
       // verbose config just for demonstration purposes, please leave in in case of debugging
       import scala.collection.JavaConverters._
       val conf = Map(
-        "akka.actor.debug.lifecycle" → true, "akka.actor.debug.event-stream" → true,
-        "akka.loglevel" → "DEBUG", "akka.stdout-loglevel" → "DEBUG")
+        "akka.actor.debug.lifecycle" -> true,
+        "akka.actor.debug.event-stream" -> true,
+        "akka.loglevel" -> "DEBUG",
+        "akka.stdout-loglevel" -> "DEBUG")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       var refs = Seq.empty[ActorRef]
       val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
-      refs foreach (_.isTerminated should not be true)
+      refs.foreach(_.isTerminated should not be true)
       TestKit.shutdownActorSystem(system)
-      spec.awaitCond(refs forall (_.isTerminated), 2 seconds)
+      spec.awaitCond(refs.forall(_.isTerminated), 2 seconds)
     }
 
     "stop correctly when sending PoisonPill to rootGuardian" in {
       val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
-      val spec = new AkkaSpec(system) {}
+      new AkkaSpec(system) {}
       val latch = new TestLatch(1)(system)
       system.registerOnTermination(latch.countDown())
 
@@ -64,8 +68,8 @@ class AkkaSpecSpec extends WordSpec with Matchers {
         implicit val timeout = TestKitExtension(system).DefaultTimeout
         val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
-            case m: DeadLetter ⇒ locker :+= m
-            case "Die!"        ⇒ sender() ! "finally gone"; context.stop(self)
+            case m: DeadLetter => locker :+= m
+            case "Die!"        => sender() ! "finally gone"; context.stop(self)
           }
         }), "davyJones")
 
@@ -74,12 +78,12 @@ class AkkaSpecSpec extends WordSpec with Matchers {
         val probe = new TestProbe(system)
         probe.ref.tell(42, davyJones)
         /*
-       * this will ensure that the message is actually received, otherwise it
-       * may happen that the system.stop() suspends the testActor before it had
-       * a chance to put the message into its private queue
-       */
+         * this will ensure that the message is actually received, otherwise it
+         * may happen that the system.stop() suspends the testActor before it had
+         * a chance to put the message into its private queue
+         */
         probe.receiveWhile(1 second) {
-          case null ⇒
+          case null =>
         }
 
         val latch = new TestLatch(1)(system)

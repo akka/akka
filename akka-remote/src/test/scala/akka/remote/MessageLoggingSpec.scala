@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -10,27 +10,29 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import MessageLoggingSpec._
 
 object MessageLoggingSpec {
-  def config(artery: Boolean) = ConfigFactory.parseString(
-    s"""
+  def config(artery: Boolean) = ConfigFactory.parseString(s"""
      akka.loglevel = info // debug makes this test fail intentionally
      akka.actor.provider = remote
      akka.remote {
+     
+      classic {
         log-received-messages = on
         log-sent-messages = on
-
         netty.tcp {
           hostname = localhost
           port = 0
         }
 
-       artery {
-         enabled = $artery
-         transport = aeron-udp
-         canonical.hostname = localhost
-         canonical.port = 0
-         log-received-messages = on
-         log-sent-messages = on
-       }
+      } 
+     
+      artery {
+        enabled = $artery
+        transport = aeron-udp
+        canonical.hostname = localhost
+        canonical.port = 0
+        log-received-messages = on
+        log-sent-messages = on
+      }
      }
     """.stripMargin)
 
@@ -41,7 +43,7 @@ object MessageLoggingSpec {
 
   class BadActor extends Actor {
     override def receive = {
-      case _ ⇒
+      case _ =>
         sender() ! BadMsg("hah")
     }
   }
@@ -70,4 +72,3 @@ abstract class MessageLoggingSpec(config: Config) extends AkkaSpec(config) with 
     TestKit.shutdownActorSystem(remoteSystem)
   }
 }
-

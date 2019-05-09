@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
 
-import scala.concurrent.Promise
+import akka.Done
 
-import akka.actor.typed.Terminated
+import scala.concurrent.Promise
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -25,8 +25,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val testkit2 = ActorTestKit()
       try {
         testkit2.system.name should ===("ActorTestKitSpec")
-      } finally
-        testkit2.shutdownTestKit()
+      } finally testkit2.shutdownTestKit()
     }
 
     "use name from given class name" in {
@@ -34,13 +33,12 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       try {
         // removing package name and such
         testkit2.system.name should ===("Vector")
-      } finally
-        testkit2.shutdownTestKit()
+      } finally testkit2.shutdownTestKit()
     }
 
     "spawn an actor" in {
       val sawMessage = Promise[Boolean]()
-      val ref = spawn(Behaviors.setup[AnyRef] { ctx ⇒
+      spawn(Behaviors.setup[AnyRef] { _ =>
         sawMessage.trySuccess(true)
         Behaviors.empty
       })
@@ -50,8 +48,8 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "spawn a named actor" in {
       val spawnedWithName = Promise[String]()
-      val ref = spawn(Behaviors.setup[AnyRef] { ctx ⇒
-        spawnedWithName.trySuccess(ctx.self.path.name)
+      spawn(Behaviors.setup[AnyRef] { context =>
+        spawnedWithName.trySuccess(context.self.path.name)
         Behaviors.empty
       }, "name")
 
@@ -62,7 +60,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       // usually done in test framework hook method but we want to assert
       val testkit2 = ActorTestKit()
       testkit2.shutdownTestKit()
-      testkit2.system.whenTerminated.futureValue shouldBe a[Terminated]
+      testkit2.system.whenTerminated.futureValue shouldBe a[Done]
     }
   }
 
@@ -81,16 +79,14 @@ class MyConcreteDerivateSpec extends MyBaseSpec {
       val testkit2 = ActorTestKit()
       try {
         testkit2.system.name should ===("MyConcreteDerivateSpec")
-      } finally
-        testkit2.shutdownTestKit()
+      } finally testkit2.shutdownTestKit()
     }
 
     "use name from given class name" in {
       val testkit2 = ActorTestKit(classOf[Vector[_]].getName)
       try {
         testkit2.system.name should ===("Vector")
-      } finally
-        testkit2.shutdownTestKit()
+      } finally testkit2.shutdownTestKit()
     }
   }
 
@@ -107,4 +103,3 @@ class CompositionSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     testKit.system.name should ===("CompositionSpec")
   }
 }
-

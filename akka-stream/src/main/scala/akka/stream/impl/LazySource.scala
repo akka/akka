@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -17,13 +17,14 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi private[akka] object LazySource {
-  def apply[T, M](sourceFactory: () ⇒ Source[T, M]) = new LazySource[T, M](sourceFactory)
+  def apply[T, M](sourceFactory: () => Source[T, M]) = new LazySource[T, M](sourceFactory)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+@InternalApi private[akka] final class LazySource[T, M](sourceFactory: () => Source[T, M])
+    extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
   val out = Outlet[T]("LazySource.out")
   override val shape = SourceShape(out)
 
@@ -64,7 +65,7 @@ import scala.util.control.NonFatal
           val matVal = subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
           matPromise.trySuccess(matVal)
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             subSink.cancel()
             failStage(ex)
             matPromise.tryFailure(ex)

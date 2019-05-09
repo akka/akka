@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -18,11 +18,15 @@ class DispatcherShutdownSpec extends WordSpec with Matchers {
     "eventually shutdown when used after system terminate" in {
 
       val threads = ManagementFactory.getThreadMXBean()
-      def threadCount = threads
-        .dumpAllThreads(false, false).toList
-        .map(_.getThreadName)
-        .filter(_.startsWith("DispatcherShutdownSpec-akka.actor.default"))
-        .size
+      def threadCount =
+        threads
+          .dumpAllThreads(false, false)
+          .toList
+          .map(_.getThreadName)
+          .filter(name =>
+            name.startsWith("DispatcherShutdownSpec-akka.actor.default") || name.startsWith(
+              "DispatcherShutdownSpec-akka.actor.internal")) // nothing is run on default without any user actors started
+          .size
 
       val system = ActorSystem("DispatcherShutdownSpec")
       threadCount should be > 0

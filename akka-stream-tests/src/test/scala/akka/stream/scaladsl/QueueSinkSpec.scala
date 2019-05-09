@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,7 +8,6 @@ import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.Attributes.inputBuffer
 import akka.stream.{ ActorMaterializer, StreamDetachedException }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 
@@ -29,8 +28,8 @@ class QueueSinkSpec extends StreamSpec {
     "send the elements as result of future" in assertAllStagesStopped {
       val expected = List(Some(1), Some(2), Some(3), None)
       val queue = Source(expected.flatten).runWith(Sink.queue())
-      expected foreach { v ⇒
-        queue.pull() pipeTo testActor
+      expected.foreach { v =>
+        queue.pull().pipeTo(testActor)
         expectMsg(v)
       }
     }
@@ -126,19 +125,18 @@ class QueueSinkSpec extends StreamSpec {
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4
-      val sink = Sink.queue[Int]()
-        .withAttributes(inputBuffer(bufferSize, bufferSize))
+      val sink = Sink.queue[Int]().withAttributes(inputBuffer(bufferSize, bufferSize))
       val bufferFullProbe = Promise[akka.Done.type]
       val queue = Source(1 to streamElementCount)
-        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ ⇒ bufferFullProbe.trySuccess(akka.Done))))
+        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .toMat(sink)(Keep.right)
         .run()
       bufferFullProbe.future.futureValue should ===(akka.Done)
-      for (i ← 1 to streamElementCount) {
-        queue.pull() pipeTo testActor
+      for (i <- 1 to streamElementCount) {
+        queue.pull().pipeTo(testActor)
         expectMsg(Some(i))
       }
-      queue.pull() pipeTo testActor
+      queue.pull().pipeTo(testActor)
       expectMsg(None)
 
     }
@@ -176,6 +174,16 @@ class QueueSinkSpec extends StreamSpec {
     "fail to materialize with zero sized input buffer" in {
       an[IllegalArgumentException] shouldBe thrownBy {
         Source.single(()).runWith(Sink.queue().withAttributes(inputBuffer(0, 0)))
+      }
+    }
+
+    "materialize to a queue which is seamlessly translatable between scala and java DSL" in assertAllStagesStopped {
+      val expected = List(Some(1), Some(2), Some(3), None)
+      val javadslQueue = Source(expected.flatten).runWith(Sink.queue()).asJava
+      val scaladslQueue = akka.stream.javadsl.SinkQueueWithCancel.asScala(javadslQueue)
+      expected.foreach { v ⇒
+        scaladslQueue.pull().pipeTo(testActor)
+        expectMsg(v)
       }
     }
   }

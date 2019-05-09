@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -460,6 +460,4 @@ package akka.stream
  *     debugging if everything is wired to the right thing.
  *
  */
-package object impl {
-
-}
+package object impl {}

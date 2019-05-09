@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -23,16 +23,16 @@ import com.typesafe.config.ConfigFactory
 object ClusterShardingSingleShardPerEntitySpec {
   class Entity extends Actor {
     def receive = {
-      case id: Int ⇒ sender() ! id
+      case id: Int => sender() ! id
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
 }
@@ -60,8 +60,10 @@ class ClusterShardingSingleShardPerEntitySpecMultiJvmNode3 extends ClusterShardi
 class ClusterShardingSingleShardPerEntitySpecMultiJvmNode4 extends ClusterShardingSingleShardPerEntitySpec
 class ClusterShardingSingleShardPerEntitySpecMultiJvmNode5 extends ClusterShardingSingleShardPerEntitySpec
 
-abstract class ClusterShardingSingleShardPerEntitySpec extends MultiNodeSpec(ClusterShardingSingleShardPerEntitySpecConfig)
-  with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingSingleShardPerEntitySpec
+    extends MultiNodeSpec(ClusterShardingSingleShardPerEntitySpecConfig)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingSingleShardPerEntitySpec._
   import ClusterShardingSingleShardPerEntitySpecConfig._
 
@@ -69,7 +71,7 @@ abstract class ClusterShardingSingleShardPerEntitySpec extends MultiNodeSpec(Clu
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       startSharding()
     }
     enterBarrier(from.name + "-joined")

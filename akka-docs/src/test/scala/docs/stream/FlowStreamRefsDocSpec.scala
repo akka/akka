@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -23,22 +23,21 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])
 
     class DataSource extends Actor {
-      import context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {
-        case RequestLogs(streamId) ⇒
+        case RequestLogs(streamId) =>
           // obtain the source you want to offer:
           val source: Source[String, NotUsed] = streamLogs(streamId)
 
           // materialize the SourceRef:
-          val ref: Future[SourceRef[String]] = source.runWith(StreamRefs.sourceRef())
+          val ref: SourceRef[String] = source.runWith(StreamRefs.sourceRef())
 
           // wrap the SourceRef in some domain message, such that the sender knows what source it is
-          val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
+          val reply = LogsOffer(streamId, ref)
 
           // reply to sender
-          reply pipeTo sender()
+          sender() ! reply
       }
 
       def streamLogs(streamId: Long): Source[String, NotUsed] = ???
@@ -70,22 +69,21 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
     class DataReceiver extends Actor {
 
-      import context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {
-        case PrepareUpload(nodeId) ⇒
+        case PrepareUpload(nodeId) =>
           // obtain the source you want to offer:
           val sink: Sink[String, NotUsed] = logsSinkFor(nodeId)
 
           // materialize the SinkRef (the remote is like a source of data for us):
-          val ref: Future[SinkRef[String]] = StreamRefs.sinkRef[String]().to(sink).run()
+          val ref: SinkRef[String] = StreamRefs.sinkRef[String]().to(sink).run()
 
           // wrap the SinkRef in some domain message, such that the sender knows what source it is
-          val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
+          val reply = MeasurementsSinkReady(nodeId, ref)
 
           // reply to sender
-          reply pipeTo sender()
+          sender() ! reply
       }
 
       def logsSinkFor(nodeId: String): Sink[String, NotUsed] = ???
@@ -116,11 +114,14 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     import akka.stream.StreamRefAttributes
 
     // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
-    Source.repeat("hello")
+    Source
+      .repeat("hello")
       .runWith(StreamRefs.sourceRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds)))
 
     // configuring SinkRef.source:
-    StreamRefs.sinkRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
+    StreamRefs
+      .sinkRef()
+      .addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
       .runWith(Sink.ignore) // not very interesting Sink, just an example
     //#attr-sub-timeout
   }

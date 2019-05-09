@@ -1,16 +1,13 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.collection.immutable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
 import akka.actor.Address
 
 object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
@@ -20,8 +17,7 @@ object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val ordinary1 = role("ordinary1")
   val ordinary2 = role("ordinary2")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class JoinSeedNodeMultiJvmNode1 extends JoinSeedNodeSpec
@@ -30,9 +26,7 @@ class JoinSeedNodeMultiJvmNode3 extends JoinSeedNodeSpec
 class JoinSeedNodeMultiJvmNode4 extends JoinSeedNodeSpec
 class JoinSeedNodeMultiJvmNode5 extends JoinSeedNodeSpec
 
-abstract class JoinSeedNodeSpec
-  extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class JoinSeedNodeSpec extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec) with MultiNodeClusterSpec {
 
   import JoinSeedNodeMultiJvmSpec._
 

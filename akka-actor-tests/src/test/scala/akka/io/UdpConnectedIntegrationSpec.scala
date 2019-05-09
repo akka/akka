@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
 import java.net.InetSocketAddress
-import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 import akka.actor.ActorRef
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddresses
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
@@ -24,7 +24,10 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     commander.sender()
   }
 
-  def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress, handler: ActorRef): ActorRef = {
+  def connectUdp(
+      localAddress: Option[InetSocketAddress],
+      remoteAddress: InetSocketAddress,
+      handler: ActorRef): ActorRef = {
     val commander = TestProbe()
     commander.send(IO(UdpConnected), UdpConnected.Connect(handler, remoteAddress, localAddress, Nil))
     commander.expectMsg(UdpConnected.Connected)
@@ -41,7 +44,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       connectUdp(localAddress = None, serverAddress, testActor) ! UdpConnected.Send(data1)
 
       val clientAddress = expectMsgPF() {
-        case Udp.Received(d, a) ⇒
+        case Udp.Received(d, a) =>
           d should ===(data1)
           a
       }
@@ -60,7 +63,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConnected.Send(data1)
 
       expectMsgPF() {
-        case Udp.Received(d, a) ⇒
+        case Udp.Received(d, a) =>
           d should ===(data1)
           a should ===(clientAddress)
       }
@@ -85,7 +88,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       expectMsg(Udp.Unbound)
 
       // Reusing the address
-      val server2 = bindUdp(serverAddress, testActor)
+      bindUdp(serverAddress, testActor)
 
       client ! UdpConnected.Send(data1)
       expectMsgType[Udp.Received].data should ===(data1)

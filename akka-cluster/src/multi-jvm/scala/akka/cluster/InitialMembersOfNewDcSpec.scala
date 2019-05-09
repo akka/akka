@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -11,11 +11,9 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
 object InitialMembersOfNewDcSpec extends MultiNodeConfig {
-  commonConfig(ConfigFactory.parseString(
-    s"""
+  commonConfig(ConfigFactory.parseString(s"""
     akka.actor.provider = cluster
     akka.actor.warn-about-java-serializer-usage = off
-    akka.coordinated-shutdown.terminate-actor-system = off
     akka.cluster {
       jmx.enabled                         = off
       debug.verbose-gossip-logging = on
@@ -52,7 +50,10 @@ class InitialMembersOfNewDcSpecMultiJvmNode3 extends InitialMembersOfNewDcSpec
 class InitialMembersOfNewDcSpecMultiJvmNode4 extends InitialMembersOfNewDcSpec
 class InitialMembersOfNewDcSpecMultiJvmNode5 extends InitialMembersOfNewDcSpec
 
-abstract class InitialMembersOfNewDcSpec extends MultiNodeSpec(InitialMembersOfNewDcSpec) with STMultiNodeSpec with ImplicitSender {
+abstract class InitialMembersOfNewDcSpec
+    extends MultiNodeSpec(InitialMembersOfNewDcSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import InitialMembersOfNewDcSpec._
 
@@ -106,4 +107,3 @@ abstract class InitialMembersOfNewDcSpec extends MultiNodeSpec(InitialMembersOfN
     }
   }
 }
-

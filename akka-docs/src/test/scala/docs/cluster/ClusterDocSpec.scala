@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package scala.docs.cluster
@@ -14,7 +14,7 @@ object ClusterDocSpec {
   val config =
     """
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     """
 }
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
@@ -11,12 +11,12 @@ private[pubsub] trait PerGroupingBuffer {
 
   private val buffers: MessageBufferMap[String] = new MessageBufferMap()
 
-  def bufferOr(grouping: String, message: Any, originalSender: ActorRef)(action: ⇒ Unit): Unit = {
+  def bufferOr(grouping: String, message: Any, originalSender: ActorRef)(action: => Unit): Unit = {
     if (!buffers.contains(grouping)) action
     else buffers.append(grouping, message, originalSender)
   }
 
-  def recreateAndForwardMessagesIfNeeded(grouping: String, recipient: ⇒ ActorRef): Unit = {
+  def recreateAndForwardMessagesIfNeeded(grouping: String, recipient: => ActorRef): Unit = {
     val buffer = buffers.getOrEmpty(grouping)
     if (buffer.nonEmpty) {
       forwardMessages(buffer, recipient)
@@ -31,7 +31,7 @@ private[pubsub] trait PerGroupingBuffer {
 
   private def forwardMessages(messages: MessageBuffer, recipient: ActorRef): Unit = {
     messages.foreach {
-      case (message, originalSender) ⇒ recipient.tell(message, originalSender)
+      case (message, originalSender) => recipient.tell(message, originalSender)
     }
   }
 

@@ -1,11 +1,13 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
 
 import akka.actor.ActorCell
 import akka.actor.Cancellable
+import akka.actor.NotInfluenceReceiveTimeout
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
@@ -13,7 +15,7 @@ private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)
 }
 
-private[akka] trait ReceiveTimeout { this: ActorCell ⇒
+private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   import ReceiveTimeout._
   import ActorCell._
@@ -24,10 +26,14 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
 
   final def setReceiveTimeout(timeout: Duration): Unit = receiveTimeoutData = receiveTimeoutData.copy(_1 = timeout)
 
+  protected def checkReceiveTimeoutIfNeeded(message: Any): Unit =
+    if (hasTimeoutData)
+      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout])
+
   final def checkReceiveTimeout(reschedule: Boolean = true): Unit = {
-    val (recvtimeout, task) = receiveTimeoutData
-    recvtimeout match {
-      case f: FiniteDuration ⇒
+    val (recvTimeout, task) = receiveTimeoutData
+    recvTimeout match {
+      case f: FiniteDuration =>
         // The fact that timeout is FiniteDuration and task is emptyCancellable
         // means that a user called `context.setReceiveTimeout(...)`
         // while sending the ReceiveTimeout message is not scheduled yet.
@@ -36,7 +42,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
         if (reschedule || (task eq emptyCancellable))
           rescheduleReceiveTimeout(f)
 
-      case _ ⇒ cancelReceiveTimeout()
+      case _ => cancelReceiveTimeout()
     }
   }
 
@@ -45,6 +51,12 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
     val task = system.scheduler.scheduleOnce(f, self, akka.actor.ReceiveTimeout)(this.dispatcher)
     receiveTimeoutData = (f, task)
   }
+
+  private def hasTimeoutData: Boolean = receiveTimeoutData ne emptyReceiveTimeoutData
+
+  protected def cancelReceiveTimeoutIfNeeded(message: Any): Unit =
+    if (hasTimeoutData && !message.isInstanceOf[NotInfluenceReceiveTimeout])
+      cancelReceiveTimeout()
 
   override final def cancelReceiveTimeout(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {

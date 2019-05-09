@@ -1,11 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
-import java.time.{ Duration ⇒ JDuration }
+import java.time.{ Duration => JDuration }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 /**
  * INTERNAL API
  */

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -44,21 +44,21 @@ object DurableDataSpec {
   class TestDurableStore(failLoad: Boolean, failStore: Boolean) extends Actor {
     import DurableStore._
     def receive = {
-      case LoadAll ⇒
+      case LoadAll =>
         if (failLoad)
           throw new LoadFailed("failed to load durable distributed-data") with NoStackTrace
         else
           sender() ! LoadAllCompleted
 
-      case Store(key, data, reply) ⇒
+      case Store(_, _, reply) =>
         if (failStore) reply match {
-          case Some(StoreReply(_, failureMsg, replyTo)) ⇒ replyTo ! failureMsg
-          case None                                     ⇒
-        }
-        else reply match {
-          case Some(StoreReply(successMsg, _, replyTo)) ⇒ replyTo ! successMsg
-          case None                                     ⇒
-        }
+          case Some(StoreReply(_, failureMsg, replyTo)) => replyTo ! failureMsg
+          case None                                     =>
+        } else
+          reply match {
+            case Some(StoreReply(successMsg, _, replyTo)) => replyTo ! successMsg
+            case None                                     =>
+          }
     }
 
   }
@@ -72,15 +72,17 @@ class DurableDataWriteBehindSpecMultiJvmNode1 extends DurableDataSpec(DurableDat
 class DurableDataWriteBehindSpecMultiJvmNode2 extends DurableDataSpec(DurableDataSpecConfig(writeBehind = true))
 
 abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
-  extends MultiNodeSpec(multiNodeConfig) with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(multiNodeConfig)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import DurableDataSpec._
   import Replicator._
   import multiNodeConfig._
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
-
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val timeout = 14.seconds.dilated // initialization of lmdb can be very slow in CI environment
   val writeTwo = WriteTo(2, timeout)
   val readTwo = ReadFrom(2, timeout)
@@ -95,12 +97,14 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     enterBarrier("after-" + testStepCounter)
   }
 
-  def newReplicator(sys: ActorSystem = system) = sys.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)), "replicator-" + testStepCounter)
+  def newReplicator(sys: ActorSystem = system) =
+    sys.actorOf(
+      Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)),
+      "replicator-" + testStepCounter)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -123,9 +127,9 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         r ! Get(KeyA, ReadLocal)
         expectMsg(NotFound(KeyA, None))
 
-        r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-        r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-        r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
+        r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+        r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+        r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
 
         expectMsg(UpdateSuccess(KeyA, None))
         expectMsg(UpdateSuccess(KeyA, None))
@@ -136,7 +140,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         expectTerminated(r)
 
         var r2: ActorRef = null
-        awaitAssert(r2 = newReplicator()) // try until name is free
+        awaitAssert { r2 = newReplicator() } // try until name is free
 
         // note that it will stash the commands until loading completed
         r2 ! Get(KeyA, ReadLocal)
@@ -163,10 +167,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     }
     enterBarrier("both-initialized")
 
-    r ! Update(KeyA, GCounter(), writeTwo)(_ + 1)
+    r ! Update(KeyA, GCounter(), writeTwo)(_ :+ 1)
     expectMsg(UpdateSuccess(KeyA, None))
 
-    r ! Update(KeyC, ORSet.empty[String], writeTwo)(_ + myself.name)
+    r ! Update(KeyC, ORSet.empty[String], writeTwo)(_ :+ myself.name)
     expectMsg(UpdateSuccess(KeyC, None))
 
     enterBarrier("update-done-" + testStepCounter)
@@ -184,7 +188,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     expectTerminated(r)
 
     var r2: ActorRef = null
-    awaitAssert(r2 = newReplicator()) // try until name is free
+    awaitAssert { r2 = newReplicator() } // try until name is free
     awaitAssert {
       r2 ! GetKeyIds
       expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])
@@ -203,7 +207,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     val r = newReplicator()
 
     runOn(first) {
-      r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ + myself.name)
+      r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ :+ myself.name)
       expectMsg(UpdateSuccess(KeyC, None))
     }
 
@@ -213,7 +217,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
 
       // must do one more roundtrip to be sure that it keyB is stored, since Changed might have
       // been sent out before storage
-      r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
+      r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
       expectMsg(UpdateSuccess(KeyA, None))
 
       watch(r)
@@ -221,7 +225,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       expectTerminated(r)
 
       var r2: ActorRef = null
-      awaitAssert(r2 = newReplicator()) // try until name is free
+      awaitAssert { r2 = newReplicator() } // try until name is free
       awaitAssert {
         r2 ! GetKeyIds
         expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])
@@ -254,10 +258,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
           r ! Get(KeyA, ReadLocal)
           expectMsg(NotFound(KeyA, None))
 
-          r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-          r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-          r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-          r ! Update(KeyB, GCounter(), WriteLocal)(_ + 1)
+          r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+          r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+          r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+          r ! Update(KeyB, GCounter(), WriteLocal)(_ :+ 1)
 
           expectMsg(UpdateSuccess(KeyA, None))
           expectMsg(UpdateSuccess(KeyA, None))
@@ -277,7 +281,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         // use the same port
         ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port = ${address.port.get}
-            akka.remote.netty.tcp.port = ${address.port.get}
+            akka.remote.classic.netty.tcp.port = ${address.port.get}
             """).withFallback(system.settings.config))
       try {
         Cluster(sys2).join(address)
@@ -286,7 +290,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
           val r2: ActorRef = newReplicator(sys2)
 
           // it should be possible to update while loading is in progress
-          r2 ! Update(KeyB, GCounter(), WriteLocal)(_ + 1)
+          r2 ! Update(KeyB, GCounter(), WriteLocal)(_ :+ 1)
           expectMsg(UpdateSuccess(KeyB, None))
 
           // wait until all loaded
@@ -310,8 +314,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "stop Replicator if Load fails" in {
     runOn(first) {
       val r = system.actorOf(
-        Replicator.props(
-          ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failLoad = true))),
+        Replicator.props(ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failLoad = true))),
         "replicator-" + testStepCounter)
       watch(r)
       expectTerminated(r)
@@ -322,14 +325,12 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "reply with StoreFailure if store fails" in {
     runOn(first) {
       val r = system.actorOf(
-        Replicator.props(
-          ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failStore = true))),
+        Replicator.props(ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failStore = true))),
         "replicator-" + testStepCounter)
-      r ! Update(KeyA, GCounter(), WriteLocal, request = Some("a"))(_ + 1)
+      r ! Update(KeyA, GCounter(), WriteLocal, request = Some("a"))(_ :+ 1)
       expectMsg(StoreFailure(KeyA, Some("a")))
     }
     enterBarrierAfterTestStep()
   }
 
 }
-

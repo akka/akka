@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -15,7 +15,8 @@ import java.io.{ InputStream, ObjectInputStream, ObjectStreamClass }
  */
 class ClassLoaderObjectInputStream(classLoader: ClassLoader, is: InputStream) extends ObjectInputStream(is) {
   override protected def resolveClass(objectStreamClass: ObjectStreamClass): Class[_] =
-    try Class.forName(objectStreamClass.getName, false, classLoader) catch {
-      case cnfe: ClassNotFoundException ⇒ super.resolveClass(objectStreamClass)
+    try Class.forName(objectStreamClass.getName, false, classLoader)
+    catch {
+      case _: ClassNotFoundException => super.resolveClass(objectStreamClass)
     }
 }

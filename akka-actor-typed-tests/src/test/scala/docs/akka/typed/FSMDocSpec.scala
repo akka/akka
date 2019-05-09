@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -31,26 +31,26 @@ object FSMDocSpec {
 
   //#simple-state
   // states of the FSM represented as behaviors
-  def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { msg: Event ⇒
-    (msg, data) match {
-      case (SetTarget(ref), Uninitialized) ⇒
+  def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { message: Event =>
+    (message, data) match {
+      case (SetTarget(ref), Uninitialized) =>
         idle(Todo(ref, Vector.empty))
-      case (Queue(obj), t @ Todo(_, v)) ⇒
+      case (Queue(obj), t @ Todo(_, v)) =>
         active(t.copy(queue = v :+ obj))
-      case _ ⇒
+      case _ =>
         Behaviors.unhandled
     }
   }
 
   def active(data: Todo): Behavior[Event] =
-    Behaviors.withTimers[Event] { timers ⇒
+    Behaviors.withTimers[Event] { timers =>
       // instead of FSM state timeout
       timers.startSingleTimer(Timeout, Timeout, 1.second)
       Behaviors.receiveMessagePartial {
-        case Flush | Timeout ⇒
+        case Flush | Timeout =>
           data.target ! Batch(data.queue)
           idle(data.copy(queue = Vector.empty))
-        case Queue(obj) ⇒
+        case Queue(obj) =>
           active(data.copy(queue = data.queue :+ obj))
       }
     }

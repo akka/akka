@@ -1,17 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
-import akka.cluster.Cluster
-import akka.cluster.UniqueAddress
 import java.math.BigInteger
 
 import akka.annotation.InternalApi
+import akka.cluster.Cluster
+import akka.cluster.UniqueAddress
 import akka.cluster.ddata.ORMap._
 
 object PNCounterMap {
+
   /**
    * INTERNAL API
    */
@@ -22,6 +23,7 @@ object PNCounterMap {
 
   def empty[A]: PNCounterMap[A] = new PNCounterMap(new ORMap(ORSet.empty, Map.empty, zeroTag = PNCounterMapTag))
   def apply[A](): PNCounterMap[A] = empty
+
   /**
    * Java API
    */
@@ -39,20 +41,21 @@ object PNCounterMap {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class PNCounterMap[A] private[akka] (
-  private[akka] val underlying: ORMap[A, PNCounter])
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A, PNCounter])
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
 
   type T = PNCounterMap[A]
   type D = ORMap.DeltaOp
 
   /** Scala API */
-  def entries: Map[A, BigInt] = underlying.entries.map { case (k, c) ⇒ k → c.value }
+  def entries: Map[A, BigInt] = underlying.entries.map { case (k, c) => k -> c.value }
 
   /** Java API */
   def getEntries: java.util.Map[A, BigInteger] = {
     import scala.collection.JavaConverters._
-    underlying.entries.map { case (k, c) ⇒ k → c.value.bigInteger }.asJava
+    underlying.entries.map { case (k, c) => k -> c.value.bigInteger }.asJava
   }
 
   /**
@@ -75,13 +78,24 @@ final class PNCounterMap[A] private[akka] (
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
-    increment(node, key, delta)
+  def incrementBy(key: A, delta: Long)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    increment(node.uniqueAddress, key, delta)
 
   /**
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
+  def increment(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
+    increment(node.selfUniqueAddress, key, delta)
+
+  /**
+   * Increment the counter with the delta specified.
+   * If the delta is negative then it will decrement instead of increment.
+   */
+  def increment(node: SelfUniqueAddress, key: A, delta: Long): PNCounterMap[A] =
+    increment(node.uniqueAddress, key, delta)
+
+  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def increment(node: Cluster, key: A, delta: Long): PNCounterMap[A] =
     increment(node.selfUniqueAddress, key, delta)
 
@@ -94,14 +108,28 @@ final class PNCounterMap[A] private[akka] (
   /**
    * Decrement the counter with the delta specified.
    * If the delta is negative then it will increment instead of decrement.
+   * TODO add implicit after deprecated is EOL.
    */
-  def decrement(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
+  def decrementBy(key: A, delta: Long = 1)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
     decrement(node, key, delta)
 
   /**
    * Decrement the counter with the delta specified.
    * If the delta is negative then it will increment instead of decrement.
+   * TODO add implicit after deprecated is EOL.
    */
+  def decrement(node: SelfUniqueAddress, key: A, delta: Long): PNCounterMap[A] =
+    decrement(node.uniqueAddress, key, delta)
+
+  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def decrement(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
+    decrement(node.selfUniqueAddress, key, delta)
+
+  /**
+   * Decrement the counter with the delta specified.
+   * If the delta is negative then it will increment instead of decrement.
+   */
+  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def decrement(node: Cluster, key: A, delta: Long): PNCounterMap[A] =
     decrement(node.selfUniqueAddress, key, delta)
 
@@ -117,15 +145,15 @@ final class PNCounterMap[A] private[akka] (
    * Note that if there is a conflicting update on another node the entry will
    * not be removed after merge.
    */
-  def -(key: A)(implicit node: Cluster): PNCounterMap[A] = remove(node, key)
+  def remove(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    remove(node.uniqueAddress, key)
 
-  /**
-   * Removes an entry from the map.
-   * Note that if there is a conflicting update on another node the entry will
-   * not be removed after merge.
-   */
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def remove(node: Cluster, key: A): PNCounterMap[A] =
     remove(node.selfUniqueAddress, key)
+
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def -(key: A)(implicit node: Cluster): PNCounterMap[A] = remove(node, key)
 
   /**
    * INTERNAL API
@@ -161,8 +189,8 @@ final class PNCounterMap[A] private[akka] (
   override def toString: String = s"PNCounter$entries"
 
   override def equals(o: Any): Boolean = o match {
-    case other: PNCounterMap[A] ⇒ underlying == other.underlying
-    case _                      ⇒ false
+    case other: PNCounterMap[A] => underlying == other.underlying
+    case _                      => false
   }
 
   override def hashCode: Int = underlying.hashCode

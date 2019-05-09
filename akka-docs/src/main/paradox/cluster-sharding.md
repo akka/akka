@@ -173,8 +173,8 @@ Where `#` is a number to distinguish between instances as there are multiple in 
  1. Incoming message `M1` to `ShardRegion` instance `SR1`.
  2. `M1` is mapped to shard `S1`. `SR1` doesn't know about `S1`, so it asks the `SC` for the location of `S1`.
  3. `SC` answers that the home of `S1` is `SR1`.
- 4. `R1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
- 5. All incoming messages for `S1` which arrive at `R1` can be handled by `R1` without `SC`. It creates entity children as needed, and forwards messages to them.
+ 4. `SR1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
+ 5. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. It creates entity children as needed, and forwards messages to them.
 
 #### Scenario 2: Message to an unknown shard that belongs to a remote ShardRegion 
 
@@ -209,7 +209,7 @@ That means they will start buffering incoming messages for that shard, in the sa
 shard location is unknown. During the rebalance process the coordinator will not answer any
 requests for the location of shards that are being rebalanced, i.e. local buffering will
 continue until the handoff is completed. The `ShardRegion` responsible for the rebalanced shard
-will stop all entities in that shard by sending the specified `handOffStopMessage`
+will stop all entities in that shard by sending the specified `stopMessage`
 (default `PoisonPill`) to them. When all entities have been terminated the `ShardRegion`
 owning the entities will acknowledge the handoff as completed to the coordinator.
 Thereafter the coordinator will reply to requests for the location of
@@ -223,11 +223,19 @@ The logic that decides which shards to rebalance is defined in a pluggable shard
 allocation strategy. The default implementation `ShardCoordinator.LeastShardAllocationStrategy`
 picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
 They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
-i.e. new members in the cluster. There is a configurable threshold of how large the difference
-must be to begin the rebalancing. This strategy can be replaced by an application specific
-implementation.
+i.e. new members in the cluster.
 
-### Shard Coordinator State
+For the `LeastShardAllocationStrategy` there is a configurable threshold (`rebalance-threshold`) of
+how large the difference must be to begin the rebalancing. The difference between number of shards in
+the region with most shards and the region with least shards must be greater than the `rebalance-threshold`
+for the rebalance to occur.
+
+A `rebalance-threshold` of 1 gives the best distribution and therefore typically the best choice.
+A higher threshold means that more shards can be rebalanced at the same time instead of one-by-one.
+That has the advantage that the rebalance process can be quicker but has the drawback that the
+the number of shards (and therefore load) between different nodes may be significantly different.
+
+### ShardCoordinator State
 
 The state of shard locations in the `ShardCoordinator` is persistent (durable) with
 @ref:[Distributed Data](distributed-data.md) or @ref:[Persistence](persistence.md) to survive failures. When a crashed or
@@ -334,6 +342,15 @@ then supposed to stop itself. Incoming messages will be buffered by the `Shard`
 between reception of `Passivate` and termination of the entity. Such buffered messages
 are thereafter delivered to a new incarnation of the entity.
 
+### Automatic Passivation
+
+The entities are automatically passivated if they haven't received a message within the duration configured in
+`akka.cluster.sharding.passivate-idle-entity-after` 
+or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
+time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
+to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
+Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
+
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
 
@@ -395,6 +412,8 @@ Java
 :  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
+
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#Sharding)
 
 ## Graceful Shutdown
 
@@ -498,3 +517,24 @@ When doing rolling upgrades special care must be taken to not change any of the 
  * the persistence mode
 
  If any one of these needs a change it will require a full cluster restart.
+ 
+
+## Lease
+
+A @ref[lease](coordination.md) can be used as an additional safety measure to ensure a shard 
+does not run on two nodes.
+
+Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+
+A lease can be a final backup that means that each shard won't create child entity actors unless it has the lease. 
+
+To use a lease for sharding set `akka.cluster.sharding.use-lease` to the configuration location
+of the lease to use. Each shard will try and acquire a lease with with the name `<actor system name>-shard-<type name>-<shard id>` and
+the owner is set to the `Cluster(system).selfAddress.hostPort`.
+
+If a shard can't acquire a lease it will remain uninitialized so messages for entities it owns will
+be buffered in the `ShardRegion`. If the lease is lost after initialization the Shard will be terminated.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -7,14 +7,20 @@ package akka.io.dns.internal
 import java.net.InetAddress
 
 import akka.io.Dns
+import akka.io.dns.AAAARecord
+import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
+import akka.io.dns.CachePolicy.Ttl
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 
-class AsyncDnsManagerSpec extends AkkaSpec(
-  """
+import scala.collection.immutable.Seq
+
+class AsyncDnsManagerSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = default
-  """) with ImplicitSender {
+  """) with ImplicitSender with WithLogCapturing {
 
   val dns = Dns(system).manager
 
@@ -23,6 +29,23 @@ class AsyncDnsManagerSpec extends AkkaSpec(
       dns ! akka.io.Dns.Resolve("127.0.0.1") // 127.0.0.1 will short circuit the resolution
       val oldProtocolReply = akka.io.Dns.Resolved("127.0.0.1", InetAddress.getByName("127.0.0.1") :: Nil)
       expectMsg(oldProtocolReply)
+    }
+
+    "support ipv6" in {
+      dns ! Resolve("::1") // ::1 will short circuit the resolution
+      val Resolved("::1", Seq(AAAARecord("::1", Ttl.effectivelyForever, _)), Nil) = expectMsgType[Resolved]
+    }
+
+    "support ipv6 also using the old protocol" in {
+      dns ! akka.io.Dns.Resolve("::1") // ::1 will short circuit the resolution
+      val resolved = expectMsgType[akka.io.Dns.Resolved]
+      resolved.ipv4 should be(Nil)
+      resolved.ipv6.length should be(1)
+    }
+
+    "provide access to cache" in {
+      dns ! AsyncDnsManager.GetCache
+      (expectMsgType[AsyncDnsCache] should be).theSameInstanceAs(Dns(system).cache)
     }
   }
 

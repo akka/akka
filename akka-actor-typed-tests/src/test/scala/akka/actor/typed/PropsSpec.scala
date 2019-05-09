@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -18,7 +18,8 @@ class PropsSpec extends WordSpec with Matchers {
     }
 
     "yield all configs of some type" in {
-      dispatcherFirst.allOf[DispatcherSelector] should ===(DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
+      dispatcherFirst.allOf[DispatcherSelector] should ===(
+        DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
     }
   }
 }

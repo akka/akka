@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.pattern;
@@ -19,37 +19,36 @@ import akka.actor.Status;
 import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
-import akka.pattern.PatternsCS;
-import akka.util.Timeout;
+import akka.pattern.Patterns;
 
 public class SupervisedAsk {
 
   private static class AskParam {
     Props props;
     Object message;
-    Timeout timeout;
+    Duration timeout;
 
-    AskParam(Props props, Object message, Timeout timeout) {
+    AskParam(Props props, Object message, Duration timeout) {
       this.props = props;
       this.message = message;
       this.timeout = timeout;
     }
   }
 
-  private static class AskTimeout {
-  }
+  private static class AskTimeout {}
 
   public static class AskSupervisorCreator extends AbstractActor {
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(AskParam.class, message -> {
-          ActorRef supervisor = getContext().actorOf(
-            Props.create(AskSupervisor.class));
-          supervisor.forward(message, getContext());
-        })
-        .build();
+          .match(
+              AskParam.class,
+              message -> {
+                ActorRef supervisor = getContext().actorOf(Props.create(AskSupervisor.class));
+                supervisor.forward(message, getContext());
+              })
+          .build();
     }
   }
 
@@ -61,49 +60,63 @@ public class SupervisedAsk {
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
-      return new OneForOneStrategy(0, Duration.ZERO, cause -> {
-          caller.tell(new Status.Failure(cause), getSelf());
-          return SupervisorStrategy.stop();
-        });
+      return new OneForOneStrategy(
+          0,
+          Duration.ZERO,
+          cause -> {
+            caller.tell(new Status.Failure(cause), getSelf());
+            return SupervisorStrategy.stop();
+          });
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(AskParam.class, message -> {
-          askParam = message;
-          caller = getSender();
-          targetActor = getContext().actorOf(askParam.props);
-          getContext().watch(targetActor);
-          targetActor.forward(askParam.message, getContext());
-          Scheduler scheduler = getContext().getSystem().scheduler();
-          timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
-            getSelf(), new AskTimeout(), getContext().dispatcher(), null);
-        })
-        .match(Terminated.class, message -> {
-          Throwable ex = new ActorKilledException("Target actor terminated.");
-          caller.tell(new Status.Failure(ex), getSelf());
-          timeoutMessage.cancel();
-          getContext().stop(getSelf());
-        })
-        .match(AskTimeout.class, message -> {
-          Throwable ex = new TimeoutException("Target actor timed out after "
-            + askParam.timeout.toString());
-          caller.tell(new Status.Failure(ex), getSelf());
-          getContext().stop(getSelf());
-        })
-        .build();
+          .match(
+              AskParam.class,
+              message -> {
+                askParam = message;
+                caller = getSender();
+                targetActor = getContext().actorOf(askParam.props);
+                getContext().watch(targetActor);
+                targetActor.forward(askParam.message, getContext());
+                Scheduler scheduler = getContext().getSystem().scheduler();
+                timeoutMessage =
+                    scheduler.scheduleOnce(
+                        askParam.timeout,
+                        getSelf(),
+                        new AskTimeout(),
+                        getContext().getDispatcher(),
+                        null);
+              })
+          .match(
+              Terminated.class,
+              message -> {
+                Throwable ex = new ActorKilledException("Target actor terminated.");
+                caller.tell(new Status.Failure(ex), getSelf());
+                timeoutMessage.cancel();
+                getContext().stop(getSelf());
+              })
+          .match(
+              AskTimeout.class,
+              message -> {
+                Throwable ex =
+                    new TimeoutException(
+                        "Target actor timed out after " + askParam.timeout.toString());
+                caller.tell(new Status.Failure(ex), getSelf());
+                getContext().stop(getSelf());
+              })
+          .build();
     }
   }
 
-  public static CompletionStage<Object> askOf(ActorRef supervisorCreator, Props props,
-                                              Object message, Timeout timeout) {
+  public static CompletionStage<Object> askOf(
+      ActorRef supervisorCreator, Props props, Object message, Duration timeout) {
     AskParam param = new AskParam(props, message, timeout);
-    return PatternsCS.ask(supervisorCreator, param, timeout);
+    return Patterns.ask(supervisorCreator, param, timeout);
   }
 
-  synchronized public static ActorRef createSupervisorCreator(
-      ActorRefFactory factory) {
+  public static synchronized ActorRef createSupervisorCreator(ActorRefFactory factory) {
     return factory.actorOf(Props.create(AskSupervisorCreator.class));
   }
 }

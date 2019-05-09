@@ -1,12 +1,13 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed
 
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 
 package object scaladsl {
+
   /**
    * @see [[akka.cluster.ddata.ReplicatorSettings]].
    */

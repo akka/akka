@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.tutorial_5;
@@ -27,7 +27,7 @@ public class Device extends AbstractActor {
   }
 
   public static Props props(String groupId, String deviceId) {
-    return Props.create(Device.class, groupId, deviceId);
+    return Props.create(Device.class, () -> new Device(groupId, deviceId));
   }
 
   public static final class RecordTemperature {
@@ -81,24 +81,33 @@ public class Device extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-            .match(RequestTrackDevice.class, r -> {
+        .match(
+            RequestTrackDevice.class,
+            r -> {
               if (this.groupId.equals(r.groupId) && this.deviceId.equals(r.deviceId)) {
                 getSender().tell(new DeviceRegistered(), getSelf());
               } else {
                 log.warning(
-                        "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
-                        r.groupId, r.deviceId, this.groupId, this.deviceId
-                );
+                    "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
+                    r.groupId,
+                    r.deviceId,
+                    this.groupId,
+                    this.deviceId);
               }
             })
-            .match(RecordTemperature.class, r -> {
+        .match(
+            RecordTemperature.class,
+            r -> {
               log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
               lastTemperatureReading = Optional.of(r.value);
               getSender().tell(new TemperatureRecorded(r.requestId), getSelf());
             })
-            .match(ReadTemperature.class, r -> {
-              getSender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+        .match(
+            ReadTemperature.class,
+            r -> {
+              getSender()
+                  .tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
             })
-            .build();
+        .build();
   }
 }

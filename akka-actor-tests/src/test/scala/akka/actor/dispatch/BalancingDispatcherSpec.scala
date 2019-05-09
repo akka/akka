@@ -1,13 +1,12 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dispatch
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.actor.{ Props, ActorRefWithCell, ActorCell, Actor }
-import akka.dispatch.Mailbox
+import akka.actor.{ Actor, ActorCell, ActorRefWithCell, Props }
 import akka.testkit.AkkaSpec
 
 object BalancingDispatcherSpec {
@@ -28,7 +27,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
     var invocationCount = 0
 
     def receive = {
-      case x: Int ⇒ {
+      case _: Int => {
         Thread.sleep(delay)
         invocationCount += 1
         finishedCounter.countDown()
@@ -37,30 +36,33 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
   }
 
   class FirstActor extends Actor {
-    def receive = { case _ ⇒ {} }
+    def receive = { case _ => {} }
   }
 
   class SecondActor extends Actor {
-    def receive = { case _ ⇒ {} }
+    def receive = { case _ => {} }
   }
 
   class ParentActor extends Actor {
-    def receive = { case _ ⇒ {} }
+    def receive = { case _ => {} }
   }
 
-  class ChildActor extends ParentActor {
-  }
+  class ChildActor extends ParentActor {}
 
   "A BalancingDispatcher" must {
     "have fast actor stealing work from slow actor" in {
       val finishedCounter = new CountDownLatch(110)
 
-      val slow = system.actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[ActorRefWithCell]
-      val fast = system.actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[ActorRefWithCell]
+      val slow = system
+        .actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher))
+        .asInstanceOf[ActorRefWithCell]
+      val fast = system
+        .actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher))
+        .asInstanceOf[ActorRefWithCell]
 
       var sentToFast = 0
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         // send most work to slow actor
         if (i % 20 == 0) {
           fast ! i
@@ -70,7 +72,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
       }
 
       // now send some messages to actors to keep the dispatcher dispatching messages
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         Thread.sleep(150)
         if (i % 2 == 0) {
           fast ! i
@@ -80,11 +82,11 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
       }
 
       finishedCounter.await(5, TimeUnit.SECONDS)
-      fast.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages should ===(false)
-      slow.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages should ===(false)
+      fast.underlying.asInstanceOf[ActorCell].mailbox.hasMessages should ===(false)
+      slow.underlying.asInstanceOf[ActorCell].mailbox.hasMessages should ===(false)
       fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount should be > sentToFast
       fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount should be >
-        (slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount)
+      slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount
       system.stop(slow)
       system.stop(fast)
     }

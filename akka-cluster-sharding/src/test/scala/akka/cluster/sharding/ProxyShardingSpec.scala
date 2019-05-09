@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -14,7 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 object ProxyShardingSpec {
   val config = """
   akka.actor.provider = "cluster"
-  akka.remote.netty.tcp.port = 0
+  akka.remote.classic.netty.tcp.port = 0
   akka.remote.artery.canonical.port = 0
   """
 }
@@ -22,7 +22,7 @@ object ProxyShardingSpec {
 class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
 
   val role = "Shard"
-  val clusterSharding: ClusterSharding = ClusterSharding.get(system)
+  val clusterSharding: ClusterSharding = ClusterSharding(system)
   val shardingSettings: ClusterShardingSettings =
     ClusterShardingSettings.create(system)
   val messageExtractor = new ShardRegion.HashCodeMessageExtractor(10) {
@@ -30,11 +30,11 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
   }
 
   val idExtractor: ShardRegion.ExtractEntityId = {
-    case msg @ id ⇒ (id.toString, msg)
+    case msg @ id => (id.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
   val shardProxy: ActorRef =
@@ -52,23 +52,20 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
   }
 
   "Shard region should be found" in {
-    val shardRegion: ActorRef = clusterSharding.start(
-      "myType",
-      TestActors.echoActorProps,
-      shardingSettings,
-      messageExtractor)
+    val shardRegion: ActorRef =
+      clusterSharding.start("myType", TestActors.echoActorProps, shardingSettings, messageExtractor)
 
     shardRegion.path should not be null
     shardRegion.path.toString should endWith("myType")
   }
 
   "Shard coordinator should be found" in {
-    val shardCoordinator: ActorRef = Await.result(
-      system
-        .actorSelection(
-          "akka://ProxyShardingSpec/system/sharding/myTypeCoordinator")
-        .resolveOne(FiniteDuration(5, SECONDS)),
-      3.seconds)
+    val shardCoordinator: ActorRef =
+      Await.result(
+        system
+          .actorSelection("akka://ProxyShardingSpec/system/sharding/myTypeCoordinator")
+          .resolveOne(FiniteDuration(5, SECONDS)),
+        3.seconds)
 
     shardCoordinator.path should not be null
     shardCoordinator.path.toString should endWith("Coordinator")

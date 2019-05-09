@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -11,14 +11,15 @@ import akka.actor.{ Actor, ActorRef, PoisonPill, Props }
 import akka.remote.{ AssociationErrorEvent, DisassociatedEvent, OversizedPayloadException, RARP }
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 
 object RemoteMessageSerializationSpec {
   class ProxyActor(val one: ActorRef, val another: ActorRef) extends Actor {
     def receive = {
-      case s if sender().path == one.path     ⇒ another ! s
-      case s if sender().path == another.path ⇒ one ! s
+      case s if sender().path == one.path     => another ! s
+      case s if sender().path == another.path => one ! s
     }
   }
 }
@@ -39,7 +40,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
       object Unserializable
       EventFilter[NotSerializableException](pattern = ".*No configured serialization.*", occurrences = 1).intercept {
         verifySend(Unserializable) {
-          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+          expectNoMessage(1.second) // No AssocitionErrorEvent should be published
         }
       }
     }
@@ -54,47 +55,52 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
 
     "drop sent messages over payload size" in {
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
-      EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1).intercept {
-        verifySend(oversized) {
-          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+      EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1)
+        .intercept {
+          verifySend(oversized) {
+            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+          }
         }
-      }
     }
 
     // TODO max payload size is not configurable yet, so we cannot send a too big message, it fails no sending side
     "drop received messages over payload size" ignore {
       // Receiver should reply with a message of size maxPayload + 1, which will be dropped and an error logged
-      EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1).intercept {
-        verifySend(maxPayloadBytes + 1) {
-          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+      EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1)
+        .intercept {
+          verifySend(maxPayloadBytes + 1) {
+            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
+          }
         }
-      }
     }
 
     "be able to serialize a local actor ref from another actor system" in {
       remoteSystem.actorOf(TestActors.echoActorProps, "echo")
       val local = localSystem.actorOf(TestActors.echoActorProps, "echo")
 
-      val remoteEcho = system.actorSelection(rootActorPath(remoteSystem) / "user" / "echo").resolveOne(3.seconds).futureValue
+      val remoteEcho =
+        system.actorSelection(rootActorPath(remoteSystem) / "user" / "echo").resolveOne(3.seconds).futureValue
       remoteEcho ! local
       expectMsg(3.seconds, local)
     }
 
   }
 
-  private def verifySend(msg: Any)(afterSend: ⇒ Unit): Unit = {
+  private def verifySend(msg: Any)(afterSend: => Unit): Unit = {
     val bigBounceId = s"bigBounce-${ThreadLocalRandom.current.nextInt()}"
     val bigBounceOther = remoteSystem.actorOf(Props(new Actor {
       def receive = {
-        case x: Int ⇒ sender() ! byteStringOfSize(x)
-        case x      ⇒ sender() ! x
+        case x: Int => sender() ! byteStringOfSize(x)
+        case x      => sender() ! x
       }
     }), bigBounceId)
-    val bigBounceHere = localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
+    @silent
+    val bigBounceHere =
+      RARP(system).provider.resolveActorRef(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
 
     val eventForwarder = localSystem.actorOf(Props(new Actor {
       def receive = {
-        case x ⇒ testActor ! x
+        case x => testActor ! x
       }
     }))
     localSystem.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
@@ -102,7 +108,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
     try {
       bigBounceHere ! msg
       afterSend
-      expectNoMsg(500.millis)
+      expectNoMessage(500.millis)
     } finally {
       localSystem.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
       localSystem.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])

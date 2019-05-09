@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -8,13 +8,15 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
+
 import scala.concurrent.duration._
 import akka.testkit.SocketUtil
 import akka.remote.QuarantinedEvent
 import akka.remote.RARP
+import com.github.ghik.silencer.silent
 
 object RemoteDeathWatchSpec {
-  val otherPort = SocketUtil.temporaryLocalPort(udp = true)
+  val otherPort = ArteryMultiNodeSpec.freePort(ConfigFactory.load())
 
   val config = ConfigFactory.parseString(s"""
     akka {
@@ -31,17 +33,20 @@ object RemoteDeathWatchSpec {
         # must still be longer than failure detection
         remote.artery.advanced {
           handshake-timeout = 10 s
-          image-liveness-timeout = 9 seconds
+          aeron.image-liveness-timeout = 9 seconds
         }
     }
     """).withFallback(ArterySpecSupport.defaultConfig)
 }
 
-class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+class RemoteDeathWatchSpec
+    extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.config)
+    with ImplicitSender
+    with DefaultTimeout
+    with DeathWatchSpec {
   import RemoteDeathWatchSpec._
 
-  system.eventStream.publish(TestEvent.Mute(
-    EventFilter[io.aeron.exceptions.RegistrationException]()))
+  system.eventStream.publish(TestEvent.Mute(EventFilter[io.aeron.exceptions.RegistrationException]()))
 
   val other = newRemoteSystem(name = Some("other"), extraConfig = Some(s"akka.remote.artery.canonical.port=$otherPort"))
 
@@ -64,7 +69,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
           context.watch(ref)
 
           def receive = {
-            case Terminated(r) ⇒ testActor ! r
+            case Terminated(r) => testActor ! r
           }
         }).withDeploy(Deploy.local))
 
@@ -75,10 +80,14 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
 
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
+
     system.actorOf(Props(new Actor {
-      context.watch(context.actorFor(path))
+      @silent
+      val watchee = RARP(context.system).provider.resolveActorRef(path)
+      context.watch(watchee)
+
       def receive = {
-        case t: Terminated ⇒ testActor ! t.actor.path
+        case t: Terminated => testActor ! t.actor.path
       }
     }).withDeploy(Deploy.local), name = "observer2")
 

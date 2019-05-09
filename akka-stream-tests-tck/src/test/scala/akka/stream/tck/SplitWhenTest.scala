@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
@@ -19,7 +19,7 @@ class SplitWhenTest extends AkkaPublisherVerification[Int] {
     else {
       val futureSource =
         Source(iterable(elements))
-          .splitWhen(elem ⇒ false)
+          .splitWhen(elem => false)
           .prefixAndTail(0)
           .map(_._2)
           .concatSubstreams

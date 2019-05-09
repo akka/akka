@@ -1,12 +1,12 @@
-/**
- *  Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import akka.actor.{ Address, ExtendedActorSystem }
-import akka.cluster.InternalClusterAction.LeaderActionsTick
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 object ClusterLogSpec {
   val config = """
@@ -17,7 +17,7 @@ object ClusterLogSpec {
     }
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.loglevel = "INFO"
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -25,33 +25,76 @@ object ClusterLogSpec {
 
 }
 
-class ClusterLogSpec extends AkkaSpec(ClusterLogSpec.config) with ImplicitSender {
+abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
 
-  val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  def this(s: String) = this(ConfigFactory.parseString(s))
 
-  val cluster = Cluster(system)
-  def clusterView: ClusterReadView = cluster.readView
+  protected val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+
+  protected val upLogMessage = "event MemberUp"
+
+  protected val downLogMessage = "event MemberDowned"
+
+  protected val cluster = Cluster(system)
+
+  protected def clusterView: ClusterReadView = cluster.readView
+
+  protected def awaitUp(): Unit = {
+    awaitCond(clusterView.isSingletonCluster)
+    clusterView.self.address should ===(selfAddress)
+    clusterView.members.map(_.address) should ===(Set(selfAddress))
+    awaitAssert(clusterView.status should ===(MemberStatus.Up))
+  }
+
+  /** The expected log info pattern to intercept after a `cluster.join`. */
+  protected def join(expected: String): Unit =
+    EventFilter.info(occurrences = 1, pattern = expected).intercept(cluster.join(selfAddress))
+
+  /** The expected log info pattern to intercept after a `cluster.down`. */
+  protected def down(expected: String): Unit =
+    EventFilter.info(occurrences = 1, pattern = expected).intercept(cluster.down(selfAddress))
+}
+
+class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
 
   "A Cluster" must {
 
     "Log a message when becoming and stopping being a leader" in {
-      EventFilter
-        .info(occurrences = 1, pattern = "is the new leader")
-        .intercept {
-          cluster.join(selfAddress)
-        }
-
-      awaitCond(clusterView.isSingletonCluster)
-      clusterView.self.address should ===(selfAddress)
-      clusterView.members.map(_.address) should ===(Set(selfAddress))
-      awaitAssert(clusterView.status should ===(MemberStatus.Up))
-
-      EventFilter
-        .info(occurrences = 1, pattern = "is no longer the leader")
-        .intercept {
-          cluster.down(selfAddress)
-        }
+      cluster.settings.LogInfo should ===(true)
+      cluster.settings.LogInfoVerbose should ===(false)
+      join("is the new leader")
+      awaitUp()
+      down("is no longer leader")
     }
+  }
+}
 
+class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(ConfigFactory.parseString(ClusterLogSpec.config)) {
+
+  "A Cluster" must {
+
+    "not log verbose cluster events by default" in {
+      cluster.settings.LogInfoVerbose should ===(false)
+      intercept[AssertionError](join(upLogMessage))
+      awaitUp()
+      intercept[AssertionError](down(downLogMessage))
+    }
+  }
+}
+
+class ClusterLogVerboseEnabledSpec
+    extends ClusterLogSpec(
+      ConfigFactory
+        .parseString("akka.cluster.log-info-verbose = on")
+        .withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
+
+  "A Cluster" must {
+
+    "log verbose cluster events when 'log-info-verbose = on'" in {
+      cluster.settings.LogInfoVerbose should ===(true)
+      join(upLogMessage)
+      awaitUp()
+      down(downLogMessage)
+    }
   }
 }

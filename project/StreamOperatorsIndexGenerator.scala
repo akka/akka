@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 import sbt._
@@ -35,7 +35,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     // TODO these don't show up as def's yet so don't show up in the index..
 //    "Fan-out operators",
     "Watching status operators",
-    "Actor interop operators"
+    "Actor interop operators",
+    "Error handling"
   )
 
   def categoryId(name: String): String = name.toLowerCase.replace(' ', '-')
@@ -106,14 +107,10 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "foldAsync",
       "newOnCompleteStage"
     ),
-    "FileIO" -> Seq(
-      "fromFile",
-      "toFile"
-    ),
-    "ActorSink" → Seq(
+    "ActorSink" -> Seq(
       "actorRefWithAck"
     ),
-    "ActorSource" → Seq(
+    "ActorSource" -> Seq(
       "actorRef"
     )
   )
@@ -123,12 +120,12 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
     Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
     Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat") ++
-    Set("++")
+    Set("++", "onPush", "onPull")
 
   def isPending(element: String, opName: String) =
     pendingTestCases.get(element).exists(_.contains(opName))
 
-  def generateAlphabeticalIndex(dir: SettingKey[File], locate: File ⇒ File) = Def.task[Seq[File]] {
+  def generateAlphabeticalIndex(dir: SettingKey[File], locate: File => File) = Def.task[Seq[File]] {
     val file = locate(dir.value)
 
     val defs =
@@ -149,6 +146,12 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/javadsl/StreamConverters.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/FileIO.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RestartSource.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RestartSource.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RestartFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RestartFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RestartSink.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RestartSink.scala",
 
         // akka-stream-typed
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSource.scala",
@@ -157,16 +160,16 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSink.scala",
-      ).flatMap{ f ⇒
+      ).flatMap{ f =>
         val slashesNr = f.count(_ == '/')
         val element = f.split("/")(slashesNr).split("\\.")(0)
         IO.read(new File(f)).split("\n")
           .map(_.trim).filter(_.startsWith("def "))
-          .map(_.drop(4).takeWhile(c ⇒ c != '[' && c != '(' && c != ':'))
+          .map(_.drop(4).takeWhile(c => c != '[' && c != '(' && c != ':'))
           .filter(op => !isPending(element, op))
           .filter(op => !ignore.contains(op))
           .map(_.replaceAll("Mat$", ""))
-          .map(method ⇒ (element, method))
+          .map(method => (element, method))
       }
 
     val sourceAndFlow = defs.collect { case ("Source", method) => method } intersect defs.collect { case ("Flow", method) => method }
@@ -230,7 +233,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     require(categoryLinkId  == categoryId(categoryName), s"category id $categoryLinkId in $file")
     (description, categoryName)
   } catch {
-    case NonFatal(ex) ⇒
+    case NonFatal(ex) =>
       throw new RuntimeException(s"Unable to extract details from $file", ex)
   }
 

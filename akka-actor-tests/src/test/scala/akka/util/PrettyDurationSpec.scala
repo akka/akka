@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -13,22 +13,22 @@ class PrettyDurationSpec extends WordSpec with Matchers {
   import scala.concurrent.duration._
 
   val cases: Seq[(Duration, String)] =
-    9.nanos → "9.000 ns" ::
-      95.nanos → "95.00 ns" ::
-      999.nanos → "999.0 ns" ::
-      1000.nanos → "1.000 μs" ::
-      9500.nanos → "9.500 μs" ::
-      9500.micros → "9.500 ms" ::
-      9500.millis → "9.500 s" ::
-      95.seconds → "1.583 min" ::
-      95.minutes → "1.583 h" ::
-      95.hours → "3.958 d" ::
-      Nil
+    9.nanos -> "9.000 ns" ::
+    95.nanos -> "95.00 ns" ::
+    999.nanos -> "999.0 ns" ::
+    1000.nanos -> "1.000 μs" ::
+    9500.nanos -> "9.500 μs" ::
+    9500.micros -> "9.500 ms" ::
+    9500.millis -> "9.500 s" ::
+    95.seconds -> "1.583 min" ::
+    95.minutes -> "1.583 h" ::
+    95.hours -> "3.958 d" ::
+    Nil
 
   "PrettyDuration" should {
 
-    cases foreach {
-      case (d, expectedValue) ⇒
+    cases.foreach {
+      case (d, expectedValue) =>
         s"print $d nanos as $expectedValue" in {
           d.pretty should ===(expectedValue)
         }

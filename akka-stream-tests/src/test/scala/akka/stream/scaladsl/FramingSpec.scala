@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -11,11 +11,10 @@ import akka.stream._
 import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.stage.{ GraphStage, _ }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.testkit.LongRunningTest
 import akka.util.{ ByteString, ByteStringBuilder }
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -81,61 +80,80 @@ class FramingSpec extends StreamSpec {
 
     // Helper to simplify testing
     def simpleLines(delimiter: String, maximumBytes: Int, allowTruncation: Boolean = true) =
-      Framing.delimiter(ByteString(delimiter), maximumBytes, allowTruncation).map(_.utf8String)
-        .named("lineFraming")
+      Framing.delimiter(ByteString(delimiter), maximumBytes, allowTruncation).map(_.utf8String).named("lineFraming")
 
     def completeTestSequences(delimiter: ByteString): immutable.Iterable[ByteString] =
-      for (prefix ← delimiter.indices; s ← baseTestSequences)
+      for (prefix <- delimiter.indices; s <- baseTestSequences)
         yield delimiter.take(prefix) ++ s
 
     "work with various delimiters and test sequences" in {
-      for (delimiter ← delimiterBytes; _ ← 1 to 5) {
+      import system.dispatcher
+      val resultFutures = for {
+        delimiter <- delimiterBytes
+        _ <- 1 to 5
+      } yield {
         val testSequence = completeTestSequences(delimiter)
-        val f = Source(testSequence)
-          .map(_ ++ delimiter)
-          .via(rechunk)
-          .via(Framing.delimiter(delimiter, 256))
-          .runWith(Sink.seq)
+        val f =
+          Source(testSequence).map(_ ++ delimiter).via(rechunk).via(Framing.delimiter(delimiter, 256)).runWith(Sink.seq)
 
-        f.futureValue should ===(testSequence)
+        f.map(result => (result, testSequence, delimiter))
       }
+
+      val futureResults = Future.sequence(resultFutures)
+      futureResults.futureValue.foreach {
+        case (result, expected, delimiter) =>
+          withClue(s"delimiter: $delimiter") {
+            result should ===(expected)
+          }
+      }
+
     }
 
     "Respect maximum line settings" in {
       // The buffer will contain more than 1 bytes, but the individual frames are less
-      Source.single(ByteString("a\nb\nc\nd\n"))
+      Source
+        .single(ByteString("a\nb\nc\nd\n"))
         .via(simpleLines("\n", 1))
         .limit(100)
-        .runWith(Sink.seq).futureValue should ===(List("a", "b", "c", "d"))
+        .runWith(Sink.seq)
+        .futureValue should ===(List("a", "b", "c", "d"))
 
-      Source.single(ByteString("ab\n"))
+      Source
+        .single(ByteString("ab\n"))
         .via(simpleLines("\n", 1))
         .limit(100)
-        .runWith(Sink.seq).failed.futureValue shouldBe a[FramingException]
+        .runWith(Sink.seq)
+        .failed
+        .futureValue shouldBe a[FramingException]
 
-      Source.single(ByteString("aaa"))
+      Source
+        .single(ByteString("aaa"))
         .via(simpleLines("\n", 2))
         .limit(100)
-        .runWith(Sink.seq).failed.futureValue shouldBe a[FramingException]
+        .runWith(Sink.seq)
+        .failed
+        .futureValue shouldBe a[FramingException]
 
     }
 
     "work with empty streams" in {
-      Source.empty.via(simpleLines("\n", 256))
-        .runFold(Vector.empty[String])(_ :+ _)
-        .futureValue should ===(Vector.empty)
+      Source.empty.via(simpleLines("\n", 256)).runFold(Vector.empty[String])(_ :+ _).futureValue should ===(
+        Vector.empty)
     }
 
     "report truncated frames" in {
-      Source.single(ByteString("I have no end"))
+      Source
+        .single(ByteString("I have no end"))
         .via(simpleLines("\n", 256, allowTruncation = false))
         .grouped(1000)
         .runWith(Sink.head)
-        .failed.futureValue shouldBe a[FramingException]
+        .failed
+        .futureValue shouldBe a[FramingException]
     }
 
     "allow truncated frames if configured so" in {
-      Source.single(ByteString("I have no end"))
+      Source
+        .single(ByteString("I have no end"))
         .via(simpleLines("\n", 256, allowTruncation = true))
         .grouped(1000)
         .runWith(Sink.head)
@@ -154,34 +172,41 @@ class FramingSpec extends StreamSpec {
     val fieldOffsets = List(0, 1, 2, 3, 15, 16, 31, 32, 44, 107)
 
     def encode(payload: ByteString, fieldOffset: Int, fieldLength: Int, byteOrder: ByteOrder): ByteString = {
-      encodeComplexFrame(payload, fieldOffset, fieldLength, byteOrder, ByteString(new Array[Byte](fieldOffset)), ByteString.empty)
+      encodeComplexFrame(
+        payload,
+        fieldOffset,
+        fieldLength,
+        byteOrder,
+        ByteString(new Array[Byte](fieldOffset)),
+        ByteString.empty)
     }
 
     def encodeComplexFrame(
-      payload:     ByteString,
-      fieldOffset: Int,
-      fieldLength: Int,
-      byteOrder:   ByteOrder,
-      offset:      ByteString,
-      tail:        ByteString): ByteString = {
+        payload: ByteString,
+        fieldOffset: Int,
+        fieldLength: Int,
+        byteOrder: ByteOrder,
+        offset: ByteString,
+        tail: ByteString): ByteString = {
       val header = {
         val h = (new ByteStringBuilder).putInt(payload.size)(byteOrder).result()
         byteOrder match {
-          case ByteOrder.LITTLE_ENDIAN ⇒ h.take(fieldLength)
-          case ByteOrder.BIG_ENDIAN    ⇒ h.drop(4 - fieldLength)
+          case ByteOrder.LITTLE_ENDIAN => h.take(fieldLength)
+          case ByteOrder.BIG_ENDIAN    => h.drop(4 - fieldLength)
         }
       }
       offset ++ header ++ payload ++ tail
     }
 
-    "work with various byte orders, frame lengths and offsets" taggedAs LongRunningTest in {
-      for {
-        byteOrder ← byteOrders
-        fieldOffset ← fieldOffsets
-        fieldLength ← fieldLengths
-      } {
+    "work with various byte orders, frame lengths and offsets" in {
+      import system.dispatcher
+      val resultFutures = for {
+        byteOrder <- byteOrders
+        fieldOffset <- fieldOffsets
+        fieldLength <- fieldLengths
+      } yield {
 
-        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length ⇒
+        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length =>
           val payload = referenceChunk.take(length)
           encode(payload, fieldOffset, fieldLength, byteOrder)
         }
@@ -191,17 +216,27 @@ class FramingSpec extends StreamSpec {
           .via(Framing.lengthField(fieldLength, fieldOffset, Int.MaxValue, byteOrder))
           .grouped(10000)
           .runWith(Sink.head)
-          .futureValue(Timeout(5.seconds)) should ===(encodedFrames)
+          .map(result => (result, encodedFrames, (byteOrder, fieldOffset, fieldLength)))
+
+      }
+
+      val futureResults = Future.sequence(resultFutures)
+      futureResults.futureValue.foreach {
+        case (result, expected, (byteOrder, fieldOffset, fieldLength)) =>
+          withClue(s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength") {
+            result should ===(expected)
+          }
       }
 
     }
 
-    "work with various byte orders, frame lengths and offsets using computeFrameSize" taggedAs LongRunningTest in {
-      for {
-        byteOrder ← byteOrders
-        fieldOffset ← fieldOffsets
-        fieldLength ← fieldLengths
-      } {
+    "work with various byte orders, frame lengths and offsets using computeFrameSize" in {
+      import system.dispatcher
+      val resultFutures = for {
+        byteOrder <- byteOrders
+        fieldOffset <- fieldOffsets
+        fieldLength <- fieldLengths
+      } yield {
 
         def computeFrameSize(offset: Array[Byte], length: Int): Int = {
           val sizeWithoutTail = offset.length + fieldLength + length
@@ -214,11 +249,17 @@ class FramingSpec extends StreamSpec {
           arr
         }
 
-        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length ⇒
+        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length =>
           val payload = referenceChunk.take(length)
           val offsetBytes = offset()
           val tailBytes = if (offsetBytes.length > 0) new Array[Byte](offsetBytes(0)) else Array.empty[Byte]
-          encodeComplexFrame(payload, fieldOffset, fieldLength, byteOrder, ByteString(offsetBytes), ByteString(tailBytes))
+          encodeComplexFrame(
+            payload,
+            fieldOffset,
+            fieldLength,
+            byteOrder,
+            ByteString(offsetBytes),
+            ByteString(tailBytes))
         }
 
         Source(encodedFrames)
@@ -226,13 +267,22 @@ class FramingSpec extends StreamSpec {
           .via(Framing.lengthField(fieldLength, fieldOffset, Int.MaxValue, byteOrder, computeFrameSize))
           .grouped(10000)
           .runWith(Sink.head)
-          .futureValue(Timeout(5.seconds)) should ===(encodedFrames)
+          .map(result => (result, encodedFrames, (byteOrder, fieldOffset, fieldLength)))
+      }
+
+      val futureResults = Future.sequence(resultFutures)
+      futureResults.futureValue.foreach {
+        case (result, encodedFrames, (byteOrder, fieldOffset, fieldLength)) =>
+          withClue(s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength") {
+            result should ===(encodedFrames)
+          }
       }
 
     }
 
     "work with empty streams" in {
-      Source.empty.via(Framing.lengthField(4, 0, Int.MaxValue, ByteOrder.BIG_ENDIAN))
+      Source.empty
+        .via(Framing.lengthField(4, 0, Int.MaxValue, ByteOrder.BIG_ENDIAN))
         .runFold(Vector.empty[ByteString])(_ :+ _)
         .futureValue should ===(Vector.empty)
     }
@@ -240,14 +290,13 @@ class FramingSpec extends StreamSpec {
     "work with grouped frames" in {
       val groupSize = 5
       val single = encode(referenceChunk.take(100), 0, 1, ByteOrder.BIG_ENDIAN)
-      val groupedFrames = (1 to groupSize)
-        .map(_ ⇒ single)
-        .fold(ByteString.empty)((result, bs) ⇒ result ++ bs)
+      val groupedFrames = (1 to groupSize).map(_ => single).fold(ByteString.empty)((result, bs) => result ++ bs)
 
       val publisher = TestPublisher.probe[ByteString]()
       val substriber = TestSubscriber.manualProbe[ByteString]()
 
-      Source.fromPublisher(publisher)
+      Source
+        .fromPublisher(publisher)
         .via(Framing.lengthField(1, 0, Int.MaxValue, ByteOrder.BIG_ENDIAN))
         .to(Sink.fromSubscriber(substriber))
         .run()
@@ -256,7 +305,7 @@ class FramingSpec extends StreamSpec {
 
       publisher.sendNext(groupedFrames)
       publisher.sendComplete()
-      for (_ ← 1 to groupSize) {
+      for (_ <- 1 to groupSize) {
         subscription.request(1)
         substriber.expectNext(single)
       }
@@ -265,25 +314,30 @@ class FramingSpec extends StreamSpec {
     }
 
     "report oversized frames" in {
-      Source.single(encode(referenceChunk.take(100), 0, 1, ByteOrder.BIG_ENDIAN))
+      Source
+        .single(encode(referenceChunk.take(100), 0, 1, ByteOrder.BIG_ENDIAN))
         .via(Framing.lengthField(1, 0, 99, ByteOrder.BIG_ENDIAN))
         .runFold(Vector.empty[ByteString])(_ :+ _)
-        .failed.futureValue shouldBe a[FramingException]
+        .failed
+        .futureValue shouldBe a[FramingException]
 
-      Source.single(encode(referenceChunk.take(100), 49, 1, ByteOrder.BIG_ENDIAN))
+      Source
+        .single(encode(referenceChunk.take(100), 49, 1, ByteOrder.BIG_ENDIAN))
         .via(Framing.lengthField(1, 0, 100, ByteOrder.BIG_ENDIAN))
         .runFold(Vector.empty[ByteString])(_ :+ _)
-        .failed.futureValue shouldBe a[FramingException]
+        .failed
+        .futureValue shouldBe a[FramingException]
     }
 
-    "report truncated frames" taggedAs LongRunningTest in {
-      for {
-        //_ ← 1 to 10
-        byteOrder ← byteOrders
-        fieldOffset ← fieldOffsets
-        fieldLength ← fieldLengths
-        frameLength ← frameLengths if frameLength < (1 << (fieldLength * 8)) && (frameLength != 0)
-      } {
+    "report truncated frames" in {
+      import system.dispatcher
+      val resultFutures: List[Future[(Throwable, (ByteOrder, Int, Int, Int))]] = for {
+        //_ <- 1 to 10
+        byteOrder <- byteOrders
+        fieldOffset <- fieldOffsets
+        fieldLength <- fieldLengths
+        frameLength <- frameLengths if frameLength < (1 << (fieldLength * 8)) && (frameLength != 0)
+      } yield {
 
         val fullFrame = encode(referenceChunk.take(frameLength), fieldOffset, fieldLength, byteOrder)
         val partialFrame = fullFrame.dropRight(1)
@@ -293,21 +347,32 @@ class FramingSpec extends StreamSpec {
           .via(Framing.lengthField(fieldLength, fieldOffset, Int.MaxValue, byteOrder))
           .grouped(10000)
           .runWith(Sink.head)
-          .failed.futureValue shouldBe a[FramingException]
+          .failed
+          .map(ex => (ex, (byteOrder, fieldOffset, fieldLength, frameLength)))
       }
+
+      val futureResults = Future.sequence(resultFutures)
+      futureResults.futureValue.foreach {
+        case (ex, (byteOrder, fieldOffset, fieldLength, frameLength)) =>
+          withClue(
+            s"byteOrder: $byteOrder, fieldOffset: $fieldOffset, fieldLength: $fieldLength, frameLength: $frameLength") {
+            ex shouldBe a[FramingException]
+          }
+      }
+
     }
 
     "support simple framing adapter" in {
       val rechunkBidi = BidiFlow.fromFlowsMat(rechunk, rechunk)(Keep.left)
       val codecFlow =
-        Framing.simpleFramingProtocol(1024)
+        Framing
+          .simpleFramingProtocol(1024)
           .atop(rechunkBidi)
           .atop(Framing.simpleFramingProtocol(1024).reversed)
           .join(Flow[ByteString]) // Loopback
 
       val testMessages = List.fill(100)(referenceChunk.take(Random.nextInt(1024)))
-      Source(testMessages).via(codecFlow).limit(1000).runWith(Sink.seq)
-        .futureValue should ===(testMessages)
+      Source(testMessages).via(codecFlow).limit(1000).runWith(Sink.seq).futureValue should ===(testMessages)
     }
 
     "fail the stage on negative length field values (#22367)" in {
@@ -319,10 +384,7 @@ class FramingSpec extends StreamSpec {
       val bs = ByteString.newBuilder.putInt(-4).result()
 
       val res =
-        Source
-          .single(bs)
-          .via(Flow[ByteString].via(Framing.lengthField(4, 0, 1000)))
-          .runWith(Sink.seq)
+        Source.single(bs).via(Flow[ByteString].via(Framing.lengthField(4, 0, 1000))).runWith(Sink.seq)
 
       val ex = res.failed.futureValue
       ex shouldBe a[FramingException]
@@ -357,9 +419,7 @@ class FramingSpec extends StreamSpec {
       val bs = Vector(emptyFrame, encodedPayload, emptyFrame)
 
       val res =
-        Source(bs)
-          .via(Flow[ByteString].via(Framing.lengthField(4, 0, 1000)))
-          .runWith(Sink.seq)
+        Source(bs).via(Flow[ByteString].via(Framing.lengthField(4, 0, 1000))).runWith(Sink.seq)
 
       res.futureValue should equal(Seq(emptyFrame, encodedPayload, emptyFrame))
 

@@ -119,7 +119,7 @@ their registration order, i.e. the last registered first.
 
 A message adapter (and the returned `ActorRef`) has the same lifecycle as
 the receiving actor. It's recommended to register the adapters in a top level
-`Behaviors.setup` or constructor of `MutableBehavior` but it's possible to
+`Behaviors.setup` or constructor of `AbstractBehavior` but it's possible to
 register them later also if needed.
 
 The adapter function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.
@@ -169,8 +169,8 @@ The response adapting function is running in the receiving actor and can safely 
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
  * Finding a good value for the timeout, especially when `ask` is triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requester, but at the same time you do not want to have many false positives 
 
-
-## Request-Response with ask from outside the ActorSystem
+<a id="outside-ask"></a>
+## Request-Response with ask from outside an Actor
 
 Some times you need to interact with actors from outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
  

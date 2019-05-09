@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -79,6 +79,7 @@ import akka.stream._
     val wireTap = name("wireTap")
     val balance = name("balance")
     val zip = name("zip")
+    val zipLatest = name("zipLatest")
     val zipN = name("zipN")
     val zipWithN = name("zipWithN")
     val zipWithIndex = name("zipWithIndex")

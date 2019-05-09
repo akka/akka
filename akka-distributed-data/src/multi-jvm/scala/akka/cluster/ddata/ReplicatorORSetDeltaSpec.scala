@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -36,15 +36,19 @@ class ReplicatorORSetDeltaSpecMultiJvmNode1 extends ReplicatorORSetDeltaSpec
 class ReplicatorORSetDeltaSpecMultiJvmNode2 extends ReplicatorORSetDeltaSpec
 class ReplicatorORSetDeltaSpecMultiJvmNode3 extends ReplicatorORSetDeltaSpec
 
-class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) with STMultiNodeSpec with ImplicitSender {
+class ReplicatorORSetDeltaSpec
+    extends MultiNodeSpec(ReplicatorORSetDeltaSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import Replicator._
   import ReplicatorORSetDeltaSpec._
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
-  val replicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)), "replicator")
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  val replicator =
+    system.actorOf(Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)), "replicator")
   val timeout = 3.seconds.dilated
 
   val KeyA = ORSetKey[String]("A")
@@ -53,7 +57,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -63,9 +67,10 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       awaitAssert {
         replicator ! Get(key, ReadLocal)
         val value = expectMsgPF() {
-          case g @ GetSuccess(`key`, _) ⇒ g.dataValue match {
-            case c: ORSet[_] ⇒ c.elements
-          }
+          case g @ GetSuccess(`key`, _) =>
+            g.dataValue match {
+              case c: ORSet[_] => c.elements
+            }
         }
         value should be(expected)
       }
@@ -88,7 +93,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       }
 
       runOn(first) {
-        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ + "a")
+        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ :+ "a")
         expectMsg(UpdateSuccess(KeyA, None))
       }
 
@@ -108,11 +113,11 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       enterBarrier("split")
 
       runOn(first) {
-        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ + "b")
+        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ :+ "b")
         expectMsg(UpdateSuccess(KeyA, None))
       }
       runOn(second) {
-        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ + "d")
+        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ :+ "d")
         expectMsg(UpdateSuccess(KeyA, None))
       }
       runOn(first, second) {
@@ -129,7 +134,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
 
       runOn(first) {
         // delta for "c" will be sent to third, but it has not received the previous delta for "b"
-        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ + "c")
+        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ :+ "c")
         expectMsg(UpdateSuccess(KeyA, None))
         // let the delta be propagated (will not fail if it takes longer)
         Thread.sleep(1000)
@@ -154,7 +159,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
 
       // and now the delta seqNr should be in sync again
       runOn(first) {
-        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ + "e")
+        replicator ! Update(KeyA, ORSet.empty[String], WriteLocal)(_ :+ "e")
         expectMsg(UpdateSuccess(KeyA, None))
       }
       assertValue(KeyA, Set("a", "b", "c", "d", "e"))
@@ -165,4 +170,3 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
   }
 
 }
-

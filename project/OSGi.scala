@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -9,6 +9,7 @@ import com.typesafe.sbt.osgi.SbtOsgi._
 import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
+import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin
 
 object OSGi {
 
@@ -16,7 +17,15 @@ object OSGi {
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings = defaultOsgiSettings ++ Seq(
-    Compile / packageBin := OsgiKeys.bundle.value,
+    Compile / packageBin := {
+      val bundle = OsgiKeys.bundle.value
+      // This normally happens automatically when loading the
+      // sbt-reproducible-builds plugin, but because we replace
+      // `packageBin` wholesale here we need to invoke the post-processing
+      // manually. See also
+      // https://github.com/raboof/sbt-reproducible-builds#sbt-osgi
+      ReproducibleBuildsPlugin.postProcessJar(bundle)
+    },
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
@@ -35,9 +44,7 @@ object OSGi {
     // dynamicImportPackage needed for loading classes defined in configuration
     OsgiKeys.dynamicImportPackage := Seq("*"))
 
-  val agent = exports(Seq("akka.agent.*"))
-
-  val camel = exports(Seq("akka.camel.*"))
+  val actorTyped = exports(Seq("akka.actor.typed.*"))
 
   val cluster = exports(Seq("akka.cluster.*"))
 
@@ -48,8 +55,6 @@ object OSGi {
   val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(kamonImport(), sigarImport()))
 
   val distributedData = exports(Seq("akka.cluster.ddata.*"))
-
-  val contrib = exports(Seq("akka.contrib.*"))
 
   val osgi = exports(Seq("akka.osgi.*"))
 
@@ -71,7 +76,7 @@ object OSGi {
         "akka.http.$DSL$.coding.*",
         "akka.http.$DSL$.common.*",
         "akka.http.$DSL$.marshalling.*",
-        "akka.http.$DSL$.unmarshalling.*") flatMap { p ⇒
+        "akka.http.$DSL$.unmarshalling.*") flatMap { p =>
           Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
         },
     imports = Seq(
@@ -91,8 +96,16 @@ object OSGi {
     exports(
       packages = Seq(
         "akka.stream.*",
-        "com.typesafe.sslconfig.akka.*"),
-      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport(), sslConfigCoreImport()))
+        "com.typesafe.sslconfig.akka.*"
+      ),
+      imports = Seq(
+        scalaJava8CompatImport(),
+        scalaParsingCombinatorImport(),
+        sslConfigCoreImport("com.typesafe.sslconfig.ssl.*"),
+        sslConfigCoreImport("com.typesafe.sslconfig.util.*"),
+        "!com.typesafe.sslconfig.akka.*"
+      )
+    )
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
@@ -100,11 +113,21 @@ object OSGi {
 
   val persistence = exports(
     Seq("akka.persistence.*"),
-    imports = Seq(optionalResolution("org.fusesource.leveldbjni.*"), optionalResolution("org.iq80.leveldb.*")))
+    imports = Seq(
+      optionalResolution("org.fusesource.leveldbjni.*"), 
+      optionalResolution("org.iq80.leveldb.*")
+    )
+  )
+
+  val persistenceTyped = exports(Seq("akka.persistence.typed.*"))
 
   val persistenceQuery = exports(Seq("akka.persistence.query.*"))
 
   val testkit = exports(Seq("akka.testkit.*"))
+
+  val discovery = exports(Seq("akka.discovery.*"))
+
+  val coordination = exports(Seq("akka.coordination.*"))
 
   val osgiOptionalImports = Seq(
     // needed because testkit is normally not used in the application bundle,
@@ -127,7 +150,9 @@ object OSGi {
   }
   def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") = versionedImport(packageName, "0.7.0", "1.0.0")
   def scalaParsingCombinatorImport(packageName: String = "scala.util.parsing.combinator.*") = versionedImport(packageName, "1.1.0", "1.2.0")
-  def sslConfigCoreImport(packageName: String = "com.typesafe.sslconfig.*") = versionedImport(packageName, "0.2.3", "1.0.0")
+  def sslConfigCoreImport(packageName: String = "com.typesafe.sslconfig") = versionedImport(packageName, "0.2.3", "1.0.0")
+  def sslConfigCoreSslImport(packageName: String = "com.typesafe.sslconfig.ssl.*") = versionedImport(packageName, "0.2.3", "1.0.0")
+  def sslConfigCoreUtilImport(packageName: String = "com.typesafe.sslconfig.util.*") = versionedImport(packageName, "0.2.3", "1.0.0")
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)

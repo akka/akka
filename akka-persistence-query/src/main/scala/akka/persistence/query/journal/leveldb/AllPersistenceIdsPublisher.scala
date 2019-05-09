@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
@@ -13,6 +13,7 @@ import akka.persistence.journal.leveldb.LeveldbJournal
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.Cancel
 import akka.stream.actor.ActorPublisherMessage.Request
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -28,39 +29,42 @@ private[akka] object AllPersistenceIdsPublisher {
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
+@silent // Re-write as part of https://github.com/akka/akka/issues/26187
 private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
-  extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+    extends ActorPublisher[String]
+    with DeliveryBuffer[String]
+    with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
 
   def receive = init
 
   def init: Receive = {
-    case _: Request ⇒
+    case _: Request =>
       journal ! LeveldbJournal.SubscribeAllPersistenceIds
       context.become(active)
-    case Cancel ⇒ context.stop(self)
+    case Cancel => context.stop(self)
   }
 
   def active: Receive = {
-    case LeveldbJournal.CurrentPersistenceIds(allPersistenceIds) ⇒
+    case LeveldbJournal.CurrentPersistenceIds(allPersistenceIds) =>
       buf ++= allPersistenceIds
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
 
-    case LeveldbJournal.PersistenceIdAdded(persistenceId) ⇒
+    case LeveldbJournal.PersistenceIdAdded(persistenceId) =>
       if (liveQuery) {
         buf :+= persistenceId
         deliverBuf()
       }
 
-    case _: Request ⇒
+    case _: Request =>
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
 
-    case Cancel ⇒ context.stop(self)
+    case Cancel => context.stop(self)
   }
 
 }

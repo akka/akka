@@ -1,15 +1,13 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.scaladsl
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.Props
+import akka.cluster.{ ddata => dd }
+import akka.cluster.ddata.SelfUniqueAddress
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -30,22 +28,33 @@ object DistributedData extends ExtensionId[DistributedData] {
 class DistributedData(system: ActorSystem[_]) extends Extension {
   import akka.actor.typed.scaladsl.adapter._
 
+  private val settings: ReplicatorSettings = ReplicatorSettings(system)
+
   private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
-  private val config = system.settings.config.getConfig("akka.cluster.distributed-data")
-  private val settings = ReplicatorSettings(config)
+
+  implicit val selfUniqueAddress: SelfUniqueAddress = dd.DistributedData(untypedSystem).selfUniqueAddress
 
   /**
    * `ActorRef` of the [[Replicator]] .
    */
-  val replicator: ActorRef[Replicator.Command] = {
-    val configuredName = config.getString("name")
-    val name = "typed" + configuredName.take(1).toUpperCase + configuredName.drop(1)
+  val replicator: ActorRef[Replicator.Command] =
+    if (isTerminated) {
+      system.log.warning(
+        "Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
+      system.deadLetters
+    } else {
+      val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
+      val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
 
-    val underlyingReplicator = akka.cluster.ddata.DistributedData(untypedSystem).replicator
-    val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
+      system.internalSystemActorOf(
+        replicatorBehavior,
+        ReplicatorSettings.name(system),
+        Props.empty.withDispatcherFromConfig(settings.dispatcher))
+    }
 
-    system.internalSystemActorOf(replicatorBehavior, name, Props.empty)
-  }
+  /**
+   * Returns true if this member is not tagged with the role configured for the replicas.
+   */
+  private def isTerminated: Boolean = dd.DistributedData(system.toUntyped).isTerminated
 
 }
-

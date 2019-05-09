@@ -1,12 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
 
 import akka.AkkaException
 import java.nio.channels.ClosedChannelException
+
+import akka.util.unused
 import org.jboss.netty.channel._
+
 import scala.util.control.NonFatal
 
 /**
@@ -14,22 +17,22 @@ import scala.util.control.NonFatal
  */
 private[netty] trait NettyHelpers {
 
-  protected def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
+  protected def onConnect(@unused ctx: ChannelHandlerContext, @unused e: ChannelStateEvent): Unit = ()
 
-  protected def onDisconnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
+  protected def onDisconnect(@unused ctx: ChannelHandlerContext, @unused e: ChannelStateEvent): Unit = ()
 
-  protected def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = ()
+  protected def onOpen(@unused ctx: ChannelHandlerContext, @unused e: ChannelStateEvent): Unit = ()
 
-  protected def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = ()
+  protected def onMessage(@unused ctx: ChannelHandlerContext, @unused e: MessageEvent): Unit = ()
 
-  protected def onException(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = ()
+  protected def onException(@unused ctx: ChannelHandlerContext, @unused e: ExceptionEvent): Unit = ()
 
   final protected def transformException(ctx: ChannelHandlerContext, ev: ExceptionEvent): Unit = {
     val cause = if (ev.getCause ne null) ev.getCause else new AkkaException("Unknown cause")
     cause match {
-      case _: ClosedChannelException ⇒ // Ignore
-      case null | NonFatal(_)        ⇒ onException(ctx, ev)
-      case e: Throwable              ⇒ throw e // Rethrow fatals
+      case _: ClosedChannelException => // Ignore
+      case null | NonFatal(_)        => onException(ctx, ev)
+      case e: Throwable              => throw e // Rethrow fatals
     }
   }
 }
@@ -88,4 +91,3 @@ private[netty] trait NettyClientHelpers extends SimpleChannelHandler with NettyH
     onDisconnect(ctx, e)
   }
 }
-

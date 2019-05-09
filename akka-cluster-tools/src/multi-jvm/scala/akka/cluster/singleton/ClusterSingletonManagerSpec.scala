@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
@@ -41,8 +41,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.cluster.auto-down-unreachable-after = 0s
                                           """))
 
-  nodeConfig(first, second, third, fourth, fifth, sixth)(
-    ConfigFactory.parseString("akka.cluster.roles =[worker]"))
+  nodeConfig(first, second, third, fourth, fifth, sixth)(ConfigFactory.parseString("akka.cluster.roles =[worker]"))
 
   //#singleton-message-classes
   object PointToPointChannel {
@@ -72,35 +71,35 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     def receive = idle
 
     def idle: Receive = {
-      case RegisterConsumer ⇒
+      case RegisterConsumer =>
         log.info("RegisterConsumer: [{}]", sender().path)
         sender() ! RegistrationOk
         context.become(active(sender()))
-      case UnregisterConsumer ⇒
+      case UnregisterConsumer =>
         log.info("UnexpectedUnregistration: [{}]", sender().path)
         sender() ! UnexpectedUnregistration
-        context stop self
-      case Reset ⇒ sender() ! ResetOk
-      case msg   ⇒ // no consumer, drop
+        context.stop(self)
+      case Reset => sender() ! ResetOk
+      case _     => // no consumer, drop
     }
 
     def active(consumer: ActorRef): Receive = {
-      case UnregisterConsumer if sender() == consumer ⇒
+      case UnregisterConsumer if sender() == consumer =>
         log.info("UnregistrationOk: [{}]", sender().path)
         sender() ! UnregistrationOk
         context.become(idle)
-      case UnregisterConsumer ⇒
+      case UnregisterConsumer =>
         log.info("UnexpectedUnregistration: [{}], expected [{}]", sender().path, consumer.path)
         sender() ! UnexpectedUnregistration
-        context stop self
-      case RegisterConsumer ⇒
+        context.stop(self)
+      case RegisterConsumer =>
         log.info("Unexpected RegisterConsumer [{}], active consumer [{}]", sender().path, consumer.path)
         sender() ! UnexpectedRegistration
-        context stop self
-      case Reset ⇒
+        context.stop(self)
+      case Reset =>
         context.become(idle)
         sender() ! ResetOk
-      case msg ⇒ consumer ! msg
+      case msg => consumer ! msg
     }
   }
 
@@ -132,22 +131,22 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case n: Int if n <= current ⇒
+      case n: Int if n <= current =>
         context.stop(self)
-      case n: Int ⇒
+      case n: Int =>
         current = n
         delegateTo ! n
-      case message @ (RegistrationOk | UnexpectedRegistration) ⇒
+      case message @ (RegistrationOk | UnexpectedRegistration) =>
         delegateTo ! message
-      case GetCurrent ⇒
+      case GetCurrent =>
         sender() ! current
       //#consumer-end
-      case End ⇒
+      case End =>
         queue ! UnregisterConsumer
-      case UnregistrationOk ⇒
+      case UnregistrationOk =>
         stoppedBeforeUnregistration = false
-        context stop self
-      case Ping ⇒
+        context.stop(self)
+      case Ping =>
         sender() ! Pong
       //#consumer-end
     }
@@ -164,7 +163,10 @@ class ClusterSingletonManagerMultiJvmNode6 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode7 extends ClusterSingletonManagerSpec
 class ClusterSingletonManagerMultiJvmNode8 extends ClusterSingletonManagerSpec
 
-class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerSpec
+    extends MultiNodeSpec(ClusterSingletonManagerSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import ClusterSingletonManagerSpec._
   import ClusterSingletonManagerSpec.PointToPointChannel._
@@ -191,7 +193,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       if (Cluster(system).selfRoles.contains("worker")) {
         createSingleton()
         createSingletonProxy()
@@ -204,7 +206,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       memberProbe.expectMsgType[MemberUp](15.seconds).member.address should ===(node(nodes.head).address)
     }
     runOn(nodes.head) {
-      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet should ===(
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) => m.address }.toSet should ===(
         nodes.map(node(_).address).toSet)
     }
     enterBarrier(nodes.head.name + "-up")
@@ -237,9 +239,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     val proxyDcB = system.actorOf(
       ClusterSingletonProxy.props(
         singletonManagerPath = "/user/consumer",
-        settings = ClusterSingletonProxySettings(system)
-          .withRole("worker")
-          .withDataCenter("B")),
+        settings = ClusterSingletonProxySettings(system).withRole("worker").withDataCenter("B")),
       name = "consumerProxyDcB")
     //#create-singleton-proxy-dc
     proxyDcB
@@ -298,13 +298,13 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     runOn(controller) {
       queue ! msg
       // make sure it's not terminated, which would be wrong
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
     runOn(oldest) {
       expectMsg(5.seconds, msg)
     }
-    runOn(roles.filterNot(r ⇒ r == oldest || r == controller || r == observer): _*) {
-      expectNoMsg(1 second)
+    runOn(roles.filterNot(r => r == oldest || r == controller || r == observer): _*) {
+      expectNoMessage(1 second)
     }
     enterBarrier("after-" + msg + "-verified")
   }
@@ -313,7 +313,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     runOn(controller) {
       queue ! Reset
       expectMsg(ResetOk)
-      roles foreach { r ⇒
+      roles.foreach { r =>
         log.info("Shutdown [{}]", node(r).address)
         testConductor.exit(r, 0).await
       }
@@ -383,10 +383,9 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
 
     "hand over when oldest leaves in 6 nodes cluster " in within(30 seconds) {
       val leaveRole = first
-      val newOldestRole = second
 
       runOn(leaveRole) {
-        Cluster(system) leave node(leaveRole).address
+        Cluster(system).leave(node(leaveRole).address)
       }
 
       verifyRegistration(second)
@@ -400,8 +399,8 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       runOn(leaveRole) {
         system.actorSelection("/user/consumer").tell(Identify("singleton"), identifyProbe.ref)
         identifyProbe.expectMsgPF() {
-          case ActorIdentity("singleton", None) ⇒ // already terminated
-          case ActorIdentity("singleton", Some(singleton)) ⇒
+          case ActorIdentity("singleton", None) => // already terminated
+          case ActorIdentity("singleton", Some(singleton)) =>
             watch(singleton)
             expectTerminated(singleton)
         }

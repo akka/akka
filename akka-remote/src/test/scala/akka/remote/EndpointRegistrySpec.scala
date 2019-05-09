@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import akka.testkit.AkkaSpec
-import akka.actor.{ Props, Address }
+import akka.actor.{ Address, Props }
 import akka.remote.EndpointManager._
 import scala.concurrent.duration._
 

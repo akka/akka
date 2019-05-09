@@ -1,9 +1,9 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-//#iot-supervisor
-package com.lightbend.akka.sample;
+// #iot-supervisor
+package com.example;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorLogging;
@@ -15,7 +15,7 @@ public class IotSupervisor extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   public static Props props() {
-    return Props.create(IotSupervisor.class);
+    return Props.create(IotSupervisor.class, IotSupervisor::new);
   }
 
   @Override
@@ -31,9 +31,7 @@ public class IotSupervisor extends AbstractActor {
   // No need to handle any messages
   @Override
   public Receive createReceive() {
-    return receiveBuilder()
-            .build();
+    return receiveBuilder().build();
   }
-
 }
-//#iot-supervisor
+// #iot-supervisor

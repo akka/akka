@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -39,19 +39,19 @@ object CircuitBreakerStressSpec {
     }
 
     override def receive = {
-      case JobDone ⇒
+      case JobDone =>
         doneCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
-      case Failure(ex: CircuitBreakerOpenException) ⇒
+      case Failure(_: CircuitBreakerOpenException) =>
         circCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
-      case Failure(_: TimeoutException) ⇒
+      case Failure(_: TimeoutException) =>
         timeoutCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
-      case Failure(_) ⇒
+      case Failure(_) =>
         failCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
-      case GetResult ⇒
+      case GetResult =>
         sender() ! Result(doneCount, timeoutCount, failCount, circCount)
     }
   }
@@ -68,12 +68,12 @@ class CircuitBreakerStressSpec extends AkkaSpec with ImplicitSender {
     val stressActors = Vector.fill(3) {
       system.actorOf(Props(classOf[StressActor], breaker))
     }
-    for (_ ← 0 to 1000; a ← stressActors) {
+    for (_ <- 0 to 1000; a <- stressActors) {
       a ! JobDone
     }
     // let them work for a while
     Thread.sleep(3000)
-    stressActors.foreach { a ⇒
+    stressActors.foreach { a =>
       a ! GetResult
       val result = expectMsgType[Result]
       result.failCount should be(0)

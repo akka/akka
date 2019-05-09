@@ -1,9 +1,10 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
+import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -14,6 +15,7 @@ import scala.annotation.unchecked.uncheckedVariance
  * @see [[akka.stream.stage.GraphStage]]
  */
 trait Graph[+S <: Shape, +M] {
+
   /**
    * Type-level accessor for the shape parameter of this graph.
    */
@@ -22,6 +24,7 @@ trait Graph[+S <: Shape, +M] {
    * The shape of a graph is all that is externally visible: its inlets and outlets.
    */
   def shape: S
+
   /**
    * INTERNAL API.
    *
@@ -44,9 +47,7 @@ trait Graph[+S <: Shape, +M] {
    * @param dispatcher Run the graph on this dispatcher
    */
   def async(dispatcher: String) =
-    addAttributes(
-      Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
-    )
+    addAttributes(Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher))
 
   /**
    * Put an asynchronous boundary around this `Graph`
@@ -57,8 +58,7 @@ trait Graph[+S <: Shape, +M] {
   def async(dispatcher: String, inputBufferSize: Int) =
     addAttributes(
       Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
-        and Attributes.inputBuffer(inputBufferSize, inputBufferSize)
-    )
+      and Attributes.inputBuffer(inputBufferSize, inputBufferSize))
 
   /**
    * Add the given attributes to this [[Graph]]. If the specific attribute was already present
@@ -67,4 +67,16 @@ trait Graph[+S <: Shape, +M] {
    * less specific than attributes set directly on the individual graphs of the composite.
    */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
+}
+
+/**
+ * INTERNAL API
+ *
+ * Allows creating additional API on top of an existing Graph by extending from this class and
+ * accessing the delegate
+ */
+@InternalApi
+private[stream] abstract class GraphDelegate[+S <: Shape, +Mat](delegate: Graph[S, Mat]) extends Graph[S, Mat] {
+  final override def shape: S = delegate.shape
+  final override private[stream] def traversalBuilder: TraversalBuilder = delegate.traversalBuilder
 }

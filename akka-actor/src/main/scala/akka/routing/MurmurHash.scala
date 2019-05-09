@@ -17,10 +17,12 @@
  *  @version 2.9
  *  @since   2.9
  */
-
 package akka.routing
 
-import java.lang.Integer.{ rotateLeft ⇒ rotl }
+import java.lang.Integer.{ rotateLeft => rotl }
+
+import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * An object designed to generate well-distributed non-cryptographic
@@ -31,7 +33,7 @@ import java.lang.Integer.{ rotateLeft ⇒ rotl }
  *  incorporate a new integer) to update the values.  Only one method
  *  needs to be called to finalize the hash.
  */
-
+@ccompatUsedUntil213
 object MurmurHash {
   // Magic values used for MurmurHash's 32 bit hash.
   // Don't change these without consulting a hashing expert!
@@ -130,10 +132,11 @@ object MurmurHash {
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
-  def symmetricHash[T](xs: TraversableOnce[T], seed: Int): Int = {
+  @silent
+  def symmetricHash[T](xs: IterableOnce[T], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs.foreach(i ⇒ {
+    xs.foreach(i => {
       val h = i.##
       a += h
       b ^= h

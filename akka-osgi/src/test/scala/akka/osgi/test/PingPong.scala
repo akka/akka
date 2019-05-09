@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.osgi.test
@@ -18,7 +18,7 @@ object PingPong {
 
   class PongActor extends Actor {
     def receive = {
-      case Ping ⇒
+      case Ping =>
         sender() ! Pong
     }
   }

@@ -1,16 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
-import scala.collection.immutable
 
 final case class ClientDowningNodeThatIsUpMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -21,19 +17,27 @@ final case class ClientDowningNodeThatIsUpMultiNodeConfig(failureDetectorPuppet:
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
-class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode1 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
-class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode2 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
-class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode3 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
-class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode4 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode1
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode2
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode3
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode4
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = true)
 
-class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode1 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
-class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode2 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
-class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode3 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
-class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode4 extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode1
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode2
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode3
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode4
+    extends ClientDowningNodeThatIsUpSpec(failureDetectorPuppet = false)
 
 abstract class ClientDowningNodeThatIsUpSpec(multiNodeConfig: ClientDowningNodeThatIsUpMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def this(failureDetectorPuppet: Boolean) = this(ClientDowningNodeThatIsUpMultiNodeConfig(failureDetectorPuppet))
 

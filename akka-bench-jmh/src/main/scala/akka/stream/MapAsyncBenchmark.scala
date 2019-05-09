@@ -1,26 +1,21 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.remote.artery.BenchTestSource
-import akka.remote.artery.LatchSink
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
+import akka.remote.artery.{ BenchTestSource, LatchSink }
 import akka.stream.scaladsl._
-import akka.testkit.TestProbe
+import akka.stream.testkit.scaladsl.StreamTestKit
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 
 object MapAsyncBenchmark {
   final val OperationsPerInvocation = 100000
@@ -32,16 +27,14 @@ object MapAsyncBenchmark {
 class MapAsyncBenchmark {
   import MapAsyncBenchmark._
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
@@ -75,7 +68,7 @@ class MapAsyncBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .mapAsync(parallelism)(elem ⇒ if (spawn) Future(elem) else Future.successful(elem))
+      .mapAsync(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -87,7 +80,7 @@ class MapAsyncBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .mapAsyncUnordered(parallelism)(elem ⇒ if (spawn) Future(elem) else Future.successful(elem))
+      .mapAsyncUnordered(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -95,18 +88,8 @@ class MapAsyncBenchmark {
 
   private def awaitLatch(latch: CountDownLatch): Unit = {
     if (!latch.await(30, TimeUnit.SECONDS)) {
-      dumpMaterializer()
+      StreamTestKit.printDebugDump(materializer.supervisor)
       throw new RuntimeException("Latch didn't complete in time")
-    }
-  }
-
-  private def dumpMaterializer(): Unit = {
-    materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
-        val probe = TestProbe()(system)
-        impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children = probe.expectMsgType[StreamSupervisor.Children].children
-        children.foreach(_ ! StreamSupervisor.PrintDebugDump)
     }
   }
 

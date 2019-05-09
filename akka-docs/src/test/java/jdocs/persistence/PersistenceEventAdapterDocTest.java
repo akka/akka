@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -11,7 +11,7 @@ public class PersistenceEventAdapterDocTest {
 
   @SuppressWarnings("unused")
   static
-  //#identity-event-adapter
+  // #identity-event-adapter
   class MyEventAdapter implements EventAdapter {
     @Override
     public String manifest(Object event) {
@@ -28,5 +28,5 @@ public class PersistenceEventAdapterDocTest {
       return EventSeq.single(event); // identity
     }
   }
-  //#identity-event-adapter
+  // #identity-event-adapter
 }

@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import akka.stream._
@@ -32,7 +33,7 @@ object UnzipWith {
     scaladsl.UnzipWith[In, A, B]((in: In) => f.apply(in) match { case Pair(a, b) => (a, b) })
 
 
-  [3..20#/** Create a new `UnzipWith` specialized for 1 outputs.
+  [3..22#/** Create a new `UnzipWith` specialized for 1 outputs.
    *
    * @param f unzipping-function from the input value to the output values
    */

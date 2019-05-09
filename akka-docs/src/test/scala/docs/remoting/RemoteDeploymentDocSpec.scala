@@ -1,42 +1,41 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.remoting
 
-import akka.actor.{ ExtendedActorSystem, ActorSystem, Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorSystem, ExtendedActorSystem }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 //#import
-import akka.actor.{ Props, Deploy, Address, AddressFromURIString }
+import akka.actor.{ Address, AddressFromURIString, Deploy, Props }
 import akka.remote.RemoteScope
 //#import
 
 object RemoteDeploymentDocSpec {
 
   class SampleActor extends Actor {
-    def receive = { case _ ⇒ sender() ! self }
+    def receive = { case _ => sender() ! self }
   }
 
 }
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = remote
-    akka.remote.netty.tcp {
-      port = 0
-    }
+    akka.remote.classic.netty.tcp.port = 0
+    akka.remote.artery.canonical.port = 0
 """) with ImplicitSender {
 
   import RemoteDeploymentDocSpec._
 
   val other = ActorSystem("remote", system.settings.config)
-  val address = other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("akka.tcp", "s", "host", 1)).get
+  val address =
+    other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("akka.tcp", "s", "host", 1)).get
 
   override def afterTermination(): Unit = { shutdown(other) }
 
   "demonstrate programmatic deployment" in {
     //#deploy
-    val ref = system.actorOf(Props[SampleActor].
-      withDeploy(Deploy(scope = RemoteScope(address))))
+    val ref = system.actorOf(Props[SampleActor].withDeploy(Deploy(scope = RemoteScope(address))))
     //#deploy
     ref.path.address should be(address)
     ref ! "test"

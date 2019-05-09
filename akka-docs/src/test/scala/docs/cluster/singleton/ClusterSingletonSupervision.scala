@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.cluster.singleton
@@ -10,7 +10,7 @@ class SupervisorActor(childProps: Props, override val supervisorStrategy: Superv
   val child = context.actorOf(childProps, "supervised-child")
 
   def receive = {
-    case msg ⇒ child forward msg
+    case msg => child.forward(msg)
   }
 }
 //#singleton-supervisor-actor

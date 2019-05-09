@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
@@ -19,16 +19,16 @@ class TestActor(override val persistenceId: String) extends PersistentActor {
   import TestActor.DeleteCmd
 
   val receiveRecover: Receive = {
-    case evt: String ⇒
+    case _: String =>
   }
 
   val receiveCommand: Receive = {
-    case DeleteCmd(toSeqNr) ⇒
+    case DeleteCmd(toSeqNr) =>
       deleteMessages(toSeqNr)
       sender() ! s"$toSeqNr-deleted"
 
-    case cmd: String ⇒
-      persist(cmd) { evt ⇒
+    case cmd: String =>
+      persist(cmd) { evt =>
         sender() ! evt + "-done"
       }
   }

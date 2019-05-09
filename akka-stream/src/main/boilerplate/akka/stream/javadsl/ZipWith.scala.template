@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import akka.stream._
@@ -30,7 +31,7 @@ object ZipWith {
   def create[A, B, Out](f: function.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], NotUsed] =
     scaladsl.ZipWith(f.apply _)
 
-  [3..20#/** Create a new `ZipWith` specialized for 1 inputs.
+  [3..22#/** Create a new `ZipWith` specialized for 1 inputs.
    *
    * @param f zipping-function from the input values to the output value
    * @param attributes optional attributes for this vertex

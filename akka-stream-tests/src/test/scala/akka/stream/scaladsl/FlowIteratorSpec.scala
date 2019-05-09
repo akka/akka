@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -10,14 +10,12 @@ import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.testkit.EventFilter
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"
   override def createSource(elements: Int): Source[Int, NotUsed] =
-    Source.fromIterator(() ⇒ (1 to elements).iterator)
+    Source.fromIterator(() => (1 to elements).iterator)
 }
 
 class FlowIterableSpec extends AbstractFlowIteratorSpec {
@@ -30,7 +28,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
   "produce onError when iterator throws" in {
     val iterable = new immutable.Iterable[Int] {
       override def iterator: Iterator[Int] =
-        (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
+        (1 to 3).iterator.map(x => if (x == 2) throw new IllegalStateException("not two") else x)
     }
     val p = Source(iterable).runWith(Sink.asPublisher(false))
     val c = TestSubscriber.manualProbe[Int]()
@@ -73,8 +71,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
 
 abstract class AbstractFlowIteratorSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
 
   private val m = ActorMaterializer(settings)
   implicit final def materializer = m

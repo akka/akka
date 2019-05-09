@@ -1,21 +1,21 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
 import language.postfixOps
 
-import akka.testkit.{ TestLatch, AkkaSpec }
-import akka.actor.{ Props, Actor }
-import scala.concurrent.{ Future, Promise, Await }
+import akka.testkit.{ AkkaSpec, TestLatch }
+import akka.actor.{ Actor, Props }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 
 object PatternSpec {
   final case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
-      case (testLatch: TestLatch, duration: FiniteDuration) ⇒
+      case (testLatch: TestLatch, duration: FiniteDuration) =>
         Await.ready(testLatch, duration)
     }
   }

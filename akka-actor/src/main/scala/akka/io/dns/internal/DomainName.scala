@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- * Adopted from Apache v2 licensed: https://github.com/ilya-epifanov/akka-dns
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -18,9 +17,9 @@ private[akka] object DomainName {
   }
 
   def write(it: ByteStringBuilder, name: String): Unit = {
-    for (label ← name.split('.')) {
+    for (label <- name.split('.')) {
       it.putByte(label.length.toByte)
-      for (c ← label) {
+      for (c <- label) {
         it.putByte(c.toByte)
       }
     }
@@ -28,7 +27,7 @@ private[akka] object DomainName {
   }
 
   def parse(it: ByteIterator, msg: ByteString): String = {
-    val ret = StringBuilder.newBuilder
+    val ret = new StringBuilder()
     while (true) {
       val length = it.getByte
       if (length == 0) {

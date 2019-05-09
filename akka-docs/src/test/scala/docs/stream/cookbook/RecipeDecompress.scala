@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -19,12 +19,10 @@ class RecipeDecompress extends RecipeSpec {
       //#decompress-gzip
 
       val compressed =
-        Source.single(ByteString.fromString("Hello World"))
-          .via(Compression.gzip)
+        Source.single(ByteString.fromString("Hello World")).via(Compression.gzip)
 
       //#decompress-gzip
-      val uncompressed = compressed.via(Compression.gunzip())
-        .map(_.utf8String)
+      val uncompressed = compressed.via(Compression.gunzip()).map(_.utf8String)
       //#decompress-gzip
 
       Await.result(uncompressed.runWith(Sink.head), 3.seconds) should be("Hello World")

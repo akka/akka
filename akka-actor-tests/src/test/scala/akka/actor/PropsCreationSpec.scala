@@ -1,10 +1,12 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import akka.testkit.AkkaSpec
+import akka.util.unused
+import com.github.ghik.silencer.silent
 
 object PropsCreationSpec {
 
@@ -12,11 +14,11 @@ object PropsCreationSpec {
 
   final class B
 
-  class OneParamActor(blackhole: A) extends Actor {
+  class OneParamActor(@unused blackhole: A) extends Actor {
     override def receive = Actor.emptyBehavior
   }
 
-  class TwoParamActor(blackhole1: A, blackhole2: B) extends Actor {
+  class TwoParamActor(@unused blackhole1: A, @unused blackhole2: B) extends Actor {
     override def receive = Actor.emptyBehavior
   }
 
@@ -51,6 +53,7 @@ class PropsCreationSpec extends AkkaSpec("akka.actor.serialize-creators = on") {
 
   "Props Java API" must {
     "work with create(creator)" in {
+      @silent
       val p = Props.create(OneParamActorCreator)
       system.actorOf(p)
     }

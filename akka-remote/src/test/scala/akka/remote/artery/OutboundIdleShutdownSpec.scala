@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -27,9 +27,8 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
   }
   """) with ImplicitSender with Eventually {
 
-  override implicit val patience: PatienceConfig = PatienceConfig(
-    testKitSettings.DefaultTimeout.duration * 2,
-    Span(200, org.scalatest.time.Millis))
+  override implicit val patience: PatienceConfig =
+    PatienceConfig(testKitSettings.DefaultTimeout.duration * 2, Span(200, org.scalatest.time.Millis))
 
   private def isArteryTcp: Boolean =
     RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Transport == ArterySettings.Tcp
@@ -50,23 +49,21 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
   "Outbound streams" should {
 
-    "be stopped when they are idle" in withAssociation {
-      (_, remoteAddress, remoteEcho, localArtery, localProbe) ⇒
+    "be stopped when they are idle" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
+      val association = localArtery.association(remoteAddress)
+      withClue("When initiating a connection, both the control and ordinary streams are opened") {
+        assertStreamActive(association, Association.ControlQueueIndex, expected = true)
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
+      }
 
-        val association = localArtery.association(remoteAddress)
-        withClue("When initiating a connection, both the control and ordinary streams are opened") {
-          assertStreamActive(association, Association.ControlQueueIndex, expected = true)
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
-        }
-
-        eventually {
-          assertStreamActive(association, Association.ControlQueueIndex, expected = false)
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
-        }
+      eventually {
+        assertStreamActive(association, Association.ControlQueueIndex, expected = false)
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
+      }
     }
 
     "still be resumable after they have been stopped" in withAssociation {
-      (_, remoteAddress, remoteEcho, localArtery, localProbe) ⇒
+      (_, remoteAddress, remoteEcho, localArtery, localProbe) =>
         val firstAssociation = localArtery.association(remoteAddress)
 
         eventually {
@@ -87,54 +84,49 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
         }
     }
 
-    "eliminate quarantined association when not used" in withAssociation {
-      (_, remoteAddress, remoteEcho, localArtery, localProbe) ⇒
+    "eliminate quarantined association when not used" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
+      val association = localArtery.association(remoteAddress)
+      withClue("When initiating a connection, both the control and ordinary streams are opened") {
+        assertStreamActive(association, Association.ControlQueueIndex, expected = true)
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
+      }
 
-        val association = localArtery.association(remoteAddress)
-        withClue("When initiating a connection, both the control and ordinary streams are opened") {
-          assertStreamActive(association, Association.ControlQueueIndex, expected = true)
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
-        }
+      val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
 
-        val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+      localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
 
-        localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
+      eventually {
+        assertStreamActive(association, Association.ControlQueueIndex, expected = false)
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
+      }
 
-        eventually {
-          assertStreamActive(association, Association.ControlQueueIndex, expected = false)
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
-        }
-
-        // the outbound streams are inactive and association quarantined, then it's completely removed
-        eventually {
-          localArtery.remoteAddresses should not contain remoteAddress
-        }
+      // the outbound streams are inactive and association quarantined, then it's completely removed
+      eventually {
+        localArtery.remoteAddresses should not contain remoteAddress
+      }
     }
 
-    "remove inbound compression after quarantine" in withAssociation {
-      (_, remoteAddress, remoteEcho, localArtery, localProbe) ⇒
+    "remove inbound compression after quarantine" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
+      val association = localArtery.association(remoteAddress)
+      val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
 
-        val association = localArtery.association(remoteAddress)
-        val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+      localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
 
-        localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
+      eventually {
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
+      }
+      // compression still exists when idle
+      localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
 
-        eventually {
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
-        }
-        // compression still exists when idle
-        localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
-
-        localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
-        // after quarantine it should be removed
-        eventually {
-          localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should not contain remoteUid
-        }
+      localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
+      // after quarantine it should be removed
+      eventually {
+        localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should not contain remoteUid
+      }
     }
 
     "remove inbound compression after restart with same host:port" in withAssociation {
-      (remoteSystem, remoteAddress, remoteEcho, localArtery, localProbe) ⇒
-
+      (remoteSystem, remoteAddress, _, localArtery, localProbe) =>
         val association = localArtery.association(remoteAddress)
         val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
 
@@ -142,10 +134,12 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
         shutdown(remoteSystem, verifySystemShutdown = true)
 
-        val remoteSystem2 = newRemoteSystem(Some(s"""
+        val remoteSystem2 = newRemoteSystem(
+          Some(s"""
           akka.remote.artery.canonical.hostname = ${remoteAddress.host.get}
           akka.remote.artery.canonical.port = ${remoteAddress.port.get}
-          """), name = Some(remoteAddress.system))
+          """),
+          name = Some(remoteAddress.system))
         try {
 
           remoteSystem2.actorOf(TestActors.echoActorProps, "echo2")
@@ -181,7 +175,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
      * 2. A TestProbe is spawned locally to initiate communication with the Echo actor
      * 3. Details (remoteAddress, remoteEcho, localArtery, localProbe) are supplied to the test
      */
-    def withAssociation(test: (ActorSystem, Address, ActorRef, ArteryTransport, TestProbe) ⇒ Any): Unit = {
+    def withAssociation(test: (ActorSystem, Address, ActorRef, ArteryTransport, TestProbe) => Any): Unit = {
       val remoteSystem = newRemoteSystem()
       try {
         remoteSystem.actorOf(TestActors.echoActorProps, "echo")

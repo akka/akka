@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit.scaladsl
@@ -20,6 +20,7 @@ object TestSource {
   /**
    * A Source that materializes to a [[akka.stream.testkit.TestPublisher.Probe]].
    */
-  def probe[T](implicit system: ActorSystem) = Source.fromGraph[T, TestPublisher.Probe[T]](new ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
+  def probe[T](implicit system: ActorSystem) =
+    Source.fromGraph[T, TestPublisher.Probe[T]](new ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
 
 }

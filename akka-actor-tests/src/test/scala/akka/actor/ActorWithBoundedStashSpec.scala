@@ -1,17 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
 import akka.dispatch.BoundedDequeBasedMailbox
+
 import scala.concurrent.duration._
 import akka.actor.ActorSystem.Settings
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
 
@@ -19,18 +20,18 @@ object ActorWithBoundedStashSpec {
 
   class StashingActor extends Actor with Stash {
     def receive = {
-      case msg: String if msg.startsWith("hello") ⇒
+      case msg: String if msg.startsWith("hello") =>
         stash()
         sender() ! "ok"
 
-      case "world" ⇒
+      case "world" =>
         context.become(afterWorldBehavior)
         unstashAll()
 
     }
 
     def afterWorldBehavior: Receive = {
-      case _ ⇒ stash()
+      case _ => stash()
     }
   }
 
@@ -38,13 +39,15 @@ object ActorWithBoundedStashSpec {
     var numStashed = 0
 
     def receive = {
-      case msg: String if msg.startsWith("hello") ⇒
+      case msg: String if msg.startsWith("hello") =>
         numStashed += 1
-        try { stash(); sender() ! "ok" } catch {
-          case _: StashOverflowException ⇒
+        try {
+          stash(); sender() ! "ok"
+        } catch {
+          case _: StashOverflowException =>
             if (numStashed == 21) {
               sender() ! "STASHOVERFLOW"
-              context stop self
+              context.stop(self)
             } else {
               sender() ! "Unexpected StashOverflowException: " + numStashed
             }
@@ -53,9 +56,9 @@ object ActorWithBoundedStashSpec {
   }
 
   // bounded deque-based mailbox with capacity 10
-  class Bounded10(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(10, 500 millis)
+  class Bounded10(@unused settings: Settings, @unused config: Config) extends BoundedDequeBasedMailbox(10, 500 millis)
 
-  class Bounded100(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(100, 500 millis)
+  class Bounded100(@unused settings: Settings, @unused config: Config) extends BoundedDequeBasedMailbox(100, 500 millis)
 
   val dispatcherId1 = "my-dispatcher-1"
   val dispatcherId2 = "my-dispatcher-2"
@@ -82,7 +85,11 @@ object ActorWithBoundedStashSpec {
     """)
 }
 
-class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testConf) with BeforeAndAfterEach with DefaultTimeout with ImplicitSender {
+class ActorWithBoundedStashSpec
+    extends AkkaSpec(ActorWithBoundedStashSpec.testConf)
+    with BeforeAndAfterEach
+    with DefaultTimeout
+    with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
   override def atStartup: Unit = {
@@ -97,7 +104,7 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
 
   def testDeadLetters(stasher: ActorRef): Unit = {
     // fill up stash
-    for (n ← 1 to 11) {
+    for (n <- 1 to 11) {
       stasher ! "hello" + n
       expectMsg("ok")
     }
@@ -108,12 +115,12 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
 
     stasher ! PoisonPill
     // stashed messages are sent to deadletters when stasher is stopped
-    for (n ← 2 to 11) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+    for (n <- 2 to 11) expectMsg(DeadLetter("hello" + n, testActor, stasher))
   }
 
   def testStashOverflowException(stasher: ActorRef): Unit = {
     // fill up stash
-    for (n ← 1 to 20) {
+    for (n <- 1 to 20) {
       stasher ! "hello" + n
       expectMsg("ok")
     }
@@ -122,7 +129,7 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
     expectMsg("STASHOVERFLOW")
 
     // stashed messages are sent to deadletters when stasher is stopped,
-    for (n ← 1 to 20) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+    for (n <- 1 to 20) expectMsg(DeadLetter("hello" + n, testActor, stasher))
   }
 
   "An Actor with Stash" must {

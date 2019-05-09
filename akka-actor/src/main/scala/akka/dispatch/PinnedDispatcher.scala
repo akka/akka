@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -15,18 +15,18 @@ import scala.concurrent.duration.FiniteDuration
  * the `lookup` method in [[akka.dispatch.Dispatchers]].
  */
 class PinnedDispatcher(
-  _configurator:     MessageDispatcherConfigurator,
-  _actor:            ActorCell,
-  _id:               String,
-  _shutdownTimeout:  FiniteDuration,
-  _threadPoolConfig: ThreadPoolConfig)
-  extends Dispatcher(
-    _configurator,
-    _id,
-    Int.MaxValue,
-    Duration.Zero,
-    _threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
-    _shutdownTimeout) {
+    _configurator: MessageDispatcherConfigurator,
+    _actor: ActorCell,
+    _id: String,
+    _shutdownTimeout: FiniteDuration,
+    _threadPoolConfig: ThreadPoolConfig)
+    extends Dispatcher(
+      _configurator,
+      _id,
+      Int.MaxValue,
+      Duration.Zero,
+      _threadPoolConfig.copy(corePoolSize = 1, maxPoolSize = 1),
+      _shutdownTimeout) {
 
   @volatile
   private var owner: ActorCell = _actor
@@ -34,7 +34,8 @@ class PinnedDispatcher(
   //Relies on an external lock provided by MessageDispatcher.attach
   protected[akka] override def register(actorCell: ActorCell) = {
     val actor = owner
-    if ((actor ne null) && actorCell != actor) throw new IllegalArgumentException("Cannot register to anyone but " + actor)
+    if ((actor ne null) && actorCell != actor)
+      throw new IllegalArgumentException("Cannot register to anyone but " + actor)
     owner = actorCell
     super.register(actorCell)
   }
@@ -44,4 +45,3 @@ class PinnedDispatcher(
     owner = null
   }
 }
-

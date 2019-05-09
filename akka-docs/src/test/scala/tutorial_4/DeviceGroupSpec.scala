@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package tutorial_4
@@ -39,7 +39,7 @@ class DeviceGroupSpec extends AkkaSpec {
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
       groupActor.tell(DeviceManager.RequestTrackDevice("wrongGroup", "device1"), probe.ref)
-      probe.expectNoMsg(500.milliseconds)
+      probe.expectNoMessage(500.milliseconds)
     }
     //#device-group-test-registration
 

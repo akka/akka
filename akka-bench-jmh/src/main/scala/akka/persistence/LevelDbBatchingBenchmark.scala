@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -99,11 +99,11 @@ class LevelDbBatchingBenchmark {
   // TOOLS
 
   private def deleteStorage(sys: ActorSystem): Unit = {
-    val storageLocations = List(
-      "akka.persistence.journal.leveldb.dir",
-      "akka.persistence.journal.leveldb-shared.store.dir",
-      "akka.persistence.snapshot-store.local.dir"
-    ).map(s ⇒ new File(sys.settings.config.getString(s)))
+    val storageLocations =
+      List(
+        "akka.persistence.journal.leveldb.dir",
+        "akka.persistence.journal.leveldb-shared.store.dir",
+        "akka.persistence.snapshot-store.local.dir").map(s => new File(sys.settings.config.getString(s)))
 
     storageLocations.foreach(FileUtils.deleteDirectory)
   }

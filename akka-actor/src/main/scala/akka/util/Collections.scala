@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -49,7 +49,7 @@ private[akka] object Collections {
     }
 
     override lazy val size: Int = iterator.size
-    override def foreach[C](f: To ⇒ C) = iterator foreach f
+    override def foreach[C](f: To => C) = iterator.foreach(f)
   }
 
 }

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -11,4 +11,4 @@ import akka.actor.ActorRef
  * See `Flow.ask` and `Flow.watch`.
  */
 final class WatchedActorTerminatedException(val watchingStageName: String, val ref: ActorRef)
-  extends RuntimeException(s"Actor watched by [$watchingStageName] has terminated! Was: $ref")
+    extends RuntimeException(s"Actor watched by [$watchingStageName] has terminated! Was: $ref")

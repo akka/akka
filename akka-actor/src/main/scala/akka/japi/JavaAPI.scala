@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi
@@ -7,6 +7,7 @@ package akka.japi
 import java.util.Collections.{ emptyList, singletonList }
 
 import akka.util.Collections.EmptyImmutableSeq
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.language.implicitConversions
@@ -82,8 +83,10 @@ object Pair {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Creator]].
  */
+@silent
 @SerialVersionUID(1L)
 trait Creator[T] extends Serializable {
+
   /**
    * This method must return a different instance upon every call.
    */
@@ -139,9 +142,16 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
   @throws(classOf[Exception])
   def apply(x: A, isCheck: Boolean): B
 
-  final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
-  final override def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
-  final override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 ⇒ B1): B1 = try apply(x, false) catch { case NoMatch ⇒ default(x) }
+  final def isDefinedAt(x: A): Boolean =
+    try {
+      apply(x, true); true
+    } catch { case NoMatch => false }
+  final override def apply(x: A): B =
+    try apply(x, false)
+    catch { case NoMatch => throw new MatchError(x) }
+  final override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
+    try apply(x, false)
+    catch { case NoMatch => default(x) }
 }
 
 /**
@@ -151,6 +161,7 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
   def get: A
+
   /**
    * Returns <code>a</code> if this is <code>some(a)</code> or <code>defaultValue</code> if
    * this is <code>none</code>.
@@ -163,6 +174,7 @@ sealed abstract class Option[A] extends java.lang.Iterable[A] {
 }
 
 object Option {
+
   /**
    * <code>Option</code> factory that creates <code>Some</code>
    */
@@ -183,8 +195,8 @@ object Option {
    * Converts a Scala Option to a Java Option
    */
   def fromScalaOption[T](scalaOption: scala.Option[T]): Option[T] = scalaOption match {
-    case scala.Some(r) ⇒ some(r)
-    case scala.None    ⇒ none
+    case scala.Some(r) => some(r)
+    case scala.None    => none
   }
 
   /**
@@ -231,15 +243,16 @@ object Util {
   /**
    * Turns an array into an immutable Scala sequence (by copying it).
    */
-  def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
+  def immutableSeq[T](arr: Array[T]): immutable.Seq[T] =
+    if ((arr ne null) && arr.length > 0) arr.toIndexedSeq else Nil
 
   /**
    * Turns an [[java.lang.Iterable]] into an immutable Scala sequence (by copying it).
    */
   def immutableSeq[T](iterable: java.lang.Iterable[T]): immutable.Seq[T] =
     iterable match {
-      case imm: immutable.Seq[_] ⇒ imm.asInstanceOf[immutable.Seq[T]]
-      case other ⇒
+      case imm: immutable.Seq[_] => imm.asInstanceOf[immutable.Seq[T]]
+      case other =>
         val i = other.iterator()
         if (i.hasNext) {
           val builder = new immutable.VectorBuilder[T]

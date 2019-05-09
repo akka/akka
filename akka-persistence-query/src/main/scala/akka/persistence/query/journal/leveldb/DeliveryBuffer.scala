@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
 
 import akka.stream.actor.ActorPublisher
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
-private[akka] trait DeliveryBuffer[T] { _: ActorPublisher[T] ⇒
+@silent // FIXME Re-write as part of https://github.com/akka/akka/issues/26187
+private[akka] trait DeliveryBuffer[T] { _: ActorPublisher[T] =>
 
   var buf = Vector.empty[T]
 
@@ -22,9 +24,9 @@ private[akka] trait DeliveryBuffer[T] { _: ActorPublisher[T] ⇒
       } else if (totalDemand <= Int.MaxValue) {
         val (use, keep) = buf.splitAt(totalDemand.toInt)
         buf = keep
-        use foreach onNext
+        use.foreach(onNext)
       } else {
-        buf foreach onNext
+        buf.foreach(onNext)
         buf = Vector.empty
       }
     }

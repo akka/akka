@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -10,7 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, UniqueAddress }
 
 object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProvider {
   override def get(system: ActorSystem): DistributedData = super.get(system)
@@ -28,24 +28,33 @@ object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProv
  */
 class DistributedData(system: ExtendedActorSystem) extends Extension {
 
-  private val config = system.settings.config.getConfig("akka.cluster.distributed-data")
-  private val settings = ReplicatorSettings(config)
+  private val settings = ReplicatorSettings(system)
 
-  /**
-   * Returns true if this member is not tagged with the role configured for the
-   * replicas.
-   */
-  def isTerminated: Boolean = Cluster(system).isTerminated || !settings.roles.subsetOf(Cluster(system).selfRoles)
+  implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(Cluster(system).selfUniqueAddress)
 
   /**
    * `ActorRef` of the [[Replicator]] .
    */
   val replicator: ActorRef =
     if (isTerminated) {
-      system.log.warning("Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
+      system.log.warning(
+        "Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
       system.deadLetters
     } else {
-      val name = config.getString("name")
-      system.systemActorOf(Replicator.props(settings), name)
+      system.systemActorOf(Replicator.props(settings), ReplicatorSettings.name(system, None))
     }
+
+  /**
+   * Returns true if this member is not tagged with the role configured for the
+   * replicas.
+   */
+  def isTerminated: Boolean =
+    Cluster(system).isTerminated || !settings.roles.subsetOf(Cluster(system).selfRoles)
+
 }
+
+/**
+ * Cluster non-specific (typed vs untyped) wrapper for [[akka.cluster.UniqueAddress]].
+ */
+@SerialVersionUID(1L)
+final case class SelfUniqueAddress(uniqueAddress: UniqueAddress)

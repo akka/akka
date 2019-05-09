@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -12,7 +12,7 @@ import akka.actor.Identify
 import akka.actor.Props
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.PoisonPill
 
 object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
@@ -27,7 +27,7 @@ object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
 
   class Echo extends Actor {
     def receive = {
-      case m ⇒ sender ! m
+      case m => sender ! m
     }
   }
 }
@@ -36,8 +36,11 @@ class AttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec
 class AttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec
 class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec
 
-class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with DefaultTimeout {
+class AttemptSysMsgRedeliverySpec
+    extends MultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender
+    with DefaultTimeout {
   import AttemptSysMsgRedeliveryMultiJvmSpec._
 
   "AttemptSysMsgRedelivery" must {

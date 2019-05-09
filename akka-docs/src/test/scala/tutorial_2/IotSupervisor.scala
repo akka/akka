@@ -1,11 +1,11 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package tutorial_2
 
 //#iot-supervisor
-package com.lightbend.akka.sample
+package com.example
 
 import akka.actor.{ Actor, ActorLogging, Props }
 

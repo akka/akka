@@ -1,11 +1,12 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
@@ -22,6 +23,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * Once the SPI is final this notice will be removed.
  */
+@silent // deprecatedName(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 abstract class Materializer {
 
   /**
@@ -47,8 +49,8 @@ abstract class Materializer {
    * processing networks.
    */
   def materialize[Mat](
-    runnable:                                              Graph[ClosedShape, Mat],
-    @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
+      runnable: Graph[ClosedShape, Mat],
+      @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
@@ -109,6 +111,6 @@ private[akka] object NoMaterializer extends Materializer {
  */
 @InternalApi
 private[akka] case class MaterializationContext(
-  materializer:        Materializer,
-  effectiveAttributes: Attributes,
-  islandName:          String)
+    materializer: Materializer,
+    effectiveAttributes: Attributes,
+    islandName: String)

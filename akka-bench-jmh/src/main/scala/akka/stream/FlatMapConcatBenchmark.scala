@@ -1,26 +1,22 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.remote.artery.BenchTestSource
-import akka.remote.artery.LatchSink
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
+import akka.remote.artery.{ BenchTestSource, LatchSink }
+import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl._
-import akka.testkit.TestProbe
+import akka.stream.testkit.scaladsl.StreamTestKit
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import akka.stream.impl.fusing.GraphStages
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object FlatMapConcatBenchmark {
   final val OperationsPerInvocation = 100000
@@ -32,16 +28,14 @@ object FlatMapConcatBenchmark {
 class FlatMapConcatBenchmark {
   import FlatMapConcatBenchmark._
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   private implicit val system: ActorSystem = ActorSystem("FlatMapConcatBenchmark", config)
 
@@ -67,9 +61,7 @@ class FlatMapConcatBenchmark {
   def sourceDotSingle(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource
-      .flatMapConcat(Source.single)
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.flatMapConcat(Source.single).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
   }
@@ -80,7 +72,7 @@ class FlatMapConcatBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .flatMapConcat(elem ⇒ new GraphStages.SingleSource(elem))
+      .flatMapConcat(elem => new GraphStages.SingleSource(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -91,9 +83,7 @@ class FlatMapConcatBenchmark {
   def oneElementList(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource
-      .flatMapConcat(n ⇒ Source(n :: Nil))
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.flatMapConcat(n => Source(n :: Nil)).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
   }
@@ -103,27 +93,16 @@ class FlatMapConcatBenchmark {
   def mapBaseline(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource
-      .map(elem ⇒ elem)
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.map(elem => elem).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
   }
 
   private def awaitLatch(latch: CountDownLatch): Unit = {
     if (!latch.await(30, TimeUnit.SECONDS)) {
-      dumpMaterializer()
+      implicit val ec = materializer.system.dispatcher
+      StreamTestKit.printDebugDump(materializer.supervisor)
       throw new RuntimeException("Latch didn't complete in time")
-    }
-  }
-
-  private def dumpMaterializer(): Unit = {
-    materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
-        val probe = TestProbe()(system)
-        impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children = probe.expectMsgType[StreamSupervisor.Children].children
-        children.foreach(_ ! StreamSupervisor.PrintDebugDump)
     }
   }
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
@@ -7,10 +7,11 @@ package akka.actor.testkit.typed.scaladsl
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.actor.testkit.typed.Effect
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
+import akka.event.Logging
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.reflect.ClassTag
@@ -30,74 +31,77 @@ object BehaviorTestKitSpec {
     case class StopChild(child: ActorRef[String]) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
-    case class CreateMessageAdapter[U](messageClass: Class[U], f: U ⇒ Command) extends Command
+    case class CreateMessageAdapter[U](messageClass: Class[U], f: U => Command) extends Command
     case class SpawnAndWatchUnwatch(name: String) extends Command
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
+    case class Log(what: String) extends Command
 
-    val init: Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
-      msg match {
-        case SpawnChild ⇒
-          ctx.spawn(Child.initial, "child")
+    val init: Behavior[Command] = Behaviors.receive[Command] { (context, message) =>
+      message match {
+        case SpawnChild =>
+          context.spawn(Child.initial, "child")
           Behaviors.same
-        case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
-          0.until(numberOfChildren).foreach { i ⇒
-            ctx.spawn(Child.initial, s"child$i")
+        case SpawnChildren(numberOfChildren) if numberOfChildren > 0 =>
+          0.until(numberOfChildren).foreach { i =>
+            context.spawn(Child.initial, s"child$i")
           }
           Behaviors.same
-        case SpawnChildrenWithProps(numberOfChildren, props) if numberOfChildren > 0 ⇒
-          0.until(numberOfChildren).foreach { i ⇒
-            ctx.spawn(Child.initial, s"child$i", props)
+        case SpawnChildrenWithProps(numberOfChildren, props) if numberOfChildren > 0 =>
+          0.until(numberOfChildren).foreach { i =>
+            context.spawn(Child.initial, s"child$i", props)
           }
           Behaviors.same
-        case SpawnAnonymous(numberOfChildren) if numberOfChildren > 0 ⇒
-          0.until(numberOfChildren).foreach { _ ⇒
-            ctx.spawnAnonymous(Child.initial)
+        case SpawnAnonymous(numberOfChildren) if numberOfChildren > 0 =>
+          0.until(numberOfChildren).foreach { _ =>
+            context.spawnAnonymous(Child.initial)
           }
           Behaviors.same
-        case SpawnAnonymousWithProps(numberOfChildren, props) if numberOfChildren > 0 ⇒
-          0.until(numberOfChildren).foreach { _ ⇒
-            ctx.spawnAnonymous(Child.initial, props)
+        case SpawnAnonymousWithProps(numberOfChildren, props) if numberOfChildren > 0 =>
+          0.until(numberOfChildren).foreach { _ =>
+            context.spawnAnonymous(Child.initial, props)
           }
           Behaviors.same
-        case StopChild(child) ⇒
-          ctx.stop(child)
+        case StopChild(child) =>
+          context.stop(child)
           Behaviors.same
-        case SpawnAdapter ⇒
-          ctx.spawnMessageAdapter {
-            r: Reproduce ⇒ SpawnAnonymous(r.times)
+        case SpawnAdapter =>
+          context.spawnMessageAdapter { r: Reproduce =>
+            SpawnAnonymous(r.times)
           }
           Behaviors.same
-        case SpawnAdapterWithName(name) ⇒
-          ctx.spawnMessageAdapter({
-            r: Reproduce ⇒ SpawnAnonymous(r.times)
+        case SpawnAdapterWithName(name) =>
+          context.spawnMessageAdapter({ r: Reproduce =>
+            SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
-        case SpawnAndWatchUnwatch(name) ⇒
-          val c = ctx.spawn(Child.initial, name)
-          ctx.watch(c)
-          ctx.unwatch(c)
+        case SpawnAndWatchUnwatch(name) =>
+          val c = context.spawn(Child.initial, name)
+          context.watch(c)
+          context.unwatch(c)
           Behaviors.same
-        case m @ SpawnAndWatchWith(name) ⇒
-          val c = ctx.spawn(Child.initial, name)
-          ctx.watchWith(c, m)
+        case m @ SpawnAndWatchWith(name) =>
+          val c = context.spawn(Child.initial, name)
+          context.watchWith(c, m)
           Behaviors.same
-        case SpawnSession(replyTo, sessionHandler) ⇒
-          val session = ctx.spawnAnonymous[String](Behaviors.receiveMessage { msg ⇒
-            sessionHandler ! msg
+        case SpawnSession(replyTo, sessionHandler) =>
+          val session = context.spawnAnonymous[String](Behaviors.receiveMessage { message =>
+            sessionHandler ! message
             Behavior.same
           })
           replyTo ! session
           Behaviors.same
-        case KillSession(session, replyTo) ⇒
-          ctx.stop(session)
+        case KillSession(session, replyTo) =>
+          context.stop(session)
           replyTo ! Done
           Behaviors.same
-        case CreateMessageAdapter(messageClass, f) ⇒
-          ctx.messageAdapter(f)(ClassTag(messageClass))
+        case CreateMessageAdapter(messageClass, f) =>
+          context.messageAdapter(f)(ClassTag(messageClass))
           Behaviors.same
-
+        case Log(what) =>
+          context.log.info(what)
+          Behaviors.same
       }
     }
   }
@@ -106,9 +110,9 @@ object BehaviorTestKitSpec {
 
     sealed trait Action
 
-    val initial: Behavior[Action] = Behaviors.receive[Action] { (_, msg) ⇒
-      msg match {
-        case _ ⇒
+    val initial: Behavior[Action] = Behaviors.receive[Action] { (_, message) =>
+      message match {
+        case _ =>
           Behaviors.empty
       }
     }
@@ -152,7 +156,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.run(SpawnChildren(1))
       val ae = intercept[AssertionError] {
         testkit.expectEffectPF {
-          case SpawnedAnonymous(_, _) ⇒
+          case SpawnedAnonymous(_, _) =>
         }
       }
       ae.getMessage should startWith("expected matching effect but got: ")
@@ -162,7 +166,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnChildren(1))
       val childName = testkit.expectEffectPF {
-        case Spawned(_, name, _) ⇒ name
+        case Spawned(_, name, _) => name
       }
       childName should ===("child0")
     }
@@ -170,9 +174,25 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
     "allow assertions using partial functions - match on NoEffect" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       val hasEffects = testkit.expectEffectPF {
-        case NoEffects ⇒ false
+        case NoEffects => false
       }
       hasEffects should ===(false)
+    }
+
+    "allow retrieving log messages issued by behavior" in {
+      val what = "Hello!"
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      testkit.run(Log(what))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, what))
+    }
+
+    "allow clearing log messages issued by behavior" in {
+      val what = "Hello!"
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      testkit.run(Log(what))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, what))
+      testkit.clearLog()
+      testkit.logEntries() shouldBe Seq.empty
     }
   }
 
@@ -228,12 +248,12 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
   "BehaviorTestkit's messageAdapter" must {
     "create message adapters and record effects" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
-      testkit.run(CreateMessageAdapter(classOf[String], (_: String) ⇒ SpawnChildren(1)))
+      testkit.run(CreateMessageAdapter(classOf[String], (_: String) => SpawnChildren(1)))
       testkit.expectEffectType[MessageAdapter[String, Command]]
     }
   }
 
-  "BehaviorTestkit's run" can {
+  "BehaviorTestkit's run".can {
     "run behaviors with messages without canonicalization" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapterWithName("adapter"))
@@ -247,21 +267,16 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       val testkit = BehaviorTestKit(Father.init)
       testkit.run(SpawnAndWatchUnwatch("hello"))
       val child = testkit.childInbox("hello").ref
-      testkit.retrieveAllEffects() should be(Seq(
-        Effects.spawned(Child.initial, "hello", Props.empty),
-        Effects.watched(child),
-        Effects.unwatched(child)
-      ))
+      testkit.retrieveAllEffects() should be(
+        Seq(Effects.spawned(Child.initial, "hello", Props.empty), Effects.watched(child), Effects.unwatched(child)))
     }
 
     "record effects for watchWith" in {
       val testkit = BehaviorTestKit(Father.init)
       testkit.run(SpawnAndWatchWith("hello"))
       val child = testkit.childInbox("hello").ref
-      testkit.retrieveAllEffects() should be(Seq(
-        Effects.spawned(Child.initial, "hello", Props.empty),
-        Effects.watched(child)
-      ))
+      testkit.retrieveAllEffects() should be(
+        Seq(Effects.spawned(Child.initial, "hello", Props.empty), Effects.watched(child)))
     }
   }
 

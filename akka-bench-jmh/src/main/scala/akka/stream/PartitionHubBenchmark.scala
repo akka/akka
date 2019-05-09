@@ -1,25 +1,21 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl._
+import akka.remote.artery.{ BenchTestSource, FixedSizePartitionHub, LatchSink }
+import akka.stream.scaladsl.{ PartitionHub, _ }
+import akka.stream.testkit.scaladsl.StreamTestKit
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.remote.artery.BenchTestSource
-import java.util.concurrent.CountDownLatch
-import akka.remote.artery.LatchSink
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.testkit.TestProbe
-import akka.stream.impl.StreamSupervisor
-import akka.stream.scaladsl.PartitionHub
-import akka.remote.artery.FixedSizePartitionHub
 
 object PartitionHubBenchmark {
   final val OperationsPerInvocation = 100000
@@ -31,16 +27,14 @@ object PartitionHubBenchmark {
 class PartitionHubBenchmark {
   import PartitionHubBenchmark._
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("PartitionHubBenchmark", config)
 
@@ -73,13 +67,13 @@ class PartitionHubBenchmark {
     val N = OperationsPerInvocation
     val latch = new CountDownLatch(NumberOfStreams)
 
-    val source = testSource
-      .runWith(PartitionHub.sink[java.lang.Integer](
-        (size, elem) ⇒ elem.intValue % NumberOfStreams,
-        startAfterNrOfConsumers = NumberOfStreams, bufferSize = BufferSize
-      ))(materializer)
+    val source = testSource.runWith(
+      PartitionHub.sink[java.lang.Integer](
+        (size, elem) => elem.intValue % NumberOfStreams,
+        startAfterNrOfConsumers = NumberOfStreams,
+        bufferSize = BufferSize))(materializer)
 
-    for (_ ← 0 until NumberOfStreams)
+    for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)
 
     if (!latch.await(30, TimeUnit.SECONDS)) {
@@ -94,15 +88,12 @@ class PartitionHubBenchmark {
     val N = OperationsPerInvocation
     val latch = new CountDownLatch(NumberOfStreams)
 
-    val source = testSource
-      .runWith(
-        Sink.fromGraph(new FixedSizePartitionHub(
-          _.intValue % NumberOfStreams,
-          lanes = NumberOfStreams, bufferSize = BufferSize
-        ))
-      )(materializer)
+    val source = testSource.runWith(
+      Sink.fromGraph(
+        new FixedSizePartitionHub(_.intValue % NumberOfStreams, lanes = NumberOfStreams, bufferSize = BufferSize)))(
+      materializer)
 
-    for (_ ← 0 until NumberOfStreams)
+    for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)
 
     if (!latch.await(30, TimeUnit.SECONDS)) {
@@ -112,13 +103,8 @@ class PartitionHubBenchmark {
   }
 
   private def dumpMaterializer(): Unit = {
-    materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
-        val probe = TestProbe()(system)
-        impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children = probe.expectMsgType[StreamSupervisor.Children].children
-        children.foreach(_ ! StreamSupervisor.PrintDebugDump)
-    }
+    implicit val ec = materializer.system.dispatcher
+    StreamTestKit.printDebugDump(materializer.supervisor)
   }
 
 }

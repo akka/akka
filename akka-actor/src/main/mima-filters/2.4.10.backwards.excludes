@@ -1,2 +1,0 @@
-# #21131 new implementation for Akka Typed
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -25,13 +25,11 @@ class RecipeMissedTicks extends RecipeSpec {
 
       //#missed-ticks
       val missedTicks: Flow[Tick, Int, NotUsed] =
-        Flow[Tick].conflateWithSeed(seed = (_) ⇒ 0)(
-          (missedTicks, tick) ⇒ missedTicks + 1)
+        Flow[Tick].conflateWithSeed(seed = (_) => 0)((missedTicks, tick) => missedTicks + 1)
       //#missed-ticks
       val latch = TestLatch(3)
       val realMissedTicks: Flow[Tick, Int, NotUsed] =
-        Flow[Tick].conflateWithSeed(seed = (_) ⇒ 0)(
-          (missedTicks, tick) ⇒ { latch.countDown(); missedTicks + 1 })
+        Flow[Tick].conflateWithSeed(seed = (_) => 0)((missedTicks, tick) => { latch.countDown(); missedTicks + 1 })
 
       tickStream.via(realMissedTicks).to(sink).run()
 

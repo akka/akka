@@ -1,11 +1,11 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testconductor
 
 import akka.testkit.AkkaSpec
-import akka.actor.{ PoisonPill, Props, AddressFromURIString }
+import akka.actor.{ AddressFromURIString, PoisonPill, Props }
 import akka.testkit.ImplicitSender
 import akka.remote.testconductor.Controller.NodeInfo
 import java.net.InetSocketAddress

@@ -1,24 +1,28 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
-import akka.testkit.AkkaSpec
+import akka.cluster.sharding.ShardRegion.EntityId
+import akka.testkit.{ AkkaSpec, TimingTest }
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 
 class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
 
-  /*
   val strategy = EntityRecoveryStrategy.constantStrategy(system, 1.second, 2)
   "ConstantRateEntityRecoveryStrategy" must {
     "recover entities" taggedAs TimingTest in {
+      import system.dispatcher
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
       val startTime = System.nanoTime()
-      val resultWithTimes = strategy.recoverEntities(entities).map(
-        _.map(entityIds ⇒ entityIds → (System.nanoTime() - startTime).nanos))
+      val resultWithTimes =
+        strategy.recoverEntities(entities).map(_.map(entityIds => entityIds -> (System.nanoTime() - startTime).nanos))
 
-      val result = Await.result(Future.sequence(resultWithTimes), 6.seconds)
-        .toVector.sortBy { case (_, duration) ⇒ duration }
+      val result =
+        Await.result(Future.sequence(resultWithTimes), 6.seconds).toVector.sortBy { case (_, duration) => duration }
       result.size should ===(3)
 
       val scheduledEntities = result.map(_._1)
@@ -40,5 +44,4 @@ class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
       result.size should ===(0)
     }
   }
-  */
 }

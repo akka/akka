@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -19,18 +19,20 @@ import akka.testkit.ImplicitSender
 import akka.actor.ActorRef
 import akka.remote.RARP
 import akka.testkit.TestProbe
-import akka.cluster.ClusterSettings.{ DataCenter, DefaultDataCenter }
+import akka.cluster.ClusterSettings.DefaultDataCenter
 
 object ClusterDomainEventPublisherSpec {
   val config = """
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     """
 }
 
-class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
-  with BeforeAndAfterEach with ImplicitSender {
+class ClusterDomainEventPublisherSpec
+    extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
+    with BeforeAndAfterEach
+    with ImplicitSender {
 
   val protocol =
     if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
@@ -53,36 +55,44 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val dUp = TestMember(Address(protocol, "sys", "d", 2552), Up, Set("GRP"))
   val eUp = TestMember(Address(protocol, "sys", "e", 2552), Up, Set("GRP"), OtherDataCenter)
 
-  private def state(gossip: Gossip, self: UniqueAddress, dc: DataCenter) =
+  private def state(gossip: Gossip, self: UniqueAddress) =
     MembershipState(gossip, self, DefaultDataCenter, crossDcConnections = 5)
 
-  val emptyMembershipState = state(Gossip.empty, aUp.uniqueAddress, DefaultDataCenter)
+  val emptyMembershipState = state(Gossip.empty, aUp.uniqueAddress)
 
   val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.uniqueAddress)
-  val state0 = state(g0, aUp.uniqueAddress, DefaultDataCenter)
+  val state0 = state(g0, aUp.uniqueAddress)
   val g1 = Gossip(members = SortedSet(aUp, cJoining)).seen(aUp.uniqueAddress).seen(cJoining.uniqueAddress)
-  val state1 = state(g1, aUp.uniqueAddress, DefaultDataCenter)
+  val state1 = state(g1, aUp.uniqueAddress)
   val g2 = Gossip(members = SortedSet(aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state2 = state(g2, aUp.uniqueAddress, DefaultDataCenter)
+  val state2 = state(g2, aUp.uniqueAddress)
   val g3 = g2.seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress)
-  val state3 = state(g3, aUp.uniqueAddress, DefaultDataCenter)
+  val state3 = state(g3, aUp.uniqueAddress)
   val g4 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state4 = state(g4, aUp.uniqueAddress, DefaultDataCenter)
-  val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress).seen(a51Up.uniqueAddress)
-  val state5 = state(g5, aUp.uniqueAddress, DefaultDataCenter)
+  val state4 = state(g4, aUp.uniqueAddress)
+  val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp))
+    .seen(aUp.uniqueAddress)
+    .seen(bExiting.uniqueAddress)
+    .seen(cUp.uniqueAddress)
+    .seen(a51Up.uniqueAddress)
+  val state5 = state(g5, aUp.uniqueAddress)
   val g6 = Gossip(members = SortedSet(aLeaving, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state6 = state(g6, aUp.uniqueAddress, DefaultDataCenter)
+  val state6 = state(g6, aUp.uniqueAddress)
   val g7 = Gossip(members = SortedSet(aExiting, bExiting, cUp)).seen(aUp.uniqueAddress)
-  val state7 = state(g7, aUp.uniqueAddress, DefaultDataCenter)
-  val g8 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp), overview = GossipOverview(reachability =
-    Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress))).seen(aUp.uniqueAddress)
-  val state8 = state(g8, aUp.uniqueAddress, DefaultDataCenter)
-  val g9 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp), overview = GossipOverview(reachability =
-    Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
-  val state9 = state(g9, aUp.uniqueAddress, DefaultDataCenter)
-  val g10 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp), overview = GossipOverview(reachability =
-    Reachability.empty))
-  val state10 = state(g10, aUp.uniqueAddress, DefaultDataCenter)
+  val state7 = state(g7, aUp.uniqueAddress)
+  val g8 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp),
+    overview = GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress)))
+    .seen(aUp.uniqueAddress)
+  val state8 = state(g8, aUp.uniqueAddress)
+  val g9 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
+    overview = GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
+  val state9 = state(g9, aUp.uniqueAddress)
+  val g10 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
+    overview = GossipOverview(reachability = Reachability.empty))
+  val state10 = state(g10, aUp.uniqueAddress)
 
   // created in beforeEach
   var memberSubscriber: TestProbe = _
@@ -119,7 +129,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
       memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
-      memberSubscriber.expectNoMsg(500 millis)
+      memberSubscriber.expectNoMessage(500 millis)
     }
 
     "publish leader changed when old leader leaves and is removed" in {
@@ -131,7 +141,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! PublishChanges(state7)
       memberSubscriber.expectMsg(MemberExited(aExiting))
       memberSubscriber.expectMsg(LeaderChanged(Some(cUp.address)))
-      memberSubscriber.expectNoMsg(500 millis)
+      memberSubscriber.expectNoMessage(500 millis)
       // at the removed member a an empty gossip is the last thing
       publisher ! PublishChanges(emptyMembershipState)
       memberSubscriber.expectMsg(MemberRemoved(aRemoved, Exiting))
@@ -148,18 +158,18 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       memberSubscriber.expectMsg(LeaderChanged(Some(a51Up.address)))
 
       publisher ! PublishChanges(state5)
-      memberSubscriber.expectNoMsg(500 millis)
+      memberSubscriber.expectNoMessage(500 millis)
     }
 
     "publish role leader changed" in {
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[RoleLeaderChanged]))
       subscriber.expectMsgType[CurrentClusterState]
-      publisher ! PublishChanges(state(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress, DefaultDataCenter))
+      publisher ! PublishChanges(state(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress))
       subscriber.expectMsgAllOf(
         RoleLeaderChanged("GRP", Some(dUp.address)),
         RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(dUp.address)))
-      publisher ! PublishChanges(state(Gossip(members = SortedSet(cUp, dUp)), dUp.uniqueAddress, DefaultDataCenter))
+      publisher ! PublishChanges(state(Gossip(members = SortedSet(cUp, dUp)), dUp.uniqueAddress))
       subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
     }
 
@@ -168,7 +178,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[ClusterDomainEvent]))
       subscriber.expectMsgType[CurrentClusterState]
       // but only to the new subscriber
-      memberSubscriber.expectNoMsg(500 millis)
+      memberSubscriber.expectNoMessage(500 millis)
     }
 
     "send events corresponding to current state when subscribe" in {
@@ -177,7 +187,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! Subscribe(subscriber.ref, InitialStateAsEvents, Set(classOf[MemberEvent], classOf[ReachabilityEvent]))
       subscriber.receiveN(4).toSet should be(Set(MemberUp(aUp), MemberUp(cUp), MemberUp(dUp), MemberExited(bExiting)))
       subscriber.expectMsg(UnreachableMember(dUp))
-      subscriber.expectNoMsg(500 millis)
+      subscriber.expectNoMessage(500 millis)
     }
 
     "send datacenter reachability events" in {
@@ -185,10 +195,10 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! PublishChanges(state9)
       publisher ! Subscribe(subscriber.ref, InitialStateAsEvents, Set(classOf[DataCenterReachabilityEvent]))
       subscriber.expectMsg(UnreachableDataCenter(OtherDataCenter))
-      subscriber.expectNoMsg(500 millis)
+      subscriber.expectNoMessage(500 millis)
       publisher ! PublishChanges(state10)
       subscriber.expectMsg(ReachableDataCenter(OtherDataCenter))
-      subscriber.expectNoMsg(500 millis)
+      subscriber.expectNoMessage(500 millis)
     }
 
     "support unsubscribe" in {
@@ -197,7 +207,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! Unsubscribe(subscriber.ref, Some(classOf[MemberEvent]))
       publisher ! PublishChanges(state3)
-      subscriber.expectNoMsg(500 millis)
+      subscriber.expectNoMessage(500 millis)
       // but memberSubscriber is still subscriber
       memberSubscriber.expectMsg(MemberExited(bExiting))
       memberSubscriber.expectMsg(MemberUp(cUp))
@@ -209,10 +219,10 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! PublishChanges(state2)
       subscriber.expectMsgType[SeenChanged]
-      subscriber.expectNoMsg(500 millis)
+      subscriber.expectNoMessage(500 millis)
       publisher ! PublishChanges(state3)
       subscriber.expectMsgType[SeenChanged]
-      subscriber.expectNoMsg(500 millis)
+      subscriber.expectNoMessage(500 millis)
     }
 
     "publish ClusterShuttingDown and Removed when stopped" in {

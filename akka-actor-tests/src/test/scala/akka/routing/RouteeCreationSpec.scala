@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -21,10 +21,10 @@ class RouteeCreationSpec extends AkkaSpec {
         system.actorSelection(self.path).tell(Identify(self.path), testActor)
         def receive = Actor.emptyBehavior
       })))
-      for (i ← 1 to N) {
+      for (i <- 1 to N) {
         expectMsgType[ActorIdentity] match {
-          case ActorIdentity(_, Some(_)) ⇒ // fine
-          case x                         ⇒ fail(s"routee $i was not found $x")
+          case ActorIdentity(_, Some(_)) => // fine
+          case x                         => fail(s"routee $i was not found $x")
         }
       }
     }
@@ -34,15 +34,15 @@ class RouteeCreationSpec extends AkkaSpec {
       system.actorOf(RoundRobinPool(N).props(Props(new Actor {
         context.parent ! "one"
         def receive = {
-          case "one" ⇒ testActor forward "two"
+          case "one" => testActor.forward("two")
         }
       })))
       val gotit = receiveWhile(messages = N) {
-        case "two" ⇒ lastSender.toString
+        case "two" => lastSender.toString
       }
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       if (gotit.size != N) {
-        fail(s"got only ${gotit.size} from [${gotit mkString ", "}]")
+        fail(s"got only ${gotit.size} from [${gotit.mkString(", ")}]")
       }
     }
 

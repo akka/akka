@@ -1,17 +1,20 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import akka.testkit.AkkaSpec
 import akka.util.Unsafe
+import com.github.ghik.silencer.silent
 
 import scala.util.Random
 
+@silent
 class LruBoundedCacheSpec extends AkkaSpec {
 
-  class TestCache(_capacity: Int, threshold: Int, hashSeed: String = "") extends LruBoundedCache[String, String](_capacity, threshold) {
+  class TestCache(_capacity: Int, threshold: Int, hashSeed: String = "")
+      extends LruBoundedCache[String, String](_capacity, threshold) {
     private var cntr = 0
 
     override protected def compute(k: String): String = {
@@ -66,7 +69,7 @@ class LruBoundedCacheSpec extends AkkaSpec {
     }
 
     "evict oldest when full" in {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val seed = Random.nextInt(1024)
         info(s"Variant $seed")
         val cache = new TestCache(4, 4, seed.toString)
@@ -146,7 +149,7 @@ class LruBoundedCacheSpec extends AkkaSpec {
     }
 
     "work with a lower age threshold" in {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val seed = Random.nextInt(1024)
         info(s"Variant $seed")
         val cache = new TestCache(4, 2, seed.toString)
@@ -203,19 +206,20 @@ class LruBoundedCacheSpec extends AkkaSpec {
     }
 
     "maintain a good average probe distance" in {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val seed = Random.nextInt(1024)
         info(s"Variant $seed")
         // Cache emulating 60% fill rate
         val cache = new TestCache(1024, 600, seed.toString)
 
         // Fill up cache
-        for (_ ← 1 to 10000) cache.getOrCompute(Random.nextString(32))
+        for (_ <- 1 to 10000) cache.getOrCompute(Random.nextString(32))
 
         val stats = cache.stats
         // Have not seen lower than 890
         stats.entries should be > 750
         // Have not seen higher than 1.8
+
         stats.averageProbeDistance should be < 2.5
         // Have not seen higher than 15
         stats.maxProbeDistance should be < 25

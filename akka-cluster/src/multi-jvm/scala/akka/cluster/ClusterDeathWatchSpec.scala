@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -14,8 +14,10 @@ import akka.testkit.TestEvent._
 import akka.actor._
 import akka.remote.RemoteActorRef
 import java.util.concurrent.TimeoutException
+
 import akka.remote.RemoteWatcher
 import akka.cluster.MultiNodeClusterSpec.EndActor
+import org.scalatest.concurrent.ScalaFutures
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -41,8 +43,10 @@ class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec
 class ClusterDeathWatchMultiJvmNode5 extends ClusterDeathWatchSpec
 
 abstract class ClusterDeathWatchSpec
-  extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender
+    with ScalaFutures {
 
   import ClusterDeathWatchMultiJvmSpec._
 
@@ -76,13 +80,13 @@ abstract class ClusterDeathWatchSpec
           context.actorSelection(path3) ! Identify(path3)
 
           def receive = {
-            case ActorIdentity(`path2`, Some(ref)) ⇒
+            case ActorIdentity(`path2`, Some(ref)) =>
               context.watch(ref)
               watchEstablished.countDown
-            case ActorIdentity(`path3`, Some(ref)) ⇒
+            case ActorIdentity(`path3`, Some(ref)) =>
               context.watch(ref)
               watchEstablished.countDown
-            case Terminated(actor) ⇒ testActor ! actor.path
+            case Terminated(actor) => testActor ! actor.path
           }
         }).withDeploy(Deploy.local), name = "observer1")
 
@@ -105,7 +109,9 @@ abstract class ClusterDeathWatchSpec
       }
 
       runOn(second, third, fourth) {
-        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local), name = "subject")
+        system.actorOf(
+          Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
+          name = "subject")
         enterBarrier("subjected-started")
         enterBarrier("watch-established")
         runOn(third) {
@@ -135,26 +141,12 @@ abstract class ClusterDeathWatchSpec
 
     }
 
-    "receive Terminated when watched path doesn't exist" ignore {
-      Thread.sleep(5000)
-      runOn(first) {
-        val path = RootActorPath(second) / "user" / "non-existing"
-        system.actorOf(Props(new Actor {
-          context.watch(context.actorFor(path))
-          def receive = {
-            case t: Terminated ⇒ testActor ! t.actor.path
-          }
-        }).withDeploy(Deploy.local), name = "observer3")
-
-        expectMsg(path)
-      }
-
-      enterBarrier("after-2")
-    }
-
-    "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(20 seconds) {
+    "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(
+      20 seconds) {
       runOn(fifth) {
-        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local), name = "subject5")
+        system.actorOf(
+          Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
+          name = "subject5")
       }
       enterBarrier("subjected-started")
 
@@ -167,7 +159,7 @@ abstract class ClusterDeathWatchSpec
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
           val stats = expectMsgType[RemoteWatcher.Stats]
-          stats.watchingRefs should contain(subject5 → testActor)
+          stats.watchingRefs should contain(subject5 -> testActor)
           stats.watchingAddresses should contain(address(fifth))
         }
       }
@@ -234,10 +226,12 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("first-unavailable")
 
         val timeout = remainingOrDefault
-        try Await.ready(system.whenTerminated, timeout) catch {
-          case _: TimeoutException ⇒
-            fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
-              system.asInstanceOf[ActorSystemImpl].printTree))
+        try Await.ready(system.whenTerminated, timeout)
+        catch {
+          case _: TimeoutException =>
+            fail(
+              "Failed to stop [%s] within [%s] \n%s"
+                .format(system.name, timeout, system.asInstanceOf[ActorSystemImpl].printTree))
         }
 
         // signal to the first node that fourth is done

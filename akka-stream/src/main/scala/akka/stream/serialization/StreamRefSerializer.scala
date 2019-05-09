@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.serialization
@@ -8,14 +8,14 @@ import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.serialization._
-import akka.stream.SourceRef
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
 
 /** INTERNAL API */
 @InternalApi
-private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest
-  with BaseSerializer {
+private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
+    extends SerializerWithStringManifest
+    with BaseSerializer {
 
   private[this] lazy val serialization = SerializationExtension(system)
 
@@ -29,94 +29,93 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
 
   override def manifest(o: AnyRef): String = o match {
     // protocol
-    case _: StreamRefsProtocol.SequencedOnNext       ⇒ SequencedOnNextManifest
-    case _: StreamRefsProtocol.CumulativeDemand      ⇒ CumulativeDemandManifest
+    case _: StreamRefsProtocol.SequencedOnNext ⇒ SequencedOnNextManifest
+    case _: StreamRefsProtocol.CumulativeDemand ⇒ CumulativeDemandManifest
     // handshake
-    case _: StreamRefsProtocol.OnSubscribeHandshake  ⇒ OnSubscribeHandshakeManifest
+    case _: StreamRefsProtocol.OnSubscribeHandshake => OnSubscribeHandshakeManifest
     // completion
-    case _: StreamRefsProtocol.RemoteStreamFailure   ⇒ RemoteSinkFailureManifest
-    case _: StreamRefsProtocol.RemoteStreamCompleted ⇒ RemoteSinkCompletedManifest
+    case _: StreamRefsProtocol.RemoteStreamFailure   => RemoteSinkFailureManifest
+    case _: StreamRefsProtocol.RemoteStreamCompleted => RemoteSinkCompletedManifest
     // refs
-    case _: SourceRefImpl[_]                         ⇒ SourceRefManifest
-    //    case _: MaterializedSourceRef[_]                 ⇒ SourceRefManifest
-    case _: SinkRefImpl[_]                           ⇒ SinkRefManifest
-    //    case _: MaterializedSinkRef[_]                   ⇒ SinkRefManifest
+    case _: SourceRefImpl[_] => SourceRefManifest
+    //    case _: MaterializedSourceRef[_]                 => SourceRefManifest
+    case _: SinkRefImpl[_] => SinkRefManifest
+    //    case _: MaterializedSinkRef[_]                   => SinkRefManifest
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     // protocol
-    case o: StreamRefsProtocol.SequencedOnNext       ⇒ serializeSequencedOnNext(o).toByteArray
-    case d: StreamRefsProtocol.CumulativeDemand      ⇒ serializeCumulativeDemand(d).toByteArray
+    case o: StreamRefsProtocol.SequencedOnNext ⇒ serializeSequencedOnNext(o).toByteArray
+    case d: StreamRefsProtocol.CumulativeDemand ⇒ serializeCumulativeDemand(d).toByteArray
     // handshake
-    case h: StreamRefsProtocol.OnSubscribeHandshake  ⇒ serializeOnSubscribeHandshake(h).toByteArray
+    case h: StreamRefsProtocol.OnSubscribeHandshake => serializeOnSubscribeHandshake(h).toByteArray
     // termination
-    case d: StreamRefsProtocol.RemoteStreamFailure   ⇒ serializeRemoteSinkFailure(d).toByteArray
-    case d: StreamRefsProtocol.RemoteStreamCompleted ⇒ serializeRemoteSinkCompleted(d).toByteArray
+    case d: StreamRefsProtocol.RemoteStreamFailure   => serializeRemoteSinkFailure(d).toByteArray
+    case d: StreamRefsProtocol.RemoteStreamCompleted => serializeRemoteSinkCompleted(d).toByteArray
     // refs
-    case ref: SinkRefImpl[_]                         ⇒ serializeSinkRef(ref).toByteArray
-    //    case ref: MaterializedSinkRef[_]                 ⇒ ??? // serializeSinkRef(ref).toByteArray
-    case ref: SourceRefImpl[_]                       ⇒ serializeSourceRef(ref).toByteArray
-    //    case ref: MaterializedSourceRef[_]               ⇒ serializeSourceRef(ref.).toByteArray
+    case ref: SinkRefImpl[_] => serializeSinkRef(ref).toByteArray
+    //    case ref: MaterializedSinkRef[_]                 => ??? // serializeSinkRef(ref).toByteArray
+    case ref: SourceRefImpl[_] => serializeSourceRef(ref).toByteArray
+    //    case ref: MaterializedSourceRef[_]               => serializeSourceRef(ref.).toByteArray
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     // protocol
-    case OnSubscribeHandshakeManifest ⇒ deserializeOnSubscribeHandshake(bytes)
-    case SequencedOnNextManifest      ⇒ deserializeSequencedOnNext(bytes)
-    case CumulativeDemandManifest     ⇒ deserializeCumulativeDemand(bytes)
-    case RemoteSinkCompletedManifest  ⇒ deserializeRemoteStreamCompleted(bytes)
-    case RemoteSinkFailureManifest    ⇒ deserializeRemoteStreamFailure(bytes)
+    case OnSubscribeHandshakeManifest => deserializeOnSubscribeHandshake(bytes)
+    case SequencedOnNextManifest      => deserializeSequencedOnNext(bytes)
+    case CumulativeDemandManifest     => deserializeCumulativeDemand(bytes)
+    case RemoteSinkCompletedManifest  => deserializeRemoteStreamCompleted(bytes)
+    case RemoteSinkFailureManifest    => deserializeRemoteStreamFailure(bytes)
     // refs
-    case SinkRefManifest              ⇒ deserializeSinkRef(bytes)
-    case SourceRefManifest            ⇒ deserializeSourceRef(bytes)
+    case SinkRefManifest   => deserializeSinkRef(bytes)
+    case SourceRefManifest => deserializeSourceRef(bytes)
   }
 
   // -----
 
   private def serializeCumulativeDemand(d: StreamRefsProtocol.CumulativeDemand): StreamRefMessages.CumulativeDemand = {
-    StreamRefMessages.CumulativeDemand.newBuilder()
-      .setSeqNr(d.seqNr)
-      .build()
+    StreamRefMessages.CumulativeDemand.newBuilder().setSeqNr(d.seqNr).build()
   }
 
-  private def serializeRemoteSinkFailure(d: StreamRefsProtocol.RemoteStreamFailure): StreamRefMessages.RemoteStreamFailure = {
-    StreamRefMessages.RemoteStreamFailure.newBuilder()
-      .setCause(ByteString.copyFrom(d.msg.getBytes))
-      .build()
+  private def serializeRemoteSinkFailure(
+      d: StreamRefsProtocol.RemoteStreamFailure): StreamRefMessages.RemoteStreamFailure = {
+    StreamRefMessages.RemoteStreamFailure.newBuilder().setCause(ByteString.copyFrom(d.msg.getBytes)).build()
   }
 
-  private def serializeRemoteSinkCompleted(d: StreamRefsProtocol.RemoteStreamCompleted): StreamRefMessages.RemoteStreamCompleted = {
-    StreamRefMessages.RemoteStreamCompleted.newBuilder()
-      .setSeqNr(d.seqNr)
-      .build()
+  private def serializeRemoteSinkCompleted(
+      d: StreamRefsProtocol.RemoteStreamCompleted): StreamRefMessages.RemoteStreamCompleted = {
+    StreamRefMessages.RemoteStreamCompleted.newBuilder().setSeqNr(d.seqNr).build()
   }
 
-  private def serializeOnSubscribeHandshake(o: StreamRefsProtocol.OnSubscribeHandshake): StreamRefMessages.OnSubscribeHandshake = {
-    StreamRefMessages.OnSubscribeHandshake.newBuilder()
-      .setTargetRef(StreamRefMessages.ActorRef.newBuilder()
-        .setPath(Serialization.serializedActorPath(o.targetRef)))
+  private def serializeOnSubscribeHandshake(
+      o: StreamRefsProtocol.OnSubscribeHandshake): StreamRefMessages.OnSubscribeHandshake = {
+    StreamRefMessages.OnSubscribeHandshake
+      .newBuilder()
+      .setTargetRef(StreamRefMessages.ActorRef.newBuilder().setPath(Serialization.serializedActorPath(o.targetRef)))
       .build()
   }
 
   private def serializeSequencedOnNext(o: StreamRefsProtocol.SequencedOnNext) = {
-    StreamRefMessages.SequencedOnNext.newBuilder()
+    StreamRefMessages.SequencedOnNext
+      .newBuilder()
       .setSeqNr(o.seqNr)
       .setPayload(ByteString.copyFrom(o.payload.toArray))
       .build()
   }
 
   private def serializeSinkRef(sink: SinkRefImpl[_]): StreamRefMessages.SinkRef = {
-    StreamRefMessages.SinkRef.newBuilder()
-      .setTargetRef(StreamRefMessages.ActorRef.newBuilder()
-        .setPath(Serialization.serializedActorPath(sink.initialPartnerRef)))
+    StreamRefMessages.SinkRef
+      .newBuilder()
+      .setTargetRef(
+        StreamRefMessages.ActorRef.newBuilder().setPath(Serialization.serializedActorPath(sink.initialPartnerRef)))
       .build()
   }
 
   private def serializeSourceRef(source: SourceRefImpl[_]): StreamRefMessages.SourceRef = {
-    StreamRefMessages.SourceRef.newBuilder()
+    StreamRefMessages.SourceRef
+      .newBuilder()
       .setOriginRef(
-        StreamRefMessages.ActorRef.newBuilder()
-          .setPath(Serialization.serializedActorPath(source.initialPartnerRef)))
+        StreamRefMessages.ActorRef.newBuilder().setPath(Serialization.serializedActorPath(source.initialPartnerRef)))
       .build()
   }
 

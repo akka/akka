@@ -1,6 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- * Copyright (C) 2012-2016 Eligotech BV.
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -17,7 +16,7 @@ final case class SnapshotMetadata(persistenceId: String, sequenceNr: Long, times
 //#snapshot-metadata
 
 object SnapshotMetadata {
-  implicit val ordering: Ordering[SnapshotMetadata] = Ordering.fromLessThan[SnapshotMetadata] { (a, b) ⇒
+  implicit val ordering: Ordering[SnapshotMetadata] = Ordering.fromLessThan[SnapshotMetadata] { (a, b) =>
     if (a eq b) false
     else if (a.persistenceId != b.persistenceId) a.persistenceId.compareTo(b.persistenceId) < 0
     else if (a.sequenceNr != b.sequenceNr) a.sequenceNr < b.sequenceNr
@@ -32,8 +31,7 @@ object SnapshotMetadata {
  * @param metadata snapshot metadata.
  */
 @SerialVersionUID(1L)
-final case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
-  extends SnapshotProtocol.Response
+final case class SaveSnapshotSuccess(metadata: SnapshotMetadata) extends SnapshotProtocol.Response
 
 /**
  * Sent to a [[PersistentActor]] after successful deletion of a snapshot.
@@ -41,8 +39,7 @@ final case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
  * @param metadata snapshot metadata.
  */
 @SerialVersionUID(1L)
-final case class DeleteSnapshotSuccess(metadata: SnapshotMetadata)
-  extends SnapshotProtocol.Response
+final case class DeleteSnapshotSuccess(metadata: SnapshotMetadata) extends SnapshotProtocol.Response
 
 /**
  * Sent to a [[PersistentActor]] after successful deletion of specified range of snapshots.
@@ -50,8 +47,7 @@ final case class DeleteSnapshotSuccess(metadata: SnapshotMetadata)
  * @param criteria snapshot selection criteria.
  */
 @SerialVersionUID(1L)
-final case class DeleteSnapshotsSuccess(criteria: SnapshotSelectionCriteria)
-  extends SnapshotProtocol.Response
+final case class DeleteSnapshotsSuccess(criteria: SnapshotSelectionCriteria) extends SnapshotProtocol.Response
 
 /**
  * Sent to a [[PersistentActor]] after failed saving of a snapshot.
@@ -60,8 +56,7 @@ final case class DeleteSnapshotsSuccess(criteria: SnapshotSelectionCriteria)
  * @param cause failure cause.
  */
 @SerialVersionUID(1L)
-final case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
-  extends SnapshotProtocol.Response
+final case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable) extends SnapshotProtocol.Response
 
 /**
  * Sent to a [[PersistentActor]] after failed deletion of a snapshot.
@@ -70,8 +65,7 @@ final case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwabl
  * @param cause failure cause.
  */
 @SerialVersionUID(1L)
-final case class DeleteSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
-  extends SnapshotProtocol.Response
+final case class DeleteSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable) extends SnapshotProtocol.Response
 
 /**
  * Sent to a [[PersistentActor]] after failed deletion of a range of snapshots.
@@ -81,7 +75,7 @@ final case class DeleteSnapshotFailure(metadata: SnapshotMetadata, cause: Throwa
  */
 @SerialVersionUID(1L)
 final case class DeleteSnapshotsFailure(criteria: SnapshotSelectionCriteria, cause: Throwable)
-  extends SnapshotProtocol.Response
+    extends SnapshotProtocol.Response
 
 /**
  * Offers a [[PersistentActor]] a previously saved `snapshot` during recovery. This offer is received
@@ -106,10 +100,10 @@ final case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
  */
 @SerialVersionUID(1L)
 final case class SnapshotSelectionCriteria(
-  maxSequenceNr: Long = Long.MaxValue,
-  maxTimestamp:  Long = Long.MaxValue,
-  minSequenceNr: Long = 0L,
-  minTimestamp:  Long = 0L) {
+    maxSequenceNr: Long = Long.MaxValue,
+    maxTimestamp: Long = Long.MaxValue,
+    minSequenceNr: Long = 0L,
+    minTimestamp: Long = 0L) {
 
   /**
    * INTERNAL API.
@@ -122,10 +116,11 @@ final case class SnapshotSelectionCriteria(
    */
   private[persistence] def matches(metadata: SnapshotMetadata): Boolean =
     metadata.sequenceNr <= maxSequenceNr && metadata.timestamp <= maxTimestamp &&
-      metadata.sequenceNr >= minSequenceNr && metadata.timestamp >= minTimestamp
+    metadata.sequenceNr >= minSequenceNr && metadata.timestamp >= minTimestamp
 }
 
 object SnapshotSelectionCriteria {
+
   /**
    * The latest saved snapshot.
    */
@@ -145,8 +140,7 @@ object SnapshotSelectionCriteria {
   /**
    * Java API.
    */
-  def create(maxSequenceNr: Long, maxTimestamp: Long,
-             minSequenceNr: Long, minTimestamp: Long) =
+  def create(maxSequenceNr: Long, maxTimestamp: Long, minSequenceNr: Long, minTimestamp: Long) =
     SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 
   /**
@@ -169,6 +163,7 @@ object SnapshotSelectionCriteria {
 final case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
 object SelectedSnapshot {
+
   /**
    * Java API, Plugin API.
    */
@@ -185,8 +180,10 @@ private[persistence] object SnapshotProtocol {
 
   /** Marker trait shared by internal snapshot messages. */
   sealed trait Message extends Protocol.Message
+
   /** Internal snapshot command. */
   sealed trait Request extends Message
+
   /** Internal snapshot acknowledgement. */
   sealed trait Response extends Message
 
@@ -198,15 +195,14 @@ private[persistence] object SnapshotProtocol {
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
   final case class LoadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
-    extends Request
+      extends Request
 
   /**
    * Response message to a [[LoadSnapshot]] message.
    *
    * @param snapshot loaded snapshot, if any.
    */
-  final case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long)
-    extends Response
+  final case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long) extends Response
 
   /**
    * Reply message to a failed [[LoadSnapshot]] request.
@@ -220,16 +216,14 @@ private[persistence] object SnapshotProtocol {
    * @param metadata snapshot metadata.
    * @param snapshot snapshot.
    */
-  final case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any)
-    extends Request
+  final case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any) extends Request
 
   /**
    * Instructs snapshot store to delete a snapshot.
    *
    * @param metadata snapshot metadata.
    */
-  final case class DeleteSnapshot(metadata: SnapshotMetadata)
-    extends Request
+  final case class DeleteSnapshot(metadata: SnapshotMetadata) extends Request
 
   /**
    * Instructs snapshot store to delete all snapshots that match `criteria`.
@@ -237,6 +231,5 @@ private[persistence] object SnapshotProtocol {
    * @param persistenceId persistent actor id.
    * @param criteria criteria for selecting snapshots to be deleted.
    */
-  final case class DeleteSnapshots(persistenceId: String, criteria: SnapshotSelectionCriteria)
-    extends Request
+  final case class DeleteSnapshots(persistenceId: String, criteria: SnapshotSelectionCriteria) extends Request
 }

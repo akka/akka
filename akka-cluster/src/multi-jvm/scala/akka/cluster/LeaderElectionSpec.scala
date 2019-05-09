@@ -1,16 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import language.postfixOps
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.duration._
-import scala.collection.immutable
 
 final case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val controller = role("controller")
@@ -35,8 +33,8 @@ class LeaderElectionWithAccrualFailureDetectorMultiJvmNode4 extends LeaderElecti
 class LeaderElectionWithAccrualFailureDetectorMultiJvmNode5 extends LeaderElectionSpec(failureDetectorPuppet = false)
 
 abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def this(failureDetectorPuppet: Boolean) = this(LeaderElectionMultiNodeConfig(failureDetectorPuppet))
 
@@ -68,17 +66,16 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
 
       myself match {
 
-        case `controller` ⇒
-          val leaderAddress = address(leader)
+        case `controller` =>
           enterBarrier("before-shutdown" + n)
           testConductor.exit(leader, 0).await
           enterBarrier("after-shutdown" + n, "after-unavailable" + n, "after-down" + n, "completed" + n)
 
-        case `leader` ⇒
+        case `leader` =>
           enterBarrier("before-shutdown" + n, "after-shutdown" + n)
         // this node will be shutdown by the controller and doesn't participate in more barriers
 
-        case `aUser` ⇒
+        case `aUser` =>
           val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n, "after-shutdown" + n)
 
@@ -93,7 +90,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
           awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (leaderAddress))
           enterBarrier("after-down" + n, "completed" + n)
 
-        case _ if remainingRoles.contains(myself) ⇒
+        case _ if remainingRoles.contains(myself) =>
           // remaining cluster nodes, not shutdown
           val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n, "after-shutdown" + n)

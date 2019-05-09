@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package tutorial_3
@@ -38,7 +38,7 @@ object DeviceInProgress2 {
     override def postStop(): Unit = log.info("Device actor {}-{} stopped", groupId, deviceId)
 
     override def receive: Receive = {
-      case ReadTemperature(id) ⇒
+      case ReadTemperature(id) =>
         sender() ! RespondTemperature(id, lastTemperatureReading)
     }
 

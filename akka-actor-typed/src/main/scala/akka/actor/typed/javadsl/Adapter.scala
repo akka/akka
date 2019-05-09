@@ -1,9 +1,10 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
+import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.EmptyProps
@@ -29,27 +30,67 @@ import akka.japi.Creator
  */
 object Adapter {
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawnAnonymous[T](sys: akka.actor.ActorSystem, behavior: Behavior[T]): ActorRef[T] =
     spawnAnonymous(sys, behavior, EmptyProps)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawnAnonymous[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], props: Props): ActorRef[T] =
     sys.spawnAnonymous(behavior, props)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawn[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], name: String): ActorRef[T] =
     spawn(sys, behavior, name, EmptyProps)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawn[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     sys.spawn(behavior, name, props)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T]): ActorRef[T] =
     spawnAnonymous(ctx, behavior, EmptyProps)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] =
     ctx.spawnAnonymous(behavior, props)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String): ActorRef[T] =
     spawn(ctx, behavior, name, EmptyProps)
 
+  /**
+   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Typed actors default supervision strategy is to stop. Can be overridden with
+   *  `Behaviors.supervise`.
+   */
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     ctx.spawn(behavior, name, props)
 
@@ -58,6 +99,9 @@ object Adapter {
 
   def toUntyped(sys: ActorSystem[_]): akka.actor.ActorSystem =
     sys.toUntyped
+
+  def toUntyped(ctx: ActorContext[_]): actor.ActorContext =
+    ActorContextAdapter.toUntyped(ctx)
 
   def watch[U](ctx: akka.actor.ActorContext, other: ActorRef[U]): Unit =
     ctx.watch(other)
@@ -99,7 +143,7 @@ object Adapter {
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]], deploy: Props): akka.actor.Props =
-    akka.actor.typed.internal.adapter.PropsAdapter(() ⇒ behavior.create(), deploy)
+    akka.actor.typed.internal.adapter.PropsAdapter(() => behavior.create(), deploy)
 
   /**
    * Wrap [[akka.actor.typed.Behavior]] in an untyped [[akka.actor.Props]], i.e. when

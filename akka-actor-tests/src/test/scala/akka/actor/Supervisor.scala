@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -11,7 +11,7 @@ package akka.actor
 class Supervisor(override val supervisorStrategy: SupervisorStrategy) extends Actor {
 
   def receive = {
-    case x: Props ⇒ sender() ! context.actorOf(x)
+    case x: Props => sender() ! context.actorOf(x)
   }
   // need to override the default of stopping all children upon restart, tests rely on keeping them around
   override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}

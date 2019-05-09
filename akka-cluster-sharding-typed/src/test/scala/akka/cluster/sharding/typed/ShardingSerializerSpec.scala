@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -18,11 +18,11 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike
 
     def checkSerialization(obj: AnyRef): Unit = {
       serialization.findSerializerFor(obj) match {
-        case serializer: ShardingSerializer ⇒
+        case serializer: ShardingSerializer =>
           val blob = serializer.toBinary(obj)
           val ref = serializer.fromBinary(blob, serializer.manifest(obj))
           ref should ===(obj)
-        case s ⇒
+        case s =>
           throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
     }

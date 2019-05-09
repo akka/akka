@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
@@ -17,10 +17,12 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  * scheduler control through [[ManualTime.apply()]]
  */
 object ManualTime {
+
   /**
    * Config needed to use the `ExplicitlyTriggeredScheduler`
    */
-  val config: Config = ConfigFactory.parseString("""akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"""")
+  val config: Config =
+    ConfigFactory.parseString("""akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"""")
 
   /**
    * Access the manual scheduler, note that you need to setup the actor system/testkit with [[config()]] for this to
@@ -28,9 +30,11 @@ object ManualTime {
    */
   def apply()(implicit system: ActorSystem[_]): ManualTime =
     system.scheduler match {
-      case sc: akka.testkit.ExplicitlyTriggeredScheduler ⇒ new ManualTime(sc)
-      case _ ⇒ throw new IllegalArgumentException("ActorSystem not configured with explicitly triggered scheduler, " +
-        "make sure to include akka.actor.testkit.typed.scaladsl.ManualTime.config() when setting up the test")
+      case sc: akka.testkit.ExplicitlyTriggeredScheduler => new ManualTime(sc)
+      case _ =>
+        throw new IllegalArgumentException(
+          "ActorSystem not configured with explicitly triggered scheduler, " +
+          "make sure to include akka.actor.testkit.typed.scaladsl.ManualTime.config() when setting up the test")
     }
 
 }

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -9,9 +9,9 @@ import java.util.Collections;
 import java.util.List;
 
 public class Messages {
-  static
-  //#immutable-message
-  public class ImmutableMessage {
+  public
+  // #immutable-message
+  static class ImmutableMessage {
     private final int sequenceNumber;
     private final List<String> values;
 
@@ -28,7 +28,7 @@ public class Messages {
       return values;
     }
   }
-  //#immutable-message
+  // #immutable-message
 
   public static class DoIt {
     private final ImmutableMessage msg;
@@ -60,9 +60,7 @@ public class Messages {
 
     @Override
     public String toString() {
-      return "DoIt{" +
-        "msg=" + msg +
-        '}';
+      return "DoIt{" + "msg=" + msg + '}';
     }
   }
 
@@ -96,13 +94,11 @@ public class Messages {
 
     @Override
     public String toString() {
-      return "Message{" +
-        "str='" + str + '\'' +
-        '}';
+      return "Message{" + "str='" + str + '\'' + '}';
     }
   }
 
-  public static enum Swap {
+  public enum Swap {
     Swap
   }
 
@@ -126,23 +122,16 @@ public class Messages {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       Result other = (Result) obj;
       if (s == null) {
-        if (other.s != null)
-          return false;
-      } else if (!s.equals(other.s))
-        return false;
+        if (other.s != null) return false;
+      } else if (!s.equals(other.s)) return false;
       if (x == null) {
-        if (other.x != null)
-          return false;
-      } else if (!x.equals(other.x))
-        return false;
+        if (other.x != null) return false;
+      } else if (!x.equals(other.x)) return false;
       return true;
     }
   }

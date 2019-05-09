@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
@@ -54,14 +54,17 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
    * See corresponding method on [[ActorTestKit]]
    */
   implicit def system: ActorSystem[Nothing] = testKit.system
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   implicit def testKitSettings: TestKitSettings = testKit.testKitSettings
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   implicit def timeout: Timeout = testKit.timeout
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
@@ -71,14 +74,17 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
    * See corresponding method on [[ActorTestKit]]
    */
   def spawn[T](behavior: Behavior[T]): ActorRef[T] = testKit.spawn(behavior)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = testKit.spawn(behavior, name)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] = testKit.spawn(behavior, props)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
@@ -88,6 +94,7 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](): TestProbe[M] = testKit.createTestProbe[M]()
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */

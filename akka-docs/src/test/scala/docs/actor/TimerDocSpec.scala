@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
@@ -22,10 +22,10 @@ object TimerDocSpec {
     timers.startSingleTimer(TickKey, FirstTick, 500.millis)
 
     def receive = {
-      case FirstTick ⇒
+      case FirstTick =>
         // do something useful here
         timers.startPeriodicTimer(TickKey, Tick, 1.second)
-      case Tick ⇒
+      case Tick =>
       // do something useful here
     }
   }

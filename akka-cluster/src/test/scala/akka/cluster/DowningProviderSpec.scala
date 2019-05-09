@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -9,19 +9,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, Props }
 import akka.testkit.TestKit.{ awaitCond, shutdownActorSystem }
+import akka.util.unused
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
 
-class FailingDowningProvider(system: ActorSystem) extends DowningProvider {
+class FailingDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds
   override def downingActorProps: Option[Props] = {
     throw new ConfigurationException("this provider never works")
   }
 }
 
-class DummyDowningProvider(system: ActorSystem) extends DowningProvider {
+class DummyDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds
 
   val actorPropsAccessed = new AtomicBoolean(false)
@@ -33,8 +34,7 @@ class DummyDowningProvider(system: ActorSystem) extends DowningProvider {
 
 class DowningProviderSpec extends WordSpec with Matchers {
 
-  val baseConf = ConfigFactory.parseString(
-    """
+  val baseConf = ConfigFactory.parseString("""
       akka {
         loglevel = WARNING
         actor.provider = "cluster"
@@ -56,8 +56,9 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "use akka.cluster.AutoDowning if 'auto-down-unreachable-after' is configured" in {
-      val system = ActorSystem("auto-downing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem(
+        "auto-downing",
+        ConfigFactory.parseString("""
           akka.cluster.auto-down-unreachable-after = 18d
         """).withFallback(baseConf))
       Cluster(system).downingProvider shouldBe an[AutoDowning]
@@ -65,8 +66,9 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "use the specified downing provider" in {
-      val system = ActorSystem("auto-downing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem(
+        "auto-downing",
+        ConfigFactory.parseString("""
           akka.cluster.downing-provider-class="akka.cluster.DummyDowningProvider"
         """).withFallback(baseConf))
 
@@ -76,8 +78,9 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "stop the cluster if the downing provider throws exception in props method" in {
-      val system = ActorSystem("auto-downing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem(
+        "auto-downing",
+        ConfigFactory.parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
         """).withFallback(baseConf))
       val cluster = Cluster(system)

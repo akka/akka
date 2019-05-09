@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -14,7 +14,6 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import org.scalatest.exceptions.TestFailedException
@@ -63,41 +62,29 @@ class FlowFlattenMergeSpec extends StreamSpec {
     "propagate early failure from main stream" in assertAllStagesStopped {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
-        Source.failed(ex)
-          .flatMapMerge(1, identity)
-          .runWith(Sink.head)
-          .futureValue
+        Source.failed(ex).flatMapMerge(1, identity).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
     "propagate late failure from main stream" in assertAllStagesStopped {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
-        (Source(List(blocked, blocked)) ++ Source.failed(ex))
-          .flatMapMerge(10, identity)
-          .runWith(Sink.head)
-          .futureValue
+        (Source(List(blocked, blocked)) ++ Source.failed(ex)).flatMapMerge(10, identity).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
     "propagate failure from map function" in assertAllStagesStopped {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
-        Source(1 to 3)
-          .flatMapMerge(10, i ⇒ if (i == 3) throw ex else blocked)
-          .runWith(Sink.head)
-          .futureValue
+        Source(1 to 3).flatMapMerge(10, i => if (i == 3) throw ex else blocked).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
     "bubble up substream exceptions" in assertAllStagesStopped {
       val ex = new Exception("buh")
       val result = intercept[TestFailedException] {
-        Source(List(blocked, blocked, Source.failed(ex)))
-          .flatMapMerge(10, identity)
-          .runWith(Sink.head)
-          .futureValue
-      }.cause.get should ===(ex)
+          Source(List(blocked, blocked, Source.failed(ex))).flatMapMerge(10, identity).runWith(Sink.head).futureValue
+        }.cause.get should ===(ex)
     }
 
     "bubble up substream materialization exception" in assertAllStagesStopped {
@@ -110,7 +97,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
         }
       }
 
-      val result = Source.single(()).flatMapMerge(4, _ ⇒ Source.fromGraph(FailingInnerMat)).runWith(Sink.ignore)
+      val result = Source.single(()).flatMapMerge(4, _ => Source.fromGraph(FailingInnerMat)).runWith(Sink.ignore)
 
       result.failed.futureValue should ===(matFail)
 
@@ -152,8 +139,8 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val latch = TestLatch()
       Source(1 to 3)
         .flatMapMerge(10, {
-          case 1 ⇒ Source.fromPublisher(p)
-          case 2 ⇒
+          case 1 => Source.fromPublisher(p)
+          case 2 =>
             Await.ready(latch, 3.seconds)
             throw ex
         })
@@ -178,33 +165,32 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "work with many concurrently queued events" in assertAllStagesStopped {
-      val p = Source((0 until 100).map(i ⇒ src10(10 * i)))
-        .flatMapMerge(Int.MaxValue, identity)
-        .runWith(TestSink.probe)
+      val p = Source((0 until 100).map(i => src10(10 * i))).flatMapMerge(Int.MaxValue, identity).runWith(TestSink.probe)
       p.within(1.second) {
         p.ensureSubscription()
         p.expectNoMsg()
       }
-      val elems = p.within(1.second)((1 to 1000).map(i ⇒ p.requestNext()).toSet)
+      val elems = p.within(1.second)((1 to 1000).map(i => p.requestNext()).toSet)
       p.expectComplete()
       elems should ===((0 until 1000).toSet)
     }
 
-    val attributesSource = Source.fromGraph(
-      new GraphStage[SourceShape[Attributes]] {
-        val out = Outlet[Attributes]("AttributesSource.out")
-        override val shape: SourceShape[Attributes] = SourceShape(out)
-        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
+    val attributesSource = Source.fromGraph(new GraphStage[SourceShape[Attributes]] {
+      val out = Outlet[Attributes]("AttributesSource.out")
+      override val shape: SourceShape[Attributes] = SourceShape(out)
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with OutHandler {
           override def onPull(): Unit = {
             push(out, inheritedAttributes)
             completeStage()
           }
           setHandler(out, this)
         }
-      })
+    })
 
     "propagate attributes to inner streams" in assertAllStagesStopped {
-      val f = Source.single(attributesSource.addAttributes(Attributes.name("inner")))
+      val f = Source
+        .single(attributesSource.addAttributes(Attributes.name("inner")))
         .flatMapMerge(1, identity)
         .addAttributes(Attributes.name("outer"))
         .runWith(Sink.head)
@@ -216,16 +202,11 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "work with optimized Source.single" in assertAllStagesStopped {
-      Source(0 to 3)
-        .flatMapConcat(Source.single)
-        .runWith(toSeq)
-        .futureValue should ===(0 to 3)
+      Source(0 to 3).flatMapConcat(Source.single).runWith(toSeq).futureValue should ===(0 to 3)
     }
 
     "work with optimized Source.single when slow demand" in assertAllStagesStopped {
-      val probe = Source(0 to 4)
-        .flatMapConcat(Source.single)
-        .runWith(TestSink.probe)
+      val probe = Source(0 to 4).flatMapConcat(Source.single).runWith(TestSink.probe)
 
       probe.request(3)
       probe.expectNext(0)
@@ -240,21 +221,19 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "work with mix of Source.single and other sources when slow demand" in assertAllStagesStopped {
-      val sources: Source[Source[Int, NotUsed], NotUsed] = Source(List(
-        Source.single(0),
-        Source.single(1),
-        Source(2 to 4),
-        Source.single(5),
-        Source(6 to 6),
-        Source.single(7),
-        Source(8 to 10),
-        Source.single(11)
-      ))
+      val sources: Source[Source[Int, NotUsed], NotUsed] = Source(
+        List(
+          Source.single(0),
+          Source.single(1),
+          Source(2 to 4),
+          Source.single(5),
+          Source(6 to 6),
+          Source.single(7),
+          Source(8 to 10),
+          Source.single(11)))
 
       val probe =
-        sources
-          .flatMapConcat(identity)
-          .runWith(TestSink.probe)
+        sources.flatMapConcat(identity).runWith(TestSink.probe)
 
       probe.request(3)
       probe.expectNext(0)
@@ -292,7 +271,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       TraversalBuilder.getSingleSource(singleSourceA) should be(OptionVal.Some(singleSourceA))
 
       TraversalBuilder.getSingleSource(Source.single("c").async) should be(OptionVal.None)
-      TraversalBuilder.getSingleSource(Source.single("d").mapMaterializedValue(_ ⇒ "Mat")) should be(OptionVal.None)
+      TraversalBuilder.getSingleSource(Source.single("d").mapMaterializedValue(_ => "Mat")) should be(OptionVal.None)
     }
 
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream;
@@ -13,24 +13,24 @@ import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 public abstract class StreamTest extends JUnitSuite {
-    final protected ActorSystem system;
-    final private ActorMaterializerSettings settings;
+  protected final ActorSystem system;
+  private final ActorMaterializerSettings settings;
 
-    protected ActorMaterializer materializer;
+  protected ActorMaterializer materializer;
 
-    protected StreamTest(AkkaJUnitActorSystemResource actorSystemResource) {
-        system = actorSystemResource.getSystem();
-        settings = ActorMaterializerSettings.create(system);
-    }
+  protected StreamTest(AkkaJUnitActorSystemResource actorSystemResource) {
+    system = actorSystemResource.getSystem();
+    settings = ActorMaterializerSettings.create(system);
+  }
 
-    @Before
-    public void setUp() {
-        materializer = ActorMaterializer.create(settings, system);
-    }
+  @Before
+  public void setUp() {
+    materializer = ActorMaterializer.create(settings, system);
+  }
 
-    @After
-    public void tearDown() {
-        StreamTestKit.assertAllStagesStopped(materializer);
-        materializer.shutdown();
-    }
+  @After
+  public void tearDown() {
+    StreamTestKit.assertAllStagesStopped(materializer);
+    materializer.shutdown();
+  }
 }

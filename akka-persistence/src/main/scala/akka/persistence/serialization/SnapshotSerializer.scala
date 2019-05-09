@@ -1,6 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- * Copyright (C) 2012-2016 Eligotech BV.
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.serialization
@@ -28,19 +27,13 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
 
   private lazy val serialization = SerializationExtension(system)
 
-  private lazy val transportInformation: Option[Serialization.Information] = {
-    val address = system.provider.getDefaultAddress
-    if (address.hasLocalScope) None
-    else Some(Serialization.Information(address, system))
-  }
-
   /**
    * Serializes a [[Snapshot]]. Delegates serialization of snapshot `data` to a matching
    * `akka.serialization.Serializer`.
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case Snapshot(data) ⇒ snapshotToBinary(data.asInstanceOf[AnyRef])
-    case _              ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case Snapshot(data) => snapshotToBinary(data.asInstanceOf[AnyRef])
+    case _              => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**

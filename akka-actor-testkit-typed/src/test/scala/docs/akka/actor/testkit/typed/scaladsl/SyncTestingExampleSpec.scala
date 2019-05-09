@@ -1,22 +1,24 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.actor.testkit.typed.scaladsl
 
 //#imports
+import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
+import akka.event.Logging
 //#imports
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
 object SyncTestingExampleSpec {
   //#child
-  val childActor = Behaviors.receiveMessage[String] { _ ⇒
+  val childActor = Behaviors.receiveMessage[String] { _ =>
     Behaviors.same[String]
   }
   //#child
@@ -28,23 +30,28 @@ object SyncTestingExampleSpec {
   case class SayHelloToChild(childName: String) extends Cmd
   case object SayHelloToAnonymousChild extends Cmd
   case class SayHello(who: ActorRef[String]) extends Cmd
+  case class LogAndSayHello(who: ActorRef[String]) extends Cmd
 
   val myBehavior = Behaviors.receivePartial[Cmd] {
-    case (ctx, CreateChild(name)) ⇒
-      ctx.spawn(childActor, name)
+    case (context, CreateChild(name)) =>
+      context.spawn(childActor, name)
       Behaviors.same
-    case (ctx, CreateAnonymousChild) ⇒
-      ctx.spawnAnonymous(childActor)
+    case (context, CreateAnonymousChild) =>
+      context.spawnAnonymous(childActor)
       Behaviors.same
-    case (ctx, SayHelloToChild(childName)) ⇒
-      val child: ActorRef[String] = ctx.spawn(childActor, childName)
+    case (context, SayHelloToChild(childName)) =>
+      val child: ActorRef[String] = context.spawn(childActor, childName)
       child ! "hello"
       Behaviors.same
-    case (ctx, SayHelloToAnonymousChild) ⇒
-      val child: ActorRef[String] = ctx.spawnAnonymous(childActor)
+    case (context, SayHelloToAnonymousChild) =>
+      val child: ActorRef[String] = context.spawnAnonymous(childActor)
       child ! "hello stranger"
       Behaviors.same
-    case (_, SayHello(who)) ⇒
+    case (_, SayHello(who)) =>
+      who ! "hello"
+      Behaviors.same
+    case (context, LogAndSayHello(who)) =>
+      context.log.info("Saying hello to {}", who.path.name)
       who ! "hello"
       Behaviors.same
   }
@@ -96,10 +103,21 @@ class SyncTestingExampleSpec extends WordSpec with Matchers {
       //#test-child-message-anonymous
       val testKit = BehaviorTestKit(myBehavior)
       testKit.run(SayHelloToAnonymousChild)
-      // Anonymous actors are created as: $a $b etc
-      val childInbox = testKit.childInbox[String](s"$$a")
+      val child = testKit.expectEffectType[SpawnedAnonymous[String]]
+
+      val childInbox = testKit.childInbox(child.ref)
       childInbox.expectMessage("hello stranger")
       //#test-child-message-anonymous
+    }
+
+    "log a message to the logger" in {
+      //#test-check-logging
+      val testKit = BehaviorTestKit(myBehavior)
+      val inbox = TestInbox[String]("Inboxer")
+      testKit.run(LogAndSayHello(inbox.ref))
+
+      testKit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, "Saying hello to Inboxer"))
+      //#test-check-logging
     }
   }
 }

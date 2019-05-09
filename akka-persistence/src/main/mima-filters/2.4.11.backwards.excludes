@@ -1,4 +1,0 @@
-# synthetic method currentEventsByTag$default$2()Long in class akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal has a different result type in current version, where it is akka.persistence.query.Offset rather than Long
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.currentEventsByTag$default$2")
-# synthetic method eventsByTag$default$2()Long in class akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal has a different result type in current version, where it is akka.persistence.query.Offset rather than Long
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.eventsByTag$default$2")

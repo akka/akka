@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.pattern;
@@ -11,21 +11,24 @@ import akka.actor.AbstractActor;
 import akka.util.Timeout;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class SupervisedAskSpec {
 
-  public Object execute(Class<? extends AbstractActor> someActor,
-      Object message, Timeout timeout, ActorRefFactory actorSystem)
+  public Object execute(
+      Class<? extends AbstractActor> someActor,
+      Object message,
+      Duration timeout,
+      ActorRefFactory actorSystem)
       throws Exception {
     // example usage
     try {
-      ActorRef supervisorCreator = SupervisedAsk
-          .createSupervisorCreator(actorSystem);
-      CompletionStage<Object> finished = SupervisedAsk.askOf(supervisorCreator,
-          Props.create(someActor), message, timeout);
-      FiniteDuration d = timeout.duration();
-      return finished.toCompletableFuture().get(d.length(), d.unit());
+      ActorRef supervisorCreator = SupervisedAsk.createSupervisorCreator(actorSystem);
+      CompletionStage<Object> finished =
+          SupervisedAsk.askOf(supervisorCreator, Props.create(someActor), message, timeout);
+      return finished.toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (Exception e) {
       // exception propagated by supervision
       throw e;

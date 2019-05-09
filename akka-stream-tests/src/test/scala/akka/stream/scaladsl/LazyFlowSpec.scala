@@ -1,12 +1,11 @@
-/**
- * Copyright (C) 2018-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream._
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
@@ -19,29 +18,27 @@ import scala.concurrent.{ Future, Promise }
 
 class LazyFlowSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 1, maxSize = 1)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
   implicit val materializer = ActorMaterializer(settings)
 
   val ex = TE("")
 
   "A LazyFlow" must {
-    def mapF(e: Int): () ⇒ Future[Flow[Int, String, NotUsed]] = () ⇒
-      Future.successful(Flow.fromFunction[Int, String](i ⇒ (i * e).toString))
+    def mapF(e: Int): () => Future[Flow[Int, String, NotUsed]] =
+      () => Future.successful(Flow.fromFunction[Int, String](i => (i * e).toString))
     val flowF = Future.successful(Flow[Int])
     "work in happy case" in assertAllStagesStopped {
-      val probe = Source(2 to 10)
-        .via(Flow.lazyInitAsync[Int, String, NotUsed](mapF(2)))
-        .runWith(TestSink.probe[String])
+      val probe = Source(2 to 10).via(Flow.lazyInitAsync[Int, String, NotUsed](mapF(2))).runWith(TestSink.probe[String])
       probe.request(100)
-      (2 to 10).map(i ⇒ (i * 2).toString).foreach(probe.expectNext)
+      (2 to 10).map(i => (i * 2).toString).foreach(probe.expectNext)
     }
 
     "work with slow flow init" in assertAllStagesStopped {
       val p = Promise[Flow[Int, Int, NotUsed]]()
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val flowProbe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ p.future))
+      val flowProbe = Source
+        .fromPublisher(sourceProbe)
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() => p.future))
         .runWith(TestSink.probe[Int])
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -54,7 +51,7 @@ class LazyFlowSpec extends StreamSpec {
       p.success(Flow[Int])
       flowProbe.request(99)
       flowProbe.expectNext(0)
-      (1 to 10).foreach(i ⇒ {
+      (1 to 10).foreach(i => {
         sourceSub.sendNext(i)
         flowProbe.expectNext(i)
       })
@@ -63,16 +60,15 @@ class LazyFlowSpec extends StreamSpec {
 
     "complete when there was no elements in the stream" in assertAllStagesStopped {
       def flowMaker() = flowF
-      val probe = Source.empty
-        .via(Flow.lazyInitAsync(flowMaker))
-        .runWith(TestSink.probe[Int])
+      val probe = Source.empty.via(Flow.lazyInitAsync(() => flowMaker)).runWith(TestSink.probe[Int])
       probe.request(1).expectComplete()
     }
 
     "complete normally when upstream completes BEFORE the stage has switched to the inner flow" in assertAllStagesStopped {
       val promise = Promise[Flow[Int, Int, NotUsed]]
-      val (pub, sub) = TestSource.probe[Int]
-        .viaMat(Flow.lazyInitAsync(() ⇒ promise.future))(Keep.left)
+      val (pub, sub) = TestSource
+        .probe[Int]
+        .viaMat(Flow.lazyInitAsync(() => promise.future))(Keep.left)
         .toMat(TestSink.probe)(Keep.both)
         .run()
       sub.request(1)
@@ -82,8 +78,9 @@ class LazyFlowSpec extends StreamSpec {
     }
 
     "complete normally when upstream completes AFTER the stage has switched to the inner flow" in assertAllStagesStopped {
-      val (pub, sub) = TestSource.probe[Int]
-        .viaMat(Flow.lazyInitAsync(() ⇒ Future.successful(Flow[Int])))(Keep.left)
+      val (pub, sub) = TestSource
+        .probe[Int]
+        .viaMat(Flow.lazyInitAsync(() => Future.successful(Flow[Int])))(Keep.left)
         .toMat(TestSink.probe)(Keep.both)
         .run()
       sub.request(1)
@@ -95,8 +92,9 @@ class LazyFlowSpec extends StreamSpec {
 
     "fail gracefully when flow factory method failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val probe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ throw ex))
+      val probe = Source
+        .fromPublisher(sourceProbe)
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() => throw ex))
         .runWith(TestSink.probe[Int])
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -109,23 +107,21 @@ class LazyFlowSpec extends StreamSpec {
 
     "fail gracefully when upstream failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val probe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInitAsync(() ⇒ flowF))
-        .runWith(TestSink.probe)
+      val probe = Source.fromPublisher(sourceProbe).via(Flow.lazyInitAsync(() => flowF)).runWith(TestSink.probe)
 
       val sourceSub = sourceProbe.expectSubscription()
       sourceSub.expectRequest(1)
       sourceSub.sendNext(0)
-      probe.request(1)
-        .expectNext(0)
+      probe.request(1).expectNext(0)
       sourceSub.sendError(ex)
       probe.expectError(ex)
     }
 
     "fail gracefully when factory future failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val flowProbe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ Future.failed(ex)))
+      val flowProbe = Source
+        .fromPublisher(sourceProbe)
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() => Future.failed(ex)))
         .runWith(TestSink.probe)
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -136,8 +132,9 @@ class LazyFlowSpec extends StreamSpec {
 
     "cancel upstream when the downstream is cancelled" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val probe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ flowF))
+      val probe = Source
+        .fromPublisher(sourceProbe)
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() => flowF))
         .runWith(TestSink.probe[Int])
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -153,12 +150,13 @@ class LazyFlowSpec extends StreamSpec {
     "fail correctly when factory throw error" in assertAllStagesStopped {
       val msg = "fail!"
       val matFail = TE(msg)
-      val result = Source.single("whatever")
-        .viaMat(Flow.lazyInitAsync(() ⇒ throw matFail))(Keep.right)
+      val result = Source
+        .single("whatever")
+        .viaMat(Flow.lazyInitAsync(() => throw matFail))(Keep.right)
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
-      ScalaFutures.whenReady(result.failed) { e ⇒
+      ScalaFutures.whenReady(result.failed) { e =>
         e.getMessage shouldBe msg
       }
     }

@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
 
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 import scala.collection.immutable
 import scala.concurrent.Await

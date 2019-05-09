@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
@@ -15,13 +15,10 @@ import java.security.SecureRandom
 import scala.util.Try
 
 import akka.actor.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.RemoteTransportException
 import akka.remote.artery.tcp.SecureRandomFactory
-import akka.stream.IgnoreComplete
-import akka.stream.TLSClosing
 import akka.stream.TLSRole
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -30,7 +27,7 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-@ApiMayChange trait SSLEngineProvider {
+trait SSLEngineProvider {
 
   def createServerSSLEngine(): SSLEngine
 
@@ -39,18 +36,17 @@ import javax.net.ssl.TrustManagerFactory
 }
 
 /**
- * Config in akka.remote.netty.ssl.security
+ * Config in akka.remote.classic.netty.ssl.security
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@ApiMayChange class ConfigSSLEngineProvider(
-  protected val log:    MarkerLoggingAdapter,
-  private val settings: SSLSettings) extends SSLEngineProvider {
+class ConfigSSLEngineProvider(protected val log: MarkerLoggingAdapter, private val settings: SSLSettings)
+    extends SSLEngineProvider {
 
-  def this(system: ActorSystem) = this(
-    Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
-    new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
-  )
+  def this(system: ActorSystem) =
+    this(
+      Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
+      new SSLSettings(system.settings.config.getConfig("akka.remote.classic.netty.ssl.security")))
 
   import settings._
 
@@ -61,9 +57,16 @@ import javax.net.ssl.TrustManagerFactory
       ctx.init(keyManagers, trustManagers, rng)
       ctx
     } catch {
-      case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-      case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
+      case e: FileNotFoundException =>
+        throw new RemoteTransportException(
+          "Server SSL connection could not be established because key store could not be loaded",
+          e)
+      case e: IOException =>
+        throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
+      case e: GeneralSecurityException =>
+        throw new RemoteTransportException(
+          "Server SSL connection could not be established because SSL context could not be constructed",
+          e)
     }
   }
 
@@ -73,7 +76,8 @@ import javax.net.ssl.TrustManagerFactory
   protected def loadKeystore(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
     val fin = Files.newInputStream(Paths.get(filename))
-    try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
+    try keyStore.load(fin, password.toCharArray)
+    finally Try(fin.close())
     keyStore
   }
 
@@ -108,10 +112,7 @@ import javax.net.ssl.TrustManagerFactory
     createSSLEngine(sslContext, role)
   }
 
-  private def createSSLEngine(
-    sslContext: SSLContext,
-    role:       TLSRole,
-    closing:    TLSClosing = IgnoreComplete): SSLEngine = {
+  private def createSSLEngine(sslContext: SSLContext, role: TLSRole): SSLEngine = {
 
     val engine = sslContext.createSSLEngine()
 
@@ -126,4 +127,3 @@ import javax.net.ssl.TrustManagerFactory
   }
 
 }
-

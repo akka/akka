@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
-import org.scalactic.ConversionCheckedTripleEquals
+import org.scalactic.TypeCheckedTripleEquals
 
 object TypedMultiMapSpec {
   trait AbstractKey { type Type }
@@ -16,7 +16,7 @@ object TypedMultiMapSpec {
   type KV[K <: AbstractKey] = MyValue[K#Type]
 }
 
-class TypedMultiMapSpec extends WordSpec with Matchers with ConversionCheckedTripleEquals {
+class TypedMultiMapSpec extends WordSpec with Matchers with TypeCheckedTripleEquals {
   import TypedMultiMapSpec._
 
   "A TypedMultiMap" must {
@@ -59,13 +59,11 @@ class TypedMultiMapSpec extends WordSpec with Matchers with ConversionCheckedTri
     }
 
     "reject invalid insertions" in {
-      val m1 = TypedMultiMap.empty[AbstractKey, KV]
-      "m1.inserted(Key(1))(MyValue(42L))" shouldNot compile
+      "TypedMultiMap.empty[AbstractKey, KV].inserted(Key(1))(MyValue(42L))" shouldNot compile
     }
 
     "reject invalid removals" in {
-      val m1 = TypedMultiMap.empty[AbstractKey, KV]
-      "m1.removed(Key(1))(MyValue(42L))" shouldNot compile
+      "TypedMultiMap.empty[AbstractKey, KV].removed(Key(1))(MyValue(42L))" shouldNot compile
     }
 
   }

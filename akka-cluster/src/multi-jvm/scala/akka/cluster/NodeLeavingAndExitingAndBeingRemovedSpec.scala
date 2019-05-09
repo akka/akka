@@ -1,11 +1,9 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -16,8 +14,7 @@ object NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec extends MultiNodeConfig 
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false)
-    .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode1 extends NodeLeavingAndExitingAndBeingRemovedSpec
@@ -25,8 +22,8 @@ class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode2 extends NodeLeavingAndEx
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode3 extends NodeLeavingAndExitingAndBeingRemovedSpec
 
 abstract class NodeLeavingAndExitingAndBeingRemovedSpec
-  extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec._
 

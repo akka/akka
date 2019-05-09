@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- * Adopted from Apache v2 licensed: https://github.com/ilya-epifanov/akka-dns
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -17,11 +16,11 @@ private[akka] object RecordClassSerializer {
 
   def parse(it: ByteIterator): RecordClass = {
     it.getShort match {
-      case 1       ⇒ RecordClass.IN
-      case 2       ⇒ RecordClass.CS
-      case 3       ⇒ RecordClass.CH
-      case 255     ⇒ RecordClass.WILDCARD
-      case unknown ⇒ throw new RuntimeException(s"Unexpected record class $unknown")
+      case 1       => RecordClass.IN
+      case 2       => RecordClass.CS
+      case 3       => RecordClass.CH
+      case 255     => RecordClass.WILDCARD
+      case unknown => throw new RuntimeException(s"Unexpected record class $unknown")
     }
   }
 

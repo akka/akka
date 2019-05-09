@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -24,7 +24,7 @@ object VersionGenerator {
          |}
          |""")))
 
-  def generateVersion(dir: SettingKey[File], locate: File ⇒ File, template: String) = Def.task[Seq[File]] {
+  def generateVersion(dir: SettingKey[File], locate: File => File, template: String) = Def.task[Seq[File]] {
     val file = locate(dir.value)
     val content = template.stripMargin.format(version.value)
     if (!file.exists || IO.read(file) != content) IO.write(file, content)

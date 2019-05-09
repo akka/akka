@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-//#print-refs
-package com.lightbend.akka.sample;
+// #print-refs
+package com.example;
 
-//#print-refs
+// #print-refs
 
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -13,7 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-//#print-refs
+// #print-refs
 import akka.actor.AbstractActor;
 import akka.actor.AbstractActor.Receive;
 import akka.actor.ActorRef;
@@ -21,24 +21,34 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 
 class PrintMyActorRefActor extends AbstractActor {
+  static Props props() {
+    return Props.create(PrintMyActorRefActor.class, PrintMyActorRefActor::new);
+  }
+
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("printit", p -> {
-          ActorRef secondRef = getContext().actorOf(Props.empty(), "second-actor");
-          System.out.println("Second: " + secondRef);
-        })
+        .matchEquals(
+            "printit",
+            p -> {
+              ActorRef secondRef = getContext().actorOf(Props.empty(), "second-actor");
+              System.out.println("Second: " + secondRef);
+            })
         .build();
   }
 }
-//#print-refs
+// #print-refs
 
-//#start-stop
+// #start-stop
 class StartStopActor1 extends AbstractActor {
+  static Props props() {
+    return Props.create(StartStopActor1.class, StartStopActor1::new);
+  }
+
   @Override
   public void preStart() {
     System.out.println("first started");
-    getContext().actorOf(Props.create(StartStopActor2.class), "second");
+    getContext().actorOf(StartStopActor2.props(), "second");
   }
 
   @Override
@@ -49,14 +59,21 @@ class StartStopActor1 extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("stop", s -> {
-          getContext().stop(getSelf());
-        })
+        .matchEquals(
+            "stop",
+            s -> {
+              getContext().stop(getSelf());
+            })
         .build();
   }
 }
 
 class StartStopActor2 extends AbstractActor {
+
+  static Props props() {
+    return Props.create(StartStopActor2.class, StartStopActor2::new);
+  }
+
   @Override
   public void preStart() {
     System.out.println("second started");
@@ -71,27 +88,36 @@ class StartStopActor2 extends AbstractActor {
   // want to handle any messages in the actor.
   @Override
   public Receive createReceive() {
-    return receiveBuilder()
-        .build();
+    return receiveBuilder().build();
   }
 }
-//#start-stop
+// #start-stop
 
-//#supervise
+// #supervise
 class SupervisingActor extends AbstractActor {
-  ActorRef child = getContext().actorOf(Props.create(SupervisedActor.class), "supervised-actor");
+  static Props props() {
+    return Props.create(SupervisingActor.class, SupervisingActor::new);
+  }
+
+  ActorRef child = getContext().actorOf(SupervisedActor.props(), "supervised-actor");
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("failChild", f -> {
-          child.tell("fail", getSelf());
-        })
+        .matchEquals(
+            "failChild",
+            f -> {
+              child.tell("fail", getSelf());
+            })
         .build();
   }
 }
 
 class SupervisedActor extends AbstractActor {
+  static Props props() {
+    return Props.create(SupervisedActor.class, SupervisedActor::new);
+  }
+
   @Override
   public void preStart() {
     System.out.println("supervised actor started");
@@ -105,21 +131,23 @@ class SupervisedActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("fail", f -> {
-          System.out.println("supervised actor fails now");
-          throw new Exception("I failed!");
-        })
+        .matchEquals(
+            "fail",
+            f -> {
+              System.out.println("supervised actor fails now");
+              throw new Exception("I failed!");
+            })
         .build();
   }
 }
-//#supervise
+// #supervise
 
-//#print-refs
+// #print-refs
 public class ActorHierarchyExperiments {
   public static void main(String[] args) throws java.io.IOException {
     ActorSystem system = ActorSystem.create("testSystem");
 
-    ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
+    ActorRef firstRef = system.actorOf(PrintMyActorRefActor.props(), "first-actor");
     System.out.println("First: " + firstRef);
     firstRef.tell("printit", ActorRef.noSender());
 
@@ -131,8 +159,7 @@ public class ActorHierarchyExperiments {
     }
   }
 }
-//#print-refs
-
+// #print-refs
 
 class ActorHierarchyExperimentsTest extends JUnitSuite {
   static ActorSystem system;
@@ -150,17 +177,17 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
 
   @Test
   public void testStartAndStopActors() {
-    //#start-stop-main
-    ActorRef first = system.actorOf(Props.create(StartStopActor1.class), "first");
+    // #start-stop-main
+    ActorRef first = system.actorOf(StartStopActor1.props(), "first");
     first.tell("stop", ActorRef.noSender());
-    //#start-stop-main
+    // #start-stop-main
   }
 
   @Test
   public void testSuperviseActors() {
-    //#supervise-main
-    ActorRef supervisingActor = system.actorOf(Props.create(SupervisingActor.class), "supervising-actor");
+    // #supervise-main
+    ActorRef supervisingActor = system.actorOf(SupervisingActor.props(), "supervising-actor");
     supervisingActor.tell("failChild", ActorRef.noSender());
-    //#supervise-main
+    // #supervise-main
   }
 }

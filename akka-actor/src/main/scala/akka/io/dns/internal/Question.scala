@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- * Adopted from Apache v2 licensed: https://github.com/ilya-epifanov/akka-dns
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -20,6 +19,7 @@ private[akka] final case class Question(name: String, qType: RecordType, qClass:
     RecordClassSerializer.write(out, qClass)
   }
 }
+
 /**
  * INTERNAL API
  */

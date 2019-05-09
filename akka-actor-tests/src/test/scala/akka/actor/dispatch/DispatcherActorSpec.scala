@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dispatch
@@ -7,9 +7,9 @@ package akka.actor.dispatch
 import language.postfixOps
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import java.util.concurrent.atomic.{ AtomicBoolean }
-import akka.testkit.{ AkkaSpec }
-import akka.actor.{ Props, Actor }
+import java.util.concurrent.atomic.AtomicBoolean
+import akka.testkit.AkkaSpec
+import akka.actor.{ Actor, Props }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.testkit.DefaultTimeout
@@ -38,8 +38,8 @@ object DispatcherActorSpec {
     """
   class TestActor extends Actor {
     def receive = {
-      case "Hello"   ⇒ sender() ! "World"
-      case "Failure" ⇒ throw new RuntimeException("Expected exception; to test fault-tolerance")
+      case "Hello"   => sender() ! "World"
+      case "Failure" => throw new RuntimeException("Expected exception; to test fault-tolerance")
     }
   }
 
@@ -48,7 +48,7 @@ object DispatcherActorSpec {
   }
   class OneWayTestActor extends Actor {
     def receive = {
-      case "OneWay" ⇒ OneWayTestActor.oneWay.countDown()
+      case "OneWay" => OneWayTestActor.oneWay.countDown()
     }
   }
 }
@@ -56,13 +56,11 @@ object DispatcherActorSpec {
 class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with DefaultTimeout {
   import DispatcherActorSpec._
 
-  private val unit = TimeUnit.MILLISECONDS
-
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
       val actor = system.actorOf(Props[OneWayTestActor].withDispatcher("test-dispatcher"))
-      val result = actor ! "OneWay"
+      actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }
@@ -80,25 +78,25 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       val latch = new CountDownLatch(100)
       val start = new CountDownLatch(1)
       val fastOne = system.actorOf(
-        Props(new Actor { def receive = { case "sabotage" ⇒ works.set(false) } })
-          .withDispatcher(throughputDispatcher))
+        Props(new Actor { def receive = { case "sabotage" => works.set(false) } }).withDispatcher(throughputDispatcher))
 
-      val slowOne = system.actorOf(
-        Props(new Actor {
-          def receive = {
-            case "hogexecutor" ⇒ { sender() ! "OK"; start.await }
-            case "ping"        ⇒ if (works.get) latch.countDown()
-          }
-        }).withDispatcher(throughputDispatcher))
+      val slowOne = system.actorOf(Props(new Actor {
+        def receive = {
+          case "hogexecutor" => { sender() ! "OK"; start.await() }
+          case "ping"        => if (works.get) latch.countDown()
+        }
+      }).withDispatcher(throughputDispatcher))
 
       assert(Await.result(slowOne ? "hogexecutor", timeout.duration) === "OK")
-      (1 to 100) foreach { _ ⇒ slowOne ! "ping" }
+      (1 to 100).foreach { _ =>
+        slowOne ! "ping"
+      }
       fastOne ! "sabotage"
       start.countDown()
       latch.await(10, TimeUnit.SECONDS)
       system.stop(fastOne)
       system.stop(slowOne)
-      assert(latch.getCount() === 0)
+      assert(latch.getCount() === 0L)
     }
 
     "respect throughput deadline" in {
@@ -110,20 +108,18 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       val start = new CountDownLatch(1)
       val ready = new CountDownLatch(1)
 
-      val fastOne = system.actorOf(
-        Props(new Actor {
-          def receive = {
-            case "ping" ⇒ if (works.get) latch.countDown(); context.stop(self)
-          }
-        }).withDispatcher(throughputDispatcher))
+      val fastOne = system.actorOf(Props(new Actor {
+        def receive = {
+          case "ping" => if (works.get) latch.countDown(); context.stop(self)
+        }
+      }).withDispatcher(throughputDispatcher))
 
-      val slowOne = system.actorOf(
-        Props(new Actor {
-          def receive = {
-            case "hogexecutor" ⇒ { ready.countDown(); start.await }
-            case "ping"        ⇒ { works.set(false); context.stop(self) }
-          }
-        }).withDispatcher(throughputDispatcher))
+      val slowOne = system.actorOf(Props(new Actor {
+        def receive = {
+          case "hogexecutor" => { ready.countDown(); start.await() }
+          case "ping"        => { works.set(false); context.stop(self) }
+        }
+      }).withDispatcher(throughputDispatcher))
 
       slowOne ! "hogexecutor"
       slowOne ! "ping"

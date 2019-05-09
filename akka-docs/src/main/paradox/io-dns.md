@@ -1,5 +1,19 @@
 # DNS Extension
 
+@@@ warning
+
+`async-dns` does not support:
+
+* [Local hosts file](https://github.com/akka/akka/issues/25846) e.g. `/etc/hosts` on Unix systems
+* The [nsswitch.conf](https://linux.die.net/man/5/nsswitch.conf) file (no plan to support)
+
+Additionally, while search domains are supported through configuration, detection of the system configured
+[Search domains](https://github.com/akka/akka/issues/25825) is only supported on systems that provide this 
+configuration through a `/etc/resolv.conf` file, i.e. it isn't supported on Windows or OSX, and none of the 
+environment variables that are usually supported on most \*nix OSes are supported.
+
+@@@
+
 @@@ note
 
 The `async-dns` API is marked as `ApiMayChange` as more information is expected to be added to the protocol.
@@ -27,7 +41,7 @@ Java
 :  @@snip [DnsCompileOnlyDocTest.java](/akka-docs/src/test/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #resolve }
 
 Alternatively the `IO(Dns)` actor can be interacted with directly. However this exposes the different protocols of the DNS provider.
-`inet-adddress` uses `Dns.Resolved` and `Dns.Resolved` where as the `async-dns` uses `DnsProtocol.Resolve` and `DnsProtocol.Resolved`. 
+`inet-adddress` uses `Dns.Resolve` and `Dns.Resolved` where as the `async-dns` uses `DnsProtocol.Resolve` and `DnsProtocol.Resolved`. 
 The reason for the difference is `inet-address` predates `async-dns` and `async-dns` exposes additional information such as SRV records 
 and it wasn't possible to evolve the original API in a backward compatible way.
 

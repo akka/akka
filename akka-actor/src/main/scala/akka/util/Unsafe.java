@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util;
@@ -46,7 +46,7 @@ public final class Unsafe {
     public static void copyUSAsciiStrToBytes(String str, byte[] bytes) {
         if (isJavaVersion9Plus) {
             final byte[] chars = (byte[]) instance.getObject(str, stringValueFieldOffset);
-            System.arraycopy(chars, 0, bytes, 0, chars.length);
+            System.arraycopy(chars, 0, bytes, 0, str.length());
         } else {
             final char[] chars = (char[]) instance.getObject(str, stringValueFieldOffset);
             int i = 0;
@@ -63,7 +63,7 @@ public final class Unsafe {
 
         if (isJavaVersion9Plus) {
             final byte[] chars = (byte[]) instance.getObject(str, stringValueFieldOffset);
-            while (i < chars.length) {
+            while (i < str.length()) {
                 long x = s0 ^ (long)chars[i++]; // Mix character into PRNG state
                 long y = s1;
 
@@ -76,7 +76,7 @@ public final class Unsafe {
             }
         } else {
             final char[] chars = (char[]) instance.getObject(str, stringValueFieldOffset);
-            while (i < chars.length) {
+            while (i < str.length()) {
                 long x = s0 ^ (long)chars[i++]; // Mix character into PRNG state
                 long y = s1;
 

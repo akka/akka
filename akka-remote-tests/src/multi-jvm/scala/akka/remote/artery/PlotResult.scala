@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -7,7 +7,7 @@ package akka.remote.artery
 final case class PlotResult(values: Vector[(String, Number)] = Vector.empty) {
 
   def add(key: String, value: Number): PlotResult =
-    copy(values = values :+ (key → value))
+    copy(values = values :+ (key -> value))
 
   def addAll(p: PlotResult): PlotResult =
     copy(values ++ p.values)
@@ -21,4 +21,7 @@ final case class PlotResult(values: Vector[(String, Number)] = Vector.empty) {
 
 }
 
-final case class LatencyPlots(plot50: PlotResult = PlotResult(), plot90: PlotResult = PlotResult(), plot99: PlotResult = PlotResult())
+final case class LatencyPlots(
+    plot50: PlotResult = PlotResult(),
+    plot90: PlotResult = PlotResult(),
+    plot99: PlotResult = PlotResult())

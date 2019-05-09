@@ -163,19 +163,16 @@ Java
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
+The easiest way to run this example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the `SimpleClusterApp`.
 
 ## Joining to Seed Nodes
 
 @@@ note
   When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, Azure, Mesos or others which maintain 
   DNS or other ways of discovering nodes, you may want to use the automatic joining process implemented by the open source
-  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
+  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module.
 @@@
 
 ### Joining configured seed nodes
@@ -227,7 +224,7 @@ and don't stop all of them at the same time.
 Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want
 to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service
 discovery (such as managed DNS). The open source Akka Management library includes the
-[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles
+[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module which handles
 just that. Please refer to its documentation for more details.
 
 ### Programatically joining to seed nodes with `joinSeedNodes`
@@ -523,13 +520,10 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the `Terminated` message to the watching actor when the
 unreachable cluster node has been downed and removed.
 
-The easiest way to run **Worker Dial-in Example** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+The easiest way to run **Worker Dial-in Example** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Worker Dial-in Example** sample.
+ 
 ## Node Roles
 
 Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
@@ -815,7 +809,7 @@ From JMX you can:
  * mark any node in the cluster as down
  * tell any node in the cluster to leave
 
-Member nodes are identified by their address, in format *akka.<protocol>://<actor-system-name>@<hostname>:<port>*.
+Member nodes are identified by their address, in format *akka.**protocol**://**actor-system-name**@**hostname**:**port***.
 
 <a id="cluster-command-line"></a>
 ### Command Line
@@ -874,40 +868,19 @@ You can silence the logging of cluster events at info level with configuration p
 akka.cluster.log-info = off
 ```
 
+You can enable verbose logging of cluster events at info level, e.g. for temporary troubleshooting, with configuration property:
+
+```
+akka.cluster.log-info-verbose = on
+```
+
 <a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
-Under the hood the cluster extension is implemented with actors and it can be necessary
-to create a bulkhead for those actors to avoid disturbance from other actors. Especially
-the heartbeating actors that is used for failure detection can generate false positives
-if they are not given a chance to run at regular intervals.
-For this purpose you can define a separate dispatcher to be used for the cluster actors:
-
-```
-akka.cluster.use-dispatcher = cluster-dispatcher
-
-cluster-dispatcher {
-  type = "Dispatcher"
-  executor = "fork-join-executor"
-  fork-join-executor {
-    parallelism-min = 2
-    parallelism-max = 4
-  }
-}
-```
-
-@@@ note
-
-Normally it should not be necessary to configure a separate dispatcher for the Cluster.
-The default-dispatcher should be sufficient for performing the Cluster tasks, i.e. `akka.cluster.use-dispatcher`
-should not be changed. If you have Cluster related problems when using the default-dispatcher that is typically an
-indication that you are running blocking or CPU intensive actors/tasks on the default-dispatcher.
-Use dedicated dispatchers for such actors/tasks instead of running them on the default-dispatcher,
-because that may starve system internal tasks.
-Related config properties: `akka.cluster.use-dispatcher = akka.cluster.cluster-dispatcher`.
-Corresponding default values: `akka.cluster.use-dispatcher =`.
-
-@@@
+Under the hood the cluster extension is implemented with actors. To protect them against
+disturbance from user actors they are by default run on the internal dispatcher configured
+under `akka.actor.internal-dispatcher`. The cluster actors can potentially be isolated even
+further onto their own dispatcher using the setting `akka.cluster.use-dispatcher`.
 
 ### Configuration Compatibility Check
 

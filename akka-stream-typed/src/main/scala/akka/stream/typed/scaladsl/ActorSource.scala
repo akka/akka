@@ -1,11 +1,11 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed._
-import akka.stream.OverflowStrategy
+import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl._
 
 /**
@@ -48,11 +48,15 @@ object ActorSource {
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def actorRef[T](
-    completionMatcher: PartialFunction[T, Unit],
-    failureMatcher:    PartialFunction[T, Throwable],
-    bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] =
-    Source.actorRef[T](
-      completionMatcher.asInstanceOf[PartialFunction[Any, Unit]],
-      failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]],
-      bufferSize, overflowStrategy).mapMaterializedValue(actorRefAdapter)
+      completionMatcher: PartialFunction[T, Unit],
+      failureMatcher: PartialFunction[T, Throwable],
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] =
+    Source
+      .actorRef[T](
+        completionMatcher.asInstanceOf[PartialFunction[Any, Unit]].andThen(_ => CompletionStrategy.Draining),
+        failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]],
+        bufferSize,
+        overflowStrategy)
+      .mapMaterializedValue(actorRefAdapter)
 }

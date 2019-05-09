@@ -1,25 +1,18 @@
-/**
- *  Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Address
-import akka.actor.Props
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.routing.Broadcast
-import akka.routing.ConsistentHashingGroup
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.routing.GetRoutees
-import akka.routing.Routees
+import akka.routing.{ Broadcast, ConsistentHashingGroup, GetRoutees, Routees }
 import akka.testkit._
+
+import scala.concurrent.Await
 
 object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
 
@@ -29,8 +22,8 @@ object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
   class Destination extends Actor {
     var receivedMessages = Set.empty[Any]
     def receive = {
-      case Get ⇒ sender() ! Collected(receivedMessages)
-      case m   ⇒ receivedMessages += m
+      case Get => sender() ! Collected(receivedMessages)
+      case m   => receivedMessages += m
     }
   }
 
@@ -46,18 +39,12 @@ class ClusterConsistentHashingGroupMultiJvmNode1 extends ClusterConsistentHashin
 class ClusterConsistentHashingGroupMultiJvmNode2 extends ClusterConsistentHashingGroupSpec
 class ClusterConsistentHashingGroupMultiJvmNode3 extends ClusterConsistentHashingGroupSpec
 
-abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterConsistentHashingGroupMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with DefaultTimeout {
+abstract class ClusterConsistentHashingGroupSpec
+    extends MultiNodeSpec(ClusterConsistentHashingGroupMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender
+    with DefaultTimeout {
   import ClusterConsistentHashingGroupMultiJvmSpec._
-
-  /**
-   * Fills in self address for local ActorRef
-   */
-  private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
-  }
 
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
@@ -71,7 +58,7 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
 
     "send to same destinations from different nodes" taggedAs LongRunningTest in {
       def hashMapping: ConsistentHashMapping = {
-        case s: String ⇒ s
+        case s: String => s
       }
       val paths = List("/user/dest")
       val router = system.actorOf(
@@ -82,7 +69,7 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
       // it may take some time until router receives cluster member events
       awaitAssert { currentRoutees(router).size should ===(3) }
       val keys = List("A", "B", "C", "D", "E", "F", "G")
-      for (_ ← 1 to 10; k ← keys) { router ! k }
+      for (_ <- 1 to 10; k <- keys) { router ! k }
       enterBarrier("messages-sent")
       router ! Broadcast(Get)
       val a = expectMsgType[Collected].messages

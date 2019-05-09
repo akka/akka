@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,14 +7,17 @@ package akka.remote
 import akka.event.Logging.LogLevel
 import akka.event.{ Logging, LoggingAdapter }
 import akka.actor.{ ActorSystem, Address }
+import com.github.ghik.silencer.silent
 
 import scala.runtime.AbstractFunction2
 
+@silent
 @SerialVersionUID(1L)
 sealed trait RemotingLifecycleEvent extends Serializable {
   def logLevel: Logging.LogLevel
 }
 
+@silent
 @SerialVersionUID(1L)
 sealed trait AssociationEvent extends RemotingLifecycleEvent {
   def localAddress: Address
@@ -28,11 +31,8 @@ sealed trait AssociationEvent extends RemotingLifecycleEvent {
 }
 
 @SerialVersionUID(1L)
-final case class AssociatedEvent(
-  localAddress:  Address,
-  remoteAddress: Address,
-  inbound:       Boolean)
-  extends AssociationEvent {
+final case class AssociatedEvent(localAddress: Address, remoteAddress: Address, inbound: Boolean)
+    extends AssociationEvent {
 
   protected override def eventName: String = "Associated"
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
@@ -40,22 +40,20 @@ final case class AssociatedEvent(
 }
 
 @SerialVersionUID(1L)
-final case class DisassociatedEvent(
-  localAddress:  Address,
-  remoteAddress: Address,
-  inbound:       Boolean)
-  extends AssociationEvent {
+final case class DisassociatedEvent(localAddress: Address, remoteAddress: Address, inbound: Boolean)
+    extends AssociationEvent {
   protected override def eventName: String = "Disassociated"
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
 }
 
 @SerialVersionUID(1L)
 final case class AssociationErrorEvent(
-  cause:         Throwable,
-  localAddress:  Address,
-  remoteAddress: Address,
-  inbound:       Boolean,
-  logLevel:      Logging.LogLevel) extends AssociationEvent {
+    cause: Throwable,
+    localAddress: Address,
+    remoteAddress: Address,
+    inbound: Boolean,
+    logLevel: Logging.LogLevel)
+    extends AssociationEvent {
   protected override def eventName: String = "AssociationError"
   override def toString: String = s"${super.toString}: Error [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"
   def getCause: Throwable = cause
@@ -95,8 +93,8 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
   override def logLevel: Logging.LogLevel = Logging.WarningLevel
   override val toString: String =
     s"Association to [$address] having UID [$longUid] is irrecoverably failed. UID is now quarantined and all " +
-      "messages to this UID will be delivered to dead letters. Remote ActorSystem must be restarted to recover " +
-      "from this situation."
+    "messages to this UID will be delivered to dead letters. Remote ActorSystem must be restarted to recover " +
+    "from this situation."
 
   // For binary compatibility
 
@@ -106,23 +104,26 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
   @deprecated("Use long uid", "2.4.x")
   def uid: Int = longUid.toInt
 
+  @silent
   @deprecated("Use long uid copy method", "2.4.x")
-  def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid)
+  def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid.toLong)
 }
 
 /**
  * The `uniqueAddress` was quarantined but it was due to normal shutdown or cluster leaving/exiting.
  */
 @SerialVersionUID(1L)
-final case class GracefulShutdownQuarantinedEvent(uniqueAddress: UniqueAddress, reason: String) extends RemotingLifecycleEvent {
+final case class GracefulShutdownQuarantinedEvent(uniqueAddress: UniqueAddress, reason: String)
+    extends RemotingLifecycleEvent {
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
   override val toString: String =
     s"Association to [${uniqueAddress.address}] having UID [${uniqueAddress.uid}] has been stopped. All " +
-      s"messages to this UID will be delivered to dead letters. Reason: $reason "
+    s"messages to this UID will be delivered to dead letters. Reason: $reason "
 }
 
 @SerialVersionUID(1L)
-final case class ThisActorSystemQuarantinedEvent(localAddress: Address, remoteAddress: Address) extends RemotingLifecycleEvent {
+final case class ThisActorSystemQuarantinedEvent(localAddress: Address, remoteAddress: Address)
+    extends RemotingLifecycleEvent {
   override def logLevel: LogLevel = Logging.WarningLevel
   override val toString: String = s"The remote system ${remoteAddress} has quarantined this system ${localAddress}."
 }

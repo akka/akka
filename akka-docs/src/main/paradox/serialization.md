@@ -259,7 +259,7 @@ The recommended approach to do deep serialization of internal actor state is to 
 ## Disabling the Java Serializer
 
 Since the `2.4.11` release of Akka it is possible to entirely disable the default Java Serialization mechanism.
-For compatibility reasons, the current (non-@ref:[Artery](remoting-artery.md)) remoting still uses Java
+For compatibility reasons, the current (non-Artery) @ref:[Remoting](remoting.md) still uses Java
 serialization for some classes, however you can disable it in this remoting implementation as well by following
 the steps below.
 
@@ -298,7 +298,7 @@ Since the release of Artery, Akka internals do not rely on Java serialization an
 @@@ warning
 
 Please note Akka 2.5 by default does not use any Java Serialization for its own internal messages, unlike 2.4 where
-by default it sill did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
+by default it still did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
 example during a rolling deployment you should first enable `additional-serialization-bindings` on the old systems.
 You must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
 configurations will cause deserialization errors on the receiving nodes. These additional serialization bindings are

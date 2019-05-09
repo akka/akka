@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -13,6 +13,7 @@ package akka
 sealed abstract class NotUsed
 
 case object NotUsed extends NotUsed {
+
   /**
    * Java API: the singleton instance
    */

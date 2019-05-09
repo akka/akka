@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
-import akka.annotation.InternalApi
 import akka.cluster.ddata.ORMap.ZeroTag
 
 object LWWMap {
+
   /**
    * INTERNAL API
    */
@@ -21,6 +22,7 @@ object LWWMap {
   private val _empty: LWWMap[Any, Any] = new LWWMap(new ORMap(ORSet.empty, Map.empty, zeroTag = LWWMapTag))
   def empty[A, B]: LWWMap[A, B] = _empty.asInstanceOf[LWWMap[A, B]]
   def apply(): LWWMap[Any, Any] = _empty
+
   /**
    * Java API
    */
@@ -55,10 +57,11 @@ object LWWMap {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class LWWMap[A, B] private[akka] (
-  private[akka] val underlying: ORMap[A, LWWRegister[B]])
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
-  import LWWRegister.{ Clock, defaultClock }
+final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, LWWRegister[B]])
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
+  import LWWRegister.{ defaultClock, Clock }
 
   type T = LWWMap[A, B]
   type D = ORMap.DeltaOp
@@ -66,7 +69,7 @@ final class LWWMap[A, B] private[akka] (
   /**
    * Scala API: All entries of the map.
    */
-  def entries: Map[A, B] = underlying.entries.map { case (k, r) ⇒ k → r.value }
+  def entries: Map[A, B] = underlying.entries.map { case (k, r) => k -> r.value }
 
   /**
    * Java API: All entries of the map.
@@ -87,6 +90,12 @@ final class LWWMap[A, B] private[akka] (
   /**
    * Adds an entry to the map
    */
+  def :+(entry: (A, B))(implicit node: SelfUniqueAddress): LWWMap[A, B] = {
+    val (key, value) = entry
+    put(node, key, value)
+  }
+
+  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def +(entry: (A, B))(implicit node: Cluster): LWWMap[A, B] = {
     val (key, value) = entry
     put(node, key, value)
@@ -95,8 +104,12 @@ final class LWWMap[A, B] private[akka] (
   /**
    * Adds an entry to the map
    */
+  def put(node: SelfUniqueAddress, key: A, value: B): LWWMap[A, B] =
+    put(node.uniqueAddress, key, value, defaultClock[B])
+
+  @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(node: Cluster, key: A, value: B): LWWMap[A, B] =
-    put(node, key, value, defaultClock[B])
+    put(node.selfUniqueAddress, key, value, defaultClock[B])
 
   /**
    * Adds an entry to the map.
@@ -106,6 +119,10 @@ final class LWWMap[A, B] private[akka] (
    * increasing version number from a database record that is used for optimistic
    * concurrency control.
    */
+  def put(node: SelfUniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] =
+    put(node.uniqueAddress, key, value, clock)
+
+  @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(node: Cluster, key: A, value: B, clock: Clock[B]): LWWMap[A, B] =
     put(node.selfUniqueAddress, key, value, clock)
 
@@ -117,16 +134,17 @@ final class LWWMap[A, B] private[akka] (
    * increasing version number from a database record that is used for optimistic
    * concurrency control.
    */
+  @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(key: A, value: B)(implicit node: Cluster, clock: Clock[B] = defaultClock[B]): LWWMap[A, B] =
-    put(node, key, value, clock)
+    put(node.selfUniqueAddress, key, value, clock)
 
   /**
    * INTERNAL API
    */
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] = {
     val newRegister = underlying.get(key) match {
-      case Some(r) ⇒ r.withValue(node, value, clock)
-      case None    ⇒ LWWRegister(node, value, clock)
+      case Some(r) => r.withValue(node, value, clock)
+      case None    => LWWRegister(node, value, clock)
     }
     new LWWMap(underlying.put(node, key, newRegister))
   }
@@ -136,6 +154,7 @@ final class LWWMap[A, B] private[akka] (
    * Note that if there is a conflicting update on another node the entry will
    * not be removed after merge.
    */
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def -(key: A)(implicit node: Cluster): LWWMap[A, B] = remove(node, key)
 
   /**
@@ -143,6 +162,10 @@ final class LWWMap[A, B] private[akka] (
    * Note that if there is a conflicting update on another node the entry will
    * not be removed after merge.
    */
+  def remove(node: SelfUniqueAddress, key: A): LWWMap[A, B] =
+    remove(node.uniqueAddress, key)
+
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def remove(node: Cluster, key: A): LWWMap[A, B] =
     remove(node.selfUniqueAddress, key)
 
@@ -180,8 +203,8 @@ final class LWWMap[A, B] private[akka] (
   override def toString: String = s"LWW$entries" //e.g. LWWMap(a -> 1, b -> 2)
 
   override def equals(o: Any): Boolean = o match {
-    case other: LWWMap[_, _] ⇒ underlying == other.underlying
-    case _                   ⇒ false
+    case other: LWWMap[_, _] => underlying == other.underlying
+    case _                   => false
   }
 
   override def hashCode: Int = underlying.hashCode

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.typed
@@ -22,24 +22,24 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
   override def identifier = 41
 
   override def manifest(msg: AnyRef) = msg match {
-    case _: Ping ⇒ PingManifest
-    case Pong    ⇒ PongManifest
+    case _: Ping => PingManifest
+    case Pong    => PongManifest
   }
 
   override def toBinary(msg: AnyRef) = msg match {
-    case Ping(who) ⇒
+    case Ping(who) =>
       actorRefResolver.toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
-    case Pong ⇒
+    case Pong =>
       Array.emptyByteArray
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String) = {
     manifest match {
-      case PingManifest ⇒
+      case PingManifest =>
         val str = new String(bytes, StandardCharsets.UTF_8)
         val ref = actorRefResolver.resolveActorRef[Pong.type](str)
         Ping(ref)
-      case PongManifest ⇒
+      case PongManifest =>
         Pong
     }
   }

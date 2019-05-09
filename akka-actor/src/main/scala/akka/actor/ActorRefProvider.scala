@@ -1,26 +1,24 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
 import akka.util.Helpers
-import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
+
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
-
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.dispatch.Mailboxes
 import akka.serialization.Serialization
 import akka.util.OptionVal
 
@@ -112,49 +110,14 @@ import akka.util.OptionVal
    * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
   private[akka] def actorOf(
-    system:        ActorSystemImpl,
-    props:         Props,
-    supervisor:    InternalActorRef,
-    path:          ActorPath,
-    systemService: Boolean,
-    deploy:        Option[Deploy],
-    lookupDeploy:  Boolean,
-    async:         Boolean): InternalActorRef
-
-  /**
-   * INTERNAL API
-   *
-   * Create actor reference for a specified local or remote path. If no such
-   * actor exists, it will be (equivalent to) a dead letter reference.
-   *
-   * Actor references acquired with `actorFor` do not always include the full information
-   * about the underlying actor identity and therefore such references do not always compare
-   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(path: ActorPath): InternalActorRef
-
-  /**
-   * INTERNAL API
-   *
-   * Create actor reference for a specified local or remote path, which will
-   * be parsed using java.net.URI. If no such actor exists, it will be
-   * (equivalent to) a dead letter reference. If `s` is a relative URI, resolve
-   * it relative to the given ref.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(ref: InternalActorRef, s: String): InternalActorRef
-
-  /**
-   * INTERNAL API
-   *
-   * Create actor reference for the specified child path starting at the
-   * given starting point. This method always returns an actor which is “logically local”,
-   * i.e. it cannot be used to obtain a reference to an actor which is not
-   * physically or logically attached to this actor system.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(ref: InternalActorRef, p: Iterable[String]): InternalActorRef
+      system: ActorSystemImpl,
+      props: Props,
+      supervisor: InternalActorRef,
+      path: ActorPath,
+      systemService: Boolean,
+      deploy: Option[Deploy],
+      lookupDeploy: Boolean,
+      async: Boolean): InternalActorRef
 
   /**
    * Create actor reference for a specified path. If no such
@@ -195,12 +158,15 @@ import akka.util.OptionVal
  * Interface implemented by ActorSystem and ActorContext, the only two places
  * from which you can get fresh actors.
  */
-@implicitNotFound("implicit ActorRefFactory required: if outside of an Actor you need an implicit ActorSystem, inside of an actor this should be the implicit ActorContext")
+@implicitNotFound(
+  "implicit ActorRefFactory required: if outside of an Actor you need an implicit ActorSystem, inside of an actor this should be the implicit ActorContext")
 trait ActorRefFactory {
+
   /**
    * INTERNAL API
    */
   protected def systemImpl: ActorSystemImpl
+
   /**
    * INTERNAL API
    */
@@ -254,88 +220,6 @@ trait ActorRefFactory {
   def actorOf(props: Props, name: String): ActorRef
 
   /**
-   * INTERNAL API
-   *
-   * Look-up an actor by path; if it does not exist, returns a reference to
-   * the dead-letter mailbox of the [[akka.actor.ActorSystem]]. If the path
-   * point to an actor which is not local, no attempt is made during this
-   * call to verify that the actor it represents does exist or is alive; use
-   * `watch(ref)` to be notified of the target’s termination, which is also
-   * signaled if the queried path cannot be resolved.
-   *
-   * Actor references acquired with `actorFor` do not always include the full information
-   * about the underlying actor identity and therefore such references do not always compare
-   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(path: ActorPath): ActorRef = provider.actorFor(path)
-
-  /**
-   * INTERNAL API
-   *
-   * Look-up an actor by path represented as string.
-   *
-   * Absolute URIs like `akka://appname/user/actorA` are looked up as described
-   * for look-ups by `actorOf(ActorPath)`.
-   *
-   * Relative URIs like `/service/actorA/childB` are looked up relative to the
-   * root path of the [[akka.actor.ActorSystem]] containing this factory and as
-   * described for look-ups by `actorOf(Iterable[String])`.
-   *
-   * Relative URIs like `myChild/grandChild` or `../myBrother` are looked up
-   * relative to the current context as described for look-ups by
-   * `actorOf(Iterable[String])`
-   *
-   * Actor references acquired with `actorFor` do not always include the full information
-   * about the underlying actor identity and therefore such references do not always compare
-   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(path: String): ActorRef = provider.actorFor(lookupRoot, path)
-
-  /**
-   * INTERNAL API
-   *
-   * Look-up an actor by applying the given path elements, starting from the
-   * current context, where `".."` signifies the parent of an actor.
-   *
-   * Example:
-   * {{{
-   * class MyActor extends Actor {
-   *   def receive = {
-   *     case msg =>
-   *       ...
-   *       val target = context.actorFor(Seq("..", "myBrother", "myNephew"))
-   *       ...
-   *   }
-   * }
-   * }}}
-   *
-   * For maximum performance use a collection with efficient head & tail operations.
-   *
-   * Actor references acquired with `actorFor` do not always include the full information
-   * about the underlying actor identity and therefore such references do not always compare
-   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(path: Iterable[String]): ActorRef = provider.actorFor(lookupRoot, path)
-
-  /**
-   * INTERNAL API
-   *
-   * Java API: Look-up an actor by applying the given path elements, starting from the
-   * current context, where `".."` signifies the parent of an actor.
-   *
-   * For maximum performance use a collection with efficient head & tail operations.
-   *
-   * Actor references acquired with `actorFor` do not always include the full information
-   * about the underlying actor identity and therefore such references do not always compare
-   * equal to references acquired with `actorOf`, `sender`, or `context.self`.
-   */
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] def actorFor(path: java.lang.Iterable[String]): ActorRef = provider.actorFor(lookupRoot, immutableSeq(path))
-
-  /**
    * Construct an [[akka.actor.ActorSelection]] from the given path, which is
    * parsed for wildcards (these are replaced by regular expressions
    * internally). No attempt is made to verify the existence of any part of
@@ -343,13 +227,13 @@ trait ActorRefFactory {
    * replies in order to resolve the matching set of actors.
    */
   def actorSelection(path: String): ActorSelection = path match {
-    case RelativeActorPath(elems) ⇒
+    case RelativeActorPath(elems) =>
       if (elems.isEmpty) ActorSelection(provider.deadLetters, "")
       else if (elems.head.isEmpty) ActorSelection(provider.rootGuardian, elems.tail)
       else ActorSelection(lookupRoot, elems)
-    case ActorPathExtractor(address, elems) ⇒
+    case ActorPathExtractor(address, elems) =>
       ActorSelection(provider.rootGuardianAt(address), elems)
-    case _ ⇒
+    case _ =>
       ActorSelection(provider.deadLetters, "")
   }
 
@@ -383,6 +267,7 @@ private[akka] final case class StopChild(child: ActorRef)
  * INTERNAL API
  */
 private[akka] object SystemGuardian {
+
   /**
    * For the purpose of orderly shutdown it's possible
    * to register interest in the termination of systemGuardian
@@ -401,12 +286,13 @@ private[akka] object LocalActorRefProvider {
   /*
    * Root and user guardian
    */
-  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor
-    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy)
+      extends Actor
+      with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
     def receive = {
-      case Terminated(_)    ⇒ context.stop(self)
-      case StopChild(child) ⇒ context.stop(child)
+      case Terminated(_)    => context.stop(self)
+      case StopChild(child) => context.stop(child)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -417,32 +303,33 @@ private[akka] object LocalActorRefProvider {
    * System guardian
    */
   private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
-    extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+      extends Actor
+      with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     import SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(`guardian`) ⇒
+      case Terminated(`guardian`) =>
         // time for the systemGuardian to stop, but first notify all the
         // termination hooks, they will reply with TerminationHookDone
         // and when all are done the systemGuardian is stopped
         context.become(terminating)
-        terminationHooks foreach { _ ! TerminationHook }
+        terminationHooks.foreach { _ ! TerminationHook }
         stopWhenAllTerminationHooksDone()
-      case Terminated(a) ⇒
+      case Terminated(a) =>
         // a registered, and watched termination hook terminated before
         // termination process of guardian has started
         terminationHooks -= a
-      case StopChild(child) ⇒ context.stop(child)
-      case RegisterTerminationHook if sender() != context.system.deadLetters ⇒
+      case StopChild(child) => context.stop(child)
+      case RegisterTerminationHook if sender() != context.system.deadLetters =>
         terminationHooks += sender()
-        context watch sender()
+        context.watch(sender())
     }
 
     def terminating: Receive = {
-      case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
-      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender())
+      case Terminated(a)       => stopWhenAllTerminationHooksDone(a)
+      case TerminationHookDone => stopWhenAllTerminationHooksDone(sender())
     }
 
     def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
@@ -470,34 +357,31 @@ private[akka] object LocalActorRefProvider {
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 private[akka] class LocalActorRefProvider private[akka] (
-  _systemName:           String,
-  override val settings: ActorSystem.Settings,
-  val eventStream:       EventStream,
-  val dynamicAccess:     DynamicAccess,
-  override val deployer: Deployer,
-  _deadLetters:          Option[ActorPath ⇒ InternalActorRef])
-  extends ActorRefProvider {
+    _systemName: String,
+    override val settings: ActorSystem.Settings,
+    val eventStream: EventStream,
+    val dynamicAccess: DynamicAccess,
+    override val deployer: Deployer,
+    _deadLetters: Option[ActorPath => InternalActorRef])
+    extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
   def this(
-    _systemName:   String,
-    settings:      ActorSystem.Settings,
-    eventStream:   EventStream,
-    dynamicAccess: DynamicAccess) =
-    this(
-      _systemName,
-      settings,
-      eventStream,
-      dynamicAccess,
-      new Deployer(settings, dynamicAccess),
-      None)
+      _systemName: String,
+      settings: ActorSystem.Settings,
+      eventStream: EventStream,
+      dynamicAccess: DynamicAccess) =
+    this(_systemName, settings, eventStream, dynamicAccess, new Deployer(settings, dynamicAccess), None)
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
-  private[akka] val log: MarkerLoggingAdapter = Logging.withMarker(eventStream, getClass.getName + "(" + rootPath.address + ")")
+  private[akka] val log: MarkerLoggingAdapter =
+    Logging.withMarker(eventStream, getClass.getName + "(" + rootPath.address + ")")
 
   override val deadLetters: InternalActorRef =
-    _deadLetters.getOrElse((p: ActorPath) ⇒ new DeadLetterActorRef(this, p, eventStream)).apply(rootPath / "deadLetters")
+    _deadLetters
+      .getOrElse((p: ActorPath) => new DeadLetterActorRef(this, p, eventStream))
+      .apply(rootPath / "deadLetters")
 
   private[this] final val terminationPromise: Promise[Terminated] = Promise[Terminated]()
 
@@ -523,11 +407,12 @@ private[akka] class LocalActorRefProvider private[akka] (
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    def isWalking = causeOfTermination.future.isCompleted == false
+    def isWalking = !causeOfTermination.future.isCompleted
 
     override def stop(): Unit = {
-      causeOfTermination.trySuccess(Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent
-      terminationPromise.tryCompleteWith(causeOfTermination.future) // Signal termination downstream, idempotent
+      causeOfTermination.trySuccess(
+        Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent
+      terminationPromise.completeWith(causeOfTermination.future) // Signal termination downstream, idempotent
     }
 
     @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
@@ -536,19 +421,19 @@ private[akka] class LocalActorRefProvider private[akka] (
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
       if (isWalking)
         message match {
-          case null ⇒ throw InvalidMessageException("Message is null")
-          case _    ⇒ log.error(s"$this received unexpected message [$message]")
+          case null => throw InvalidMessageException("Message is null")
+          case _    => log.error(s"$this received unexpected message [$message]")
         }
 
     override def sendSystemMessage(message: SystemMessage): Unit = if (isWalking) {
       message match {
-        case Failed(child: InternalActorRef, ex, _) ⇒
+        case Failed(child: InternalActorRef, ex, _) =>
           log.error(ex, s"guardian $child failed, shutting down!")
           causeOfTermination.tryFailure(ex)
           child.stop()
-        case Supervise(_, _)           ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case _: DeathWatchNotification ⇒ stop()
-        case _                         ⇒ log.error(s"$this received unexpected system message [$message]")
+        case Supervise(_, _)           => // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case _: DeathWatchNotification => stop()
+        case _                         => log.error(s"$this received unexpected system message [$message]")
       }
     }
   }
@@ -575,13 +460,15 @@ private[akka] class LocalActorRefProvider private[akka] (
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
   private def guardianSupervisorStrategyConfigurator =
-    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, EmptyImmutableSeq).get
+    dynamicAccess
+      .createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, EmptyImmutableSeq)
+      .get
 
   /**
    * Overridable supervision strategy to be used by the “/user” guardian.
    */
   protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case ex ⇒
+    case ex =>
       log.error(ex, "guardian failed, shutting down system")
       SupervisorStrategy.Stop
   }
@@ -596,7 +483,7 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  private lazy val defaultDispatcher = system.dispatchers.defaultGlobalDispatcher
+  private def internalDispatcher = system.dispatchers.internalDispatcher
 
   private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
 
@@ -604,15 +491,15 @@ private[akka] class LocalActorRefProvider private[akka] (
     new LocalActorRef(
       system,
       Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
-      defaultDispatcher,
+      internalDispatcher,
       defaultMailbox,
       theOneWhoWalksTheBubblesOfSpaceTime,
       rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
-        case "temp"        ⇒ tempContainer
-        case "deadLetters" ⇒ deadLetters
-        case other         ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case "temp"        => tempContainer
+        case "deadLetters" => deadLetters
+        case other         => extraNames.getOrElse(other, super.getSingleChild(other))
       }
     }
 
@@ -623,8 +510,19 @@ private[akka] class LocalActorRefProvider private[akka] (
   override lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
-    val ref = new LocalActorRef(system, system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
-      defaultDispatcher, defaultMailbox, rootGuardian, rootPath / "user")
+    // make user provided guardians not run on internal dispatcher
+    val dispatcher =
+      system.guardianProps match {
+        case None        => internalDispatcher
+        case Some(props) => system.dispatchers.lookup(props.dispatcher)
+      }
+    val ref = new LocalActorRef(
+      system,
+      system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
+      dispatcher,
+      defaultMailbox,
+      rootGuardian,
+      rootPath / "user")
     cell.initChild(ref)
     ref.start()
     ref
@@ -634,8 +532,12 @@ private[akka] class LocalActorRefProvider private[akka] (
     val cell = rootGuardian.underlying
     cell.reserveChild("system")
     val ref = new LocalActorRef(
-      system, Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
-      defaultDispatcher, defaultMailbox, rootGuardian, rootPath / "system")
+      system,
+      Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
+      internalDispatcher,
+      defaultMailbox,
+      rootGuardian,
+      rootPath / "system")
     cell.initChild(ref)
     ref.start()
     ref
@@ -662,43 +564,9 @@ private[akka] class LocalActorRefProvider private[akka] (
     eventStream.startDefaultLoggers(_system)
   }
 
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] override def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
-    case RelativeActorPath(elems) ⇒
-      if (elems.isEmpty) {
-        log.debug("look-up of empty path string [{}] fails (per definition)", path)
-        deadLetters
-      } else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
-      else actorFor(ref, elems)
-    case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
-    case _ ⇒
-      log.debug("look-up of unknown path [{}] failed", path)
-      deadLetters
-  }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] override def actorFor(path: ActorPath): InternalActorRef =
-    if (path.root == rootPath) actorFor(rootGuardian, path.elements)
-    else {
-      log.debug("look-up of foreign ActorPath [{}] failed", path)
-      deadLetters
-    }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  private[akka] override def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
-    if (path.isEmpty) {
-      log.debug("look-up of empty path sequence fails (per definition)")
-      deadLetters
-    } else ref.getChild(path.iterator) match {
-      case Nobody ⇒
-        log.debug("look-up of path sequence [/{}] failed", path.mkString("/"))
-        new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
-      case x ⇒ x
-    }
-
   def resolveActorRef(path: String): ActorRef = path match {
-    case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ resolveActorRef(rootGuardian, elems)
-    case _ ⇒
+    case ActorPathExtractor(address, elems) if address == rootPath.address => resolveActorRef(rootGuardian, elems)
+    case _ =>
       log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
@@ -708,7 +576,8 @@ private[akka] class LocalActorRefProvider private[akka] (
     else {
       log.debug(
         "Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
-        path, rootPath)
+        path,
+        rootPath)
       deadLetters
     }
   }
@@ -720,39 +589,49 @@ private[akka] class LocalActorRefProvider private[akka] (
     if (pathElements.isEmpty) {
       log.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
       deadLetters
-    } else ref.getChild(pathElements.iterator) match {
-      case Nobody ⇒
-        if (log.isDebugEnabled)
-          log.debug(
-            "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
+    } else
+      ref.getChild(pathElements.iterator) match {
+        case Nobody =>
+          if (log.isDebugEnabled)
+            log.debug(
+              "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
               "It has probably been stopped, using deadLetters.",
-            pathElements.mkString("/"))
-        new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
-      case x ⇒ x
-    }
+              pathElements.mkString("/"))
+          new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
+        case x => x
+      }
 
-  def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
-              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
+  def actorOf(
+      system: ActorSystemImpl,
+      props: Props,
+      supervisor: InternalActorRef,
+      path: ActorPath,
+      systemService: Boolean,
+      deploy: Option[Deploy],
+      lookupDeploy: Boolean,
+      async: Boolean): InternalActorRef = {
     props.deploy.routerConfig match {
-      case NoRouter ⇒
+      case NoRouter =>
         if (settings.DebugRouterMisconfiguration) {
-          deployer.lookup(path) foreach { d ⇒
+          deployer.lookup(path).foreach { d =>
             if (d.routerConfig != NoRouter)
-              log.warning("Configuration says that [{}] should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.", path)
+              log.warning(
+                "Configuration says that [{}] should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.",
+                path)
           }
         }
 
         val props2 =
           // mailbox and dispatcher defined in deploy should override props
           (if (lookupDeploy) deployer.lookup(path) else deploy) match {
-            case Some(d) ⇒
+            case Some(d) =>
               (d.dispatcher, d.mailbox) match {
-                case (Deploy.NoDispatcherGiven, Deploy.NoMailboxGiven) ⇒ props
-                case (dsp, Deploy.NoMailboxGiven)                      ⇒ props.withDispatcher(dsp)
-                case (Deploy.NoMailboxGiven, mbx)                      ⇒ props.withMailbox(mbx)
-                case (dsp, mbx)                                        ⇒ props.withDispatcher(dsp).withMailbox(mbx)
+                case (Deploy.NoDispatcherGiven, Deploy.NoMailboxGiven) => props
+                case (dsp, Deploy.NoMailboxGiven)                      => props.withDispatcher(dsp)
+                case (Deploy.NoMailboxGiven, mbx)                      => props.withMailbox(mbx)
+                case (dsp, mbx)                                        => props.withDispatcher(dsp).withMailbox(mbx)
               }
-            case _ ⇒ props // no deployment config found
+            case _ => props // no deployment config found
           }
 
         if (!system.dispatchers.hasDispatcher(props2.dispatcher))
@@ -762,16 +641,20 @@ private[akka] class LocalActorRefProvider private[akka] (
           val dispatcher = system.dispatchers.lookup(props2.dispatcher)
           val mailboxType = system.mailboxes.getMailboxType(props2, dispatcher.configurator.config)
 
-          if (async) new RepointableActorRef(system, props2, dispatcher, mailboxType, supervisor, path).initialize(async)
+          if (async)
+            new RepointableActorRef(system, props2, dispatcher, mailboxType, supervisor, path).initialize(async)
           else new LocalActorRef(system, props2, dispatcher, mailboxType, supervisor, path)
         } catch {
-          case NonFatal(e) ⇒ throw new ConfigurationException(
-            s"configuration problem while creating [$path] with dispatcher [${props2.dispatcher}] and mailbox [${props2.mailbox}]", e)
+          case NonFatal(e) =>
+            throw new ConfigurationException(
+              s"configuration problem while creating [$path] with dispatcher [${props2.dispatcher}] and mailbox [${props2.mailbox}]",
+              e)
         }
 
-      case router ⇒
+      case router =>
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
-        val r = router :: deploy.map(_.routerConfig).toList ::: lookup.map(_.routerConfig).toList reduce ((a, b) ⇒ b withFallback a)
+        val r = (router :: deploy.map(_.routerConfig).toList ::: lookup.map(_.routerConfig).toList).reduce((a, b) =>
+          b.withFallback(a))
         val p = props.withRouter(r)
 
         if (!system.dispatchers.hasDispatcher(p.dispatcher))
@@ -781,7 +664,8 @@ private[akka] class LocalActorRefProvider private[akka] (
 
         val routerProps = Props(
           p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
-          classOf[RoutedActorCell.RouterActorCreator], Vector(p.routerConfig))
+          classOf[RoutedActorCell.RouterActorCreator],
+          Vector(p.routerConfig))
         val routeeProps = p.withRouter(NoRouter)
 
         try {
@@ -791,13 +675,16 @@ private[akka] class LocalActorRefProvider private[akka] (
           // routers use context.actorOf() to create the routees, which does not allow us to pass
           // these through, but obtain them here for early verification
           val routeeDispatcher = system.dispatchers.lookup(p.dispatcher)
-          val routeeMailbox = system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
+          system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
 
-          new RoutedActorRef(system, routerProps, routerDispatcher, routerMailbox, routeeProps, supervisor, path).initialize(async)
+          new RoutedActorRef(system, routerProps, routerDispatcher, routerMailbox, routeeProps, supervisor, path)
+            .initialize(async)
         } catch {
-          case NonFatal(e) ⇒ throw new ConfigurationException(
-            s"configuration problem while creating [$path] with router dispatcher [${routerProps.dispatcher}] and mailbox [${routerProps.mailbox}] " +
-              s"and routee dispatcher [${routeeProps.dispatcher}] and mailbox [${routeeProps.mailbox}]", e)
+          case NonFatal(e) =>
+            throw new ConfigurationException(
+              s"configuration problem while creating [$path] with router dispatcher [${routerProps.dispatcher}] and mailbox [${routerProps.mailbox}] " +
+              s"and routee dispatcher [${routeeProps.dispatcher}] and mailbox [${routeeProps.mailbox}]",
+              e)
         }
     }
   }
@@ -811,8 +698,8 @@ private[akka] class LocalActorRefProvider private[akka] (
   @InternalApi override private[akka] def serializationInformation: Serialization.Information = {
     Serialization.Information(getDefaultAddress, system)
     serializationInformationCache match {
-      case OptionVal.Some(info) ⇒ info
-      case OptionVal.None ⇒
+      case OptionVal.Some(info) => info
+      case OptionVal.None =>
         if (system eq null)
           throw new IllegalStateException("Too early access of serializationInformation")
         else {

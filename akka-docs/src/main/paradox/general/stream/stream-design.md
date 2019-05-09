@@ -45,6 +45,28 @@ All stream Processors produced by the default materialization of Akka Streams ar
 
 This means that `Sink.asPublisher(true)` (for enabling fan-out support) must be used where broadcast behavior is needed for interoperation with other Reactive Streams implementations.
 
+### Rationale and benefits from Sink/Source/Flow not directly extending Reactive Streams interfaces
+
+A sometimes overlooked crucial piece of information about [Reactive Streams](https://github.com/reactive-streams/reactive-streams-jvm/) is that they are a [Service Provider Interface](https://en.m.wikipedia.org/wiki/Service_provider_interface), as explained in depth in one of the [early discussions](https://github.com/reactive-streams/reactive-streams-jvm/pull/25) about the specification.
+Akka Streams was designed during the development of Reactive Streams, so they both heavily influenced one another.
+
+It may be enlightening to learn that even within the Reactive Specification the types had initially attempted to hide `Publisher`, `Subscriber` and the other SPI types from users of the API.
+Though since those internal SPI types would end up surfacing to end users of the standard in some cases, it was decided to [remove the API types, and only keep the SPI types](https://github.com/reactive-streams/reactive-streams-jvm/pull/25) which are the `Publisher`, `Subscriber` et al.
+
+With this historical knowledge and context about the purpose of the standard – being an internal detail of interoperable libraries - we can with certainty say that it can't be really said that an direct _inheritance_ relationship with these types can be considered some form of advantage or meaningful differentiator between libraries.
+Rather, it could be seen that APIs which expose those SPI types to end-users are leaking internal implementation details accidentally. 
+
+The `Source`, `Sink` and `Flow` types which are part of Akka Streams have the purpose of providing the fluent DSL, as well as to be "factories" for running those streams.
+Their direct counterparts in Reactive Streams are, respectively, `Publisher`, `Subscriber` and `Processor`. 
+In other words, Akka Streams operate on a lifted representation of the computing graph,
+which then is materialized and executed in accordance to Reactive Streams rules. This also allows Akka Streams to perform optimizations like fusing and dispatcher configuration during the materialization step.
+
+Another not obvious gain from hiding the Reactive Streams interfaces comes from the fact that `org.reactivestreams.Subscriber` (et al) have now been included in Java 9+, and thus become part of Java itself, so libraries should migrate to using the `java.util.concurrent.Flow.Subscriber` instead of `org.reactivestreams.Subscriber`.
+Libraries which selected to expose and directly extend the Reactive Streams types will now have a tougher time to adapt the JDK9+ types -- all their classes that extend Subscriber and friends will need to be copied or changed to extend the exact same interface,
+but from a different package. In Akka we simply expose the new type when asked to -- already supporting JDK9 types, from the day JDK9 was released.
+
+The other, and perhaps more important reason for hiding the Reactive Streams interfaces comes back to the first points of this explanation: the fact of Reactive Streams being an SPI, and as such is hard to "get right" in ad-hoc implementations. Thus Akka Streams discourages the use of the hard to implement pieces of the underlying infrastructure, and offers simpler, more type-safe, yet more powerful abstractions for users to work with: GraphStages and operators. It is of course still (and easily) possible to accept or obtain Reactive Streams (or JDK+ Flow) representations of the stream operators by using methods like `asPublisher` or `fromSubscriber`.
+
 ## What shall users of streaming libraries expect?
 
 We expect libraries to be built on top of Akka Streams, in fact Akka HTTP is one such example that lives within the Akka project itself. In order to allow users to profit from the principles that are described for Akka Streams above, the following rules are established:

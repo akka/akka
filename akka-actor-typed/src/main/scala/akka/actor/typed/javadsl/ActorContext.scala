@@ -1,18 +1,18 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-import java.util.function.{ BiFunction, Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
+import java.util.concurrent.CompletionStage
 
-import akka.util.Timeout
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -37,7 +37,7 @@ import scala.concurrent.ExecutionContextExecutor
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
+trait ActorContext[T] extends TypedActorContext[T] {
   // this must be a pure interface, i.e. only abstract methods
 
   /**
@@ -73,6 +73,15 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getLog: Logger
+
+  /**
+   * Replace the current logger (or initialize a new logger if the logger was not touched before) with one that
+   * has ghe given class as logging class. Logger source will be actor path.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   */
+  def setLoggerClass(clazz: Class[_]): Unit
 
   /**
    * The list of child Actors created by this Actor during its lifetime that
@@ -186,7 +195,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def setReceiveTimeout(d: Duration, msg: T): Unit
+  def setReceiveTimeout(timeout: Duration, msg: T): Unit
 
   /**
    * Cancel the sending of receive timeout notifications.
@@ -207,7 +216,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * This method is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def schedule[U](delay: Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable
+  def scheduleOnce[U](delay: Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
   /**
    * This Actor’s execution context. It can be used to run asynchronous tasks
@@ -234,7 +243,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    *
    * A message adapter (and the returned `ActorRef`) has the same lifecycle as
    * this actor. It's recommended to register the adapters in a top level
-   * `Behaviors.setup` or constructor of `MutableBehavior` but it's possible to
+   * `Behaviors.setup` or constructor of `AbstractBehavior` but it's possible to
    * register them later also if needed. Message adapters don't have to be stopped since
    * they consume no resources other than an entry in an internal `Map` and the number
    * of adapters are bounded since it's only possible to have one per message class.
@@ -260,7 +269,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
-   * @param applyToResponse Transforms the response from the `otherActor` into a message this actor understands.
+   * @param applyToResponse Transforms the response from the `target` into a message this actor understands.
    *                        Will be invoked with either the response message or an AskTimeoutException failed or
    *                        potentially another exception if the remote actor is untyped and sent a
    *                        [[akka.actor.Status.Failure]] as response. The returned message of type `T` is then
@@ -273,10 +282,19 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](
-    resClass:        Class[Res],
-    otherActor:      ActorRef[Req],
-    responseTimeout: Timeout,
-    createRequest:   java.util.function.Function[ActorRef[Res], Req],
-    applyToResponse: BiFunction[Res, Throwable, T]): Unit
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: java.util.function.Function[ActorRef[Res], Req],
+      applyToResponse: BiFunction[Res, Throwable, T]): Unit
+
+  /**
+   * Sends the result of the given `CompletionStage` to this Actor (“`self`”), after adapted it with
+   * the given function.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   */
+  def pipeToSelf[Value](future: CompletionStage[Value], applyToResult: BiFunction[Value, Throwable, T]): Unit
 
 }

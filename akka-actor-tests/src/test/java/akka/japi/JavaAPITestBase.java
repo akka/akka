@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi;
@@ -41,8 +41,7 @@ public class JavaAPITestBase extends JUnitSuite {
 
   @Test
   public void shouldEnterForLoop() {
-    for (@SuppressWarnings("unused")
-    String s : Option.some("abc")) {
+    for (@SuppressWarnings("unused") String s : Option.some("abc")) {
       return;
     }
     org.junit.Assert.fail("for-loop not entered");
@@ -50,8 +49,7 @@ public class JavaAPITestBase extends JUnitSuite {
 
   @Test
   public void shouldNotEnterForLoop() {
-    for (@SuppressWarnings("unused")
-    Object o : Option.none()) {
+    for (@SuppressWarnings("unused") Object o : Option.none()) {
       org.junit.Assert.fail("for-loop entered");
     }
   }
@@ -63,16 +61,20 @@ public class JavaAPITestBase extends JUnitSuite {
 
   @Test
   public void mustBeAbleToGetNoLogging() {
-      LoggingAdapter a = NoLogging.getInstance();
-      assertNotNull(a);
+    LoggingAdapter a = NoLogging.getInstance();
+    assertNotNull(a);
   }
-    
+
   @Test
   public void mustBeAbleToUseCurrentSystem() {
-      assertNull(JavaSerializer.currentSystem().withValue(null, new Callable<ExtendedActorSystem>() {
-          public ExtendedActorSystem call() {
-              return JavaSerializer.currentSystem().value();
-          }
-      }));
+    assertNull(
+        JavaSerializer.currentSystem()
+            .withValue(
+                null,
+                new Callable<ExtendedActorSystem>() {
+                  public ExtendedActorSystem call() {
+                    return JavaSerializer.currentSystem().value();
+                  }
+                }));
   }
 }

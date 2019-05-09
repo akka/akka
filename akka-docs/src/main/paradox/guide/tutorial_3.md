@@ -94,7 +94,7 @@ immediately after the API has been invoked any of the following can happen:
 This illustrates that the **guarantee of delivery** does not translate to the **domain level guarantee**. We only want to report success once the order has been actually fully processed and persisted. **The only entity that can report success is the application itself, since only it has any understanding of the domain guarantees required. No generalized framework can figure out the specifics of a particular domain and what is considered a success in that domain**.
 
 In this particular example, we only want to signal success after a successful database write, where the database acknowledged that the order is now safely stored. **For these reasons Akka lifts the responsibilities of guarantees to the application
-itself, i.e. you have to implement them yourself. This gives you full control of the guarantees that you want to provide**. Now, let's consider the message ordering that Akka provides to make it easy to reason about application logic.
+itself, i.e. you have to implement them yourself with the tools that Akka provides. This gives you full control of the guarantees that you want to provide**. Now, let's consider the message ordering that Akka provides to make it easy to reason about application logic.
 
 ### Message Ordering
 
@@ -146,8 +146,11 @@ Note in the code that:
 
 ## Testing the actor
 
-Based on the simple actor above, we could write a simple test. In the `com.lightbend.akka.sample` package in the test tree of your project, add the following code to a @scala[`DeviceSpec.scala`]@java[`DeviceTest.java`] file.
-@scala[(We use ScalaTest but any other test framework can be used with the Akka Testkit)].
+Based on the simple actor above, we could write a simple test. You can check a full example of an Actor test in the Quickstart guide here @scala[[Quickstart Guide Testing example](https://developer.lightbend.com/guides/akka-quickstart-scala/testing-actors.html)] @java[[Quickstart Guide Testing example](https://developer.lightbend.com/guides/akka-quickstart-java/testing-actors.html)].
+You'll find there an example on how you can fully setup an Actor test, so that you can run it properly.
+
+In the test tree of your project, add the following code to a @scala[`DeviceSpec.scala`]@java[`DeviceTest.java`] file.
+@scala[(We use [ScalaTest](http://www.scalatest.org) but any other testing framework can be used with the Akka Testkit)].
 
 You can run this test @java[by running `mvn test` or] by running `test` at the sbt prompt.
 

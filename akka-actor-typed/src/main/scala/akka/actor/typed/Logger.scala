@@ -1,10 +1,13 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
+import java.util.Optional
+
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.event.Logging
 import akka.event.Logging._
 
 /**
@@ -42,6 +45,79 @@ object LogMarker {
 }
 
 /**
+ * Logging options when using `Behaviors.logMessages`.
+ */
+@DoNotInherit
+abstract sealed class LogOptions {
+
+  /**
+   * User control whether messages are logged or not.  This is useful when you want to have an application configuration
+   * to control when to log messages.
+   */
+  def withEnabled(enabled: Boolean): LogOptions
+
+  /**
+   * The [[akka.event.Logging.LogLevel]] to use when logging messages.
+   */
+  def withLevel(level: LogLevel): LogOptions
+
+  /**
+   * A [[akka.actor.typed.Logger]] to use when logging messages.
+   */
+  def withLogger(logger: Logger): LogOptions
+
+  def enabled: Boolean
+  def level: LogLevel
+  def logger: Option[Logger]
+
+  /** Java API */
+  def getLogger: Optional[Logger]
+}
+
+/**
+ * Factories for log options
+ */
+object LogOptions {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final case class LogOptionsImpl(enabled: Boolean, level: LogLevel, logger: Option[Logger])
+      extends LogOptions {
+
+    /**
+     * User control whether messages are logged or not.  This is useful when you want to have an application configuration
+     * to control when to log messages.
+     */
+    override def withEnabled(enabled: Boolean): LogOptions = this.copy(enabled = enabled)
+
+    /**
+     * The [[akka.event.Logging.LogLevel]] to use when logging messages.
+     */
+    override def withLevel(level: LogLevel): LogOptions = this.copy(level = level)
+
+    /**
+     * A [[akka.actor.typed.Logger]] to use when logging messages.
+     */
+    override def withLogger(logger: Logger): LogOptions = this.copy(logger = Option(logger))
+
+    /** Java API */
+    override def getLogger: Optional[Logger] = Optional.ofNullable(logger.orNull)
+  }
+
+  /**
+   * Scala API: Create a new log options with defaults.
+   */
+  def apply(): LogOptions = LogOptionsImpl(enabled = true, Logging.DebugLevel, None)
+
+  /**
+   * Java API: Create a new log options.
+   */
+  def create(): LogOptions = apply()
+}
+
+/**
  * Logging API provided inside of actors through the actor context.
  *
  * All log-level methods support simple interpolation templates with up to four
@@ -76,11 +152,25 @@ abstract class Logger private[akka] () {
   def isErrorEnabled: Boolean
 
   /**
-   * Whether error logging is enabled on the actor system level, may not represent the setting all the way to the
+   * Whether error logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
+  def isErrorEnabled(marker: LogMarker): Boolean
+
+  /**
+   * Whether warning logging is enabled on the actor system level, may not represent the setting all the way to the
    * logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries that
    * will not actually end up in any logger output.
    */
   def isWarningEnabled: Boolean
+
+  /**
+   * Whether warning logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
+  def isWarningEnabled(marker: LogMarker): Boolean
 
   /**
    * Whether info logging is enabled on the actor system level, may not represent the setting all the way to the
@@ -90,6 +180,13 @@ abstract class Logger private[akka] () {
   def isInfoEnabled: Boolean
 
   /**
+   * Whether info logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
+  def isInfoEnabled(marker: LogMarker): Boolean
+
+  /**
    * Whether debug logging is enabled on the actor system level, may not represent the setting all the way to the
    * logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries that
    * will not actually end up in any logger output.
@@ -97,16 +194,36 @@ abstract class Logger private[akka] () {
   def isDebugEnabled: Boolean
 
   /**
+   * Whether debug logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
+  def isDebugEnabled(marker: LogMarker): Boolean
+
+  /**
    * Whether a log level is enabled on the actor system level, may not represent the setting all the way to the
    * logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries that
    * will not actually end up in any logger output.
    */
   def isLevelEnabled(logLevel: LogLevel): Boolean = logLevel match {
-    case ErrorLevel   ⇒ isErrorEnabled
-    case WarningLevel ⇒ isWarningEnabled
-    case InfoLevel    ⇒ isInfoEnabled
-    case DebugLevel   ⇒ isDebugEnabled
-    case _            ⇒ false
+    case ErrorLevel   => isErrorEnabled
+    case WarningLevel => isWarningEnabled
+    case InfoLevel    => isInfoEnabled
+    case DebugLevel   => isDebugEnabled
+    case _            => false
+  }
+
+  /**
+   * Whether a log level with this marker is enabled on the actor system level, may not represent the setting all the
+   * way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries
+   * that will not actually end up in any logger output.
+   */
+  def isLevelEnabled(logLevel: LogLevel, marker: LogMarker): Boolean = logLevel match {
+    case ErrorLevel   => isErrorEnabled(marker)
+    case WarningLevel => isWarningEnabled(marker)
+    case InfoLevel    => isInfoEnabled(marker)
+    case DebugLevel   => isDebugEnabled(marker)
+    case _            => false
   }
 
   // message only error logging
@@ -117,6 +234,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -126,18 +244,21 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def error(template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -153,6 +274,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(cause: Throwable, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -162,18 +284,21 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -189,6 +314,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -198,24 +324,28 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
    * @see [[Logger]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
+
   /**
    * Log message at error level, without providing the exception that caused the error.
    *
@@ -224,6 +354,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(marker: LogMarker, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -235,6 +366,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
@@ -243,6 +375,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
@@ -251,6 +384,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -266,6 +400,7 @@ abstract class Logger private[akka] () {
    * Log message at warning level.
    */
   def warning(message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -275,18 +410,21 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def warning(template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -298,6 +436,7 @@ abstract class Logger private[akka] () {
    * Log message at warning level.
    */
   def warning(cause: Throwable, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -307,16 +446,19 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    * @see [[Logger]]
    */
   def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    * @see [[Logger]]
@@ -330,6 +472,7 @@ abstract class Logger private[akka] () {
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    */
   def warning(marker: LogMarker, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -341,6 +484,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
@@ -349,6 +493,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
@@ -357,6 +502,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -371,6 +517,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, cause: Throwable, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -382,6 +529,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
@@ -390,6 +538,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
@@ -398,6 +547,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def warning(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -415,6 +565,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def info(message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -424,18 +575,21 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def info(template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def info(template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -453,6 +607,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def info(marker: LogMarker, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -464,6 +619,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
@@ -472,6 +628,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
@@ -480,6 +637,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -497,6 +655,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def debug(message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -506,18 +665,21 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def debug(template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def debug(template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -535,6 +697,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def debug(marker: LogMarker, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -546,6 +709,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
@@ -554,6 +718,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
@@ -562,6 +727,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -579,6 +745,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -588,18 +755,21 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
    * @see [[Logger]]
    */
   def log(level: LogLevel, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
    * @see [[Logger]]
    */
   def log(level: LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -617,6 +787,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, marker: LogMarker, message: String): Unit
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -628,6 +799,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any): Unit
+
   /**
    * Message template with 2 replacement arguments.
    *
@@ -636,6 +808,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
+
   /**
    * Message template with 3 replacement arguments.
    *
@@ -644,6 +817,7 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+
   /**
    * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
    *
@@ -666,4 +840,14 @@ abstract class Logger private[akka] () {
    * See also [[akka.actor.typed.javadsl.Behaviors.withMdc]]
    */
   def withMdc(mdc: java.util.Map[String, Any]): Logger
+
+  /**
+   * Return a new logger sharing properties of this logger except the logger class
+   */
+  def withLoggerClass(clazz: Class[_]): Logger
+
+  /**
+   * Return a new logger sharing properties of this logger except the log source
+   */
+  def withLogSource(logSource: String): Logger
 }

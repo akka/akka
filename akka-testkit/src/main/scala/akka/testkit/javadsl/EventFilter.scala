@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.javadsl
@@ -14,8 +14,7 @@ class EventFilter(clazz: Class[_], system: ActorSystem) {
 
   require(
     classOf[Throwable].isAssignableFrom(clazz) || classOf[Logging.LogEvent].isAssignableFrom(clazz),
-    "supplied class must either be LogEvent or Throwable"
-  )
+    "supplied class must either be LogEvent or Throwable")
 
   private val _clazz: Class[_ <: Logging.LogEvent] =
     if (classOf[Throwable].isAssignableFrom(clazz))

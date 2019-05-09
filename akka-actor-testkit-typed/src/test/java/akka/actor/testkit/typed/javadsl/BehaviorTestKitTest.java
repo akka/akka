@@ -1,22 +1,26 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl;
 
 import akka.Done;
+import akka.actor.testkit.typed.CapturedLogEvent;
 import akka.actor.testkit.typed.Effect;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.event.Logging;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -26,8 +30,7 @@ import static org.junit.Assert.assertTrue;
 
 public class BehaviorTestKitTest extends JUnitSuite {
 
-  public interface Command {
-  }
+  public interface Command {}
 
   public static class SpawnWatchAndUnWatch implements Command {
     private final String name;
@@ -111,68 +114,110 @@ public class BehaviorTestKitTest extends JUnitSuite {
     }
   }
 
-  public interface Action {
+  public static class Log implements Command {
+    private final String what;
+
+    public Log(String what) {
+      this.what = what;
+    }
   }
+
+  public interface Action {}
 
   private static Behavior<Action> childInitial = Behaviors.ignore();
 
   private static Props props = Props.empty().withDispatcherFromConfig("cat");
 
-  private static Behavior<Command> behavior = Behaviors.receive(Command.class)
-    .onMessage(SpawnChildren.class, (ctx, msg) -> {
-      IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawn(childInitial, "child" + i);
-      });
-      return Behaviors.same();
-    })
-    .onMessage(SpawnChildrenAnonymous.class, (ctx, msg) -> {
-      IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawnAnonymous(childInitial);
-      });
-      return Behaviors.same();
-    })
-    .onMessage(SpawnChildrenWithProps.class, (ctx, msg) -> {
-      IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawn(childInitial, "child" + i, msg.props);
-      });
-      return Behaviors.same();
-    })
-    .onMessage(SpawnChildrenAnonymousWithProps.class, (ctx, msg) -> {
-      IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawnAnonymous(childInitial, msg.props);
-      });
-      return Behaviors.same();
-    })
-    .onMessage(CreateMessageAdapter.class, (ctx, msg) -> {
-      ctx.messageAdapter(msg.clazz, msg.f);
-      return Behaviors.same();
-    })
-    .onMessage(SpawnWatchAndUnWatch.class, (ctx, msg) -> {
-      ActorRef<Action> c = ctx.spawn(childInitial, msg.name);
-      ctx.watch(c);
-      ctx.unwatch(c);
-      return Behaviors.same();
-    })
-    .onMessage(SpawnAndWatchWith.class, (ctx, msg) -> {
-      ActorRef<Action> c = ctx.spawn(childInitial, msg.name);
-      ctx.watchWith(c, msg);
-      return Behaviors.same();
-    })
-    .onMessage(SpawnSession.class, (ctx, msg) -> {
-      ActorRef<String> session = ctx.spawnAnonymous(Behaviors.receiveMessage( m -> {
-        msg.sessionHandler.tell(m);
-        return Behaviors.same();
-      }));
-      msg.replyTo.tell(session);
-      return Behaviors.same();
-    })
-    .onMessage(KillSession.class, (ctx, msg) -> {
-      ctx.stop(msg.session);
-      msg.replyTo.tell(Done.getInstance());
-      return Behaviors.same();
-    })
-    .build();
-
+  private static Behavior<Command> behavior =
+      Behaviors.receive(Command.class)
+          .onMessage(
+              SpawnChildren.class,
+              (context, message) -> {
+                IntStream.range(0, message.numberOfChildren)
+                    .forEach(
+                        i -> {
+                          context.spawn(childInitial, "child" + i);
+                        });
+                return Behaviors.same();
+              })
+          .onMessage(
+              SpawnChildrenAnonymous.class,
+              (context, message) -> {
+                IntStream.range(0, message.numberOfChildren)
+                    .forEach(
+                        i -> {
+                          context.spawnAnonymous(childInitial);
+                        });
+                return Behaviors.same();
+              })
+          .onMessage(
+              SpawnChildrenWithProps.class,
+              (context, message) -> {
+                IntStream.range(0, message.numberOfChildren)
+                    .forEach(
+                        i -> {
+                          context.spawn(childInitial, "child" + i, message.props);
+                        });
+                return Behaviors.same();
+              })
+          .onMessage(
+              SpawnChildrenAnonymousWithProps.class,
+              (context, message) -> {
+                IntStream.range(0, message.numberOfChildren)
+                    .forEach(
+                        i -> {
+                          context.spawnAnonymous(childInitial, message.props);
+                        });
+                return Behaviors.same();
+              })
+          .onMessage(
+              CreateMessageAdapter.class,
+              (context, message) -> {
+                context.messageAdapter(message.clazz, message.f);
+                return Behaviors.same();
+              })
+          .onMessage(
+              SpawnWatchAndUnWatch.class,
+              (context, message) -> {
+                ActorRef<Action> c = context.spawn(childInitial, message.name);
+                context.watch(c);
+                context.unwatch(c);
+                return Behaviors.same();
+              })
+          .onMessage(
+              SpawnAndWatchWith.class,
+              (context, message) -> {
+                ActorRef<Action> c = context.spawn(childInitial, message.name);
+                context.watchWith(c, message);
+                return Behaviors.same();
+              })
+          .onMessage(
+              SpawnSession.class,
+              (context, message) -> {
+                ActorRef<String> session =
+                    context.spawnAnonymous(
+                        Behaviors.receiveMessage(
+                            m -> {
+                              message.sessionHandler.tell(m);
+                              return Behaviors.same();
+                            }));
+                message.replyTo.tell(session);
+                return Behaviors.same();
+              })
+          .onMessage(
+              KillSession.class,
+              (context, message) -> {
+                context.stop(message.session);
+                message.replyTo.tell(Done.getInstance());
+                return Behaviors.same();
+              })
+          .onMessage(
+              Log.class,
+              (context, message) -> {
+                context.getLog().info(message.what);
+                return Behaviors.same();
+              })
+          .build();
 
   @Test
   public void allowAssertionsOnEffectType() {
@@ -195,6 +240,26 @@ public class BehaviorTestKitTest extends JUnitSuite {
   }
 
   @Test
+  public void allowRetrieveAllLogs() {
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
+    String what = "Hello!";
+    test.run(new Log(what));
+    final List<CapturedLogEvent> allLogEntries = test.getAllLogEntries();
+    assertEquals(1, allLogEntries.size());
+    assertEquals(new CapturedLogEvent(Logging.InfoLevel(), what), allLogEntries.get(0));
+  }
+
+  @Test
+  public void allowClearLogs() {
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
+    String what = "Hello!";
+    test.run(new Log(what));
+    assertEquals(1, test.getAllLogEntries().size());
+    test.clearLog();
+    assertEquals(0, test.getAllLogEntries().size());
+  }
+
+  @Test
   public void returnEffectsThatHaveTakenPlace() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     assertFalse(test.hasEffects());
@@ -204,8 +269,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
 
   @Test
   @Ignore("Not supported for Java API")
-  public void allowAssertionsUsingPartialFunctions() {
-  }
+  public void allowAssertionsUsingPartialFunctions() {}
 
   @Test
   public void spawnChildrenWithNoProps() {
@@ -213,9 +277,10 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new SpawnChildren(2));
     List<Effect> allEffects = test.getAllEffects();
     assertEquals(
-      Arrays.asList(Effects.spawned(childInitial, "child0"), Effects.spawned(childInitial, "child1", Props.empty())),
-      allEffects
-    );
+        Arrays.asList(
+            Effects.spawned(childInitial, "child0"),
+            Effects.spawned(childInitial, "child1", Props.empty())),
+        allEffects);
   }
 
   @Test
@@ -231,9 +296,10 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new SpawnChildrenAnonymous(2));
     List<Effect> allEffects = test.getAllEffects();
     assertEquals(
-      Arrays.asList(Effects.spawnedAnonymous(childInitial), Effects.spawnedAnonymous(childInitial, Props.empty())),
-      allEffects
-    );
+        Arrays.asList(
+            Effects.spawnedAnonymous(childInitial),
+            Effects.spawnedAnonymous(childInitial, Props.empty())),
+        allEffects);
   }
 
   @Test
@@ -248,7 +314,8 @@ public class BehaviorTestKitTest extends JUnitSuite {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     SpawnChildren adaptedMessage = new SpawnChildren(1);
     test.run(new CreateMessageAdapter(String.class, o -> adaptedMessage));
-    Effect.MessageAdapter mAdapter = test.expectEffectClass(Effect.MessageAdapter.class);
+    Effect.MessageAdapter<String, SpawnChildren> mAdapter =
+        test.<Effect.MessageAdapter>expectEffectClass(Effect.MessageAdapter.class);
     assertEquals(String.class, mAdapter.messageClass());
     assertEquals(adaptedMessage, mAdapter.adaptFunction().apply("anything"));
   }
@@ -294,5 +361,4 @@ public class BehaviorTestKitTest extends JUnitSuite {
     assertEquals(Collections.singletonList(Done.getInstance()), d.getAllReceived());
     test.expectEffectClass(Effect.Stopped.class);
   }
-
 }

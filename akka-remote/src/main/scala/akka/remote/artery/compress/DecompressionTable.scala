@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -15,18 +15,19 @@ private[remote] final case class DecompressionTable[T](originUid: Long, version:
 
   def get(idx: Int): T = {
     if (idx >= length)
-      throw new IllegalArgumentException(s"Attempted decompression of unknown id: [$idx]! " +
+      throw new IllegalArgumentException(
+        s"Attempted decompression of unknown id: [$idx]! " +
         s"Only $length ids allocated in table version [$version] for origin [$originUid].")
     table(idx)
   }
 
   def invert: CompressionTable[T] =
-    CompressionTable(originUid, version, Map(table.zipWithIndex: _*))
+    CompressionTable(originUid, version, table.zipWithIndex.toMap)
 
   /** Writes complete table as String (heavy operation) */
   override def toString =
     s"DecompressionTable($originUid, $version, " +
-      s"Map(${table.zipWithIndex.map({ case (t, i) ⇒ s"$i -> $t" }).mkString(",")}))"
+    s"Map(${table.zipWithIndex.map({ case (t, i) => s"$i -> $t" }).mkString(",")}))"
 }
 
 /** INTERNAL API */

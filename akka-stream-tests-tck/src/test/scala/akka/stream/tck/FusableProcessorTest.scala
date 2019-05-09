@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
@@ -11,8 +11,8 @@ import org.reactivestreams.Processor
 class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
-    val settings = ActorMaterializerSettings(system)
-      .withInputBuffer(initialSize = maxBufferSize / 2, maxSize = maxBufferSize)
+    val settings =
+      ActorMaterializerSettings(system).withInputBuffer(initialSize = maxBufferSize / 2, maxSize = maxBufferSize)
 
     implicit val materializer = ActorMaterializer(settings)(system)
 

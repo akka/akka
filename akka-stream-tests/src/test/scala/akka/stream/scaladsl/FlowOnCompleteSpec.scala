@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -11,14 +11,12 @@ import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 
 class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -63,14 +61,17 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       import system.dispatcher // for the Future.onComplete
-      val foreachSink = Sink.foreach[Int] {
-        x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
+      val foreachSink = Sink.foreach[Int] { x =>
+        onCompleteProbe.ref ! ("foreach-" + x)
       }
-      val future = Source.fromPublisher(p).map { x ⇒
-        onCompleteProbe.ref ! ("map-" + x)
-        x
-      }.runWith(foreachSink)
-      future onComplete { onCompleteProbe.ref ! _ }
+      val future = Source
+        .fromPublisher(p)
+        .map { x =>
+          onCompleteProbe.ref ! ("map-" + x)
+          x
+        }
+        .runWith(foreachSink)
+      future.onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)

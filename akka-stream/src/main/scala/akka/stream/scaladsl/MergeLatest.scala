@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,7 +8,6 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ Attributes, Inlet, Outlet, UniformFanInShape }
 
 import scala.collection.immutable
-import scala.language.higherKinds
 
 /**
  * MergeLatest joins elements from N input streams into stream of lists of size N.
@@ -24,6 +23,7 @@ import scala.language.higherKinds
  *
  */
 object MergeLatest {
+
   /**
    * Create a new `MergeLatest` with the specified number of input ports.
    *
@@ -35,51 +35,55 @@ object MergeLatest {
 
 }
 
-final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buildElem: Array[T] ⇒ M) extends GraphStage[UniformFanInShape[T, M]] {
+final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buildElem: Array[T] => M)
+    extends GraphStage[UniformFanInShape[T, M]] {
   require(inputPorts >= 1, "input ports must be >= 1")
 
-  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("MergeLatest.in" + i))
+  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i => Inlet[T]("MergeLatest.in" + i))
   val out: Outlet[M] = Outlet[M]("MergeLatest.out")
   override val shape: UniformFanInShape[T, M] = UniformFanInShape(out, in: _*)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
-    private val activeStreams: java.util.HashSet[Int] = new java.util.HashSet[Int]()
-    private var runningUpstreams: Int = inputPorts
-    private def upstreamsClosed: Boolean = runningUpstreams == 0
-    private def allMessagesReady: Boolean = activeStreams.size == inputPorts
-    private val messages: Array[Any] = new Array[Any](inputPorts)
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
+      private val activeStreams: java.util.HashSet[Int] = new java.util.HashSet[Int]()
+      private var runningUpstreams: Int = inputPorts
+      private def upstreamsClosed: Boolean = runningUpstreams == 0
+      private def allMessagesReady: Boolean = activeStreams.size == inputPorts
+      private val messages: Array[Any] = new Array[Any](inputPorts)
 
-    override def preStart(): Unit = in.foreach(tryPull)
+      override def preStart(): Unit = in.foreach(tryPull)
 
-    in.zipWithIndex.foreach {
-      case (input, index) ⇒
-        setHandler(input, new InHandler {
-          override def onPush(): Unit = {
-            messages.update(index, grab(input))
-            activeStreams.add(index)
-            if (allMessagesReady) emit(out, buildElem(messages.asInstanceOf[Array[T]]))
-            tryPull(input)
-          }
+      in.zipWithIndex.foreach {
+        case (input, index) =>
+          setHandler(
+            input,
+            new InHandler {
+              override def onPush(): Unit = {
+                messages.update(index, grab(input))
+                activeStreams.add(index)
+                if (allMessagesReady) emit(out, buildElem(messages.asInstanceOf[Array[T]]))
+                tryPull(input)
+              }
 
-          override def onUpstreamFinish(): Unit = {
-            if (!eagerClose) {
-              runningUpstreams -= 1
-              if (upstreamsClosed) completeStage()
-            } else completeStage()
-          }
-        })
-    }
-
-    override def onPull(): Unit = {
-      var i = 0
-      while (i < inputPorts) {
-        if (!hasBeenPulled(in(i))) tryPull(in(i))
-        i += 1
+              override def onUpstreamFinish(): Unit = {
+                if (!eagerClose) {
+                  runningUpstreams -= 1
+                  if (upstreamsClosed) completeStage()
+                } else completeStage()
+              }
+            })
       }
-    }
 
-    setHandler(out, this)
-  }
+      override def onPull(): Unit = {
+        var i = 0
+        while (i < inputPorts) {
+          if (!hasBeenPulled(in(i))) tryPull(in(i))
+          i += 1
+        }
+      }
+
+      setHandler(out, this)
+    }
 
   override def toString = "MergeLatest"
 }

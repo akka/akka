@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -17,7 +17,7 @@ object ShutdownAfterJoinSeedNodesSpec {
   val config = """
        akka.actor.provider = "cluster"
        akka.coordinated-shutdown.terminate-actor-system = on
-       akka.remote.netty.tcp.port = 0
+       akka.remote.classic.netty.tcp.port = 0
        akka.remote.artery.canonical.port = 0
        akka.cluster {
          seed-node-timeout = 2s
@@ -42,14 +42,16 @@ class ShutdownAfterJoinSeedNodesSpec extends AkkaSpec(ShutdownAfterJoinSeedNodes
   "Joining seed nodes" must {
     "be aborted after shutdown-after-unsuccessful-join-seed-nodes" taggedAs LongRunningTest in {
 
-      val seedNodes: immutable.IndexedSeq[Address] = Vector(seed1, seed2).map(s ⇒ Cluster(s).selfAddress)
+      val seedNodes: immutable.IndexedSeq[Address] = Vector(seed1, seed2).map(s => Cluster(s).selfAddress)
       shutdown(seed1) // crash so that others will not be able to join
 
       Cluster(seed2).joinSeedNodes(seedNodes)
       Cluster(oridinary1).joinSeedNodes(seedNodes)
 
       Await.result(seed2.whenTerminated, Cluster(seed2).settings.ShutdownAfterUnsuccessfulJoinSeedNodes + 10.second)
-      Await.result(oridinary1.whenTerminated, Cluster(seed2).settings.ShutdownAfterUnsuccessfulJoinSeedNodes + 10.second)
+      Await.result(
+        oridinary1.whenTerminated,
+        Cluster(seed2).settings.ShutdownAfterUnsuccessfulJoinSeedNodes + 10.second)
     }
 
   }

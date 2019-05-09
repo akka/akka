@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -8,10 +8,11 @@ import akka.AkkaException
 import akka.Done
 import akka.actor._
 import akka.event.LoggingAdapter
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
-import akka.util.OptionVal
+import akka.util.{ unused, OptionVal }
 
 /**
  * RemoteTransportException represents a general failure within a RemoteTransport,
@@ -27,7 +28,8 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
  */
 @SerialVersionUID(1L)
 class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
-  extends RemoteTransportException(message, cause) with NoStackTrace
+    extends RemoteTransportException(message, cause)
+    with NoStackTrace
 
 /**
  * INTERNAL API
@@ -40,6 +42,7 @@ class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
  * received or when the start() method returns, whatever happens first.
  */
 private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
+
   /**
    * Shuts down the remoting
    */
@@ -79,7 +82,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    * @param cmd Command message to send to the transports.
    * @return A Future that indicates when the message was successfully handled or dropped.
    */
-  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
+  def managementCommand(@unused cmd: Any): Future[Boolean] = { Future.successful(false) }
 
   /**
    * A Logger that can be used to log issues that may occur

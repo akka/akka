@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit.metrics
@@ -20,13 +20,13 @@ class AveragingGauge extends Gauge[Double] {
 
   def add(n: Long): Unit = {
     count.increment()
-    sum add n
+    sum.add(n)
   }
 
   def add(ns: Seq[Long]): Unit = {
     // takes a mutable Seq on order to allow use with Array's
-    count add ns.length
-    sum add ns.sum
+    count.add(ns.length)
+    sum.add(ns.sum)
   }
 
   override def getValue: Double = sum.sum().toDouble / count.sum()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
@@ -62,21 +62,20 @@ private[akka] object Chunking {
   }
 
   def unchunk[T]: Flow[ByteString, T, NotUsed] =
-    Flow[ByteString]
-      .via(Framing.simpleFramingProtocolDecoder(MaxFrameSize))
-      .mapAsync(Parallelism) { bytes ⇒
-        val sys = GraphInterpreter.currentInterpreter.materializer.asInstanceOf[ActorMaterializer].system
-        import sys.dispatcher
-        Future {
-          val messageProtocol = Payload.parseFrom(bytes.toArray)
-          SerializationExtension(sys).deserialize(
+    Flow[ByteString].via(Framing.simpleFramingProtocolDecoder(MaxFrameSize)).mapAsync(Parallelism) { bytes ⇒
+      val sys = GraphInterpreter.currentInterpreter.materializer.asInstanceOf[ActorMaterializer].system
+      import sys.dispatcher
+      Future {
+        val messageProtocol = Payload.parseFrom(bytes.toArray)
+        SerializationExtension(sys)
+          .deserialize(
             messageProtocol.getEnclosedMessage.toByteArray,
             messageProtocol.getSerializerId,
-            if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else ""
-          ).get
-            .asInstanceOf[T]
-        }
+            if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else "")
+          .get
+          .asInstanceOf[T]
       }
+    }
 
   // copied verbatim from akka-http, should move to a final place, somewhere in akka-stream
   private def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =
@@ -88,6 +87,7 @@ private[akka] object Chunking {
         var remaining = ByteString.empty
 
         def splitAndPush(elem: ByteString): Unit = {
+          println(elem) // FIXME: elem isn't used?
           val toPush = remaining.take(maxBytesPerChunk)
           val toKeep = remaining.drop(maxBytesPerChunk)
           push(out, toPush)

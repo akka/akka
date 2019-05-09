@@ -1,23 +1,17 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
-import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
+import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.cluster.Cluster
-import akka.cluster.ddata.Replicator.Changed
-import akka.cluster.ddata.Replicator.GetKeyIds
-import akka.cluster.ddata.Replicator.GetKeyIdsResult
-import akka.cluster.ddata.Replicator.Subscribe
-import akka.cluster.ddata.Replicator.Update
-import akka.cluster.ddata.Replicator.UpdateResponse
-import akka.cluster.ddata.Replicator.WriteLocal
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -30,15 +24,16 @@ object LotsOfDataBot {
     if (args.isEmpty)
       startup(Seq("2551", "2552", "0"))
     else
-      startup(args)
+      startup(args.toIndexedSeq)
   }
 
   def startup(ports: Seq[String]): Unit = {
-    ports.foreach { port ⇒
+    ports.foreach { port =>
       // Override the configuration of the port
-      val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-        withFallback(ConfigFactory.load(
-          ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("akka.remote.classic.netty.tcp.port=" + port)
+        .withFallback(
+          ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
@@ -75,8 +70,8 @@ class LotsOfDataBot extends Actor with ActorLogging {
   import LotsOfDataBot._
   import Replicator._
 
+  implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
   val replicator = DistributedData(context.system).replicator
-  implicit val cluster = Cluster(context.system)
 
   import context.dispatcher
   val isPassive = context.system.settings.config.getBoolean("passive")
@@ -93,9 +88,9 @@ class LotsOfDataBot extends Actor with ActorLogging {
   def receive = if (isPassive) passive else active
 
   def active: Receive = {
-    case Tick ⇒
+    case Tick =>
       val loop = if (count >= maxEntries) 1 else 100
-      for (_ ← 1 to loop) {
+      for (_ <- 1 to loop) {
         count += 1
         if (count % 10000 == 0)
           log.info("Reached {} entries", count)
@@ -110,31 +105,31 @@ class LotsOfDataBot extends Actor with ActorLogging {
         val s = ThreadLocalRandom.current().nextInt(97, 123).toChar.toString
         if (count <= maxEntries || ThreadLocalRandom.current().nextBoolean()) {
           // add
-          replicator ! Update(key, ORSet(), WriteLocal)(_ + s)
+          replicator ! Update(key, ORSet(), WriteLocal)(_ :+ s)
         } else {
           // remove
-          replicator ! Update(key, ORSet(), WriteLocal)(_ - s)
+          replicator ! Update(key, ORSet(), WriteLocal)(_.remove(s))
         }
       }
 
-    case _: UpdateResponse[_] ⇒ // ignore
+    case _: UpdateResponse[_] => // ignore
 
-    case c @ Changed(ORSetKey(id)) ⇒
+    case c @ Changed(ORSetKey(id)) =>
       val ORSet(elements) = c.dataValue
       log.info("Current elements: {} -> {}", id, elements)
   }
 
   def passive: Receive = {
-    case Tick ⇒
+    case Tick =>
       if (!tickTask.isCancelled)
         replicator ! GetKeyIds
-    case GetKeyIdsResult(keys) ⇒
+    case GetKeyIdsResult(keys) =>
       if (keys.size >= maxEntries) {
         tickTask.cancel()
         val duration = (System.nanoTime() - startTime).nanos.toMillis
         log.info("It took {} ms to replicate {} entries", duration, keys.size)
       }
-    case c @ Changed(ORSetKey(id)) ⇒
+    case c @ Changed(ORSetKey(id)) =>
       val ORSet(elements) = c.dataValue
       log.info("Current elements: {} -> {}", id, elements)
   }
@@ -142,4 +137,3 @@ class LotsOfDataBot extends Actor with ActorLogging {
   override def postStop(): Unit = tickTask.cancel()
 
 }
-

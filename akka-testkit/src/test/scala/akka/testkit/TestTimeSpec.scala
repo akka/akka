@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -7,12 +7,12 @@ package akka.testkit
 import scala.concurrent.duration._
 import org.scalatest.exceptions.TestFailedException
 
-class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" → 2.0)) {
+class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) {
 
   "A TestKit" must {
 
     "correctly dilate times" taggedAs TimingTest in {
-      1.second.dilated.toNanos should ===(1000000000L * testKitSettings.TestTimeFactor)
+      1.second.dilated.toNanos should ===(1000000000L * testKitSettings.TestTimeFactor.toLong)
 
       val probe = TestProbe()
       val now = System.nanoTime

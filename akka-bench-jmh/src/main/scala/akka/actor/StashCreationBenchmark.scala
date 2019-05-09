@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 object StashCreationBenchmark {
   class StashingActor extends Actor with Stash {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 
@@ -59,4 +59,3 @@ class StashCreationBenchmark {
     true
   }
 }
-

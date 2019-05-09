@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -45,16 +45,17 @@ import akka.actor.{ ActorLogging, Props }
  *
  */
 private[io] class TcpManager(tcp: TcpExt)
-  extends SelectionHandler.SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors) with ActorLogging {
+    extends SelectionHandler.SelectorBasedManager(tcp.Settings, tcp.Settings.NrOfSelectors)
+    with ActorLogging {
 
   def receive = workerForCommandHandler {
-    case c: Connect ⇒
+    case c: Connect =>
       val commander = sender() // cache because we create a function that will run asynchly
-      (registry ⇒ Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c))
+      (registry => Props(classOf[TcpOutgoingConnection], tcp, registry, commander, c))
 
-    case b: Bind ⇒
+    case b: Bind =>
       val commander = sender() // cache because we create a function that will run asynchly
-      (registry ⇒ Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b))
+      (registry => Props(classOf[TcpListener], selectorPool, tcp, registry, commander, b))
   }
 
 }

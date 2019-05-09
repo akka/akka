@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
@@ -17,13 +17,13 @@ private[persistence] object LeveldbCompaction {
  * Exposure of LevelDB compaction capability to reduce journal size upon message deletions.
  */
 private[persistence] trait LeveldbCompaction extends Actor with ActorLogging with CompactionSegmentManagement {
-  this: LeveldbStore ⇒
+  this: LeveldbStore =>
 
   import Key._
   import LeveldbCompaction._
 
   def receiveCompactionInternal: Receive = {
-    case TryCompactLeveldb(persistenceId, toSeqNr) ⇒
+    case TryCompactLeveldb(persistenceId, toSeqNr) =>
       tryCompactOnDelete(persistenceId, toSeqNr)
   }
 
@@ -68,7 +68,7 @@ private[persistence] trait CompactionSegmentManagement {
   def compactionIntervals: Map[String, Long]
 
   def updateCompactionSegment(persistenceId: String, compactionSegment: Long): Unit = {
-    latestCompactionSegments += persistenceId → compactionSegment
+    latestCompactionSegments += persistenceId -> compactionSegment
   }
 
   def compactionLimit(persistenceId: String, toSeqNr: Long): Long = {
@@ -86,7 +86,8 @@ private[persistence] trait CompactionSegmentManagement {
   private def isCompactionRequired(persistenceId: String, toSeqNr: Long): Boolean =
     compactionSegment(persistenceId, toSeqNr) > latestCompactionSegment(persistenceId)
 
-  private def latestCompactionSegment(persistenceId: String): Long = latestCompactionSegments.getOrElse(persistenceId, 0L)
+  private def latestCompactionSegment(persistenceId: String): Long =
+    latestCompactionSegments.getOrElse(persistenceId, 0L)
 
   private def compactionInterval(persistenceId: String): Long =
     compactionIntervals.getOrElse(persistenceId, compactionIntervals.getOrElse(Wildcard, 0L))

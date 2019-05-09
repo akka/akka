@@ -15,12 +15,11 @@ To use Akka Cluster Typed, you must add the following dependency in your project
 For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](../common/cluster.md). This documentation shows how to use the typed
 Cluster API.
 
-@@@ warning
+@@@ note
 
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
+This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
+This means that API or semantics can change without warning or deprecation period, but such changes will
+be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
 
 @@@
 
@@ -55,7 +54,7 @@ Java
 
 The Cluster extensions gives you access to:
 
-* manager: An `ActorRef[ClusterCommand]` where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
+* manager: An @scala[`ActorRef[ClusterCommand]`]@java[`ActorRef<ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
 * subscriptions: An `ActorRef[ClusterStateSubscription]` where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
 * state: The current `CurrentClusterState`
 

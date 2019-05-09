@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.tutorial_5;
@@ -85,5 +85,4 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
-
 }

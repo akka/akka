@@ -13,7 +13,7 @@ To use Multi Node Testing, you must add the following dependency in your project
 ## Sample project
 
 You can look at the
-@extref[Multi Node example project](samples:akka-samples-multi-node)
+@extref[Multi Node example project](samples:akka-samples-multi-node-scala)
 to see what this looks like in practice.
 
 ## Multi Node Testing Concepts

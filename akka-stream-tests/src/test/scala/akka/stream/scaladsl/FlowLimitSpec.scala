@@ -1,17 +1,16 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ StreamLimitReachedException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, StreamLimitReachedException }
 import scala.concurrent.Await
 
 class FlowLimitSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val mat = ActorMaterializer(settings)
 
