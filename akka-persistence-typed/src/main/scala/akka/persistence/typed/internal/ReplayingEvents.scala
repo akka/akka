@@ -171,8 +171,14 @@ private[akka] final class ReplayingEvents[C, E, S](
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
-
+    if (setup.log.isDebugEnabled) {
+      setup.log.debug(
+        "Recovery failure for persitsenceId {} after {} nanos",
+        setup.persistenceId,
+        System.nanoTime() - state.recoveryStartTime)
+    }
     val sequenceNr = state.seqNr
+
     val msg = event match {
       case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
@@ -190,7 +196,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.log.isDebugEnabled) {
         setup.log.debug(
-          "Recovery for persitsenceId {} took {} nanos",
+          "Recovery for persistenceId {} took {} nanos",
           setup.persistenceId,
           System.nanoTime() - state.recoveryStartTime)
       }

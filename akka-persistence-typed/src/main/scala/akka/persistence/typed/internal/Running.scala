@@ -228,7 +228,8 @@ private[akka] object Running {
       var visibleState: RunningState[S], // previous state until write success
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
-      var sideEffects: immutable.Seq[SideEffect[S]])
+      var sideEffects: immutable.Seq[SideEffect[S]],
+      persistStartTime: Long = System.nanoTime())
       extends AbstractBehavior[InternalProtocol]
       with WithSeqNrAccessible {
 
@@ -255,8 +256,16 @@ private[akka] object Running {
       }
     }
 
+    private[akka] def onWriteComplete(persistenceId: String, startTime: Long, endTime: Long): Unit = {
+      if (setup.log.isDebugEnabled) {
+        setup.log.debug("writeComplete for persistenceId {}. Took {} nanos", persistenceId, endTime - startTime)
+      }
+    }
+
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
-      setup.log.debug("Received Journal response: {}", response)
+      if (setup.log.isDebugEnabled) {
+        setup.log.debug("Received Journal response: {} after: {} nanos", response, System.nanoTime() - persistStartTime)
+      }
 
       def onWriteResponse(p: PersistentRepr): Behavior[InternalProtocol] = {
         state = state.updateLastSequenceNr(p)
@@ -265,6 +274,7 @@ private[akka] object Running {
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) this
         else {
+          onWriteComplete(setup.persistenceId.id, persistStartTime, System.nanoTime())
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
             tryUnstashOne(applySideEffects(sideEffects, state))
