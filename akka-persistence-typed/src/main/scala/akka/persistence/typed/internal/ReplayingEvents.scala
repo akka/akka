@@ -44,7 +44,8 @@ private[akka] object ReplayingEvents {
       state: State,
       eventSeenInInterval: Boolean,
       toSeqNr: Long,
-      receivedPoisonPill: Boolean)
+      receivedPoisonPill: Boolean,
+      recoveryStartTime: Long)
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -166,7 +167,7 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param cause failure cause.
    * @param event the event that was being processed when the exception was thrown
    */
-  private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+  private[akka] def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
@@ -184,9 +185,15 @@ private[akka] final class ReplayingEvents[C, E, S](
     throw new JournalFailureException(msg, cause)
   }
 
-  private def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
+  private[akka] def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
       tryReturnRecoveryPermit("replay completed successfully")
+      if (setup.log.isDebugEnabled) {
+        setup.log.debug(
+          "Recovery for persitsenceId {} took {} nanos",
+          setup.persistenceId,
+          System.nanoTime() - state.recoveryStartTime)
+      }
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)

@@ -142,7 +142,13 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
     ReplayingEvents[C, E, S](
       setup,
-      ReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill))
+      ReplayingEvents.ReplayingState(
+        lastSequenceNr,
+        state,
+        eventSeenInInterval = false,
+        toSnr,
+        receivedPoisonPill,
+        System.nanoTime()))
   }
 
 }
