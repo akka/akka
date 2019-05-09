@@ -24,12 +24,6 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 
-/*case class SerializedMessage(
-  data:         ByteString,
-  serializerId: Int,
-  manifest:     String
-)*/
-
 @InternalApi
 private[akka] object Chunking {
   // FIXME: somehow get from config
@@ -62,20 +56,22 @@ private[akka] object Chunking {
   }
 
   def unchunk[T]: Flow[ByteString, T, NotUsed] =
-    Flow[ByteString].via(Framing.simpleFramingProtocolDecoder(MaxFrameSize)).mapAsync(Parallelism) { bytes ⇒
-      val sys = GraphInterpreter.currentInterpreter.materializer.asInstanceOf[ActorMaterializer].system
-      import sys.dispatcher
-      Future {
-        val messageProtocol = Payload.parseFrom(bytes.toArray)
-        SerializationExtension(sys)
-          .deserialize(
-            messageProtocol.getEnclosedMessage.toByteArray,
-            messageProtocol.getSerializerId,
-            if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else "")
-          .get
-          .asInstanceOf[T]
+    Flow[ByteString] // manual line break comment to appease scalafmt
+      .via(Framing.simpleFramingProtocolDecoder(MaxFrameSize))
+      .mapAsync(Parallelism) { bytes ⇒
+        val sys = GraphInterpreter.currentInterpreter.materializer.asInstanceOf[ActorMaterializer].system
+        import sys.dispatcher
+        Future {
+          val messageProtocol = Payload.parseFrom(bytes.toArray)
+          SerializationExtension(sys)
+            .deserialize(
+              messageProtocol.getEnclosedMessage.toByteArray,
+              messageProtocol.getSerializerId,
+              if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else "")
+            .get
+            .asInstanceOf[T]
+        }
       }
-    }
 
   // copied verbatim from akka-http, should move to a final place, somewhere in akka-stream
   private def limitByteChunksStage(maxBytesPerChunk: Int): GraphStage[FlowShape[ByteString, ByteString]] =

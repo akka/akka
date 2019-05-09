@@ -383,7 +383,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       Await.result(done, 7.seconds)
     }
 
-    "respect back -pressure from (implied by origin Sink)" in {
+    "respect back-pressure from (implied by origin Sink)" in {
       remoteActor ! "receive-32"
       val sinkRef = expectMsgType[SinkRef[String]]
 
