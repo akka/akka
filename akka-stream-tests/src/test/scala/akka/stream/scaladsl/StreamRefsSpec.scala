@@ -11,6 +11,7 @@ import akka.pattern._
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
 import akka.stream._
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
@@ -145,7 +146,8 @@ object StreamRefsSpec {
   def config(): Config = {
     ConfigFactory.parseString(s"""
     akka {
-      loglevel = INFO
+      loglevel = DEBUG
+      loggers = ["akka.testkit.SilenceAllTestEventListener"]
 
       actor {
         provider = remote
@@ -162,7 +164,7 @@ object StreamRefsSpec {
   }
 }
 
-class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSender with WithLogCapturing {
   import StreamRefsSpec._
 
   def this() {
