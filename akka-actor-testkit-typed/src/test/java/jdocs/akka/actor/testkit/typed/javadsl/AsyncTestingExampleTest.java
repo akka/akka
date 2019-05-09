@@ -16,10 +16,8 @@ import akka.actor.testkit.typed.javadsl.ActorTestKit;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
-// #test-header
 import org.scalatest.junit.JUnitSuite;
 
-// #test-header
 import scala.util.Success;
 import scala.util.Try;
 
@@ -32,7 +30,11 @@ import java.util.Objects;
 import static org.junit.Assert.assertEquals;
 
 // #test-header
-public class AsyncTestingExampleTest extends JUnitSuite {
+public class AsyncTestingExampleTest
+    // #test-header
+    extends JUnitSuite
+// #test-header
+{
   static final ActorTestKit testKit = ActorTestKit.create();
   // #test-header
 
