@@ -32,7 +32,7 @@ private[akka] final class LocalReceptionist
 @InternalApi
 private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
-  override val name = "local-receptionist"
+  override val name = "localReceptionist"
 
   type KV[K <: AbstractServiceKey] = ActorRef[K#Protocol]
   type LocalServiceRegistry = TypedMultiMap[AbstractServiceKey, KV]

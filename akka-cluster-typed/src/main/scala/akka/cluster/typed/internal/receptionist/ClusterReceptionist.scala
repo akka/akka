@@ -42,7 +42,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   final val EmptyORMultiMap = ORMultiMap.empty[ServiceKey[_], Entry]
 
-  override val name = "cluster-receptionist"
+  override val name = "clusterReceptionist"
 
   // values contain system uid to make it possible to discern actors at the same
   // path in different incarnations of a cluster node
