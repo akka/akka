@@ -198,14 +198,14 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(initialTimeout)
 
         def receive: Receive = {
-          case Identify(_)    => context.setReceiveTimeout(Duration.Undefined)
-          case ReceiveTimeout => timeoutLatch.open
+          case TransparentTick => context.setReceiveTimeout(Duration.Undefined)
+          case ReceiveTimeout  => timeoutLatch.open
         }
       }))
 
-      timeoutActor ! Identify(None)
+      timeoutActor ! TransparentTick
 
-      Await.ready(timeoutLatch, initialTimeout * 2)
+      intercept[TimeoutException] { Await.ready(timeoutLatch, initialTimeout * 2) }
       system.stop(timeoutActor)
     }
 

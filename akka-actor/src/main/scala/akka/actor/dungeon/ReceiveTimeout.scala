@@ -28,8 +28,8 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   /** Called after `ActorCell.receiveMessage` or `ActorCell.autoReceiveMessage`. */
   protected def checkReceiveTimeoutIfNeeded(message: Any, beforeReceive: (Duration, Cancellable)): Unit =
-    if (hasTimeoutData)
-      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout] || (receiveTimeoutData ne beforeReceive))
+    if (hasTimeoutData || receiveTimeoutChanged(beforeReceive))
+      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout] || receiveTimeoutChanged(beforeReceive))
 
   final def checkReceiveTimeout(reschedule: Boolean = true): Unit = {
     val (recvtimeout, task) = receiveTimeoutData
@@ -54,6 +54,9 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
   }
 
   private def hasTimeoutData: Boolean = receiveTimeoutData ne emptyReceiveTimeoutData
+
+  private def receiveTimeoutChanged(beforeReceive: (Duration, Cancellable)): Boolean =
+    receiveTimeoutData ne beforeReceive
 
   protected def cancelReceiveTimeoutIfNeeded(message: Any): (Duration, Cancellable) = {
     if (hasTimeoutData && !message.isInstanceOf[NotInfluenceReceiveTimeout])
