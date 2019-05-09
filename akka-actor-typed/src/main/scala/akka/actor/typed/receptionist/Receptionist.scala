@@ -51,7 +51,7 @@ abstract class Receptionist extends Extension {
     import akka.actor.typed.scaladsl.adapter._
     system.internalSystemActorOf(
       provider.behavior,
-      "receptionist",
+      provider.name,
       Props.empty.withDispatcherFromConfig(Dispatchers.InternalDispatcherId))
   }
 }
