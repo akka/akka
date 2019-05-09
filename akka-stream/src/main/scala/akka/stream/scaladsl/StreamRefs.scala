@@ -5,6 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.streamref.Chunking
+import akka.stream.impl.streamref.SinkRefImpl
+import akka.stream.impl.streamref.SourceRefImpl
 import akka.stream.{ SinkRef, SourceRef }
 import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
 import akka.util.OptionVal
@@ -23,7 +25,9 @@ object StreamRefs {
    * See more detailed documentation on [[SourceRef]].
    */
   def sourceRef[T](): Sink[T, SourceRef[T]] =
-    Chunking.chunk[T].toMat(Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None)))(Keep.right)
+    Chunking
+      .chunk[T]
+      .toMat(Sink.fromGraph(new SinkRefStageImpl(OptionVal.None)))((_, ref) => SourceRefImpl(ref): SourceRef[T])
 
   /**
    * A local [[Source]] which materializes a [[SinkRef]] which can be used by other streams (including remote ones),
@@ -34,5 +38,7 @@ object StreamRefs {
    * See more detailed documentation on [[SinkRef]].
    */
   def sinkRef[T](): Source[T, SinkRef[T]] =
-    Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None)).via(Chunking.unchunk[T])
+    Source
+      .fromGraph(new SourceRefStageImpl(OptionVal.None))
+      .viaMat(Chunking.unchunk[T])((ref, _) => SinkRefImpl(ref): SinkRef[T])
 }

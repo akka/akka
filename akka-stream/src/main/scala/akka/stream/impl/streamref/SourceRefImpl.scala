@@ -11,6 +11,7 @@ import akka.event.Logging
 import akka.stream._
 import akka.stream.actor.{ RequestStrategy, WatermarkRequestStrategy }
 import akka.stream.impl.FixedSizeBuffer
+import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.ByteString
@@ -19,12 +20,8 @@ import akka.util.{ OptionVal, PrettyDuration }
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
 private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) extends SourceRef[T] {
-  def source: Source[T, NotUsed] = {
-    Source
-      .fromGraph(new SourceRefStageImpl[ByteString](OptionVal.Some(initialPartnerRef)))
-      .mapMaterializedValue(_ ⇒ NotUsed)
-      .via(Chunking.unchunk[T])
-  }
+  def source: Source[T, NotUsed] =
+    Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).viaMat(Chunking.unchunk[T])(Keep.none)
 }
 
 /**
@@ -34,8 +31,8 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
  * If it is none, then we are the side creating the ref.
  */
 @InternalApi
-private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: OptionVal[ActorRef])
-    extends GraphStageWithMaterializedValue[SourceShape[ByteString], SinkRef[Out]] { stage ⇒
+private[stream] final class SourceRefStageImpl(val initialPartnerRef: OptionVal[ActorRef])
+    extends GraphStageWithMaterializedValue[SourceShape[ByteString], ActorRef] { stage ⇒
   val out: Outlet[ByteString] = Outlet[ByteString](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
 
@@ -45,12 +42,12 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       case _                   => "<no-initial-ref>"
     }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SinkRef[Out]) =
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
     throw new IllegalStateException("Not supported")
 
   private[akka] override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
-      eagerMaterializer: Materializer): (GraphStageLogic, SinkRef[Out]) = {
+      eagerMaterializer: Materializer): (GraphStageLogic, ActorRef) = {
 
     object logic extends TimerGraphStageLogic(shape) with StageLogging with OutHandler {
       private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
@@ -161,7 +158,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
           triggerCumulativeDemand()
 
-        case (sender, msg @ StreamRefsProtocol.SequencedOnNext(seqNr, payload: Out @unchecked)) =>
+        case (sender, msg @ StreamRefsProtocol.SequencedOnNext(seqNr, payload)) =>
           observeAndValidateSender(sender, "Illegal sender in SequencedOnNext")
           observeAndValidateSequenceNr(seqNr, "Illegal sequence nr in SequencedOnNext")
           log.debug("[{}] Received seq {} from {}", stageActorName, msg, sender)
@@ -252,7 +249,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       setHandler(out, this)
     }
-    (logic, SinkRefImpl(logic.ref))
+    (logic, logic.ref)
   }
 
   override def toString: String =

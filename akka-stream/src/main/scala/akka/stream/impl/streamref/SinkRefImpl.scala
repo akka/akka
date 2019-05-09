@@ -21,7 +21,7 @@ import scala.util.{ Failure, Success, Try }
 @InternalApi
 private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) extends SinkRef[In] {
   override def sink(): Sink[In, NotUsed] =
-    Chunking.chunk[In].to(Sink.fromGraph(new SinkRefStageImpl[In](OptionVal.Some(initialPartnerRef))))
+    Chunking.chunk[In].to(Sink.fromGraph(new SinkRefStageImpl(OptionVal.Some(initialPartnerRef))))
 }
 
 /**
@@ -31,8 +31,8 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
  * the ref.
  */
 @InternalApi
-private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartnerRef: OptionVal[ActorRef])
-    extends GraphStageWithMaterializedValue[SinkShape[ByteString], SourceRef[In]] {
+private[stream] final class SinkRefStageImpl private[akka] (val initialPartnerRef: OptionVal[ActorRef])
+    extends GraphStageWithMaterializedValue[SinkShape[ByteString], ActorRef] {
   val in: Inlet[ByteString] = Inlet[ByteString](s"${Logging.simpleName(getClass)}($initialRefName).in")
   override def shape: SinkShape[ByteString] = SinkShape.of(in)
 
@@ -42,12 +42,12 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       case OptionVal.None      => "<no-initial-ref>"
     }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SourceRef[In]) =
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
     throw new IllegalStateException("Not supported")
 
   private[akka] override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
-      eagerMaterializer: Materializer): (GraphStageLogic, SourceRef[In]) = {
+      eagerMaterializer: Materializer): (GraphStageLogic, ActorRef) = {
 
     object logic extends TimerGraphStageLogic(shape) with StageLogging with InHandler {
 
@@ -232,7 +232,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       setHandler(in, this)
     }
 
-    (logic, SourceRefImpl(logic.ref))
+    (logic, logic.ref)
   }
 
   override def toString = s"${Logging.simpleName(getClass)}($initialRefName)"
