@@ -174,3 +174,15 @@ and then it will behave as in Akka 2.5.x:
 ```
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
+
+## Akka Typed
+
+### Receptionist has moved
+
+The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
+instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`. 
+
+The path change makes it impossible to do a rolling upgrade from 2.5 to 2.6 if you use Akka Typed and the receptionist
+as the old and the new nodes receptionists will not be able to communicate.
+
+ 
