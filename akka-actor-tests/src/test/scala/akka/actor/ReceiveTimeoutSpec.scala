@@ -227,11 +227,14 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         }
       }))
 
+      probe.expectNoMessage(initialTimeout / 2)
+
       timeoutActor ! TransparentTick
       timeoutActor ! TransparentTick
 
       // not triggered by initialTimeout because it was changed by the ticks
-      probe.expectNoMessage(initialTimeout) //  the last set value
+      // wait shorter than last set value, but longer than initialTimeout
+      probe.expectNoMessage(initialTimeout / 2 + 50.millis)
       // now should happen
       probe.expectMsgType[ReceiveTimeout]
       system.stop(timeoutActor)
