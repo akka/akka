@@ -41,7 +41,7 @@ out-of-date value.
 
 ## Using the Replicator
 
-The @apidoc[typed.*\.Replicator$]
+The @apidoc[typed.*.Replicator$]
 actor provides the API for interacting with the data and is accessed through the extension 
 @apidoc[typed.*DistributedData].
 
