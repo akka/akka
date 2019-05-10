@@ -210,7 +210,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
     }
 
     "work correctly if the timeout is changed multiple times while handling a NotInfluenceReceiveTimeout message" taggedAs TimingTest in {
-      val timeoutLatch = TestLatch()
+      val probe = TestProbe()
       val initialTimeout = 500.millis
 
       val timeoutActor = system.actorOf(Props(new Actor {
@@ -223,14 +223,17 @@ class ReceiveTimeoutSpec extends AkkaSpec {
             count += 1 // do some work then
             context.setReceiveTimeout(initialTimeout)
 
-          case ReceiveTimeout => timeoutLatch.open
+          case ReceiveTimeout => probe.ref ! ReceiveTimeout
         }
       }))
 
       timeoutActor ! TransparentTick
       timeoutActor ! TransparentTick
 
-      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
+      // not triggered by initialTimeout because it was changed by the ticks
+      probe.expectNoMessage(initialTimeout) //  the last set value
+      // now should happen
+      probe.expectMsgType[ReceiveTimeout]
       system.stop(timeoutActor)
     }
   }
