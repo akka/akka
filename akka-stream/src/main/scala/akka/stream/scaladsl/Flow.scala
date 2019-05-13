@@ -29,7 +29,7 @@ import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -319,10 +319,7 @@ final class Flow[-In, +Out, +Mat](
    *
    * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
    * @param extractContext turn each outgoing element of this Flow into an outgoing context value
-   *
-   * API MAY CHANGE
    */
-  @ApiMayChange
   def asFlowWithContext[U, CtxU, CtxOut](collapseContext: (U, CtxU) => In)(
       extractContext: Out => CtxOut): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
     new FlowWithContext(
@@ -1017,7 +1014,13 @@ trait FlowOps[+Out, +Mat] {
     val askFlow = Flow[Out]
       .watch(ref)
       .mapAsync(parallelism) { el =>
-        akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
+        akka.pattern.ask(ref).?(el)(timeout)
+      }
+      .map {
+        case e: S => e
+        case o =>
+          throw new ClassCastException(
+            s"'Flow.ask' failed: expected response of type [${tag.runtimeClass}], got [${o.getClass}]")
       }
       .mapError {
         // the purpose of this recovery is to change the name of the stage in that exception

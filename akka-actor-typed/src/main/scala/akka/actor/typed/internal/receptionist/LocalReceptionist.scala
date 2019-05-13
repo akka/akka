@@ -19,6 +19,7 @@ import akka.util.TypedMultiMap
  */
 @InternalApi
 private[akka] trait ReceptionistBehaviorProvider {
+  def name: String
   def behavior: Behavior[Command]
 }
 
@@ -30,6 +31,8 @@ private[akka] final class LocalReceptionist
 /** INTERNAL API */
 @InternalApi
 private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
+
+  override val name = "localReceptionist"
 
   type KV[K <: AbstractServiceKey] = ActorRef[K#Protocol]
   type LocalServiceRegistry = TypedMultiMap[AbstractServiceKey, KV]

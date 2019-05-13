@@ -407,7 +407,7 @@ private[akka] class LocalActorRefProvider private[akka] (
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    def isWalking = causeOfTermination.future.isCompleted == false
+    def isWalking = !causeOfTermination.future.isCompleted
 
     override def stop(): Unit = {
       causeOfTermination.trySuccess(
@@ -499,7 +499,7 @@ private[akka] class LocalActorRefProvider private[akka] (
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp"        => tempContainer
         case "deadLetters" => deadLetters
-        case other         => extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case other         => extraNames.getOrElse(other, super.getSingleChild(other))
       }
     }
 

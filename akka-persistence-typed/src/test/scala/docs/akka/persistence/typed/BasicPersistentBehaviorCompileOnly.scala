@@ -10,10 +10,13 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsFailed
+//#behavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.PersistenceId
+
+//#behavior
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import com.github.ghik.silencer.silent
 
 // unused variables in pattern match are useful in the docs

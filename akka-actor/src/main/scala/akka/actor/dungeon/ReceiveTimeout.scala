@@ -6,6 +6,8 @@ package akka.actor.dungeon
 
 import akka.actor.ActorCell
 import akka.actor.Cancellable
+import akka.actor.NotInfluenceReceiveTimeout
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
@@ -24,9 +26,13 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   final def setReceiveTimeout(timeout: Duration): Unit = receiveTimeoutData = receiveTimeoutData.copy(_1 = timeout)
 
+  protected def checkReceiveTimeoutIfNeeded(message: Any): Unit =
+    if (hasTimeoutData)
+      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout])
+
   final def checkReceiveTimeout(reschedule: Boolean = true): Unit = {
-    val (recvtimeout, task) = receiveTimeoutData
-    recvtimeout match {
+    val (recvTimeout, task) = receiveTimeoutData
+    recvTimeout match {
       case f: FiniteDuration =>
         // The fact that timeout is FiniteDuration and task is emptyCancellable
         // means that a user called `context.setReceiveTimeout(...)`
@@ -45,6 +51,12 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
     val task = system.scheduler.scheduleOnce(f, self, akka.actor.ReceiveTimeout)(this.dispatcher)
     receiveTimeoutData = (f, task)
   }
+
+  private def hasTimeoutData: Boolean = receiveTimeoutData ne emptyReceiveTimeoutData
+
+  protected def cancelReceiveTimeoutIfNeeded(message: Any): Unit =
+    if (hasTimeoutData && !message.isInstanceOf[NotInfluenceReceiveTimeout])
+      cancelReceiveTimeout()
 
   override final def cancelReceiveTimeout(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {

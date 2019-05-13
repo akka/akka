@@ -97,7 +97,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
 
   /** Call only if it was checked before that `watching contains ref` */
   private def checkWatchingSame(ref: InternalActorRef, newMessage: Option[Any]): Unit = {
-    val previous = watching.get(ref).get
+    val previous = watching(ref)
     if (previous != newMessage)
       throw new IllegalStateException(
         s"Watch($self, $ref) termination message was not overwritten from [$previous] to [$newMessage]. " +
@@ -105,7 +105,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
   }
 
   protected def tellWatchersWeDied(): Unit =
-    if (!watchedBy.isEmpty) {
+    if (watchedBy.nonEmpty) {
       try {
         // Don't need to send to parent parent since it receives a DWN by default
         def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
@@ -137,7 +137,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
     }
 
   protected def unwatchWatchedActors(@unused actor: Actor): Unit =
-    if (!watching.isEmpty) {
+    if (watching.nonEmpty) {
       maintainAddressTerminatedSubscription() {
         try {
           watching.foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -220,7 +220,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
     }
 
     if (isNonLocal(change)) {
-      def hasNonLocalAddress: Boolean = ((watching.keysIterator.exists(isNonLocal)) || (watchedBy.exists(isNonLocal)))
+      def hasNonLocalAddress: Boolean = watching.keysIterator.exists(isNonLocal) || watchedBy.exists(isNonLocal)
       val had = hasNonLocalAddress
       val result = block
       val has = hasNonLocalAddress

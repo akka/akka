@@ -175,10 +175,22 @@ and then it will behave as in Akka 2.5.x:
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
 
-## Akka Typed API changes
+## Akka Typed
+
+### Receptionist has moved
+
+The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
+instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`. 
+
+The path change makes it impossible to do a rolling upgrade from 2.5 to 2.6 if you use Akka Typed and the receptionist
+as the old and the new nodes receptionists will not be able to communicate.
+
+
+### Akka Typed API changes
 
 Akka Typed APIs are still marked as [may change](../common/may-change.md) and therefore its API can still change without deprecation period. The following is a list of API changes since the latest release: 
 
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
+ 
