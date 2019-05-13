@@ -188,7 +188,10 @@ private[akka] final case class RunningInterpreterImpl(
 @InternalApi
 private[akka] final case class LogicSnapshotImpl(index: Int, label: String, attributes: Attributes)
     extends LogicSnapshot
-    with HideImpl
+    with HideImpl {
+
+  override def toString: String = s"Logic($label)"
+}
 
 /**
  * INTERNAL API
