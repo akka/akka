@@ -10,13 +10,15 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe, retry, AskTimeoutException }
 import akka.stream._
-import akka.stream.impl.fusing.GraphInterpreterShell
-import akka.util.OptionVal
+import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphInterpreterShell }
+import akka.stream.snapshot.StreamSnapshot
+import akka.util.{ OptionVal, Timeout }
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, ExecutionContextExecutor }
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
@@ -177,6 +179,9 @@ private[akka] class SubFusingActorMaterializerImpl(
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
 
+  case object GetChildrenSnapshots
+  final case class ChildrenSnapshots(seq: immutable.Seq[StreamSnapshot])
+
   /** Testing purpose */
   case object GetChildren
 
@@ -195,7 +200,7 @@ private[akka] class SubFusingActorMaterializerImpl(
  */
 @InternalApi private[akka] class StreamSupervisor(haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
-
+  implicit val ec = context.dispatcher
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
@@ -209,6 +214,28 @@ private[akka] class SubFusingActorMaterializerImpl(
       context.asInstanceOf[ActorCell].removeFunctionRef(ref)
     case GetChildren =>
       sender() ! Children(context.children.toSet)
+    case GetChildrenSnapshots =>
+      // Arbitrary timeout but should always be quick, the failure scenario is that
+      // the child/stream stopped, and we do retry
+      implicit val timeout: Timeout = 1.second
+      implicit val scheduler = context.system.scheduler
+      val futureSnapshots: Iterable[Future[Option[StreamSnapshot]]] =
+        context.children.map(
+          child =>
+            retry(
+              { () =>
+                (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot].map(s => Some(s)).recover {
+                  case ex: AskTimeoutException
+                      if ex.getMessage
+                        .contains("had already been terminated") || context.child(child.path.name).isEmpty =>
+                    // child/stream was stopped while we were asking
+                    None
+                }
+              },
+              3,
+              200.millis))
+      Future.sequence(futureSnapshots).map(snaps => ChildrenSnapshots(snaps.flatten.toVector)).pipeTo(sender())
+
     case StopChildren =>
       context.children.foreach(context.stop)
       sender() ! StoppedChildren
