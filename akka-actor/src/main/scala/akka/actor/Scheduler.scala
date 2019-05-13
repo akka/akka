@@ -47,6 +47,13 @@ trait Scheduler {
    * thereafter every 500ms you would set delay=Duration.Zero and
    * interval=Duration(500, TimeUnit.MILLISECONDS)
    *
+   * The delay between periodic messages is compensated for when the previous
+   * message was actually sent. It may for example be delayed longer than expected
+   * if the JVM process is suspended (GC or starved). If this drift exceeds
+   * the configured `akka.scheduler.max-drift-compensation` the delay of subsequent message
+   * will not be compensated. The reason for this is to avoid bursts of scheduled messages
+   * when the process wakes up.
+   *
    * Java & Scala API
    */
   @silent
@@ -71,6 +78,13 @@ trait Scheduler {
    * thereafter every 500ms you would set delay=Duration.Zero and
    * interval=Duration(500, TimeUnit.MILLISECONDS)
    *
+   * The delay between periodic messages is compensated for when the previous
+   * message was actually sent. It may for example be delayed longer than expected
+   * if the JVM process is suspended (GC or starved). If this drift exceeds
+   * the configured `akka.scheduler.max-drift-compensation` the delay of subsequent message
+   * will not be compensated. The reason for this is to avoid bursts of scheduled messages
+   * when the process wakes up.
+   *
    * Java API
    */
   final def schedule(
@@ -88,11 +102,17 @@ trait Scheduler {
    * Schedules a function to be run repeatedly with an initial delay and a
    * frequency. E.g. if you would like the function to be run after 2 seconds
    * and thereafter every 100ms you would set delay = Duration(2, TimeUnit.SECONDS)
-   * and interval = Duration(100, TimeUnit.MILLISECONDS). If the execution of
-   * the function takes longer than the interval, the subsequent execution will
-   * start immediately after the prior one completes (there will be no overlap
+   * and interval = Duration(100, TimeUnit.MILLISECONDS).
+   *
+   * If the execution of the function takes longer than the interval, the subsequent
+   * execution will start immediately after the prior one completes (there will be no overlap
    * of the function executions). In such cases, the actual execution interval
    * will differ from the interval passed to this method.
+   *
+   * This may also happen if the JVM process is suspended (GC or starved). If tasks take longer
+   * than the configured `akka.scheduler.max-drift-compensation` the delay of subsequent task
+   * will not be compensated. The reason for this is to avoid bursts of scheduled tasks
+   * when the process wakes up.
    *
    * If the function throws an exception the repeated scheduling is aborted,
    * i.e. the function will not be invoked any more.
@@ -108,12 +128,18 @@ trait Scheduler {
    * Schedules a `Runnable` to be run repeatedly with an initial delay and
    * a frequency. E.g. if you would like the function to be run after 2
    * seconds and thereafter every 100ms you would set delay = Duration(2,
-   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS). If
-   * the execution of the runnable takes longer than the interval, the
+   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS).
+   *
+   * If the execution of the runnable takes longer than the interval, the
    * subsequent execution will start immediately after the prior one completes
    * (there will be no overlap of executions of the runnable). In such cases,
    * the actual execution interval will differ from the interval passed to this
    * method.
+   *
+   * This may also happen if the JVM process is suspended (GC or starved). If tasks take longer
+   * than the configured `akka.scheduler.max-drift-compensation` the delay of subsequent task
+   * will not be compensated. The reason for this is to avoid bursts of scheduled tasks
+   * when the process wakes up.
    *
    * If the `Runnable` throws an exception the repeated scheduling is aborted,
    * i.e. the function will not be invoked any more.
@@ -130,12 +156,18 @@ trait Scheduler {
    * Schedules a `Runnable` to be run repeatedly with an initial delay and
    * a frequency. E.g. if you would like the function to be run after 2
    * seconds and thereafter every 100ms you would set delay = Duration(2,
-   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS). If
-   * the execution of the runnable takes longer than the interval, the
+   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS).
+   *
+   * If the execution of the runnable takes longer than the interval, the
    * subsequent execution will start immediately after the prior one completes
    * (there will be no overlap of executions of the runnable). In such cases,
    * the actual execution interval will differ from the interval passed to this
    * method.
+   *
+   * This may also happen if the JVM process is suspended (GC or starved). If tasks take longer
+   * than the configured `akka.scheduler.max-drift-compensation` the delay of subsequent task
+   * will not be compensated. The reason for this is to avoid bursts of scheduled tasks
+   * when the process wakes up.
    *
    * If the `Runnable` throws an exception the repeated scheduling is aborted,
    * i.e. the function will not be invoked any more.

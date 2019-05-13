@@ -41,18 +41,22 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
   import Helpers.Requiring
   import Helpers.ConfigOps
 
-  val WheelSize =
+  val WheelSize: Int =
     config
       .getInt("akka.scheduler.ticks-per-wheel")
       .requiring(ticks => (ticks & (ticks - 1)) == 0, "ticks-per-wheel must be a power of 2")
-  val TickDuration =
+  val TickDuration: FiniteDuration =
     config
       .getMillisDuration("akka.scheduler.tick-duration")
       .requiring(
         _ >= 10.millis || !Helpers.isWindows,
         "minimum supported akka.scheduler.tick-duration on Windows is 10ms")
       .requiring(_ >= 1.millis, "minimum supported akka.scheduler.tick-duration is 1ms")
-  val ShutdownTimeout = config.getMillisDuration("akka.scheduler.shutdown-timeout")
+  val MaxDriftCompensation: FiniteDuration =
+    config
+      .getMillisDuration("akka.scheduler.max-drift-compensation")
+      .requiring(_ >= Duration.Zero, "akka.scheduler.max-drift-compensation must be >= 0 s")
+  val ShutdownTimeout: FiniteDuration = config.getMillisDuration("akka.scheduler.shutdown-timeout")
 
   import LightArrayRevolverScheduler._
 
@@ -102,9 +106,19 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
             override def run(): Unit = {
               try {
                 runnable.run()
-                val driftNanos = clock() - getAndAdd(delay.toNanos)
+                val now = clock()
+                val driftNanos = now - getAndAdd(delay.toNanos)
+                val nextDelay =
+                  if (driftNanos >= MaxDriftCompensation.toNanos) {
+                    // reset because the drift is too large, e.g. JVM process was suspended, starved or long GC
+                    set(now + delay.toNanos)
+                    delay
+                  } else {
+                    Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))
+                  }
+
                 if (self.get != null)
-                  swap(schedule(executor, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
+                  swap(schedule(executor, this, nextDelay))
               } catch {
                 case _: SchedulerException => // ignore failure to enqueue or terminated target actor
               }

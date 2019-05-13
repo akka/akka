@@ -254,23 +254,37 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       val startTime = System.nanoTime
       val n = 200
       val latch = new TestLatch(n)
-      system.scheduler.schedule(25.millis, 25.millis) { latch.countDown() }
+      val task = system.scheduler.schedule(25.millis, 25.millis) { latch.countDown() }
       Await.ready(latch, 6.seconds)
       // Rate
       n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis should ===(40.0 +- 4)
+      task.cancel()
     }
 
     "not be affected by long running task" taggedAs TimingTest in {
       val n = 22
       val latch = new TestLatch(n)
       val startTime = System.nanoTime
-      system.scheduler.schedule(225.millis, 225.millis) {
+      val task = system.scheduler.schedule(225.millis, 225.millis) {
         Thread.sleep(100)
         latch.countDown()
       }
       Await.ready(latch, 6.seconds)
       // Rate
       n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis should ===(4.4 +- 0.5)
+      task.cancel()
+    }
+
+    // test for issue #26910
+    "not compensate drift when too long" taggedAs TimingTest in {
+      val count = new AtomicInteger()
+      val task = system.scheduler.schedule(250.millis, 250.millis) {
+        if (count.incrementAndGet() == 2)
+          Thread.sleep(1500)
+      }
+      Thread.sleep(3000)
+      count.get should be <= 8 // it's typically 5, but some margin
+      task.cancel()
     }
 
     "handle timeouts equal to multiple of wheel period" taggedAs TimingTest in {
