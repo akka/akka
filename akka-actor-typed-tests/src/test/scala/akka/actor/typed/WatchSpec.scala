@@ -290,6 +290,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
       watchProbe.expectMessage(Done)
+      watchProbe.expectMessage(Done)
       terminator ! Stop
 
       receivedTerminationSignal.future.futureValue shouldEqual CustomTerminationMessage2
