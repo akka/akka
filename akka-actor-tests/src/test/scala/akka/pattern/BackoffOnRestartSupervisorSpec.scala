@@ -91,16 +91,19 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         // Exponential back off restart test
         probe.within(1.4 seconds, 2 seconds) {
           supervisor ! "THROW"
-          // numRestart = 0 ~ 200 millis
-          probe.expectMsg(300 millis, "STARTED")
+          // numRestart = 0: expected delay ~200 millis
+          probe.expectNoMessage(200 millis)
+          probe.expectMsg(150 millis, "STARTED")
 
           supervisor ! "THROW"
-          // numRestart = 1 ~ 400 millis
-          probe.expectMsg(500 millis, "STARTED")
+          // numRestart = 1: expected delay ~400 millis
+          probe.expectNoMessage(400 millis)
+          probe.expectMsg(150 millis, "STARTED")
 
           supervisor ! "THROW"
-          // numRestart = 2 ~ 800 millis
-          probe.expectMsg(900 millis, "STARTED")
+          // numRestart = 2: expected delay ~800 millis
+          probe.expectNoMessage(800 millis)
+          probe.expectMsg(150 millis, "STARTED")
         }
 
         // Verify that we only have one child at this point by selecting all the children
