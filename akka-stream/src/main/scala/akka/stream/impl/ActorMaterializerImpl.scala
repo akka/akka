@@ -235,7 +235,7 @@ private[akka] class SubFusingActorMaterializerImpl(
 
     // If the timeout hits it is likely because one of the streams stopped between looking at the list
     // of children and asking it for a snapshot. We retry the entire snapshot in that case
-    retry(() => takeSnapshot(), 3, 200.millis)
+    retry(() => takeSnapshot(), 3, Duration.Zero)
   }
 
   override def postStop(): Unit = haveShutDown.set(true)
