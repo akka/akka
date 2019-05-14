@@ -143,13 +143,10 @@ akka.actor.deployment {
 This means that user requests can be sent to `StatsService` on any node and it will use
 `StatsWorker` on all nodes.
 
-The easiest way to run **Router Example with Group of Routees** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Router Example with Group of Routees** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+The easiest way to run **Router Example with Group of Routees** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Router Example with Group of Routees** sample.
+ 
 ## Router with Pool of Remote Deployed Routees
 
 When using a `Pool` with routees created and deployed on the cluster member nodes
@@ -243,11 +240,6 @@ akka.actor.deployment {
   }
 }
 ```
-
-The easiest way to run **Router Example with Pool of Remote Deployed Routees** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Router Example with Pool of Remote Deployed Routees** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+The easiest way to run **Router Example with Pool of Routees** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Router Example with Pool of Routees** sample.
