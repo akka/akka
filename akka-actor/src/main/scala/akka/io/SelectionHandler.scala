@@ -103,13 +103,16 @@ private[io] object SelectionHandler {
 
     override def supervisorStrategy = connectionSupervisorStrategy
 
-    val selectorPool = context.actorOf(
-      props = RandomPool(nrOfSelectors)
+    val selectorPool: ActorRef = {
+      val routeeProps = Props(classOf[SelectionHandler], selectorSettings)
         .withDispatcher(context.props.dispatcher)
-        .props(Props(classOf[SelectionHandler], selectorSettings))
         .withDeploy(Deploy.local)
-        .withDispatcher(context.props.dispatcher),
-      name = "selectors")
+      context.actorOf(
+        props = RandomPool(nrOfSelectors, routerDispatcher = context.props.dispatcher)
+          .props(routeeProps)
+          .withDeploy(Deploy.local),
+        name = "selectors")
+    }
 
     final def workerForCommandHandler(pf: PartialFunction[HasFailureMessage, ChannelRegistry => Props]): Receive = {
       case cmd: HasFailureMessage if pf.isDefinedAt(cmd) => selectorPool ! WorkerForCommand(cmd, sender(), pf(cmd))
