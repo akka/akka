@@ -95,16 +95,10 @@ private[akka] final class ArterySettings private (config: Config) {
     val TestMode: Boolean = getBoolean("test-mode")
     val Dispatcher: String = getString("use-dispatcher")
     val ControlStreamDispatcher: String = getString("use-control-stream-dispatcher")
-    val MaterializerSettings: ActorMaterializerSettings = {
-      val settings = ActorMaterializerSettings(config.getConfig("materializer"))
-      if (Dispatcher.isEmpty) settings
-      else settings.withDispatcher(Dispatcher)
-    }
-    val ControlStreamMaterializerSettings: ActorMaterializerSettings = {
-      val settings = ActorMaterializerSettings(config.getConfig("materializer"))
-      if (ControlStreamDispatcher.isEmpty) settings
-      else settings.withDispatcher(ControlStreamDispatcher)
-    }
+    val MaterializerSettings: ActorMaterializerSettings =
+      ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(Dispatcher)
+    val ControlStreamMaterializerSettings: ActorMaterializerSettings =
+      ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(ControlStreamDispatcher)
 
     val OutboundLanes: Int = getInt("outbound-lanes").requiring(n => n > 0, "outbound-lanes must be greater than zero")
     val InboundLanes: Int = getInt("inbound-lanes").requiring(n => n > 0, "inbound-lanes must be greater than zero")
