@@ -29,7 +29,7 @@ Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager p
 
 You can use both Akka remoting and Akka Cluster inside of Docker containers. But note
 that you will need to take special care with the network configuration when using Docker,
-described here: @ref:[Akka behind NAT or in a Docker container](../remoting.md#remote-configuration-nat)
+described here: @ref:[Akka behind NAT or in a Docker container](../remoting-artery.md#remote-configuration-nat-artery)
 
 You can look at the
 @java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]

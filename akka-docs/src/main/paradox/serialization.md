@@ -53,7 +53,7 @@ depending on the akka-remote module), so normally you don't need to add
 configuration for that; since `com.google.protobuf.GeneratedMessage`
 implements `java.io.Serializable`, protobuf messages will always be
 serialized using the protobuf protocol unless specifically overridden. In order
-to disable a default serializer, see @ref:[Disabling the Java Serializer](remoting.md#disable-java-serializer)
+to disable a default serializer, see @ref:[Disabling the Java Serializer](remoting-artery.md#disable-java-serializer)
 
 ### Enable additional bindings
 
