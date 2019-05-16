@@ -334,8 +334,8 @@ import scala.util.{ Failure, Success, Try }
    */
   private def mayCloseOutbound: Boolean =
     lastHandshakeStatus match {
-      case HandshakeStatus.NOT_HANDSHAKING | HandshakeStatus.FINISHED ⇒ true
-      case _ ⇒ false
+      case HandshakeStatus.NOT_HANDSHAKING | HandshakeStatus.FINISHED => true
+      case _                                                          => false
     }
 
   def flushToTransport(): Unit = {

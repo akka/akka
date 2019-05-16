@@ -128,7 +128,7 @@ object SinkQueueWithCancel {
     // would have been better to add `asScala` in SinkQueueWithCancel trait, but not doing
     // that for backwards compatibility reasons
     new akka.stream.scaladsl.SinkQueueWithCancel[T] {
-      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
 
       override def pull(): Future[Option[T]] =
         queue.pull().toScala.map(_.asScala)(same)
