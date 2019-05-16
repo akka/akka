@@ -1019,6 +1019,9 @@ class DDataShardCoordinator(
     if (rememberEntities) Set(CoordinatorStateKey, AllShardsKey) else Set(CoordinatorStateKey)
 
   var shards = Set.empty[String]
+
+  var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
+
   if (rememberEntities)
     replicator ! Subscribe(AllShardsKey, self)
 
@@ -1096,9 +1099,13 @@ class DDataShardCoordinator(
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized =>
+      unstashGetShardHomeRequests()
       unstashAll()
       stateInitialized()
       activate()
+
+    case g: GetShardHome ⇒
+      stashGetShardHomeRequest(sender(), g)
 
     case _ => stash()
   }
@@ -1150,9 +1157,9 @@ class DDataShardCoordinator(
         evt)
       throw cause
 
-    case GetShardHome(shard) =>
+    case g @ GetShardHome(shard) =>
       if (!handleGetShardHome(shard))
-        stash() // must wait for update that is in progress
+        stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
     case _ => stash()
   }
@@ -1160,7 +1167,18 @@ class DDataShardCoordinator(
   private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E => Unit): Unit = {
     context.unbecome()
     afterUpdateCallback(evt)
+    unstashGetShardHomeRequests()
     unstashAll()
+  }
+
+  private def stashGetShardHomeRequest(sender: ActorRef, request: GetShardHome): Unit =
+    getShardHomeRequests += (sender -> request)
+
+  private def unstashGetShardHomeRequests(): Unit = {
+    getShardHomeRequests.foreach {
+      case (originalSender, request) ⇒ self.tell(request, sender = originalSender)
+    }
+    getShardHomeRequests = Set.empty
   }
 
   def activate() = {
