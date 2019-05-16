@@ -114,6 +114,36 @@ object ReplicatorSpec {
       // suppress unused compiler warnings
       println("" + reply1 + reply2 + reply3 + reply4)
     }
+
+    def shouldHaveUnapplyForResponseTypes(): Unit = {
+      val getResponse: GetResponse[GCounter] = ???
+      getResponse match {
+        case GetSuccess(Key, Some(_)) =>
+        case GetFailure(Key, Some(_)) =>
+        case NotFound(Key, None)      =>
+      }
+
+      val updateResponse: UpdateResponse[GCounter] = ???
+      updateResponse match {
+        case UpdateSuccess(Key, Some(_))    =>
+        case ModifyFailure(Key, _, _, None) =>
+        case UpdateTimeout(Key, None)       =>
+        case StoreFailure(Key, None)        =>
+        case UpdateFailure(Key, Some(_))    =>
+      }
+
+      val deleteResponse: DeleteResponse[GCounter] = ???
+      deleteResponse match {
+        case DeleteSuccess(Key, Some(_))            =>
+        case ReplicationDeleteFailure(Key, Some(_)) =>
+        case DataDeleted(Key, Some(_))              =>
+      }
+
+      val replicaCount: ReplicaCount = ???
+      replicaCount match {
+        case ReplicaCount(_) =>
+      }
+    }
   }
 
 }
