@@ -72,7 +72,9 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In
     new javadsl.FlowWithContext(
       javadsl.Flow
         .create[Pair[JIn, JCtxIn]]()
-        .map(_.toScala)
+        .map(new akka.japi.function.Function[Pair[JIn, JCtxIn], (JIn, JCtxIn)]() {
+          def apply(pair: Pair[JIn, JCtxIn]): (JIn, JCtxIn) = pair.toScala
+        })
         .viaMat(delegate.map {
           case (first, second) =>
             Pair[JOut, JCtxOut](first, second)
