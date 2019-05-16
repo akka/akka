@@ -379,6 +379,14 @@ the default directory contains the remote port of the actor system. If using a d
 assigned port (0) it will be different each time and the previously stored data will not
 be loaded.
 
+The reason for storing the identifiers of the active entities in durable storage, i.e. stored to
+disk, is that the same entities should be started also after a complete cluster restart. If this is not needed
+you can disable durable storage and benefit from better performance by using the following configuration:
+
+```
+akka.cluster.sharding.distributed-data.durable.keys = []
+```
+
 When `rememberEntities` is set to false, a `Shard` will not automatically restart any entities
 after a rebalance or recovering from a crash. Entities will only be started once the first message
 for that entity has been received in the `Shard`. Entities will not be restarted if they stop without
