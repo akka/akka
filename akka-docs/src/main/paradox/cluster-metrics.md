@@ -19,13 +19,6 @@ akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 
 ## Introduction
 
-To enable usage of the extension you need to add the following dependency to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-metrics_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
 and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
