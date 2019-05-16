@@ -138,6 +138,9 @@ object ByteString {
 
   val empty: ByteString = CompactByteString(Array.empty[Byte])
 
+  /** Java API */
+  val emptyByteString: ByteString = empty
+
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
   /** Java API */
