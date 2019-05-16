@@ -316,9 +316,7 @@ object BackoffSupervisor {
   }
 }
 
-// for backwards compability
-@deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22")
-final class BackoffSupervisor(
+final class BackoffSupervisor @deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22")(
     override val childProps: Props,
     override val childName: String,
     minBackoff: FiniteDuration,
@@ -340,6 +338,7 @@ final class BackoffSupervisor(
       finalStopMessage) {
 
   // for binary compatibility with 2.5.18
+  @deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22")
   def this(
       childProps: Props,
       childName: String,
@@ -352,6 +351,7 @@ final class BackoffSupervisor(
     this(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, strategy, replyWhileStopped, None)
 
   // for binary compatibility with 2.4.1
+  @deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22")
   def this(
       childProps: Props,
       childName: String,
@@ -371,6 +371,7 @@ final class BackoffSupervisor(
       None)
 
   // for binary compatibility with 2.4.0
+  @deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22")
   def this(
       childProps: Props,
       childName: String,

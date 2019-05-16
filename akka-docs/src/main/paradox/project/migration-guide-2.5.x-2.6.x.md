@@ -1,5 +1,9 @@
 # Migration Guide 2.5.x to 2.6.x
 
+It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of
+@apidoc[akka.util.ByteString]`.empty()` when using Java because @apidoc[akka.util.ByteString]`.empty()`
+is [no longer available as a static method](https://github.com/scala/bug/issues/11509) in the artifacts built for Scala 2.13.
+
 ## Scala 2.11 no longer supported
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13

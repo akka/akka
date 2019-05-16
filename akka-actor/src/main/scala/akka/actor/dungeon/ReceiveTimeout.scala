@@ -4,12 +4,12 @@
 
 package akka.actor.dungeon
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorCell
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
 
 private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)
@@ -26,9 +26,10 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   final def setReceiveTimeout(timeout: Duration): Unit = receiveTimeoutData = receiveTimeoutData.copy(_1 = timeout)
 
-  protected def checkReceiveTimeoutIfNeeded(message: Any): Unit =
-    if (hasTimeoutData)
-      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout])
+  /** Called after `ActorCell.receiveMessage` or `ActorCell.autoReceiveMessage`. */
+  protected def checkReceiveTimeoutIfNeeded(message: Any, beforeReceive: (Duration, Cancellable)): Unit =
+    if (hasTimeoutData || receiveTimeoutChanged(beforeReceive))
+      checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout] || receiveTimeoutChanged(beforeReceive))
 
   final def checkReceiveTimeout(reschedule: Boolean = true): Unit = {
     val (recvTimeout, task) = receiveTimeoutData
@@ -54,9 +55,15 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   private def hasTimeoutData: Boolean = receiveTimeoutData ne emptyReceiveTimeoutData
 
-  protected def cancelReceiveTimeoutIfNeeded(message: Any): Unit =
+  private def receiveTimeoutChanged(beforeReceive: (Duration, Cancellable)): Boolean =
+    receiveTimeoutData ne beforeReceive
+
+  protected def cancelReceiveTimeoutIfNeeded(message: Any): (Duration, Cancellable) = {
     if (hasTimeoutData && !message.isInstanceOf[NotInfluenceReceiveTimeout])
       cancelReceiveTimeout()
+
+    receiveTimeoutData
+  }
 
   override final def cancelReceiveTimeout(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {
