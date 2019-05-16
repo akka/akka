@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
@@ -347,10 +347,15 @@ private[persistence] trait Eventsourced
 
   private def flushJournalBatch(): Unit =
     if (!writeInProgress && journalBatch.nonEmpty) {
-      journal ! WriteMessages(journalBatch, self, instanceId)
+      sendBatchedEventsToJournal(journalBatch)
       journalBatch = Vector.empty
       writeInProgress = true
     }
+
+  @InternalStableApi
+  private def sendBatchedEventsToJournal(journalBatch: Vector[PersistentEnvelope]): Unit = {
+    journal ! WriteMessages(journalBatch, self, instanceId)
+  }
 
   private def log: LoggingAdapter = Logging(context.system, this)
 
@@ -387,13 +392,14 @@ private[persistence] trait Eventsourced
         "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingStashingPersistInvocations += 1
     pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
-    eventBatch ::= AtomicWrite(
-      PersistentRepr(
-        event,
-        persistenceId = persistenceId,
-        sequenceNr = nextSequenceNr(),
-        writerUuid = writerUuid,
-        sender = sender()))
+    batchAtomicWrite(
+      AtomicWrite(
+        PersistentRepr(
+          event,
+          persistenceId = persistenceId,
+          sequenceNr = nextSequenceNr(),
+          writerUuid = writerUuid,
+          sender = sender())))
   }
 
   /**
@@ -409,15 +415,21 @@ private[persistence] trait Eventsourced
         pendingStashingPersistInvocations += 1
         pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       }
-      eventBatch ::= AtomicWrite(
-        events.map(
-          PersistentRepr.apply(
-            _,
-            persistenceId = persistenceId,
-            sequenceNr = nextSequenceNr(),
-            writerUuid = writerUuid,
-            sender = sender())))
+      batchAtomicWrite(
+        AtomicWrite(
+          events.map(
+            PersistentRepr.apply(
+              _,
+              persistenceId = persistenceId,
+              sequenceNr = nextSequenceNr(),
+              writerUuid = writerUuid,
+              sender = sender()))))
     }
+  }
+
+  @InternalStableApi
+  private def batchAtomicWrite(atomicWrite: AtomicWrite): Unit = {
+    eventBatch ::= atomicWrite
   }
 
   /**
@@ -791,6 +803,21 @@ private[persistence] trait Eventsourced
     try pendingInvocations.peek().handler(payload)
     finally flushBatch()
 
+  @InternalStableApi
+  private def writeEventSucceeded(p: PersistentRepr): Unit = {
+    peekApplyHandler(p.payload)
+  }
+
+  @InternalStableApi
+  private def writeEventRejected(p: PersistentRepr, cause: Throwable): Unit = {
+    onPersistRejected(cause, p.payload, p.sequenceNr)
+  }
+
+  @InternalStableApi
+  private def writeEventFailed(p: PersistentRepr, cause: Throwable): Unit = {
+    onPersistFailure(cause, p.payload, p.sequenceNr)
+  }
+
   /**
    * Common receive handler for processingCommands and persistingEvents
    */
@@ -804,7 +831,7 @@ private[persistence] trait Eventsourced
         if (id == instanceId) {
           updateLastSequenceNr(p)
           try {
-            peekApplyHandler(p.payload)
+            writeEventSucceeded(p)
             onWriteMessageComplete(err = false)
           } catch {
             case NonFatal(e) => onWriteMessageComplete(err = true); throw e
@@ -816,14 +843,14 @@ private[persistence] trait Eventsourced
         if (id == instanceId) {
           updateLastSequenceNr(p)
           onWriteMessageComplete(err = false)
-          onPersistRejected(cause, p.payload, p.sequenceNr)
+          writeEventRejected(p, cause)
         }
       case WriteMessageFailure(p, cause, id) =>
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
         // while message is in flight, in that case the handler has already been discarded
         if (id == instanceId) {
           onWriteMessageComplete(err = false)
-          try onPersistFailure(cause, p.payload, p.sequenceNr)
+          try writeEventFailed(p, cause)
           finally context.stop(self)
         }
       case LoopMessageSuccess(l, id) =>
