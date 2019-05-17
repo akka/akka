@@ -5,14 +5,11 @@
 package akka.persistence.typed.internal
 
 import scala.util.control.NonFatal
-
-import akka.actor.typed.Behavior
-import akka.actor.typed.Signal
+import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.annotation.{ InternalApi, StableInternalApi }
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
@@ -20,6 +17,7 @@ import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
+import akka.util.unused
 
 /***
  * INTERNAL API
@@ -70,6 +68,12 @@ private[akka] final class ReplayingEvents[C, E, S](
   import ReplayingEvents.ReplayingState
 
   replayEvents(state.seqNr + 1L, state.toSeqNr)
+  onRecoveryStart(setup.context)
+
+  @StableInternalApi
+  def onRecoveryStart(@unused context: ActorContext[_]): Unit = {}
+  @StableInternalApi
+  def onRecoveryComplete(@unused context: ActorContext[_]): Unit = {}
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
@@ -193,6 +197,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   private[akka] def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
+      onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.log.isDebugEnabled) {
         setup.log.debug(
