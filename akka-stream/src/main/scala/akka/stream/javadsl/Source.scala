@@ -26,7 +26,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-import java.util.function.Supplier
+import java.util.function.{ BiFunction, Supplier }
 
 import akka.util.unused
 import com.github.ghik.silencer.silent
@@ -358,6 +358,14 @@ object Source {
       case s if s eq scaladsl.Source.empty => empty().asInstanceOf[Source[T, M]]
       case other                           => new Source(scaladsl.Source.fromGraph(other))
     }
+
+  /**
+   * Defers the creation of a [[Source]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Source]] returned by this method.
+   */
+  def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Source[T, M]]): Source[T, CompletionStage[M]] =
+    scaladsl.Source.setup((mat, attr) ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
