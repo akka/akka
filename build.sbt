@@ -1,6 +1,6 @@
 import akka.{AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader,
+enablePlugins(UnidocRoot, UnidocWithPrValidation, NoPublish, CopyrightHeader,
   CopyrightHeaderInPr,
   ScalafixIgnoreFilePlugin,
   JavaFormatterPlugin)
