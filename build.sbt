@@ -2,7 +2,6 @@ import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, Scal
 
 enablePlugins(
   UnidocRoot,
-  TimeStampede,
   UnidocWithPrValidation,
   NoPublish,
   CopyrightHeader,
