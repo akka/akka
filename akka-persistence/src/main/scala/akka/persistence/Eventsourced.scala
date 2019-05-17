@@ -646,9 +646,16 @@ private[persistence] trait Eventsourced
             case SelectedSnapshot(metadata, snapshot) =>
               val offer = SnapshotOffer(metadata, snapshot)
               if (recoveryBehavior.isDefinedAt(offer)) {
-                setLastSequenceNr(metadata.sequenceNr)
-                // Since we are recovering we can ignore the receive behavior from the stack
-                Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+                try {
+                  setLastSequenceNr(metadata.sequenceNr)
+                  // Since we are recovering we can ignore the receive behavior from the stack
+                  Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+                } catch {
+                  case NonFatal(t) =>
+                    try onRecoveryFailure(t, None)
+                    finally context.stop(self)
+                    returnRecoveryPermit()
+                }
               } else {
                 unhandled(offer)
               }
