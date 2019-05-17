@@ -5,7 +5,7 @@
 package akka.actor.typed.eventstream
 
 import akka.actor.typed._
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.reflect.ClassTag
 
@@ -48,7 +48,10 @@ object EventStream {
      */
     def this(subscriber: ActorRef[E], clazz: Class[E]) = this(subscriber)(ClassTag(clazz))
 
-    private[akka] def topic: Class[_] = classTag.runtimeClass
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def topic: Class[_] = classTag.runtimeClass
   }
 
   /**
