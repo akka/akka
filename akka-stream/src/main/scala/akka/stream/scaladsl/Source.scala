@@ -296,6 +296,14 @@ object Source {
   }
 
   /**
+   * Defers the creation of a [[Source]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Source]] returned by this method.
+   */
+  def setup[T, M](factory: (ActorMaterializer, Attributes) ⇒ Source[T, M]): Source[T, Future[M]] =
+    Source.fromGraph(new SetupSourceStage(factory))
+
+  /**
    * Helper to create [[Source]] from `Iterable`.
    * Example usage: `Source(Seq(1,2,3))`
    *
