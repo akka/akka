@@ -20,6 +20,7 @@ import akka.actor.Props
 import akka.actor.Stash
 import akka.actor.Terminated
 import akka.actor.Timers
+import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
@@ -32,6 +33,7 @@ import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.pattern.pipe
 import akka.persistence._
+import akka.util.ConstantFun
 import akka.util.MessageBufferMap
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -486,7 +488,8 @@ private[akka] class Shard(
     getOrCreateEntity(id).tell(payload, snd)
   }
 
-  def getOrCreateEntity(id: EntityId): ActorRef = {
+  @InternalStableApi
+  def getOrCreateEntity(id: EntityId, onCreate: ActorRef => Unit = ConstantFun.scalaAnyToUnit): ActorRef = {
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
       case Some(child) => child
@@ -497,6 +500,7 @@ private[akka] class Shard(
         refById = refById.updated(id, a)
         state = state.copy(state.entities + id)
         touchLastMessageTimestamp(id)
+        onCreate(a)
         a
     }
   }
