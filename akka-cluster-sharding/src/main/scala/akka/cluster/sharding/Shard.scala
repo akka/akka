@@ -20,6 +20,7 @@ import akka.actor.Props
 import akka.actor.Stash
 import akka.actor.Terminated
 import akka.actor.Timers
+import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
@@ -486,6 +487,7 @@ private[akka] class Shard(
     getOrCreateEntity(id).tell(payload, snd)
   }
 
+  @InternalStableApi
   def getOrCreateEntity(id: EntityId): ActorRef = {
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
