@@ -13,17 +13,17 @@ import scala.collection.immutable.SortedSet
 
 class GossipTargetSelectorSpec extends WordSpec with Matchers {
 
-  val aDc1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
-  val bDc1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
-  val cDc1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc1")
+  val aDc1 = TestMember(Address("akka", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
+  val bDc1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
+  val cDc1 = TestMember(Address("akka", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc1")
 
-  val eDc2 = TestMember(Address("akka.tcp", "sys", "e", 2552), Up, Set.empty, dataCenter = "dc2")
-  val fDc2 = TestMember(Address("akka.tcp", "sys", "f", 2552), Up, Set.empty, dataCenter = "dc2")
+  val eDc2 = TestMember(Address("akka", "sys", "e", 2552), Up, Set.empty, dataCenter = "dc2")
+  val fDc2 = TestMember(Address("akka", "sys", "f", 2552), Up, Set.empty, dataCenter = "dc2")
 
-  val gDc3 = TestMember(Address("akka.tcp", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
-  val hDc3 = TestMember(Address("akka.tcp", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
+  val gDc3 = TestMember(Address("akka", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
+  val hDc3 = TestMember(Address("akka", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
 
-  val iDc4 = TestMember(Address("akka.tcp", "sys", "i", 2552), Up, Set.empty, dataCenter = "dc4")
+  val iDc4 = TestMember(Address("akka", "sys", "i", 2552), Up, Set.empty, dataCenter = "dc4")
 
   val defaultSelector =
     new GossipTargetSelector(reduceGossipDifferentViewProbability = 400, crossDcGossipProbability = 0.2)

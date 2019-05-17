@@ -108,18 +108,17 @@ akka {
   actor {
     provider = "cluster"
   }
-  remote {
-    log-remote-lifecycle-events = off
-    netty.tcp {
+  remote.artery {
+    canonical {
       hostname = "127.0.0.1"
-      port = 0
+      port = 2551
     }
   }
 
   cluster {
     seed-nodes = [
-      "akka.tcp://ClusterSystem@127.0.0.1:2551",
-      "akka.tcp://ClusterSystem@127.0.0.1:2552"]
+      "akka://ClusterSystem@127.0.0.1:2551",
+      "akka://ClusterSystem@127.0.0.1:2552"]
 
     # auto downing is NOT safe for production deployments.
     # you may want to use it during development, read more about it in the docs.
@@ -128,22 +127,16 @@ akka {
   }
 }
 
-# Enable metrics extension in akka-cluster-metrics.
-akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
-
-# Sigar native library extract location during tests.
-# Note: use per-jvm-instance folder when running multiple jvm on one host.
-akka.cluster.metrics.native-library-extract-folder=${user.dir}/target/native
 ```
 
-To enable cluster capabilities in your Akka project you should, at a minimum, add the @ref:[Remoting](remoting.md)
+To enable cluster capabilities in your Akka project you should, at a minimum, add the @ref:[Remoting](remoting-artery.md)
 settings, but with `cluster`.
 The `akka.cluster.seed-nodes` should normally also be added to your `application.conf` file.
 
 @@@ note
 
 If you are running Akka in a Docker container or the nodes for some other reason have separate internal and
-external ip addresses you must configure remoting according to @ref:[Akka behind NAT or in a Docker container](remoting.md#remote-configuration-nat)
+external ip addresses you must configure remoting according to @ref:[Akka behind NAT or in a Docker container](remoting-artery.md#remote-configuration-nat-artery)
 
 @@@
 
@@ -190,15 +183,15 @@ You define the seed nodes in the [configuration](#cluster-configuration) file (a
 
 ```
 akka.cluster.seed-nodes = [
-  "akka.tcp://ClusterSystem@host1:2552",
-  "akka.tcp://ClusterSystem@host2:2552"]
+  "akka://ClusterSystem@host1:2552",
+  "akka://ClusterSystem@host2:2552"]
 ```
 
 This can also be defined as Java system properties when starting the JVM using the following syntax:
 
 ```
--Dakka.cluster.seed-nodes.0=akka.tcp://ClusterSystem@host1:2552
--Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
+-Dakka.cluster.seed-nodes.0=akka://ClusterSystem@host1:2552
+-Dakka.cluster.seed-nodes.1=akka://ClusterSystem@host2:2552
 ```
 
 The seed nodes can be started in any order and it is not necessary to have all
@@ -846,7 +839,7 @@ Where the <node-url> should be on the format of
   'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
 Examples: ./akka-cluster localhost 9999 is-available
-          ./akka-cluster localhost 9999 join akka.tcp://MySystem@darkstar:2552
+          ./akka-cluster localhost 9999 join akka://MySystem@darkstar:2552
           ./akka-cluster localhost 9999 cluster-status
 ```
 

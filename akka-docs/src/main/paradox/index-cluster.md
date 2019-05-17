@@ -14,10 +14,11 @@
 * [cluster-metrics](cluster-metrics.md)
 * [distributed-data](distributed-data.md)
 * [cluster-dc](cluster-dc.md)
+* [serialization](serialization.md)
 * [multi-jvm-testing](multi-jvm-testing.md)
 * [multi-node-testing](multi-node-testing.md)
-* [remoting](remoting.md)
 * [remoting-artery](remoting-artery.md)
-* [serialization](serialization.md)
+* [remoting](remoting.md)
+
 
 @@@
