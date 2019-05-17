@@ -5,25 +5,11 @@
 package akka.actor.typed.eventstream
 
 import akka.actor.typed._
-import akka.actor.typed.internal.adapter.EventStreamAdapter
-import akka.actor.typed.scaladsl.adapter._
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.DoNotInherit
 
 import scala.reflect.ClassTag
 
-/**
- * INTERNAL API
- *
- * Exposes a typed actor that interacts with the [[akka.actor.ActorSystem.eventStream]].
- *
- * It is used as an extension to ensure a single instance per actor system.
- */
-@InternalApi private[akka] final class EventStream(actorSystem: ActorSystem[_]) extends Extension {
-  val ref: ActorRef[EventStream.Command] =
-    actorSystem.internalSystemActorOf(EventStreamAdapter.behavior, "eventstream", Props.empty)
-}
-
-object EventStream extends ExtensionId[EventStream] {
+object EventStream {
 
   /**
    * Not for user Extension
@@ -56,6 +42,9 @@ object EventStream extends ExtensionId[EventStream] {
    * @tparam E
    */
   final case class Subscribe[E](subscriber: ActorRef[E])(implicit classTag: ClassTag[E]) extends Command {
+
+    def this(subscriber: ActorRef[E], clazz: Class[E]) = this(subscriber)(ClassTag(clazz))
+
     private[akka] def topic: Class[_] = classTag.runtimeClass
   }
 
@@ -66,12 +55,10 @@ object EventStream extends ExtensionId[EventStream] {
    */
   final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
 
-  override def createExtension(system: ActorSystem[_]): EventStream = new EventStream(system)
-
   /**
    * Java API.
    */
-  def subscribe[E](subscriber: ActorRef[E], clazz: java.lang.Class[E]): Subscribe[E] =
+  def subscribeToType[E](subscriber: ActorRef[E], clazz: java.lang.Class[E]): Subscribe[E] =
     Subscribe(subscriber)(ClassTag(clazz))
 
 }

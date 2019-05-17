@@ -12,6 +12,7 @@ public class EventStreamTest {
   static class SomeClass {}
 
   public static void compileOnlyTest(ActorSystem<?> actorSystem, ActorRef<SomeClass> actorRef) {
-    actorSystem.eventStream().tell(EventStream.subscribe(actorRef, SomeClass.class));
+    actorSystem.eventStream().tell(EventStream.subscribeToType(actorRef, SomeClass.class));
+    actorSystem.eventStream().tell(new EventStream.Subscribe(actorRef, SomeClass.class));
   }
 }

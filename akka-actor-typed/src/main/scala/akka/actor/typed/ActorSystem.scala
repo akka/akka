@@ -9,7 +9,7 @@ import java.util.concurrent.{ CompletionStage, ThreadFactory }
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.{ ApiMayChange, DoNotInherit }
@@ -158,7 +158,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * Accepts [[akka.actor.typed.eventstream.EventStream.Command]].
    */
   def eventStream: ActorRef[EventStream.Command] =
-    EventStream(this).ref
+    EventStreamExtension(this).ref
 
 }
 
