@@ -5,10 +5,10 @@
 package akka.cluster.singleton
 
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.concurrent.Future
+
 import akka.actor.Actor
 import akka.actor.Deploy
 import akka.actor.ActorSystem
@@ -25,8 +25,8 @@ import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
-
 import scala.concurrent.Promise
+
 import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.annotation.DoNotInherit
@@ -36,8 +36,9 @@ import akka.util.Timeout
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 import akka.dispatch.Dispatchers
 import com.github.ghik.silencer.silent
-
 import scala.util.control.NonFatal
+
+import akka.annotation.InternalSpi
 
 object ClusterSingletonManagerSettings {
 
@@ -805,6 +806,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stop()
   }
 
+  @InternalSpi
   def gotoOldest(): State = {
     val singleton = context.watch(context.actorOf(singletonProps, singletonName))
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
