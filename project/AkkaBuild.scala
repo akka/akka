@@ -4,6 +4,7 @@
 
 package akka
 
+import java.io.FileReader
 import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
@@ -31,12 +32,25 @@ object AkkaBuild {
         .ofPattern("yyyyMMdd-HHmmss")
         .format(ZonedDateTime.now(ZoneOffset.UTC)))
   }
-
+  
   def akkaVersion: String = {
-    sys.props.getOrElse("akka.build.version", "2.5-SNAPSHOT") match {
+    val default = "2.5-SNAPSHOT"
+    sys.props.getOrElse("akka.build.version", default) match {
       case "timestamp" => s"2.5-$currentDateTime" // used when publishing timestamped snapshots
+      case "file" => akkaVersionFromFile(default)
       case v => v
     }
+  }
+
+  def akkaVersionFromFile(default: String): String = {
+    val versionFile = "akka-actor/target/classes/version.conf"
+    if (new File(versionFile).exists()) {
+      val versionProps = new Properties()
+      val reader = new FileReader(versionFile)
+      try versionProps.load(reader) finally reader.close()
+      versionProps.getProperty("akka.version", default).replaceAll("\"", "")
+    } else
+      default
   }
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
