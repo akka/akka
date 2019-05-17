@@ -33,6 +33,7 @@ import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.pattern.pipe
 import akka.persistence._
+import akka.util.ConstantFun
 import akka.util.MessageBufferMap
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -488,7 +489,7 @@ private[akka] class Shard(
   }
 
   @InternalStableApi
-  def getOrCreateEntity(id: EntityId): ActorRef = {
+  def getOrCreateEntity(id: EntityId, onCreate: ActorRef => Unit = ConstantFun.scalaAnyToUnit): ActorRef = {
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
       case Some(child) => child
@@ -499,6 +500,7 @@ private[akka] class Shard(
         refById = refById.updated(id, a)
         state = state.copy(state.entities + id)
         touchLastMessageTimestamp(id)
+        onCreate(a)
         a
     }
   }
