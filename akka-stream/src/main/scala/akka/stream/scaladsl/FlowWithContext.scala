@@ -4,8 +4,11 @@
 
 package akka.stream.scaladsl
 
+import akka.NotUsed
+
 import scala.annotation.unchecked.uncheckedVariance
 import akka.annotation.ApiMayChange
+import akka.japi.Pair
 import akka.stream._
 
 /**
@@ -66,5 +69,14 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In
 
   def asJava[JIn <: In, JCtxIn <: CtxIn, JOut >: Out, JCtxOut >: CtxOut, JMat >: Mat]
       : javadsl.FlowWithContext[JIn, JCtxIn, JOut, JCtxOut, JMat] =
-    new javadsl.FlowWithContext(this)
+    new javadsl.FlowWithContext(
+      javadsl.Flow
+        .create[Pair[JIn, JCtxIn]]()
+        .map(new akka.japi.function.Function[Pair[JIn, JCtxIn], (JIn, JCtxIn)]() {
+          def apply(pair: Pair[JIn, JCtxIn]): (JIn, JCtxIn) = pair.toScala
+        })
+        .viaMat(delegate.map {
+          case (first, second) =>
+            Pair[JOut, JCtxOut](first, second)
+        }.asJava, javadsl.Keep.right[NotUsed, JMat]))
 }
