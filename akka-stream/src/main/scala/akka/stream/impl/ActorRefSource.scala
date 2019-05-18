@@ -11,8 +11,6 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
 
-import scala.annotation.tailrec
-
 private object ActorRefSource {
   private sealed trait ActorRefStage { def ref: ActorRef }
 }
@@ -53,13 +51,13 @@ private object ActorRefSource {
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
-      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
-        case (_, PoisonPill) ⇒
-          log.warning("for backwards compatibility: PoisonPill will note be supported in the future")
+      override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
+        case (_, PoisonPill) =>
+          log.warning("for backwards compatibility: PoisonPill will not be supported in the future")
           completeStage()
-        case (_, m) if failureMatcher.isDefinedAt(m) ⇒
+        case (_, m) if failureMatcher.isDefinedAt(m) =>
           failStage(failureMatcher(m))
-        case (_, m) if completionMatcher.isDefinedAt(m) ⇒
+        case (_, m) if completionMatcher.isDefinedAt(m) =>
           completionMatcher(m) match {
             case CompletionStrategy.Draining =>
               isCompleting = true
@@ -67,7 +65,7 @@ private object ActorRefSource {
             case CompletionStrategy.Immediately =>
               completeStage()
           }
-        case (_, m: T @unchecked) ⇒
+        case (_, m: T @unchecked) =>
           buffer match {
             case OptionVal.None =>
               if (isCompleting) {
@@ -89,37 +87,37 @@ private object ActorRefSource {
                 tryPush()
               } else
                 overflowStrategy match {
-                  case s: DropHead ⇒
+                  case s: DropHead =>
                     log.log(
                       s.logLevel,
                       "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
                     buf.dropHead()
                     buf.enqueue(m)
                     tryPush()
-                  case s: DropTail ⇒
+                  case s: DropTail =>
                     log.log(
                       s.logLevel,
                       "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
                     buf.dropTail()
                     buf.enqueue(m)
                     tryPush()
-                  case s: DropBuffer ⇒
+                  case s: DropBuffer =>
                     log.log(
                       s.logLevel,
                       "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
                     buf.clear()
                     buf.enqueue(m)
                     tryPush()
-                  case s: DropNew ⇒
+                  case s: DropNew =>
                     log.log(
                       s.logLevel,
                       "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
-                  case s: Fail ⇒
+                  case s: Fail =>
                     log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
                     val bufferOverflowException =
                       BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
                     failStage(bufferOverflowException)
-                  case _: Backpressure ⇒
+                  case _: Backpressure =>
                     // there is a precondition check in Source.actorRefSource factory method to not allow backpressure as strategy
                     failStage(new IllegalStateException("Backpressure is not supported"))
                 }

@@ -45,10 +45,17 @@ object Scaladoc extends AutoPlugin {
 
   def scaladocOptions(ver: String, base: File): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
-    val opts = List("-implicits", "-groups", "-doc-source-url", urlString, "-sourcepath", base.getAbsolutePath,
-      "-doc-title", "Akka",
-      "-doc-version", ver
-    )
+    val opts = List(
+      "-implicits",
+      "-groups",
+      "-doc-source-url",
+      urlString,
+      "-sourcepath",
+      base.getAbsolutePath,
+      "-doc-title",
+      "Akka",
+      "-doc-version",
+      ver)
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
@@ -123,13 +130,10 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
-    .ifTrue(
-      Seq(
-        javacOptions in (JavaUnidoc, unidoc) := Seq(
-            "-Xdoclint:none",
-            "--frames",
-            "--ignore-source-errors",
-            "--no-module-directories")))
+    .ifTrue(Seq(javacOptions in (JavaUnidoc, unidoc) := {
+      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
+      else Seq("-Xdoclint:none", "--frames", "--ignore-source-errors", "--no-module-directories")
+    }))
     .getOrElse(Nil)
 
   override lazy val projectSettings = {
@@ -162,8 +166,8 @@ object BootstrapGenjavadoc extends AutoPlugin {
   override def requires =
     UnidocRoot.CliOptions.genjavadocEnabled
       .ifTrue {
-        val onJdk8 = System.getProperty("java.version").startsWith("1.")
-        require(!onJdk8, "Javadoc generation requires at least jdk 11")
+        // require 11, fail fast for 8, 9, 10
+        require(JavaVersion.isJdk11orHigher, "Javadoc generation requires at least jdk 11")
         sbtunidoc.GenJavadocPlugin
       }
       .getOrElse(plugins.JvmPlugin)

@@ -7,10 +7,10 @@ package akka.stream
 import java.util.concurrent.{ Semaphore, TimeUnit }
 
 import akka.actor.ActorSystem
+import akka.remote.artery.BenchTestSource
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import org.reactivestreams._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -40,39 +40,14 @@ class SourceRefBenchmark {
   final val successFailure = Success(new Exception)
 
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
-  var sourceRef: SourceRef[Int] = _
+  var sourceRef: SourceRef[java.lang.Integer] = _
 
   //  @Param(Array("16", "32", "128"))
   //  var initialInputBufferSize = 0
 
   @Setup(Level.Invocation)
   def setup(): Unit = {
-    val sourcePublisher = new Publisher[Int] {
-      override def subscribe(s: Subscriber[_ >: Int]): Unit = {
-        val sub = new Subscription {
-          var counter = 0 // Piggyback on caller thread, no need for volatile
-
-          override def request(n: Long): Unit = {
-            var i = n
-            while (i > 0) {
-              s.onNext(counter)
-              counter += 1
-              if (counter == 100000) {
-                s.onComplete()
-                return
-              }
-              i -= 1
-            }
-          }
-
-          override def cancel(): Unit = ()
-        }
-
-        s.onSubscribe(sub)
-      }
-    }
-
-    sourceRef = Await.result(Source.fromPublisher(sourcePublisher).runWith(StreamRefs.sourceRef()), 10.seconds)
+    sourceRef = Source.fromGraph(new BenchTestSource(100000)).runWith(StreamRefs.sourceRef())
   }
 
   @TearDown

@@ -35,7 +35,7 @@ object ClusterDeployerSpec {
           cluster.allow-local-routees = off
         }
       }
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       """,
     ConfigParseOptions.defaults)

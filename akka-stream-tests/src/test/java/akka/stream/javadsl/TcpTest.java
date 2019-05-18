@@ -19,6 +19,7 @@ import akka.testkit.SocketUtil;
 import akka.testkit.javadsl.EventFilter;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import static akka.util.ByteString.emptyByteString;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -85,7 +86,7 @@ public class TcpTest extends StreamTest {
                 Tcp.get(system)
                     .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
             .runFold(
-                ByteString.empty(),
+                emptyByteString(),
                 new Function2<ByteString, ByteString, ByteString>() {
                   public ByteString apply(ByteString acc, ByteString elem) {
                     return acc.concat(elem);

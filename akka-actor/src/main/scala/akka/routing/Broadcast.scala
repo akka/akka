@@ -10,6 +10,7 @@ import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
 import akka.japi.Util.immutableSeq
 import akka.actor.ActorSystem
+import com.github.ghik.silencer.silent
 
 object BroadcastRoutingLogic {
   def apply(): BroadcastRoutingLogic = new BroadcastRoutingLogic
@@ -18,6 +19,7 @@ object BroadcastRoutingLogic {
 /**
  * Broadcasts a message to all its routees.
  */
+@silent
 @SerialVersionUID(1L)
 final class BroadcastRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
@@ -57,7 +59,7 @@ final class BroadcastRoutingLogic extends RoutingLogic {
  */
 @SerialVersionUID(1L)
 final case class BroadcastPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
@@ -121,7 +123,7 @@ final case class BroadcastPool(
  */
 @SerialVersionUID(1L)
 final case class BroadcastGroup(
-    val paths: immutable.Iterable[String],
+    paths: immutable.Iterable[String],
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {
 

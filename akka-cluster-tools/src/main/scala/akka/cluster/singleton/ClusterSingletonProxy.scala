@@ -6,6 +6,7 @@ package akka.cluster.singleton
 
 import akka.actor._
 import akka.cluster.{ Cluster, Member, MemberStatus }
+
 import scala.collection.immutable
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterEvent.MemberRemoved
@@ -13,6 +14,7 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.actor.RootActorPath
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberExited
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import com.typesafe.config.Config
@@ -21,6 +23,7 @@ import akka.event.Logging
 import akka.util.MessageBuffer
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.dispatch.Dispatchers
 
 object ClusterSingletonProxySettings {
 
@@ -127,7 +130,9 @@ object ClusterSingletonProxy {
    * @param settings see [[ClusterSingletonProxySettings]]
    */
   def props(singletonManagerPath: String, settings: ClusterSingletonProxySettings): Props =
-    Props(new ClusterSingletonProxy(singletonManagerPath, settings)).withDeploy(Deploy.local)
+    Props(new ClusterSingletonProxy(singletonManagerPath, settings))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   private case object TryToIdentifySingleton extends NoSerializationVerificationNeeded
 
@@ -264,7 +269,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     case _: MemberEvent => // do nothing
 
     // singleton identification logic
-    case ActorIdentity(identifyId, Some(s)) =>
+    case ActorIdentity(_, Some(s)) =>
       // if the new singleton is defined, deliver all buffered messages
       log.info("Singleton identified at [{}]", s.path)
       singleton = Some(s)

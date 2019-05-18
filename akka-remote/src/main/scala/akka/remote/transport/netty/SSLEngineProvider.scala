@@ -15,7 +15,6 @@ import java.security.SecureRandom
 import scala.util.Try
 
 import akka.actor.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.RemoteTransportException
@@ -28,7 +27,7 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-@ApiMayChange trait SSLEngineProvider {
+trait SSLEngineProvider {
 
   def createServerSSLEngine(): SSLEngine
 
@@ -37,17 +36,17 @@ import javax.net.ssl.TrustManagerFactory
 }
 
 /**
- * Config in akka.remote.netty.ssl.security
+ * Config in akka.remote.classic.netty.ssl.security
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@ApiMayChange class ConfigSSLEngineProvider(protected val log: MarkerLoggingAdapter, private val settings: SSLSettings)
+class ConfigSSLEngineProvider(protected val log: MarkerLoggingAdapter, private val settings: SSLSettings)
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
     this(
       Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
-      new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security")))
+      new SSLSettings(system.settings.config.getConfig("akka.remote.classic.netty.ssl.security")))
 
   import settings._
 

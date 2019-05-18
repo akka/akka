@@ -18,6 +18,7 @@ Pass incoming elements to a function that return a @scala[`Future`] @java[`Compl
 downstream. Up to `n` elements can be processed concurrently, but regardless of their completion time the incoming
 order will be kept when results complete. For use cases where order does not matter `mapAsyncUnordered` can be used.
 
+If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, element is not passed downstream.
 If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
 

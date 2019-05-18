@@ -5,10 +5,12 @@
 package akka.persistence.query.journal.leveldb
 
 import akka.stream.actor.ActorPublisher
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
+@silent // FIXME Re-write as part of https://github.com/akka/akka/issues/26187
 private[akka] trait DeliveryBuffer[T] { _: ActorPublisher[T] =>
 
   var buf = Vector.empty[T]

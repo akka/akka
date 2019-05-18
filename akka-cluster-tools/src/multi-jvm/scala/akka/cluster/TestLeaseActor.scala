@@ -25,8 +25,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 object TestLeaseActor {
-  def props(probe: ActorRef): Props =
-    Props(new TestLeaseActor(probe))
+  def props(): Props =
+    Props(new TestLeaseActor)
 
   sealed trait LeaseRequest
   final case class Acquire(owner: String) extends LeaseRequest
@@ -38,30 +38,30 @@ object TestLeaseActor {
   final case class ActionRequest(request: LeaseRequest, result: Any) // boolean of Failure
 }
 
-class TestLeaseActor(probe: ActorRef) extends Actor with ActorLogging {
+class TestLeaseActor extends Actor with ActorLogging {
   import TestLeaseActor._
 
   var requests: List[(ActorRef, LeaseRequest)] = Nil
 
   override def receive = {
 
-    case c: Create ⇒
+    case c: Create =>
       log.info("Lease created with name {} ownerName {}", c.leaseName, c.ownerName)
 
-    case request: LeaseRequest ⇒
+    case request: LeaseRequest =>
       log.info("Lease request {} from {}", request, sender())
       requests = (sender(), request) :: requests
 
-    case GetRequests ⇒
+    case GetRequests =>
       sender() ! LeaseRequests(requests.map(_._2))
 
-    case ActionRequest(request, result) ⇒
+    case ActionRequest(request, result) =>
       requests.find(_._2 == request) match {
-        case Some((snd, req)) ⇒
+        case Some((snd, req)) =>
           log.info("Actioning request {} to {}", req, result)
           snd ! result
           requests = requests.filterNot(_._2 == request)
-        case None ⇒
+        case None =>
           throw new RuntimeException(s"unknown request to action: ${request}. Requests: ${requests}")
       }
 
@@ -111,6 +111,6 @@ class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem)
 
   override def checkLease(): Boolean = false
 
-  override def acquire(callback: Option[Throwable] ⇒ Unit): Future[Boolean] =
+  override def acquire(callback: Option[Throwable] => Unit): Future[Boolean] =
     (leaseActor ? Acquire(settings.ownerName)).mapTo[Boolean]
 }

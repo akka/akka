@@ -155,9 +155,9 @@ akka {
     }
   }
 
-  remote {
-    # The port clients should connect to. Default is 2552.
-    netty.tcp.port = 4711
+  remote.artery {
+    # The port clients should connect to.
+    canonical.port = 4711
   }
 }
 ```
@@ -423,16 +423,6 @@ Each Akka module has a reference configuration file with the default values.
 ### akka-actor
 
 @@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
-
-<a id="config-akka-agent"></a>
-### akka-agent
-
-@@snip [reference.conf](/akka-agent/src/main/resources/reference.conf)
-
-<a id="config-akka-camel"></a>
-### akka-camel
-
-@@snip [reference.conf](/akka-camel/src/main/resources/reference.conf)
 
 <a id="config-akka-cluster"></a>
 ### akka-cluster

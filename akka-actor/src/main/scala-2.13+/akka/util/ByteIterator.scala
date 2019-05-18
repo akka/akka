@@ -9,10 +9,10 @@ import akka.util.Collections.EmptyImmutableSeq
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.annotation.tailrec
+import scala.collection.BufferedIterator
 import scala.collection.LinearSeq
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
-import akka.util.ccompat._
 
 object ByteIterator {
   object ByteArrayIterator {
@@ -280,7 +280,7 @@ object ByteIterator {
 
     final override def takeWhile(p: Byte => Boolean): this.type = {
       var stop = false
-      var builder = new ListBuffer[ByteArrayIterator]
+      val builder = new ListBuffer[ByteArrayIterator]
       while (!stop && !iterators.isEmpty) {
         val lastLen = current.len
         current.takeWhile(p)
@@ -415,8 +415,11 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   protected def clear(): Unit
 
-  def ++(that: IterableOnce[Byte]): ByteIterator =
-    if (that.isEmpty) this else ByteIterator.ByteArrayIterator(that.toArray)
+  def ++(that: IterableOnce[Byte]): ByteIterator = {
+    val it = that.iterator
+    if (it.isEmpty) this
+    else ByteIterator.ByteArrayIterator(it.toArray)
+  }
 
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
@@ -463,7 +466,11 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   }
 
   override def indexWhere(p: Byte => Boolean, from: Int = 0): Int = {
-    var index = from
+    var index = 0
+    while (index < from) {
+      next()
+      index += 1
+    }
     var found = false
     while (!found && hasNext) if (p(next())) {
       found = true

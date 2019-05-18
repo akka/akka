@@ -15,12 +15,13 @@ import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.ConstantFun
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
+
+import akka.stream.ActorAttributes.SupervisionStrategy
 
 /**
  * INTERNAL API
@@ -770,6 +771,8 @@ object Partition {
  * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
  * to the partitioner function applied to the element
  *
+ * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+ *
  * '''Emits when''' emits when an element is available from the input and the chosen output has demand
  *
  * '''Backpressures when''' the currently chosen output back-pressures
@@ -784,7 +787,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
   /**
    * Sets `eagerCancel` to `false`.
    */
-  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter")
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", "2.5.10")
   def this(outputPorts: Int, partitioner: T => Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
@@ -793,27 +796,48 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler {
+      lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
       private var outPendingElem: Any = null
       private var outPendingIdx: Int = _
       private var downstreamRunning = outputPorts
 
       def onPush() = {
         val elem = grab(in)
-        val idx = partitioner(elem)
-        if (idx < 0 || idx >= outputPorts) {
-          failStage(PartitionOutOfBoundsException(
-            s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
-        } else if (!isClosed(out(idx))) {
-          if (isAvailable(out(idx))) {
-            push(out(idx), elem)
-            if (out.exists(isAvailable(_)))
-              pull(in)
-          } else {
-            outPendingElem = elem
-            outPendingIdx = idx
+        val idx =
+          try {
+            val i = partitioner(elem)
+            if (i < 0 || i >= outputPorts)
+              throw PartitionOutOfBoundsException(
+                s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$i] for input " +
+                s"[${elem.getClass.getName}].")
+            else i
+          } catch {
+            case NonFatal(ex) =>
+              decider(ex) match {
+                case Supervision.Stop    => failStage(ex)
+                case Supervision.Restart => pull(in)
+                case Supervision.Resume  => pull(in)
+              }
+              Int.MinValue
           }
 
-        } else if (out.exists(isAvailable(_)))
+        if (idx != Int.MinValue) {
+          if (!isClosed(out(idx))) {
+            if (isAvailable(out(idx))) {
+              push(out(idx), elem)
+              pullIfAnyOutIsAvailable()
+            } else {
+              outPendingElem = elem
+              outPendingIdx = idx
+            }
+
+          } else
+            pullIfAnyOutIsAvailable()
+        }
+      }
+
+      private def pullIfAnyOutIsAvailable(): Unit = {
+        if (out.exists(isAvailable(_)))
           pull(in)
       }
 

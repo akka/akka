@@ -9,6 +9,7 @@ import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
 import scala.collection.immutable
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.util.unused
 import org.reactivestreams.Subscription
 
 /**
@@ -188,7 +189,7 @@ import org.reactivestreams.Subscription
       enqueue(id, elem)
     }
 
-    def onCancel(output: Int): Unit = ()
+    def onCancel(@unused output: Int): Unit = ()
 
     def demandAvailableFor(id: Int) = new TransferState {
       override def isCompleted: Boolean = cancelled(id) || completed(id) || errored(id)

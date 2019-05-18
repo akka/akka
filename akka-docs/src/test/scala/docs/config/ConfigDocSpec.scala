@@ -41,7 +41,7 @@ class ConfigDocSpec extends WordSpec with Matchers {
   
     # '/user/actorA/actorB' is a remote deployed actor
     /actorA/actorB {
-      remote = "akka.tcp://sampleActorSystem@127.0.0.1:2553"
+      remote = "akka://sampleActorSystem@127.0.0.1:2553"
     }
     
     # all direct children of '/user/actorC' have a dedicated dispatcher 

@@ -25,6 +25,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -49,7 +50,7 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
       case ActorIdentity(None, Some(ref)) =>
         context.watch(ref)
         replyTo ! Done
-      case t: Terminated =>
+      case _: Terminated =>
     }
   }
 }
@@ -75,7 +76,7 @@ abstract class RestartNodeSpec
   lazy val restartedSecondSystem = ActorSystem(
     system.name,
     ConfigFactory.parseString(s"""
-      akka.remote.netty.tcp.port = ${secondUniqueAddress.address.port.get}
+      akka.remote.classic.netty.tcp.port = ${secondUniqueAddress.address.port.get}
       akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
       """).withFallback(system.settings.config))
 

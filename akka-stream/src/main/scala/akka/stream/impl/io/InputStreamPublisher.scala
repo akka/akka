@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisherMessage
 import akka.stream.IOResult
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
@@ -29,6 +30,7 @@ import scala.util.{ Failure, Success }
 }
 
 /** INTERNAL API */
+@silent
 @InternalApi private[akka] class InputStreamPublisher(
     is: InputStream,
     completionPromise: Promise[IOResult],
@@ -44,9 +46,9 @@ import scala.util.{ Failure, Success }
   var readBytesTotal = 0L
 
   def receive = {
-    case ActorPublisherMessage.Request(elements) => readAndSignal()
-    case Continue                                => readAndSignal()
-    case ActorPublisherMessage.Cancel            => context.stop(self)
+    case ActorPublisherMessage.Request(_) => readAndSignal()
+    case Continue                         => readAndSignal()
+    case ActorPublisherMessage.Cancel     => context.stop(self)
   }
 
   def readAndSignal(): Unit =

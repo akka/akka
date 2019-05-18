@@ -15,7 +15,6 @@ import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.Props
-import akka.pattern.pipe
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
@@ -59,7 +58,7 @@ object StreamRefSpec extends MultiNodeConfig {
     def receive = {
       case RequestLogs(streamId) =>
         // materialize the SourceRef:
-        val (done: Future[Done], ref: Future[SourceRef[String]]) =
+        val (done: Future[Done], ref: SourceRef[String]) =
           Source
             .fromIterator(() => Iterator.from(1))
             .map(n => s"elem-$n")
@@ -77,10 +76,10 @@ object StreamRefSpec extends MultiNodeConfig {
         }
 
         // wrap the SourceRef in some domain message, such that the sender knows what source it is
-        val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
+        val reply = LogsOffer(streamId, ref)
 
         // reply to sender
-        reply.pipeTo(sender())
+        sender() ! reply
     }
 
   }
@@ -101,7 +100,7 @@ object StreamRefSpec extends MultiNodeConfig {
     def receive = {
       case PrepareUpload(nodeId) =>
         // materialize the SinkRef (the remote is like a source of data for us):
-        val (ref: Future[SinkRef[String]], done: Future[Done]) =
+        val (ref: SinkRef[String], done: Future[Done]) =
           StreamRefs
             .sinkRef[String]()
             .throttle(1, 1.second)
@@ -118,10 +117,10 @@ object StreamRefSpec extends MultiNodeConfig {
         }
 
         // wrap the SinkRef in some domain message, such that the sender knows what source it is
-        val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
+        val reply = MeasurementsSinkReady(nodeId, ref)
 
         // reply to sender
-        reply.pipeTo(sender())
+        sender() ! reply
     }
 
   }

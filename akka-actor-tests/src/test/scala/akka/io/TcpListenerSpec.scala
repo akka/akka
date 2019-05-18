@@ -47,7 +47,7 @@ class TcpListenerSpec extends AkkaSpec("""
 
       expectWorkerForCommand
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       // and pick up the last remaining connection on the next ChannelAcceptable
@@ -61,13 +61,13 @@ class TcpListenerSpec extends AkkaSpec("""
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
     }
 
@@ -75,16 +75,16 @@ class TcpListenerSpec extends AkkaSpec("""
       bindListener()
 
       attemptConnectionToEndpoint()
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
 
       listener ! ResumeAccepting(batchSize = 1)
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       // No more accepts are allowed now
-      interestCallReceiver.expectNoMsg(100.millis)
+      interestCallReceiver.expectNoMessage(100.millis)
 
       listener ! ResumeAccepting(batchSize = 2)
       interestCallReceiver.expectMsg(OP_ACCEPT)
@@ -92,17 +92,17 @@ class TcpListenerSpec extends AkkaSpec("""
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       // There is still one token remaining, accepting
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
 
       // Tokens are depleted now
-      interestCallReceiver.expectNoMsg(100.millis)
+      interestCallReceiver.expectNoMessage(100.millis)
     }
 
     "react to Unbind commands by replying with Unbound and stopping itself" in new TestSetup(pullMode = false) {

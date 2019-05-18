@@ -29,6 +29,7 @@ import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle,
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object Player {
 
   final class Waiter extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
@@ -87,8 +88,8 @@ trait Player { this: TestConductorExt =>
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
-    _client = system.actorOf(Props(classOf[ClientFSM], name, controllerAddr), "TestConductorClient")
-    val a = system.actorOf(Player.waiterProps)
+    _client = system.systemActorOf(Props(classOf[ClientFSM], name, controllerAddr), "TestConductorClient")
+    val a = system.systemActorOf(Player.waiterProps, "TestConductorWaiter")
     (a ? client).mapTo(classTag[Done])
   }
 
@@ -115,7 +116,7 @@ trait Player { this: TestConductorExt =>
         implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
         Await.result(client ? ToServer(EnterBarrier(b, Option(barrierTimeout))), Duration.Inf)
       } catch {
-        case e: AskTimeoutException =>
+        case _: AskTimeoutException =>
           client ! ToServer(FailBarrier(b))
           // Why don't TimeoutException have a constructor that takes a cause?
           throw new TimeoutException("Client timed out while waiting for barrier " + b);
@@ -184,7 +185,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
   startWith(Connecting, Data(None, None))
 
   when(Connecting, stateTimeout = settings.ConnectTimeout) {
-    case Event(msg: ClientOp, _) =>
+    case Event(_: ClientOp, _) =>
       stay.replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(Connected(channel), _) =>
       channel.write(Hello(name.name, TestConductor().address))
@@ -204,7 +205,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(msg: NetworkOp, _) =>
       log.error("received {} instead of Done", msg)
       goto(Failed)
-    case Event(msg: ServerOp, _) =>
+    case Event(_: ServerOp, _) =>
       stay.replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(StateTimeout, _) =>
       log.error("connect timeout to TestConductor")
@@ -221,15 +222,15 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(ToServer(msg), d @ Data(Some(channel), None)) =>
       channel.write(msg)
       val token = msg match {
-        case EnterBarrier(barrier, timeout) => Some(barrier -> sender())
-        case GetAddress(node)               => Some(node.name -> sender())
-        case _                              => None
+        case EnterBarrier(barrier, _) => Some(barrier -> sender())
+        case GetAddress(node)         => Some(node.name -> sender())
+        case _                        => None
       }
       stay.using(d.copy(runningOp = token))
-    case Event(ToServer(op), Data(channel, Some((token, _)))) =>
+    case Event(ToServer(op), Data(_, Some((token, _)))) =>
       log.error("cannot write {} while waiting for {}", op, token)
       stay
-    case Event(op: ClientOp, d @ Data(Some(channel), runningOp)) =>
+    case Event(op: ClientOp, d @ Data(Some(channel @ _), runningOp)) =>
       op match {
         case BarrierResult(b, success) =>
           runningOp match {
@@ -244,7 +245,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
               log.warning("did not expect {}", op)
           }
           stay.using(d.copy(runningOp = None))
-        case AddressReply(node, address) =>
+        case AddressReply(_, address) =>
           runningOp match {
             case Some((_, requester)) => requester ! address
             case None                 => log.warning("did not expect {}", op)
@@ -273,15 +274,15 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
               "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
           }
           stay
-        case d: DisconnectMsg =>
+        case _: DisconnectMsg =>
           // FIXME: Currently ignoring, needs support from Remoting
           stay
         case TerminateMsg(Left(false)) =>
           context.system.terminate()
-          stay
+          stop()
         case TerminateMsg(Left(true)) =>
           context.system.asInstanceOf[ActorSystemImpl].abort()
-          stay
+          stop()
         case TerminateMsg(Right(exitValue)) =>
           System.exit(exitValue)
           stay // needed because Java doesn’t have Nothing
@@ -340,7 +341,7 @@ private[akka] class PlayerHandler(
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     log.debug("channel {} exception {}", event.getChannel, event.getCause)
     event.getCause match {
-      case c: ConnectException if reconnects > 0 =>
+      case _: ConnectException if reconnects > 0 =>
         reconnects -= 1
         scheduler.scheduleOnce(nextAttempt.timeLeft)(reconnect())
       case e => fsm ! ConnectionFailure(e.getMessage)

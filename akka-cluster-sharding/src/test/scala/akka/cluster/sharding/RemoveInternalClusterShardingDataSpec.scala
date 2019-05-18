@@ -29,7 +29,7 @@ object RemoveInternalClusterShardingDataSpec {
   val config = """
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.journal.leveldb {
@@ -77,7 +77,7 @@ object RemoveInternalClusterShardingDataSpec {
     override def recovery: Recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria.None)
 
     override def receiveRecover: Receive = {
-      case event: ShardCoordinator.Internal.DomainEvent =>
+      case _: ShardCoordinator.Internal.DomainEvent =>
         hasEvents = true
       case RecoveryCompleted =>
         replyTo ! hasEvents
@@ -201,12 +201,8 @@ class RemoveInternalClusterShardingDataSpec
         hasEvents(typeName) should ===(true)
       }
 
-      val result = RemoveInternalClusterShardingData.remove(
-        system,
-        journalPluginId = "",
-        typeNames.toSet,
-        terminateSystem = false,
-        remove2dot3Data = true)
+      val result =
+        RemoveInternalClusterShardingData.remove(system, journalPluginId = "", typeNames.toSet, remove2dot3Data = true)
       Await.ready(result, remaining)
 
       typeNames.foreach { typeName =>

@@ -29,11 +29,13 @@ import akka.util.JavaDurationConverters._
 import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.coordination.lease.LeaseUsageSettings
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
+import akka.dispatch.Dispatchers
+import com.github.ghik.silencer.silent
 
 import scala.util.control.NonFatal
 
@@ -43,6 +45,7 @@ object ClusterSingletonManagerSettings {
    * Create settings from the default configuration
    * `akka.cluster.singleton`.
    */
+  @silent // deprecated setting
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
     // note that this setting has some additional logic inside the ClusterSingletonManager
@@ -55,7 +58,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(config: Config): ClusterSingletonManagerSettings = {
     val lease = config.getString("use-lease") match {
-      case s if s.isEmpty ⇒ None
+      case s if s.isEmpty => None
       case leaseConfigPath =>
         Some(new LeaseUsageSettings(leaseConfigPath, config.getDuration("lease-retry-interval").asScala))
     }
@@ -161,7 +164,9 @@ object ClusterSingletonManager {
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
    */
   def props(singletonProps: Props, terminationMessage: Any, settings: ClusterSingletonManagerSettings): Props =
-    Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings)).withDeploy(Deploy.local)
+    Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -476,7 +481,6 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   import ClusterSingletonManager.Internal._
   import ClusterSingletonManager.Internal.OldestChangedBuffer._
   import settings._
-  import FSM.`->`
 
   val cluster = Cluster(context.system)
   val selfUniqueAddressOption = Some(cluster.selfUniqueAddress)
@@ -980,9 +984,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
-    case Event(_: OldestChanged, _) =>
+    case Event(_: OldestChanged | HandOverToMe, _) =>
       // not interested anymore - waiting for removal
-      stay
+      stay()
   }
 
   def selfMemberExited(): Unit = {

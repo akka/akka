@@ -29,7 +29,6 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.Function0;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -191,9 +190,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
     private final ActorContext<Command> ctx;
 
-    CounterBehavior(PersistenceId persistentId, ActorContext<Command> ctx) {
+    CounterBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
       super(
-          persistentId,
+          persistenceId,
           SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
       this.ctx = ctx;
     }
@@ -413,7 +412,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
-                  public SignalHandler signalHandler() {
+                  public SignalHandler<State> signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             SnapshotCompleted.class,
@@ -462,7 +461,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
     c.tell(StopThenLog.INSTANCE);
-    probe.expectTerminated(c, Duration.ofSeconds(1));
+    probe.expectTerminated(c);
   }
 
   @Test
@@ -474,7 +473,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                 new CounterBehavior(new PersistenceId("c5"), ctx) {
 
                   @Override
-                  public SignalHandler signalHandler() {
+                  public SignalHandler<State> signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             PostStop.instance(),
@@ -635,7 +634,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<Object> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,
@@ -716,7 +715,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<String> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,

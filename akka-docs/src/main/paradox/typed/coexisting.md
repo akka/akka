@@ -43,10 +43,10 @@ While coexisting your application will likely still have an untyped ActorSystem.
 so that new code and migrated parts don't rely on the untyped system:
 
 Scala
-:  @@snip [UntypedWatchingTypedSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #convert-untyped }
+:  @@snip [UntypedWatchingTypedSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #adapter-import #convert-untyped }
 
 Java
-:  @@snip [UntypedWatchingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #convert-untyped }
+:  @@snip [UntypedWatchingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #adapter-import #convert-untyped }
 
 Then for new typed actors here's how you create, watch and send messages to
 it from an untyped actor.
@@ -115,6 +115,12 @@ Scala
 Java
 :  @@snip [TypedWatchingUntypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingUntypedTest.java) { #typed }
 
-There is one caveat regarding supervision of untyped child from typed parent. If the child throws an exception we would expect it to be restarted, but supervision in Akka Typed defaults to stopping the child in case it fails. The restarting facilities in Akka Typed will not work with untyped children. However, the workaround is to add another untyped actor that takes care of the supervision, i.e. restarts in case of failure if that is the desired behavior.
+## Supervision
+
+The default supervision for untyped actors is to restart whereas for typed it is to stop.
+When combining untyped and typed actors the default supervision is based on the default behavior of
+the child i.e. if an untyped actor creates a typed child, its default supervision will be to stop. If a typed
+actor creates an untyped child, its default supervision will be to restart.
+
 
 

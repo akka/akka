@@ -16,10 +16,20 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.ConstantFun
 import akka.util.OptionVal
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object BehaviorSetup {
+  sealed trait SnapshotAfterPersist
+  case object NoSnapshot extends SnapshotAfterPersist
+  case object SnapshotWithRetention extends SnapshotAfterPersist
+  case object SnapshotWithoutRetention extends SnapshotAfterPersist
+}
 
 /**
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
@@ -33,9 +43,9 @@ private[akka] final class BehaviorSetup[C, E, S](
     val eventHandler: EventSourcedBehavior.EventHandler[S, E],
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
     private val signalHandler: PartialFunction[(S, Signal), Unit],
-    val tagger: E ⇒ Set[String],
+    val tagger: E => Set[String],
     val eventAdapter: EventAdapter[E, _],
-    val snapshotWhen: (S, E, Long) ⇒ Boolean,
+    val snapshotWhen: (S, E, Long) => Boolean,
     val recovery: Recovery,
     val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
@@ -44,6 +54,7 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   import InternalProtocol.RecoveryTickEvent
   import akka.actor.typed.scaladsl.adapter._
+  import BehaviorSetup._
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
@@ -118,6 +129,18 @@ private[akka] final class BehaviorSetup[C, E, S](
           log.debug(s"Error while processing signal [{}]: {}", signal, ex)
           throw ex
         }
+    }
+  }
+
+  def shouldSnapshot(state: S, event: E, sequenceNr: Long): SnapshotAfterPersist = {
+    retention match {
+      case DisabledRetentionCriteria =>
+        if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
+        else NoSnapshot
+      case s: SnapshotCountRetentionCriteriaImpl =>
+        if (s.snapshotWhen(sequenceNr)) SnapshotWithRetention
+        else if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
+        else NoSnapshot
     }
   }
 

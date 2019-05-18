@@ -21,7 +21,7 @@ object HandshakeShouldDropCompressionTableSpec {
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
        remote.artery.advanced.handshake-timeout = 10s
-       remote.artery.advanced.image-liveness-timeout = 7s
+       remote.artery.advanced.aeron.image-liveness-timeout = 7s
 
        remote.artery.advanced.compression {
          actor-refs {
@@ -50,7 +50,10 @@ class HandshakeShouldDropCompressionTableSpec
   "Outgoing compression table" must {
     "be dropped on system restart" in {
       val messagesToExchange = 10
-      val systemATransport = RARP(system).provider.transport.asInstanceOf[ArteryTransport]
+
+      // System A transport:
+      RARP(system).provider.transport.asInstanceOf[ArteryTransport]
+
       def systemBTransport = RARP(systemB).provider.transport.asInstanceOf[ArteryTransport]
 
       // listen for compression table events
@@ -126,7 +129,7 @@ class HandshakeShouldDropCompressionTableSpec
   def waitForEcho(probe: TestKit, m: String, max: Duration = 3.seconds): Any =
     probe.fishForMessage(max = max, hint = s"waiting for '$m'") {
       case `m` => true
-      case x   => false
+      case _   => false
     }
 
   def identify(_system: String, port: Int, name: String) = {

@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.event.Logging
 import akka.pattern.BackoffSupervisor
 import akka.stream.Attributes.Attribute
@@ -355,7 +354,6 @@ object RestartWithBackoffFlow {
    *
    * Will be removed if/when cancellation can include a cause.
    */
-  @ApiMayChange
   case class Delay(duration: FiniteDuration) extends Attribute
 
   /**

@@ -28,7 +28,7 @@ object AkkaBuild {
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.5-SNAPSHOT"
+      version in ThisBuild := "2.6-SNAPSHOT"
     )
  
   lazy val mayChangeSettings = Seq(
@@ -98,29 +98,16 @@ object AkkaBuild {
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
       scalacOptions in Compile ++= (
-        if (System.getProperty("java.version").startsWith("1."))
+        if (JavaVersion.isJdk8)
           Seq("-target:jvm-1.8")
         else
-          if (scalaBinaryVersion.value == "2.11")
-            Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-          else
-            // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-            Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+          // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
+          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      javacOptions in compile ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
-      javacOptions in test ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
+      javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+      javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
@@ -146,13 +133,12 @@ object AkkaBuild {
       initialCommands :=
         """|import language.postfixOps
          |import akka.actor._
-         |import ActorDSL._
          |import scala.concurrent._
          |import com.typesafe.config.ConfigFactory
          |import scala.concurrent.duration._
          |import akka.util.Timeout
          |var config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-         |var remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
+         |var remoteConfig = ConfigFactory.parseString("akka.remote.classic.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
          |var system: ActorSystem = null
          |implicit def _system = system
          |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }
@@ -231,12 +217,12 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
-
-
-  lazy val noScala211 = Seq(
-    crossScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("2.11"))
+    javacOptions in doc ++= {
+      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
+      else Seq("-Xdoclint:none", "--ignore-source-errors")
+    }
   )
+
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._

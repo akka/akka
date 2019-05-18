@@ -308,6 +308,19 @@ trait ActorContext[T] extends TypedActorContext[T] {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[akka] def currentBehavior: Behavior[T]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def hasTimer: Boolean
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def cancelAllTimers(): Unit
 
 }

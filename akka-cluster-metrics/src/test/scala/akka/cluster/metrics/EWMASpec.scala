@@ -8,6 +8,9 @@ import scala.concurrent.duration._
 import akka.testkit.{ AkkaSpec, LongRunningTest }
 import java.util.concurrent.ThreadLocalRandom
 
+import com.github.ghik.silencer.silent
+
+@silent
 class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
 
   val collector = createMetricsCollector

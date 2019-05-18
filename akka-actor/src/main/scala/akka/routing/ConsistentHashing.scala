@@ -274,10 +274,10 @@ final case class ConsistentHashingRoutingLogic(
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
-    val virtualNodesFactor: Int = 0,
-    val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
+    virtualNodesFactor: Int = 0,
+    hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
     override val usePoolDispatcher: Boolean = false)
@@ -363,9 +363,9 @@ final case class ConsistentHashingPool(
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingGroup(
-    val paths: immutable.Iterable[String],
-    val virtualNodesFactor: Int = 0,
-    val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
+    paths: immutable.Iterable[String],
+    virtualNodesFactor: Int = 0,
+    hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {
 

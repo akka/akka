@@ -169,6 +169,14 @@ private[akka] class SubFusingActorMaterializerImpl(
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
 
+  final case class AddFunctionRef(f: (ActorRef, Any) => Unit, name: String)
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
+
+  final case class RemoveFunctionRef(ref: FunctionRef)
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
+
   /** Testing purpose */
   case object GetChildren
 
@@ -194,7 +202,13 @@ private[akka] class SubFusingActorMaterializerImpl(
     case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
-    case GetChildren => sender() ! Children(context.children.toSet)
+    case AddFunctionRef(f, name) =>
+      val ref = context.asInstanceOf[ActorCell].addFunctionRef(f, name)
+      sender() ! ref
+    case RemoveFunctionRef(ref) =>
+      context.asInstanceOf[ActorCell].removeFunctionRef(ref)
+    case GetChildren =>
+      sender() ! Children(context.children.toSet)
     case StopChildren =>
       context.children.foreach(context.stop)
       sender() ! StoppedChildren

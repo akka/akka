@@ -23,7 +23,7 @@ object CoordinatedShutdownShardingSpec {
     """
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     """
 
@@ -36,6 +36,7 @@ object CoordinatedShutdownShardingSpec {
   }
 }
 
+@ccompatUsedUntil213
 class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardingSpec.config) with WithLogCapturing {
   import CoordinatedShutdownShardingSpec._
 

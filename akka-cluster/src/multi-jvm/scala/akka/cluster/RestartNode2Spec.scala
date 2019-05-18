@@ -20,6 +20,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
   val seed2 = role("seed2")
@@ -56,7 +57,7 @@ abstract class RestartNode2SpecSpec
   lazy val restartedSeed1System = ActorSystem(
     system.name,
     ConfigFactory.parseString(s"""
-      akka.remote.netty.tcp.port = ${seedNodes.head.port.get}
+      akka.remote.classic.netty.tcp.port = ${seedNodes.head.port.get}
       akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
       #akka.remote.retry-gate-closed-for = 1s
       """).withFallback(system.settings.config))

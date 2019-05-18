@@ -1,11 +1,10 @@
 # How the Actor Model Meets the Needs of Modern, Distributed Systems
 
-@@@ warning
+@@@ note
 
-This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
+This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
+This means that API or semantics can change without warning or deprecation period, but such changes will
+be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
 
 @@@
 
@@ -50,7 +49,7 @@ different actors work concurrently with each other so that an actor system can p
 Since there is always at most one message being processed per actor,
 the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
-![messages don't invalidate invariants as they are processed sequentially](../../guide/diagrams/serialized_timeline_invariants.png)
+![messages do not invalidate invariants as they are processed sequentially](../../guide/diagrams/serialized_timeline_invariants.png)
 
 In summary, this is what happens when an actor receives a message:
 

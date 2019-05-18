@@ -7,12 +7,13 @@ package akka.dispatch
 import java.util.Collection
 import scala.concurrent.{ BlockContext, CanAwait }
 import scala.concurrent.duration.Duration
-import akka.dispatch.forkjoin._
 import java.util.concurrent.{
   ArrayBlockingQueue,
   BlockingQueue,
   Callable,
   ExecutorService,
+  ForkJoinPool,
+  ForkJoinWorkerThread,
   LinkedBlockingQueue,
   RejectedExecutionException,
   RejectedExecutionHandler,
@@ -90,7 +91,7 @@ final case class ThreadPoolConfig(
       service
     }
   }
-  final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
       case m: MonitorableThreadFactory =>
         // add the dispatcher id to the thread names

@@ -4,25 +4,23 @@
 
 package akka.testkit
 
-import language.postfixOps
+import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.TimeUnit
+
+import scala.language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
-
+import scala.util.control.NonFatal
 import akka.actor._
 import akka.util.{ BoxedType, Timeout }
-
-import scala.util.control.NonFatal
-import scala.Some
-import java.util.concurrent.TimeUnit
-
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
 import akka.actor.Terminated
+import com.github.ghik.silencer.silent
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -921,6 +919,7 @@ trait TestKitBase {
  *
  * @since 1.1
  */
+@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
 object TestKit {

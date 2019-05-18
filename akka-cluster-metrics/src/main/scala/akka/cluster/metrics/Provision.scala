@@ -39,7 +39,7 @@ trait SigarProvider {
       SigarProvider.close(sigar)
       true
     } catch {
-      case e: Throwable => false
+      case _: Throwable => false
     }
 
   /** Create sigar and verify it works. */

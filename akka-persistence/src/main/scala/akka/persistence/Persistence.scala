@@ -404,7 +404,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     log.debug(s"Create plugin: $pluginActorName $pluginClassName")
     val pluginClass = system.dynamicAccess.getClassFor[Any](pluginClassName).get
     val pluginDispatcherId = pluginConfig.getString("plugin-dispatcher")
-    val pluginActorArgs = try {
+    val pluginActorArgs: List[AnyRef] = try {
       Reflect.findConstructor(pluginClass, List(pluginConfig, configPath)) // will throw if not found
       List(pluginConfig, configPath)
     } catch {

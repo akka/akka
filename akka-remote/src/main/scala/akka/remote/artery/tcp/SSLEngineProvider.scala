@@ -18,7 +18,6 @@ import scala.util.Try
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.event.LogMarker
 import akka.event.Logging
@@ -35,7 +34,8 @@ import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-@ApiMayChange trait SSLEngineProvider {
+@ccompatUsedUntil213
+trait SSLEngineProvider {
 
   def createServerSSLEngine(hostname: String, port: Int): SSLEngine
 
@@ -64,7 +64,7 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@ApiMayChange class ConfigSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
+class ConfigSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
@@ -215,8 +215,7 @@ object SSLEngineProviderSetup {
  *
  * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup()]]
  */
-@ApiMayChange class SSLEngineProviderSetup private (val sslEngineProvider: ExtendedActorSystem => SSLEngineProvider)
-    extends Setup
+class SSLEngineProviderSetup private (val sslEngineProvider: ExtendedActorSystem => SSLEngineProvider) extends Setup
 
 /**
  * INTERNAL API

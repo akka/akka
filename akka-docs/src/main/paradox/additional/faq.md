@@ -98,11 +98,7 @@ to see all sent and received messages (logged at DEBUG level).
 
 ### Which options shall I enable when debugging remoting issues?
 
-Have a look at the @ref:[Remote Configuration](../remoting.md#remote-configuration), the typical candidates are:
-
- * *akka.remote.log-sent-messages*
- * *akka.remote.log-received-messages*
- * *akka.remote.log-remote-lifecycle-events* (this also includes deserialization errors)
+Have a look at the @ref:[Remote Configuration](../logging.md#auxiliary-remote-logging-options).
 
 ### What is the name of a remote actor?
 
@@ -110,16 +106,14 @@ When you want to send messages to an actor on a remote host, you need to know
 its @ref:[full path](../general/addressing.md), which is of the form:
 
 ```
-akka.protocol://system@host:1234/user/my/actor/hierarchy/path
+akka://system@host:1234/user/my/actor/hierarchy/path
 ```
 
 Observe all the parts you need here:
 
- * `protocol` is the protocol to be used to communicate with the remote system.
- Most of the cases this is *tcp*.
  * `system` is the remote system’s name (must match exactly, case-sensitive!)
  * `host` is the remote system’s IP address or DNS name, and it must match that
-system’s configuration (i.e. *akka.remote.netty.tcp.hostname*)
+system’s configuration (i.e. *akka.remote.artery.canonical.hostname*)
  * `1234` is the port number on which the remote system is listening for
 connections and receiving messages
  * `/user/my/actor/hierarchy/path` is the absolute path of the remote actor in
@@ -137,10 +131,10 @@ system’s network location, e.g. because `host` was configured to be `0.0.0.0`,
 `localhost` or a NAT’ed IP address.
 
 If you are running an ActorSystem under a NAT or inside a docker container, make sure to
-set *akka.remote.netty.tcp.hostname* and *akka.remote.netty.tcp.port* to the address
+set *akka.remote.artery.hostname* and *akka.remote.artery.canonical.port* to the address
 it is reachable at from other ActorSystems. If you need to bind your network interface
-to a different address - use *akka.remote.netty.tcp.bind-hostname* and
-*akka.remote.netty.tcp.bind-port* settings. Also make sure your network is configured
+to a different address - use *akka.remote.artery.bind.hostname* and
+*akka.remote.artery.bind.port* settings. Also make sure your network is configured
 to translate from the address your ActorSystem is reachable at to the address your
 ActorSystem network interface is bound to.
 

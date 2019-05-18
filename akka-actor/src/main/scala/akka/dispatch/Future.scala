@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture
 
 import akka.compat
 import akka.util.unused
+import com.github.ghik.silencer.silent
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -240,6 +241,7 @@ object japi {
  *
  * Java API
  */
+@silent
 abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
   protected final override def internal(result: T) = onSuccess(result)
 
@@ -257,6 +259,7 @@ abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
  *
  * Java API
  */
+@silent
 abstract class OnFailure extends japi.CallbackBridge[Throwable] {
   protected final override def internal(failure: Throwable) = onFailure(failure)
 
@@ -274,6 +277,7 @@ abstract class OnFailure extends japi.CallbackBridge[Throwable] {
  *
  * Java API
  */
+@silent
 abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
   protected final override def internal(value: Try[T]): Unit = value match {
     case Failure(t) => onComplete(t, null.asInstanceOf[T])
@@ -296,6 +300,7 @@ abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
  *
  * Java API
  */
+@silent
 abstract class Recover[+T] extends japi.RecoverBridge[T] {
   protected final override def internal(result: Throwable): T = recover(result)
 
@@ -349,6 +354,7 @@ object Filter {
  * SAM (Single Abstract Method) class
  * Java API
  */
+@silent
 abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
   override final def internal(t: T): Unit = each(t)
 

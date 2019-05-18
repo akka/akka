@@ -5,7 +5,6 @@
 package akka.actor.typed
 
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.typed.scaladsl.ActorContext
@@ -19,10 +18,9 @@ object TypedBenchmarkActors {
   // we pass the respondTo actor ref into the behavior
   final case object Message
 
-  private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receive {
-    (ctx, msg) =>
-      respondTo ! Message
-      Behaviors.same
+  private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receive { (_, _) =>
+    respondTo ! Message
+    Behaviors.same
   }
 
   private def echoSender(
@@ -49,7 +47,7 @@ object TypedBenchmarkActors {
           false
       }
 
-      Behaviors.receiveMessage { msg =>
+      Behaviors.receiveMessage { _ =>
         batch -= 1
         if (batch <= 0 && !sendBatch()) {
           onDone ! Done
@@ -165,7 +163,7 @@ object TypedBenchmarkActors {
     val pingPongBehavior = newPingPongBehavior(messagesPerPair, latch)
     val pingPongProps = Props.empty.withDispatcherFromConfig(fullPathToDispatcher)
     val actors = for {
-      i <- (1 to numPairs).toVector
+      _ <- (1 to numPairs).toVector
     } yield {
       val ping = ctx.spawnAnonymous(pingPongBehavior, pingPongProps)
       val pong = ctx.spawnAnonymous(pingPongBehavior, pingPongProps)

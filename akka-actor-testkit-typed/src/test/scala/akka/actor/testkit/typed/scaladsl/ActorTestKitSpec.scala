@@ -7,7 +7,6 @@ package akka.actor.testkit.typed.scaladsl
 import akka.Done
 
 import scala.concurrent.Promise
-import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -39,7 +38,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "spawn an actor" in {
       val sawMessage = Promise[Boolean]()
-      val ref = spawn(Behaviors.setup[AnyRef] { context =>
+      spawn(Behaviors.setup[AnyRef] { _ =>
         sawMessage.trySuccess(true)
         Behaviors.empty
       })
@@ -49,7 +48,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "spawn a named actor" in {
       val spawnedWithName = Promise[String]()
-      val ref = spawn(Behaviors.setup[AnyRef] { context =>
+      spawn(Behaviors.setup[AnyRef] { context =>
         spawnedWithName.trySuccess(context.self.path.name)
         Behaviors.empty
       }, "name")

@@ -108,18 +108,17 @@ akka {
   actor {
     provider = "cluster"
   }
-  remote {
-    log-remote-lifecycle-events = off
-    netty.tcp {
+  remote.artery {
+    canonical {
       hostname = "127.0.0.1"
-      port = 0
+      port = 2551
     }
   }
 
   cluster {
     seed-nodes = [
-      "akka.tcp://ClusterSystem@127.0.0.1:2551",
-      "akka.tcp://ClusterSystem@127.0.0.1:2552"]
+      "akka://ClusterSystem@127.0.0.1:2551",
+      "akka://ClusterSystem@127.0.0.1:2552"]
 
     # auto downing is NOT safe for production deployments.
     # you may want to use it during development, read more about it in the docs.
@@ -128,22 +127,16 @@ akka {
   }
 }
 
-# Enable metrics extension in akka-cluster-metrics.
-akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
-
-# Sigar native library extract location during tests.
-# Note: use per-jvm-instance folder when running multiple jvm on one host.
-akka.cluster.metrics.native-library-extract-folder=${user.dir}/target/native
 ```
 
-To enable cluster capabilities in your Akka project you should, at a minimum, add the @ref:[Remoting](remoting.md)
+To enable cluster capabilities in your Akka project you should, at a minimum, add the @ref:[Remoting](remoting-artery.md)
 settings, but with `cluster`.
 The `akka.cluster.seed-nodes` should normally also be added to your `application.conf` file.
 
 @@@ note
 
 If you are running Akka in a Docker container or the nodes for some other reason have separate internal and
-external ip addresses you must configure remoting according to @ref:[Akka behind NAT or in a Docker container](remoting.md#remote-configuration-nat)
+external ip addresses you must configure remoting according to @ref:[Akka behind NAT or in a Docker container](remoting-artery.md#remote-configuration-nat-artery)
 
 @@@
 
@@ -163,12 +156,9 @@ Java
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
+The easiest way to run this example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the `SimpleClusterApp`.
 
 ## Joining to Seed Nodes
 
@@ -193,15 +183,15 @@ You define the seed nodes in the [configuration](#cluster-configuration) file (a
 
 ```
 akka.cluster.seed-nodes = [
-  "akka.tcp://ClusterSystem@host1:2552",
-  "akka.tcp://ClusterSystem@host2:2552"]
+  "akka://ClusterSystem@host1:2552",
+  "akka://ClusterSystem@host2:2552"]
 ```
 
 This can also be defined as Java system properties when starting the JVM using the following syntax:
 
 ```
--Dakka.cluster.seed-nodes.0=akka.tcp://ClusterSystem@host1:2552
--Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
+-Dakka.cluster.seed-nodes.0=akka://ClusterSystem@host1:2552
+-Dakka.cluster.seed-nodes.1=akka://ClusterSystem@host2:2552
 ```
 
 The seed nodes can be started in any order and it is not necessary to have all
@@ -523,13 +513,10 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the `Terminated` message to the watching actor when the
 unreachable cluster node has been downed and removed.
 
-The easiest way to run **Worker Dial-in Example** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+The easiest way to run **Worker Dial-in Example** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Worker Dial-in Example** sample.
+ 
 ## Node Roles
 
 Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
@@ -852,7 +839,7 @@ Where the <node-url> should be on the format of
   'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
 Examples: ./akka-cluster localhost 9999 is-available
-          ./akka-cluster localhost 9999 join akka.tcp://MySystem@darkstar:2552
+          ./akka-cluster localhost 9999 join akka://MySystem@darkstar:2552
           ./akka-cluster localhost 9999 cluster-status
 ```
 
@@ -883,37 +870,10 @@ akka.cluster.log-info-verbose = on
 <a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
-Under the hood the cluster extension is implemented with actors and it can be necessary
-to create a bulkhead for those actors to avoid disturbance from other actors. Especially
-the heartbeating actors that is used for failure detection can generate false positives
-if they are not given a chance to run at regular intervals.
-For this purpose you can define a separate dispatcher to be used for the cluster actors:
-
-```
-akka.cluster.use-dispatcher = cluster-dispatcher
-
-cluster-dispatcher {
-  type = "Dispatcher"
-  executor = "fork-join-executor"
-  fork-join-executor {
-    parallelism-min = 2
-    parallelism-max = 4
-  }
-}
-```
-
-@@@ note
-
-Normally it should not be necessary to configure a separate dispatcher for the Cluster.
-The default-dispatcher should be sufficient for performing the Cluster tasks, i.e. `akka.cluster.use-dispatcher`
-should not be changed. If you have Cluster related problems when using the default-dispatcher that is typically an
-indication that you are running blocking or CPU intensive actors/tasks on the default-dispatcher.
-Use dedicated dispatchers for such actors/tasks instead of running them on the default-dispatcher,
-because that may starve system internal tasks.
-Related config properties: `akka.cluster.use-dispatcher = akka.cluster.cluster-dispatcher`.
-Corresponding default values: `akka.cluster.use-dispatcher =`.
-
-@@@
+Under the hood the cluster extension is implemented with actors. To protect them against
+disturbance from user actors they are by default run on the internal dispatcher configured
+under `akka.actor.internal-dispatcher`. The cluster actors can potentially be isolated even
+further onto their own dispatcher using the setting `akka.cluster.use-dispatcher`.
 
 ### Configuration Compatibility Check
 

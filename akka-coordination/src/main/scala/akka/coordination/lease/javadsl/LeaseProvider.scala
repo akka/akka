@@ -7,7 +7,7 @@ package akka.coordination.lease.javadsl
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.ApiMayChange
 import akka.coordination.lease.internal.LeaseAdapter
-import akka.coordination.lease.scaladsl.{ LeaseProvider ⇒ ScalaLeaseProvider }
+import akka.coordination.lease.scaladsl.{ LeaseProvider => ScalaLeaseProvider }
 
 @ApiMayChange
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
@@ -36,6 +36,6 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
    */
   def getLease(leaseName: String, configPath: String, ownerName: String): Lease = {
     val scalaLease = delegate.getLease(leaseName, configPath, ownerName)
-    new LeaseAdapter(scalaLease)(system.dispatcher)
+    new LeaseAdapter(scalaLease)(system.dispatchers.internalDispatcher)
   }
 }

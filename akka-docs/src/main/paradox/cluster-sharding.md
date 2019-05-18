@@ -344,12 +344,12 @@ are thereafter delivered to a new incarnation of the entity.
 
 ### Automatic Passivation
 
-The entities can be configured to be automatically passivated if they haven't received
-a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
+The entities are automatically passivated if they haven't received a message within the duration configured in
+`akka.cluster.sharding.passivate-idle-entity-after` 
 or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
 time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity. 
-By default automatic passivation is disabled. 
+to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
+Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
 
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
@@ -378,6 +378,14 @@ configuration of the `akka.cluster.sharding.distributed-data.durable.lmdb.dir`, 
 the default directory contains the remote port of the actor system. If using a dynamically
 assigned port (0) it will be different each time and the previously stored data will not
 be loaded.
+
+The reason for storing the identifiers of the active entities in durable storage, i.e. stored to
+disk, is that the same entities should be started also after a complete cluster restart. If this is not needed
+you can disable durable storage and benefit from better performance by using the following configuration:
+
+```
+akka.cluster.sharding.distributed-data.durable.keys = []
+```
 
 When `rememberEntities` is set to false, a `Shard` will not automatically restart any entities
 after a rebalance or recovering from a crash. Entities will only be started once the first message

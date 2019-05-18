@@ -12,12 +12,11 @@ To use Akka Cluster Distributed Data Typed, you must add the following dependenc
 
 ## Introduction
 
-@@@ warning
+@@@ note
 
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
+This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
+This means that API or semantics can change without warning or deprecation period, but such changes will
+be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
 
 @@@
 
@@ -42,9 +41,9 @@ out-of-date value.
 
 ## Using the Replicator
 
-The @scala[@unidoc[akka.cluster.ddata.typed.scaladsl.Replicator]]@java[@unidoc[akka.cluster.ddata.typed.javadsl.Replicator]] 
+The @scala[@apidoc[akka.cluster.ddata.typed.scaladsl.Replicator]]@java[@apidoc[akka.cluster.ddata.typed.javadsl.Replicator]] 
 actor provides the API for interacting with the data and is accessed through the extension 
-@scala[@unidoc[akka.cluster.ddata.typed.scaladsl.DistributedData]]@java[@unidoc[akka.cluster.ddata.typed.javadsl.DistributedData]].
+@scala[@apidoc[akka.cluster.ddata.typed.scaladsl.DistributedData]]@java[@apidoc[akka.cluster.ddata.typed.javadsl.DistributedData]].
 
 The messages for the replicator, such as `Replicator.Update` are defined in @scala[`akka.cluster.ddata.typed.scaladsl.Replicator`]
 @java[`akka.cluster.ddata.typed.scaladsl.Replicator`] but the actual CRDTs are the 

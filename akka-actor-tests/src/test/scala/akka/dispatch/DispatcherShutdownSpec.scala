@@ -23,7 +23,9 @@ class DispatcherShutdownSpec extends WordSpec with Matchers {
           .dumpAllThreads(false, false)
           .toList
           .map(_.getThreadName)
-          .filter(_.startsWith("DispatcherShutdownSpec-akka.actor.default"))
+          .filter(name =>
+            name.startsWith("DispatcherShutdownSpec-akka.actor.default") || name.startsWith(
+              "DispatcherShutdownSpec-akka.actor.internal")) // nothing is run on default without any user actors started
           .size
 
       val system = ActorSystem("DispatcherShutdownSpec")

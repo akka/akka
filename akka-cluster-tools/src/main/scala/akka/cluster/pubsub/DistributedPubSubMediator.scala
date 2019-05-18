@@ -29,7 +29,6 @@ import akka.routing.BroadcastRoutingLogic
 
 import scala.collection.immutable.TreeMap
 import com.typesafe.config.Config
-import akka.dispatch.Dispatchers
 
 object DistributedPubSubSettings {
 
@@ -354,9 +353,11 @@ object DistributedPubSubMediator {
         case Terminated(ref) =>
           remove(ref)
         case Prune =>
-          for (d <- pruneDeadline if d.isOverdue) {
-            pruneDeadline = None
-            context.parent ! NoMoreSubscribers
+          pruneDeadline match {
+            case Some(deadline) if deadline.isOverdue() =>
+              pruneDeadline = None
+              context.parent ! NoMoreSubscribers
+            case _ =>
           }
         case TerminateRequest =>
           if (subscribers.isEmpty && context.children.isEmpty)
@@ -640,7 +641,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
         }
       }
 
-    case msg @ RegisterTopic(t) =>
+    case RegisterTopic(t) =>
       registerTopic(t)
 
     case NoMoreSubscribers =>
@@ -655,7 +656,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
     case GetTopics =>
       sender ! CurrentTopics(getCurrentTopics())
 
-    case msg @ Subscribed(ack, ref) =>
+    case Subscribed(ack, ref) =>
       ref ! ack
 
     case msg @ Unsubscribe(topic, _, _) =>
@@ -667,7 +668,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
         }
       }
 
-    case msg @ Unsubscribed(ack, ref) =>
+    case Unsubscribed(ack, ref) =>
       ref ! ack
 
     case Status(otherVersions, isReplyToStatus) =>
@@ -751,7 +752,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
 
     case Count =>
       val count = registry.map {
-        case (owner, bucket) =>
+        case (_, bucket) =>
           bucket.content.count {
             case (_, valueHolder) => valueHolder.ref.isDefined
           }
@@ -928,10 +929,7 @@ class DistributedPubSub(system: ExtendedActorSystem) extends Extension {
       system.deadLetters
     else {
       val name = system.settings.config.getString("akka.cluster.pub-sub.name")
-      val dispatcher = system.settings.config.getString("akka.cluster.pub-sub.use-dispatcher") match {
-        case "" => Dispatchers.DefaultDispatcherId
-        case id => id
-      }
+      val dispatcher = system.settings.config.getString("akka.cluster.pub-sub.use-dispatcher")
       system.systemActorOf(DistributedPubSubMediator.props(settings).withDispatcher(dispatcher), name)
     }
   }

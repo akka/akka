@@ -12,7 +12,6 @@ import akka.actor.{
   Address,
   DeadLetterSuppression,
   Deploy,
-  FSM,
   LoggingFSM,
   NoSerializationVerificationNeeded,
   OneForOneStrategy,
@@ -84,7 +83,7 @@ trait Conductor { this: TestConductorExt =>
       name: RoleName,
       controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
+    _controller = system.systemActorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
     (controller ? GetSockAddr).flatMap {
@@ -441,10 +440,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   override def supervisorStrategy = OneForOneStrategy() {
     case BarrierTimeout(data)             => failBarrier(data)
     case FailedBarrier(data)              => failBarrier(data)
-    case BarrierEmpty(data, msg)          => SupervisorStrategy.Resume
+    case BarrierEmpty(_, _)               => SupervisorStrategy.Resume
     case WrongBarrier(name, client, data) => { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
-    case ClientLost(data, node)           => failBarrier(data)
-    case DuplicateNode(data, node)        => failBarrier(data)
+    case ClientLost(data, _)              => failBarrier(data)
+    case DuplicateNode(data, _)           => failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {
@@ -580,7 +579,6 @@ private[akka] class BarrierCoordinator
     with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
   import Controller._
-  import FSM._
 
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false
@@ -639,7 +637,7 @@ private[akka] class BarrierCoordinator
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else
         handleBarrier(d.copy(arrived = together))
-    case Event(RemoveClient(name), d @ Data(clients, barrier, arrived, _)) =>
+    case Event(RemoveClient(name), d @ Data(clients, _, arrived, _)) =>
       clients.find(_.name == name) match {
         case None => stay
         case Some(client) =>

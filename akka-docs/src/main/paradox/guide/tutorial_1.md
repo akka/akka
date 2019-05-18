@@ -145,10 +145,10 @@ java.lang.Exception: I failed!
         at akka.dispatch.Mailbox.processMailbox(Mailbox.scala:257)
         at akka.dispatch.Mailbox.run(Mailbox.scala:224)
         at akka.dispatch.Mailbox.exec(Mailbox.scala:234)
-        at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)
-        at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
-        at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
-        at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
+        at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:260)
+        at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
+        at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
+        at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
 ```
 
 We see that after failure the supervised actor is stopped and immediately restarted. We also see a log entry reporting the exception that was handled, in this case, our test exception. In this example we used `preStart()` and `postStop()` hooks

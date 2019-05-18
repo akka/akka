@@ -14,6 +14,7 @@ import akka.routing.RoundRobinGroup
 import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
 import akka.testkit.{ filterEvents, AkkaSpec, DefaultTimeout, EventFilter, TimingTest }
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import scala.annotation.tailrec
@@ -24,6 +25,7 @@ import scala.language.postfixOps
 
 object TypedActorSpec {
 
+  @silent
   val config = """
     pooled-dispatcher {
       type = "akka.dispatch.BalancingDispatcherConfigurator"
@@ -109,7 +111,7 @@ object TypedActorSpec {
     def read(): Int
 
     def testMethodCallSerialization(foo: Foo, s: String, i: Int, o: WithStringSerializedClass): Unit =
-      throw new IllegalStateException("expected")
+      throw new IllegalStateException(s"expected $foo $s $i $o")
   }
 
   class Bar extends Foo with Serializable {
@@ -131,7 +133,6 @@ object TypedActorSpec {
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
-      implicit val timeout = TypedActor(TypedActor.context.system).DefaultReturnTimeout
       foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
 
@@ -188,19 +189,19 @@ object TypedActorSpec {
 
     private def ensureContextAvailable[T](f: => T): T = TypedActor.context match {
       case null => throw new IllegalStateException("TypedActor.context is null!")
-      case some => f
+      case _    => f
     }
 
     override def crash(): Unit = throw new IllegalStateException("Crash!")
 
     override def preStart(): Unit = ensureContextAvailable(latch.countDown())
 
-    override def postStop(): Unit = ensureContextAvailable(for (i <- 1 to 3) latch.countDown())
+    override def postStop(): Unit = ensureContextAvailable(for (_ <- 1 to 3) latch.countDown())
 
     override def preRestart(reason: Throwable, message: Option[Any]): Unit =
-      ensureContextAvailable(for (i <- 1 to 5) latch.countDown())
+      ensureContextAvailable(for (_ <- 1 to 5) latch.countDown())
 
-    override def postRestart(reason: Throwable): Unit = ensureContextAvailable(for (i <- 1 to 7) latch.countDown())
+    override def postRestart(reason: Throwable): Unit = ensureContextAvailable(for (_ <- 1 to 7) latch.countDown())
 
     override def onReceive(msg: Any, sender: ActorRef): Unit = {
       ensureContextAvailable(msg match {
@@ -231,8 +232,8 @@ object TypedActorSpec {
     }
 
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case manifest if bytes.length == 1 && bytes(0) == 255.toByte => WithStringSerializedClass()
-      case _                                                       => throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
+      case _ if bytes.length == 1 && bytes(0) == 255.toByte => WithStringSerializedClass()
+      case _                                                => throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
     }
   }
 
@@ -282,9 +283,9 @@ class TypedActorSpec
 
     "throw an IllegalStateException when TypedActor.self is called in the wrong scope" in {
       filterEvents(EventFilter[IllegalStateException]("Calling")) {
-        (intercept[IllegalStateException] {
+        intercept[IllegalStateException] {
           TypedActor.self[Foo]
-        }).getMessage should ===("Calling TypedActor.self outside of a TypedActor implementation method!")
+        }.getMessage should ===("Calling TypedActor.self outside of a TypedActor implementation method!")
       }
     }
 
@@ -405,10 +406,10 @@ class TypedActorSpec
           "expected")
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        (intercept[IllegalStateException] { t.failingJOptionPigdog }).getMessage should ===("expected")
+        intercept[IllegalStateException] { t.failingJOptionPigdog }.getMessage should ===("expected")
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        (intercept[IllegalStateException] { t.failingOptionPigdog }).getMessage should ===("expected")
+        intercept[IllegalStateException] { t.failingOptionPigdog }.getMessage should ===("expected")
 
         t.read() should ===(1) //Make sure state is not reset after failure
 
@@ -456,7 +457,7 @@ class TypedActorSpec
     }
 
     "be able to use balancing dispatcher" in within(timeout.duration) {
-      val thais = for (i <- 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
+      val thais = for (_ <- 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
       val results = for (i <- 1 to 120) yield (i, iterator.next.futurePigdog(200 millis, i))

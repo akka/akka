@@ -96,7 +96,7 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
       bus.subscribe(subscriber, classifier)
       bus.publish(event)
       expectMsg(event)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
       bus.unsubscribe(subscriber, classifier)
     }
 
@@ -108,7 +108,7 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
       expectMsg(event)
       expectMsg(event)
       expectMsg(event)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
       bus.unsubscribe(subscriber, classifier)
     }
 
@@ -136,14 +136,14 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
       expectMsg(event)
       bus.unsubscribe(subscriber, classifier)
       bus.unsubscribe(otherSubscriber, otherClassifier)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "not publish the given event to a former subscriber" in {
       bus.subscribe(subscriber, classifier)
       bus.unsubscribe(subscriber, classifier)
       bus.publish(event)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "cleanup subscriber" in {
@@ -207,7 +207,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
     expectUnsubscribedByUnsubscriber(p, subs)
 
     bus.publish(m(2))
-    expectNoMsg(1 second)
+    expectNoMessage(1 second)
 
     disposeSubscriber(system, subs)
     disposeSubscriber(system, a1)
@@ -256,7 +256,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
 
     bus.unsubscribe(subs, a1)
     bus.publish(m1(2))
-    expectNoMsg(1 second)
+    expectNoMessage(1 second)
     bus.publish(m2(2))
     expectMsg(m2(2))
 
@@ -264,7 +264,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
     expectUnregisterFromUnsubscriber(p, subs)
     bus.publish(m1(3))
     bus.publish(m2(3))
-    expectNoMsg(1 second)
+    expectNoMessage(1 second)
 
     disposeSubscriber(system, subs)
     disposeSubscriber(system, a1)
@@ -275,7 +275,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
     val expectedMsg = s"actor $a has terminated, unsubscribing it from $bus"
     p.fishForMessage(1 second, hint = expectedMsg) {
       case Logging.Debug(_, _, msg) if msg.equals(expectedMsg) => true
-      case other                                               => false
+      case _                                                   => false
     }
   }
 
@@ -283,7 +283,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
     val expectedMsg = s"unregistered watch of $a in $bus"
     p.fishForMessage(1 second, hint = expectedMsg) {
       case Logging.Debug(_, _, msg) if msg.equals(expectedMsg) => true
-      case other                                               => false
+      case _                                                   => false
     }
   }
 }

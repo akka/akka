@@ -347,6 +347,8 @@ object ShardRegion {
 
   private case object Retry extends ShardRegionCommand
 
+  private case object RegisterRetry extends ShardRegionCommand
+
   /**
    * When an remembering entities and the shard stops unexpected (e.g. persist failure), we
    * restart it after a back off using this message.
@@ -442,7 +444,8 @@ private[akka] class ShardRegion(
     replicator: ActorRef,
     majorityMinCap: Int)
     extends Actor
-    with ActorLogging {
+    with ActorLogging
+    with Timers {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -466,8 +469,9 @@ private[akka] class ShardRegion(
   var gracefulShutdownInProgress = false
 
   import context.dispatcher
-  val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
   var retryCount = 0
+  val initRegistrationDelay: FiniteDuration = 100.millis.max(retryInterval / 2 / 2 / 2)
+  var nextRegistrationDelay: FiniteDuration = initRegistrationDelay
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()
@@ -484,6 +488,8 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
+    timers.startPeriodicTimer(Retry, Retry, retryInterval)
+    startRegistration()
     if (settings.passivateIdleEntityAfter > Duration.Zero)
       log.info(
         "{}: Idle entities will be passivated after [{}]",
@@ -495,7 +501,6 @@ private[akka] class ShardRegion(
     super.postStop()
     cluster.unsubscribe(self)
     gracefulShutdownProgress.trySuccess(Done)
-    retryTask.cancel()
   }
 
   // when using proxy the data center can be different from the own data center
@@ -508,7 +513,7 @@ private[akka] class ShardRegion(
     member.hasRole(targetDcRole) && role.forall(member.hasRole)
 
   def coordinatorSelection: Option[ActorSelection] =
-    membersByAge.headOption.map(m => context.actorSelection(RootActorPath(m.address) + coordinatorPath))
+    membersByAge.headOption.map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
 
   /**
    * When leaving the coordinator singleton is started rather quickly on next
@@ -516,7 +521,7 @@ private[akka] class ShardRegion(
    * the likely locations of the coordinator.
    */
   def gracefulShutdownCoordinatorSelections: List[ActorSelection] =
-    membersByAge.take(2).toList.map(m => context.actorSelection(RootActorPath(m.address) + coordinatorPath))
+    membersByAge.take(2).toList.map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
 
   var coordinator: Option[ActorRef] = None
 
@@ -532,7 +537,7 @@ private[akka] class ShardRegion(
           before.map(_.address).getOrElse(""),
           after.map(_.address).getOrElse(""))
       coordinator = None
-      register()
+      startRegistration()
     }
   }
 
@@ -614,6 +619,7 @@ private[akka] class ShardRegion(
     case RegisterAck(coord) =>
       context.watch(coord)
       coordinator = Some(coord)
+      finishRegistration()
       requestShardBufferHomes()
 
     case BeginHandOff(shard) =>
@@ -662,6 +668,12 @@ private[akka] class ShardRegion(
 
       tryCompleteGracefulShutdown()
 
+    case RegisterRetry =>
+      if (coordinator.isEmpty) {
+        register()
+        scheduleNextRegistration()
+      }
+
     case GracefulShutdown =>
       log.debug("{}: Starting graceful shutdown of region and all its shards", typeName)
       gracefulShutdownInProgress = true
@@ -691,9 +703,10 @@ private[akka] class ShardRegion(
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {
-    if (coordinator.contains(ref))
+    if (coordinator.contains(ref)) {
       coordinator = None
-    else if (regions.contains(ref)) {
+      startRegistration()
+    } else if (regions.contains(ref)) {
       val shards = regions(ref)
       regionByShard --= shards
       regions -= ref
@@ -741,7 +754,7 @@ private[akka] class ShardRegion(
         }.toMap)
       }
       .recover {
-        case x: AskTimeoutException => ShardRegionStats(Map.empty)
+        case _: AskTimeoutException => ShardRegionStats(Map.empty)
       }
       .pipeTo(ref)
   }
@@ -757,6 +770,25 @@ private[akka] class ShardRegion(
     if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty) {
       context.stop(self) // all shards have been rebalanced, complete graceful shutdown
     }
+
+  def startRegistration(): Unit = {
+    nextRegistrationDelay = initRegistrationDelay
+
+    register()
+    scheduleNextRegistration()
+  }
+
+  def scheduleNextRegistration(): Unit = {
+    if (nextRegistrationDelay < retryInterval) {
+      timers.startSingleTimer(RegisterRetry, RegisterRetry, nextRegistrationDelay)
+      // exponentially increasing retry interval until reaching the normal retryInterval
+      nextRegistrationDelay *= 2
+    }
+  }
+
+  def finishRegistration(): Unit = {
+    timers.cancel(RegisterRetry)
+  }
 
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
@@ -931,7 +963,7 @@ private[akka] class ShardRegion(
             shards = shards.updated(id, shard)
             startingShards += id
             None
-          case Some(props) =>
+          case Some(_) =>
             None
           case None =>
             throw new IllegalStateException("Shard must not be allocated to a proxy only ShardRegion")

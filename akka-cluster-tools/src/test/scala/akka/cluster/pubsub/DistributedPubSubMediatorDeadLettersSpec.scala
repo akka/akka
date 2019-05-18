@@ -14,7 +14,7 @@ object DistributedPubSubMediatorDeadLettersSpec {
     s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port=0
+    akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port=0
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.pub-sub.send-to-dead-letters-when-no-subscribers = $sendToDeadLettersWhenNoSubscribers
@@ -25,7 +25,7 @@ trait DeadLettersProbe { this: TestKitBase =>
   val deadLettersProbe = TestProbe()
   system.eventStream.subscribe(deadLettersProbe.ref, classOf[DeadLetter])
 
-  def expectNoDeadLetters(): Unit = deadLettersProbe.expectNoMsg(100.milliseconds)
+  def expectNoDeadLetters(): Unit = deadLettersProbe.expectNoMessage(100.milliseconds)
   def expectDeadLetter(): Unit = deadLettersProbe.expectMsgClass(classOf[DeadLetter])
 }
 

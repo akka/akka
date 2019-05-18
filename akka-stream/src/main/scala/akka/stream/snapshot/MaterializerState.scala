@@ -33,8 +33,7 @@ object MaterializerState {
   def streamSnapshots(mat: Materializer): Future[immutable.Seq[StreamSnapshot]] = {
     mat match {
       case impl: PhasedFusingActorMaterializer =>
-        import impl.system.dispatcher
-        requestFromSupervisor(impl.supervisor)
+        requestFromSupervisor(impl.supervisor)(impl.system.dispatchers.internalDispatcher)
     }
   }
 

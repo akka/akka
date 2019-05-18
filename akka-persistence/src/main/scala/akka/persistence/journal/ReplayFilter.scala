@@ -80,7 +80,7 @@ private[akka] class ReplayFilter(
           if (r.persistent.sequenceNr < seqNo) {
             val errMsg = s"Invalid replayed event [sequenceNr=${r.persistent.sequenceNr}, writerUUID=${r.persistent.writerUuid}] as " +
               s"the sequenceNr should be equal to or greater than already-processed event [sequenceNr=${seqNo}, writerUUID=${writerUuid}] from the same writer, for the same persistenceId [${r.persistent.persistenceId}]. " +
-              "Perhaps, events were journaled out of sequence, or duplicate persistentId for different entities?"
+              "Perhaps, events were journaled out of sequence, or duplicate persistenceId for different entities?"
             logIssue(errMsg)
             mode match {
               case RepairByDiscardOld => // discard
@@ -98,7 +98,7 @@ private[akka] class ReplayFilter(
           // from old writer
           val errMsg = s"Invalid replayed event [sequenceNr=${r.persistent.sequenceNr}, writerUUID=${r.persistent.writerUuid}]. " +
             s"There was already a newer writer whose last replayed event was [sequenceNr=${seqNo}, writerUUID=${writerUuid}] for the same persistenceId [${r.persistent.persistenceId}]." +
-            "Perhaps, the old writer kept journaling messages after the new writer created, or duplicate persistentId for different entities?"
+            "Perhaps, the old writer kept journaling messages after the new writer created, or duplicate persistenceId for different entities?"
           logIssue(errMsg)
           mode match {
             case RepairByDiscardOld => // discard
@@ -124,7 +124,7 @@ private[akka] class ReplayFilter(
             if (msg.persistent.sequenceNr >= seqNo) {
               val errMsg = s"Invalid replayed event [sequenceNr=${r.persistent.sequenceNr}, writerUUID=${r.persistent.writerUuid}] from a new writer. " +
                 s"An older writer already sent an event [sequenceNr=${msg.persistent.sequenceNr}, writerUUID=${msg.persistent.writerUuid}] whose sequence number was equal or greater for the same persistenceId [${r.persistent.persistenceId}]. " +
-                "Perhaps, the new writer journaled the event out of sequence, or duplicate persistentId for different entities?"
+                "Perhaps, the new writer journaled the event out of sequence, or duplicate persistenceId for different entities?"
               logIssue(errMsg)
               mode match {
                 case RepairByDiscardOld => iter.remove() // discard
@@ -168,7 +168,7 @@ private[akka] class ReplayFilter(
     persistentActor.tell(ReplayMessagesFailure(cause), Actor.noSender)
     context.become {
       case _: ReplayedMessage => // discard
-      case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) =>
+      case _: RecoverySuccess | _: ReplayMessagesFailure =>
         context.stop(self)
     }
   }

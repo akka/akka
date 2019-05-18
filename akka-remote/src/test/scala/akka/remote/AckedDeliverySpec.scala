@@ -257,7 +257,7 @@ class AckedDeliverySpec extends AkkaSpec {
 
     def happened(p: Double) = ThreadLocalRandom.current().nextDouble() < p
 
-    @tailrec def geom(p: Double, limit: Int = 5, acc: Int = 0): Int =
+    @tailrec def geom(p: Double, limit: Int, acc: Int = 0): Int =
       if (acc == limit) acc
       else if (happened(p)) acc
       else geom(p, limit, acc + 1)
@@ -278,7 +278,7 @@ class AckedDeliverySpec extends AkkaSpec {
 
       def dbgLog(message: String): Unit = log :+= message
 
-      def senderSteps(steps: Int, p: Double = 1.0) = {
+      def senderSteps(steps: Int, p: Double) = {
         val resends = (sndBuf.nacked ++ sndBuf.nonAcked).take(steps)
 
         val sends = if (steps - resends.size > 0) {
@@ -300,7 +300,7 @@ class AckedDeliverySpec extends AkkaSpec {
         }
       }
 
-      def receiverStep(p: Double = 1.0) = {
+      def receiverStep(p: Double) = {
         if (happened(p)) {
           sndBuf = sndBuf.acknowledge(lastAck)
           dbgLog(s"$sndBuf <-- $lastAck -- $rcvBuf")

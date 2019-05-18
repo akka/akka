@@ -27,7 +27,7 @@ class ArteryFailedToBindSpec extends WordSpec with Matchers {
            |      enabled = on
            |      canonical.hostname = "127.0.0.1"
            |      canonical.port = $port
-           |      log-aeron-counters = on
+           |      aeron.log-aeron-counters = on
            |    }
            |  }
            |}

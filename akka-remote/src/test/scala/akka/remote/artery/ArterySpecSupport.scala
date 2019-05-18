@@ -23,6 +23,7 @@ object ArterySpecSupport {
         warn-about-java-serializer-usage = off
         serialize-creators = off
       }
+      akka.remote.warn-about-direct-use = off
       remote.artery {
         enabled = on
         canonical {

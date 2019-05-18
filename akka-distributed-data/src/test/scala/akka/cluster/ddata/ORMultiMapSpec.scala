@@ -11,7 +11,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class ORMultiMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A ORMultiMap" must {

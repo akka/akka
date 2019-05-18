@@ -7,6 +7,7 @@ package akka.io.dns.internal
 import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
 import akka.util.{ ByteString, ByteStringBuilder }
+import com.github.ghik.silencer.silent
 
 import scala.collection.GenTraversableOnce
 import scala.collection.immutable.Seq
@@ -155,6 +156,7 @@ private[internal] object Message {
     }
 
     import scala.language.implicitConversions
+    @silent
     implicit def flattener[T](tried: Try[T]): GenTraversableOnce[T] =
       if (flags.isTruncated) tried.toOption
       else

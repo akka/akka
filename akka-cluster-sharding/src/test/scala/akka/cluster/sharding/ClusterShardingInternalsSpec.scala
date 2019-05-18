@@ -11,7 +11,7 @@ import akka.cluster.sharding.ShardRegion.HandOffStopper
 import akka.testkit.{ AkkaSpec, TestProbe }
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 
@@ -30,7 +30,7 @@ object ClusterShardingInternalsSpec {
 
 class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
-    |akka.remote.netty.tcp.port = 0
+    |akka.remote.classic.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
     |""".stripMargin) with MockitoSugar {
   import ClusterShardingInternalsSpec._

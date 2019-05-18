@@ -7,7 +7,6 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -18,6 +17,7 @@ import akka.event.EventStream
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
+import akka.util.unused
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -27,7 +27,7 @@ object TransportFailConfig extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
-      akka.remote {
+      akka.remote.classic {
         transport-failure-detector {
           implementation-class = "akka.remote.TransportFailSpec$$TestFailureDetector"
           heartbeat-interval = 1 s
@@ -57,7 +57,7 @@ object TransportFailSpec {
   private val fdAvailable = new AtomicBoolean(true)
 
   // FD that will fail when `fdAvailable` flag is false
-  class TestFailureDetector(config: Config, ev: EventStream) extends FailureDetector {
+  class TestFailureDetector(@unused config: Config, @unused ev: EventStream) extends FailureDetector {
     @volatile private var active = false
 
     override def heartbeat(): Unit = {
@@ -110,7 +110,6 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
 
     "reconnect" taggedAs LongRunningTest in {
       runOn(first) {
-        val secondAddress = node(second).address
         enterBarrier("actors-started")
 
         val subject = identify(second, "subject")
@@ -144,7 +143,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
           }
         }, max = 5.seconds)
         watch(subject2)
-        quarantineProbe.expectNoMsg(1.seconds)
+        quarantineProbe.expectNoMessage(1.seconds)
         subject2 ! "hello2"
         expectMsg("hello2")
         enterBarrier("watch-established2")

@@ -8,10 +8,12 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
+
 import scala.concurrent.duration._
 import akka.testkit.SocketUtil
 import akka.remote.QuarantinedEvent
 import akka.remote.RARP
+import com.github.ghik.silencer.silent
 
 object RemoteDeathWatchSpec {
   val otherPort = ArteryMultiNodeSpec.freePort(ConfigFactory.load())
@@ -31,7 +33,7 @@ object RemoteDeathWatchSpec {
         # must still be longer than failure detection
         remote.artery.advanced {
           handshake-timeout = 10 s
-          image-liveness-timeout = 9 seconds
+          aeron.image-liveness-timeout = 9 seconds
         }
     }
     """).withFallback(ArterySpecSupport.defaultConfig)
@@ -78,8 +80,12 @@ class RemoteDeathWatchSpec
 
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
+
     system.actorOf(Props(new Actor {
-      context.watch(context.actorFor(path))
+      @silent
+      val watchee = RARP(context.system).provider.resolveActorRef(path)
+      context.watch(watchee)
+
       def receive = {
         case t: Terminated => testActor ! t.actor.path
       }

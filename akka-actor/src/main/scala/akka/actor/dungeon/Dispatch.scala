@@ -5,21 +5,22 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-
 import akka.AkkaException
 import akka.dispatch.{ Envelope, Mailbox }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
+
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
-
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
 import akka.dispatch.UnboundedMailbox
 import akka.serialization.Serialization
+import com.github.ghik.silencer.silent
 
 @SerialVersionUID(1L)
 final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)
@@ -28,9 +29,13 @@ final case class SerializationCheckFailedException private (msg: Object, cause: 
       "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message",
       cause)
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
-  @volatile private var _mailboxDoNotCallMeDirectly
+  @silent @volatile private var _mailboxDoNotCallMeDirectly
       : Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
   @inline final def mailbox: Mailbox =
@@ -115,7 +120,7 @@ private[akka] trait Dispatch { this: ActorCell =>
   private def handleException: Catcher[Unit] = {
     case e: InterruptedException =>
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
-      Thread.currentThread.interrupt()
+      Thread.currentThread().interrupt()
     case NonFatal(e) =>
       val message = e match {
         case n: NoStackTrace => "swallowing exception during message send: " + n.getMessage

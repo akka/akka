@@ -8,20 +8,21 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.ActorInitializationException
+import akka.actor.{ ActorInitializationException, ActorRefWithCell }
 import akka.{ actor => untyped }
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Behavior.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
-
 import scala.annotation.switch
+
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -33,6 +34,8 @@ import scala.annotation.switch
    * the cause and can fill in the cause in the `ChildFailed` signal
    * Wrapped to avoid it being logged as the typed supervision will already
    * have logged it.
+   *
+   * Should only be thrown if the parent is known to be an `ActorAdapter`.
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
 
@@ -45,7 +48,7 @@ import scala.annotation.switch
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T])
+@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
     extends untyped.Actor
     with untyped.ActorLogging {
   import Behavior._
@@ -102,7 +105,21 @@ import scala.annotation.switch
 
   private def handleMessage(msg: T): Unit = {
     try {
-      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+      val c = ctx
+      if (c.hasTimer) {
+        msg match {
+          case timerMsg: TimerMsg =>
+            c.timer.interceptTimerMsg(ctx.log, timerMsg) match {
+              case OptionVal.None => // means TimerMsg not applicable, discard
+              case OptionVal.Some(m) =>
+                next(Behavior.interpretMessage(behavior, c, m), m)
+            }
+          case _ =>
+            next(Behavior.interpretMessage(behavior, c, msg), msg)
+        }
+      } else {
+        next(Behavior.interpretMessage(behavior, c, msg), msg)
+      }
     } catch handleUnstashException
   }
 
@@ -131,7 +148,8 @@ import scala.annotation.switch
       case BehaviorTags.FailedBehavior =>
         val f = b.asInstanceOf[FailedBehavior]
         // For the parent untyped supervisor to pick up the exception
-        throw TypedActorFailedException(f.cause)
+        if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
+        else context.stop(self)
       case BehaviorTags.StoppedBehavior =>
         val stopped = b.asInstanceOf[StoppedBehavior[T]]
         behavior = new ComposedStoppingBehavior[T](behavior, stopped)
@@ -185,6 +203,12 @@ import scala.annotation.switch
       recordChildFailure(cause)
       untyped.SupervisorStrategy.Stop
     case ex =>
+      val isTypedActor = sender() match {
+        case afwc: ActorRefWithCell =>
+          afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+        case _ =>
+          false
+      }
       recordChildFailure(ex)
       val logMessage = ex match {
         case e: ActorInitializationException if e.getCause ne null =>
@@ -196,7 +220,10 @@ import scala.annotation.switch
       }
       // log at Error as that is what the supervision strategy would have done.
       log.error(ex, logMessage)
-      untyped.SupervisorStrategy.Stop
+      if (isTypedActor)
+        untyped.SupervisorStrategy.Stop
+      else
+        untyped.SupervisorStrategy.Restart
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
@@ -215,16 +242,19 @@ import scala.annotation.switch
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    ctx.cancelAllTimers()
     Behavior.interpretSignal(behavior, ctx, PreRestart)
     behavior = Behavior.stopped
   }
 
   override def postRestart(reason: Throwable): Unit = {
+    ctx.cancelAllTimers()
     behavior = validateAsInitial(Behavior.start(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
 
   override def postStop(): Unit = {
+    ctx.cancelAllTimers()
     behavior match {
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
@@ -232,6 +262,7 @@ import scala.annotation.switch
     }
     behavior = Behavior.stopped
   }
+
 }
 
 /**

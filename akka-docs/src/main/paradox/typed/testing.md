@@ -13,7 +13,7 @@ To use Akka TestKit Typed, add the module to your project:
 
 ## Introduction
 
-Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviousTestKit`.
+Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviourTestKit`.
 
 For testing logic in a `Behavior` in isolation synchronous testing is preferred. For testing interactions between multiple
 actors a more realistic asynchronous test is preferred.
@@ -22,12 +22,11 @@ Certain `Behavior`s will be hard to test synchronously e.g. if they spawn Future
 before observing the effect you want to test. Further support for controlling the scheduler and execution context used
 will be added.
 
-@@@ warning
+@@@ note
 
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
+This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
+This means that API or semantics can change without warning or deprecation period, but such changes will
+be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
 
 @@@
 

@@ -42,6 +42,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   final val EmptyORMultiMap = ORMultiMap.empty[ServiceKey[_], Entry]
 
+  override val name = "clusterReceptionist"
+
   // values contain system uid to make it possible to discern actors at the same
   // path in different incarnations of a cluster node
   final case class Entry(ref: ActorRef[_], systemUid: Long) {
@@ -149,7 +151,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
        * Hack to allow multiple termination notifications per target
        * FIXME #26505: replace by simple map in our state
        */
-      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit =
+      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit = {
         ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
           innerCtx.watch(target)
           Behaviors.receiveSignal[Nothing] {
@@ -158,6 +160,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               Behaviors.stopped
           }
         })
+        ()
+      }
 
       def isLeader = {
         cluster.state.leader.contains(cluster.selfAddress)

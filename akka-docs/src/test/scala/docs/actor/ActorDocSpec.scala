@@ -623,7 +623,7 @@ class ActorDocSpec extends AkkaSpec("""
     context.actorSelection("../*")
     //#selection-wildcard
     //#selection-remote
-    context.actorSelection("akka.tcp://app@otherhost:1234/user/serviceB")
+    context.actorSelection("akka://app@otherhost:1234/user/serviceB")
     //#selection-remote
   }
 
@@ -722,14 +722,6 @@ class ActorDocSpec extends AkkaSpec("""
     lastSender.path.toStringWithoutAddress should be("/user")
     expectMsg("reply")
     lastSender.path.toStringWithoutAddress should be("/user")
-  }
-
-  "using ActorDSL outside of akka.actor package" in {
-    import akka.actor.ActorDSL._
-    actor(new Act {
-      superviseWith(OneForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
-      superviseWith(AllForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
-    })
   }
 
   "using CoordinatedShutdown" in {

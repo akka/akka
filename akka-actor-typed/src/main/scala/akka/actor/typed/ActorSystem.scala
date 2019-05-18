@@ -104,8 +104,15 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   implicit def executionContext: ExecutionContextExecutor
 
   /**
-   * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, then the system guardian
+   * Terminates this actor system by running [[akka.actor.CoordinatedShutdown]] with reason
+   * [[akka.actor.CoordinatedShutdown.ActorSystemTerminateReason]].
+   *
+   * If `akka.coordinated-shutdown.run-by-actor-system-terminate` is configured to `off`
+   * it will not run `CoordinatedShutdown`, but the `ActorSystem` and its actors
+   * will still be terminated.
+   *
+   * This will stop the guardian actor, which in turn
+   * will recursively stop all its child actors, and finally the system guardian
    * (below which the logging actors reside).
    *
    * This is an asynchronous operation and completion of the termination can

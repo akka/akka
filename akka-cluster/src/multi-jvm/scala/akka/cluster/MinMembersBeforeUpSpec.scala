@@ -12,6 +12,7 @@ import akka.testkit._
 import akka.cluster.MemberStatus._
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")

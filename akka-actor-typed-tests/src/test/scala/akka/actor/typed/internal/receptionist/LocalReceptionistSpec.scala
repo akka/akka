@@ -121,6 +121,10 @@ class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike 
       listing.isForKey(ServiceKeyA) should ===(true)
       listing.serviceInstances(ServiceKeyA) should be(Set())
     }
+
+    "not conflict with the ClusterClient receptionist default name" in {
+      system.systemActorOf(Behaviors.ignore, "receptionist")
+    }
   }
 }
 

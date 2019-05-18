@@ -35,7 +35,7 @@ object ClusterSingletonManagerStartupSpec extends MultiNodeConfig {
   /**
    * The singleton actor
    */
-  class Echo(testActor: ActorRef) extends Actor {
+  class Echo extends Actor {
     def receive = {
       case _ =>
         sender() ! self
@@ -65,7 +65,7 @@ class ClusterSingletonManagerStartupSpec
   def createSingleton(): ActorRef = {
     system.actorOf(
       ClusterSingletonManager.props(
-        singletonProps = Props(classOf[Echo], testActor),
+        singletonProps = Props(classOf[Echo]),
         terminationMessage = PoisonPill,
         settings = ClusterSingletonManagerSettings(system)),
       name = "echo")

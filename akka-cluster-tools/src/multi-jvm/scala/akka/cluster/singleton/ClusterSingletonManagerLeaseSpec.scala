@@ -10,11 +10,9 @@ import akka.cluster.TestLeaseActor._
 import akka.cluster.singleton.ClusterSingletonManagerLeaseSpec.ImportantSingleton.Response
 import akka.cluster._
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
 
 object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
@@ -59,7 +57,7 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
       log.info("Singleton stopping")
     }
     override def receive: Receive = {
-      case msg ⇒
+      case msg =>
         sender() ! Response(msg, selfAddress)
     }
   }
@@ -115,7 +113,7 @@ class ClusterSingletonManagerLeaseSpec
 
     "start test lease" in {
       runOn(controller) {
-        system.actorOf(TestLeaseActor.props(leaseProbe.ref), s"lease-${system.name}")
+        system.actorOf(TestLeaseActor.props(), s"lease-${system.name}")
       }
       enterBarrier("lease-actor-started")
     }

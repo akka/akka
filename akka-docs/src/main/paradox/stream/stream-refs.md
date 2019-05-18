@@ -77,8 +77,7 @@ can be offered to a remote actor system in order for it to consume some source o
 locally. 
 
 In order to share a `Source` with a remote endpoint you need to materialize it by running it into the `Sink.sourceRef`.
-That `Sink` materializes the `SourceRef` that you can then send to other nodes. Please note that it materializes into a
-`Future` so you will have to use `pipeTo`.
+That `Sink` materializes the `SourceRef` that you can then send to other nodes.
 
 Scala
 :   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source }

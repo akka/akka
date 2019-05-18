@@ -24,6 +24,7 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object ClusterShardingFailureSpec {
   case class Get(id: String)
   case class Add(id: String, i: Int)
@@ -58,7 +59,7 @@ abstract class ClusterShardingFailureSpecConfig(val mode: String) extends MultiN
   commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
+    akka.remote.classic.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
     akka.cluster.roles = ["backend"]
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"

@@ -115,7 +115,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
       throw new RuntimeException(
         "Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {
-      case _: ClassCastException ⇒
+      case _: ClassCastException =>
         throw new RuntimeException(
           "Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
       case _: ClassNotFoundException =>

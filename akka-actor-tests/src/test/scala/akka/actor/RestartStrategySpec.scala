@@ -5,17 +5,20 @@
 package akka.actor
 
 import language.postfixOps
-
 import java.lang.Thread.sleep
+
 import scala.concurrent.Await
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
+
 import scala.concurrent.duration._
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
 
+@silent
 class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off") with DefaultTimeout {
 
   override def atStartup: Unit = {
@@ -216,7 +219,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
         override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second)(List(classOf[Throwable]))
         def receive = {
           case p: Props      => sender() ! context.watch(context.actorOf(p))
-          case t: Terminated => maxNoOfRestartsLatch.open()
+          case _: Terminated => maxNoOfRestartsLatch.open()
         }
       }))
 

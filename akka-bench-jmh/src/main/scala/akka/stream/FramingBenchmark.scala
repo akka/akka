@@ -8,6 +8,7 @@ import java.util.concurrent.{ Semaphore, TimeUnit }
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.remote.artery.BenchTestSourceSameElement
 import akka.stream.scaladsl.{ Framing, Sink, Source }
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -64,9 +65,10 @@ class FramingBenchmark {
     materializer = ActorMaterializer()
 
     val frame = List.range(0, messageSize, 1).map(_ => Random.nextPrintableChar()).mkString + "\n"
-    flow = Source
-      .repeat(ByteString(List.range(0, framePerSeq, 1).map(_ => frame).mkString))
-      .take(100000)
+    val messageChunk = ByteString(List.range(0, framePerSeq, 1).map(_ => frame).mkString)
+
+    Source
+      .fromGraph(new BenchTestSourceSameElement(100000, messageChunk))
       .via(Framing.delimiter(ByteString("\n"), Int.MaxValue))
   }
 

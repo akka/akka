@@ -57,7 +57,7 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = off
-           advanced.idle-cpu-level=8
+           advanced.aeron.idle-cpu-level=8
          }
        }
        """)))
@@ -99,7 +99,7 @@ abstract class AeronStreamLatencySpec
     Aeron.connect(ctx)
   }
 
-  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.idle-cpu-level")
+  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.aeron.idle-cpu-level")
   val taskRunner = {
     val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()
@@ -142,12 +142,7 @@ abstract class AeronStreamLatencySpec
     super.afterAll()
   }
 
-  def printTotal(
-      testName: String,
-      payloadSize: Long,
-      histogram: Histogram,
-      totalDurationNanos: Long,
-      lastRepeat: Boolean): Unit = {
+  def printTotal(testName: String, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
     def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
     val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
 
@@ -217,7 +212,7 @@ abstract class AeronStreamLatencySpec
             histogram.recordValue(d)
             if (c == totalMessages) {
               val totalDurationNanos = System.nanoTime() - startTime.get
-              printTotal(testName, bytes.length, histogram, totalDurationNanos, lastRepeat.get)
+              printTotal(testName, histogram, totalDurationNanos, lastRepeat.get)
               barrier.await() // this is always the last party
             }
           }

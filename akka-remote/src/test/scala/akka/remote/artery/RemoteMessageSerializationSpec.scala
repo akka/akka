@@ -11,6 +11,7 @@ import akka.actor.{ Actor, ActorRef, PoisonPill, Props }
 import akka.remote.{ AssociationErrorEvent, DisassociatedEvent, OversizedPayloadException, RARP }
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 
@@ -39,7 +40,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
       object Unserializable
       EventFilter[NotSerializableException](pattern = ".*No configured serialization.*", occurrences = 1).intercept {
         verifySend(Unserializable) {
-          expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+          expectNoMessage(1.second) // No AssocitionErrorEvent should be published
         }
       }
     }
@@ -57,7 +58,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
       EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1)
         .intercept {
           verifySend(oversized) {
-            expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
     }
@@ -68,7 +69,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload received.*", occurrences = 1)
         .intercept {
           verifySend(maxPayloadBytes + 1) {
-            expectNoMsg(1.second) // No AssocitionErrorEvent should be published
+            expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
     }
@@ -93,7 +94,9 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
         case x      => sender() ! x
       }
     }), bigBounceId)
-    val bigBounceHere = localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
+    @silent
+    val bigBounceHere =
+      RARP(system).provider.resolveActorRef(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
 
     val eventForwarder = localSystem.actorOf(Props(new Actor {
       def receive = {
@@ -105,7 +108,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
     try {
       bigBounceHere ! msg
       afterSend
-      expectNoMsg(500.millis)
+      expectNoMessage(500.millis)
     } finally {
       localSystem.eventStream.unsubscribe(eventForwarder, classOf[AssociationErrorEvent])
       localSystem.eventStream.unsubscribe(eventForwarder, classOf[DisassociatedEvent])

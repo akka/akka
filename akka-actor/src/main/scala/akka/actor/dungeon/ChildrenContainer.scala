@@ -117,8 +117,8 @@ private[akka] object ChildrenContainer {
     override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
-      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) => c.asInstanceOf[Option[ChildRestartStats]]
-      case _                                                        => None
+      case c @ Some(crs: ChildRestartStats) if crs.child == actor => c.asInstanceOf[Option[ChildRestartStats]]
+      case _                                                      => None
     }
 
     override def children: immutable.Iterable[ActorRef] =
@@ -140,7 +140,7 @@ private[akka] object ChildrenContainer {
     }
 
     override def toString =
-      if (c.size > 20) c.size + " children"
+      if (c.size > 20) c.size.toString + " children"
       else c.mkString("children:\n    ", "\n    ", "")
   }
 
@@ -179,8 +179,8 @@ private[akka] object ChildrenContainer {
     override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
-      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) => c.asInstanceOf[Option[ChildRestartStats]]
-      case _                                                        => None
+      case c @ Some(crs: ChildRestartStats) if crs.child == actor => c.asInstanceOf[Option[ChildRestartStats]]
+      case _                                                      => None
     }
 
     override def children: immutable.Iterable[ActorRef] =
@@ -208,7 +208,7 @@ private[akka] object ChildrenContainer {
     override def isNormal: Boolean = reason == UserRequest
 
     override def toString =
-      if (c.size > 20) c.size + " children"
+      if (c.size > 20) c.size.toString + " children"
       else c.mkString("children (" + toDie.size + " terminating):\n    ", "\n    ", "\n") + toDie
   }
 

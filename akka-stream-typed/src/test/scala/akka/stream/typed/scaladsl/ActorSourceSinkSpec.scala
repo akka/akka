@@ -48,20 +48,18 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.receive[AckProto] { (ctx, msg) =>
-        msg match {
-          case m @ Init(sender) =>
-            p.ref ! m
-            sender ! "ACK"
-            Behaviors.same
-          case m @ Msg(sender, _) =>
-            p.ref ! m
-            sender ! "ACK"
-            Behaviors.same
-          case m =>
-            p.ref ! m
-            Behaviors.same
-        }
+      val autoPilot = Behaviors.receiveMessage[AckProto] {
+        case m @ Init(sender) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m @ Msg(sender, _) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m =>
+          p.ref ! m
+          Behaviors.same
       }
 
       val pilotRef: ActorRef[AckProto] = spawn(autoPilot)
