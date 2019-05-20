@@ -1104,7 +1104,7 @@ class DDataShardCoordinator(
       stateInitialized()
       activate()
 
-    case g: GetShardHome ⇒
+    case g: GetShardHome =>
       stashGetShardHomeRequest(sender(), g)
 
     case _ => stash()
@@ -1176,7 +1176,7 @@ class DDataShardCoordinator(
 
   private def unstashGetShardHomeRequests(): Unit = {
     getShardHomeRequests.foreach {
-      case (originalSender, request) ⇒ self.tell(request, sender = originalSender)
+      case (originalSender, request) => self.tell(request, sender = originalSender)
     }
     getShardHomeRequests = Set.empty
   }
