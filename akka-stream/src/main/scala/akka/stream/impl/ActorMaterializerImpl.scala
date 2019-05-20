@@ -181,6 +181,8 @@ private[akka] class SubFusingActorMaterializerImpl(
 
   case object GetChildrenSnapshots
   final case class ChildrenSnapshots(seq: immutable.Seq[StreamSnapshot])
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
 
   /** Testing purpose */
   case object GetChildren

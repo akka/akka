@@ -26,7 +26,7 @@ class MaterializerStateSpec extends StreamSpec {
           snapshot should have size (1)
           snapshot.head.activeInterpreters should have size (1)
           snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
-        }, 3.seconds)
+        }, remainingOrDefault)
       } finally {
         mat.shutdown()
       }
@@ -46,7 +46,7 @@ class MaterializerStateSpec extends StreamSpec {
           snapshot should have size (1)
           snapshot.head.activeInterpreters should have size (1)
           snapshot.head.activeInterpreters.head.stoppedLogics should have size (2) // Source.single and a detach
-        }, 3.seconds)
+        }, remainingOrDefault)
 
       } finally {
         mat.shutdown()
@@ -88,7 +88,7 @@ class MaterializerStateSpec extends StreamSpec {
         MaterializerState.streamSnapshots(mat).futureValue
         callMeMaybe.success(Some("green"))
         MaterializerState.streamSnapshots(mat).futureValue
-        Thread.sleep(100)
+        Thread.sleep(100) // just to give it a bigger chance to cover different states of shutting down
         MaterializerState.streamSnapshots(mat).futureValue
 
       } finally {
