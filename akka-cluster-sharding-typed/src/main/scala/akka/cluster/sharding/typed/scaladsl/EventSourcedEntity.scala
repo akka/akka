@@ -44,8 +44,8 @@ object EventSourcedEntity {
       entityTypeKey: EntityTypeKey[Command],
       entityId: String,
       emptyState: State,
-      commandHandler: (State, Command) ⇒ ReplyEffect[Event, State],
-      eventHandler: (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
+      commandHandler: (State, Command) => ReplyEffect[Event, State],
+      eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] =
     EventSourcedBehavior.withEnforcedReplies(
       entityTypeKey.persistenceIdFrom(entityId),
       emptyState,
