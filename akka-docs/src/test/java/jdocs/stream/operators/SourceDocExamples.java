@@ -8,8 +8,9 @@ package jdocs.stream.operators;
 // #range-imports
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.actor.testkit.typed.javadsl.ManualTime;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.stream.ActorMaterializer;
-import akka.stream.CompletionStrategy;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 // #range-imports
@@ -18,7 +19,9 @@ import akka.stream.javadsl.Source;
 import akka.actor.ActorRef;
 import akka.actor.Status.Success;
 import akka.stream.OverflowStrategy;
+import akka.stream.CompletionStrategy;
 import akka.stream.javadsl.Sink;
+import akka.testkit.TestProbe;
 // #actor-ref-imports
 
 import java.util.Arrays;
@@ -26,6 +29,8 @@ import java.util.Arrays;
 // #imports
 
 public class SourceDocExamples {
+
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(ManualTime.config());
 
   public static void fromExample() {
     // #source-from-example
@@ -84,5 +89,25 @@ public class SourceDocExamples {
     // The stream completes successfully with the following message
     actorRef.tell(new Success(CompletionStrategy.draining()), ActorRef.noSender());
     // #actor-ref
+  }
+
+  static void actorRefWithAck() {
+    final TestProbe probe = null;
+
+    // #actor-ref-with-ack
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+
+    Source<Object, ActorRef> source = Source.actorRefWithAck("ack");
+
+    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(materializer);
+    probe.send(actorRef, "hello");
+    probe.expectMsg("ack");
+    probe.send(actorRef, "hello");
+    probe.expectMsg("ack");
+
+    // The stream completes successfully with the following message
+    actorRef.tell(new Success(CompletionStrategy.draining()), ActorRef.noSender());
+    // #actor-ref-with-ack
   }
 }
