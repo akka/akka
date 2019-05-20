@@ -50,7 +50,7 @@ abstract class Materializer {
    */
   def materialize[Mat](
       runnable: Graph[ClosedShape, Mat],
-      @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
+      @deprecatedName(Symbol("initialAttributes")) defaultAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
