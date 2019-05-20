@@ -93,7 +93,8 @@ import scala.util.control.NonFatal
 }
 
 /** Internal Api */
-@InternalApi private[stream] final class SetupSourceStage[T, M](factory: (ActorMaterializer, Attributes) => Source[T, M])
+@InternalApi private[stream] final class SetupSourceStage[T, M](
+    factory: (ActorMaterializer, Attributes) => Source[T, M])
     extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
 
   private val out = Outlet[T]("SetupSourceStage.out")
