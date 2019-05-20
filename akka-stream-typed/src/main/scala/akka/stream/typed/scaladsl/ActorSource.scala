@@ -74,12 +74,14 @@ object ActorSource {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    */
-  def actorRefWithAck[T](
-      ackMessage: Any,
+  def actorRefWithAck[T, Ack](
+      ackTo: ActorRef[Ack],
+      ackMessage: Ack,
       completionMatcher: PartialFunction[T, CompletionStrategy],
       failureMatcher: PartialFunction[T, Throwable]): Source[T, ActorRef[T]] =
     Source
       .actorRefWithAck[T](
+        Some(ackTo.toUntyped),
         ackMessage,
         completionMatcher.asInstanceOf[PartialFunction[Any, CompletionStrategy]],
         failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]])

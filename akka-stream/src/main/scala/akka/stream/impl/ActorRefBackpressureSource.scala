@@ -19,6 +19,7 @@ private object ActorRefBackpressureSource {
  * INTERNAL API
  */
 @InternalApi private[akka] final class ActorRefBackpressureSource[T](
+    ackTo: Option[ActorRef],
     ackMessage: Any,
     completionMatcher: PartialFunction[Any, CompletionStrategy],
     failureMatcher: PartialFunction[Any, Throwable])
@@ -61,7 +62,10 @@ private object ActorRefBackpressureSource {
           if (element.isDefined) {
             failStage(new IllegalStateException("Received new element before ack was signaled back"))
           } else {
-            element = OptionVal.Some(e)
+            ackTo match {
+              case Some(at) => element = OptionVal.Some((at, e._2))
+              case None     => element = OptionVal.Some(e)
+            }
             tryPush()
           }
       }.ref

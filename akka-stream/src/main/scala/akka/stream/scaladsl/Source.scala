@@ -565,10 +565,11 @@ object Source {
    * INTERNAL API
    */
   @InternalApi private[akka] def actorRefWithAck[T](
+      ackTo: Option[ActorRef],
       ackMessage: Any,
       completionMatcher: PartialFunction[Any, CompletionStrategy],
       failureMatcher: PartialFunction[Any, Throwable]): Source[T, ActorRef] = {
-    Source.fromGraph(new ActorRefBackpressureSource(ackMessage, completionMatcher, failureMatcher))
+    Source.fromGraph(new ActorRefBackpressureSource(ackTo, ackMessage, completionMatcher, failureMatcher))
   }
 
   /**
@@ -591,7 +592,7 @@ object Source {
    * i.e. you can watch it to get notified when that happens.
    */
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
-    actorRefWithAck(ackMessage, {
+    actorRefWithAck(None, ackMessage, {
       case akka.actor.Status.Success(s: CompletionStrategy) => s
       case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
       case akka.actor.Status.Success                        => CompletionStrategy.Draining
