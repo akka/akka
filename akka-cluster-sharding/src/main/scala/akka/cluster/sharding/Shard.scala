@@ -432,9 +432,18 @@ private[akka] class Shard(
 
   // EntityStopped handler
   def passivateCompleted(event: EntityStopped): Unit = {
-    log.debug("Entity stopped after passivation [{}]", event.entityId)
+    val hasBufferedMessages = messageBuffers.getOrEmpty(event.entityId).nonEmpty
     state = state.copy(state.entities - event.entityId)
-    messageBuffers.remove(event.entityId)
+    if (hasBufferedMessages) {
+      log.debug(
+        "Entity stopped after passivation [{}], but will be started again due to buffered messages.",
+        event.entityId)
+      processChange(EntityStarted(event.entityId))(sendMsgBuffer)
+    } else {
+      log.debug("Entity stopped after passivation [{}]", event.entityId)
+      messageBuffers.remove(event.entityId)
+    }
+
   }
 
   // EntityStarted handler
