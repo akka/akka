@@ -4,12 +4,16 @@
 
 package akka
 
+import java.io.FileReader
 import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
 import sbt.Keys._
 import sbt._
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
+import java.time.format.DateTimeFormatter
+import java.time.ZonedDateTime
+import java.time.ZoneOffset
 
 import scala.collection.breakOut
 
@@ -19,16 +23,46 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
+  lazy val currentDateTime = {
+    // storing the first accessed timestamp in system property so that it will be the
+    // same when build is reloaded or when using `+`.
+    // `+` actually doesn't re-initialize this part of the build but that may change in the future.
+    sys.props.getOrElseUpdate("akka.build.timestamp",
+      DateTimeFormatter
+        .ofPattern("yyyyMMdd-HHmmss")
+        .format(ZonedDateTime.now(ZoneOffset.UTC)))
+  }
+  
+  def akkaVersion: String = {
+    val default = "2.5-SNAPSHOT"
+    sys.props.getOrElse("akka.build.version", default) match {
+      case "timestamp" => s"2.5-$currentDateTime" // used when publishing timestamped snapshots
+      case "file" => akkaVersionFromFile(default)
+      case v => v
+    }
+  }
+
+  def akkaVersionFromFile(default: String): String = {
+    val versionFile = "akka-actor/target/classes/version.conf"
+    if (new File(versionFile).exists()) {
+      val versionProps = new Properties()
+      val reader = new FileReader(versionFile)
+      try versionProps.load(reader) finally reader.close()
+      versionProps.getProperty("akka.version", default).replaceAll("\"", "")
+    } else
+      default
+  }
+
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
-    // use the same value as in the build scope, so it can be overriden by stampVersion
+    // use the same value as in the build scope
     version := (version in ThisBuild).value)
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.5-SNAPSHOT"
+      version in ThisBuild := akkaVersion
     )
  
   lazy val mayChangeSettings = Seq(
