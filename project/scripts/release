@@ -254,9 +254,6 @@ if [ "${current_version:0:3}" != "${version:0:3}" ]; then
   fail "Releasing $version from wrong with version $current_version"
 fi
 
-# fixate the version
-echo "version in ThisBuild := \"${version}\"" > version.sbt
-
 # start clean
 try sbt clean
 
@@ -270,9 +267,9 @@ fi
 # build the release
 echolog "Building the release..."
 if [ ! $dry_run ]; then
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
+  RELEASE_OPT="-Dakka.build.version=${version} -Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 else
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
+  RELEASE_OPT="-Dakka.build.version=${version} -Dakka.genjavadoc.enabled=true"
 fi
 try sbt $RELEASE_OPT +buildRelease
 try sbt $RELEASE_OPT buildDocs
@@ -281,18 +278,15 @@ echolog "Successfully created local release"
 # check binary compatibility for dry run
 if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Running migration manager report..."
-  sbt +mimaReportBinaryIssues
+  sbt $RELEASE_OPT +mimaReportBinaryIssues
   echodry "Finished migration manager report"
 fi
 
-try sbt whitesourceCheckPolicies
+try sbt $RELEASE_OPT whitesourceCheckPolicies
 
 # commit and tag this release
 echolog "Tagging..."
 try git tag -am "Version ${version}" v${version}
-
-# clean up fixated version
-rm version.sbt
 
 # the point of no return... we're now pushing out to servers
 
@@ -334,20 +328,20 @@ fi
 echolog "Uploading whitesource report"
 if [ $dry_run ]; then
   echodry "Not actually uploading whitesource report. Commands:"
-  echodry "  sbt whitesourceUpdate"
+  echodry "  sbt $RELEASE_OPT whitesourceUpdate"
 else
-  important sbt whitesourceUpdate
+  important sbt $RELEASE_OPT whitesourceUpdate
 fi
 
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Commands:"
-  echodry "  sbt deployRsync"
+  echodry "  sbt $RELEASE_OPT deployRsync"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads --exclude ${release_dir}/docs ${release_dir}/ ${publish_path}/"
 else
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
-  important sbt "deployRsync ${release_server}"
+  important sbt $RELEASE_OPT "deployRsync ${release_server}"
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude downloads --exclude docs ${release_dir}/ ${publish_path}/
   #important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
   #important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
