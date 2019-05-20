@@ -680,12 +680,15 @@ import akka.stream.snapshot._
         })
     }
 
+    val stoppedStages: List[LogicSnapshot] = shutdownCounter.zipWithIndex.collect {
+      case (activeConnections, idx) if activeConnections < 1 => logicSnapshots(idx)
+    }.toList
+
     RunningInterpreterImpl(
       logicSnapshots.toVector,
       connectionSnapshots.toVector,
       queueStatus,
       runningStages,
-      shutdownCounter.toList.map(n => logicSnapshots(n)))
+      stoppedStages)
   }
-
 }
