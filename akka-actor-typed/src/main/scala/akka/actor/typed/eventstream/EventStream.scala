@@ -21,6 +21,14 @@ import scala.reflect.ClassTag
  */
 final case class Publish[E](event: E) extends Command
 
+object Publish {
+
+  /**
+   * Java API.
+   */
+  def of[E](event: E): Publish[E] = apply(event)
+}
+
 /**
  * Subscribe a typed actor to listen for types or subtypes of E.
  * ==Simple example==
@@ -67,3 +75,11 @@ object Subscribe {
  * @tparam E
  */
 final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
+
+object Unsubscribe {
+
+  /**
+   * Java API.
+   */
+  def of[E](subscriber: ActorRef[E]): Unsubscribe[E] = apply(subscriber)
+}
