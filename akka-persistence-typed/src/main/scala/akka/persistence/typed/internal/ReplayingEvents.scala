@@ -74,6 +74,11 @@ private[akka] final class ReplayingEvents[C, E, S](
   def onRecoveryStart(@unused context: ActorContext[_]): Unit = {}
   @StableInternalApi
   def onRecoveryComplete(@unused context: ActorContext[_]): Unit = {}
+  @StableInternalApi
+  def onRecoveryFailed(
+      @unused context: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: Option[Any]): Unit = {}
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
@@ -172,6 +177,7 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param event the event that was being processed when the exception was thrown
    */
   private[akka] def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+    onRecoveryFailed(setup.context, cause, event)
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)

@@ -6,14 +6,12 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.annotation.{ InternalApi, StableInternalApi }
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotFailure
@@ -39,6 +37,7 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl.Effect
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -293,13 +292,15 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
+            onWriteRejected(setup.context, cause, p.payload, currentSequenceNumber)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
-          if (id == setup.writerIdentity.instanceId)
+          if (id == setup.writerIdentity.instanceId) {
+            onWriteFailed(setup.context, cause, p.payload, currentSequenceNumber)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
-          else this
+          } else this
 
         case WriteMessagesSuccessful =>
           // ignore
@@ -506,5 +507,18 @@ private[akka] object Running {
         Behaviors.unhandled // unexpected snapshot response
     }
   }
+
+  @StableInternalApi
+  private[akka] def onWriteFailed(
+      @unused ctx: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: Any,
+      @unused sequenceNr: Long): Unit = {}
+  @StableInternalApi
+  private[akka] def onWriteRejected(
+      @unused ctx: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: Any,
+      @unused sequenceNr: Long): Unit = {}
 
 }
