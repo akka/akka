@@ -109,6 +109,7 @@ import akka.stream._
     val subscriberSource = name("subscriberSource")
     val actorPublisherSource = name("actorPublisherSource")
     val actorRefSource = name("actorRefSource")
+    val actorRefWithAckSource = name("actorRefWithAckSource")
     val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
