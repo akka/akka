@@ -9,13 +9,15 @@ import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
 
 import scala.concurrent.duration._
 import akka.testkit.LongRunningTest
-
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import com.typesafe.config.ConfigFactory
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+      akka.remote.artery.enabled = false 
+    """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   val master = role("master")
   val slave = role("slave")

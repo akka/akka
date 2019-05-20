@@ -16,7 +16,7 @@ object StartupWithOneThreadSpec {
   val config = """
     akka.actor.provider = "cluster"
     akka.actor.creation-timeout = 10s
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
 
     akka.actor.default-dispatcher {
@@ -25,6 +25,7 @@ object StartupWithOneThreadSpec {
         fixed-pool-size = 1
       }
     }
+    akka.actor.internal-dispatcher = akka.actor.default-dispatcher 
     """
 
   final case class GossipTo(address: Address)
@@ -60,7 +61,7 @@ class StartupWithOneThreadSpec(startTime: Long) extends AkkaSpec(StartupWithOneT
       system.actorOf(testProps) ! "hello"
       system.actorOf(testProps) ! "hello"
 
-      val cluster = Cluster(system)
+      Cluster(system)
       (System.nanoTime - startTime).nanos.toMillis should be <
       (system.settings.CreationTimeout.duration - 2.second).toMillis
 

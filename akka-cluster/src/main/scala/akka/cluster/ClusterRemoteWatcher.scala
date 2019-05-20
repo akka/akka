@@ -13,6 +13,7 @@ import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberWeaklyUp
+import akka.dispatch.Dispatchers
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
 import akka.remote.RARP
@@ -35,7 +36,7 @@ private[cluster] object ClusterRemoteWatcher {
       failureDetector,
       heartbeatInterval,
       unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+      heartbeatExpectedResponseAfter).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
 
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
       extends NoSerializationVerificationNeeded

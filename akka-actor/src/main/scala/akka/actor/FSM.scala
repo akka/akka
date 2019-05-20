@@ -183,7 +183,7 @@ object FSM {
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
         replies: List[Any] = replies): State[S, D] = {
-      new State(stateName, stateData, timeout, stopReason, replies)
+      State(stateName, stateData, timeout, stopReason, replies)
     }
 
     /**
@@ -226,7 +226,7 @@ object FSM {
      * set when transitioning to the new state.
      */
     @silent
-    def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D] = {
+    def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D] = {
       copy(stateData = nextStateData)
     }
 
@@ -461,7 +461,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (debugEvent)
       log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {
-      timers(name).cancel
+      timers(name).cancel()
     }
     val timer = Timer(name, msg, repeat, timerGen.next, this)(context)
     timer.schedule(self, timeout)
@@ -476,7 +476,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (debugEvent)
       log.debug("canceling timer '" + name + "'")
     if (timers contains name) {
-      timers(name).cancel
+      timers(name).cancel()
       timers -= name
     }
   }
@@ -686,14 +686,13 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       listeners.remove(actorRef)
     case Deafen(actorRef) =>
       listeners.remove(actorRef)
-    case value => {
+    case value =>
       if (timeoutFuture.isDefined) {
         timeoutFuture.get.cancel()
         timeoutFuture = None
       }
       generation += 1
       processMsg(value, sender())
-    }
   }
 
   private def processMsg(value: Any, source: AnyRef): Unit = {

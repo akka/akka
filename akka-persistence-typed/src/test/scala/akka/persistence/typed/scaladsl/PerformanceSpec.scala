@@ -17,8 +17,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
@@ -78,11 +76,11 @@ object PerformanceSpec {
           persistenceId = PersistenceId(name),
           "",
           commandHandler = CommandHandler.command {
-            case StopMeasure ⇒
+            case StopMeasure =>
               Effect.none.thenRun(_ => probe.ref ! StopMeasure)
-            case FailAt(sequence) ⇒
+            case FailAt(sequence) =>
               Effect.none.thenRun(_ => parameters.failAt = sequence)
-            case command ⇒ other(command, parameters)
+            case command => other(command, parameters)
           },
           eventHandler = {
             case (state, _) => state

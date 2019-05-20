@@ -125,7 +125,7 @@ class AllowJavaSerializationOffSpec
       p.ref ! new ProgrammaticJavaDummy
       SerializationExtension(system).findSerializerFor(new ProgrammaticJavaDummy).toBinary(new ProgrammaticJavaDummy)
       // should not receive this one, it would have been java serialization!
-      p.expectNoMsg(100.millis)
+      p.expectNoMessage(100.millis)
 
       p.ref ! new ProgrammaticDummy
       p.expectMsgType[ProgrammaticDummy]

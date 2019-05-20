@@ -6,23 +6,13 @@ package akka.remote.serialization
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import akka.actor.{
-  Actor,
-  ActorRef,
-  Address,
-  Deploy,
-  ExtendedActorSystem,
-  OneForOneStrategy,
-  Props,
-  SupervisorStrategy
-}
+import akka.actor.{ Actor, ActorRef, Address, Deploy, ExtendedActorSystem, Props, SupervisorStrategy }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ FromConfig, RoundRobinPool }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.testkit.AkkaSpec
+import akka.util.unused
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object DaemonMsgCreateSerializerSpec {
 
@@ -30,14 +20,15 @@ object DaemonMsgCreateSerializerSpec {
     def receive = Actor.emptyBehavior
   }
   class MyActor extends EmptyActor
-  class MyActorWithParam(ignore: String) extends EmptyActor
-  class MyActorWithFunParam(fun: Function1[Int, Int]) extends EmptyActor
-  class ActorWithDummyParameter(javaSerialized: DummyParameter, protoSerialized: ActorRef) extends EmptyActor
+  class MyActorWithParam(@unused ignore: String) extends EmptyActor
+  class MyActorWithFunParam(@unused fun: Function1[Int, Int]) extends EmptyActor
+  class ActorWithDummyParameter(@unused javaSerialized: DummyParameter, @unused protoSerialized: ActorRef)
+      extends EmptyActor
 }
 
 case class DummyParameter(val inner: String) extends Serializable
 
-trait SerializationVerification { self: AkkaSpec =>
+private[akka] trait SerializationVerification { self: AkkaSpec =>
 
   def ser: Serialization
 
@@ -112,6 +103,8 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
       val system = ActorSystem(
         "DaemonMsgCreateSerializer-old-wire-format",
         ConfigFactory.parseString("""
+          # old hex bytes contain actor ref with akka.tcp
+          akka.remote.artery.enabled = off
           # in 2.4 this is off by default, but in 2.5+ its on so we wouldn't
           # get the right set of serializers (and since the old wire protocol doesn't
           # contain serializer ids that will go unnoticed with unpleasant consequences)
@@ -205,11 +198,6 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
 
   "serialize and de-serialize DaemonMsgCreate with Deploy and RouterConfig" in {
     verifySerialization {
-      // Duration.Inf doesn't equal Duration.Inf, so we use another for test
-      val supervisorStrategy = OneForOneStrategy(3, 10 seconds) {
-        case _ => SupervisorStrategy.Escalate
-      }
-
       val deploy1 = Deploy(
         path = "path1",
         config = ConfigFactory.parseString("a=1"),

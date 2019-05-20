@@ -31,7 +31,6 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
 import akka.cluster.singleton.ClusterSingletonManager
-import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.pattern.BackoffOpts
 import akka.pattern.ask
@@ -179,10 +178,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   private lazy val guardian: ActorRef = {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
-    val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher") match {
-      case "" => Dispatchers.DefaultDispatcherId
-      case id => id
-    }
+    val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher")
     system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
 
@@ -750,7 +746,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
             val singletonProps =
               BackoffOpts
-                .onFailure(
+                .onStop(
                   childProps = coordinatorProps,
                   childName = "coordinator",
                   minBackoff = coordinatorFailureBackoff,

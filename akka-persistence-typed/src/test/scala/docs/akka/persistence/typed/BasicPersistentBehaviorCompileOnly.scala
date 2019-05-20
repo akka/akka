@@ -5,17 +5,22 @@
 package docs.akka.persistence.typed
 
 import scala.concurrent.duration._
-
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsFailed
+//#behavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.PersistenceId
+
+//#behavior
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import com.github.ghik.silencer.silent
 
+// unused variables in pattern match are useful in the docs
+@silent
 object BasicPersistentBehaviorCompileOnly {
 
   import akka.persistence.typed.scaladsl.RetentionCriteria
@@ -87,7 +92,7 @@ object BasicPersistentBehaviorCompileOnly {
       commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
       .receiveSignal {
-        case (state, RecoveryCompleted) ⇒
+        case (state, RecoveryCompleted) =>
           throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
@@ -109,7 +114,7 @@ object BasicPersistentBehaviorCompileOnly {
     commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .receiveSignal {
-      case (state, RecoveryCompleted) ⇒
+      case (state, RecoveryCompleted) =>
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 

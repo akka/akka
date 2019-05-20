@@ -5,7 +5,7 @@
 package akka.remote.artery
 
 import org.scalacheck.{ Arbitrary, Gen }
-import org.scalatest.prop.Checkers
+import org.scalatestplus.scalacheck.Checkers
 import org.scalatest.{ Matchers, WordSpec }
 
 class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {

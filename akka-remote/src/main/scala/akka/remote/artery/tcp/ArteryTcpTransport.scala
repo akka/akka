@@ -62,6 +62,7 @@ private[remote] object ArteryTcpTransport {
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[remote] class ArteryTcpTransport(
     _system: ExtendedActorSystem,
     _provider: RemoteActorRefProvider,
@@ -123,13 +124,13 @@ private[remote] class ArteryTcpTransport(
         Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
-          connectTimeout = settings.Advanced.ConnectionTimeout,
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)))
       } else {
         Tcp().outgoingConnection(
           remoteAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-          connectTimeout = settings.Advanced.ConnectionTimeout)
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout)
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
@@ -388,7 +389,7 @@ private[remote] class ArteryTcpTransport(
             }
             .to(immutable.Vector)
 
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
@@ -432,7 +433,7 @@ private[remote] class ArteryTcpTransport(
   }
 
   override protected def shutdownTransport(): Future[Done] = {
-    import system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
     inboundKillSwitch.shutdown()
     unbind().map { _ =>
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
@@ -443,7 +444,7 @@ private[remote] class ArteryTcpTransport(
   private def unbind(): Future[Done] = {
     serverBinding match {
       case Some(binding) =>
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
         for {
           b <- binding
           _ <- b.unbind()

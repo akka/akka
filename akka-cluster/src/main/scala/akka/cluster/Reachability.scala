@@ -12,6 +12,7 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[cluster] object Reachability {
   val empty = new Reachability(Vector.empty, Map.empty)
 

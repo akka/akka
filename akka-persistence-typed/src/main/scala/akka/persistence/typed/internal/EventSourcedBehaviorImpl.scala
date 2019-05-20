@@ -63,9 +63,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     loggerClass: Class[_],
     journalPluginId: Option[String] = None,
     snapshotPluginId: Option[String] = None,
-    tagger: Event ⇒ Set[String] = (_: Event) ⇒ Set.empty[String],
+    tagger: Event => Set[String] = (_: Event) => Set.empty[String],
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
-    snapshotWhen: (State, Event, Long) ⇒ Boolean = ConstantFun.scalaAnyThreeToFalse,
+    snapshotWhen: (State, Event, Long) => Boolean = ConstantFun.scalaAnyThreeToFalse,
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
@@ -87,9 +87,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
     val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
-      case (_, SnapshotCompleted(meta)) ⇒
+      case (_, SnapshotCompleted(meta)) =>
         ctx.log.debug("Save snapshot successful, snapshot metadata [{}].", meta)
-      case (_, SnapshotFailed(meta, failure)) ⇒
+      case (_, SnapshotFailed(meta, failure)) =>
         ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}].", meta)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Individual(meta))) =>
         ctx.log.debug("Persistent snapshot [{}] deleted successfully.", meta)
@@ -107,7 +107,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
     Behaviors
       .supervise {
-        Behaviors.setup[Command] { _ ⇒
+        Behaviors.setup[Command] { _ =>
           val eventSourcedSetup = new BehaviorSetup(
             ctx.asInstanceOf[ActorContext[InternalProtocol]],
             persistenceId,

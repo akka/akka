@@ -127,16 +127,16 @@ object EventSourcedBehaviorRetentionSpec {
             Effect.none.thenStop()
 
         },
-      eventHandler = (state, evt) ⇒
+      eventHandler = (state, evt) =>
         evt match {
-          case Incremented(delta) ⇒
+          case Incremented(delta) =>
             probe ! ((state, evt))
             State(state.value + delta, state.history :+ state.value)
         }).receiveSignal {
       case (_, RecoveryCompleted) => ()
-      case (_, SnapshotCompleted(metadata)) ⇒
+      case (_, SnapshotCompleted(metadata)) =>
         snapshotProbe ! Success(metadata)
-      case (_, SnapshotFailed(_, failure)) ⇒
+      case (_, SnapshotFailed(_, failure)) =>
         snapshotProbe ! Failure(failure)
       case (_, e: EventSourcedSignal) =>
         retentionProbe ! Success(e)
@@ -303,7 +303,7 @@ class EventSourcedBehaviorRetentionSpec
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
-        Behaviors.setup[Command](ctx ⇒
+        Behaviors.setup[Command](ctx =>
           counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
             .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2))))
 
@@ -336,7 +336,7 @@ class EventSourcedBehaviorRetentionSpec
 
       val persistentActor = spawn(
         Behaviors.setup[Command](
-          ctx ⇒
+          ctx =>
             counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref).withRetention(
               // tests the Java API as well
               RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2).withDeleteEventsOnSnapshot)))
@@ -382,7 +382,7 @@ class EventSourcedBehaviorRetentionSpec
 
       val persistentActor = spawn(
         Behaviors.setup[Command](
-          ctx ⇒
+          ctx =>
             counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
               .snapshotWhen((_, _, seqNr) => seqNr == 3 || seqNr == 13)
               .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 5, keepNSnapshots = 1))))
@@ -419,7 +419,7 @@ class EventSourcedBehaviorRetentionSpec
 
       val persistentActor = spawn(
         Behaviors.setup[Command](
-          ctx ⇒
+          ctx =>
             counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
               .snapshotWhen((_, _, seqNr) => seqNr == 3 || seqNr == 13)
               .withRetention(
@@ -468,7 +468,7 @@ class EventSourcedBehaviorRetentionSpec
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
-        Behaviors.setup[Command](ctx ⇒
+        Behaviors.setup[Command](ctx =>
           counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
             .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1, keepNSnapshots = 3))))
 
@@ -508,7 +508,7 @@ class EventSourcedBehaviorRetentionSpec
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
-        Behaviors.setup[Command](ctx ⇒
+        Behaviors.setup[Command](ctx =>
           counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref).withRetention(
             RetentionCriteria.snapshotEvery(numberOfEvents = 1, keepNSnapshots = 3).withDeleteEventsOnSnapshot)))
 

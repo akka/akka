@@ -36,8 +36,7 @@ private[akka] object InterceptorImpl {
 private[akka] final class InterceptorImpl[O, I](
     val interceptor: BehaviorInterceptor[O, I],
     val nestedBehavior: Behavior[I])
-    extends ExtensibleBehavior[O]
-    with WrappingBehavior[O, I] {
+    extends ExtensibleBehavior[O] {
 
   import BehaviorInterceptor._
 
@@ -70,7 +69,7 @@ private[akka] final class InterceptorImpl[O, I](
     deduplicate(started, ctx)
   }
 
-  override def replaceNested(newNested: Behavior[I]): Behavior[O] =
+  def replaceNested(newNested: Behavior[I]): Behavior[O] =
     new InterceptorImpl(interceptor, newNested)
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {

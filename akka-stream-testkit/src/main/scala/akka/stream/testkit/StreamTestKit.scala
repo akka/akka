@@ -83,6 +83,7 @@ object TestPublisher {
 
     type Self <: ManualProbe[I]
 
+    @ccompatUsedUntil213
     private val probe: TestProbe = TestProbe()
 
     //this is a way to pause receiving message from probe until subscription is done
@@ -419,7 +420,7 @@ object TestSubscriber {
       @annotation.tailrec
       def expectOneOf(all: immutable.Seq[I]): Unit = all match {
         case Nil =>
-        case list =>
+        case _ =>
           val next = expectNext()
           assert(all.contains(next), s"expected one of $all, but received $next")
           expectOneOf(all.diff(Seq(next)))
@@ -541,8 +542,8 @@ object TestSubscriber {
      */
     def expectNextOrError(): Either[Throwable, I] = {
       probe.fishForMessage(hint = s"OnNext(_) or error") {
-        case OnNext(element) => true
-        case OnError(cause)  => true
+        case OnNext(_)  => true
+        case OnError(_) => true
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
@@ -568,7 +569,7 @@ object TestSubscriber {
      */
     def expectNextOrComplete(): Either[OnComplete.type, I] = {
       probe.fishForMessage(hint = s"OnNext(_) or OnComplete") {
-        case OnNext(n)  => true
+        case OnNext(_)  => true
         case OnComplete => true
       } match {
         case OnComplete              => Left(OnComplete)

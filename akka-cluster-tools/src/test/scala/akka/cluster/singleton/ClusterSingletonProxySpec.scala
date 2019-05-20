@@ -69,8 +69,8 @@ object ClusterSingletonProxySpec {
       cluster.jmx.enabled = off
       actor.provider = "cluster"
       remote {
-        log-remote-lifecycle-events = off
-        netty.tcp {
+        classic.log-remote-lifecycle-events = off
+        classic.netty.tcp {
           hostname = "127.0.0.1"
           port = 0
         }

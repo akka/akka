@@ -50,10 +50,6 @@ provides tools to facilitate in building GDPR capable systems.
 
 @@@
 
-Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
-concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
-@ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
-
 ## Architecture
 
  * @scala[`PersistentActor`]@java[`AbstractPersistentActor`]: Is a persistent, stateful actor. It is able to persist events to a journal and can react to

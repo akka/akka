@@ -1,2 +1,0 @@
-ProblemFilters.exclude[Problem]("akka.cluster.pubsub.DistributedPubSubMediator$Internal*")
-ProblemFilters.exclude[Problem]("akka.cluster.pubsub.DistributedPubSubMediator#Internal*")

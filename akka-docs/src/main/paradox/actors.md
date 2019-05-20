@@ -89,7 +89,7 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template="Akka" layout="v75" minheight="400px" }
 
 @@@
 
@@ -292,42 +292,6 @@ are described in more depth in the
 [Using Akka with Dependency Injection](http://letitcrash.com/post/55958814293/akka-dependency-injection)
 guideline and the [Akka Java Spring](https://github.com/typesafehub/activator-akka-java-spring) tutorial.
 
-### The Inbox
-
-When writing code outside of actors which shall communicate with actors, the
-`ask` pattern can be a solution (see below), but there are two things it
-cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
-to a notification service) and watching other actors’ lifecycle. For these
-purposes there is the `Inbox` class:
-
-Scala
-:  @@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
-
-Java
-:  @@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #inbox }
-
-
-@@@ div { .group-scala }
-
-There is an implicit conversion from inbox to actor reference which means that
-in this example the sender reference will be that of the actor hidden away
-within the inbox. This allows the reply to be received on the last line.
-Watching an actor is quite simple as well:
-
-@@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
-
-@@@
-
-@@@ div { .group-java }
-
-The `send` method wraps a normal `tell` and supplies the internal
-actor’s reference as the sender. This allows the reply to be received on the
-last line.  Watching an actor is quite simple as well:
-
-@@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #watch }
-
-@@@
-
 ## Actor API
 
 @scala[The `Actor` trait defines only one abstract method, the above mentioned
@@ -505,8 +469,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1.
-    The old actor is informed by calling `preRestart` with the exception
+ 1. The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
 message, e.g. when a supervisor does not trap the exception and is restarted
@@ -633,7 +596,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting-artery.md#looking-up-remote-actors).
 
 ## Messages and immutability
 
@@ -1131,6 +1094,8 @@ To enable a hard `System.exit` as a final action you can configure:
 akka.coordinated-shutdown.exit-jvm = on
 ```
 
+The coordinated shutdown process can also be started by calling `ActorSystem.terminate()`.
+
 When using @ref:[Akka Cluster](cluster-usage.md) the `CoordinatedShutdown` will automatically run
 when the cluster node sees itself as `Exiting`, i.e. leaving from another node will trigger
 the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
@@ -1161,6 +1126,7 @@ used in the test:
 ```
 # Don't terminate ActorSystem via CoordinatedShutdown in tests
 akka.coordinated-shutdown.terminate-actor-system = off
+akka.coordinated-shutdown.run-by-actor-system-terminate = off
 akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
 akka.cluster.run-coordinated-shutdown-when-down = off
 ```

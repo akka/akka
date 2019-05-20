@@ -49,7 +49,7 @@ final class SignalHandlerBuilder[State] {
    */
   def onSignal[T <: Signal](signalType: Class[T], callback: BiConsumer[State, T]): SignalHandlerBuilder[State] = {
     val newPF: PartialFunction[(State, Signal), Unit] = {
-      case (state, t) if signalType.isInstance(t) ⇒
+      case (state, t) if signalType.isInstance(t) =>
         callback.accept(state, t.asInstanceOf[T])
     }
     handler = newPF.orElse(handler)
@@ -61,7 +61,7 @@ final class SignalHandlerBuilder[State] {
    */
   def onSignal[T <: Signal](signal: T, callback: Consumer[State]): SignalHandlerBuilder[State] = {
     val newPF: PartialFunction[(State, Signal), Unit] = {
-      case (state, `signal`) ⇒
+      case (state, `signal`) =>
         callback.accept(state)
     }
     handler = newPF.orElse(handler)

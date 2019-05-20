@@ -6,10 +6,13 @@ package akka.testkit
 
 import akka.actor._
 import java.util.concurrent.atomic.AtomicLong
+
 import akka.dispatch._
+
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -18,6 +21,7 @@ import akka.pattern.ask
  *
  * @since 1.1
  */
+@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
 class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) extends {
   val props =
     _props.withDispatcher(

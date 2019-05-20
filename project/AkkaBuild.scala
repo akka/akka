@@ -6,6 +6,9 @@ package akka
 
 import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
+import java.time.format.DateTimeFormatter
+import java.time.ZonedDateTime
+import java.time.ZoneOffset
 
 import sbt.Keys._
 import sbt._
@@ -19,18 +22,33 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  val jdkVersion = sys.props("java.specification.version")
-
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
-    // use the same value as in the build scope, so it can be overriden by stampVersion
+    // use the same value as in the build scope
     version := (version in ThisBuild).value)
+
+  lazy val currentDateTime = {
+    // storing the first accessed timestamp in system property so that it will be the
+    // same when build is reloaded or when using `+`.
+    // `+` actually doesn't re-initialize this part of the build but that may change in the future.
+    sys.props.getOrElseUpdate("akka.build.timestamp",
+      DateTimeFormatter
+        .ofPattern("yyyyMMdd-HHmmss")
+        .format(ZonedDateTime.now(ZoneOffset.UTC)))
+  }
+  
+  def akkaVersion: String = {
+    sys.props.getOrElse("akka.build.version", "2.6-SNAPSHOT") match {
+      case "timestamp" => s"2.6-$currentDateTime" // used when publishing timestamped snapshots
+      case v => v  
+    }
+  }
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.5-SNAPSHOT"
+      version in ThisBuild := akkaVersion 
     )
  
   lazy val mayChangeSettings = Seq(
@@ -100,29 +118,16 @@ object AkkaBuild {
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
       scalacOptions in Compile ++= (
-        if (System.getProperty("java.version").startsWith("1."))
+        if (JavaVersion.isJdk8)
           Seq("-target:jvm-1.8")
         else
-          if (scalaBinaryVersion.value == "2.11")
-            Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-          else
-            // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-            Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+          // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
+          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      javacOptions in compile ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
-      javacOptions in test ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
+      javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+      javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
@@ -148,13 +153,12 @@ object AkkaBuild {
       initialCommands :=
         """|import language.postfixOps
          |import akka.actor._
-         |import ActorDSL._
          |import scala.concurrent._
          |import com.typesafe.config.ConfigFactory
          |import scala.concurrent.duration._
          |import akka.util.Timeout
          |var config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-         |var remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
+         |var remoteConfig = ConfigFactory.parseString("akka.remote.classic.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
          |var system: ActorSystem = null
          |implicit def _system = system
          |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }
@@ -234,7 +238,7 @@ object AkkaBuild {
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= {
-      if (jdkVersion == "1.8") Seq("-Xdoclint:none")
+      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
     }
   )

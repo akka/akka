@@ -8,15 +8,20 @@ import language.postfixOps
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._
+
 import scala.concurrent.Await
-import akka.util.Timeout
+import akka.util.{ unused, Timeout }
+
 import scala.concurrent.duration._
 import com.typesafe.config._
 import akka.pattern.ask
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
+
 import akka.actor.dungeon.SerializationCheckFailedException
+import com.github.ghik.silencer.silent
 import test.akka.serialization.NoVerification
+import SerializationTests._
 
 object SerializationTests {
 
@@ -51,8 +56,10 @@ object SerializationTests {
 
   final case class Record(id: Int, person: Person)
 
+  @silent // can't use unused otherwise case class below gets a deprecated
   class SimpleMessage(s: String) extends TestSerializable
 
+  @silent
   class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
 
   trait AnotherInterface extends TestSerializable
@@ -67,7 +74,7 @@ object SerializationTests {
 
   class BothTestSerializableAndJavaSerializable(s: String) extends SimpleMessage(s) with Serializable
 
-  class BothTestSerializableAndTestSerializable2(s: String) extends TestSerializable with TestSerializable2
+  class BothTestSerializableAndTestSerializable2(@unused s: String) extends TestSerializable with TestSerializable2
 
   trait A
   trait B
@@ -101,7 +108,7 @@ object SerializationTests {
       receiveBuilder().build()
   }
 
-  class NonSerializableActor(system: ActorSystem) extends Actor {
+  class NonSerializableActor(@unused system: ActorSystem) extends Actor {
     def receive = {
       case s: String => sender() ! s
     }
@@ -133,13 +140,15 @@ object SerializationTests {
 }
 
 class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
-  import SerializationTests._
 
   val ser = SerializationExtension(system)
   import ser._
 
-  val address = Address("120", "Monroe Street", "Santa Clara", "95050")
-  val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
+  val address = SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050")
+  val person = SerializationTests.Person(
+    "debasish ghosh",
+    25,
+    SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050"))
 
   "Serialization" must {
 
@@ -151,7 +160,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "serialize Address" in {
-      assert(deserialize(serialize(address).get, classOf[Address]).get === address)
+      assert(deserialize(serialize(address).get, classOf[SerializationTests.Address]).get === address)
     }
 
     "serialize Person" in {
@@ -225,8 +234,8 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
     "give warning for message with several bindings" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1).intercept {
-        ser.serializerFor(classOf[BothTestSerializableAndTestSerializable2]).getClass should (be(
-          classOf[NoopSerializer]).or(be(classOf[NoopSerializer2])))
+        ser.serializerFor(classOf[BothTestSerializableAndTestSerializable2]).getClass should be(classOf[NoopSerializer])
+          .or(be(classOf[NoopSerializer2]))
       }
     }
 
@@ -290,7 +299,6 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 }
 
 class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerializabilityConf) {
-  import SerializationTests._
   implicit val timeout = Timeout(5 seconds)
 
   "verify config" in {
@@ -306,7 +314,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     system.stop(b)
 
     intercept[IllegalArgumentException] {
-      val d = system.actorOf(Props(new NonSerializableActor(system)))
+      system.actorOf(Props(new NonSerializableActor(system)))
     }
 
   }
@@ -318,14 +326,13 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     EventFilter[SerializationCheckFailedException](
       start = "Failed to serialize and deserialize message of type java.lang.Object",
       occurrences = 1).intercept {
-      a ! (new AnyRef)
+      a ! new AnyRef
     }
     system.stop(a)
   }
 }
 
 class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyReferenceSystem) {
-  import SerializationTests._
 
   val ser = SerializationExtension(system)
   def serializerMustBe(toSerialize: Class[_], expectedSerializer: Class[_]) =

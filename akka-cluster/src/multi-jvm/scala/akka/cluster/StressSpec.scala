@@ -128,7 +128,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 
-    akka.remote.artery.advanced {
+    akka.remote.artery.advanced.aeron {
       idle-cpu-level = 1
       embedded-media-driver = off
       aeron-dir = "target/aeron-StressSpec"
@@ -245,7 +245,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       extends Actor
       with ActorLogging {
     import settings.infolog
-    private val cluster = Cluster(context.system)
     private var reportTo: Option[ActorRef] = None
     private var results = Vector.empty[ClusterResult]
     private var phiValuesObservedByNode = {
@@ -548,7 +547,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    */
   class Worker extends Actor with ActorLogging {
     def receive = {
-      case SimpleJob(id, payload)                   => sender() ! Ack(id)
+      case SimpleJob(id, _)                         => sender() ! Ack(id)
       case TreeJob(id, payload, idx, levels, width) =>
         // create the actors when first TreeJob message is received
         val totalActors = ((width * math.pow(width, levels) - 1) / (width - 1)).toInt
@@ -563,7 +562,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
 
     def treeWorker(tree: ActorRef): Receive = {
-      case SimpleJob(id, payload) => sender() ! Ack(id)
+      case SimpleJob(id, _) => sender() ! Ack(id)
       case TreeJob(id, payload, idx, _, _) =>
         tree.forward((idx, SimpleJob(id, payload)))
     }
@@ -1106,7 +1105,7 @@ abstract class StressSpec
     within(duration + 10.seconds) {
       val rounds = (duration.toMillis / oneIteration.toMillis).max(1).toInt
       val supervisor = system.actorOf(Props[Supervisor], "supervisor")
-      for (count <- 0 until rounds) {
+      for (_ <- 0 until rounds) {
         createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
         val (masterRoles, otherRoles) = roles.take(nbrUsedRoles).splitAt(3)

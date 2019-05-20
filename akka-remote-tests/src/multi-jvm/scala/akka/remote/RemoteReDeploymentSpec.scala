@@ -24,7 +24,7 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
   val second = role("second")
 
   commonConfig(
-    debugConfig(on = true).withFallback(ConfigFactory.parseString(s"""akka.remote.transport-failure-detector {
+    debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""akka.remote.classic.transport-failure-detector {
          threshold=0.1
          heartbeat-interval=0.1s
          acceptable-heartbeat-pause=1s
@@ -124,7 +124,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
     "terminate the child when its parent system is replaced by a new one" in {
       // Any message sent to `echo` will be passed on to `testActor`
-      val echo = system.actorOf(echoProps(testActor), "echo")
+      system.actorOf(echoProps(testActor), "echo")
       enterBarrier("echo-started")
 
       runOn(second) {
@@ -150,8 +150,8 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
           within(sleepAfterKill) {
             // The quarantine of node 2, where the Parent lives, should cause the Hello child to be stopped:
             expectMsg("PostStop")
-            expectNoMsg()
-          } else expectNoMsg(sleepAfterKill)
+            expectNoMessage()
+          } else expectNoMessage(sleepAfterKill)
         awaitAssert(node(second), 10.seconds, 100.millis)
       }
 
@@ -160,7 +160,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       // Start the second system again
       runOn(second) {
         Await.ready(system.whenTerminated, 30.seconds)
-        expectNoMsg(sleepAfterKill)
+        expectNoMessage(sleepAfterKill)
         sys = startNewSystem()
       }
 
@@ -205,7 +205,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       enterBarrier("the-end")
 
       // After this we expect no further messages
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       // Until we clean up after ourselves
       enterBarrier("stopping")

@@ -5,13 +5,14 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
 import akka.dispatch.BoundedDequeBasedMailbox
+
 import scala.concurrent.duration._
 import akka.actor.ActorSystem.Settings
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
 
@@ -55,9 +56,9 @@ object ActorWithBoundedStashSpec {
   }
 
   // bounded deque-based mailbox with capacity 10
-  class Bounded10(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(10, 500 millis)
+  class Bounded10(@unused settings: Settings, @unused config: Config) extends BoundedDequeBasedMailbox(10, 500 millis)
 
-  class Bounded100(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(100, 500 millis)
+  class Bounded100(@unused settings: Settings, @unused config: Config) extends BoundedDequeBasedMailbox(100, 500 millis)
 
   val dispatcherId1 = "my-dispatcher-1"
   val dispatcherId2 = "my-dispatcher-2"

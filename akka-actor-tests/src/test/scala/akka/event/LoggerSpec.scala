@@ -21,6 +21,8 @@ import akka.util.Helpers
 import akka.event.Logging.InitializeLogger
 import akka.event.Logging.Warning
 import java.text.SimpleDateFormat
+import java.time.{ LocalDateTime, ZoneOffset }
+import java.util.concurrent.TimeUnit
 
 object LoggerSpec {
 
@@ -159,7 +161,7 @@ class LoggerSpec extends WordSpec with Matchers {
             case _                 => false
           }
         } else {
-          probe.expectNoMsg(0.5.seconds.dilated)
+          probe.expectNoMessage(0.5.seconds.dilated)
         }
       } finally {
         TestKit.shutdownActorSystem(system)
@@ -277,6 +279,30 @@ class LoggerSpec extends WordSpec with Matchers {
       val minutes = c.get(Calendar.MINUTE)
       val seconds = c.get(Calendar.SECOND)
       val ms = c.get(Calendar.MILLISECOND)
+      Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+    }
+  }
+
+  "currentTimeMillisToUTCString" must {
+    "add trailing zeros" in {
+      val hours = 0
+      val minutes = 0
+      val seconds = 0
+      val ms = 0
+      val dt = LocalDateTime.of(2019, 5, 5, hours, minutes, seconds, TimeUnit.MILLISECONDS.toNanos(ms).toInt)
+      val timestamp = dt.toInstant(ZoneOffset.UTC).toEpochMilli
+
+      Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+    }
+
+    "not add trailing zeros" in {
+      val hours = 23
+      val minutes = 59
+      val seconds = 59
+      val ms = 999
+      val dt = LocalDateTime.of(2019, 5, 5, hours, minutes, seconds, TimeUnit.MILLISECONDS.toNanos(ms).toInt)
+      val timestamp = dt.toInstant(ZoneOffset.UTC).toEpochMilli
+
       Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
     }
   }

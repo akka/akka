@@ -12,7 +12,7 @@ import org.scalatest.WordSpec
 class PruningStateSpec extends WordSpec with Matchers {
   import PruningState._
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
   val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4L)

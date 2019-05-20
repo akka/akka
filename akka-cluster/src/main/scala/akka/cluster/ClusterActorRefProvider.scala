@@ -6,6 +6,7 @@ package akka.cluster
 
 import akka.ConfigurationException
 import akka.actor.{ ActorRef, ActorSystem, ActorSystemImpl, Deploy, DynamicAccess, NoScopeGiven, Scope }
+import akka.annotation.InternalApi
 import akka.cluster.routing.{
   ClusterRouterGroup,
   ClusterRouterGroupSettings,
@@ -16,6 +17,7 @@ import akka.event.EventStream
 import akka.remote.{ RemoteActorRefProvider, RemoteDeployer }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing.{ Group, Pool }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -26,6 +28,7 @@ import com.typesafe.config.ConfigFactory
  * extension, i.e. the cluster will automatically be started when
  * the `ClusterActorRefProvider` is used.
  */
+@InternalApi
 private[akka] class ClusterActorRefProvider(
     _systemName: String,
     _settings: ActorSystem.Settings,
@@ -61,6 +64,7 @@ private[akka] class ClusterActorRefProvider(
    */
   override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
+  override protected def showDirectUseWarningIfRequired(): Unit = ()
 }
 
 /**
@@ -68,6 +72,7 @@ private[akka] class ClusterActorRefProvider(
  *
  * Deployer of cluster aware routers.
  */
+@InternalApi
 private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess)
     extends RemoteDeployer(_settings, _pm) {
 
@@ -114,6 +119,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
 
 }
 
+@silent
 @SerialVersionUID(1L)
 abstract class ClusterScope extends Scope
 

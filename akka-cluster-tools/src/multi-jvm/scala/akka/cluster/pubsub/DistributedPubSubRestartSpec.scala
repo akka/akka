@@ -141,7 +141,7 @@ class DistributedPubSubRestartSpec
           val port = Cluster(system).selfAddress.port.get
           val config = ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
-              akka.remote.netty.tcp.port=$port
+              akka.remote.classic.netty.tcp.port=$port
               """).withFallback(system.settings.config)
 
           ActorSystem(system.name, config)

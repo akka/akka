@@ -53,7 +53,7 @@ depending on the akka-remote module), so normally you don't need to add
 configuration for that; since `com.google.protobuf.GeneratedMessage`
 implements `java.io.Serializable`, protobuf messages will always be
 serialized using the protobuf protocol unless specifically overridden. In order
-to disable a default serializer, see @ref:[Disabling the Java Serializer](remoting.md#disable-java-serializer)
+to disable a default serializer, see @ref:[Disabling the Java Serializer](remoting-artery.md#disable-java-serializer)
 
 ### Enable additional bindings
 
@@ -298,7 +298,7 @@ Since the release of Artery, Akka internals do not rely on Java serialization an
 @@@ warning
 
 Please note Akka 2.5 by default does not use any Java Serialization for its own internal messages, unlike 2.4 where
-by default it sill did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
+by default it still did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
 example during a rolling deployment you should first enable `additional-serialization-bindings` on the old systems.
 You must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
 configurations will cause deserialization errors on the receiving nodes. These additional serialization bindings are

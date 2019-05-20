@@ -51,7 +51,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   implicit val ec = system.dispatcher
   import RoutingSpec._
 
-  muteDeadLetters(classOf[akka.dispatch.sysmsg.DeathWatchNotification])()
+  muteDeadLetters(classOf[akka.dispatch.sysmsg.DeathWatchNotification])(system)
 
   "routers in general" must {
 
@@ -95,7 +95,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routees.size should ===(2)
       routees.foreach { _.send(PoisonPill, testActor) }
       // expect no Terminated
-      expectNoMsg(2.seconds)
+      expectNoMessage(2.seconds)
     }
 
     "use configured nr-of-instances when FromConfig" in {

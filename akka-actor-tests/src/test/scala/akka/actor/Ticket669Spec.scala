@@ -53,7 +53,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
 object Ticket669Spec {
   class Supervised extends Actor {
     def receive = {
-      case msg => throw new Exception("test")
+      case _ => throw new Exception("test")
     }
 
     override def preRestart(reason: scala.Throwable, msg: Option[Any]): Unit = {

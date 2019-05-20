@@ -11,9 +11,12 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Future
 
+// unused names in pattern match can be useful in the docs
+@silent
 object PersistentActorCompileOnlyTest {
 
   import akka.persistence.typed.scaladsl.EventSourcedBehavior._
@@ -90,7 +93,7 @@ object PersistentActorCompileOnlyTest {
                 case IntentRecorded(correlationId, data) =>
                   EventsInFlight(
                     nextCorrelationId = correlationId + 1,
-                    dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
+                    dataByCorrelationId = state.dataByCorrelationId + (correlationId -> data))
                 case SideEffectAcknowledged(correlationId) =>
                   state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
               }).receiveSignal {

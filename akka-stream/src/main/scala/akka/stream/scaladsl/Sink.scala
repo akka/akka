@@ -146,6 +146,14 @@ object Sink {
     }
 
   /**
+   * Defers the creation of a [[Sink]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Sink]] returned by this method.
+   */
+  def setup[T, M](factory: (ActorMaterializer, Attributes) ⇒ Sink[T, M]): Sink[T, Future[M]] =
+    Sink.fromGraph(new SetupSinkStage(factory))
+
+  /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
   def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, NotUsed] =
@@ -542,8 +550,8 @@ object Sink {
   }
 
   /**
-   * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueue]].
-   * [[akka.stream.scaladsl.SinkQueue.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
+   * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueueWithCancel]].
+   * [[akka.stream.scaladsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
    * `Future` completes when element is available.
    *
    * Before calling pull method second time you need to wait until previous Future completes.
@@ -553,7 +561,7 @@ object Sink {
    * upstream and then stop back pressure.  You can configure size of input
    * buffer by using [[Sink.withAttributes]] method.
    *
-   * For stream completion you need to pull all elements from [[akka.stream.scaladsl.SinkQueue]] including last None
+   * For stream completion you need to pull all elements from [[akka.stream.scaladsl.SinkQueueWithCancel]] including last None
    * as completion marker
    *
    * See also [[akka.stream.scaladsl.SinkQueueWithCancel]]

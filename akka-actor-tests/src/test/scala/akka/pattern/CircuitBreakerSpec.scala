@@ -12,7 +12,7 @@ import scala.util.{ Failure, Success, Try }
 import akka.testkit._
 import org.mockito.ArgumentCaptor
 import org.scalatest.BeforeAndAfter
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.mockito.Mockito._
 
 object CircuitBreakerSpec {
@@ -603,7 +603,6 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
 
     "pass through next call and invoke onCallBreakerOpen while executing other" in {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
-      val captor = timeCaptor
 
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.halfOpenLatch)

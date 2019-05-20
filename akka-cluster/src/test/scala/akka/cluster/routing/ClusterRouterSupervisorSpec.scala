@@ -11,7 +11,7 @@ import akka.actor.OneForOneStrategy
 
 object ClusterRouterSupervisorSpec {
 
-  class KillableActor(testActor: ActorRef) extends Actor {
+  class KillableActor() extends Actor {
 
     def receive = {
       case "go away" =>
@@ -24,7 +24,7 @@ object ClusterRouterSupervisorSpec {
 
 class ClusterRouterSupervisorSpec extends AkkaSpec("""
   akka.actor.provider = "cluster"
-  akka.remote.netty.tcp.port = 0
+  akka.remote.classic.netty.tcp.port = 0
   akka.remote.artery.canonical.port = 0
 """) {
 
@@ -41,7 +41,7 @@ class ClusterRouterSupervisorSpec extends AkkaSpec("""
               SupervisorStrategy.Stop
           }),
           ClusterRouterPoolSettings(totalInstances = 1, maxInstancesPerNode = 1, allowLocalRoutees = true))
-          .props(Props(classOf[KillableActor], testActor)),
+          .props(Props(classOf[KillableActor])),
         name = "therouter")
 
       router ! "go away"

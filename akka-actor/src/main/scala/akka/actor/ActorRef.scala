@@ -6,10 +6,11 @@ package akka.actor
 
 import java.util.concurrent.ConcurrentHashMap
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -138,7 +139,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * The contract is that if this method returns true, then it will never be false again.
    * But you cannot rely on that it is alive if it returns false, since this by nature is a racy method.
    */
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+  @InternalApi
   private[akka] def isTerminated: Boolean
 
   final override def hashCode: Int = {
@@ -155,8 +156,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   }
 
   override def toString: String =
-    if (path.uid == ActorCell.undefinedUid) s"Actor[${path}]"
-    else s"Actor[${path}#${path.uid}]"
+    if (path.uid == ActorCell.undefinedUid) s"Actor[$path]"
+    else s"Actor[$path#${path.uid}]"
 }
 
 /**
@@ -337,6 +338,7 @@ private[akka] class LocalActorRef private[akka] (
    * If this method returns true, it will never return false again, but if it
    * returns false, you cannot be sure if it's alive still (race condition)
    */
+  @InternalApi
   override private[akka] def isTerminated: Boolean = actorCell.isTerminated
 
   /**
@@ -746,7 +748,7 @@ private[akka] final class FunctionRef(
     }
   }
 
-  // watching, _watchedBy and maintainAddressTerminatedSubscription requires sychronized access because
+  // watching, _watchedBy and maintainAddressTerminatedSubscription requires synchronized access because
   // AddressTerminatedTopic must be updated together with the variables here.
   // Important: don't include calls to sendSystemMessage inside the synchronized since that can
   // result in deadlock, see issue #26326
@@ -946,7 +948,7 @@ private[akka] final class FunctionRef(
         // AddressTerminatedTopic update not needed
         block
       case _ =>
-        def hasNonLocalAddress: Boolean = (watching.exists(isNonLocal)) || (watchedByOrEmpty.exists(isNonLocal))
+        def hasNonLocalAddress: Boolean = watching.exists(isNonLocal) || watchedByOrEmpty.exists(isNonLocal)
 
         val had = hasNonLocalAddress
         val result = block

@@ -44,7 +44,7 @@ class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.co
         probe.tell("eventHandler:" + state + ":" + event)
         if (state == null) event else state + event
       }).receiveSignal {
-      case (state, RecoveryCompleted) ⇒
+      case (state, RecoveryCompleted) =>
         probe.tell("onRecoveryCompleted:" + state)
     }
 

@@ -11,9 +11,11 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 import akka.Done
+import akka.actor.CoordinatedShutdown
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
@@ -27,7 +29,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
   case class Probe(message: String, replyTo: ActorRef[String])
 
   def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
-      block: ActorSystem[T] ⇒ Unit): Unit = {
+      block: ActorSystem[T] => Unit): Unit = {
     val sys = system(behavior, s"$suite-$name")
     try {
       block(sys)
@@ -47,7 +49,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       withSystem("a", Behaviors.receiveMessage[Probe] { p =>
         p.replyTo ! p.message
         Behaviors.stopped
-      }, doTerminate = false) { sys ⇒
+      }, doTerminate = false) { sys =>
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {
@@ -55,6 +57,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
         }
         inbox.receiveAll() should ===("hello" :: Nil)
         sys.whenTerminated.futureValue
+        CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+          Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
     }
 
@@ -89,6 +93,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       // now we know that the guardian has started, and should receive PostStop
       sys.terminate()
       sys.whenTerminated.futureValue
+      CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+        Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
     }
 

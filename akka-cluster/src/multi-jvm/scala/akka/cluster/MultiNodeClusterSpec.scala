@@ -29,6 +29,7 @@ import akka.util.ccompat._
 
 import scala.concurrent.Await
 
+@ccompatUsedUntil213
 object MultiNodeClusterSpec {
 
   def clusterConfigWithFailureDetectorPuppet: Config =

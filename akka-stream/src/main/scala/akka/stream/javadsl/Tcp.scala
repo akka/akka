@@ -27,7 +27,7 @@ import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
 import javax.net.ssl.SSLContext
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.stream.TLSProtocol.NegotiateNewSession
 import com.github.ghik.silencer.silent
 
@@ -246,7 +246,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def outgoingTlsConnection(
       remoteAddress: InetSocketAddress,
       sslContext: SSLContext,
@@ -276,7 +275,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Note: the half close parameter is currently ignored
    */
-  @ApiMayChange
   def bindTls(
       interface: String,
       port: Int,

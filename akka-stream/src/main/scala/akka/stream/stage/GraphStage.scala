@@ -7,8 +7,9 @@ package akka.stream.stage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
+import akka.pattern.ask
 import akka.stream._
 import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
@@ -17,11 +18,12 @@ import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
 import akka.{ Done, NotUsed }
-
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Await, Future, Promise }
+
+import akka.stream.impl.StreamSupervisor
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -75,7 +77,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
  *
  * Extend this `AbstractGraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ * value you can instead extend [[GraphStage]] which materializes a [[NotUsed]] value.
  *
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
@@ -215,27 +217,37 @@ object GraphStageLogic {
     }
 
     private val callback = getAsyncCallback(internalReceive)
-    private def cell = materializer.supervisor match {
-      case ref: LocalActorRef                        => ref.underlying
-      case ref: RepointableActorRef if ref.isStarted => ref.underlying.asInstanceOf[ActorCell]
-      case unknown =>
-        throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
-    }
 
-    private val functionRef: FunctionRef =
-      cell.addFunctionRef(
-        {
-          case (r, PoisonPill) if poisonPillFallback ⇒
-            callback.invoke((r, PoisonPill))
-          case (_, m @ (PoisonPill | Kill)) =>
-            materializer.logger.warning(
-              "{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
-              "Use a custom message type to communicate with it instead.",
-              m,
-              functionRef.path)
-          case pair => callback.invoke(pair)
-        },
-        name)
+    private val functionRef: FunctionRef = {
+      val f: (ActorRef, Any) => Unit = {
+        case (r, PoisonPill) if poisonPillFallback =>
+          callback.invoke((r, PoisonPill))
+        case (_, m @ (PoisonPill | Kill)) =>
+          materializer.logger.warning(
+            "{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
+            "Use a custom message type to communicate with it instead.",
+            m,
+            functionRef.path)
+        case pair => callback.invoke(pair)
+      }
+
+      materializer.supervisor match {
+        case ref: LocalActorRef =>
+          ref.underlying.addFunctionRef(f, name)
+        case ref: RepointableActorRef =>
+          if (ref.isStarted)
+            ref.underlying.asInstanceOf[ActorCell].addFunctionRef(f, name)
+          else {
+            // this may happen if materialized immediately before Materializer has been fully initialized,
+            // should be rare
+            implicit val timeout = ref.system.settings.CreationTimeout
+            val reply = (materializer.supervisor ? StreamSupervisor.AddFunctionRef(f, name)).mapTo[FunctionRef]
+            Await.result(reply, timeout.duration)
+          }
+        case unknown =>
+          throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+      }
+    }
 
     /**
      * The ActorRef by which this StageActor can be contacted from the outside.
@@ -267,7 +279,9 @@ object GraphStageLogic {
       behavior = receive
     }
 
-    def stop(): Unit = cell.removeFunctionRef(functionRef)
+    def stop(): Unit = {
+      materializer.supervisor ! StreamSupervisor.RemoveFunctionRef(functionRef)
+    }
 
     def watch(actorRef: ActorRef): Unit = functionRef.watch(actorRef)
 
@@ -375,11 +389,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
-      throw new IllegalStateException("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
+      throw new IllegalStateException(
+        "not yet initialized: only setHandler is allowed in GraphStageLogic constructor. To access materializer use Source/Flow/Sink.setup factory")
     else _interpreter
 
   /**
    * The [[akka.stream.Materializer]] that has set this GraphStage in motion.
+   *
+   * Can not be used from a `GraphStage` constructor. Access to materializer is provided by the
+   * [[akka.stream.scaladsl.Source.setup]], [[akka.stream.scaladsl.Flow.setup]] and [[akka.stream.scaladsl.Sink.setup]]
+   * and their corresponding Java API factories.
    */
   protected def materializer: Materializer = interpreter.materializer
 
@@ -931,7 +950,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       andThen()
       if (followUps != null) {
 
-        /**
+        /*
          * If (while executing andThen() callback) handler was changed to new emitting,
          * we should add it to the end of emission queue
          */
@@ -942,7 +961,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         val next = dequeue()
         if (next.isInstanceOf[EmittingCompletion[_]]) {
 
-          /**
+          /*
            * If next element is emitting completion and there are some elements after it,
            * we to need pass them before completion
            */
@@ -1125,7 +1144,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def invokeWithFeedback(event: T): Future[Done] = {
       val promise: Promise[Done] = Promise[Done]()
 
-      /**
+      /*
        * Add this promise to the owning logic, so it can be completed afterPostStop if it was never handled otherwise.
        * Returns whether the logic is still running.
        */
@@ -1209,7 +1228,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @param receive callback that will be called upon receiving of a message by this special Actor
    * @return minimal actor with watch method
    */
-  @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
     getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
 
@@ -1220,9 +1238,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   protected[akka] def getEagerStageActor(
       eagerMaterializer: Materializer,
       poisonPillCompatibility: Boolean)( // fallback required for source actor backwards compatibility
-      receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
+      receive: ((ActorRef, Any)) => Unit): StageActor =
     _stageActor match {
-      case null ⇒
+      case null =>
         val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
         _stageActor =
           new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
@@ -1241,7 +1259,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * Returns an empty string by default, which means that the name will a unique generated String (e.g. "$$a").
    */
-  @ApiMayChange
   protected def stageActorName: String = ""
 
   // Internal hooks to avoid reliance on user calling super in preStart

@@ -12,6 +12,7 @@ import scala.collection.immutable
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 package object testkit {
+  @ccompatUsedUntil213
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: => T)(implicit system: ActorSystem): T = {
     def now = System.currentTimeMillis
 

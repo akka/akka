@@ -14,7 +14,6 @@ object InitialMembersOfNewDcSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString(s"""
     akka.actor.provider = cluster
     akka.actor.warn-about-java-serializer-usage = off
-    akka.coordinated-shutdown.terminate-actor-system = off
     akka.cluster {
       jmx.enabled                         = off
       debug.verbose-gossip-logging = on

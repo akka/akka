@@ -20,6 +20,7 @@ import akka.testkit.TestProbe
 import akka.actor.ExtendedActorSystem
 import akka.testkit.TestActors.echoActorProps
 import akka.actor.ActorPath
+import com.github.ghik.silencer.silent
 
 object ConfiguredLocalRoutingSpec {
   val config = """
@@ -167,8 +168,9 @@ class ConfiguredLocalRoutingSpec
 
     "not get confused when trying to wildcard-configure children" in {
       system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
-      val recv = Set() ++ (for (_ <- 1 to 3) yield expectMsgType[ActorRef])
-      val expc = Set('a', 'b', 'c').map(i => system.actorFor("/user/weird/$" + i))
+      val recv = (for (_ <- 1 to 3) yield expectMsgType[ActorRef].path.elements.mkString("/", "/", "")).toSet
+      @silent
+      val expc = Set('a', 'b', 'c').map(i => "/user/weird/$" + i)
       recv should ===(expc)
       expectNoMessage(1 second)
     }

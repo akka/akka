@@ -222,7 +222,9 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"))
 
   val manager: ActorRef = {
-    system.systemActorOf(props = Props(classOf[UdpManager], this).withDeploy(Deploy.local), name = "IO-UDP-FF")
+    system.systemActorOf(
+      props = Props(classOf[UdpManager], this).withDispatcher(settings.ManagementDispatcher).withDeploy(Deploy.local),
+      name = "IO-UDP-FF")
   }
 
   /**

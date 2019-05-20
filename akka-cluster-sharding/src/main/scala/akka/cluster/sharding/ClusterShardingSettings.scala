@@ -61,8 +61,8 @@ object ClusterShardingSettings {
       else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
 
     val lease = config.getString("use-lease") match {
-      case s if s.isEmpty ⇒ None
-      case other ⇒ Some(new LeaseUsageSettings(other, config.getDuration("lease-retry-interval").asScala))
+      case s if s.isEmpty => None
+      case other          => Some(new LeaseUsageSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
 
     new ClusterShardingSettings(

@@ -24,7 +24,6 @@ import scala.collection.immutable.Queue
 
 import akka.annotation.InternalApi
 import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
 import akka.stream.Attributes.LogLevels
 
 /**
@@ -774,7 +773,7 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange def statefulSink[T](
+  def statefulSink[T](
       partitioner: () => (ConsumerInfo, T) => Long,
       startAfterNrOfConsumers: Int,
       bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
@@ -809,7 +808,6 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange
   def sink[T](
       partitioner: (Int, T) => Int,
       startAfterNrOfConsumers: Int,
@@ -822,7 +820,7 @@ object PartitionHub {
     statefulSink(() => fun, startAfterNrOfConsumers, bufferSize)
   }
 
-  @DoNotInherit @ApiMayChange trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
+  @DoNotInherit trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
 
     /**
      * Sequence of all identifiers of current consumers.

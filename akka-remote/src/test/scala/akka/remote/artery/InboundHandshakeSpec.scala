@@ -36,9 +36,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
 
-  private def setupStream(
-      inboundContext: InboundContext,
-      timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+  private def setupStream(inboundContext: InboundContext): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = OptionVal.None // not used
     TestSource
       .probe[AnyRef]
@@ -89,7 +87,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       downstream.request(10)
       // no HandshakeReq
       upstream.sendNext("msg17")
-      downstream.expectNoMsg(200.millis) // messages from unknown are dropped
+      downstream.expectNoMessage(200.millis) // messages from unknown are dropped
 
       // and accept messages after handshake
       upstream.sendNext(HandshakeReq(addressA, addressB.address))

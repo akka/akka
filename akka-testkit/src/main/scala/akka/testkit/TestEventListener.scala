@@ -540,6 +540,7 @@ final case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int)
  * }
  * </code></pre>
  */
+@ccompatUsedUntil213
 class TestEventListener extends Logging.DefaultLogger {
   import TestEvent._
 

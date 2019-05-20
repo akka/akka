@@ -55,7 +55,7 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
     val serviceDiscovery = Discovery(system)
     settings.discoveryMethods.map(mech => (mech, serviceDiscovery.loadServiceDiscovery(mech)))
   }
-  private implicit val ec = system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   /**
    * Each discovery method is given the resolveTimeout rather than reducing it each time between methods.

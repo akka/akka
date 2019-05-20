@@ -98,7 +98,7 @@ private[akka] class ArgsReflectConstructor(clz: Class[_ <: Actor], args: immutab
     extends IndirectActorProducer {
   private[this] val constructor = Reflect.findConstructor(clz, args)
   override def actorClass = clz
-  override def produce() = Reflect.instantiate(constructor, args).asInstanceOf[Actor]
+  override def produce() = Reflect.instantiate(constructor, args)
 }
 
 /**

@@ -420,7 +420,7 @@ private[akka] object ActorCell {
     // Note that this uid is also used as hashCode in ActorRef, so be careful
     // to not break hashing if you change the way uid is generated
     val uid = ThreadLocalRandom.current.nextInt()
-    if (uid == undefinedUid) newUid
+    if (uid == undefinedUid) newUid()
     else uid
   }
 
@@ -571,22 +571,20 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = {
-    val influenceReceiveTimeout = !messageHandle.message.isInstanceOf[NotInfluenceReceiveTimeout]
+    val msg = messageHandle.message
+    val timeoutBeforeReceive = cancelReceiveTimeoutIfNeeded(msg)
     try {
       currentMessage = messageHandle
-      if (influenceReceiveTimeout)
-        cancelReceiveTimeout()
-      messageHandle.message match {
+      msg match {
         case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
         case msg                    => receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e =>
       handleInvokeFailure(Nil, e)
-    } finally {
-      // Schedule or reschedule receive timeout
-      checkReceiveTimeout(reschedule = influenceReceiveTimeout)
-    }
+    } finally
+    // Schedule or reschedule receive timeout
+    checkReceiveTimeoutIfNeeded(msg, timeoutBeforeReceive)
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {

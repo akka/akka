@@ -17,7 +17,8 @@ import akka.persistence.query.journal.leveldb.{
 import akka.persistence.query.scaladsl.{ ReadJournal, _ }
 import akka.persistence.query.{ EventEnvelope, NoOffset, Offset, Sequence }
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.util.{ unused, ByteString }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -36,7 +37,8 @@ import scala.concurrent.duration._
  * absolute path corresponding to the identifier, which is `"akka.persistence.query.journal.leveldb"`
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  */
-class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
+@silent // FIXME Re-write as part of https://github.com/akka/akka/issues/26187
+class LeveldbReadJournal(@unused system: ExtendedActorSystem, config: Config)
     extends ReadJournal
     with PersistenceIdsQuery
     with CurrentPersistenceIdsQuery

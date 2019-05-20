@@ -5,6 +5,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
+
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 import akka.actor.ActorRef
@@ -88,10 +89,45 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       expectMsg(Udp.Unbound)
 
       // Reusing the address
-      val server2 = bindUdp(serverAddress, testActor)
+      bindUdp(serverAddress, testActor)
 
       client ! UdpConnected.Send(data1)
       expectMsgType[Udp.Received].data should ===(data1)
+    }
+
+    // #26903
+    "be able to send and receive when server goes away (and comes back)" in {
+      val addresses = temporaryServerAddresses(2, udp = true)
+      val serverAddress = addresses(0)
+      val clientAddress = addresses(1)
+      val server = bindUdp(serverAddress, testActor)
+      val data1 = ByteString("To infinity and beyond!")
+
+      val clientCommander = connectUdp(Some(clientAddress), serverAddress, testActor)
+      clientCommander ! UdpConnected.Send(data1)
+
+      expectMsg(Udp.Received(data1, clientAddress))
+
+      server ! Udp.Unbind
+      expectMsg(Udp.Unbound)
+      Thread.sleep(1000) // if it stops that takes a bit of time, give it that time
+
+      // bug was that the commander would fail on next read/write
+      clientCommander ! UdpConnected.Send(ByteString("data to trigger fail"), 1)
+      expectMsg(1)
+
+      // and at this time the commander would have stopped
+      clientCommander ! UdpConnected.Send(ByteString("data to trigger fail"), 2)
+      expectMsg(2)
+
+      // when a new server appears at the same port it it should be able to receive
+      val serverIncarnation2 = bindUdp(serverAddress, testActor)
+      val dataToNewIncarnation = ByteString("Data to new incarnation")
+      clientCommander ! UdpConnected.Send(dataToNewIncarnation, 3)
+      expectMsg(3)
+      expectMsg(Udp.Received(dataToNewIncarnation, clientAddress))
+
+      serverIncarnation2 ! Udp.Unbind
     }
 
   }

@@ -194,8 +194,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
   def docOnly = { //not used, only demo
     //#initialContacts
     val initialContacts = Set(
-      ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
-      ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
+      ActorPath.fromString("akka://OtherSys@host1:2552/system/receptionist"),
+      ActorPath.fromString("akka://OtherSys@host2:2552/system/receptionist"))
     val settings = ClusterClientSettings(system).withInitialContacts(initialContacts)
     //#initialContacts
 
@@ -497,7 +497,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           system.name,
           ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
-              akka.remote.netty.tcp.port=$port
+              akka.remote.classic.netty.tcp.port=$port
               """).withFallback(system.settings.config))
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         val service2 = sys2.actorOf(Props(classOf[TestService], testActor), "service2")

@@ -6,11 +6,13 @@ package akka.actor
 
 import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
+
 import scala.concurrent.duration._
 import akka.{ Die, Ping }
 import akka.testkit.TestEvent._
 import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
@@ -19,6 +21,7 @@ import akka.dispatch.MessageQueue
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.routing.RoundRobinPool
+import akka.util.unused
 
 object SupervisorSpec {
   val Timeout = 5.seconds
@@ -88,7 +91,7 @@ object SupervisorSpec {
 
   val failure = new AssertionError("deliberate test failure")
 
-  class Mailbox(settings: ActorSystem.Settings, config: Config) extends MailboxType {
+  class Mailbox(@unused settings: ActorSystem.Settings, @unused config: Config) extends MailboxType {
     override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
       throw failure
   }
@@ -193,14 +196,14 @@ class SupervisorSpec
   }
 
   def kill(pingPongActor: ActorRef) = {
-    val result = (pingPongActor.?(DieReply)(DilatedTimeout))
+    val result = pingPongActor.?(DieReply)(DilatedTimeout)
     expectMsg(Timeout, ExceptionMessage) //this is sent from PingPongActor's postRestart()
     intercept[RuntimeException] { Await.result(result, DilatedTimeout) }
   }
 
   def killExpectNoRestart(pingPongActor: ActorRef) = {
-    val result = (pingPongActor.?(DieReply)(DilatedTimeout))
-    expectNoMsg(500 milliseconds)
+    val result = pingPongActor.?(DieReply)(DilatedTimeout)
+    expectNoMessage(500 milliseconds)
     intercept[RuntimeException] { Await.result(result, DilatedTimeout) }
   }
 
@@ -211,7 +214,7 @@ class SupervisorSpec
 
       master ! Die
       expectMsg(3 seconds, "terminated")
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "restart properly when same instance is returned" in {
@@ -263,7 +266,7 @@ class SupervisorSpec
         expectMsg("postStop1")
       }
 
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "not restart temporary actor" in {
@@ -271,13 +274,13 @@ class SupervisorSpec
 
       intercept[RuntimeException] { Await.result(temporaryActor.?(DieReply)(DilatedTimeout), DilatedTimeout) }
 
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "start server for nested supervisor hierarchy" in {
       val (actor1, _, _, _) = nestedSupervisorsAllForOne
       ping(actor1)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "kill single actor OneForOne" in {
@@ -286,36 +289,36 @@ class SupervisorSpec
     }
 
     "call-kill-call single actor OneForOne" in {
-      val (actor, supervisor) = singleActorOneForOne
+      val (actor, _) = singleActorOneForOne
       ping(actor)
       kill(actor)
       ping(actor)
     }
 
     "kill single actor AllForOne" in {
-      val (actor, supervisor) = singleActorAllForOne
+      val (actor, _) = singleActorAllForOne
       kill(actor)
     }
 
     "call-kill-call single actor AllForOne" in {
-      val (actor, supervisor) = singleActorAllForOne
+      val (actor, _) = singleActorAllForOne
       ping(actor)
       kill(actor)
       ping(actor)
     }
 
     "kill multiple actors OneForOne 1" in {
-      val (actor1, actor2, actor3, supervisor) = multipleActorsOneForOne
+      val (actor1, _, _, _) = multipleActorsOneForOne
       kill(actor1)
     }
 
     "kill multiple actors OneForOne 2" in {
-      val (actor1, actor2, actor3, supervisor) = multipleActorsOneForOne
+      val (_, _, actor3, _) = multipleActorsOneForOne
       kill(actor3)
     }
 
     "call-kill-call multiple actors OneForOne" in {
-      val (actor1, actor2, actor3, supervisor) = multipleActorsOneForOne
+      val (actor1, actor2, actor3, _) = multipleActorsOneForOne
 
       ping(actor1)
       ping(actor2)
@@ -329,7 +332,7 @@ class SupervisorSpec
     }
 
     "kill multiple actors AllForOne" in {
-      val (actor1, actor2, actor3, supervisor) = multipleActorsAllForOne
+      val (_, actor2, _, _) = multipleActorsAllForOne
 
       kill(actor2)
 
@@ -339,7 +342,7 @@ class SupervisorSpec
     }
 
     "call-kill-call multiple actors AllForOne" in {
-      val (actor1, actor2, actor3, supervisor) = multipleActorsAllForOne
+      val (actor1, actor2, actor3, _) = multipleActorsAllForOne
 
       ping(actor1)
       ping(actor2)
@@ -457,7 +460,7 @@ class SupervisorSpec
         }
 
         def receive = {
-          case Terminated(a) if a.path == child.path => testActor ! "child terminated"
+          case Terminated(t) if t.path == child.path => testActor ! "child terminated"
           case l: TestLatch                          => child ! l
           case "test"                                => sender() ! "green"
           case "testchild"                           => child.forward("test")
@@ -496,7 +499,7 @@ class SupervisorSpec
         val middle = expectMsgType[ActorRef]
         middle ! creator(testActor, fail = true)
         expectMsgPF(hint = "ConfigurationException") {
-          case (top, middle, ex: ConfigurationException) =>
+          case (_, _, ex: ConfigurationException) =>
             ex.getCause should ===(failure)
         }
       }
@@ -513,7 +516,7 @@ class SupervisorSpec
         val middle = expectMsgType[ActorRef]
         middle ! creator(testActor, fail = true).withRouter(RoundRobinPool(1))
         expectMsgPF(hint = "ConfigurationException") {
-          case (top, middle, ex: ConfigurationException) =>
+          case (_, _, ex: ConfigurationException) =>
             ex.getCause should ===(failure)
         }
       }

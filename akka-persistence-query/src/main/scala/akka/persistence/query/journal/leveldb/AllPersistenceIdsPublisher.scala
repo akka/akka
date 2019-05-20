@@ -13,6 +13,7 @@ import akka.persistence.journal.leveldb.LeveldbJournal
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.Cancel
 import akka.stream.actor.ActorPublisherMessage.Request
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -28,6 +29,7 @@ private[akka] object AllPersistenceIdsPublisher {
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
+@silent // Re-write as part of https://github.com/akka/akka/issues/26187
 private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
     extends ActorPublisher[String]
     with DeliveryBuffer[String]

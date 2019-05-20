@@ -33,6 +33,7 @@ import scala.collection.immutable
  * nodes which aggressively come and go as the traffic in the service changes.
  */
 @InternalApi
+@ccompatUsedUntil213
 private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogging {
   import CrossDcHeartbeatSender._
 
@@ -61,7 +62,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
     selfDataCenter,
     crossDcFailureDetector,
     crossDcSettings.NrOfMonitoringActors,
-    SortedSet.empty)
+    immutable.SortedSet.empty)
 
   // start periodic heartbeat to other nodes in cluster
   val heartbeatTask = scheduler.schedule(
@@ -218,7 +219,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
     selfDataCenter: DataCenter,
     failureDetector: FailureDetectorRegistry[Address],
     nrOfMonitoredNodesPerDc: Int,
-    state: Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
+    state: Map[ClusterSettings.DataCenter, immutable.SortedSet[Member]]) {
   import CrossDcHeartbeatingState._
 
   /**
@@ -242,7 +243,8 @@ private[cluster] final case class CrossDcHeartbeatingState(
     // we need to remove the member first, to avoid having "duplicates"
     // this is because the removal and uniqueness we need is only by uniqueAddress
     // which is not used by the `ageOrdering`
-    val oldMembersWithoutM = state.getOrElse(dc, emptyMembersSortedSet).filterNot(_.uniqueAddress == m.uniqueAddress)
+    val oldMembersWithoutM: immutable.SortedSet[Member] =
+      state.getOrElse(dc, emptyMembersSortedSet).filterNot(_.uniqueAddress == m.uniqueAddress)
 
     val updatedMembers = oldMembersWithoutM + m
     val updatedState = this.copy(state = state.updated(dc, updatedMembers))
@@ -307,7 +309,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
 private[cluster] object CrossDcHeartbeatingState {
 
   /** Sorted by age */
-  private def emptyMembersSortedSet: SortedSet[Member] = SortedSet.empty[Member](Member.ageOrdering)
+  private def emptyMembersSortedSet: immutable.SortedSet[Member] = immutable.SortedSet.empty[Member](Member.ageOrdering)
 
   // Since we need ordering of oldests guaranteed, we must only look at Up (or Leaving, Exiting...) nodes
   def atLeastInUpState(m: Member): Boolean =
@@ -317,7 +319,7 @@ private[cluster] object CrossDcHeartbeatingState {
       selfDataCenter: DataCenter,
       crossDcFailureDetector: FailureDetectorRegistry[Address],
       nrOfMonitoredNodesPerDc: Int,
-      members: SortedSet[Member]): CrossDcHeartbeatingState = {
+      members: immutable.SortedSet[Member]): CrossDcHeartbeatingState = {
     new CrossDcHeartbeatingState(selfDataCenter, crossDcFailureDetector, nrOfMonitoredNodesPerDc, state = {
       // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
       val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
@@ -329,7 +331,7 @@ private[cluster] object CrossDcHeartbeatingState {
         // we need to enforce the ageOrdering for the SortedSet in each DC
         groupedByDc.map {
           case (dc, ms) =>
-            dc -> (SortedSet.empty[Member](Member.ageOrdering).union(ms))
+            dc -> immutable.SortedSet.empty[Member](Member.ageOrdering).union(ms)
         }
       }
     })
