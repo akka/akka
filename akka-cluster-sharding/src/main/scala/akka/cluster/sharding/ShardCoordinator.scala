@@ -1171,8 +1171,14 @@ class DDataShardCoordinator(
     unstashAll()
   }
 
-  private def stashGetShardHomeRequest(sender: ActorRef, request: GetShardHome): Unit =
+  private def stashGetShardHomeRequest(sender: ActorRef, request: GetShardHome): Unit = {
+    log.debug(
+      "GetShardHome [{}] request from [{}] stashed, because waiting for initial state or update of state. " +
+      "It will be handled afterwards.",
+      request.shard,
+      sender)
     getShardHomeRequests += (sender -> request)
+  }
 
   private def unstashGetShardHomeRequests(): Unit = {
     getShardHomeRequests.foreach {
