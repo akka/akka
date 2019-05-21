@@ -34,7 +34,7 @@ import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl._
-import akka.util.ConstantFun
+import akka.util.{ unused, ConstantFun }
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -162,7 +162,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   }
 
   @StableInternalApi
-  private[akka] def initialize(context: ActorContext[_]) {}
+  private[akka] def initialize(@unused context: ActorContext[_]) {}
 
   override def receiveSignal(
       handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =
