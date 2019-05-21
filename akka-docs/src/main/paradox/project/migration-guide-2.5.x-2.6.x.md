@@ -45,6 +45,14 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
+## Deprecated features
+
+### TypedActor
+
+`akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
+`akka.actor.typed` API which should be used instead. For more context on
+this deprecation [please refer to the discussion here](https://github.com/akka/akka/issues/26144).
+
 ## Internal dispatcher introduced
 
 To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
