@@ -21,7 +21,7 @@ object Dependencies {
   val aeronVersion = "1.15.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.8", "2.13.0-RC1"),
+    crossScalaVersions := Seq("2.12.8", "2.13.0-RC2"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.9.1"),
     scalaCheckVersion := sys.props
@@ -30,7 +30,7 @@ object Dependencies {
           case Some((2, n)) if n >= 12 => "1.14.0" // does not work for 2.11
           case _                       => "1.13.2"
         }),
-    scalaTestVersion := "3.0.8-RC2",
+    scalaTestVersion := "3.0.8-RC4",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         // java8-compat is only used in a couple of places for 2.13,
