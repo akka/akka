@@ -10,7 +10,6 @@ import akka.testkit.EventFilter
 import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
-// FIXME https://github.com/scala/bug/issues/11512
 import org.scalatest.junit.JUnitSuiteLike
 
 import scala.util.control.NoStackTrace
