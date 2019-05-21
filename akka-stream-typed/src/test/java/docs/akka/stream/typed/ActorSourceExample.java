@@ -12,6 +12,8 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSource;
+
+import java.util.Optional;
 // #actor-source-ref
 
 public class ActorSourceExample {
@@ -44,20 +46,12 @@ public class ActorSourceExample {
   {
     // #actor-source-ref
 
-    final JavaPartialFunction<Protocol, Throwable> failureMatcher =
-        new JavaPartialFunction<Protocol, Throwable>() {
-          public Throwable apply(Protocol p, boolean isCheck) {
-            if (p instanceof Fail) {
-              return ((Fail) p).ex;
-            } else {
-              throw noMatch();
-            }
-          }
-        };
-
     final Source<Protocol, ActorRef<Protocol>> source =
         ActorSource.actorRef(
-            (m) -> m instanceof Complete, failureMatcher, 8, OverflowStrategy.fail());
+            (m) -> m instanceof Complete,
+            (m) -> (m instanceof Fail) ? Optional.of(((Fail) m).ex) : Optional.empty(),
+            8,
+            OverflowStrategy.fail());
 
     final ActorRef<Protocol> ref =
         source
