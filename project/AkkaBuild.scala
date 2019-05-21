@@ -34,7 +34,7 @@ object AkkaBuild {
   }
   
   def akkaVersion: String = {
-    val default = "2.5-SNAPSHOT"
+    val default = "2.5.23"
     sys.props.getOrElse("akka.build.version", default) match {
       case "timestamp" => s"2.5-$currentDateTime" // used when publishing timestamped snapshots
       case "file" => akkaVersionFromFile(default)
