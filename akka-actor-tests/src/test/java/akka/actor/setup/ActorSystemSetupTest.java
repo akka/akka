@@ -7,7 +7,7 @@ package akka.actor.setup;
 import akka.actor.setup.ActorSystemSetup;
 import akka.actor.setup.Setup;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.Optional;
 

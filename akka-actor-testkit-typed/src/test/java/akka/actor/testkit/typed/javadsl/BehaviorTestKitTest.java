@@ -14,7 +14,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.event.Logging;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.Arrays;
 import java.util.Collections;

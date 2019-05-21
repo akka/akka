@@ -5,13 +5,13 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.testkit._
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import akka.pattern.pipe
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class FlowSlidingSpec extends StreamSpec with GeneratorDrivenPropertyChecks {
+class FlowSlidingSpec extends StreamSpec with ScalaCheckDrivenPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
@@ -20,7 +20,7 @@ class FlowSlidingSpec extends StreamSpec with GeneratorDrivenPropertyChecks {
   "Sliding" must {
     import org.scalacheck.Shrink.shrinkAny
     def check(gen: Gen[(Int, Int, Int)]): Unit =
-      forAll(gen, MinSize(1000), MaxSize(1000)) {
+      forAll(gen, MinSize(1000), SizeRange(0)) {
         case (len, win, step) =>
           val af = Source
             .fromIterator(() => Iterator.from(0).take(len))

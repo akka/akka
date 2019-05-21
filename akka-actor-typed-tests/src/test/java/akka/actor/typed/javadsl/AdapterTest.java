@@ -7,7 +7,7 @@ package akka.actor.typed.javadsl;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import scala.concurrent.duration.FiniteDuration;
 

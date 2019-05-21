@@ -9,7 +9,7 @@ import akka.actor.ActorSystem;
 
 import akka.japi.*;
 import org.junit.ClassRule;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.Function1;
 import scala.concurrent.Await;
 import scala.concurrent.Future;

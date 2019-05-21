@@ -7,10 +7,10 @@ package akka.stream.scaladsl
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalacheck.Shrink
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks {
+class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckDrivenPropertyChecks {
 
   override type Outputs = Int
 

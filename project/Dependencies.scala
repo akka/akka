@@ -80,6 +80,10 @@ object Dependencies {
       val mockito = "org.mockito" % "mockito-core" % "2.19.1" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
+      val scalatestPlusJunit = "org.scalatestplus" %% "scalatestplus-junit" % "1.0.0-SNAP6" % "test" // ApacheV2
+      val scalatestPlusMockito = "org.scalatestplus" %% "scalatestplus-mockito" % "1.0.0-SNAP3" % "test" // ApacheV2
+      val scalatestPlusScalacheck = "org.scalatestplus" %% "scalatestplus-scalacheck" % "1.0.0-SNAP5" % "test" // ApacheV2
+      val scalatestPlusTestng = "org.scalatestplus" %% "scalatestplus-testng" % "1.0.0-SNAP3" % "test" // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
@@ -141,6 +145,9 @@ object Dependencies {
   val actorTests = l ++= Seq(
         Test.junit,
         Test.scalatest.value,
+        Test.scalatestPlusJunit,
+        Test.scalatestPlusMockito,
+        Test.scalatestPlusScalacheck,
         Test.commonsCodec,
         Test.commonsMath,
         Test.mockito,
@@ -150,9 +157,11 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
+  val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value, Test.scalatestPlusJunit)
 
-  val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
+  val actorTypedTests = l += Test.scalatestPlusJunit
+
+  val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.scalatestPlusScalacheck, Test.jimfs)
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 
@@ -177,6 +186,7 @@ object Dependencies {
         Provided.levelDB,
         Provided.levelDBNative,
         Test.scalatest.value,
+        Test.scalatestPlusJunit,
         Test.junit,
         Test.commonsIo,
         Test.commonsCodec,
@@ -219,7 +229,7 @@ object Dependencies {
 
   lazy val streamTests = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.commonsIo, Test.jimfs)
 
-  lazy val streamTestsTck = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.reactiveStreamsTck)
+  lazy val streamTestsTck = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.scalatestPlusTestng, Test.junit, Test.reactiveStreamsTck)
 
 }
 

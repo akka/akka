@@ -11,8 +11,8 @@ import akka.stream.{ ActorMaterializer, ClosedShape }
 import akka.testkit.TestKit
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ BeforeAndAfterAll, GivenWhenThen, Matchers, WordSpecLike }
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -22,7 +22,7 @@ class GraphZipLatestSpec
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with PropertyChecks
+    with ScalaCheckPropertyChecks
     with GivenWhenThen
     with ScalaFutures {
   implicit val materializer = ActorMaterializer()

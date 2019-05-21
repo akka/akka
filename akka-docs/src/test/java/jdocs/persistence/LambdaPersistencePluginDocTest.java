@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.runner.RunWith;
-import org.scalatest.junit.JUnitRunner;
+import org.scalatestplus.junit.JUnitRunner;
 import scala.concurrent.Future;
 import java.util.function.Consumer;
 import org.iq80.leveldb.util.FileUtils;
