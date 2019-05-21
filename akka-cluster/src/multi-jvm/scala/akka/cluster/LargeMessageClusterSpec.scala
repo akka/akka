@@ -5,11 +5,13 @@
 package akka.cluster
 
 import scala.concurrent.duration._
+
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.cluster.ClusterEvent.UnreachableMember
+import akka.remote.RARP
 import akka.remote.artery.ArterySettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -97,6 +99,12 @@ abstract class LargeMessageClusterSpec
   val unreachableProbe = TestProbe()
 
   "Artery Cluster with large messages" must {
+
+    if (!RARP(system).provider.remoteSettings.Artery.Enabled) {
+      info(s"${getClass.getName} is only enabled for Artery")
+      pending
+    }
+
     "init cluster" taggedAs LongRunningTest in {
       Cluster(system).subscribe(unreachableProbe.ref, ClusterEvent.InitialStateAsEvents, classOf[UnreachableMember])
 

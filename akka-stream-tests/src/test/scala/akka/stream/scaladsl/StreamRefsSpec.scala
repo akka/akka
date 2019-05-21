@@ -155,7 +155,7 @@ object StreamRefsSpec {
       }
       remote {
         artery.canonical.port = 0
-        netty.tcp.port = 0
+        classic.netty.tcp.port = 0
       }
     }
   """).withFallback(ConfigFactory.load())

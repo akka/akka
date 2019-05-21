@@ -214,7 +214,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       val a = TestActorRef[WorkerActor]
       val f = a ? "work"
       // CallingThreadDispatcher means that there is no delay
-      f should be('completed)
+      f.isCompleted should be(true)
       Await.result(f, timeout.duration) should ===("workDone")
     }
 

@@ -709,7 +709,7 @@ object Logging {
      * The thread that created this log event
      */
     @transient
-    val thread: Thread = Thread.currentThread
+    val thread: Thread = Thread.currentThread()
 
     /**
      * When this LogEvent was created according to System.currentTimeMillis
@@ -969,7 +969,6 @@ object Logging {
 
   /**
    * LoggerInitializationException is thrown to indicate that there was a problem initializing a logger
-   * @param msg
    */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 

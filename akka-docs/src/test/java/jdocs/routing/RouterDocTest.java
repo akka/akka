@@ -451,8 +451,8 @@ public class RouterDocTest extends AbstractJavaTest {
   public void demonstrateRemoteDeploy() {
     // #remoteRoutees
     Address[] addresses = {
-      new Address("akka.tcp", "remotesys", "otherhost", 1234),
-      AddressFromURIString.parse("akka.tcp://othersys@anotherhost:1234")
+      new Address("akka", "remotesys", "otherhost", 1234),
+      AddressFromURIString.parse("akka://othersys@anotherhost:1234")
     };
     ActorRef routerRemote =
         system.actorOf(

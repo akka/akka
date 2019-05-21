@@ -29,7 +29,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   val other = ActorSystem("remote", system.settings.config)
   val address =
-    other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("akka.tcp", "s", "host", 1)).get
+    other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("akka", "s", "host", 1)).get
 
   override def afterTermination(): Unit = { shutdown(other) }
 
@@ -51,8 +51,8 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate address extractor" in {
     //#make-address
-    val one = AddressFromURIString("akka.tcp://sys@host:1234")
-    val two = Address("akka.tcp", "sys", "host", 1234) // this gives the same
+    val one = AddressFromURIString("akka://sys@host:1234")
+    val two = Address("akka", "sys", "host", 1234) // this gives the same
     //#make-address
     one should be(two)
   }

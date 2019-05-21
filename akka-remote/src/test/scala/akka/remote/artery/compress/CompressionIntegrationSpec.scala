@@ -336,7 +336,7 @@ class CompressionIntegrationSpec
         remainingExpectedTableVersions = removeFirst(remainingExpectedTableVersions, lastTable.version)
       }
 
-      remainingExpectedTableVersions should be('empty)
+      remainingExpectedTableVersions shouldBe empty
       lastTable.version.toInt should be <= upToNTablesAcceptedAfterWrap // definitely, since we expected to wrap around and start from 0 again
     }
   }

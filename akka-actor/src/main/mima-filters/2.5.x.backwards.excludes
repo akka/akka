@@ -21,3 +21,24 @@ ProblemFilters.exclude[MissingClassProblem]("akka.actor.dungeon.UndefinedUidActo
 
 # Protect internals against starvation #23576
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.dispatch.Dispatchers.this")
+
+# Remove internal Akka fork of FJP, was meant-to-be internal
+ProblemFilters.exclude[Problem]("akka.dispatch.forkjoin.*")
+
+# Consequences of removing the internal FJP is that class hierarchies changes. Many of those APIs are internal, others are not
+# but probably not meant to be used standalone so it's probably ok. The changes would probably only be observable if you
+# also referenced classes from akka.dispatch.forkjoin
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#ForkJoinExecutorServiceFactory.threadFactory")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#ForkJoinExecutorServiceFactory.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#ForkJoinExecutorServiceFactory.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator.validate")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.ForkJoinExecutorConfigurator$AkkaForkJoinTask")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.MonitorableThreadFactory")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.MonitorableThreadFactory.newThread")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.ForkJoinExecutorConfigurator$AkkaForkJoinPool")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#AkkaForkJoinPool.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#AkkaForkJoinPool.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.Mailbox")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.BalancingDispatcher$SharingMailbox")
+ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.MonitorableThreadFactory$AkkaForkJoinWorkerThread")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.MonitorableThreadFactory#AkkaForkJoinWorkerThread.this")

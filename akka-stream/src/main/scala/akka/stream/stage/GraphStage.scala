@@ -7,7 +7,7 @@ package akka.stream.stage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.pattern.ask
 import akka.stream._
@@ -77,7 +77,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
  *
  * Extend this `AbstractGraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ * value you can instead extend [[GraphStage]] which materializes a [[NotUsed]] value.
  *
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
@@ -389,11 +389,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
-      throw new IllegalStateException("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
+      throw new IllegalStateException(
+        "not yet initialized: only setHandler is allowed in GraphStageLogic constructor. To access materializer use Source/Flow/Sink.setup factory")
     else _interpreter
 
   /**
    * The [[akka.stream.Materializer]] that has set this GraphStage in motion.
+   *
+   * Can not be used from a `GraphStage` constructor. Access to materializer is provided by the
+   * [[akka.stream.scaladsl.Source.setup]], [[akka.stream.scaladsl.Flow.setup]] and [[akka.stream.scaladsl.Sink.setup]]
+   * and their corresponding Java API factories.
    */
   protected def materializer: Materializer = interpreter.materializer
 
@@ -1223,7 +1228,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @param receive callback that will be called upon receiving of a message by this special Actor
    * @return minimal actor with watch method
    */
-  @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
     getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
 
@@ -1255,7 +1259,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * Returns an empty string by default, which means that the name will a unique generated String (e.g. "$$a").
    */
-  @ApiMayChange
   protected def stageActorName: String = ""
 
   // Internal hooks to avoid reliance on user calling super in preStart

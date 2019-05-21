@@ -1,5 +1,9 @@
 # Migration Guide 2.5.x to 2.6.x
 
+It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of
+@apidoc[akka.util.ByteString]`.empty()` when using Java because @apidoc[akka.util.ByteString]`.empty()`
+is [no longer available as a static method](https://github.com/scala/bug/issues/11509) in the artifacts built for Scala 2.13.
+
 ## Scala 2.11 no longer supported
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
@@ -73,6 +77,11 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
+
+## Akka now uses Fork Join Pool from JDK
+
+Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
+keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
 <a id="classic-to-artery"></a>
 ### Migrating from classic remoting to Artery
@@ -174,3 +183,23 @@ and then it will behave as in Akka 2.5.x:
 ```
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
+
+## Akka Typed
+
+### Receptionist has moved
+
+The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
+instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`. 
+
+The path change makes it impossible to do a rolling upgrade from 2.5 to 2.6 if you use Akka Typed and the receptionist
+as the old and the new nodes receptionists will not be able to communicate.
+
+
+### Akka Typed API changes
+
+Akka Typed APIs are still marked as [may change](../common/may-change.md) and therefore its API can still change without deprecation period. The following is a list of API changes since the latest release: 
+
+* Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
+* New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
+* New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
+ 

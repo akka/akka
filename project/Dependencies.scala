@@ -34,8 +34,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
-    val config = "com.typesafe" % "config" % "1.3.3" // ApacheV2
+    val config = "com.typesafe" % "config" % "1.3.4" // ApacheV2
     val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
 
     val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License

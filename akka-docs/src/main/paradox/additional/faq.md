@@ -98,11 +98,7 @@ to see all sent and received messages (logged at DEBUG level).
 
 ### Which options shall I enable when debugging remoting issues?
 
-Have a look at the @ref:[Remote Configuration](../remoting.md#remote-configuration), the typical candidates are:
-
- * *akka.remote.log-sent-messages*
- * *akka.remote.log-received-messages*
- * *akka.remote.log-remote-lifecycle-events* (this also includes deserialization errors)
+Have a look at the @ref:[Remote Configuration](../logging.md#auxiliary-remote-logging-options).
 
 ### What is the name of a remote actor?
 
@@ -110,16 +106,14 @@ When you want to send messages to an actor on a remote host, you need to know
 its @ref:[full path](../general/addressing.md), which is of the form:
 
 ```
-akka.protocol://system@host:1234/user/my/actor/hierarchy/path
+akka://system@host:1234/user/my/actor/hierarchy/path
 ```
 
 Observe all the parts you need here:
 
- * `protocol` is the protocol to be used to communicate with the remote system.
- Most of the cases this is *tcp*.
  * `system` is the remote system’s name (must match exactly, case-sensitive!)
  * `host` is the remote system’s IP address or DNS name, and it must match that
-system’s configuration (i.e. *akka.remote.classic.netty.tcp.hostname*)
+system’s configuration (i.e. *akka.remote.artery.canonical.hostname*)
  * `1234` is the port number on which the remote system is listening for
 connections and receiving messages
  * `/user/my/actor/hierarchy/path` is the absolute path of the remote actor in

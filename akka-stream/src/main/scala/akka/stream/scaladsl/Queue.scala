@@ -145,7 +145,7 @@ object SinkQueueWithCancel {
    */
   @InternalApi private[akka] def asJava[T](queue: SinkQueueWithCancel[T]): akka.stream.javadsl.SinkQueueWithCancel[T] =
     new akka.stream.javadsl.SinkQueueWithCancel[T] {
-      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
       override def pull(): CompletionStage[Optional[T]] =
         queue.pull().map(_.asJava)(same).toJava
       override def cancel(): Unit = queue.cancel()

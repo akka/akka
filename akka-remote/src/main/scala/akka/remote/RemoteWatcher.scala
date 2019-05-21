@@ -9,9 +9,10 @@ import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-
 import scala.collection.mutable
 import scala.concurrent.duration._
+
+import akka.dispatch.Dispatchers
 import akka.remote.artery.ArteryTransport
 import com.github.ghik.silencer.silent
 
@@ -33,7 +34,7 @@ private[akka] object RemoteWatcher {
       failureDetector,
       heartbeatInterval,
       unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+      heartbeatExpectedResponseAfter).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
 
   final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)

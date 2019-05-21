@@ -469,8 +469,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1.
-    The old actor is informed by calling `preRestart` with the exception
+ 1. The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
 message, e.g. when a supervisor does not trap the exception and is restarted
@@ -597,7 +596,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting-artery.md#looking-up-remote-actors).
 
 ## Messages and immutability
 

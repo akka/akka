@@ -24,14 +24,14 @@ object PriorityDispatcherSpec {
 
   class Unbounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends UnboundedPriorityMailbox(PriorityGenerator({
-        case i: Int  => i //Reverse order
-        case 'Result => Int.MaxValue
+        case i: Int   => i //Reverse order
+        case "Result" => Int.MaxValue
       }: Any => Int))
 
   class Bounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends BoundedPriorityMailbox(PriorityGenerator({
-        case i: Int  => i //Reverse order
-        case 'Result => Int.MaxValue
+        case i: Int   => i //Reverse order
+        case "Result" => Int.MaxValue
       }: Any => Int), 1000, 10 seconds)
 
 }
@@ -66,11 +66,11 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
           self ! m
         }
 
-        self.tell('Result, testActor)
+        self.tell("Result", testActor)
 
         def receive = {
-          case i: Int  => acc += i
-          case 'Result => sender() ! acc.toList
+          case i: Int   => acc += i
+          case "Result" => sender() ! acc.toList
         }
       }).withDispatcher(dispatcherKey))
 

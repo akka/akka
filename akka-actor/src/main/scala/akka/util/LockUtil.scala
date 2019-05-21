@@ -4,8 +4,8 @@
 
 package akka.util
 
-import java.util.concurrent.locks.{ ReentrantLock }
-import java.util.concurrent.atomic.{ AtomicBoolean }
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.atomic.AtomicBoolean
 
 final class ReentrantGuard extends ReentrantLock {
 
