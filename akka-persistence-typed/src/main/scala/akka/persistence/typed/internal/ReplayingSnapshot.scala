@@ -7,7 +7,7 @@ package akka.persistence.typed.internal
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.annotation.{ InternalApi, StableInternalApi }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence._
@@ -90,7 +90,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     Behaviors.stopped
   }
 
-  @StableInternalApi
+  @InternalStableApi
   def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = {}
 
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =

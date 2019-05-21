@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
-import akka.annotation.{ InternalApi, StableInternalApi }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
@@ -184,7 +184,7 @@ private[persistence] trait Eventsourced
    * @param cause failure cause.
    * @param event the event that was to be persisted
    */
-  @StableInternalApi
+  @InternalStableApi
   protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.error(
       cause,
@@ -202,7 +202,7 @@ private[persistence] trait Eventsourced
    * @param cause failure cause
    * @param event the event that was to be persisted
    */
-  @StableInternalApi
+  @InternalStableApi
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.error(
       cause,

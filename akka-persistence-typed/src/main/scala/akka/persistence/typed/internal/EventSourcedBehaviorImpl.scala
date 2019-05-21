@@ -16,7 +16,7 @@ import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.{ InternalApi, StableInternalApi }
+import akka.annotation._
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
@@ -161,7 +161,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       .onFailure[JournalFailureException](supervisionStrategy)
   }
 
-  @StableInternalApi
+  @InternalStableApi
   private[akka] def initialize(@unused context: ActorContext[_]): Unit = {}
 
   override def receiveSignal(

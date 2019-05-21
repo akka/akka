@@ -9,7 +9,7 @@ import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
-import akka.annotation.{ InternalApi, StableInternalApi }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
@@ -70,11 +70,11 @@ private[akka] final class ReplayingEvents[C, E, S](
   replayEvents(state.seqNr + 1L, state.toSeqNr)
   onRecoveryStart(setup.context)
 
-  @StableInternalApi
+  @InternalStableApi
   def onRecoveryStart(@unused context: ActorContext[_]): Unit = {}
-  @StableInternalApi
+  @InternalStableApi
   def onRecoveryComplete(@unused context: ActorContext[_]): Unit = {}
-  @StableInternalApi
+  @InternalStableApi
   def onRecoveryFailed(
       @unused context: ActorContext[_],
       @unused reason: Throwable,

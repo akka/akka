@@ -11,7 +11,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
-import akka.annotation.{ InternalApi, StableInternalApi }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotFailure
@@ -508,13 +508,13 @@ private[akka] object Running {
     }
   }
 
-  @StableInternalApi
+  @InternalStableApi
   private[akka] def onWriteFailed(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
       @unused event: Any,
       @unused sequenceNr: Long): Unit = {}
-  @StableInternalApi
+  @InternalStableApi
   private[akka] def onWriteRejected(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
