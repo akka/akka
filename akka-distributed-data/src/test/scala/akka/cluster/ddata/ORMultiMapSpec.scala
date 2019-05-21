@@ -551,7 +551,7 @@ class ORMultiMapSpec extends WordSpec with Matchers {
   }
 
   "have unapply extractor" in {
-    val m1 = ORMultiMap.empty[String, Long].put(node1, "a", Set(1L, 2L)).put(node2, "b", Set(3L))
+    val m1 = ORMultiMap.empty.put(node1, "a", Set(1L, 2L)).put(node2, "b", Set(3L))
     val _: ORMultiMap[String, Long] = m1
     val ORMultiMap(entries1) = m1
     val entries2: Map[String, Set[Long]] = entries1
