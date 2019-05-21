@@ -179,7 +179,7 @@ final class ReplicatorSettings(
       deltaCrdtEnabled: Boolean,
       maxDeltaSize: Int) =
     this(
-      role.toSet,
+      role.iterator.toSet,
       gossipInterval,
       notifySubscribersInterval,
       maxDeltaElements,
@@ -203,7 +203,7 @@ final class ReplicatorSettings(
       pruningInterval: FiniteDuration,
       maxPruningDissemination: FiniteDuration) =
     this(
-      roles = role.toSet,
+      roles = role.iterator.toSet,
       gossipInterval,
       notifySubscribersInterval,
       maxDeltaElements,
@@ -272,9 +272,9 @@ final class ReplicatorSettings(
       deltaCrdtEnabled,
       200)
 
-  def withRole(role: String): ReplicatorSettings = copy(roles = ReplicatorSettings.roleOption(role).toSet)
+  def withRole(role: String): ReplicatorSettings = copy(roles = ReplicatorSettings.roleOption(role).iterator.toSet)
 
-  def withRole(role: Option[String]): ReplicatorSettings = copy(roles = role.toSet)
+  def withRole(role: Option[String]): ReplicatorSettings = copy(roles = role.iterator.toSet)
 
   @varargs
   def withRoles(roles: String*): ReplicatorSettings = copy(roles = roles.toSet)
