@@ -236,10 +236,11 @@ The above configuration will result in `akka-dns` first being checked and if it 
 targets for the given service name then `config` is queried which i configured with one service called
 `service1` which two hosts `host1` and `host2`.
 
-## Migrating from Akka Management Discovery 
+## Migrating from Akka Management Discovery (before 1.0.0)
 
-Akka Discovery is not compatible with older versions of Akka Management Discovery. At least version `1.0.0` of
-any Akka Management module should be used if also using Akka Discovery.
+Akka Discovery started out as a submodule of Akka Management, before 1.0.0 of Akka Management. Akka Discovery is not compatible with those versions of Akka Management Discovery.
+
+At least version `1.0.0` of any Akka Management module should be used if also using Akka Discovery.
 
 Migration steps:
 
