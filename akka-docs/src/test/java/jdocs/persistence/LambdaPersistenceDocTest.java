@@ -87,16 +87,16 @@ public class LambdaPersistenceDocTest {
           }
 
           // FIXME workaround for https://github.com/scala/bug/issues/11512
-          @Override
-          public boolean recoveryRunning() {
-            return super.recoveryRunning();
-          }
+          // @Override
+          // public boolean recoveryRunning() {
+          //  return super.recoveryRunning();
+          // }
 
           // FIXME workaround for https://github.com/scala/bug/issues/11512
-          @Override
-          public boolean recoveryFinished() {
-            return super.recoveryFinished();
-          }
+          // @Override
+          // public boolean recoveryFinished() {
+          //  return super.recoveryFinished();
+          // }
         }
 
         // #recovery-completed

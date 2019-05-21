@@ -15,7 +15,6 @@ import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
-// FIXME workaround for https://github.com/scala/bug/issues/11512
 import org.scalatest.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
