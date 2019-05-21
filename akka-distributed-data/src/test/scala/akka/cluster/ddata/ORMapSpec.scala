@@ -174,9 +174,7 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas" in {
-      val m1 = ORMap.empty
-        .put(node1, "a", GSet.empty + "A")
-        .put(node1, "b", GSet.empty + "B")
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node1, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
 
       val merged1 = m1.merge(m2)
@@ -200,9 +198,7 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 2" in {
-      val m1 = ORMap.empty
-        .put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
       val merged1 = m1.merge(m2)
@@ -226,9 +222,7 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 3" in {
-      val m1 = ORMap.empty
-        .put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
       val merged1 = m1.merge(m2)
@@ -252,9 +246,7 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 4" in {
-      val m1 = ORMap.empty
-        .put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
       val merged1 = m1.merge(m2)
@@ -302,9 +294,7 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 6" in {
-      val m1 = ORMap.empty
-        .put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "b", ORSet.empty.add(node2, "B3"))
 
       val merged1 = m1.merge(m2)
@@ -333,9 +323,7 @@ class ORMapSpec extends WordSpec with Matchers {
         .put(node1, "a", ORSet.empty.add(node1, "A"))
         .put(node1, "b", ORSet.empty.add(node1, "B1"))
         .remove(node1, "b")
-      val m2 = ORMap.empty
-        .put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B2"))
+      val m2 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B2"))
       val m2d = m2.resetDelta.remove(node1, "b")
       val m2u = m2.resetDelta
         .updated(node1, "b", ORSet.empty[String])(_.add(node1, "B3"))
@@ -401,9 +389,7 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 10" in {
-      val m1 = ORMap.empty
-        .put(node2, "a", GSet.empty + "A")
-        .put(node2, "b", GSet.empty + "B")
+      val m1 = ORMap.empty.put(node2, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
 
       val m3 = m1.resetDelta.remove(node2, "b")
       val m4 = m3.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
@@ -437,9 +423,7 @@ class ORMapSpec extends WordSpec with Matchers {
       // please note that the current ORMultiMap has the same anomaly
       // because the condition of keeping global vvector is violated
       // by removal of the whole entry for the removed key "b" which results in removal of it's value's vvector
-      val m1 = ORMap.empty
-        .put(node1, "a", ORSet.empty.add(node1, "A"))
-        .put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
       val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
 
       // m1 - node1 gets the update from m2
