@@ -51,6 +51,7 @@ object EventSourcedBehavior {
       commandHandler: (State, Command) => Effect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
     val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
+
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 

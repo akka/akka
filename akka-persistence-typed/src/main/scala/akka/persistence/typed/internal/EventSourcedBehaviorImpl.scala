@@ -16,7 +16,7 @@ import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, StableInternalApi }
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
@@ -105,6 +105,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         ctx.log.warning("Failed to delete events to sequence number [{}] due to [{}].", toSequenceNr, failure)
     }
 
+    // do this once, even if the actor is restarted
+    initialize(context.asScala)
+
     Behaviors
       .supervise {
         Behaviors.setup[Command] { _ =>
@@ -157,6 +160,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       }
       .onFailure[JournalFailureException](supervisionStrategy)
   }
+
+  @StableInternalApi
+  private[akka] def initialize(context: ActorContext[_]) {}
 
   override def receiveSignal(
       handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =

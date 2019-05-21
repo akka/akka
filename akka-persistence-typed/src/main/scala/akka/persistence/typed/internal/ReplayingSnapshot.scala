@@ -6,11 +6,12 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.annotation.{ InternalApi, StableInternalApi }
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence._
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -83,10 +84,14 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
    * @param cause failure cause.
    */
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
+    onRecoveryFailed(setup.context, cause)
     setup.cancelRecoveryTimer()
     setup.log.error(cause, s"Persistence failure when replaying snapshot. ${cause.getMessage}")
     Behaviors.stopped
   }
+
+  @StableInternalApi
+  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = {}
 
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {
