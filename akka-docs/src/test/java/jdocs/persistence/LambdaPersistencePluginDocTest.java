@@ -164,7 +164,6 @@ public class LambdaPersistencePluginDocTest {
 
   static Object o4 =
       new Object() {
-        // https://github.com/akka/akka/issues/26826
         // #journal-tck-before-after-java
         class MyJournalSpecTest extends JavaJournalSpec {
 
