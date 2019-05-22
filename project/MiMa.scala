@@ -12,7 +12,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 22
+  private val latestPatchOf25 = 23
   // No 2.6 has been released yet. Update to '0' after releasing 2.6.0
   private val latestPatchOf26 = -1
 

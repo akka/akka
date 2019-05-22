@@ -12,9 +12,5 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.Connect
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.OutgoingConnectionStage.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.MergeHub#MergedSourceLogic.this")
 
-# #25045 adding Java/Scala interop to SourceQueue and SinkQueue
-ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")
-ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SourceQueueAdapter")
-
 # 26896 JavaDSL FlowWithContext
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.FlowWithContext.this")

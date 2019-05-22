@@ -98,3 +98,7 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPubl
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
 
+# #25045 adding Java/Scala interop to SourceQueue and SinkQueue
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SourceQueueAdapter")
+
