@@ -255,8 +255,6 @@ private[akka] object Running {
       }
     }
 
-
-
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled) {
         setup.log.debug("Received Journal response: {} after: {} nanos", response, System.nanoTime() - persistStartTime)
