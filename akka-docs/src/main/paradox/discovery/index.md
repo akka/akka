@@ -59,7 +59,7 @@ Port can be used when a service opens multiple ports e.g. a HTTP port and an Akk
 
 DNS discovery maps `Lookup` queries as follows:
 
-* `serviceName`, `portName` and `protocol` set: SRV query in the form: `_port._protocol._name` Where the `_`s are added.
+* `serviceName`, `portName` and `protocol` set: SRV query in the form: `_port._protocol.name` Where the `_`s are added.
 * Any query  missing any of the fields is mapped to a A/AAAA query for the `serviceName`
 
 The mapping between Akka service discovery terminology and SRV terminology:
