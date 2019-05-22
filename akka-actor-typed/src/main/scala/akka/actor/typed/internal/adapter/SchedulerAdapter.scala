@@ -16,7 +16,8 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
-@InternalApi final class SchedulerAdapter(untypedScheduler: akka.actor.Scheduler) extends Scheduler {
+@InternalApi
+private[akka] final class SchedulerAdapter(private[akka] val untypedScheduler: akka.actor.Scheduler) extends Scheduler {
   override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
     untypedScheduler.scheduleOnce(delay, runnable)
