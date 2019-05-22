@@ -176,7 +176,7 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param cause failure cause.
    * @param event the event that was being processed when the exception was thrown
    */
-  private[akka] def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+  private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
     onRecoveryFailed(setup.context, cause, event)
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
@@ -201,7 +201,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     throw new JournalFailureException(msg, cause)
   }
 
-  private[akka] def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
+  private def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")

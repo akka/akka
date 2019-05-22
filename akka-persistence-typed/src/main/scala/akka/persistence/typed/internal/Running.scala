@@ -255,11 +255,7 @@ private[akka] object Running {
       }
     }
 
-    private[akka] def onWriteComplete(persistenceId: String, startTime: Long, endTime: Long): Unit = {
-      if (setup.log.isDebugEnabled) {
-        setup.log.debug("writeComplete for persistenceId {}. Took {} nanos", persistenceId, endTime - startTime)
-      }
-    }
+
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled) {
@@ -273,7 +269,6 @@ private[akka] object Running {
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) this
         else {
-          onWriteComplete(setup.persistenceId.id, persistStartTime, System.nanoTime())
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
             tryUnstashOne(applySideEffects(sideEffects, state))
