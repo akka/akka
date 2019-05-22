@@ -13,7 +13,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * The ActorSystem facility for scheduling tasks.
  *
- * For user scheduling needs `Behaviors.withTimers` should be preferred.
+ * For scheduling within actors `Behaviors.withTimers` should be preferred.
  *
  * Not for user extension
  */
@@ -28,7 +28,7 @@ trait Scheduler {
    * @throws IllegalArgumentException if the given delays exceed the maximum
    * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
    *
-   * Note: For user scheduling needs `Behaviors.withTimers` should be preferred.
+   * Note: For scheduling within actors `Behaviors.withTimers` or `ActorContext.scheduleOnce` should be preferred.
    *
    * Scala API
    */
@@ -41,7 +41,7 @@ trait Scheduler {
    * @throws IllegalArgumentException if the given delays exceed the maximum
    * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
    *
-   * Note: For user scheduling needs `Behaviors.withTimers` should be preferred.
+   * Note: For scheduling within actors `Behaviors.withTimers` or `ActorContext.scheduleOnce` should be preferred.
    *
    * Java API
    */
@@ -68,7 +68,7 @@ trait Scheduler {
    *
    * Scala API
    */
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
+  def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable
 
   /**
@@ -92,7 +92,7 @@ trait Scheduler {
    *
    * Java API
    */
-  def schedule(
+  def scheduleAtFixedRate(
       initialDelay: java.time.Duration,
       interval: java.time.Duration,
       runnable: Runnable,

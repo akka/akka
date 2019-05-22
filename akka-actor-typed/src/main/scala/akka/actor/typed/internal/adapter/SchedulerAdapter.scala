@@ -24,11 +24,11 @@ import scala.concurrent.duration.FiniteDuration
   override def scheduleOnce(delay: Duration, runnable: Runnable, executor: ExecutionContext): Cancellable =
     untypedScheduler.scheduleOnce(delay, runnable)(executor)
 
-  override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
+  override def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
     untypedScheduler.schedule(initialDelay, interval, runnable)
 
-  override def schedule(
+  override def scheduleAtFixedRate(
       initialDelay: Duration,
       interval: Duration,
       runnable: Runnable,
