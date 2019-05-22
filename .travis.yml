@@ -40,3 +40,10 @@ env:
   global:
     # encrypt with: travis encrypt WHITESOURCE_KEY=...
     - secure: "L/wJ7TbgY+oPULgbv+giFZejnQERfv/8/9Ex/nwRni8qnpxw5Q6BqB86Sch6b79irQiOdb+hr2tq3/m3KzXjC58xppRPfnmXsu3yI9XAln9WPi/sPvqUL8WPJmRfGswAw3L8w2JdD9VBP4iv0dWpRghGD27iqgipVRdN62PU+nU="
+
+# safelist
+branches:
+  only:
+  - master
+  - release-2.5
+  - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
