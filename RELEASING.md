@@ -52,23 +52,26 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
  * go to the [Milestones tab](https://github.com/akka/akka/milestones)
  * move all open issues so that this milestone contains completed work only
  * close that milestone
+ * create a new milestone for next patch version
 
-* In case of a new major release:
+* In case of a new minor release:
  * update the branch descriptions at CONTRIBUTING.md#branches-summary
+ * write blog post for akka.io and lightbend.com
 
 * Create an announcement as a PR against akka/akka.github.com .
   * credits can be generated with `scripts/authors.scala v2.3.5 v2.3.6`
   * also update the `latest` variable in `_config.yml`.
 
-* Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
-
 Now wait until all artifacts have been properly propagated. Then:
+
+* Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
 
 * Change the symbolic links from 'current': `ssh akkarepo@gustav.akka.io ./update-akka-current-version.sh <x.y.z>`
 
-* Merge the release announcement
+* Publish the release announcement
 * Tweet about it
-* Post about it on Gitter and Discuss
+* Post about it on Discuss
+* Post about it on Gitter
 
 ## Update references
 
