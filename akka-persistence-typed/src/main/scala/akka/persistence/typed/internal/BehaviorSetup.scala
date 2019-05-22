@@ -95,14 +95,12 @@ private[akka] final class BehaviorSetup[C, E, S](
     implicit val ec: ExecutionContext = context.executionContext
     val timer =
       if (snapshot)
-        context.system.scheduler
-          .scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped, RecoveryTickEvent(snapshot = true))
+        context.scheduleOnce(settings.recoveryEventTimeout, context.self, RecoveryTickEvent(snapshot = true))
       else
         context.system.scheduler.scheduleAtFixedRate(
           settings.recoveryEventTimeout,
           settings.recoveryEventTimeout,
-          context.self.toUntyped,
-          RecoveryTickEvent(snapshot = false))
+          () => context.self ! RecoveryTickEvent(snapshot = false))
     recoveryTimer = OptionVal.Some(timer)
   }
 
