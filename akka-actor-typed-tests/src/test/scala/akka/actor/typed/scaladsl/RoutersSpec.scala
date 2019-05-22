@@ -27,7 +27,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
   def compileOnlyApiCoverage(): Unit = {
     Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
 
-    Routers.pool(10)(() => Behavior.empty[Any]).withRandomRouting().withRoundRobinRouting()
+    Routers.pool(10)(() => Behavior.empty[Any]).withRandomRouting()
+    Routers.pool(10)(() => Behavior.empty[Any]).withRoundRobinRouting()
   }
 
   "The router pool" must {
