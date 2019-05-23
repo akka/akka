@@ -211,6 +211,7 @@ lazy val docs = akkaModule("akka-docs")
         "scala.version" -> scalaVersion.value,
         "scala.binary_version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
+        "scalatest.version" -> Dependencies.scalaTestVersion.value,
         "sigar_loader.version" -> "1.6.6-rev002",
         "algolia.docsearch.api_key" -> "543bad5ad786495d9ccd445ed34ed082",
         "algolia.docsearch.index_name" -> "akka_io",
