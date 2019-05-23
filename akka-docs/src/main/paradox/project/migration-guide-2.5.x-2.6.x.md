@@ -56,7 +56,7 @@ The reason for phasing out the old `TypedActor` is mostly that it doesn't match 
 of implementing and interacting with actors. They use transparent remoting, which we believe is a bad idea.
 Transparent remoting is when you try to make remote method invocations look like local calls. In contrast we
 believe in location transparency with explicit messaging between actors (same type of messaging for both local
-and remote actors).
+There are several reasons for phasing out the old `TypedActor`. The primary reason is they use transparent remoting which is not our recommended way of implementing and interacting with actors. Transparent remoting is when you try to make remote method invocations look like local calls. In contrast we believe in location transparency with explicit messaging between actors (same type of messaging for both local and remote actors). They also have limited functionality compared to ordinary actors, and worse performance.
 
 To summarize the fallacy of transparent remoting:
 * Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
