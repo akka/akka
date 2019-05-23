@@ -64,7 +64,7 @@ To summarize the fallacy of transparent remoting:
   Typically handled by using timeouts but the client can't always know the result of the call.
 * Latency of calls over a network are several order of magnitudes longer than latency of local calls,
   which can be more than surprising if encoded as an innocent looking local method call.
-* Remote invocations also have much lower throughput due to the need of serializing the
+* Remote invocations have much lower throughput due to the need of serializing the
   data and you can't just pass huge datasets in the same way.
 
 Therefore explicit message passing is a good thing. It looks different from local method calls
