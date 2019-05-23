@@ -42,3 +42,6 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.Mailbox")
 ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.BalancingDispatcher$SharingMailbox")
 ProblemFilters.exclude[MissingTypesProblem]("akka.dispatch.MonitorableThreadFactory$AkkaForkJoinWorkerThread")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.MonitorableThreadFactory#AkkaForkJoinWorkerThread.this")
+
+# Better indicator of ActorRefProvider implementation selection #27009
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ProviderSelection.this")
