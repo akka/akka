@@ -91,7 +91,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   }
 
   @InternalStableApi
-  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = {}
+  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = ()
 
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {

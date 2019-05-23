@@ -508,12 +508,12 @@ private[akka] object Running {
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
       @unused event: Any,
-      @unused sequenceNr: Long): Unit = {}
+      @unused sequenceNr: Long): Unit = ()
   @InternalStableApi
   private[akka] def onWriteRejected(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
       @unused event: Any,
-      @unused sequenceNr: Long): Unit = {}
+      @unused sequenceNr: Long): Unit = ()
 
 }

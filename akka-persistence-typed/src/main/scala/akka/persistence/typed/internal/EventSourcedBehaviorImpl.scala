@@ -162,7 +162,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   }
 
   @InternalStableApi
-  private[akka] def initialize(@unused context: ActorContext[_]): Unit = {}
+  private[akka] def initialize(@unused context: ActorContext[_]): Unit = ()
 
   override def receiveSignal(
       handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =

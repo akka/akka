@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.util.control.NonFatal
+import scala.concurrent.duration._
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
@@ -18,6 +19,7 @@ import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.util.unused
+import akka.util.PrettyDuration._
 
 /***
  * INTERNAL API
@@ -71,14 +73,12 @@ private[akka] final class ReplayingEvents[C, E, S](
   onRecoveryStart(setup.context)
 
   @InternalStableApi
-  def onRecoveryStart(@unused context: ActorContext[_]): Unit = {}
+  def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
   @InternalStableApi
-  def onRecoveryComplete(@unused context: ActorContext[_]): Unit = {}
+  def onRecoveryComplete(@unused context: ActorContext[_]): Unit = ()
   @InternalStableApi
-  def onRecoveryFailed(
-      @unused context: ActorContext[_],
-      @unused reason: Throwable,
-      @unused event: Option[Any]): Unit = {}
+  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable, @unused event: Option[Any]): Unit =
+    ()
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
@@ -183,9 +183,9 @@ private[akka] final class ReplayingEvents[C, E, S](
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
     if (setup.log.isDebugEnabled) {
       setup.log.debug(
-        "Recovery failure for persitsenceId {} after {} nanos",
+        "Recovery failure for persistenceId [{}] after {}",
         setup.persistenceId,
-        System.nanoTime() - state.recoveryStartTime)
+        (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
     }
     val sequenceNr = state.seqNr
 
@@ -207,9 +207,9 @@ private[akka] final class ReplayingEvents[C, E, S](
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.log.isDebugEnabled) {
         setup.log.debug(
-          "Recovery for persistenceId {} took {} nanos",
+          "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
-          System.nanoTime() - state.recoveryStartTime)
+          (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
       }
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 
