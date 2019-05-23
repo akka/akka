@@ -71,7 +71,7 @@ Therefore explicit message passing is a good thing. It looks different from loca
 (@scala[`actorRef ! message`]@java[`actorRef.tell(message)`]) and there is no misconception that
 sending a message will result in that it's processed instantaneously. The goal of location transparency
 is to unify message passing for both local and remote interactions, but it doesn't aim at making
-remote interactions look like local method calls.
+Therefore explicit message passing is preferred. It looks different from local method calls (@scala[`actorRef ! message`]@java[`actorRef.tell(message)`]) and there is no misconception that sending a message will result in it being processed instantaneously. The goal of location transparency is to unify message passing for both local and remote interactions, versus attempting to make remote interactions look like local method calls.
 
 Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
 for many years.
