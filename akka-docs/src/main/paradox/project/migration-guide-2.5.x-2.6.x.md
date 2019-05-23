@@ -52,11 +52,6 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 `akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
 `akka.actor.typed` API which should be used instead.
 
-The reason for phasing out the old `TypedActor` is mostly that it doesn't match our recommended way
-of implementing and interacting with actors. They use transparent remoting, which we believe is a bad idea.
-Transparent remoting is when you try to make remote method invocations look like local calls. In contrast we
-believe in location transparency with explicit messaging between actors (same type of messaging for both local
-
 There are several reasons for phasing out the old `TypedActor`. The primary reason is they use transparent
 remoting which is not our recommended way of implementing and interacting with actors. Transparent remoting
 is when you try to make remote method invocations look like local calls. In contrast we believe in location
