@@ -23,7 +23,7 @@ object AccountExampleWithCommandHandlersInState {
   //##account-entity
   object AccountEntity {
     // Command
-    sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
+    sealed trait AccountCommand[-Reply] extends ExpectingReply[Reply]
     final case class CreateAccount()(override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
     final case class Deposit(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
@@ -120,7 +120,9 @@ object AccountExampleWithCommandHandlersInState {
     case object ClosedAccount extends Account {
       override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
         cmd match {
-          case c @ (_: Deposit | _: Withdraw) =>
+          case c: Deposit =>
+            Effect.reply(c)(Rejected("Account is closed"))
+          case c: Withdraw =>
             Effect.reply(c)(Rejected("Account is closed"))
           case c: GetBalance =>
             Effect.reply(c)(CurrentBalance(Zero))
@@ -134,8 +136,8 @@ object AccountExampleWithCommandHandlersInState {
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
-    def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
-      EventSourcedBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Account](
+    def behavior[R <: AccountCommandReply](accountNumber: String): Behavior[AccountCommand[R]] = {
+      EventSourcedBehavior.withEnforcedReplies[AccountCommand[R], AccountEvent, Account](
         PersistenceId(s"Account|$accountNumber"),
         EmptyAccount,
         (state, cmd) => state.applyCommand(cmd),
@@ -145,4 +147,18 @@ object AccountExampleWithCommandHandlersInState {
   }
   //##account-entity
 
+  import akka.actor.testkit.typed.scaladsl._
+  class AccountExampleSpec extends ScalaTestWithActorTestKit() {
+    import AccountEntity._
+
+    val behavior = AccountEntity.behavior("1")
+    val ref = spawn(behavior)
+
+    val probe = TestProbe[OperationResult]
+    ref.tell(CreateAccount()(probe.ref))
+    probe.expectMessage(Confirmed)
+
+    val probe2 = TestProbe[CurrentBalance]
+    ref.tell(GetBalance()(probe2.ref))
+  }
 }

@@ -11,6 +11,6 @@ import akka.actor.typed.ActorRef
  *
  * @tparam ReplyMessage The type of the reply message
  */
-trait ExpectingReply[ReplyMessage] {
+trait ExpectingReply[-ReplyMessage] {
   def replyTo: ActorRef[ReplyMessage]
 }
