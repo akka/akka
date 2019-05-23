@@ -197,11 +197,23 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ### Receptionist has moved
 
 The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
-instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`. 
+instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`.
 
-The path change makes it impossible to do a rolling upgrade from 2.5 to 2.6 if you use Akka Typed and the receptionist
-as the old and the new nodes receptionists will not be able to communicate.
+The path change means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
+it will work properly again.
 
+### Cluster Receptionist using own Distributed Data
+
+In 2.5 the Cluster Receptionist was using the shared Distributed Data extension but that could result in
+undesired configuration changes if the application was also using that and changed for example the `role`
+configuration.
+
+In 2.6 the Cluster Receptionist is using it's own independent instance of Distributed Data.
+
+This means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
+it will work properly again.
 
 ### Akka Typed API changes
 
