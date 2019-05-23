@@ -34,8 +34,8 @@ object Routers {
    * Note that if a child stops, there is a slight chance that messages still get delivered to it, and get lost,
    * before the pool sees that the child stopped. Therefore it is best to _not_ stop children arbitrarily.
    */
-  def pool[T](poolSize: Int)(behavior: Behavior[T]): PoolRouter[T] =
-    new PoolRouterBuilder[T](poolSize, behavior)
+  def pool[T](poolSize: Int)(behaviorFactory: () => Behavior[T]): PoolRouter[T] =
+    new PoolRouterBuilder[T](poolSize, behaviorFactory)
 
 }
 
