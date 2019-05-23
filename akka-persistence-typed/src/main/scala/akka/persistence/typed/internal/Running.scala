@@ -285,13 +285,15 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            onWriteRejected(setup.context, cause, p.payload, currentSequenceNumber)
+            // current + 1 as it is the inflight event that that has failed
+            onWriteRejected(setup.context, cause, p.payload, currentSequenceNumber + 1)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            onWriteFailed(setup.context, cause, p.payload, currentSequenceNumber)
+            // current + 1 as it is the inflight event that that has failed
+            onWriteFailed(setup.context, cause, p.payload, currentSequenceNumber + 1)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
 
