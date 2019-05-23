@@ -18,7 +18,7 @@ import akka.annotation.InternalApi
  * produces a warning, and not using a parameter marked @unused does not
  * produce an 'unused parameter' warning.
  *
- * Extending 'deprecated' is deprecated in Scala 2.13 and scheduled to be
+ * This approach is deprecated in Scala 2.13 and scheduled to be
  * removed in 2.14. Perhaps we should promote introducing an `@unused`
  * to Scala? https://contributors.scala-lang.org/t/more-error-reporting-annotations/1681/7
  *
