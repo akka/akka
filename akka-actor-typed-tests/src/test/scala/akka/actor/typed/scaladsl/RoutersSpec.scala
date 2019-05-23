@@ -135,9 +135,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
       val group = spawn(Routers.group(serviceKey), "group-router-1")
 
-      // give the group a little time to get a listing from the receptionist
-      Thread.sleep(receptionistDelayMs)
-
+      // ok to do right away
       (0 to 3).foreach { n =>
         val msg = s"message-$n"
         group ! msg
