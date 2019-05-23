@@ -27,11 +27,7 @@ abstract class Receptionist extends Extension {
  */
 @InternalApi private[akka] class ReceptionistImpl(system: ActorSystem[_]) extends Receptionist {
 
-  private def hasCluster: Boolean = {
-    // FIXME: replace with better indicator that cluster is enabled
-    val provider = system.settings.untypedSettings.ProviderClass
-    provider == "akka.cluster.ClusterActorRefProvider"
-  }
+  private def hasCluster: Boolean = system.settings.untypedSettings.ProviderSelectionType.isCluster
 
   override val ref: ActorRef[Receptionist.Command] = {
     val provider: ReceptionistBehaviorProvider =

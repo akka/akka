@@ -82,11 +82,28 @@ object BootstrapSetup {
 
 }
 
-abstract class ProviderSelection private (private[akka] val identifier: String)
+/**
+ * @param identifier the simple name of the selected provider
+ * @param fqcn the fully-qualified class name of the selected provider
+ */
+abstract class ProviderSelection private (private[akka] val identifier: String, private[akka] val fqcn: String) {
+
+  /** INTERNAL API */
+  @InternalApi private[akka] def isCluster: Boolean =
+    this match {
+      case ProviderSelection.Cluster => true
+      case _                         => false
+    }
+}
 object ProviderSelection {
-  case object Local extends ProviderSelection("local")
-  case object Remote extends ProviderSelection("remote")
-  case object Cluster extends ProviderSelection("cluster")
+  private[akka] val RemoteActorRefProvider = "akka.remote.RemoteActorRefProvider"
+  private[akka] val ClusterActorRefProvider = "akka.cluster.ClusterActorRefProvider"
+
+  case object Local extends ProviderSelection("local", classOf[LocalActorRefProvider].getName)
+  // these two cannot be referenced by class as they may not be on the classpath
+  case object Remote extends ProviderSelection("remote", RemoteActorRefProvider)
+  case object Cluster extends ProviderSelection("cluster", ClusterActorRefProvider)
+  final case class Custom(override val fqcn: String) extends ProviderSelection("custom", fqcn)
 
   /**
    * JAVA API
@@ -103,6 +120,15 @@ object ProviderSelection {
    */
   def cluster(): ProviderSelection = Cluster
 
+  /** INTERNAL API */
+  @InternalApi private[akka] def apply(providerClass: String): ProviderSelection =
+    providerClass match {
+      case "local" => Local
+      // additional fqcn for older configs not using 'remote' or 'cluster'
+      case "remote" | RemoteActorRefProvider   => Remote
+      case "cluster" | ClusterActorRefProvider => Cluster
+      case fqcn                                => Custom(fqcn)
+    }
 }
 
 /**
@@ -331,18 +357,16 @@ object ActorSystem {
     import config._
 
     final val ConfigVersion: String = getString("akka.version")
-    final val ProviderClass: String =
-      setup
-        .get[BootstrapSetup]
-        .flatMap(_.actorRefProvider)
-        .map(_.identifier)
-        .getOrElse(getString("akka.actor.provider")) match {
-        case "local" => classOf[LocalActorRefProvider].getName
-        // these two cannot be referenced by class as they may not be on the classpath
-        case "remote"  => "akka.remote.RemoteActorRefProvider"
-        case "cluster" => "akka.cluster.ClusterActorRefProvider"
-        case fqcn      => fqcn
-      }
+
+    private final val providerSelectionSetup = setup
+      .get[BootstrapSetup]
+      .flatMap(_.actorRefProvider)
+      .map(_.identifier)
+      .getOrElse(getString("akka.actor.provider"))
+
+    final val ProviderSelectionType: ProviderSelection = ProviderSelection(providerSelectionSetup)
+
+    final val ProviderClass: String = ProviderSelectionType.fqcn
 
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
