@@ -62,7 +62,7 @@ To summarize the fallacy of transparent remoting:
 * Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
 * Partial failure is a major problem. Remote calls introduce uncertainty whether the function was invoked or not.
   Typically handled by using timeouts but the client can't always know the result of the call.
-* Latency of calls over network have several order of magnitudes longer latency than local calls,
+* Latency of calls over a network are several order of magnitudes longer than latency of local calls,
   which can be more than surprising if encoded as an innocent looking local method call.
 * Remote invocations also have much lower throughput due to the need of serializing the
   data and you can't just pass huge datasets in the same way.
