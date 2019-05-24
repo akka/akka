@@ -365,7 +365,6 @@ lazy val testkit = akkaModule("akka-testkit")
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=
@@ -377,7 +376,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       import akka.util.Timeout
       implicit val timeout = Timeout(5.seconds)
     """)
-  .disablePlugins(MimaPlugin)
+  .disablePlugins(MimaPlugin) // remove before RC?
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -387,10 +386,9 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     actorTypedTests % "test->test",
     actorTestkitTyped % "compile->compile;test->test")
   .settings(Dependencies.persistenceShared)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
-  .disablePlugins(MimaPlugin)
+
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
@@ -404,7 +402,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
@@ -419,7 +416,6 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
     remoteTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
@@ -434,9 +430,8 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     streamTestkit % "test->test",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
-  .settings(AutomaticModuleName.settings("akka.stream.typed"))
-  .disablePlugins(MimaPlugin)
+  .settings(AutomaticModuleName.settings("akka.stream.typed"))  
+  .disablePlugins(MimaPlugin) // remove before RC?
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
