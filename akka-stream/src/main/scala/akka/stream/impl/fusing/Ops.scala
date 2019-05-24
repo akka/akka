@@ -4,35 +4,37 @@
 
 package akka.stream.impl.fusing
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-import akka.actor.{ ActorRef, Terminated }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.actor.{ActorRef, Terminated}
+import akka.annotation.{DoNotInherit, InternalApi}
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging.LogLevel
-import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.stream.Attributes.{ InputBuffer, LogLevels }
+import akka.event.{LogSource, Logging, LoggingAdapter}
+import akka.stream.Attributes.{InputBuffer, LogLevels}
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl }
 import akka.stream.scaladsl.{ DelayStrategy, Flow, Keep, Source }
 import akka.stream.stage._
-import akka.stream.{ Supervision, _ }
+import akka.stream.{Supervision, _}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{Future, Promise}
+import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.{Failure, Success, Try}
 import akka.stream.ActorAttributes.SupervisionStrategy
 
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.control.Exception.Catcher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
 import akka.util.unused
 import com.github.ghik.silencer.silent
+import akka.stream.impl.fusing.RecoverWithBackoff._
 
 /**
  * INTERNAL API
@@ -2008,6 +2010,94 @@ private[stream] object Collect {
   }
 
   override def toString: String = "RecoverWith"
+}
+
+object RecoverWithBackoff {
+  private[akka] case class RetryContainer(ex: Throwable, id: UUID = UUID.randomUUID)
+
+  sealed trait RetryBackoffStrategy
+  case object Exponential extends RetryBackoffStrategy
+  case object Linear extends RetryBackoffStrategy
+}
+
+/**
+  * INTERNAL API
+  */
+@InternalApi private[akka] final class RecoverWithBackoff[T, M](val maximumAttempts: Int,
+                                                                val initialRetryTimeout: FiniteDuration,
+                                                                val backoffStrategy: RetryBackoffStrategy,
+                                                                val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]])
+  extends SimpleLinearGraphStage[T] {
+
+  override def toString: String = "RecoverWithBackoff"
+
+  override def createLogic(attr: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with StageLogging {
+    var attempt = 0
+
+    setHandler(
+      in,
+      new InHandler {
+        override def onPush(): Unit = {
+          val elem = grab(in)
+          push(out, elem)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
+      }
+    )
+
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+
+    override protected def onTimer(timerKey: Any): Unit = {
+      val key = timerKey.asInstanceOf[RetryContainer]
+      switchTo(key)
+    }
+
+    def onFailure(ex: Throwable): Unit =
+      if ((maximumAttempts < 0 || attempt < maximumAttempts) && pf.isDefinedAt(ex)) {
+        attempt += 1
+
+        val delay =
+          backoffStrategy match {
+            case Exponential => initialRetryTimeout * Math.pow(2, attempt - 1).toInt
+            case Linear => initialRetryTimeout * attempt
+          }
+        log.debug(s"Retry attempt $attempt for exception $ex to be scheduled after $delay ${delay.unit}")
+
+        scheduleOnce(RetryContainer(ex), delay)
+      } else {
+        failStage(ex)
+      }
+
+    def switchTo(key: RetryContainer): Unit = {
+      val sinkIn = new SubSinkInlet[T]("RecoverWithBackoffSink")
+
+      sinkIn.setHandler(new InHandler {
+        override def onPush(): Unit = {
+          val elem = sinkIn.grab()
+          push(out, elem)
+        }
+
+        override def onUpstreamFinish(): Unit = completeStage()
+
+        override def onUpstreamFailure(ex: Throwable): Unit = onFailure(ex)
+      })
+
+      val outHandler = new OutHandler {
+        override def onPull(): Unit = sinkIn.pull()
+
+        override def onDownstreamFinish(cause: Throwable): Unit = sinkIn.cancel(cause)
+      }
+
+      Source.fromGraph(pf(key.ex)).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+      setHandler(out, outHandler)
+      if (isAvailable(out)) {
+        sinkIn.pull()
+      }
+    }
+  }
 }
 
 /**
