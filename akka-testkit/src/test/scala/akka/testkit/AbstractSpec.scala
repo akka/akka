@@ -9,4 +9,4 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
 // we could migrate AkkaSpec to extend this
-class AbstractSpec extends WordSpecLike with Matchers with BeforeAndAfterEach
+abstract class AbstractSpec extends WordSpecLike with Matchers with BeforeAndAfterEach
