@@ -75,7 +75,7 @@ final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, L
    * Java API: All entries of the map.
    */
   def getEntries(): java.util.Map[A, B] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     entries.asJava
   }
 

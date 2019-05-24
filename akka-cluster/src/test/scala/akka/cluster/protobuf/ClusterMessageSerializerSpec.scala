@@ -14,7 +14,7 @@ import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
-
+@silent
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -148,8 +148,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
             pool.settings.totalInstances should ===(123)
             pool.settings.maxInstancesPerNode should ===(345)
             pool.settings.allowLocalRoutees should ===(true)
-            @silent
-            val _ = pool.settings.useRole should ===(Some("role ABC"))
+            pool.settings.useRole should ===(Some("role ABC"))
             pool.settings.useRoles should ===(Set("role ABC"))
         }
       } finally {

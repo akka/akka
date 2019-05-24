@@ -5,7 +5,7 @@
 package akka.testkit.metrics
 
 import java.util
-import collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import java.lang.management.{ ManagementFactory, OperatingSystemMXBean }
 import com.codahale.metrics.{ Gauge, Metric, MetricSet }
 import com.codahale.metrics.MetricRegistry._

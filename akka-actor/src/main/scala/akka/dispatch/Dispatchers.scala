@@ -194,7 +194,7 @@ class Dispatchers @InternalApi private[akka] (
    * INTERNAL API
    */
   private[akka] def config(id: String, appConfig: Config): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
       .withFallback(appConfig)
@@ -203,7 +203,7 @@ class Dispatchers @InternalApi private[akka] (
   }
 
   private def idConfig(id: String): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
 

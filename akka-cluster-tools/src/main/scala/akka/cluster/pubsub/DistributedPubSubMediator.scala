@@ -236,7 +236,7 @@ object DistributedPubSubMediator {
      * Java API
      */
     def getTopics(): java.util.Set[String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       topics.asJava
     }
   }
@@ -590,14 +590,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
     case Send(path, msg, localAffinity) =>
       val routees = registry(selfAddress).content.get(path) match {
         case Some(valueHolder) if localAffinity =>
-          (for {
-            routee <- valueHolder.routee
-          } yield routee).toVector
+          valueHolder.routee.toList.toIndexedSeq
         case _ =>
           (for {
             (_, bucket) <- registry
-            valueHolder <- bucket.content.get(path).toSeq
-            routee <- valueHolder.routee.toSeq
+            valueHolder <- bucket.content.get(path).toList
+            routee <- valueHolder.routee.toList
           } yield routee).toVector
       }
 
@@ -780,8 +778,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
     val refs = for {
       (address, bucket) <- registry
       if !(allButSelf && address == selfAddress) // if we should skip sender() node and current address == self address => skip
-      valueHolder <- bucket.content.get(path).toSeq
-      ref <- valueHolder.ref.toSeq
+      valueHolder <- bucket.content.get(path).toList
+      ref <- valueHolder.ref.toList
     } yield ref
     if (refs.isEmpty) ignoreOrSendToDeadLetters(msg)
     else refs.foreach(_.forward(msg))

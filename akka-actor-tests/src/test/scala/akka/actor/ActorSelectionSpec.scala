@@ -95,7 +95,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       identify(system.child("c2").child("c21")) should ===(Some(c21)) // test Java API
       identify(system / Seq("c2", "c21")) should ===(Some(c21))
 
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       identify(system.descendant(Seq("c2", "c21").asJava)) // test Java API
     }
 
@@ -244,7 +244,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "return deadLetters or ActorIdentity(None), respectively, for non-existing paths" in {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
 
       def checkOne(looker: ActorRef, query: Query, result: Option[ActorRef]): Unit = {
         val lookup = askNode(looker, query)

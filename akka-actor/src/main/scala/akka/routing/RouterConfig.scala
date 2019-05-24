@@ -405,7 +405,7 @@ final case class Routees(routees: immutable.IndexedSeq[Routee]) {
    * Java API
    */
   def getRoutees: java.util.List[Routee] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     routees.asJava
   }
 }

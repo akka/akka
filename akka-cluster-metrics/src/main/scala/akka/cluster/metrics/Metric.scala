@@ -9,6 +9,8 @@ import scala.util.Success
 import scala.util.Failure
 import scala.util.Try
 
+import com.github.ghik.silencer.silent
+
 /**
  * Metrics key/value.
  *
@@ -323,6 +325,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
   /**
    * Java API
    */
+  @silent
   def getMetrics: java.lang.Iterable[Metric] =
     scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
 
