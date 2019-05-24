@@ -325,14 +325,6 @@ else
   important git push origin --tags
 fi
 
-echolog "Uploading whitesource report"
-if [ $dry_run ]; then
-  echodry "Not actually uploading whitesource report. Commands:"
-  echodry "  sbt $RELEASE_OPT whitesourceUpdate"
-else
-  important sbt $RELEASE_OPT whitesourceUpdate
-fi
-
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
