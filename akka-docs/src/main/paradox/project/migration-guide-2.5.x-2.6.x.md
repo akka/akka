@@ -50,8 +50,31 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 ### TypedActor
 
 `akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
-`akka.actor.typed` API which should be used instead. For more context on
-this deprecation [please refer to the discussion here](https://github.com/akka/akka/issues/26144).
+`akka.actor.typed` API which should be used instead.
+
+There are several reasons for phasing out the old `TypedActor`. The primary reason is they use transparent
+remoting which is not our recommended way of implementing and interacting with actors. Transparent remoting
+is when you try to make remote method invocations look like local calls. In contrast we believe in location
+transparency with explicit messaging between actors (same type of messaging for both local and remote actors).
+They also have limited functionality compared to ordinary actors, and worse performance.
+
+To summarize the fallacy of transparent remoting:
+* Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
+* Partial failure is a major problem. Remote calls introduce uncertainty whether the function was invoked or not.
+  Typically handled by using timeouts but the client can't always know the result of the call.
+* Latency of calls over a network are several order of magnitudes longer than latency of local calls,
+  which can be more than surprising if encoded as an innocent looking local method call.
+* Remote invocations have much lower throughput due to the need of serializing the
+  data and you can't just pass huge datasets in the same way.
+
+Therefore explicit message passing is preferred. It looks different from local method calls
+(@scala[`actorRef ! message`]@java[`actorRef.tell(message)`]) and there is no misconception
+that sending a message will result in it being processed instantaneously. The goal of location
+transparency is to unify message passing for both local and remote interactions, versus attempting
+to make remote interactions look like local method calls.
+
+Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
+for many years.
 
 ## Internal dispatcher introduced
 
