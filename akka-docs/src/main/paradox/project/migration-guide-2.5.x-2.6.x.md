@@ -200,6 +200,12 @@ To disable passivation you can use configuration:
 akka.cluster.sharding.passivate-idle-entity-after = off
 ```
 
+### waiting-for-state-timeout reduced to 2s
+
+This has been reduced to speed up ShardCoordinator initialization in smaller clusters.
+The read from ddata is a ReadMajority, for small clusters (< majority-min-cap) every node needs to respond
+so is more likely to timeout if there are nodes restarting i.e. when there is a rolling re-deploy happening.
+
 ## CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
