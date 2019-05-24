@@ -1510,6 +1510,52 @@ class SubFlow[In, Out, Mat](
   def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.interleave(that, segmentSize))
 
+    /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[M](
+      that: Graph[SourceShape[Out], M],
+      eagerComplete: Boolean): javadsl.SubFlow[In, java.util.List[Out], Mat] =
+    new SubFlow(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * '''emits''' when one of the inputs has an element available. If multiple have elements available, prefer the 'right' one when 'preferred' is 'true', or the 'left' one when 'preferred' is 'false'.
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePreferred[M](
+      that: Graph[SourceShape[Out], M],
+      preferred: Boolean,
+      eagerComplete: Boolean): javadsl.SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.mergePreferred(that, preferred, eagerComplete))
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePrioritized[M](
+      that: Graph[SourceShape[Out], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean): javadsl.SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.mergePrioritized(that, leftPriority, rightPriority, eagerComplete))
+
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side
