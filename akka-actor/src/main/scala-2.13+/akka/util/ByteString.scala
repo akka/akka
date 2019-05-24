@@ -7,13 +7,15 @@ package akka.util
 import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
+import java.nio.charset.{ Charset, StandardCharsets }
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.reflect.ClassTag
-import java.nio.charset.{ Charset, StandardCharsets }
+
+import com.github.ghik.silencer.silent
 
 object ByteString {
 
@@ -140,6 +142,9 @@ object ByteString {
   def fromByteBuffer(buffer: ByteBuffer): ByteString = apply(buffer)
 
   val empty: ByteString = CompactByteString(Array.empty[Byte])
+
+  /** Java API */
+  val emptyByteString: ByteString = empty
 
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
@@ -381,7 +386,7 @@ object ByteString {
       }
     }
 
-    override protected def writeReplace(): AnyRef = new SerializationProxy(this)
+    protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
   private[akka] object ByteStrings extends Companion {
@@ -623,7 +628,7 @@ object ByteString {
       }
     }
 
-    override protected def writeReplace(): AnyRef = new SerializationProxy(this)
+    protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
   @SerialVersionUID(1L)
@@ -672,10 +677,7 @@ sealed abstract class ByteString
 
   override protected def fromSpecific(coll: IterableOnce[Byte]): ByteString = ByteString(coll)
   override protected def newSpecificBuilder: mutable.Builder[Byte, ByteString] = ByteString.newBuilder
-
-  // FIXME this is a workaround for
-  //  https://github.com/scala/bug/issues/11192#issuecomment-436926231
-  protected[this] override def writeReplace(): AnyRef = this
+  override val empty: ByteString = ByteString.empty
 
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
@@ -811,6 +813,7 @@ sealed abstract class ByteString
    * Java API: Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
    * all fragments. Will always have at least one entry.
    */
+  @silent
   def getByteBuffers(): JIterable[ByteBuffer] = {
     import scala.collection.JavaConverters.asJavaIterableConverter
     asByteBuffers.asJava

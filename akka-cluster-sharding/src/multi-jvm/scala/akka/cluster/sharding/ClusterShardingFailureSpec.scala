@@ -238,10 +238,16 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
         //Test the Shard passivate works after a journal failure
         shard2.tell(Passivate(PoisonPill), entity21)
 
-        awaitCond({
+        awaitAssert {
+          // Note that the order between this Get message to 21 and the above Passivate to 21 is undefined.
+          // If this Get arrives first the reply will be Value("21", 3) and then it is retried by the
+          // awaitAssert.
+          // Also note that there is no timeout parameter on below expectMsg because messages should not
+          // be lost here. They should be buffered and delivered also after Passivate completed.
           region ! Get("21")
-          expectMsgType[Value] == Value("21", 0)
-        }, message = "Passivating did not reset Value down to 0")
+          // counter reset to 0 when started again
+          expectMsg(Value("21", 0))
+        }
 
         region ! Add("21", 1)
 

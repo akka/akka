@@ -64,7 +64,7 @@ object PersistentActorCompileOnlyTest {
     def performSideEffect(sender: ActorRef[AcknowledgeSideEffect], correlationId: Int, data: String): Unit = {
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout: akka.util.Timeout = 1.second
-      implicit val scheduler: akka.actor.Scheduler = ???
+      implicit val scheduler: akka.actor.typed.Scheduler = ???
       implicit val ec: ExecutionContext = ???
 
       val response: Future[RecoveryComplete.Response] =

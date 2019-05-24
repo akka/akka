@@ -108,7 +108,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
           s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
     }
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   def serializeQuarantined(quarantined: Quarantined): ArteryControlFormats.Quarantined =
     ArteryControlFormats.Quarantined

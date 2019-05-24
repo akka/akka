@@ -14,14 +14,11 @@ public class ThrowablesTest {
     Assert.assertTrue(Throwables.isNonFatal(new IllegalArgumentException("isNonFatal")));
   }
 
-  private static class ControlThrowableImpl extends Throwable implements ControlThrowable {}
-
   @Test
   public void testIsFatal() {
     Assert.assertTrue(Throwables.isFatal(new StackOverflowError("fatal")));
     Assert.assertTrue(Throwables.isFatal(new ThreadDeath()));
     Assert.assertTrue(Throwables.isFatal(new InterruptedException("fatal")));
     Assert.assertTrue(Throwables.isFatal(new LinkageError("fatal")));
-    Assert.assertTrue(Throwables.isFatal(new ControlThrowableImpl()));
   }
 }

@@ -404,7 +404,7 @@ object PersistentFSM {
     @deprecated(
       "Internal API easily to be confused with regular FSM's using. Use regular events (`applying`). Internally, `copy` can be used instead.",
       "2.5.5")
-    private[akka] def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D, E] = {
+    private[akka] def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D, E] = {
       copy(stateData = nextStateData)
     }
 
@@ -482,6 +482,9 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
    * Used for identifying domain events during recovery
    */
   def domainEventClass: Class[E]
+
+  // workaround, possibly for https://github.com/scala/bug/issues/11512
+  override def receive: Receive = super.receive
 }
 
 /**
@@ -490,6 +493,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
  * Persistent Finite State Machine actor abstract base class with FSM Logging
  *
  */
+@silent
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSM[S, D, E]
     with LoggingPersistentFSM[S, D, E]

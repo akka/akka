@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
 import com.typesafe.config.ConfigFactory
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.actor._
 import scala.annotation.tailrec
 

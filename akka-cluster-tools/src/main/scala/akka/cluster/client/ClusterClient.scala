@@ -88,7 +88,7 @@ object ClusterClientSettings {
  *   the servers (cluster nodes) that the client will try to contact initially.
  *   It is mandatory to specify at least one initial contact. The path of the
  *   default receptionist is
- *   "akka.tcp://system@hostname:port/system/receptionist"
+ *   "akka://system@hostname:port/system/receptionist"
  * @param establishingGetContactsInterval Interval at which the client retries
  *   to establish contact with one of ClusterReceptionist on the servers (cluster nodes)
  * @param refreshContactsInterval Interval at which the client will ask the
@@ -152,7 +152,7 @@ final class ClusterClientSettings(
    * Java API
    */
   def withInitialContacts(initialContacts: java.util.Set[ActorPath]): ClusterClientSettings = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     withInitialContacts(initialContacts.asScala.toSet)
   }
 
@@ -262,7 +262,7 @@ case object GetContactPoints extends GetContactPoints {
  * @param contactPoints The presently known list of contact points.
  */
 final case class ContactPoints(contactPoints: Set[ActorPath]) {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Java API
@@ -811,7 +811,7 @@ case object GetClusterClients extends GetClusterClients {
  * @param clusterClients The presently known list of cluster clients.
  */
 final case class ClusterClients(clusterClients: Set[ActorRef]) {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Java API

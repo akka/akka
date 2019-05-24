@@ -14,7 +14,7 @@ import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
-
+@silent
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -39,19 +39,19 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
 
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty[String])
-  val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1"), "foo")
-  val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
-  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
+  val a1 = TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String])
+  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"))
+  val c1 = TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
+  val d1 = TestMember(Address("akka", "sys", "d", 2552), Exiting, Set("r1"), "foo")
+  val e1 = TestMember(Address("akka", "sys", "e", 2552), Down, Set("r3"))
+  val f1 = TestMember(Address("akka", "sys", "f", 2552), Removed, Set("r3"), "foo")
 
   "ClusterMessages" must {
 
     "be serializable" in {
-      val address = Address("akka.tcp", "system", "some.host.org", 4711)
+      val address = Address("akka", "system", "some.host.org", 4711)
       val uniqueAddress = UniqueAddress(address, 17L)
-      val address2 = Address("akka.tcp", "system", "other.host.org", 4711)
+      val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
       checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
       checkSerialization(ClusterUserAction.Leave(address))
@@ -103,7 +103,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       // we must use the old singleton class name so that the other side will see an InitJoin
       // but discard the config as it does not know about the config check
       val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        Address("akka", "cluster", "127.0.0.1", 2552),
         InternalClusterAction.UncheckedConfig)
       val serializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
 
@@ -114,7 +114,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
 
     "serialize to wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
       val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        Address("akka", "cluster", "127.0.0.1", 2552),
         InternalClusterAction.ConfigCheckUnsupportedByJoiningNode)
       val bytes = serializer.toBinary(initJoinAck)
 
@@ -148,8 +148,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
             pool.settings.totalInstances should ===(123)
             pool.settings.maxInstancesPerNode should ===(345)
             pool.settings.allowLocalRoutees should ===(true)
-            @silent
-            val _ = pool.settings.useRole should ===(Some("role ABC"))
+            pool.settings.useRole should ===(Some("role ABC"))
             pool.settings.useRoles should ===(Set("role ABC"))
         }
       } finally {

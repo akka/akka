@@ -11,6 +11,7 @@ import akka.stream.impl.{
   fusing,
   LinearTraversalBuilder,
   ProcessorModule,
+  SetupFlowStage,
   SubFlowImpl,
   Throttle,
   Timers,
@@ -386,6 +387,14 @@ object Flow {
 
       case _ => new Flow(LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right), g.shape)
     }
+
+  /**
+   * Defers the creation of a [[Flow]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Flow]] returned by this method.
+   */
+  def setup[T, U, M](factory: (ActorMaterializer, Attributes) => Flow[T, U, M]): Flow[T, U, Future[M]] =
+    Flow.fromGraph(new SetupFlowStage(factory))
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input

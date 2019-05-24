@@ -77,7 +77,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
  *
  * Extend this `AbstractGraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ * value you can instead extend [[GraphStage]] which materializes a [[NotUsed]] value.
  *
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
@@ -389,11 +389,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
-      throw new IllegalStateException("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
+      throw new IllegalStateException(
+        "not yet initialized: only setHandler is allowed in GraphStageLogic constructor. To access materializer use Source/Flow/Sink.setup factory")
     else _interpreter
 
   /**
    * The [[akka.stream.Materializer]] that has set this GraphStage in motion.
+   *
+   * Can not be used from a `GraphStage` constructor. Access to materializer is provided by the
+   * [[akka.stream.scaladsl.Source.setup]], [[akka.stream.scaladsl.Flow.setup]] and [[akka.stream.scaladsl.Sink.setup]]
+   * and their corresponding Java API factories.
    */
   protected def materializer: Materializer = interpreter.materializer
 
@@ -737,7 +742,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       andThen: Procedure[java.util.List[T]],
       onClose: Procedure[java.util.List[T]]): Unit = {
     //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     readN(in, n)(seq => andThen(seq.asJava), seq => onClose(seq.asJava))
   }
 
@@ -847,7 +852,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * signal.
    */
   final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T]): Unit = {
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     emitMultiple(out, elems.asScala, DoNothing)
   }
 
@@ -860,7 +865,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * signal.
    */
   final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T], andThen: Effect): Unit = {
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     emitMultiple(out, elems.asScala, andThen.apply _)
   }
 

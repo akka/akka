@@ -11,7 +11,7 @@ import akka.actor.{ ActorSystem, Address }
 import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 @ccompatUsedUntil213
 class DaemonicSpec extends AkkaSpec {
@@ -30,14 +30,16 @@ class DaemonicSpec extends AkkaSpec {
         akka.actor.provider = remote
         akka.remote.classic.netty.tcp.transport-class = "akka.remote.transport.netty.NettyTransport"
         akka.remote.classic.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
         akka.log-dead-letters-during-shutdown = off
       """))
 
       try {
         val unusedPort = 86 // very unlikely to ever be used, "system port" range reserved for Micro Focus Cobol
 
+        val protocol = if (RARP(daemonicSystem).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp"
         val unusedAddress =
-          RARP(daemonicSystem).provider.getExternalAddressFor(Address(s"akka.tcp", "", "", unusedPort)).get
+          RARP(daemonicSystem).provider.getExternalAddressFor(Address(protocol, "", "", unusedPort)).get
         val selection = daemonicSystem.actorSelection(s"$unusedAddress/user/SomeActor")
         selection ! "whatever"
 

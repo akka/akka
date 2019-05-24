@@ -226,7 +226,7 @@ object FSM {
      * set when transitioning to the new state.
      */
     @silent
-    def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D] = {
+    def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D] = {
       copy(stateData = nextStateData)
     }
 

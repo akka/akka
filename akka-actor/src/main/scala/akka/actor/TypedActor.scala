@@ -10,8 +10,10 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.concurrent.{ Await, Future }
+
 import akka.japi.{ Creator, Option => JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
+import akka.pattern.AskTimeoutException
 import akka.util.Timeout
 import akka.util.Reflect.instantiator
 import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
@@ -21,11 +23,12 @@ import java.util.concurrent.TimeoutException
 import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
 
-import akka.pattern.AskTimeoutException
+import com.github.ghik.silencer.silent
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
  */
+@deprecated("Use 'akka.actor.typed' API.", since = "2.6.0")
 trait TypedActorFactory {
 
   /**
@@ -100,6 +103,7 @@ trait TypedActorFactory {
 /**
  * This represents the TypedActor Akka Extension, access to the functionality is done through a given ActorSystem.
  */
+@deprecated("Use 'akka.actor.typed' API.", since = "2.6.0")
 object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): TypedActorExtension = super.get(system)
 
@@ -111,6 +115,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * will be children to the specified context, this allows for creating hierarchies of TypedActors.
    * Do _not_ let this instance escape the TypedActor since that will not be thread-safe.
    */
+  @deprecated("Use 'akka.actor.typed' API.", since = "2.6.0")
   def apply(context: ActorContext): TypedActorFactory = ContextualTypedActorFactory(apply(context.system), context)
 
   /**
@@ -120,7 +125,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Java API
    */
+  @silent
   def get(context: ActorContext): TypedActorFactory = apply(context)
+
+  @deprecated("Use 'akka.actor.typed' API.", since = "2.6.0")
+  @silent
+  override def apply(system: ActorSystem): TypedActorExtension = super.apply(system)
 
   /**
    * This class represents a Method call, and has a reference to the Method to be called and the parameters to supply
@@ -275,6 +285,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       }
     }
 
+    @silent
     override def postStop(): Unit =
       try {
         withContext {
@@ -489,6 +500,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         case some => toTypedActorInvocationHandler(some)
       }
 
+    @silent
     def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
       new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
   }
@@ -664,12 +676,14 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
  * ContextualTypedActorFactory allows TypedActors to create children, effectively forming the same Actor Supervision Hierarchies
  * as normal Actors can.
  */
+@silent
 final case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext)
     extends TypedActorFactory {
   override def getActorRefFor(proxy: AnyRef): ActorRef = typedActor.getActorRefFor(proxy)
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
 
+@silent
 class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFactory with Extension {
   import TypedActor._ //Import the goodies from the companion object
   protected def actorFactory: ActorRefFactory = system

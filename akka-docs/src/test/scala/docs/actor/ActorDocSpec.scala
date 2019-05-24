@@ -623,7 +623,7 @@ class ActorDocSpec extends AkkaSpec("""
     context.actorSelection("../*")
     //#selection-wildcard
     //#selection-remote
-    context.actorSelection("akka.tcp://app@otherhost:1234/user/serviceB")
+    context.actorSelection("akka://app@otherhost:1234/user/serviceB")
     //#selection-remote
   }
 

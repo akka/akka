@@ -5,9 +5,12 @@
 package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
+
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.internal.adapter.SchedulerAdapter
 import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
+
 import scala.annotation.varargs
 
 /**
@@ -29,11 +32,17 @@ object ManualTime {
    */
   def get[A](system: ActorSystem[A]): ManualTime =
     system.scheduler match {
-      case sc: akka.testkit.ExplicitlyTriggeredScheduler => new ManualTime(sc)
-      case _ =>
+      case adapter: SchedulerAdapter =>
+        adapter.untypedScheduler match {
+          case sc: akka.testkit.ExplicitlyTriggeredScheduler => new ManualTime(sc)
+          case _ =>
+            throw new IllegalArgumentException(
+              "ActorSystem not configured with explicitly triggered scheduler, " +
+              "make sure to include akka.actor.testkit.typed.scaladsl.ManualTime.config() when setting up the test")
+        }
+      case s =>
         throw new IllegalArgumentException(
-          "ActorSystem not configured with explicitly triggered scheduler, " +
-          "make sure to include akka.actor.testkit.typed.javadsl.ManualTime.config() when setting up the test")
+          s"ActorSystem.scheduler is not an untyped SchedulerAdapter but a ${s.getClass.getName}, this is not supported")
     }
 
 }

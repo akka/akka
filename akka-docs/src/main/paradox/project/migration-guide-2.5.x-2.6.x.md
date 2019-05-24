@@ -1,5 +1,9 @@
 # Migration Guide 2.5.x to 2.6.x
 
+It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of
+@apidoc[akka.util.ByteString]`.empty()` when using Java because @apidoc[akka.util.ByteString]`.empty()`
+is [no longer available as a static method](https://github.com/scala/bug/issues/11509) in the artifacts built for Scala 2.13.
+
 ## Scala 2.11 no longer supported
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
@@ -41,6 +45,37 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
+## Deprecated features
+
+### TypedActor
+
+`akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
+`akka.actor.typed` API which should be used instead.
+
+There are several reasons for phasing out the old `TypedActor`. The primary reason is they use transparent
+remoting which is not our recommended way of implementing and interacting with actors. Transparent remoting
+is when you try to make remote method invocations look like local calls. In contrast we believe in location
+transparency with explicit messaging between actors (same type of messaging for both local and remote actors).
+They also have limited functionality compared to ordinary actors, and worse performance.
+
+To summarize the fallacy of transparent remoting:
+* Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
+* Partial failure is a major problem. Remote calls introduce uncertainty whether the function was invoked or not.
+  Typically handled by using timeouts but the client can't always know the result of the call.
+* Latency of calls over a network are several order of magnitudes longer than latency of local calls,
+  which can be more than surprising if encoded as an innocent looking local method call.
+* Remote invocations have much lower throughput due to the need of serializing the
+  data and you can't just pass huge datasets in the same way.
+
+Therefore explicit message passing is preferred. It looks different from local method calls
+(@scala[`actorRef ! message`]@java[`actorRef.tell(message)`]) and there is no misconception
+that sending a message will result in it being processed instantaneously. The goal of location
+transparency is to unify message passing for both local and remote interactions, versus attempting
+to make remote interactions look like local method calls.
+
+Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
+for many years.
+
 ## Internal dispatcher introduced
 
 To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
@@ -75,6 +110,11 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
+
+## Akka now uses Fork Join Pool from JDK
+
+Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
+keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
 <a id="classic-to-artery"></a>
 #### Migrating from classic remoting to Artery
@@ -187,9 +227,35 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ### Receptionist has moved
 
 The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
-instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`. 
+instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`.
 
-The path change makes it impossible to do a rolling upgrade from 2.5 to 2.6 if you use Akka Typed and the receptionist
-as the old and the new nodes receptionists will not be able to communicate.
+The path change means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
+it will work properly again.
 
- 
+### Cluster Receptionist using own Distributed Data
+
+In 2.5 the Cluster Receptionist was using the shared Distributed Data extension but that could result in
+undesired configuration changes if the application was also using that and changed for example the `role`
+configuration.
+
+In 2.6 the Cluster Receptionist is using it's own independent instance of Distributed Data.
+
+This means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
+it will work properly again.
+
+### Akka Typed API changes
+
+Akka Typed APIs are still marked as [may change](../common/may-change.md) and therefore its API can still change without deprecation period. The following is a list of API changes since the latest release: 
+
+* Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
+* New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
+* New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
+* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`. Additionally `.schedule` has been renamed to `.scheduleAtFixedRate`. Actors that needs to schedule tasks should prefer `Behaviors.withTimers`.
+* `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
+
+### Akka Typed Stream API changes
+
+* `ActorSoruce.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
+

@@ -74,7 +74,7 @@ private[akka] class RemoteSystemDaemon(
 
   private val whitelistEnabled = system.settings.config.getBoolean("akka.remote.deployment.enable-whitelist")
   private val remoteDeploymentWhitelist: immutable.Set[String] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     if (whitelistEnabled) system.settings.config.getStringList("akka.remote.deployment.whitelist").asScala.toSet
     else Set.empty
   }

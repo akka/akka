@@ -70,7 +70,7 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
         system.dynamicAccess.createInstanceFor[Throwable](clazz, List(classOf[String] -> protoT.getMessage)).get
       }
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val stackTrace =
       protoT.getStackTraceList.asScala.map { elem =>
         val fileName = elem.getFileName

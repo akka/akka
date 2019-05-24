@@ -14,7 +14,7 @@ import org.reactivestreams.Processor
 import scala.concurrent.duration.FiniteDuration
 import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
-import java.util.function.Supplier
+import java.util.function.{ BiFunction, Supplier }
 
 import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
@@ -61,6 +61,15 @@ object Flow {
       case f: Flow[I, O, M] => f
       case other            => new Flow(scaladsl.Flow.fromGraph(other))
     }
+
+  /**
+   * Defers the creation of a [[Flow]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Flow]] returned by this method.
+   */
+  def setup[I, O, M](
+      factory: BiFunction[ActorMaterializer, Attributes, Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
+    scaladsl.Flow.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
@@ -289,7 +298,7 @@ object Flow {
 
 /** Create a `Flow` which can process elements of type `T`. */
 final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
   override def traversalBuilder = delegate.traversalBuilder

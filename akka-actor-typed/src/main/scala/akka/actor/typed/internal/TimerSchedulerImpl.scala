@@ -76,13 +76,11 @@ import akka.util.OptionVal
 
     val task =
       if (repeat)
-        ctx.system.scheduler.schedule(delay, delay) {
-          ctx.self.unsafeUpcast ! timerMsg
-        }(ExecutionContexts.sameThreadExecutionContext)
+        ctx.system.scheduler.scheduleAtFixedRate(delay, delay, () => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.sameThreadExecutionContext)
       else
-        ctx.system.scheduler.scheduleOnce(delay) {
-          ctx.self.unsafeUpcast ! timerMsg
-        }(ExecutionContexts.sameThreadExecutionContext)
+        ctx.system.scheduler
+          .scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.sameThreadExecutionContext)
 
     val nextTimer = Timer(key, msg, repeat, nextGen, task)
     ctx.log.debug("Start timer [{}] with generation [{}]", key, nextGen)

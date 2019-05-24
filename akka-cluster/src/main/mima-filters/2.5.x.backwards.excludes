@@ -1,0 +1,2 @@
+# #24710 remove internal ClusterReadView.refreshCurrentState
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView.refreshCurrentState")

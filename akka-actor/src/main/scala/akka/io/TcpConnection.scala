@@ -387,7 +387,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     val interestedInClose: Set[ActorRef] =
       (if (writePending) Set(pendingWrite.commander) else Set.empty) ++
-      closedMessage.toSet[CloseInformation].flatMap(_.notificationsTo)
+      closedMessage.toList.flatMap(_.notificationsTo).toSet
 
     if (channel.isOpen) // if channel is still open here, we didn't go through stopWith => unexpected actor termination
       prepareAbort()

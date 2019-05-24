@@ -8,7 +8,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -301,7 +301,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
             TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       } catch {
         case NonFatal(e) =>
-          import scala.collection.JavaConverters._
+          import akka.util.ccompat.JavaConverters._
           log.error(e, "failed to store [{}]", pending.keySet.asScala.mkString(","))
           tx.abort()
       } finally {

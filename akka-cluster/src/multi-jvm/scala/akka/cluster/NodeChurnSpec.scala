@@ -24,7 +24,7 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 1s
       akka.cluster.prune-gossip-tombstones-after = 1s
-      akka.remote.log-frame-size-exceeding = 1200b
+      akka.remote.classic.log-frame-size-exceeding = 1200b
       akka.remote.artery.advanced.aeron {
         idle-cpu-level = 1
         embedded-media-driver = off

@@ -596,7 +596,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting-artery.md#looking-up-remote-actors).
 
 ## Messages and immutability
 

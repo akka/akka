@@ -1,0 +1,5 @@
+# #26877 Performance improvements of DDataShard
+ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
+
+# #25191
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")

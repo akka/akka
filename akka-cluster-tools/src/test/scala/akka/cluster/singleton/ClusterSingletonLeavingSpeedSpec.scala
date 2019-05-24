@@ -52,7 +52,7 @@ class ClusterSingletonLeavingSpeedSpec
   # akka.cluster.gossip-interval = 2s
 
   akka.remote {
-    netty.tcp {
+    classic.netty.tcp {
       hostname = "127.0.0.1"
       port = 0
     }

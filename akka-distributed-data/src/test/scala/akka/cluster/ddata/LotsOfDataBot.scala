@@ -32,13 +32,12 @@ object LotsOfDataBot {
       // Override the configuration of the port
       val config = ConfigFactory
         .parseString("akka.remote.classic.netty.tcp.port=" + port)
-        .withFallback(
-          ConfigFactory.load(ConfigFactory.parseString("""
+        .withFallback(ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
             akka.remote {
-              netty.tcp {
+              artery.canonical {
                 hostname = "127.0.0.1"
                 port = 0
               }
@@ -46,13 +45,11 @@ object LotsOfDataBot {
 
             akka.cluster {
               seed-nodes = [
-                "akka.tcp://ClusterSystem@127.0.0.1:2551",
-                "akka.tcp://ClusterSystem@127.0.0.1:2552"]
+                "akka://ClusterSystem@127.0.0.1:2551",
+                "akka://ClusterSystem@127.0.0.1:2552"]
 
               auto-down-unreachable-after = 10s
             }
-            akka.cluster.distributed-data.use-offheap-memory = off
-            akka.remote.log-frame-size-exceeding = 10000b
             """)))
 
       // Create an Akka system

@@ -127,7 +127,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
       sharding.init(
-          Entity.ofPersistentEntity(
+          Entity.ofEventSourcedEntity(
               TestPersistentEntity.ENTITY_TYPE_KEY,
               entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
 

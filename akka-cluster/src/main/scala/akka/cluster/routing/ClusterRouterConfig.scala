@@ -30,7 +30,7 @@ import com.typesafe.config.ConfigFactory
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 object ClusterRouterGroupSettings {
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")

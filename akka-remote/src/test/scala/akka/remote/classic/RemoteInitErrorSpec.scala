@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.mutable.Set
 import scala.concurrent.duration._
 import scala.language.postfixOps

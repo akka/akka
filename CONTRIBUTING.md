@@ -103,7 +103,6 @@ Using, for example: current.version 2.5.22, previous.version 2.5, milestone.vers
 1. Label this PR with `to-be-backported`
 1. Mark this PR with Milestone `${milestone.version}`
 1. Mark the issue with Milestone `${current.version}`
-1. `cherry-pick to release-${previous.version}`
 1. `git checkout release-${previous.version}`
 1. `git pull`
 1. Create wip branch

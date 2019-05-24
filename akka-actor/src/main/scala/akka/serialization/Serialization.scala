@@ -63,7 +63,7 @@ object Serialization {
     }
 
     private final def configToMap(cfg: Config): Map[String, String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       cfg.root.unwrapped.asScala.toMap.map { case (k, v) => (k -> v.toString) }
     }
   }
@@ -189,6 +189,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * using the optional type hint to the Serializer.
    * Returns either the resulting object or an Exception if one was thrown.
    */
+  @deprecated("Use deserialize that accepts the `manifest` as a class name.", since = "2.6.0")
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
     Try {
       val serializer = try getSerializerById(serializerId)

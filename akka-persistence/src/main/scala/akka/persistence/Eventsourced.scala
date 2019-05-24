@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
@@ -184,6 +184,7 @@ private[persistence] trait Eventsourced
    * @param cause failure cause.
    * @param event the event that was to be persisted
    */
+  @InternalStableApi
   protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.error(
       cause,
@@ -201,6 +202,7 @@ private[persistence] trait Eventsourced
    * @param cause failure cause
    * @param event the event that was to be persisted
    */
+  @InternalStableApi
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.error(
       cause,
@@ -646,9 +648,16 @@ private[persistence] trait Eventsourced
             case SelectedSnapshot(metadata, snapshot) =>
               val offer = SnapshotOffer(metadata, snapshot)
               if (recoveryBehavior.isDefinedAt(offer)) {
-                setLastSequenceNr(metadata.sequenceNr)
-                // Since we are recovering we can ignore the receive behavior from the stack
-                Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+                try {
+                  setLastSequenceNr(metadata.sequenceNr)
+                  // Since we are recovering we can ignore the receive behavior from the stack
+                  Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+                } catch {
+                  case NonFatal(t) =>
+                    try onRecoveryFailure(t, None)
+                    finally context.stop(self)
+                    returnRecoveryPermit()
+                }
               } else {
                 unhandled(offer)
               }
