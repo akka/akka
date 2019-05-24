@@ -4,15 +4,25 @@
 
 package akka.stream.javadsl
 
-import java.util.concurrent.CompletionStage
-import java.util.function.BiFunction
-import java.util.function.Supplier
 import java.util.Comparator
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
+import java.util.function.Supplier
 
+import org.reactivestreams.Processor
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
+import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.japi.Pair
@@ -20,20 +30,14 @@ import akka.japi.Util
 import akka.japi.function
 import akka.stream._
 import akka.stream.impl.fusing.LazyFlow
+import akka.stream.impl.fusing.RecoverWithBackoff.RetryBackoffStrategy
 import akka.util.JavaDurationConverters._
 import akka.util.unused
 import akka.util.ConstantFun
 import akka.util.Timeout
-import akka.Done
-import akka.NotUsed
 import akka.japi.function.Creator
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Processor
 
-import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
+import com.github.ghik.silencer.silent
 
 object Flow {
 
@@ -1635,6 +1639,45 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       attempts: Int,
       pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recoverWithRetries(attempts, pf))
+
+  /**
+   * RecoverWithRetries allows to switch to alternative Source on flow failure. This overloaded method allows to
+   * schedule retries on intervals as specified by `initialRetryTimeout` parameter using
+   * [[akka.stream.impl.fusing.RecoverWithBackoff.RetryBackoffStrategy]] as specified by `backoffStrategy` parameter.
+   * Following strategies are supported as of now: [[akka.stream.impl.fusing.RecoverWithBackoff.Exponential]]
+   * and [[akka.stream.impl.fusing.RecoverWithBackoff.Linear]]. It will stay in effect after
+   * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+   * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+   * attempt to recover at all.
+   *
+   * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Throwing an exception inside `recoverWithRetries` _will_ be logged on ERROR level automatically.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+   * from alternative Source
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param attempts Maximum number of retries or -1 to retry indefinitely
+   * @param initialRetryTimeout Initial timeout for retry delay, next delay is calculated based on `backoffStrategy`
+   * @param backoffStrategy The strategy used for calculating next retry attempt
+   * @param pf Receives the failure cause and returns the new Source to be materialized if any
+   *
+   */
+  def recoverWithRetries(
+      attempts: Int,
+      initialRetryTimeout: FiniteDuration,
+      backoffStrategy: RetryBackoffStrategy,
+      pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.recoverWithRetries(attempts, initialRetryTimeout, backoffStrategy, pf))
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
