@@ -2487,7 +2487,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
    */
-  def mergeLatest(that: Graph[SourceShape[Out], _], eagerComplete: Boolean): javadsl.Flow[In, java.util.List[Out], Mat] =
+  def mergeLatest(
+      that: Graph[SourceShape[Out], _],
+      eagerComplete: Boolean): javadsl.Flow[In, java.util.List[Out], Mat] =
     new Flow(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
 
   /**
@@ -2496,15 +2498,72 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * MergeLatest emits list for each element emitted from some input stream,
    * but only after each input stream emitted at least one element.
    *
-   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
-   *
-   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def mergeLatestMat[Mat2, Mat3](
       that: Graph[SourceShape[Out], Mat2],
       eagerComplete: Boolean,
       matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, java.util.List[Out], Mat3] =
     new Flow(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map(_.asJava)
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * '''emits''' when one of the inputs has an element available. If multiple have elements available, prefer the 'right' one when 'preferred' is 'true', or the 'left' one when 'preferred' is 'false'.
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePreferred(
+      that: Graph[SourceShape[Out], _],
+      preferred: Boolean,
+      eagerComplete: Boolean): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.mergePreferred(that, preferred, eagerComplete))
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePreferredMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      preferred: Boolean,
+      eagerComplete: Boolean,
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, Out, Mat3] =
+    new Flow(delegate.mergePreferredMat(that, preferred, eagerComplete)(combinerToScala(matF)))
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePrioritized(
+      that: Graph[SourceShape[Out], _],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.mergePrioritized(that, leftPriority, rightPriority, eagerComplete))
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePrioritizedMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean,
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, Out, Mat3] =
+    new Flow(delegate.mergePrioritizedMat(that, leftPriority, rightPriority, eagerComplete)(combinerToScala(matF)))
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
