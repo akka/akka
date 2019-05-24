@@ -1510,7 +1510,7 @@ class SubFlow[In, Out, Mat](
   def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.interleave(that, segmentSize))
 
-    /**
+  /**
    * MergeLatest joins elements from N input streams into stream of lists of size N.
    * i-th element in list is the latest emitted element from i-th input stream.
    * MergeLatest emits list for each element emitted from some input stream,
