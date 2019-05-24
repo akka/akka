@@ -462,7 +462,6 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
-  .settings(AkkaBuild.mayChangeSettings)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
