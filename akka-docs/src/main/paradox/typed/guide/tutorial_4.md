@@ -2,14 +2,6 @@
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 Let's take a closer look at the main functionality required by our use case. In a complete IoT system for monitoring home temperatures, the steps for connecting a device sensor to our system might look like this:
 
 1. A sensor device in the home connects through some protocol.

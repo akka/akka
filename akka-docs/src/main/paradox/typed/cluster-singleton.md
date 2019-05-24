@@ -12,14 +12,6 @@ To use Cluster Singleton, you must add the following dependency in your project:
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 

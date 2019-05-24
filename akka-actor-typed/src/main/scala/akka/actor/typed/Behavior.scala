@@ -9,7 +9,7 @@ import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.{ BehaviorImpl, InterceptorImpl }
 import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.util.{ LineNumbers, OptionVal }
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext => SAC }
 
 import scala.annotation.switch
@@ -54,7 +54,6 @@ private[akka] object BehaviorTags {
  *
  * Not for user extension.
  */
-@ApiMayChange
 @DoNotInherit
 abstract class Behavior[T](private[akka] val _tag: Int) { behavior =>
 
