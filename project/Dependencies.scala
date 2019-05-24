@@ -17,7 +17,9 @@ object Dependencies {
   val sslConfigVersion = "0.3.7"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
+  // check agrona version when updating this
   val aeronVersion = "1.15.1"
+  val agronaVersion = "0.9.31"
   val nettyVersion = "3.10.6.Final"
 
   val Versions = Seq(
@@ -66,6 +68,8 @@ object Dependencies {
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
+    // Added explicitly for when artery tcp is used
+    val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
@@ -156,7 +160,7 @@ object Dependencies {
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
 
-  val remote = l ++= Seq(Test.junit, Test.scalatest.value, Test.jimfs) ++ remoteOptionalDependencies
+  val remote = l ++= Seq(agrona, Test.junit, Test.scalatest.value, Test.jimfs) ++ remoteOptionalDependencies
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml) ++ remoteDependencies
 
