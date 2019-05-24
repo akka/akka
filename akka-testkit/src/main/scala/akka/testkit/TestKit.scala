@@ -1029,32 +1029,3 @@ trait DefaultTimeout { this: TestKitBase =>
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }
 
-/**
- * INTERNAL API
- *
- * This is a specialized variant of PartialFunction which is <b><i>only
- * applicable if you know that `isDefinedAt(x)` is always called before
- * `apply(x)`—with the same `x` of course.</i></b>
- *
- * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
- * are the same as for [[akka.japi.JavaPartialFunction]] (apart from the
- * missing because unneeded boolean argument).
- *
- * This class is used internal to JavaTestKit and should not be extended
- * by client code directly.
- */
-@deprecated(message = "The only usage is in JavaTestKit which is deprecated.", since = "2.5.0")
-private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef]
-    extends scala.runtime.AbstractPartialFunction[A, B] {
-  import akka.japi.JavaPartialFunction._
-
-  @throws(classOf[Exception])
-  def `match`(x: A): B
-
-  var cache: B = _
-  final def isDefinedAt(x: A): Boolean =
-    try {
-      cache = `match`(x); true
-    } catch { case NoMatch => cache = null.asInstanceOf[B]; false }
-  final override def apply(x: A): B = cache
-}
