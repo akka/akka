@@ -7,6 +7,7 @@ package akka.stream.typed.javadsl
 import java.util.function.Predicate
 
 import akka.actor.typed._
+import akka.japi.JavaPartialFunction
 import akka.stream.javadsl._
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
 
@@ -49,13 +50,19 @@ object ActorSource {
    */
   def actorRef[T](
       completionMatcher: Predicate[T],
-      failureMatcher: PartialFunction[T, Throwable],
+      failureMatcher: akka.japi.function.Function[T, java.util.Optional[Throwable]],
       bufferSize: Int,
       overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] = {
     akka.stream.typed.scaladsl.ActorSource
       .actorRef(
         { case m if completionMatcher.test(m) => }: PartialFunction[T, Unit],
-        failureMatcher,
+        new JavaPartialFunction[T, Throwable] {
+          override def apply(x: T, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
         bufferSize,
         overflowStrategy)
       .asJava
@@ -78,13 +85,25 @@ object ActorSource {
   def actorRefWithAck[T, Ack](
       ackTo: ActorRef[Ack],
       ackMessage: Ack,
-      completionMatcher: PartialFunction[T, CompletionStrategy],
-      failureMatcher: PartialFunction[T, Throwable]): Source[T, ActorRef[T]] =
+      completionMatcher: akka.japi.function.Function[T, java.util.Optional[CompletionStrategy]],
+      failureMatcher: akka.japi.function.Function[T, java.util.Optional[Throwable]]): Source[T, ActorRef[T]] =
     akka.stream.typed.scaladsl.ActorSource
       .actorRefWithAck[T, Ack](
         ackTo,
         ackMessage,
-        completionMatcher.asInstanceOf[PartialFunction[Any, CompletionStrategy]],
-        failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]])
+        new JavaPartialFunction[T, CompletionStrategy] {
+          override def apply(x: T, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[T, Throwable] {
+          override def apply(x: T, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        })
       .asJava
 }
