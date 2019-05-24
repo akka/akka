@@ -4,13 +4,11 @@
 
 package akka.coordination.lease
 
-import akka.annotation.ApiMayChange
 import com.typesafe.config.{ Config, ConfigValueType }
 import akka.util.JavaDurationConverters._
 import scala.concurrent.duration._
 
 object TimeoutSettings {
-  @ApiMayChange
   def apply(config: Config): TimeoutSettings = {
     val heartBeatTimeout = config.getDuration("heartbeat-timeout").asScala
     val heartBeatInterval = config.getValue("heartbeat-interval").valueType() match {
@@ -24,7 +22,6 @@ object TimeoutSettings {
 
 }
 
-@ApiMayChange
 final class TimeoutSettings(
     val heartbeatInterval: FiniteDuration,
     val heartbeatTimeout: FiniteDuration,

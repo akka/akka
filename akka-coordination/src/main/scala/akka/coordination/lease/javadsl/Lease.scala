@@ -7,10 +7,8 @@ package akka.coordination.lease.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import akka.annotation.ApiMayChange
 import akka.coordination.lease.LeaseSettings
 
-@ApiMayChange
 abstract class Lease() {
 
   def getSettings(): LeaseSettings
