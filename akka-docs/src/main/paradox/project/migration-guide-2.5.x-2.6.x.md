@@ -69,13 +69,15 @@ blocking and protect a bit against starving the internal actors. Since the inter
 the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
 `8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
 
-## Default remoting is now Artery TCP
+@@ Remoting
+
+### Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
 <a id="classic-to-artery"></a>
-### Migrating from classic remoting to Artery
+#### Migrating from classic remoting to Artery
 
 Artery has the same functionality as classic remoting and you should normally only have to change the
 configuration to switch.
@@ -105,7 +107,7 @@ If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs 
 for how to do this.
 
 
-### Migration from 2.5.x Artery to 2.6.x Artery
+#### Migration from 2.5.x Artery to 2.6.x Artery
 
 The following defaults have changed:
 
@@ -130,17 +132,22 @@ For TCP:
 * `akka.remote.artery.advanced.connection-timeout` to `akka.remote.artery.advanced.tcp.connection-timeout`
 
 
-### Remaining with Classic remoting (not recommended)
+#### Remaining with Classic remoting (not recommended)
 
 Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
-## Netty UDP has been removed
+### Netty UDP has been removed
 
 Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
+
+### Remoting dependencies have been made optional
+
+Classic remoting depend on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
+to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
 
 ## Streams
 

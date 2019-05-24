@@ -7,23 +7,24 @@ package akka.remote
 import akka.Done
 import akka.actor._
 import akka.dispatch.sysmsg._
-import akka.event.{ EventStream, Logging, LoggingAdapter }
+import akka.event.{EventStream, Logging, LoggingAdapter}
 import akka.event.Logging.Error
 import akka.pattern.pipe
 
 import scala.util.control.NonFatal
 import scala.util.Failure
-import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
+import akka.actor.SystemGuardian.{RegisterTerminationHook, TerminationHook, TerminationHookDone}
 
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 import akka.ConfigurationException
 import akka.annotation.InternalApi
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 import akka.remote.artery.ArteryTransport
 import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.ArterySettings
-import akka.util.{ ErrorMessages, OptionVal }
+import akka.remote.artery.ArterySettings.AeronUpd
+import akka.util.{ErrorMessages, OptionVal}
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
@@ -209,11 +210,11 @@ private[akka] class RemoteActorRefProvider(
       remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
       "remoting-terminator")
 
-    if (remoteSettings.Artery.Enabled) {
+    if (remoteSettings.Artery.Enabled && remoteSettings.Artery.Transport == AeronUpd) {
       checkAeronOnClassPath(system)
-    } else {
+    } else if (!remoteSettings.Artery.Enabled) {
       checkNettyOnClassPath(system)
-    }
+    } // artery tcp has no dependencies
 
     val internals = Internals(
       remoteDaemon = {

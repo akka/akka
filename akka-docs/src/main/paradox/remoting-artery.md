@@ -23,7 +23,7 @@ To use Artery Remoting, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-Artery depends on Aeron. This needs to be explicitly added as a dependency so that users
+Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
 not using artery remoting do not have Aeron on the classpath:
 
 @@dependency[sbt,Maven,Gradle] {
