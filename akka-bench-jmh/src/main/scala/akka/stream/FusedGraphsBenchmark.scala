@@ -113,7 +113,6 @@ class FusedGraphsBenchmark {
     val settings = ActorMaterializerSettings(system)
       .withFuzzing(false)
       .withSyncProcessingLimit(Int.MaxValue)
-      .withAutoFusing(false) // We fuse manually in this test in the setup
 
     materializer = ActorMaterializer(settings)
     testElements = Array.fill(ElementCount)(new MutableElement(0))

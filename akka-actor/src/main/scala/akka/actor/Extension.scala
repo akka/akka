@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import scala.reflect.ClassTag
-
 /**
  * The basic ActorSystem covers all that is needed for locally running actors,
  * using futures and so on. In addition, more features can hook into it and
@@ -117,42 +115,4 @@ trait ExtensionIdProvider {
    * Returns the canonical ExtensionId for this Extension
    */
   def lookup(): ExtensionId[_ <: Extension]
-}
-
-/**
- * This is a one-stop-shop if all you want is an extension which is
- * constructed with the ExtendedActorSystem as its only constructor argument:
- *
- * {{{
- * object MyExt extends ExtensionKey[Ext]
- *
- * class Ext(system: ExtendedActorSystem) extends Extension {
- *   ...
- * }
- * }}}
- *
- * Java API:
- *
- * {{{
- * public class MyExt extends Extension {
- *   public static final ExtensionKey<MyExt> key = new ExtensionKey<MyExt>(MyExt.class);
- *
- *   public MyExt(ExtendedActorSystem system) {
- *     ...
- *   }
- * }
- * }}}
- *
- * Note: Don't use this class if the extension is written in Scala and consumed in
- * Eclipse Java projects. JDT has problems resolving correct type for the
- * `get` method.
- *
- */
-@deprecated(message = "Use a regular Extension instead", since = "2.5.0")
-abstract class ExtensionKey[T <: Extension](implicit m: ClassTag[T]) extends ExtensionId[T] with ExtensionIdProvider {
-  def this(clazz: Class[T]) = this()(ClassTag(clazz))
-
-  override def lookup(): ExtensionId[T] = this
-  def createExtension(system: ExtendedActorSystem): T =
-    system.dynamicAccess.createInstanceFor[T](m.runtimeClass, List(classOf[ExtendedActorSystem] -> system)).get
 }

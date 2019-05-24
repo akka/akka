@@ -234,46 +234,6 @@ trait ActorContext extends ActorRefFactory {
 }
 
 /**
- * UntypedActorContext is the UntypedActor equivalent of ActorContext,
- * containing the Java API
- */
-@deprecated("Use AbstractActor.ActorContext instead of UntypedActorContext.", since = "2.5.0")
-trait UntypedActorContext extends ActorContext {
-
-  /**
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
-   */
-  def getChildren(): java.lang.Iterable[ActorRef]
-
-  /**
-   * Returns a reference to the named child or null if no child with
-   * that name exists.
-   */
-  def getChild(name: String): ActorRef
-
-  /**
-   * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Replaces the current behavior on the top of the behavior stack.
-   */
-  def become(behavior: Procedure[Any]): Unit
-
-  /**
-   * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * This method acts upon the behavior stack as follows:
-   *
-   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
-   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
-   *
-   * The default of replacing the current behavior on the stack has been chosen to avoid memory
-   * leaks in case client code is written without consulting this documentation first (i.e.
-   * always pushing new behaviors and never issuing an `unbecome()`)
-   */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit
-
-}
-
-/**
  * INTERNAL API
  */
 @InternalApi
@@ -450,8 +410,7 @@ private[akka] class ActorCell(
     final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
     val dispatcher: MessageDispatcher,
     val parent: InternalActorRef)
-    extends UntypedActorContext
-    with AbstractActor.ActorContext
+    extends AbstractActor.ActorContext
     with Cell
     with dungeon.ReceiveTimeout
     with dungeon.Children

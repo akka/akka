@@ -6,7 +6,6 @@ package jdocs.persistence;
 
 import akka.persistence.AbstractPersistentActor;
 import akka.persistence.RuntimePluginConfig;
-import akka.persistence.UntypedPersistentActor;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 

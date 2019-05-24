@@ -613,16 +613,6 @@ final class ActorMaterializerSettings @InternalApi private (
     else copy(debugLogging = enable)
 
   /**
-   * Enable automatic fusing of all graphs that are run. For short-lived streams
-   * this may cause an initial runtime overhead, but most of the time fusing is
-   * desirable since it reduces the number of Actors that are created.
-   */
-  @deprecated("Turning off fusing is no longer possible with the traversal based materializer", since = "2.5.0")
-  def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
-    if (enable == this.autoFusing) this
-    else copy(autoFusing = enable)
-
-  /**
    * Configure the maximum buffer size for which a FixedSizeBuffer will be preallocated.
    * This defaults to a large value because it is usually better to fail early when
    * system memory is not sufficient to hold the buffer.
