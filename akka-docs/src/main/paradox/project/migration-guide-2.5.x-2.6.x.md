@@ -45,6 +45,10 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
+### JavaTestKit removed
+
+The `JavaTetKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
+
 ## Deprecated features
 
 ### TypedActor
