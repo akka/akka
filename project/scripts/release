@@ -271,7 +271,12 @@ if [ ! $dry_run ]; then
 else
   RELEASE_OPT="-Dakka.build.version=${version} -Dakka.genjavadoc.enabled=true"
 fi
-try sbt $RELEASE_OPT +buildRelease
+
+# FIXME #27019 change back to +buildRelease when Jackson ScalaModule has been released for Scala 2.13
+#try sbt $RELEASE_OPT +buildRelease
+try sbt $RELEASE_OPT buildRelease
+try sbt $RELEASE_OPT -Dakka.build.scalaVersion=2.13.0-RC2 buildRelease
+
 try sbt $RELEASE_OPT buildDocs
 echolog "Successfully created local release"
 

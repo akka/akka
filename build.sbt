@@ -70,7 +70,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
     testkit) ++
   (if (isScala213) List.empty[ProjectReference]
    else
-     List[ProjectReference](jackson, benchJmh, benchJmhTyped)) // FIXME move 2.13 condition when Jackson ScalaModule has been released for Scala 2.13.0
+     List[ProjectReference](jackson, benchJmh, benchJmhTyped)) // FIXME #27019 remove 2.13 condition when Jackson ScalaModule has been released for Scala 2.13
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -244,7 +244,7 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
   .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
   .settings(OSGi.jackson)
   .settings(javacOptions += "-parameters")
-  // FIXME remove when Jackson ScalaModule has been released for Scala 2.13.0
+  // FIXME #27019 remove when Jackson ScalaModule has been released for Scala 2.13
   .settings(crossScalaVersions -= Dependencies.scala213Version)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
