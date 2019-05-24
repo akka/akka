@@ -257,6 +257,22 @@ the inputs in different ways.
 |Source/Flow|<a name="zipwith"></a>@ref[zipWith](Source-or-Flow/zipWith.md)|Combines elements from multiple sources through a `combine` function and passes the returned value downstream.|
 |Source/Flow|<a name="zipwithindex"></a>@ref[zipWithIndex](Source-or-Flow/zipWithIndex.md)|Zips elements of current flow with its indices.|
 
+## Fan-out operators
+
+These have one input and multiple outputs. They might route the elements between different outputs, or emit elements on
+multiple outputs at the same time.
+
+There is currently no 'fluent' API available for the fan-out operators, to use them you will have to use the @ref[Graph DSL](../stream-graphs.md#constructing-graphs).
+
+
+| |Operator|Description|
+|--|--|--|
+| |<a name="balance"></a>@ref[Balance](Balance.md)|Fan-out the stream to several streams.|
+| |<a name="broadcast"></a>@ref[Broadcast](Broadcast.md)|Emit each incoming element each of `n` outputs.|
+| |<a name="partition"></a>@ref[Partition](Partition.md)|Fan-out the stream to several streams.|
+| |<a name="unzip"></a>@ref[Unzip](Unzip.md)|Takes a stream of two element tuples and unzips the two elements ino two different downstreams.|
+| |<a name="unzipwith"></a>@ref[UnzipWith](UnzipWith.md)|Splits each element of input into multiple downstreams using a function|
+
 ## Watching status operators
 
 
@@ -439,5 +455,10 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithAck](ActorSource/actorRefWithAck.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)
+* [Partition](Partition.md)
+* [Broadcast](Broadcast.md)
+* [Balance](Balance.md)
+* [Unzip](Unzip.md)
+* [UnzipWith](UnzipWith.md)
 
 @@@

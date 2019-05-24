@@ -1,14 +1,14 @@
-# unzipWith
+# Unzip
 
-Splits each element of input into multiple downstreams using a function
+Takes a stream of two element tuples and unzips the two elements ino two different downstreams.
 
-@ref[Fan-out operators](../index.md#fan-out-operators)
+@ref[Fan-out operators](index.md#fan-out-operators)
 
 ## Signature
 
 ## Description
 
-Splits each element of input into multiple downstreams using a function
+Takes a stream of two element tuples and unzips the two elements ino two different downstreams.
 
 
 @@@div { .callout }
@@ -20,5 +20,4 @@ Splits each element of input into multiple downstreams using a function
 **completes** when upstream completes
 
 @@@
-
 
