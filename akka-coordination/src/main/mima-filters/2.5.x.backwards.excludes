@@ -1,0 +1,2 @@
+# Made final when removing api may change
+ProblemFilters.exclude[FinalClassProblem]("akka.coordination.lease.LeaseUsageSettings")
