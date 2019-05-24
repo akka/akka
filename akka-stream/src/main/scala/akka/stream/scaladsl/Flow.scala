@@ -2594,13 +2594,23 @@ trait FlowOps[+Out, +Mat] {
       FlowShape(merge.in(0), merge.out)
     }
 
-  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[List[U]] =
-    via(mergeLatestGraph(that))
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[List[U]] =
+    via(mergeLatestGraph(that, eagerComplete))
 
-  protected def mergeLatestGraph[U >: Out, M](that: Graph[SourceShape[U], M]):
+  protected def mergeLatestGraph[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean):
       Graph[FlowShape[Out @uncheckedVariance, List[U]], M] =
     GraphDSL.create(that) { implicit b => r =>
-      val merge = b.add(MergeLatest[U](2))
+      val merge = b.add(MergeLatest[U](2, eagerComplete))
       r ~> merge.in(1)
       FlowShape(merge.in(0), merge.out)
     }
@@ -3011,8 +3021,19 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
       matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
     viaMat(interleaveGraph(that, request, eagerClose))(matF)
 
-  def mergeLatestMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3): ReprMat[List[U], Mat3] =
-    viaMat(mergeLatestGraph(that))(matF)
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * @see [[#mergeLatest]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergeLatestMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerClose: Boolean)(matF: (Mat, Mat2) => Mat3): ReprMat[List[U], Mat3] =
+    viaMat(mergeLatestGraph(that, eagerClose))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,

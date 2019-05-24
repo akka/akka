@@ -1091,13 +1091,35 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       eagerComplete: Boolean): javadsl.Source[Out, M2] =
     new Source(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
-  def mergeLatest[M](that: Graph[SourceShape[Out], M]): javadsl.Source[java.util.List[Out], Mat] =
-    new Source(delegate.mergeLatest(that).map(_.asJava))
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[M](that: Graph[SourceShape[Out], M], eagerComplete: Boolean): javadsl.Source[java.util.List[Out], Mat] =
+    new Source(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
 
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * @see [[#mergeLatest]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
   def mergeLatestMat[Mat2, Mat3](
       that: Graph[SourceShape[Out], Mat2],
+      eagerComplete: Boolean,
       matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[java.util.List[Out], Mat3] =
-    new Source(delegate.mergeLatestMat(that)(combinerToScala(matF))).map(_.asJava)
+    new Source(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map(_.asJava)
 
   /**
    * Merge the given [[Source]] to this [[Source]], taking elements as they arrive from input streams,

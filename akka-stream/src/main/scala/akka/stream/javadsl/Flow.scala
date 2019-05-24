@@ -2477,8 +2477,34 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       eagerComplete: Boolean): javadsl.Flow[In, Out, M2] =
     new Flow(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
-  def mergeLatest(that: Graph[SourceShape[Out], _]): javadsl.Flow[In, java.util.List[Out], Mat] =
-    new Flow(delegate.mergeLatest(that).map(_.asJava))
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest(that: Graph[SourceShape[Out], _], eagerComplete: Boolean): javadsl.Flow[In, java.util.List[Out], Mat] =
+    new Flow(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
+
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatestMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      eagerComplete: Boolean,
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, java.util.List[Out], Mat3] =
+    new Flow(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map(_.asJava)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
