@@ -83,7 +83,7 @@ import akka.event.LoggingFilterWithMarker
     LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
-  override def scheduler: akka.actor.Scheduler = untypedSystem.scheduler
+  override val scheduler: Scheduler = new SchedulerAdapter(untypedSystem.scheduler)
   override def settings: Settings = new Settings(untypedSystem.settings)
   override def startTime: Long = untypedSystem.startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = untypedSystem.threadFactory

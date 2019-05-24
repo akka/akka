@@ -85,7 +85,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * It is recommended to use the ActorContext’s scheduling capabilities for sending
    * messages to actors instead of registering a Runnable for execution using this facility.
    */
-  def scheduler: untyped.Scheduler
+  def scheduler: Scheduler
 
   /**
    * Facilities for lookup up thread-pools from configuration.
