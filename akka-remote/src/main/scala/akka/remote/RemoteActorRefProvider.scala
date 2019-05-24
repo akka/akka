@@ -31,8 +31,6 @@ import akka.remote.artery.tcp.ArteryTcpTransport
 import akka.serialization.Serialization
 import com.github.ghik.silencer.silent
 
-
-
 /**
  * INTERNAL API
  */
@@ -251,7 +249,12 @@ private[akka] class RemoteActorRefProvider(
 
   private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
     // TODO change link to current once 2.6 is out
-    checkClassOrThrow(system, "org.jboss.netty.channel.Channel", "Classic", "Netty", "https://doc.akka.io/docs/akka/2.6/remoting.html")
+    checkClassOrThrow(
+      system,
+      "org.jboss.netty.channel.Channel",
+      "Classic",
+      "Netty",
+      "https://doc.akka.io/docs/akka/2.6/remoting.html")
   }
 
   private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
@@ -262,10 +265,16 @@ private[akka] class RemoteActorRefProvider(
     checkClassOrThrow(system, "io.aeron.Aeron", "Artery", "Aeron client", arteryLink)
   }
 
-  private def checkClassOrThrow(system: ActorSystemImpl, className: String, remoting: String, libraryMissing: String, link: String): Unit = {
+  private def checkClassOrThrow(
+      system: ActorSystemImpl,
+      className: String,
+      remoting: String,
+      libraryMissing: String,
+      link: String): Unit = {
     system.dynamicAccess.getClassFor(className) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
-        throw new IllegalStateException(s"$remoting remoting is enabled but $libraryMissing is not on the classpath, it must be added explicitly. See $link")
+        throw new IllegalStateException(
+          s"$remoting remoting is enabled but $libraryMissing is not on the classpath, it must be added explicitly. See $link")
       case _ =>
     }
   }
