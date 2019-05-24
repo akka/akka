@@ -8,7 +8,7 @@ package javadsl
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.japi.function.{ Function => JFunction }
 import akka.util.JavaDurationConverters._

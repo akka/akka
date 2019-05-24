@@ -9,7 +9,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.cluster.ddata.SelfUniqueAddress
 
 // #sample
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
