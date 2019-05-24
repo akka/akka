@@ -2477,6 +2477,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       eagerComplete: Boolean): javadsl.Flow[In, Out, M2] =
     new Flow(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
+  def mergeLatest(that: Graph[SourceShape[Out], _]): javadsl.Flow[In, java.util.List[Out], Mat] =
+    new Flow(delegate.mergeLatest(that).map(_.asJava))
+
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side

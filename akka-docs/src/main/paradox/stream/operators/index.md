@@ -248,6 +248,7 @@ the inputs in different ways.
 |Source/Flow|<a name="concat"></a>@ref[concat](Source-or-Flow/concat.md)|After completion of the original upstream the elements of the given source will be emitted.|
 |Source/Flow|<a name="interleave"></a>@ref[interleave](Source-or-Flow/interleave.md)|Emits a specifiable number of elements from the original source, then from the provided source and repeats.|
 |Source/Flow|<a name="merge"></a>@ref[merge](Source-or-Flow/merge.md)|Merge multiple sources.|
+|Source/Flow|<a name="mergelatest"></a>@ref[mergeLatest](Source-or-Flow/mergeLatest.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergesorted"></a>@ref[mergeSorted](Source-or-Flow/mergeSorted.md)|Merge multiple sources.|
 |Source/Flow|<a name="orelse"></a>@ref[orElse](Source-or-Flow/orElse.md)|If the primary source completes without emitting any elements, the elements from the secondary source are emitted.|
 |Source/Flow|<a name="prepend"></a>@ref[prepend](Source-or-Flow/prepend.md)|Prepends the given source to the flow, consuming it until completion before the original source is consumed.|
@@ -328,6 +329,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [wireTap](Source-or-Flow/wireTap.md)
 * [interleave](Source-or-Flow/interleave.md)
 * [merge](Source-or-Flow/merge.md)
+* [mergeLatest](Source-or-Flow/mergeLatest.md)
 * [mergeSorted](Source-or-Flow/mergeSorted.md)
 * [zip](Source-or-Flow/zip.md)
 * [zipLatest](Source-or-Flow/zipLatest.md)

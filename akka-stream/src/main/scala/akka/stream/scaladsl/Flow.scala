@@ -2594,6 +2594,17 @@ trait FlowOps[+Out, +Mat] {
       FlowShape(merge.in(0), merge.out)
     }
 
+  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M]): Repr[List[U]] =
+    via(mergeLatestGraph(that))
+
+  protected def mergeLatestGraph[U >: Out, M](that: Graph[SourceShape[U], M]):
+      Graph[FlowShape[Out @uncheckedVariance, List[U]], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergeLatest[U](2))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
+    }
+
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side
@@ -2999,6 +3010,9 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean)(
       matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
     viaMat(interleaveGraph(that, request, eagerClose))(matF)
+
+  def mergeLatestMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3): ReprMat[List[U], Mat3] =
+    viaMat(mergeLatestGraph(that))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,

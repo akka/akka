@@ -1091,6 +1091,14 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       eagerComplete: Boolean): javadsl.Source[Out, M2] =
     new Source(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
+  def mergeLatest[M](that: Graph[SourceShape[Out], M]): javadsl.Source[java.util.List[Out], Mat] =
+    new Source(delegate.mergeLatest(that).map(_.asJava))
+
+  def mergeLatestMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[java.util.List[Out], Mat3] =
+    new Source(delegate.mergeLatestMat(that)(combinerToScala(matF))).map(_.asJava)
+
   /**
    * Merge the given [[Source]] to this [[Source]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side
