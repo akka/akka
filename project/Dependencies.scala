@@ -18,6 +18,7 @@ object Dependencies {
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.15.1"
+  val nettyVersion = "3.10.6.Final"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.8", "2.13.0-M5"),
@@ -35,7 +36,7 @@ object Dependencies {
     // Compile
 
     val config = "com.typesafe" % "config" % "1.3.4" // ApacheV2
-    val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
+    val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
     val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
@@ -152,9 +153,14 @@ object Dependencies {
 
   val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
 
-  val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
+  val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
+  val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
 
-  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
+  val remote = l ++= Seq(Test.junit, Test.scalatest.value, Test.jimfs) ++ remoteOptionalDependencies
+
+  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml) ++ remoteDependencies
+
+  val multiNodeTestkit = l ++= remoteOptionalDependencies
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
 

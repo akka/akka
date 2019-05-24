@@ -219,7 +219,9 @@ lazy val docs = akkaModule("akka-docs")
         "google.analytics.domain.name" -> "akka.io",
         "signature.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
         "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath),
+        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+        "aeron_version" -> Dependencies.aeronVersion,
+        "netty_version" -> Dependencies.nettyVersion),
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
@@ -237,6 +239,7 @@ lazy val docs = akkaModule("akka-docs")
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
+  .settings(Dependencies.multiNodeTestkit)
   .settings(Protobuf.settings)
   .settings(AutomaticModuleName.settings("akka.remote.testkit"))
   .settings(AkkaBuild.mayChangeSettings)

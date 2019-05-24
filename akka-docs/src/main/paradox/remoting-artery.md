@@ -23,6 +23,18 @@ To use Artery Remoting, you must add the following dependency in your project:
   version=$akka.version$
 }
 
+Artery depends on Aeron. This needs to be explicitly added as a dependency so that users
+not using artery remoting do not have Aeron on the classpath:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=io.aeron
+  artifact=aeron-driver
+  version="$aeron_version$"
+  group2=io.aeron
+  artifact2=aeron-client
+  version2="$aeron_version$"
+}
+
 If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
 
 ## Configuration

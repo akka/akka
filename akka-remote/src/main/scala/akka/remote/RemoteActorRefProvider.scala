@@ -12,6 +12,7 @@ import akka.event.Logging.Error
 import akka.pattern.pipe
 
 import scala.util.control.NonFatal
+import scala.util.Failure
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
 
 import scala.util.control.Exception.Catcher
@@ -30,11 +31,14 @@ import akka.remote.artery.tcp.ArteryTcpTransport
 import akka.serialization.Serialization
 import com.github.ghik.silencer.silent
 
+
+
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] object RemoteActorRefProvider {
+
   private final case class Internals(transport: RemoteTransport, remoteDaemon: InternalActorRef)
       extends NoSerializationVerificationNeeded
 
@@ -207,6 +211,12 @@ private[akka] class RemoteActorRefProvider(
       remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
       "remoting-terminator")
 
+    if (remoteSettings.Artery.Enabled) {
+      checkAeronOnClassPath(system)
+    } else {
+      checkNettyOnClassPath(system)
+    }
+
     val internals = Internals(
       remoteDaemon = {
         val d = new RemoteSystemDaemon(
@@ -237,6 +247,27 @@ private[akka] class RemoteActorRefProvider(
 
     _remoteWatcher = createRemoteWatcher(system)
     remoteDeploymentWatcher = createRemoteDeploymentWatcher(system)
+  }
+
+  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
+    // TODO change link to current once 2.6 is out
+    checkClassOrThrow(system, "org.jboss.netty.channel.Channel", "Classic", "Netty", "https://doc.akka.io/docs/akka/2.6/remoting.html")
+  }
+
+  private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
+    // TODO change link to current once 2.6 is out
+    val arteryLink = "https://doc.akka.io/docs/akka/2.6/remoting-artery.html"
+    // using classes that are used so will fail to compile if they get removed from Aeron
+    checkClassOrThrow(system, "io.aeron.driver.MediaDriver", "Artery", "Aeron driver", arteryLink)
+    checkClassOrThrow(system, "io.aeron.Aeron", "Artery", "Aeron client", arteryLink)
+  }
+
+  private def checkClassOrThrow(system: ActorSystemImpl, className: String, remoting: String, libraryMissing: String, link: String): Unit = {
+    system.dynamicAccess.getClassFor(className) match {
+      case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
+        throw new IllegalStateException(s"$remoting remoting is enabled but $libraryMissing is not on the classpath, it must be added explicitly. See $link")
+      case _ =>
+    }
   }
 
   protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
