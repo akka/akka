@@ -417,11 +417,23 @@ private final case class SavedIslandData(
 
   override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher)
 
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    system.scheduler.scheduleWithFixedDelay(initialDelay, delay)(task)(executionContext)
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    system.scheduler.scheduleAtFixedRate(initialDelay, interval)(task)(executionContext)
+
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
       task: Runnable): Cancellable =
-    system.scheduler.schedule(initialDelay, interval, task)(executionContext)
+    system.scheduler.scheduleAtFixedRate(initialDelay, interval)(task)(executionContext)
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
     system.scheduler.scheduleOnce(delay, task)(executionContext)

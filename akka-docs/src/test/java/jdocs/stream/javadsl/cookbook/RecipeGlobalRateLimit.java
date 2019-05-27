@@ -79,7 +79,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
       this.replenishTimer =
           system
               .scheduler()
-              .schedule(
+              .scheduleWithFixedDelay(
                   this.tokenRefreshPeriod,
                   this.tokenRefreshPeriod,
                   getSelf(),

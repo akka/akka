@@ -211,6 +211,25 @@ A full cluster restart is required to change to Artery.
 Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
 to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
 
+## Schedule periodically with fixed-delay vs. fixed-rate
+
+The `Scheduler.schedule` method has been deprecated in favor of selecting `scheduleWithFixedDelay` or
+`scheduleAtFixedRate`.
+
+The @ref:[Scheduler](../scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
+
+The deprecated `schedule` method had the same semantics as `scheduleAtFixedRate`, but since that can result in
+bursts of scheduled tasks or messages after long garbage collection pauses and in worst case cause undesired
+load on the system `scheduleWithFixedDelay` is often preferred.
+
+For the same reason the following methods have also been deprecated:
+
+* `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
+* `FSM.setTimer`, replaced by `startSingleTimer`, `startTimerWithFixedDelay` or `startTimerAtFixedRate`
+* `PersistentFSM.setTimer`, replaced by `startSingleTimer`, `startTimerWithFixedDelay` or `startTimerAtFixedRate`
+
 ## Streams
 
 ### StreamRefs
@@ -274,7 +293,10 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and th
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
-* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`. Additionally `.schedule` has been renamed to `.scheduleAtFixedRate`. Actors that needs to schedule tasks should prefer `Behaviors.withTimers`.
+* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
+  Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
+  prefer `Behaviors.withTimers`.
+* `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
 
 ### Akka Typed Stream API changes

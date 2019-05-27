@@ -25,14 +25,26 @@ private[akka] final class SchedulerAdapter(private[akka] val untypedScheduler: a
   override def scheduleOnce(delay: Duration, runnable: Runnable, executor: ExecutionContext): Cancellable =
     untypedScheduler.scheduleOnce(delay, runnable)(executor)
 
-  override def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
+  override def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
-    untypedScheduler.schedule(initialDelay, interval, runnable)
+    untypedScheduler.scheduleWithFixedDelay(initialDelay, delay)(runnable)
+
+  override def scheduleWithFixedDelay(
+      initialDelay: Duration,
+      delay: Duration,
+      runnable: Runnable,
+      executor: ExecutionContext): Cancellable =
+    untypedScheduler.scheduleWithFixedDelay(initialDelay, delay, runnable, executor)
+
+  override def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable =
+    untypedScheduler.scheduleAtFixedRate(initialDelay, interval)(runnable)
 
   override def scheduleAtFixedRate(
       initialDelay: Duration,
       interval: Duration,
       runnable: Runnable,
       executor: ExecutionContext): Cancellable =
-    untypedScheduler.schedule(initialDelay, interval, runnable)(executor)
+    untypedScheduler.scheduleAtFixedRate(initialDelay, interval, runnable, executor)
+
 }

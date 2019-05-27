@@ -65,7 +65,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
     immutable.SortedSet.empty)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask = scheduler.schedule(
+  val heartbeatTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval,
     self,

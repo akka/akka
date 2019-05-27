@@ -109,7 +109,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (nextDeadline - System.nanoTime < 0)
             failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+        override def preStart(): Unit =
+          scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
       }
 
     override def toString = "IdleTimeout"
@@ -141,7 +142,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (waitingDemand && (nextDeadline - System.nanoTime < 0))
             failStage(new TimeoutException(s"No demand signalled in the last $timeout."))
 
-        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+        override def preStart(): Unit =
+          scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
       }
 
     override def toString = "BackpressureTimeout"
@@ -169,7 +171,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
         if (nextDeadline - System.nanoTime < 0)
           failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-      override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+      override def preStart(): Unit =
+        scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
 
       class IdleBidiHandler[P](in: Inlet[P], out: Outlet[P]) extends InHandler with OutHandler {
         override def onPush(): Unit = {

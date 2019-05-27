@@ -257,7 +257,7 @@ private[remote] class ReliableDeliverySupervisor(
   import ReliableDeliverySupervisor._
   import context.dispatcher
 
-  val autoResendTimer = context.system.scheduler.schedule(
+  val autoResendTimer = context.system.scheduler.scheduleWithFixedDelay(
     settings.SysResendTimeout,
     settings.SysResendTimeout,
     self,
@@ -672,7 +672,7 @@ private[remote] class EndpointWriter(
 
   val ackIdleTimer = {
     val interval = settings.SysMsgAckTimeout / 2
-    context.system.scheduler.schedule(interval, interval, self, AckIdleCheckTimer)
+    context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, AckIdleCheckTimer)
   }
 
   override def preStart(): Unit = {

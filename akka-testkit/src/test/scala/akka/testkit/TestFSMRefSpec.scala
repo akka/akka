@@ -49,7 +49,7 @@ class TestFSMRefSpec extends AkkaSpec {
         }
       }, "test-fsm-ref-2")
       fsm.isTimerActive("test") should ===(false)
-      fsm.setTimer("test", 12, 10 millis, true)
+      fsm.startTimerWithFixedDelay("test", 12, 10 millis)
       fsm.isTimerActive("test") should ===(true)
       fsm.cancelTimer("test")
       fsm.isTimerActive("test") should ===(false)

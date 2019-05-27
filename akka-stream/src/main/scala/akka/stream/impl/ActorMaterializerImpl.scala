@@ -131,11 +131,23 @@ private[akka] class SubFusingActorMaterializerImpl(
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
 
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    delegate.scheduleWithFixedDelay(initialDelay, delay, task)
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    delegate.scheduleAtFixedRate(initialDelay, interval, task)
+
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
       task: Runnable): Cancellable =
-    delegate.schedulePeriodically(initialDelay, interval, task)
+    scheduleAtFixedRate(initialDelay, interval, task)
 
   override def withNamePrefix(name: String): SubFusingActorMaterializerImpl =
     new SubFusingActorMaterializerImpl(delegate.withNamePrefix(name), registerShell)

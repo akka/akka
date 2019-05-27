@@ -1605,7 +1605,7 @@ private[stream] object Collect {
       private var hasElements = false
 
       override def preStart() = {
-        schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+        scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
         pull(in)
       }
 
@@ -1631,7 +1631,7 @@ private[stream] object Collect {
                 // we also have to pull if downstream hasn't yet requested an element.
                 pull(in)
               } else {
-                schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+                scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
                 emitGroup()
               }
             }
@@ -1645,7 +1645,7 @@ private[stream] object Collect {
               pending = elem
               pendingWeight = cost
             }
-            schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+            scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
             tryCloseGroup()
           }
         }

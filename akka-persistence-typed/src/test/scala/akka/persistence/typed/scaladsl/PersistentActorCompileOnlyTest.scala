@@ -143,7 +143,7 @@ object PersistentActorCompileOnlyTest {
       })
 
     Behaviors.withTimers((timers: TimerScheduler[Command]) => {
-      timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
+      timers.startTimerWithFixedDelay("swing", MoodSwing, 10.seconds)
       b
     })
   }

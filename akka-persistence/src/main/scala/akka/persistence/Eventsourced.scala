@@ -709,7 +709,7 @@ private[persistence] trait Eventsourced
       // protect against snapshot stalling forever because of journal overloaded and such
       val timeoutCancellable = {
         import context.dispatcher
-        context.system.scheduler.schedule(timeout, timeout, self, RecoveryTick(snapshot = false))
+        context.system.scheduler.scheduleWithFixedDelay(timeout, timeout, self, RecoveryTick(snapshot = false))
       }
       var eventSeenInInterval = false
       var _recoveryRunning = true

@@ -488,7 +488,7 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
-    timers.startPeriodicTimer(Retry, Retry, retryInterval)
+    timers.startTimerWithFixedDelay(Retry, Retry, retryInterval)
     startRegistration()
     if (settings.passivateIdleEntityAfter > Duration.Zero)
       log.info(

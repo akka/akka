@@ -90,6 +90,12 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     }
   }
 
+  override def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable = {
+    checkMaxDelay(roundUp(delay).toNanos)
+    super.scheduleWithFixedDelay(initialDelay, delay)(runnable)
+  }
+
   override def schedule(initialDelay: FiniteDuration, delay: FiniteDuration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
@@ -130,7 +136,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
 
       override def isCancelled: Boolean = get == null
     } catch {
-      case SchedulerException(msg) => throw new IllegalStateException(msg)
+      case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
     }
   }
 
@@ -138,7 +144,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       implicit executor: ExecutionContext): Cancellable =
     try schedule(executor, runnable, roundUp(delay))
     catch {
-      case SchedulerException(msg) => throw new IllegalStateException(msg)
+      case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
     }
 
   override def close(): Unit = Await.result(stop(), getShutdownTimeout).foreach { task =>

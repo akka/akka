@@ -1232,14 +1232,19 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   //Start periodic gossip to random nodes in cluster
   import context.dispatcher
-  val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
+  val gossipTask = context.system.scheduler.scheduleWithFixedDelay(gossipInterval, gossipInterval, self, GossipTick)
   val notifyTask =
-    context.system.scheduler.schedule(notifySubscribersInterval, notifySubscribersInterval, self, FlushChanges)
+    context.system.scheduler.scheduleWithFixedDelay(
+      notifySubscribersInterval,
+      notifySubscribersInterval,
+      self,
+      FlushChanges)
   val pruningTask =
     if (pruningInterval >= Duration.Zero)
-      Some(context.system.scheduler.schedule(pruningInterval, pruningInterval, self, RemovedNodePruningTick))
+      Some(
+        context.system.scheduler.scheduleWithFixedDelay(pruningInterval, pruningInterval, self, RemovedNodePruningTick))
     else None
-  val clockTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, ClockTick)
+  val clockTask = context.system.scheduler.scheduleWithFixedDelay(gossipInterval, gossipInterval, self, ClockTick)
 
   val serializer = SerializationExtension(context.system).serializerFor(classOf[DataEnvelope])
   val maxPruningDisseminationNanos = maxPruningDissemination.toNanos
@@ -1291,7 +1296,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       val deltaPropagationInterval = (gossipInterval / deltaPropagationSelector.gossipIntervalDivisor).max(200.millis)
       Some(
         context.system.scheduler
-          .schedule(deltaPropagationInterval, deltaPropagationInterval, self, DeltaPropagationTick))
+          .scheduleWithFixedDelay(deltaPropagationInterval, deltaPropagationInterval, self, DeltaPropagationTick))
     } else None
 
   // cluster nodes, doesn't contain selfAddress, doesn't contain joining and weaklyUp

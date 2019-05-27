@@ -129,9 +129,9 @@ private[akka] class RemoteWatcher(
   var unreachable: Set[Address] = Set.empty
   var addressUids: Map[Address, Long] = Map.empty
 
-  val heartbeatTask = scheduler.schedule(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
+  val heartbeatTask = scheduler.scheduleWithFixedDelay(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
   val failureDetectorReaperTask =
-    scheduler.schedule(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
+    scheduler.scheduleWithFixedDelay(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
 
   override def postStop(): Unit = {
     super.postStop()

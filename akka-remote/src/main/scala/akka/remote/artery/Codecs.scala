@@ -371,16 +371,17 @@ private[remote] class Decoder(
       override protected def logSource = classOf[Decoder]
 
       override def preStart(): Unit = {
-        schedulePeriodically(Tick, 1.seconds)
+        val tickDelay = 1.seconds
+        scheduleWithFixedDelay(Tick, tickDelay, tickDelay)
 
         if (settings.Advanced.Compression.Enabled) {
           settings.Advanced.Compression.ActorRefs.AdvertisementInterval match {
-            case d: FiniteDuration => schedulePeriodicallyWithInitialDelay(AdvertiseActorRefsCompressionTable, d, d)
+            case d: FiniteDuration => scheduleWithFixedDelay(AdvertiseActorRefsCompressionTable, d, d)
             case _                 => // not advertising actor ref compressions
           }
           settings.Advanced.Compression.Manifests.AdvertisementInterval match {
             case d: FiniteDuration =>
-              schedulePeriodicallyWithInitialDelay(AdvertiseClassManifestsCompressionTable, d, d)
+              scheduleWithFixedDelay(AdvertiseClassManifestsCompressionTable, d, d)
             case _ => // not advertising class manifest compressions
           }
         }
