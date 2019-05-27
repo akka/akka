@@ -10,8 +10,8 @@ import com.typesafe.config.ConfigFactory
 
 object ForkJoinPoolStarvationSpec {
   val config = ConfigFactory.parseString("""
+      |akka.actor.serialize-messages = off
       |actorhang {
-      |
       |  task-dispatcher {
       |    mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
       |    throughput = 100
