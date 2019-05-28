@@ -4,15 +4,20 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic }
+import akka.actor.Status.Failure
+import akka.stream.stage.{GraphStage, GraphStageLogic}
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream._
+import akka.stream.impl.fusing.RecoverWithBackoff
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestProbe
+
 import com.github.ghik.silencer.silent
 
 import scala.util.control.NoStackTrace
+import scala.concurrent.duration._
 
 @silent // tests deprecated APIs
 class FlowRecoverWithSpec extends StreamSpec {
@@ -156,6 +161,26 @@ class FlowRecoverWithSpec extends StreamSpec {
         .expectNextN(List(11, 22))
         .expectNextN(List(11, 22))
         .expectError(ex)
+    }
+
+    "terminate with exception after set number of retries using Linear backoff strategy" in assertAllStagesStopped {
+      val probe = TestProbe()
+      val indexOutOfBoundsException = new IndexOutOfBoundsException()
+      val maxTimeout = 10.seconds
+
+      Source(1 to 2)
+        .map { a => if (a == 2) throw indexOutOfBoundsException else a
+        }
+        .recoverWithRetries(2, 1.milliseconds, RecoverWithBackoff.Linear, {
+          case t: Throwable =>
+            Source(List(11, 22)).map(m => if (m == 22) throw indexOutOfBoundsException else m)
+        })
+        .runWith(Sink.actorRef(probe.ref, "completed"))
+
+      probe.expectMsg(maxTimeout, 1)
+      probe.expectMsg(maxTimeout, 11)
+      probe.expectMsg(maxTimeout, 11)
+      probe.expectMsgType[Failure](maxTimeout)
     }
 
     "not attempt recovering when attempts is zero" in assertAllStagesStopped {
