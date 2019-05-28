@@ -27,19 +27,19 @@ cache:
     - $HOME/.sbt/boot
     - $HOME/.jabba/jdk
 
+# script for the default 'test' stage:
+script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
+
 jobs:
   include:
     - stage: whitesource
       name: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
-    - stage: compile_and_mima
-      name: compile_and_mima
-      script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
 
 stages:
   - name: whitesource
     if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) = "2.12.8"
-  - name: compile_and_mima
+  - name: test
     if: type == pull_request OR NOT tag =~ ^v
 
 env:
