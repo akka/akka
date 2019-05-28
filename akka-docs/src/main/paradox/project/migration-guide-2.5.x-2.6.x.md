@@ -186,7 +186,7 @@ A full cluster restart is required to change to Artery.
 
 ### Remoting dependencies have been made optional
 
-Classic remoting depend on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
+Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
 to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
 
 ## Streams

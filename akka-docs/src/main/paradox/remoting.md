@@ -31,7 +31,7 @@ To use Akka Remoting, you must add the following dependency in your project:
 }
 
 Classic remoting depends on Netty. This needs to be explicitly added as a dependency so that users
-not using classic remoting do not have Netty on the classpath:
+not using classic remoting do not have to have Netty on the classpath:
 
 @@dependency[sbt,Maven,Gradle] {
   group=io.netty

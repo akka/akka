@@ -24,7 +24,7 @@ To use Artery Remoting, you must add the following dependency in your project:
 }
 
 Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
-not using artery remoting do not have Aeron on the classpath:
+not using Artery remoting do not have Aeron on the classpath:
 
 @@dependency[sbt,Maven,Gradle] {
   group=io.aeron
