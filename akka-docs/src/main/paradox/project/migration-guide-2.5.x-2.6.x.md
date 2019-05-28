@@ -47,7 +47,7 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 ### Untyped actor removed
 
-`UntypedActor` has been depcated since `2.5.0`. Use AbstractActor instead.
+`UntypedActor` has been depcated since `2.5.0`. Use `AbstractActor` instead.
 
 ### UntypedPersistentActor removed
 
@@ -55,7 +55,7 @@ Use `AbstractPersistentActor` instead.
 
 ### UntypedPersistentActorWithAtLeastOnceDelivery removed
 
-Use AbstractPersistentActorWithAtLeastOnceDelivery instead.
+Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 
 ### Various removed methods
 
