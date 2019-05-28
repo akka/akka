@@ -4,33 +4,34 @@
 
 package akka.stream.impl.fusing
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-import akka.actor.{ ActorRef, Terminated }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.actor.{ActorRef, Terminated}
+import akka.annotation.{DoNotInherit, InternalApi}
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging.LogLevel
-import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.stream.Attributes.{ InputBuffer, LogLevels }
+import akka.event.{LogSource, Logging, LoggingAdapter}
+import akka.stream.Attributes.{InputBuffer, LogLevels}
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl }
-import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.impl.{ReactiveStreamsCompliance, Buffer => BufferImpl}
+import akka.stream.scaladsl.{Flow, Keep, Source}
 import akka.stream.stage._
-import akka.stream.{ Supervision, _ }
+import akka.stream.{Supervision, _}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{Future, Promise}
+import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.{Failure, Success, Try}
 import akka.stream.ActorAttributes.SupervisionStrategy
 
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.control.Exception.Catcher
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.fusing.RecoverWithBackoff.{ Exponential, Linear, RetryContainer }
+import akka.stream.impl.fusing.RecoverWithBackoff.{Exponential, Linear, RetryBackoffStrategy, RetryContainer}
 import akka.util.OptionVal
 import akka.util.unused
 import com.github.ghik.silencer.silent
