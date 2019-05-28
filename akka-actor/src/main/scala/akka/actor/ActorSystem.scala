@@ -86,24 +86,19 @@ object BootstrapSetup {
  * @param identifier the simple name of the selected provider
  * @param fqcn the fully-qualified class name of the selected provider
  */
-abstract class ProviderSelection private (private[akka] val identifier: String, private[akka] val fqcn: String) {
-
-  /** INTERNAL API */
-  @InternalApi private[akka] def hasCluster: Boolean =
-    this match {
-      case ProviderSelection.Cluster => true
-      case _                         => false
-    }
-}
+abstract class ProviderSelection private (
+    private[akka] val identifier: String,
+    private[akka] val fqcn: String,
+    val hasCluster: Boolean)
 object ProviderSelection {
   private[akka] val RemoteActorRefProvider = "akka.remote.RemoteActorRefProvider"
   private[akka] val ClusterActorRefProvider = "akka.cluster.ClusterActorRefProvider"
 
-  case object Local extends ProviderSelection("local", classOf[LocalActorRefProvider].getName)
+  case object Local extends ProviderSelection("local", classOf[LocalActorRefProvider].getName, hasCluster = false)
   // these two cannot be referenced by class as they may not be on the classpath
-  case object Remote extends ProviderSelection("remote", RemoteActorRefProvider)
-  case object Cluster extends ProviderSelection("cluster", ClusterActorRefProvider)
-  final case class Custom(override val fqcn: String) extends ProviderSelection("custom", fqcn)
+  case object Remote extends ProviderSelection("remote", RemoteActorRefProvider, hasCluster = false)
+  case object Cluster extends ProviderSelection("cluster", ClusterActorRefProvider, hasCluster = true)
+  final case class Custom(override val fqcn: String) extends ProviderSelection("custom", fqcn, hasCluster = false)
 
   /**
    * JAVA API
