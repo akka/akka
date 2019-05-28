@@ -28,12 +28,13 @@ cache:
     - $HOME/.jabba/jdk
 
 jobs:
-  - stage: whitesource
-    name: whitesource
-    script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
-  - stage: compile_and_mima
-    name: compile_and_mima
-    script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
+  include:
+    - stage: whitesource
+      name: whitesource
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
+    - stage: compile_and_mima
+      name: compile_and_mima
+      script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
 
 stages:
   - name: whitesource
