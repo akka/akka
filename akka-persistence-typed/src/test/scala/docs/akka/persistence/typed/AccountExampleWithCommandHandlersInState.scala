@@ -154,11 +154,31 @@ object AccountExampleWithCommandHandlersInState {
     val behavior = AccountEntity.behavior("1")
     val ref = spawn(behavior)
 
+    proveTypeIs[Behavior[AccountCommand[Nothing]]](behavior)
+    proveTypeIs[ActorRef[AccountCommand[Nothing]]](ref)
+
     val probe = TestProbe[OperationResult]
     ref.tell(CreateAccount()(probe.ref))
     probe.expectMessage(Confirmed)
 
     val probe2 = TestProbe[CurrentBalance]
     ref.tell(GetBalance()(probe2.ref))
+
+    {
+      val behavior = AccountEntity.behavior[OperationResult]("1")
+      val ref = spawn(behavior)
+
+      proveTypeIs[Behavior[AccountCommand[OperationResult]]](behavior)
+      proveTypeIs[ActorRef[AccountCommand[OperationResult]]](ref)
+
+      val probe = TestProbe[OperationResult]
+      ref.tell(CreateAccount()(probe.ref))
+      probe.expectMessage(Confirmed)
+
+      // val probe2 = TestProbe[CurrentBalance]
+      // ref.tell(GetBalance()(probe2.ref))      // type mismatch: GetBalance NOT =:= AccountCommand[OperationResult]
+    }
+
+    def proveTypeIs[A]: A => Unit = _ => ()
   }
 }
