@@ -25,17 +25,17 @@ import akka.actor.ClassicActorSystemProvider
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
+import akka.japi.function
 import akka.japi.Pair
 import akka.japi.Util
-import akka.japi.function
+import akka.japi.function.Creator
 import akka.stream._
 import akka.stream.impl.fusing.LazyFlow
 import akka.stream.impl.fusing.RecoverWithBackoff.RetryBackoffStrategy
-import akka.util.JavaDurationConverters._
 import akka.util.unused
+import akka.util.JavaDurationConverters._
 import akka.util.ConstantFun
 import akka.util.Timeout
-import akka.japi.function.Creator
 
 import com.github.ghik.silencer.silent
 
