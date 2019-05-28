@@ -89,7 +89,7 @@ object BootstrapSetup {
 abstract class ProviderSelection private (
     private[akka] val identifier: String,
     private[akka] val fqcn: String,
-    val hasCluster: Boolean)
+    private[akka] val hasCluster: Boolean)
 object ProviderSelection {
   private[akka] val RemoteActorRefProvider = "akka.remote.RemoteActorRefProvider"
   private[akka] val ClusterActorRefProvider = "akka.cluster.ClusterActorRefProvider"
