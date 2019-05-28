@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.actor.Status.Failure
-import akka.stream.stage.{GraphStage, GraphStageLogic}
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream._
@@ -169,7 +169,8 @@ class FlowRecoverWithSpec extends StreamSpec {
       val maxTimeout = 10.seconds
 
       Source(1 to 2)
-        .map { a => if (a == 2) throw indexOutOfBoundsException else a
+        .map { a =>
+          if (a == 2) throw indexOutOfBoundsException else a
         }
         .recoverWithRetries(2, 1.milliseconds, RecoverWithBackoff.Linear, {
           case t: Throwable =>
