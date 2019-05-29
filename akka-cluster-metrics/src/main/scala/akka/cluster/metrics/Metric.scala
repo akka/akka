@@ -131,13 +131,12 @@ object StandardMetrics {
       for {
         used <- nodeMetrics.metric(HeapMemoryUsed)
         committed <- nodeMetrics.metric(HeapMemoryCommitted)
-      } yield
-        (
-          nodeMetrics.address,
-          nodeMetrics.timestamp,
-          used.smoothValue.longValue,
-          committed.smoothValue.longValue,
-          nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
+      } yield (
+        nodeMetrics.address,
+        nodeMetrics.timestamp,
+        used.smoothValue.longValue,
+        committed.smoothValue.longValue,
+        nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
     }
 
   }
@@ -183,14 +182,13 @@ object StandardMetrics {
         nodeMetrics: NodeMetrics): Option[(Address, Long, Option[Double], Option[Double], Option[Double], Int)] = {
       for {
         processors <- nodeMetrics.metric(Processors)
-      } yield
-        (
-          nodeMetrics.address,
-          nodeMetrics.timestamp,
-          nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
-          nodeMetrics.metric(CpuCombined).map(_.smoothValue),
-          nodeMetrics.metric(CpuStolen).map(_.smoothValue),
-          processors.value.intValue)
+      } yield (
+        nodeMetrics.address,
+        nodeMetrics.timestamp,
+        nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
+        nodeMetrics.metric(CpuCombined).map(_.smoothValue),
+        nodeMetrics.metric(CpuStolen).map(_.smoothValue),
+        processors.value.intValue)
     }
 
   }
