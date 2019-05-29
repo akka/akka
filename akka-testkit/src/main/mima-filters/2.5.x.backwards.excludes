@@ -1,0 +1,4 @@
+# Remove JavaTestKit https://github.com/akka/akka/issues/26189
+ProblemFilters.exclude[MissingClassProblem]("akka.testkit.JavaTestKit")
+ProblemFilters.exclude[MissingClassProblem]("akka.testkit.JavaTestKit$*")
+ProblemFilters.exclude[MissingClassProblem]("akka.testkit.CachingPartialFunction")

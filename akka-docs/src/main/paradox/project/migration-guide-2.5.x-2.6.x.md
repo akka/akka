@@ -63,6 +63,9 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 * `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
 * `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
 
+### JavaTestKit removed
+
+The `JavaTestKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
 
 ## Deprecated features
 
