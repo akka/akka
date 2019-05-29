@@ -376,7 +376,6 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       import akka.util.Timeout
       implicit val timeout = Timeout(5.seconds)
     """)
-  .disablePlugins(MimaPlugin) // remove before RC?
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -388,7 +387,6 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
-
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
@@ -403,7 +401,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     actorTypedTests % "test->test",
     remoteTests % "test->test")
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
-  .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -419,7 +416,6 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
-  .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -430,8 +426,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     streamTestkit % "test->test",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test")
-  .settings(AutomaticModuleName.settings("akka.stream.typed"))  
-  .disablePlugins(MimaPlugin) // remove before RC?
+  .settings(AutomaticModuleName.settings("akka.stream.typed"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
