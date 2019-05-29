@@ -163,6 +163,7 @@ private[akka] object Shard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
+@InternalStableApi
 private[akka] class Shard(
     typeName: String,
     shardId: ShardRegion.ShardId,
@@ -381,6 +382,7 @@ private[akka] class Shard(
       entityTerminated(ref)
   }
 
+  @InternalStableApi
   def entityTerminated(ref: ActorRef): Unit = {
     val id = idByRef(ref)
     idByRef -= ref
