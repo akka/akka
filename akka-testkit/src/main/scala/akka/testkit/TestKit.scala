@@ -1028,4 +1028,3 @@ trait ImplicitSender { this: TestKitBase =>
 trait DefaultTimeout { this: TestKitBase =>
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }
-

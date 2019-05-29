@@ -65,7 +65,7 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 
 ### JavaTestKit removed
 
-The `JavaTetKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
+The `JavaTestKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
 
 ## Deprecated features
 
