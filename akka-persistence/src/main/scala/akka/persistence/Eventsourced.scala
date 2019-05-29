@@ -139,6 +139,7 @@ private[persistence] trait Eventsourced
    * Called whenever a message replay succeeds.
    * May be implemented by subclass.
    */
+  @InternalStableApi
   private[akka] def onReplaySuccess(): Unit = ()
 
   /**
@@ -231,6 +232,7 @@ private[persistence] trait Eventsourced
   private def unstashInternally(all: Boolean): Unit =
     if (all) internalStash.unstashAll() else internalStash.unstash()
 
+  @InternalStableApi
   private def startRecovery(recovery: Recovery): Unit = {
     val timeout = {
       val journalPluginConfig = this match {

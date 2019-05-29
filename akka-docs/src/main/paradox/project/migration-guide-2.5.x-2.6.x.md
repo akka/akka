@@ -51,6 +51,24 @@ Classic remoting over UDP has been deprecated since `2.5.0` and now has been rem
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
 
+### Untyped actor removed
+
+`UntypedActor` has been depcated since `2.5.0`. Use `AbstractActor` instead.
+
+### UntypedPersistentActor removed
+
+Use `AbstractPersistentActor` instead.
+
+### UntypedPersistentActorWithAtLeastOnceDelivery removed
+
+Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
+
+### Various removed methods
+
+* `Logging.getLogger(UntypedActor)` Untyped actor has been removed, use AbstractActor instead.
+* `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
+* `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
+
 ## Deprecated features
 
 ### TypedActor
