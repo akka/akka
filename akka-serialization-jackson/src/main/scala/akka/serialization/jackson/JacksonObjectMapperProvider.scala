@@ -87,17 +87,20 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
         ObjectMapper.findModules(dynamicAccess.classLoader).asScala
       else
         configuredModules.flatMap { fqcn ⇒
-          dynamicAccess.createInstanceFor[Module](fqcn, Nil) match {
-            case Success(m) ⇒ Some(m)
-            case Failure(e) ⇒
-              log.foreach(
-                _.error(
-                  e,
-                  s"Could not load configured Jackson module [$fqcn], " +
-                  "please verify classpath dependencies or amend the configuration " +
-                  "[akka.serialization.jackson-modules]. Continuing without this module."))
-              None
-          }
+          if (isModuleEnabled(fqcn, dynamicAccess)) {
+            dynamicAccess.createInstanceFor[Module](fqcn, Nil) match {
+              case Success(m) ⇒ Some(m)
+              case Failure(e) ⇒
+                log.foreach(
+                  _.error(
+                    e,
+                    s"Could not load configured Jackson module [$fqcn], " +
+                    "please verify classpath dependencies or amend the configuration " +
+                    "[akka.serialization.jackson-modules]. Continuing without this module."))
+                None
+            }
+          } else
+            None
         }
 
     val modules2 = modules1.map { module ⇒
@@ -117,6 +120,19 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     }
 
     mapper
+  }
+
+  private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean = {
+    // akka-actor-typed dependency is "provided" and may not be included
+    if (fqcn == "akka.serialization.jackson.AkkaTypedJacksonModule") {
+      dynamicAccess.getClassFor("akka.actor.typed.ActorRef") match {
+        case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
+          false // akka-actor-typed not in classpath
+        case _ =>
+          true
+      }
+    } else
+      true
   }
 
   private def features(config: Config, section: String): immutable.Seq[(String, Boolean)] = {
