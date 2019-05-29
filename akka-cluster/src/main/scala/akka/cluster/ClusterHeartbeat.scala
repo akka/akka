@@ -8,7 +8,16 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, Props, RootActorPath}
+import akka.actor.{
+  Actor,
+  ActorLogging,
+  ActorPath,
+  ActorSelection,
+  Address,
+  DeadLetterSuppression,
+  Props,
+  RootActorPath
+}
 import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
