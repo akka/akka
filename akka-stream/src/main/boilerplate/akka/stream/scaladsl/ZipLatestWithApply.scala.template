@@ -32,12 +32,12 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) { outer =>
       // Without this field the completion signalling would take one extra pull
-      var willShutDown = false
+      private var willShutDown = false
 
       [#val inlet0 = new ZipLatestInlet(in0)#
       ]
-      var waitingForTuple = false
-      var staleTupleValues = true
+      private var waitingForTuple = false
+      private var staleTupleValues = true
 
       override def preStart(): Unit = {
         [#pull(in0)#
@@ -96,8 +96,8 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
          }
 
          override def onUpstreamFinish(): Unit = {
-           if (outer.staleTupleValues) completeStage()
-           outer.willShutDown = true
+           if (!hasValue || outer.staleTupleValues) completeStage()
+           else outer.willShutDown = true
          }
        }
     }
