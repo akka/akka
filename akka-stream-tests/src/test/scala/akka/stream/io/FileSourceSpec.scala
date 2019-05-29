@@ -9,6 +9,7 @@ import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
 import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
 import akka.stream.IOResult._
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
@@ -251,7 +252,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           .supervisor
           .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
-        try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+        try assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
         finally p.cancel()
       } finally shutdown(sys)
     }

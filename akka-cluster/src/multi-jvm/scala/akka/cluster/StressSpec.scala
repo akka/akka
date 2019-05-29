@@ -128,7 +128,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 
-    akka.remote.artery.advanced {
+    akka.remote.artery.advanced.aeron {
       idle-cpu-level = 1
       embedded-media-driver = off
       aeron-dir = "target/aeron-StressSpec"
@@ -770,7 +770,7 @@ abstract class StressSpec
       .append(" MB")
     sb.append("\n")
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val args = runtime.getInputArguments.asScala.filterNot(_.contains("classpath")).mkString("\n  ")
     sb.append("Args:\n  ").append(args)
     sb.append("\n")

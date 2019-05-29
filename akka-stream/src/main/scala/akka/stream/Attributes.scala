@@ -201,7 +201,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * `get` to get the most specific attribute value.
    */
   def getAttributeList(): java.util.List[Attribute] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     attributeList.asJava
   }
 
@@ -405,33 +405,8 @@ object ActorAttributes {
   import Attributes._
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
 
-  object Dispatcher {
-
-    /**
-     * INTERNAL API
-     * Resolves the dispatcher's name with a fallback to the default blocking IO dispatcher.
-     * Note that `IODispatcher.dispatcher` is not used here as the config used to create [[ActorMaterializerSettings]]
-     * is not easily accessible, instead the name is taken from `settings.blockingIoDispatcher`
-     */
-    @InternalApi
-    private[akka] def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
-      attributes.mandatoryAttribute[Dispatcher] match {
-        case IODispatcher           => settings.blockingIoDispatcher
-        case Dispatcher(dispatcher) => dispatcher
-      }
-
-    /**
-     * INTERNAL API
-     * Resolves the dispatcher name with a fallback to the default blocking IO dispatcher.
-     */
-    @InternalApi
-    private[akka] def resolve(context: MaterializationContext): String =
-      resolve(context.effectiveAttributes, ActorMaterializerHelper.downcast(context.materializer).settings)
-  }
-
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
 
-  // this is actually a config key that needs reading and itself will contain the actual dispatcher name
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.materializer.blocking-io-dispatcher")
 
   /**

@@ -4,22 +4,17 @@
 
 package akka.stream.javadsl
 
-import akka.annotation.ApiMayChange
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
 import akka.event.LoggingAdapter
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
 
-/**
- * API MAY CHANGE
- */
-@ApiMayChange
 object SourceWithContext {
 
   /**
@@ -37,10 +32,7 @@ object SourceWithContext {
  * operations.
  *
  * Can be created by calling [[Source.asSourceWithContext()]]
- *
- * API MAY CHANGE
  */
-@ApiMayChange
 final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithContext[Out, Ctx, Mat])
     extends GraphDelegate(delegate) {
 

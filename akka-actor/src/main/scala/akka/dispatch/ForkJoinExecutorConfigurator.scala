@@ -4,9 +4,7 @@
 
 package akka.dispatch
 
-import akka.dispatch.forkjoin.{ ForkJoinPool, ForkJoinTask }
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.{ ExecutorService, ForkJoinPool, ForkJoinTask, ThreadFactory }
 import com.typesafe.config.Config
 
 object ForkJoinExecutorConfigurator {
@@ -44,7 +42,7 @@ object ForkJoinExecutorConfigurator {
   final class AkkaForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
     override def getRawResult(): Unit = ()
     override def setRawResult(unit: Unit): Unit = ()
-    final override def exec(): Boolean =
+    override def exec(): Boolean =
       try {
         runnable.run(); true
       } catch {
@@ -52,7 +50,7 @@ object ForkJoinExecutorConfigurator {
           Thread.currentThread.interrupt()
           false
         case anything: Throwable =>
-          val t = Thread.currentThread
+          val t = Thread.currentThread()
           t.getUncaughtExceptionHandler match {
             case null =>
             case some => some.uncaughtException(t, anything)

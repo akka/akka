@@ -196,7 +196,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
    * Java API: All entries of the map.
    */
   def getEntries(): java.util.Map[A, B] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     entries.asJava
   }
 

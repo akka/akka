@@ -6,7 +6,7 @@ package akka.remote.artery
 
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ ActorSystem, Address }
-import akka.remote.transport.netty.NettyTransportSpec._
+import akka.remote.classic.transport.netty.NettyTransportSpec._
 
 import scala.concurrent.Await
 import org.scalatest.WordSpec

@@ -78,7 +78,7 @@ final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends R
    * Java API
    */
   def getRoutees(): java.util.List[Routee] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     routees.asJava
   }
 
@@ -94,7 +94,7 @@ final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends R
  *
  * A `Router` is immutable and the [[RoutingLogic]] must be thread safe.
  */
-final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedSeq[Routee] = Vector.empty) {
+final case class Router(logic: RoutingLogic, routees: immutable.IndexedSeq[Routee] = Vector.empty) {
 
   /**
    * Java API

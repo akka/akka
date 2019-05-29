@@ -11,7 +11,7 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
 class GCounterSpec extends WordSpec with Matchers {
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
 

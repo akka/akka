@@ -8,8 +8,8 @@ import akka.actor.{ ActorPath, ActorRef }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.pattern.ask
-import akka.stream.{ Attributes, Materializer }
 import akka.stream.impl.fusing.ActorGraphInterpreter
+import akka.stream.{ Attributes, Materializer }
 import akka.util.Timeout
 
 import scala.collection.immutable
@@ -33,8 +33,7 @@ object MaterializerState {
   def streamSnapshots(mat: Materializer): Future[immutable.Seq[StreamSnapshot]] = {
     mat match {
       case impl: PhasedFusingActorMaterializer =>
-        import impl.system.dispatcher
-        requestFromSupervisor(impl.supervisor)
+        requestFromSupervisor(impl.supervisor)(impl.system.dispatchers.internalDispatcher)
     }
   }
 
@@ -42,11 +41,9 @@ object MaterializerState {
   @InternalApi
   private[akka] def requestFromSupervisor(supervisor: ActorRef)(
       implicit ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
-    // FIXME arbitrary timeout
+    // Arbitrary timeout: operation should always be quick, when it times out it will be because the materializer stopped
     implicit val timeout: Timeout = 10.seconds
-    (supervisor ? StreamSupervisor.GetChildren)
-      .mapTo[StreamSupervisor.Children]
-      .flatMap(msg => Future.sequence(msg.children.toVector.map(requestFromChild)))
+    (supervisor ? StreamSupervisor.GetChildrenSnapshots).mapTo[StreamSupervisor.ChildrenSnapshots].map(_.seq)
   }
 
   /** INTERNAL API */
@@ -189,7 +186,10 @@ private[akka] final case class RunningInterpreterImpl(
 @InternalApi
 private[akka] final case class LogicSnapshotImpl(index: Int, label: String, attributes: Attributes)
     extends LogicSnapshot
-    with HideImpl
+    with HideImpl {
+
+  override def toString: String = s"Logic($label)"
+}
 
 /**
  * INTERNAL API

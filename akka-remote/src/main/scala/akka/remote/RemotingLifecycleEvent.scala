@@ -61,6 +61,7 @@ final case class AssociationErrorEvent(
 
 @SerialVersionUID(1L)
 final case class RemotingListenEvent(listenAddresses: Set[Address]) extends RemotingLifecycleEvent {
+  @silent
   def getListenAddresses: java.util.Set[Address] =
     scala.collection.JavaConverters.setAsJavaSetConverter(listenAddresses).asJava
   override def logLevel: Logging.LogLevel = Logging.InfoLevel

@@ -13,8 +13,7 @@ import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.DeadLetterSuppression
+import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.util.HashCode
 
 object ServiceDiscovery {
@@ -29,13 +28,14 @@ object ServiceDiscovery {
 
   /** Result of a successful resolve request */
   final class Resolved(val serviceName: String, val addresses: immutable.Seq[ResolvedTarget])
-      extends DeadLetterSuppression {
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded {
 
     /**
      * Java API
      */
     def getAddresses: java.util.List[ResolvedTarget] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       addresses.asJava
     }
 
@@ -58,6 +58,8 @@ object ServiceDiscovery {
   object ResolvedTarget {
     // Simply compare the bytes of the address.
     // This may not work in exotic cases such as IPv4 addresses encoded as IPv6 addresses.
+    import com.github.ghik.silencer.silent
+    @silent
     private implicit val inetAddressOrdering: Ordering[InetAddress] =
       Ordering.by[InetAddress, Iterable[Byte]](_.getAddress)
 
@@ -80,7 +82,8 @@ object ServiceDiscovery {
    * @param port optional port number
    * @param address optional IP address of the target. This is used during cluster bootstap when available.
    */
-  final class ResolvedTarget(val host: String, val port: Option[Int], val address: Option[InetAddress]) {
+  final class ResolvedTarget(val host: String, val port: Option[Int], val address: Option[InetAddress])
+      extends NoSerializationVerificationNeeded {
 
     /**
      * Java API
@@ -121,7 +124,8 @@ object ServiceDiscovery {
  *
  * @param serviceName must not be 'null' or an empty String
  */
-final class Lookup(val serviceName: String, val portName: Option[String], val protocol: Option[String]) {
+final class Lookup(val serviceName: String, val portName: Option[String], val protocol: Option[String])
+    extends NoSerializationVerificationNeeded {
 
   require(serviceName != null, "'serviceName' cannot be null")
   require(serviceName.trim.nonEmpty, "'serviceName' cannot be empty")

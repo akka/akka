@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import java.util.stream.Collectors
 
 import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
@@ -80,7 +81,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
           .supervisor
           .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
-        assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+        assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
       } finally shutdown(sys)
     }
   }

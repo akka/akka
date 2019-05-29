@@ -66,11 +66,10 @@ object PersistenceQueryDocSpec {
      */
     override def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] = offset match {
       case Sequence(offsetValue) =>
-        val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
-        Source.actorPublisher[EventEnvelope](props).mapMaterializedValue(_ => NotUsed)
+        Source.fromGraph(new MyEventsByTagSource(tag, offsetValue, refreshInterval))
       case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
       case _ =>
-        throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
+        throw new IllegalArgumentException("MyJournal does not support " + offset.getClass.getName + " offsets")
     }
 
     override def eventsByPersistenceId(
@@ -127,7 +126,7 @@ object PersistenceQueryDocSpec {
     // possibility to add more plugin specific queries
 
     def byTagsWithMeta(tags: java.util.Set[String]): javadsl.Source[RichEvent, QueryMetadata] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       scaladslReadJournal.byTagsWithMeta(tags.asScala.toSet).asJava
     }
   }

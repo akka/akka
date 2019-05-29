@@ -6,3 +6,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterHeartbea
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterHeartbeatReceiver.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterHeartbeatSender.heartbeatRsp")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.CrossDcHeartbeatSender.selfHeartbeat")
+
+# #24710 remove internal ClusterReadView.refreshCurrentState
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView.refreshCurrentState")

@@ -51,7 +51,7 @@ private object ActorRefSource {
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
-      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
+      override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
         case (_, PoisonPill) =>
           log.warning("for backwards compatibility: PoisonPill will not be supported in the future")
           completeStage()

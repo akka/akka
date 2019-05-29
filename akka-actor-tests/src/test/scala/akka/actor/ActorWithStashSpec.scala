@@ -15,7 +15,7 @@ import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.junit.JUnitSuiteLike
+import org.scalatest.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 
@@ -102,6 +102,7 @@ object ActorWithStashSpec {
 
 }
 
+@silent
 class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
 @silent
@@ -186,36 +187,5 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       expectMsg("terminated")
       expectMsg("terminated")
     }
-  }
-
-  "An ActWithStash" must {
-
-    "allow using whenRestarted" in {
-      import ActorDSL._
-      val a = actor(new ActWithStash {
-        become {
-          case "die" => throw new RuntimeException("dying")
-        }
-        whenRestarted { _ =>
-          testActor ! "restarted"
-        }
-      })
-      EventFilter[RuntimeException]("dying", occurrences = 1).intercept {
-        a ! "die"
-      }
-      expectMsg("restarted")
-    }
-
-    "allow using whenStopping" in {
-      import ActorDSL._
-      val a = actor(new ActWithStash {
-        whenStopping {
-          testActor ! "stopping"
-        }
-      })
-      a ! PoisonPill
-      expectMsg("stopping")
-    }
-
   }
 }

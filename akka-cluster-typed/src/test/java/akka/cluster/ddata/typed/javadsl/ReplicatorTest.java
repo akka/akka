@@ -191,7 +191,7 @@ public class ReplicatorTest extends JUnitSuite {
   static Config config =
       ConfigFactory.parseString(
           "akka.actor.provider = cluster \n"
-              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n");
 

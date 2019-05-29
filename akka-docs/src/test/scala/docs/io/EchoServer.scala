@@ -6,34 +6,24 @@ package docs.io
 
 import java.net.InetSocketAddress
 
-import scala.concurrent.duration.DurationInt
-
 import com.typesafe.config.ConfigFactory
-
-import akka.actor.{ Actor, ActorDSL, ActorLogging, ActorRef, ActorSystem, Props, SupervisorStrategy }
-import akka.actor.ActorDSL.inbox
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props, SupervisorStrategy }
 import akka.io.{ IO, Tcp }
 import akka.util.ByteString
+
+import scala.io.StdIn
 
 object EchoServer extends App {
 
   val config = ConfigFactory.parseString("akka.loglevel = DEBUG")
   implicit val system = ActorSystem("EchoServer", config)
 
-  // make sure to stop the system so that the application stops
-  try run()
-  finally system.terminate()
+  system.actorOf(Props(classOf[EchoManager], classOf[EchoHandler]), "echo")
+  system.actorOf(Props(classOf[EchoManager], classOf[SimpleEchoHandler]), "simple")
 
-  def run(): Unit = {
-    import ActorDSL._
-
-    // create two EchoManager and stop the application once one dies
-    val watcher = inbox()
-    watcher.watch(system.actorOf(Props(classOf[EchoManager], classOf[EchoHandler]), "echo"))
-    watcher.watch(system.actorOf(Props(classOf[EchoManager], classOf[SimpleEchoHandler]), "simple"))
-    watcher.receive(10.minutes)
-  }
-
+  println("Press enter to exit...")
+  StdIn.readLine()
+  system.terminate()
 }
 
 class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {

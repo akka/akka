@@ -24,7 +24,7 @@ import akka.cluster.ClusterSettings.DefaultDataCenter
 object ClusterDomainEventPublisherSpec {
   val config = """
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     """
 }

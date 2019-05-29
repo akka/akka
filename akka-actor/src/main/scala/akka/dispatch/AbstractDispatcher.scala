@@ -351,14 +351,14 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[ExecutorServiceConfigurator](fqcn, args)
-          .recover({
+          .recover {
             case exception =>
               throw new IllegalArgumentException(
                 ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
                 make sure it has an accessible constructor with a [%s,%s] signature""")
                   .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]),
                 exception)
-          })
+          }
           .get
     }
 

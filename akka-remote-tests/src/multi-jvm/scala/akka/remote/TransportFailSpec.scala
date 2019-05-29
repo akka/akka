@@ -27,7 +27,7 @@ object TransportFailConfig extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
-      akka.remote {
+      akka.remote.classic {
         transport-failure-detector {
           implementation-class = "akka.remote.TransportFailSpec$$TestFailureDetector"
           heartbeat-interval = 1 s

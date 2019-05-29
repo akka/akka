@@ -27,8 +27,8 @@ class RemoteNodeRestartDeathWatchConfig(artery: Boolean) extends MultiNodeConfig
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
-      akka.remote.transport-failure-detector.heartbeat-interval = 1 s
-      akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
+      akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
+      akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.artery.enabled = $artery
     """)))
 
@@ -110,7 +110,7 @@ abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestar
         val freshSystem = ActorSystem(
           system.name,
           ConfigFactory.parseString(s"""
-          akka.remote.netty.tcp.port = ${address.port.get}
+          akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")

@@ -64,6 +64,7 @@ private[akka] class ClusterActorRefProvider(
    */
   override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
+  override protected def showDirectUseWarningIfRequired(): Unit = ()
 }
 
 /**

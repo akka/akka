@@ -161,7 +161,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
           system.name,
           ConfigFactory.parseString(s"""
                   akka.remote.artery.canonical.port = ${address.port.get}
-                  akka.remote.netty.tcp.port = ${address.port.get}
+                  akka.remote.classic.netty.tcp.port = ${address.port.get}
                   """).withFallback(system.settings.config))
         val cluster3 = Cluster(sys3)
         val replicator3 = startReplicator(sys3)

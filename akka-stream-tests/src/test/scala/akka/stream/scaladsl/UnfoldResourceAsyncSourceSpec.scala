@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.Utils._
@@ -325,7 +326,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           .supervisor
           .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSourceAsync").get
-        assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+        assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
       } finally shutdown(sys)
     }
 

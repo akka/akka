@@ -4,12 +4,8 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.Props
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.SelfUniqueAddress
 
@@ -50,7 +46,10 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
       val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
       val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
 
-      system.internalSystemActorOf(replicatorBehavior, ReplicatorSettings.name(system), Props.empty)
+      system.internalSystemActorOf(
+        replicatorBehavior,
+        ReplicatorSettings.name(system),
+        Props.empty.withDispatcherFromConfig(settings.dispatcher))
     }
 
   /**

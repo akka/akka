@@ -15,13 +15,12 @@ import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration.Deadline
 import akka.annotation.InternalApi
 import akka.cluster.InternalClusterAction._
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.Pool
-import akka.util.ccompat._
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
@@ -190,6 +189,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     builder.build()
   }
 
+  @silent
   private def clusterRouterPoolSettingsToProto(settings: ClusterRouterPoolSettings): cm.ClusterRouterPoolSettings = {
     val builder = cm.ClusterRouterPoolSettings.newBuilder()
     builder
@@ -199,8 +199,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .addAllUseRoles(settings.useRoles.asJava)
 
     // for backwards compatibility
-    @silent
-    val _ = settings.useRole.foreach(builder.setUseRole)
+    settings.useRole.foreach(builder.setUseRole)
 
     builder.build()
   }

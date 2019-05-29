@@ -43,7 +43,7 @@ public class HelloWorldPersistentEntityExample {
       sharding = ClusterSharding.get(system);
 
       sharding.init(
-          Entity.ofPersistentEntity(
+          Entity.ofEventSourcedEntity(
               HelloWorld.ENTITY_TYPE_KEY,
               ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
     }

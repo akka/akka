@@ -12,7 +12,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 22
+  private val latestPatchOf25 = 23
   // No 2.6 has been released yet. Update to '0' after releasing 2.6.0
   private val latestPatchOf26 = -1
 
@@ -32,6 +32,7 @@ object MiMa extends AutoPlugin {
         case "2.12" =>
           val firstPatchOf25 =
             if (projectName.contains("discovery")) 19
+            else if (projectName.contains("coordination")) 22
             else 0
 
           expandVersions(2, 5, firstPatchOf25 to latestPatchOf25) ++

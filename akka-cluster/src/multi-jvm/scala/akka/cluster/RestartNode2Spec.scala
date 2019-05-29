@@ -57,7 +57,7 @@ abstract class RestartNode2SpecSpec
   lazy val restartedSeed1System = ActorSystem(
     system.name,
     ConfigFactory.parseString(s"""
-      akka.remote.netty.tcp.port = ${seedNodes.head.port.get}
+      akka.remote.classic.netty.tcp.port = ${seedNodes.head.port.get}
       akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
       #akka.remote.retry-gate-closed-for = 1s
       """).withFallback(system.settings.config))

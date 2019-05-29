@@ -12,7 +12,7 @@ import akka.japi.{ function, Pair }
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.stream.scaladsl.GenericGraph
 import akka.util.unused
 
@@ -214,6 +214,8 @@ object Broadcast {
 /**
  * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
  * to the partitioner function applied to the element
+ *
+ * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
  *
  * '''Emits when''' all of the outputs stops backpressuring and there is an input element available
  *
@@ -455,7 +457,7 @@ object ZipN {
  */
 object ZipWithN {
   def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
   }
 }

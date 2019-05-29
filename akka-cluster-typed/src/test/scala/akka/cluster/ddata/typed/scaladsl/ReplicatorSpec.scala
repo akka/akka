@@ -9,7 +9,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.cluster.ddata.SelfUniqueAddress
 
 // #sample
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
@@ -28,7 +28,7 @@ object ReplicatorSpec {
 
   val config = ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.remote.artery.canonical.hostname = 127.0.0.1
     """)
@@ -113,6 +113,36 @@ object ReplicatorSpec {
 
       // suppress unused compiler warnings
       println("" + reply1 + reply2 + reply3 + reply4)
+    }
+
+    def shouldHaveUnapplyForResponseTypes(): Unit = {
+      val getResponse: GetResponse[GCounter] = ???
+      getResponse match {
+        case GetSuccess(Key, Some(_)) =>
+        case GetFailure(Key, Some(_)) =>
+        case NotFound(Key, None)      =>
+      }
+
+      val updateResponse: UpdateResponse[GCounter] = ???
+      updateResponse match {
+        case UpdateSuccess(Key, Some(_))    =>
+        case ModifyFailure(Key, _, _, None) =>
+        case UpdateTimeout(Key, None)       =>
+        case StoreFailure(Key, None)        =>
+        case UpdateFailure(Key, Some(_))    =>
+      }
+
+      val deleteResponse: DeleteResponse[GCounter] = ???
+      deleteResponse match {
+        case DeleteSuccess(Key, Some(_))            =>
+        case ReplicationDeleteFailure(Key, Some(_)) =>
+        case DataDeleted(Key, Some(_))              =>
+      }
+
+      val replicaCount: ReplicaCount = ???
+      replicaCount match {
+        case ReplicaCount(_) =>
+      }
     }
   }
 

@@ -150,7 +150,7 @@ private[akka] final case class TailChoppingRoutees(
  */
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
     within: FiniteDuration,
     interval: FiniteDuration,
@@ -248,7 +248,7 @@ final case class TailChoppingPool(
  *   router management messages
  */
 final case class TailChoppingGroup(
-    val paths: immutable.Iterable[String],
+    paths: immutable.Iterable[String],
     within: FiniteDuration,
     interval: FiniteDuration,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)

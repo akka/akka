@@ -25,7 +25,7 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
   public static final Config config =
       ConfigFactory.parseString(
           "akka.actor.provider = cluster \n"
-              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
               + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
@@ -42,7 +42,7 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
 
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
       sharding.init(
-          Entity.ofPersistentEntity(
+          Entity.ofEventSourcedEntity(
               HelloWorld.ENTITY_TYPE_KEY,
               ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
       _sharding = sharding;

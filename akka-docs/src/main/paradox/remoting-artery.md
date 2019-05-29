@@ -1,8 +1,21 @@
-# Remoting (codename Artery)
+# Artery Remoting
+
+@@@ note
+
+Remoting is the mechanism by which Actors on different nodes talk to each
+other internally.
+
+When building an Akka application, you would usually not use the Remoting concepts
+directly, but instead use the more high-level
+@ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
+such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
+[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) etc.
+
+@@@
 
 ## Dependency
 
-To use Remoting (codename Artery), you must add the following dependency in your project:
+To use Artery Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -24,7 +37,6 @@ akka {
   }
   remote {
     artery {
-      enabled = on
       transport = tcp # See Selecting a transport below
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
@@ -113,26 +125,7 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
 
 ## Migrating from classic remoting
 
-Artery TCP will be the default transport in Akka 2.6.0, and the @ref:[classic remoting implementation](remoting.md)
-will be deprecated.
-
-Artery has the same functionality as classic remoting and you should normally only have to change the
-configuration to switch.
-
-Enable Artery as shown in above @ref:[configuration](#configuration) with your
-@ref:[selected transport](#selecting-a-transport). `tcp` is a good start.
-
-The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`
-has changed from `akka.tcp` to `akka`. If you have configured or hardcoded any such addresses you have to change
-them to `"akka://actorSystemName@10.0.0.1:2552/user/actorName"`. `akka` is used also when TLS is enabled.
-One typical place where such address is used is in the `seed-nodes` configuration.
-
-The configuration is different, so you might have to revisit any custom configuration. See the full
-@ref:[reference configuration for Artery](general/configuration.md#config-akka-remote-artery) and
-@ref:[reference configuration for classic remoting](general/configuration.md#config-akka-remote).
-
-One thing to be aware of is that rolling update from classic remoting to Artery is not supported since the protocol
-is completely different. It will require a full cluster shutdown and new startup.
+See @ref:[migrating from classic remoting](project/migration-guide-2.5.x-2.6.x.md#classic-to-artery)
 
 ## Canonical address
 
@@ -747,7 +740,7 @@ To use the external media driver from the Akka application you need to define th
 configuration properties:
 
 ```
-akka.remote.artery.advanced {
+akka.remote.artery.advanced.aeron {
   embedded-media-driver = off
   aeron-dir = /dev/shm/aeron
 }
@@ -773,7 +766,7 @@ usage and latency with the following configuration:
 ```
 # Values can be from 1 to 10, where 10 strongly prefers low latency
 # and 1 strongly prefers less CPU usage
-akka.remote.artery.advanced.idle-cpu-level = 1
+akka.remote.artery.advanced.aeron.idle-cpu-level = 1
 ```
 
 By setting this value to a lower number, it tells Akka to do longer "sleeping" periods on its thread dedicated

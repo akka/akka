@@ -153,7 +153,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
     }
 
     def props = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val protoProps = proto.getProps
       val actorClass = system.dynamicAccess.getClassFor[AnyRef](protoProps.getClazz).get
       val args: Vector[AnyRef] =

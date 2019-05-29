@@ -159,7 +159,9 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val pub = try {
       val is = createInputStream() // can throw, i.e. FileNotFound
 
-      val props = InputStreamPublisher.props(is, ioResultPromise, chunkSize).withDispatcher(Dispatcher.resolve(context))
+      val props = InputStreamPublisher
+        .props(is, ioResultPromise, chunkSize)
+        .withDispatcher(context.effectiveAttributes.mandatoryAttribute[Dispatcher].dispatcher)
 
       val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)

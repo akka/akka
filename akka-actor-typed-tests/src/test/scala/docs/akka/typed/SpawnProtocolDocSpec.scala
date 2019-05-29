@@ -24,7 +24,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
 import akka.util.Timeout
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
 
 //#imports2
 

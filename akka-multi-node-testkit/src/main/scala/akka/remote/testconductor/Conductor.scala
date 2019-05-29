@@ -83,7 +83,7 @@ trait Conductor { this: TestConductorExt =>
       name: RoleName,
       controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
+    _controller = system.systemActorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
     (controller ? GetSockAddr).flatMap {
