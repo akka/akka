@@ -72,6 +72,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     private final Class<Object> clazz;
     private final Function<Object, Command> f;
 
+    @SuppressWarnings("unchecked")
     public CreateMessageAdapter(Class clazz, Function<Object, Command> f) {
       this.clazz = clazz;
       this.f = f;
@@ -314,6 +315,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     SpawnChildren adaptedMessage = new SpawnChildren(1);
     test.run(new CreateMessageAdapter(String.class, o -> adaptedMessage));
+    @SuppressWarnings("unchecked")
     Effect.MessageAdapter<String, SpawnChildren> mAdapter =
         test.<Effect.MessageAdapter>expectEffectClass(Effect.MessageAdapter.class);
     assertEquals(String.class, mAdapter.messageClass());

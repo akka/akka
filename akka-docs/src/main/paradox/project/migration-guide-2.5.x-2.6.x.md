@@ -45,13 +45,58 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
+### Untyped actor removed
+
+`UntypedActor` has been depcated since `2.5.0`. Use `AbstractActor` instead.
+
+### UntypedPersistentActor removed
+
+Use `AbstractPersistentActor` instead.
+
+### UntypedPersistentActorWithAtLeastOnceDelivery removed
+
+Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
+
+### Various removed methods
+
+* `Logging.getLogger(UntypedActor)` Untyped actor has been removed, use AbstractActor instead.
+* `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
+* `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
+
+### JavaTestKit removed
+
+The `JavaTestKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
+
 ## Deprecated features
 
 ### TypedActor
 
 `akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
-`akka.actor.typed` API which should be used instead. For more context on
-this deprecation [please refer to the discussion here](https://github.com/akka/akka/issues/26144).
+`akka.actor.typed` API which should be used instead.
+
+There are several reasons for phasing out the old `TypedActor`. The primary reason is they use transparent
+remoting which is not our recommended way of implementing and interacting with actors. Transparent remoting
+is when you try to make remote method invocations look like local calls. In contrast we believe in location
+transparency with explicit messaging between actors (same type of messaging for both local and remote actors).
+They also have limited functionality compared to ordinary actors, and worse performance.
+
+To summarize the fallacy of transparent remoting:
+* Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
+* Partial failure is a major problem. Remote calls introduce uncertainty whether the function was invoked or not.
+  Typically handled by using timeouts but the client can't always know the result of the call.
+* Latency of calls over a network are several order of magnitudes longer than latency of local calls,
+  which can be more than surprising if encoded as an innocent looking local method call.
+* Remote invocations have much lower throughput due to the need of serializing the
+  data and you can't just pass huge datasets in the same way.
+
+Therefore explicit message passing is preferred. It looks different from local method calls
+(@scala[`actorRef ! message`]@java[`actorRef.tell(message)`]) and there is no misconception
+that sending a message will result in it being processed instantaneously. The goal of location
+transparency is to unify message passing for both local and remote interactions, versus attempting
+to make remote interactions look like local method calls.
+
+Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
+for many years.
 
 ## Internal dispatcher introduced
 
@@ -81,7 +126,9 @@ blocking and protect a bit against starving the internal actors. Since the inter
 the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
 `8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
 
-## Default remoting is now Artery TCP
+@@ Remoting
+
+### Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
@@ -92,7 +139,7 @@ Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we 
 keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
 <a id="classic-to-artery"></a>
-### Migrating from classic remoting to Artery
+#### Migrating from classic remoting to Artery
 
 Artery has the same functionality as classic remoting and you should normally only have to change the
 configuration to switch.
@@ -122,7 +169,7 @@ If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs 
 for how to do this.
 
 
-### Migration from 2.5.x Artery to 2.6.x Artery
+#### Migration from 2.5.x Artery to 2.6.x Artery
 
 The following defaults have changed:
 
@@ -147,17 +194,22 @@ For TCP:
 * `akka.remote.artery.advanced.connection-timeout` to `akka.remote.artery.advanced.tcp.connection-timeout`
 
 
-### Remaining with Classic remoting (not recommended)
+#### Remaining with Classic remoting (not recommended)
 
 Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
-## Netty UDP has been removed
+### Netty UDP has been removed
 
 Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
+
+### Remoting dependencies have been made optional
+
+Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
+to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
 
 ## Streams
 
@@ -222,4 +274,10 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and th
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
+* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`. Additionally `.schedule` has been renamed to `.scheduleAtFixedRate`. Actors that needs to schedule tasks should prefer `Behaviors.withTimers`.
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
+
+### Akka Typed Stream API changes
+
+* `ActorSoruce.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
+

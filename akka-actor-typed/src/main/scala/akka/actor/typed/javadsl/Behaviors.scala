@@ -9,18 +9,16 @@ import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
-import akka.annotation.ApiMayChange
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
-@ApiMayChange
 object Behaviors {
 
   private[this] val _two2same = new JapiFunction2[ActorContext[Any], Any, Behavior[Any]] {

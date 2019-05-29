@@ -138,7 +138,7 @@ class ORMultiMapSpec extends WordSpec with Matchers {
 
   "be able to get all bindings for an entry and then reduce them upon putting them back" in {
     val m = ORMultiMap().addBinding(node1, "a", "A1").addBinding(node1, "a", "A2").addBinding(node1, "b", "B1")
-    val Some(a) = m.get("a")
+    val a = m.get("a").get
 
     a should be(Set("A1", "A2"))
 

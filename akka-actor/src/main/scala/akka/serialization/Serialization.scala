@@ -63,7 +63,7 @@ object Serialization {
     }
 
     private final def configToMap(cfg: Config): Map[String, String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       cfg.root.unwrapped.asScala.toMap.map { case (k, v) => (k -> v.toString) }
     }
   }

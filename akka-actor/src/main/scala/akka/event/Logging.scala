@@ -676,17 +676,6 @@ object Logging {
   def getLogger(logSource: Actor): DiagnosticLoggingAdapter = apply(logSource)
 
   /**
-   * Obtain LoggingAdapter with MDC support for the given actor.
-   * Don't use it outside its specific Actor as it isn't thread safe
-   */
-  @deprecated("Use AbstractActor instead of UntypedActor.", since = "2.5.0")
-  def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
-    val (str, clazz) = LogSource.fromAnyRef(logSource)
-    val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]
-    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
-  }
-
-  /**
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
@@ -745,7 +734,7 @@ object Logging {
      * Java API: Retrieve the contents of the MDC.
      */
     def getMDC: java.util.Map[String, Any] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       mdc.asJava
     }
   }
@@ -1564,7 +1553,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
   import Logging._
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   private var _mdc = emptyMDC
 

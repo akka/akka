@@ -14,3 +14,4 @@ RedirectMatch 301 ^(.*)/project/migration-guide-stream-2\.0-2\.4.html.* $1/proje
 
 RedirectMatch 301 ^(.*)/stream/stages-overview\.html$ $1/stream/operators/index.html
 RedirectMatch 301 ^(.*)/agents\.html$ $1/project/migration-guide-2.5.x-2.6.x.html
+RedirectMatch 301 ^(.*)/typed-actors\.html$ $1/project/migration-guide-2.5.x-2.6.x.html#typedactor

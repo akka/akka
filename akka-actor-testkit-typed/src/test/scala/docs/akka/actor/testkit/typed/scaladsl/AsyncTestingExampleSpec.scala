@@ -4,7 +4,7 @@
 
 package docs.akka.actor.testkit.typed.scaladsl
 
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
 //#test-header
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 

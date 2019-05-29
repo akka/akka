@@ -4,9 +4,9 @@
 
 package jdocs.akka.actor.testkit.typed.javadsl;
 
-import akka.actor.Scheduler;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.actor.typed.javadsl.Behaviors;
 // #test-header

@@ -13,7 +13,7 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher

@@ -45,3 +45,17 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.MonitorableTh
 
 # Better indicator of ActorRefProvider implementation selection #27009
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ProviderSelection.this")
+
+# Remove deprecated features since 2.5.0 https://github.com/akka/akka/issues/26492
+# The ActorCell and others are due to UntypedActorContext being removed from the Cell's hierarchy
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActor")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorWithUnboundedStash")
+ProblemFilters.exclude[MissingTypesProblem]("akka.actor.ActorCell")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorWithStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorWithUnrestrictedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorContext")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.ExtensionKey")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.LoggingReceive.create")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.Logging.getLogger")
+ProblemFilters.exclude[MissingTypesProblem]("akka.routing.RoutedActorCell")
+ProblemFilters.exclude[MissingTypesProblem]("akka.routing.ResizablePoolCell")

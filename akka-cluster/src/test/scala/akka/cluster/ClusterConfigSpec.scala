@@ -12,8 +12,10 @@ import akka.dispatch.Dispatchers
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
+
 import com.github.ghik.silencer.silent
 
+@silent
 class ClusterConfigSpec extends AkkaSpec {
 
   "Clustering" must {
@@ -41,8 +43,7 @@ class ClusterConfigSpec extends AkkaSpec {
       UnreachableNodesReaperInterval should ===(1 second)
       PublishStatsInterval should ===(Duration.Undefined)
       AutoDownUnreachableAfter should ===(Duration.Undefined)
-      @silent
-      val _ = DownRemovalMargin should ===(Duration.Zero)
+      DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
       SelfDataCenter should ===("default")

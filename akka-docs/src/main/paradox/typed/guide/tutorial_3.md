@@ -2,14 +2,6 @@
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 In the previous topics we explained how to view actor systems _in the large_, that is, how components should be represented, how actors should be arranged in the hierarchy. In this part, we will look at actors _in the small_ by implementing the device actor.
 
 If we were working with objects, we would typically design the API as _interfaces_, a collection of abstract methods to be filled out by the actual implementation. In the world of actors, protocols take the place of interfaces. While it is not possible to formalize general protocols in the programming language, we can compose their most basic element, messages. So, we will start by identifying the messages we will want to send to device actors.

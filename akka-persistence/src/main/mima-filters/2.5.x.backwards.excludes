@@ -1,0 +1,3 @@
+# Remove deprecated features since 2.5.0 https://github.com/akka/akka/issues/26492
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentActor")
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentActorWithAtLeastOnceDelivery")

@@ -9,7 +9,7 @@ import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.annotation.InternalApi
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Internal API

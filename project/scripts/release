@@ -271,7 +271,12 @@ if [ ! $dry_run ]; then
 else
   RELEASE_OPT="-Dakka.build.version=${version} -Dakka.genjavadoc.enabled=true"
 fi
-try sbt $RELEASE_OPT +buildRelease
+
+# FIXME #27019 change back to +buildRelease when Jackson ScalaModule has been released for Scala 2.13
+#try sbt $RELEASE_OPT +buildRelease
+try sbt $RELEASE_OPT buildRelease
+try sbt $RELEASE_OPT -Dakka.build.scalaVersion=2.13.0-RC2 buildRelease
+
 try sbt $RELEASE_OPT buildDocs
 echolog "Successfully created local release"
 
@@ -323,14 +328,6 @@ if [ $dry_run ]; then
   echodry "  git push origin --tags"
 else
   important git push origin --tags
-fi
-
-echolog "Uploading whitesource report"
-if [ $dry_run ]; then
-  echodry "Not actually uploading whitesource report. Commands:"
-  echodry "  sbt $RELEASE_OPT whitesourceUpdate"
-else
-  important sbt $RELEASE_OPT whitesourceUpdate
 fi
 
 # push the release to the server
