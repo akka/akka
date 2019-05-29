@@ -2,14 +2,6 @@
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 The conversational patterns that we have seen so far are simple in the sense that they require the actor to keep little or no state. Specifically:
 
 * Device actors return a reading, which requires no state change

@@ -5,7 +5,7 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.internal._
 
 import scala.reflect.{ classTag, ClassTag }
@@ -13,7 +13,6 @@ import scala.reflect.{ classTag, ClassTag }
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
-@ApiMayChange
 object Behaviors {
 
   /**

@@ -5,7 +5,6 @@
 package akka.actor.typed
 
 import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
 
 /**
  * This trait is not meant to be extended by user code. If you do so, you may
@@ -14,7 +13,6 @@ import akka.annotation.ApiMayChange
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 trait TypedActorContext[T] {
   // this should be a pure interface, i.e. only abstract methods
 

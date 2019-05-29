@@ -2,14 +2,6 @@
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 With an understanding of actor hierarchy and behavior, the remaining question is how to map the top-level components of our IoT system to actors. The _user guardian_ can be an actor that represents the whole application. In other words, we will have a single top-level actor in our IoT system. The components that create and manage devices and dashboards will be children of this actor. This allows us to refactor the example use case architecture diagram into a tree of actors:
 
 ![actor tree diagram of the architecture](diagrams/arch_tree_diagram.png)
