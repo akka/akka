@@ -251,7 +251,7 @@ declare -r current_version=$(get_current_version)
 echolog "Current version is ${current_version}"
 
 if [ "${current_version:0:3}" != "${version:0:3}" ]; then
-  fail "Releasing $version from wrong with version $current_version"
+  fail "Releasing $version from wrong branch with version $current_version"
 fi
 
 # start clean
@@ -272,9 +272,13 @@ else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
 fi
 
-try sbt $RELEASE_OPT +buildRelease
+# tag this release
+echolog "Tagging..."
+try git tag -am "Version ${version}" v${version}
 
+try sbt $RELEASE_OPT +buildRelease
 try sbt $RELEASE_OPT buildDocs
+
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
@@ -285,10 +289,6 @@ if [ ! $no_mima ] && [ $dry_run ]; then
 fi
 
 try sbt $RELEASE_OPT whitesourceCheckPolicies
-
-# commit and tag this release
-echolog "Tagging..."
-try git tag -am "Version ${version}" v${version}
 
 # the point of no return... we're now pushing out to servers
 
