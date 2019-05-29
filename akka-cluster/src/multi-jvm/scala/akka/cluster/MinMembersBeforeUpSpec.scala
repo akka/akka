@@ -118,7 +118,6 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
     runOn(first) {
       cluster.join(myself)
       awaitAssert {
-        clusterView.refreshCurrentState()
         clusterView.status should ===(Joining)
       }
     }
@@ -132,7 +131,6 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
     runOn(first, second) {
       val expectedAddresses = Set(first, second).map(address)
       awaitAssert {
-        clusterView.refreshCurrentState()
         clusterView.members.map(_.address) should ===(expectedAddresses)
       }
       clusterView.members.unsorted.map(_.status) should ===(Set(Joining))

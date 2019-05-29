@@ -12,7 +12,7 @@ import org.scalatest.WordSpec
 
 class PNCounterMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A PNCounterMap" must {

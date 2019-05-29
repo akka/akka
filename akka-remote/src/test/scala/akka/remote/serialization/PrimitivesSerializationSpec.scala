@@ -27,7 +27,7 @@ object PrimitivesSerializationSpec {
 class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.testConfig) {
 
   val buffer = {
-    val b = ByteBuffer.allocate(1024)
+    val b = ByteBuffer.allocate(4096)
     b.order(ByteOrder.LITTLE_ENDIAN)
     b
   }
@@ -119,7 +119,9 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       "empty string" -> ByteString.empty,
       "simple content" -> ByteString("hello"),
       "concatenated content" -> (ByteString("hello") ++ ByteString("world")),
-      "sliced content" -> ByteString("helloabc").take(5)).foreach {
+      "sliced content" -> ByteString("helloabc").take(5),
+      "large concatenated" ->
+      (ByteString(Array.fill[Byte](1000)(1)) ++ ByteString(Array.fill[Byte](1000)(2)))).foreach {
       case (scenario, item) =>
         s"resolve serializer for [$scenario]" in {
           val serializer = SerializationExtension(system)

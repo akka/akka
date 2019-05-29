@@ -4,6 +4,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardC
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RememberEntityStarter.props")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData.remove")
 
-# #25191
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")
-

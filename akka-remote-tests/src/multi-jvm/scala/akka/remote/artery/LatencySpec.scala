@@ -9,7 +9,9 @@ import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
+
 import akka.actor._
+import akka.dispatch.Dispatchers
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -66,7 +68,7 @@ object LatencySpec extends MultiNodeConfig {
   final case object Reset
 
   def echoProps(): Props =
-    Props(new Echo)
+    Props(new Echo).withDispatcher(Dispatchers.InternalDispatcherId)
 
   class Echo extends Actor {
     // FIXME to avoid using new RemoteActorRef each time
@@ -91,6 +93,7 @@ object LatencySpec extends MultiNodeConfig {
       plotsRef: ActorRef,
       BenchmarkFileReporter: BenchmarkFileReporter): Props =
     Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef, BenchmarkFileReporter))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
 
   class Receiver(
       reporter: RateReporter,

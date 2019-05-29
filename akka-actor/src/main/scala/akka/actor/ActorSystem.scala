@@ -193,14 +193,14 @@ object ActorSystem {
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config): ActorSystem = apply(name, config)
 
   /**
    * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
 
@@ -217,7 +217,7 @@ object ActorSystem {
    * executor = "default-executor", including those that have not defined the executor setting and thereby fallback
    * to the default of "default-dispatcher.executor".
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(
       name: String,
@@ -270,14 +270,14 @@ object ActorSystem {
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config): ActorSystem = apply(name, Option(config), None, None)
 
   /**
    * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem =
     apply(name, Option(config), Option(classLoader), None)
@@ -291,7 +291,7 @@ object ActorSystem {
    * If no ExecutionContext is given, the system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
    * The system will use the passed in config, or falls back to the default reference configuration using the ClassLoader.
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(
       name: String,
@@ -305,7 +305,7 @@ object ActorSystem {
    *
    * For more detailed information about the different possible configuration options, look in the Akka Documentation under "Configuration"
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String, val setup: ActorSystemSetup) {
 
@@ -314,7 +314,7 @@ object ActorSystem {
     /**
      * The backing Config of this ActorSystem's Settings
      *
-     * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+     * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
@@ -1055,7 +1055,7 @@ private[akka] class ActorSystemImpl(
                 extensions.replace(ext, inProcessOfRegistration, t) //In case shit hits the fan, remove the inProcess signal
                 throw t //Escalate to caller
             } finally {
-              inProcessOfRegistration.countDown //Always notify listeners of the inProcess signal
+              inProcessOfRegistration.countDown() //Always notify listeners of the inProcess signal
             }
           case _ =>
             registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry

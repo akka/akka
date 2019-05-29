@@ -499,7 +499,7 @@ private[akka] class LocalActorRefProvider private[akka] (
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp"        => tempContainer
         case "deadLetters" => deadLetters
-        case other         => extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case other         => extraNames.getOrElse(other, super.getSingleChild(other))
       }
     }
 

@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
 import scala.annotation.tailrec
 
 import akka.stream.impl.{ Buffer => BufferImpl }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages.SingleSource
@@ -299,7 +299,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
       private def tryCancel(): Boolean =
         // if there's no active substreams or there's only one but it's not been pushed yet
-        if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == substreamWaitingToBePushed.size)) {
+        if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == 1 && substreamWaitingToBePushed.isDefined)) {
           completeStage()
           true
         } else false

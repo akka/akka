@@ -11,7 +11,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class ORMultiMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A ORMultiMap" must {
@@ -138,7 +138,7 @@ class ORMultiMapSpec extends WordSpec with Matchers {
 
   "be able to get all bindings for an entry and then reduce them upon putting them back" in {
     val m = ORMultiMap().addBinding(node1, "a", "A1").addBinding(node1, "a", "A2").addBinding(node1, "b", "B1")
-    val Some(a) = m.get("a")
+    val a = m.get("a").get
 
     a should be(Set("A1", "A2"))
 

@@ -16,8 +16,8 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of Akka 2.5.x
-* `release-2.4` – maintenance branch of Akka 2.4.x
+* `master` – active development branch of Akka 2.6.x
+* `release-2.5` – maintenance branch of Akka 2.5.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
 ## Tags
@@ -103,7 +103,6 @@ Using, for example: current.version 2.5.22, previous.version 2.5, milestone.vers
 1. Label this PR with `to-be-backported`
 1. Mark this PR with Milestone `${milestone.version}`
 1. Mark the issue with Milestone `${current.version}`
-1. `cherry-pick to release-${previous.version}`
 1. `git checkout release-${previous.version}`
 1. `git pull`
 1. Create wip branch

@@ -14,7 +14,7 @@ import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
 
 /**

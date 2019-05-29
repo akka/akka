@@ -4,40 +4,40 @@
 
 package akka.cluster.singleton
 
-import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import akka.AkkaException
+import akka.Done
 import akka.actor.Actor
-import akka.actor.Deploy
-import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
+import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.CoordinatedShutdown
 import akka.actor.DeadLetterSuppression
+import akka.actor.Deploy
 import akka.actor.FSM
+import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster._
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalStableApi
 import akka.cluster.ClusterEvent._
-import akka.AkkaException
-import akka.actor.NoSerializationVerificationNeeded
+import akka.cluster._
+import akka.coordination.lease.LeaseUsageSettings
+import akka.coordination.lease.scaladsl.Lease
+import akka.coordination.lease.scaladsl.LeaseProvider
+import akka.dispatch.Dispatchers
+import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.Promise
-import akka.Done
-import akka.actor.CoordinatedShutdown
-import akka.annotation.DoNotInherit
-import akka.coordination.lease.LeaseUsageSettings
-import akka.pattern.ask
 import akka.util.Timeout
-import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
-import akka.dispatch.Dispatchers
 import com.github.ghik.silencer.silent
-
-import scala.util.control.NonFatal
+import com.typesafe.config.Config
 
 object ClusterSingletonManagerSettings {
 
@@ -478,8 +478,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     extends Actor
     with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
-  import ClusterSingletonManager.Internal._
   import ClusterSingletonManager.Internal.OldestChangedBuffer._
+  import ClusterSingletonManager.Internal._
   import settings._
 
   val cluster = Cluster(context.system)
@@ -805,6 +805,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stop()
   }
 
+  @InternalStableApi
   def gotoOldest(): State = {
     val singleton = context.watch(context.actorOf(singletonProps, singletonName))
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)

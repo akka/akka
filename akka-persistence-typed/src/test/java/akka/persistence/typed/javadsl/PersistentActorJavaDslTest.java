@@ -190,9 +190,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
     private final ActorContext<Command> ctx;
 
-    CounterBehavior(PersistenceId persistentId, ActorContext<Command> ctx) {
+    CounterBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
       super(
-          persistentId,
+          persistenceId,
           SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
       this.ctx = ctx;
     }

@@ -181,7 +181,7 @@ class QueueSinkSpec extends StreamSpec {
       val expected = List(Some(1), Some(2), Some(3), None)
       val javadslQueue = Source(expected.flatten).runWith(Sink.queue()).asJava
       val scaladslQueue = akka.stream.javadsl.SinkQueueWithCancel.asScala(javadslQueue)
-      expected.foreach { v ⇒
+      expected.foreach { v =>
         scaladslQueue.pull().pipeTo(testActor)
         expectMsg(v)
       }

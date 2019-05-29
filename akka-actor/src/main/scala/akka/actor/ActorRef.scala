@@ -748,7 +748,7 @@ private[akka] final class FunctionRef(
     }
   }
 
-  // watching, _watchedBy and maintainAddressTerminatedSubscription requires sychronized access because
+  // watching, _watchedBy and maintainAddressTerminatedSubscription requires synchronized access because
   // AddressTerminatedTopic must be updated together with the variables here.
   // Important: don't include calls to sendSystemMessage inside the synchronized since that can
   // result in deadlock, see issue #26326
@@ -948,7 +948,7 @@ private[akka] final class FunctionRef(
         // AddressTerminatedTopic update not needed
         block
       case _ =>
-        def hasNonLocalAddress: Boolean = (watching.exists(isNonLocal)) || (watchedByOrEmpty.exists(isNonLocal))
+        def hasNonLocalAddress: Boolean = watching.exists(isNonLocal) || watchedByOrEmpty.exists(isNonLocal)
 
         val had = hasNonLocalAddress
         val result = block

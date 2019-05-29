@@ -345,7 +345,7 @@ Java
 
 The `RecoveryCompleted` contains the current `State`.
 
-@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
+@ref[Snapshots](persistence-snapshot.md) can be used for optimizing recovery times.
 
 ## Tagging
 

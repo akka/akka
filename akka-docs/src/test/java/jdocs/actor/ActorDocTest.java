@@ -337,7 +337,7 @@ public class ActorDocTest extends AbstractJavaTest {
       // #selection-wildcard
 
       // #selection-remote
-      getContext().actorSelection("akka.tcp://app@otherhost:1234/user/serviceB");
+      getContext().actorSelection("akka://app@otherhost:1234/user/serviceB");
       // #selection-remote
     }
   }
