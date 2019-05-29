@@ -18,9 +18,9 @@ object Dependencies {
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   // check agrona version when updating this
-  val aeronVersion = "1.15.1"
+  val aeronVersion = "1.19.1"
   // needs to be inline with the aeron version
-  val agronaVersion = "0.9.31"
+  val agronaVersion = "1.0.1"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
 
