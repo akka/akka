@@ -14,11 +14,9 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.annotation.ApiMayChange
 import akka.event.Logging
 import akka.coordination.lease.LeaseSettings
 
-@ApiMayChange
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): LeaseProvider = super.get(system)
 
@@ -29,7 +27,6 @@ object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider
   private final case class LeaseKey(leaseName: String, configPath: String, clientName: String)
 }
 
-@ApiMayChange
 class LeaseProvider(system: ExtendedActorSystem) extends Extension {
   import LeaseProvider.LeaseKey
 
