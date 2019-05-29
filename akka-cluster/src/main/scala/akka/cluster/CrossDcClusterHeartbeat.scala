@@ -158,6 +158,7 @@ private[cluster] class CrossDcHeartbeatSender extends Actor with ActorLogging {
     }
 
   def heartbeat(): Unit = {
+    val nextHB = nextHeartBeat()
     dataCentersState.activeReceivers.foreach { to =>
       if (crossDcFailureDetector.isMonitoring(to.address)) {
         if (verboseHeartbeat) logDebug("(Cross) Heartbeat to [{}]", to.address)
@@ -167,7 +168,7 @@ private[cluster] class CrossDcHeartbeatSender extends Actor with ActorLogging {
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ClusterHeartbeatSender.ExpectedFirstHeartbeat(to))
       }
-      heartbeatReceiver(to.address) ! nextHeartBeat()
+      heartbeatReceiver(to.address) ! nextHB
     }
   }
 

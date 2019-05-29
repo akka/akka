@@ -8,8 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
-import akka.actor.{ Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, RootActorPath }
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, Props, RootActorPath}
 import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
@@ -34,9 +33,9 @@ private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster)
 
   def receive: Receive = {
     case hb: Heartbeat =>
-      // TODO log the sequence nr once serialiser is enabled
+      // TODO log the sequence nr once serializer is enabled
       if (verboseHeartbeat) cluster.ClusterLogger.logDebug("Heartbeat from [{}]", hb.from)
-      sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.sendTimeNanos)
+      sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.sendNanoTime)
   }
 
 }
@@ -45,6 +44,7 @@ private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster)
 @InternalApi
 private[cluster] object ClusterHeartbeatReceiver {
 
+  def props(clusterFactory: () => Cluster): Props = Props(new ClusterHeartbeatReceiver(clusterFactory))
   def name: String = "heartbeatReceiver"
   def path(address: Address): ActorPath =
     RootActorPath(address) / "system" / "cluster" / name
@@ -58,7 +58,7 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent at regular intervals for failure detection.
    */
-  final case class Heartbeat(from: Address, sequenceNr: Long, sendTimeNanos: Long)
+  final case class Heartbeat(from: Address, sequenceNr: Long, sendNanoTime: Long)
       extends ClusterMessage
       with HeartbeatMessage
       with DeadLetterSuppression
@@ -186,6 +186,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor with ActorLogging {
     state = state.reachableMember(m.uniqueAddress)
 
   def heartbeat(): Unit = {
+    val nextHB = selfHeartbeat()
     state.activeReceivers.foreach { to =>
       if (failureDetector.isMonitoring(to.address)) {
         if (verboseHeartbeat) logDebug("Heartbeat to [{}]", to.address)
@@ -195,7 +196,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor with ActorLogging {
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ExpectedFirstHeartbeat(to))
       }
-      heartbeatReceiver(to.address) ! selfHeartbeat
+      heartbeatReceiver(to.address) ! nextHB
     }
 
     checkTickInterval()
