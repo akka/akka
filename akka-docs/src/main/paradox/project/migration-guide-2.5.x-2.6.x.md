@@ -208,6 +208,13 @@ A full cluster restart is required to change to Artery.
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
 
+### IOSources
+
+`[StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
+to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In casw of an IO failure
+the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException]. 
+ 
+
 ## Cluster Sharding
 
 ### Passivate idle entity

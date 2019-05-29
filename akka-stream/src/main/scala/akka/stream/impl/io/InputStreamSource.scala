@@ -55,13 +55,12 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
         }
       }
 
-      override def onPull(): Unit = if (isAvailable(out)) {
+      override def onPull(): Unit =
         try {
-          val readBytes = inputStream.read(buffer)
-          readBytes match {
+          inputStream.read(buffer) match {
             case -1 =>
               closeStage()
-            case _ =>
+            case readBytes =>
               readBytesTotal += readBytes
               push(out, ByteString.fromArray(buffer, 0, readBytes))
           }
@@ -70,7 +69,6 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
             failStream(t)
             failStage(t)
         }
-      }
 
       override def onDownstreamFinish(): Unit = {
         if (!isClosed) {
