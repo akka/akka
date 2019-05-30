@@ -93,7 +93,7 @@ object ExecutionContexts {
  * Futures is the Java API for Futures and Promises
  */
 object Futures {
-  import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Starts an asynchronous computation and returns a `Future` object with the result of that computation.

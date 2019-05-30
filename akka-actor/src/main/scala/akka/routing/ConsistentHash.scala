@@ -126,7 +126,7 @@ object ConsistentHash {
    * Java API: Factory method to create a ConsistentHash
    */
   def create[T](nodes: java.lang.Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     apply(nodes.asScala, virtualNodesFactor)(ClassTag(classOf[Any].asInstanceOf[Class[T]]))
   }
 

@@ -15,8 +15,8 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   // increase for serious measurements
   val iterations = sys.props.get("akka.cluster.ReachabilityPerfSpec.iterations").getOrElse("100").toInt
 
-  val address = Address("akka.tcp", "sys", "a", 2552)
-  val node = Address("akka.tcp", "sys", "a", 2552)
+  val address = Address("akka", "sys", "a", 2552)
+  val node = Address("akka", "sys", "a", 2552)
 
   private def createReachabilityOfSize(base: Reachability, size: Int): Reachability =
     (1 to size).foldLeft(base) {

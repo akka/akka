@@ -12,6 +12,7 @@ import akka.stream.javadsl.Compression;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import static akka.util.ByteString.emptyByteString;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -51,7 +52,7 @@ public class RecipeDecompress extends RecipeTest {
 
     ByteString decompressedData =
         decompressedStream
-            .runFold(ByteString.empty(), ByteString::concat, mat)
+            .runFold(emptyByteString(), ByteString::concat, mat)
             .toCompletableFuture()
             .get(1, TimeUnit.SECONDS);
     String decompressedString = decompressedData.utf8String();

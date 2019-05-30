@@ -4,9 +4,7 @@
 
 package akka.dispatch
 
-import akka.dispatch.forkjoin.{ ForkJoinPool, ForkJoinTask }
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.{ ExecutorService, ForkJoinPool, ForkJoinTask, ThreadFactory }
 import com.typesafe.config.Config
 
 object ForkJoinExecutorConfigurator {
@@ -52,7 +50,7 @@ object ForkJoinExecutorConfigurator {
           Thread.currentThread.interrupt()
           false
         case anything: Throwable =>
-          val t = Thread.currentThread
+          val t = Thread.currentThread()
           t.getUncaughtExceptionHandler match {
             case null =>
             case some => some.uncaughtException(t, anything)

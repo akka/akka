@@ -82,4 +82,6 @@ package object ccompat {
   implicit class ImmutableSortedSetOps[A](val real: i.SortedSet[A]) extends AnyVal {
     def unsorted: i.Set[A] = real
   }
+
+  object JavaConverters extends scala.collection.convert.DecorateAsJava with scala.collection.convert.DecorateAsScala
 }

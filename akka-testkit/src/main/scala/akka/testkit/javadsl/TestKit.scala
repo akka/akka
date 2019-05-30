@@ -12,7 +12,7 @@ import akka.testkit.{ TestActor, TestDuration, TestProbe }
 import akka.util.JavaDurationConverters._
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration._
 
 /**

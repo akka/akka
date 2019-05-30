@@ -11,7 +11,7 @@ import akka.event.LoggingAdapter
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
@@ -22,22 +22,16 @@ import scala.compat.java8.FutureConverters._
 @ApiMayChange
 object FlowWithContext {
 
-  def create[In, Ctx](): FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] = {
-    new FlowWithContext(scaladsl.FlowWithContext[In, Ctx])
-  }
+  def create[In, Ctx](): FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] =
+    new FlowWithContext(Flow.create[Pair[In, Ctx]]())
 
   /**
    * Creates a FlowWithContext from a regular flow that operates on `Pair<data, context>` elements.
    */
   def fromPairs[In, CtxIn, Out, CtxOut, Mat](
-      under: Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] = {
-    new FlowWithContext(
-      scaladsl.FlowWithContext.fromTuples(
-        scaladsl
-          .Flow[(In, CtxIn)]
-          .map { case (i, c) => Pair(i, c) }
-          .viaMat(under.asScala.map(_.toScala))(scaladsl.Keep.right)))
-  }
+      under: Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    new FlowWithContext(under)
+
 }
 
 /**
@@ -51,8 +45,8 @@ object FlowWithContext {
  * API MAY CHANGE
  */
 @ApiMayChange
-final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
-    delegate: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat])
+final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
+    delegate: javadsl.Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat])
     extends GraphDelegate(delegate) {
 
   /**
@@ -83,12 +77,7 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
    * Creates a regular flow of pairs (data, context).
    */
   def asFlow(): Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat] @uncheckedVariance =
-    scaladsl
-      .Flow[Pair[In, CtxIn]]
-      .map(_.toScala)
-      .viaMat(delegate.asFlow)(scaladsl.Keep.right)
-      .map { case (o, c) => Pair(o, c) }
-      .asJava
+    delegate
 
   // remaining operations in alphabetic order
 
@@ -240,7 +229,12 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
   def log(name: String): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
-  def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] = delegate
+  def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    scaladsl.FlowWithContext.fromTuples(
+      scaladsl
+        .Flow[(In, CtxIn)]
+        .map { case (i, c) => Pair(i, c) }
+        .viaMat(delegate.asScala.map(_.toScala))(scaladsl.Keep.right))
 
   private[this] def viaScala[In2, CtxIn2, Out2, CtxOut2, Mat2](
       f: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] => scaladsl.FlowWithContext[
@@ -249,5 +243,6 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
         Out2,
         CtxOut2,
         Mat2]): FlowWithContext[In2, CtxIn2, Out2, CtxOut2, Mat2] =
-    new FlowWithContext(f(delegate))
+    f(this.asScala).asJava
+
 }

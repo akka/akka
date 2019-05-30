@@ -33,7 +33,7 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
   akka.cluster.auto-down-unreachable-after = 2s
   akka.cluster.singleton.min-number-of-hand-over-retries = 5
   akka.remote {
-    netty.tcp {
+    classic.netty.tcp {
       hostname = "127.0.0.1"
       port = 0
     }

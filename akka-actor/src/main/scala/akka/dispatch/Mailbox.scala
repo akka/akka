@@ -18,7 +18,6 @@ import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import akka.dispatch.forkjoin.ForkJoinTask
 import scala.util.control.NonFatal
 
 /**
@@ -210,6 +209,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage])
 
   protected final def systemQueuePut(_old: LatestFirstSystemMessageList, _new: LatestFirstSystemMessageList): Boolean =
+    (_old.head eq _new.head) ||
     // Note: calling .head is not actually existing on the bytecode level as the parameters _old and _new
     // are SystemMessage instances hidden during compile time behind the SystemMessageList value class.
     // Without calling .head the parameters would be boxed in SystemMessageList wrapper.
@@ -241,10 +241,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       run(); false
     } catch {
       case _: InterruptedException =>
-        Thread.currentThread.interrupt()
+        Thread.currentThread().interrupt()
         false
       case anything: Throwable =>
-        val t = Thread.currentThread
+        val t = Thread.currentThread()
         t.getUncaughtExceptionHandler match {
           case null =>
           case some => some.uncaughtException(t, anything)

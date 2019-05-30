@@ -117,8 +117,8 @@ private[akka] object ChildrenContainer {
     override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
-      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) => c.asInstanceOf[Option[ChildRestartStats]]
-      case _                                                        => None
+      case c @ Some(crs: ChildRestartStats) if crs.child == actor => c.asInstanceOf[Option[ChildRestartStats]]
+      case _                                                      => None
     }
 
     override def children: immutable.Iterable[ActorRef] =
@@ -179,8 +179,8 @@ private[akka] object ChildrenContainer {
     override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
-      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) => c.asInstanceOf[Option[ChildRestartStats]]
-      case _                                                        => None
+      case c @ Some(crs: ChildRestartStats) if crs.child == actor => c.asInstanceOf[Option[ChildRestartStats]]
+      case _                                                      => None
     }
 
     override def children: immutable.Iterable[ActorRef] =

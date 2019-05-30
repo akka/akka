@@ -149,7 +149,7 @@ private[remote] final class InboundCompressionsImpl(
   }
 
   override def currentOriginUids: Set[Long] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     // can't use union because of java.lang.Long and Scala Long mismatch,
     // only used for testing so doesn't matter
     val result = Set.empty[java.lang.Long] ++ _actorRefsIns.keySet.asScala.iterator ++

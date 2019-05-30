@@ -25,7 +25,7 @@ private[akka] object Reflect {
    * executing in that stack frame. Implemented using
    * `sun.reflect.Reflection.getCallerClass` if available, None otherwise.
    *
-   * Hint: when comparing to Thread.currentThread.getStackTrace, add two levels.
+   * Hint: when comparing to Thread.currentThread().getStackTrace, add two levels.
    */
   val getCallerClass: Option[Int => Class[_]] = {
     try {
@@ -183,7 +183,7 @@ private[akka] object Reflect {
         case c    => c.getClassLoader
       }
 
-    Option(Thread.currentThread.getContextClassLoader)
+    Option(Thread.currentThread().getContextClassLoader)
       .orElse(Reflect.getCallerClass.map(findCaller))
       .getOrElse(getClass.getClassLoader)
   }

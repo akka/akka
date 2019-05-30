@@ -155,9 +155,9 @@ akka {
     }
   }
 
-  remote {
-    # The port clients should connect to. Default is 2552.
-    netty.tcp.port = 4711
+  remote.artery {
+    # The port clients should connect to.
+    canonical.port = 4711
   }
 }
 ```

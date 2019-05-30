@@ -11,7 +11,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp => IoTcp }
 import akka.stream.TLSProtocol.NegotiateNewSession
@@ -262,7 +262,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def outgoingTlsConnection(
       remoteAddress: InetSocketAddress,
       sslContext: SSLContext,
@@ -307,7 +306,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def bindTls(
       interface: String,
       port: Int,
@@ -355,7 +353,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def bindAndHandleTls(
       handler: Flow[ByteString, ByteString, _],
       interface: String,

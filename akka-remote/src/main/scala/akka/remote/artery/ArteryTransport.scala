@@ -29,6 +29,8 @@ import akka.NotUsed
 import akka.actor.Actor
 import akka.actor.Props
 import akka.actor._
+import akka.annotation.InternalStableApi
+import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.AddressUidExtension
@@ -468,7 +470,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
     controlMaterializer =
-      ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remoteControl", system)
+      ActorMaterializer.systemMaterializer(settings.Advanced.ControlStreamMaterializerSettings, "remoteControl", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
@@ -678,7 +680,9 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         else {
           val flushingPromise = Promise[Done]()
           system.systemActorOf(
-            FlushOnShutdown.props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this, allAssociations),
+            FlushOnShutdown
+              .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this, allAssociations)
+              .withDispatcher(Dispatchers.InternalDispatcherId),
             "remoteFlushOnShutdown")
           flushingPromise.future
         }
@@ -789,6 +793,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     }
   }
 
+  @InternalStableApi
   override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = {
     quarantine(remoteAddress, uid, reason, harmless = false)
   }

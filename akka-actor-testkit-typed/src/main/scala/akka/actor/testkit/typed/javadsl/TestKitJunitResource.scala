@@ -4,10 +4,15 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.Scheduler
+import java.time.Duration
+
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestKitUtils
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
 import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -123,6 +128,16 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](name: String): TestProbe[M] = testKit.createTestProbe(name)
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def stop[T](ref: ActorRef[T], max: Duration): Unit = testKit.stop(ref, max)
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def stop[T](ref: ActorRef[T]): Unit = testKit.stop(ref)
 
   override def after(): Unit = {
     testKit.shutdownTestKit()

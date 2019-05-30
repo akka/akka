@@ -4,12 +4,10 @@
 
 package akka.coordination.lease.scaladsl
 
-import akka.annotation.ApiMayChange
 import akka.coordination.lease.LeaseSettings
 
 import scala.concurrent.Future
 
-@ApiMayChange
 abstract class Lease(val settings: LeaseSettings) {
 
   /**

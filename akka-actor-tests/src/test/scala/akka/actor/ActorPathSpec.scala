@@ -13,7 +13,7 @@ class ActorPathSpec extends WordSpec with Matchers {
   "An ActorPath" must {
 
     "support parsing its String rep" in {
-      val path = RootActorPath(Address("akka.tcp", "mysys")) / "user"
+      val path = RootActorPath(Address("akka", "mysys")) / "user"
       ActorPath.fromString(path.toString) should ===(path)
     }
 
@@ -31,20 +31,20 @@ class ActorPathSpec extends WordSpec with Matchers {
     }
 
     "create correct toString" in {
-      val a = Address("akka.tcp", "mysys")
-      RootActorPath(a).toString should ===("akka.tcp://mysys/")
-      (RootActorPath(a) / "user").toString should ===("akka.tcp://mysys/user")
-      (RootActorPath(a) / "user" / "foo").toString should ===("akka.tcp://mysys/user/foo")
-      (RootActorPath(a) / "user" / "foo" / "bar").toString should ===("akka.tcp://mysys/user/foo/bar")
+      val a = Address("akka", "mysys")
+      RootActorPath(a).toString should ===("akka://mysys/")
+      (RootActorPath(a) / "user").toString should ===("akka://mysys/user")
+      (RootActorPath(a) / "user" / "foo").toString should ===("akka://mysys/user/foo")
+      (RootActorPath(a) / "user" / "foo" / "bar").toString should ===("akka://mysys/user/foo/bar")
     }
 
     "have correct path elements" in {
-      (RootActorPath(Address("akka.tcp", "mysys")) / "user" / "foo" / "bar").elements.toSeq should ===(
+      (RootActorPath(Address("akka", "mysys")) / "user" / "foo" / "bar").elements.toSeq should ===(
         Seq("user", "foo", "bar"))
     }
 
     "create correct toStringWithoutAddress" in {
-      val a = Address("akka.tcp", "mysys")
+      val a = Address("akka", "mysys")
       RootActorPath(a).toStringWithoutAddress should ===("/")
       (RootActorPath(a) / "user").toStringWithoutAddress should ===("/user")
       (RootActorPath(a) / "user" / "foo").toStringWithoutAddress should ===("/user/foo")
@@ -57,32 +57,32 @@ class ActorPathSpec extends WordSpec with Matchers {
     }
 
     "create correct toStringWithAddress" in {
-      val local = Address("akka.tcp", "mysys")
+      val local = Address("akka", "mysys")
       val a = local.copy(host = Some("aaa"), port = Some(2552))
       val b = a.copy(host = Some("bb"))
       val c = a.copy(host = Some("cccc"))
       val root = RootActorPath(local)
-      root.toStringWithAddress(a) should ===("akka.tcp://mysys@aaa:2552/")
-      (root / "user").toStringWithAddress(a) should ===("akka.tcp://mysys@aaa:2552/user")
-      (root / "user" / "foo").toStringWithAddress(a) should ===("akka.tcp://mysys@aaa:2552/user/foo")
+      root.toStringWithAddress(a) should ===("akka://mysys@aaa:2552/")
+      (root / "user").toStringWithAddress(a) should ===("akka://mysys@aaa:2552/user")
+      (root / "user" / "foo").toStringWithAddress(a) should ===("akka://mysys@aaa:2552/user/foo")
 
-      //      root.toStringWithAddress(b) should ===("akka.tcp://mysys@bb:2552/")
-      (root / "user").toStringWithAddress(b) should ===("akka.tcp://mysys@bb:2552/user")
-      (root / "user" / "foo").toStringWithAddress(b) should ===("akka.tcp://mysys@bb:2552/user/foo")
+      //      root.toStringWithAddress(b) should ===("akka://mysys@bb:2552/")
+      (root / "user").toStringWithAddress(b) should ===("akka://mysys@bb:2552/user")
+      (root / "user" / "foo").toStringWithAddress(b) should ===("akka://mysys@bb:2552/user/foo")
 
-      root.toStringWithAddress(c) should ===("akka.tcp://mysys@cccc:2552/")
-      (root / "user").toStringWithAddress(c) should ===("akka.tcp://mysys@cccc:2552/user")
-      (root / "user" / "foo").toStringWithAddress(c) should ===("akka.tcp://mysys@cccc:2552/user/foo")
+      root.toStringWithAddress(c) should ===("akka://mysys@cccc:2552/")
+      (root / "user").toStringWithAddress(c) should ===("akka://mysys@cccc:2552/user")
+      (root / "user" / "foo").toStringWithAddress(c) should ===("akka://mysys@cccc:2552/user/foo")
 
       val rootA = RootActorPath(a)
-      rootA.toStringWithAddress(b) should ===("akka.tcp://mysys@aaa:2552/")
-      (rootA / "user").toStringWithAddress(b) should ===("akka.tcp://mysys@aaa:2552/user")
-      (rootA / "user" / "foo").toStringWithAddress(b) should ===("akka.tcp://mysys@aaa:2552/user/foo")
+      rootA.toStringWithAddress(b) should ===("akka://mysys@aaa:2552/")
+      (rootA / "user").toStringWithAddress(b) should ===("akka://mysys@aaa:2552/user")
+      (rootA / "user" / "foo").toStringWithAddress(b) should ===("akka://mysys@aaa:2552/user/foo")
     }
 
     "not allow path separators in RootActorPath's name" in {
       intercept[IllegalArgumentException] {
-        RootActorPath(Address("akka.tcp", "mysys"), "/user/boom/*") // illegally pass in a path where name is expected
+        RootActorPath(Address("akka", "mysys"), "/user/boom/*") // illegally pass in a path where name is expected
       }.getMessage should include("is a path separator")
 
       // sanity check that creating such path still works

@@ -21,8 +21,8 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
       ConfigFactory.parseString(
           "akka { \n"
               + "  actor.provider = cluster \n"
-              + "  remote { \n"
-              + "    netty.tcp { \n"
+              + "  remote.artery { \n"
+              + "    canonical { \n"
               + "      hostname = \"127.0.0.1\" \n"
               + "      port = 2551 \n"
               + "    } \n"

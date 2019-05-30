@@ -13,6 +13,7 @@ import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import static akka.util.ByteString.emptyByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -78,7 +79,7 @@ public class RecipeByteStrings extends RecipeTest {
         @Override
         public GraphStageLogic createLogic(Attributes inheritedAttributes) {
           return new GraphStageLogic(shape) {
-            private ByteString buffer = ByteString.empty();
+            private ByteString buffer = emptyByteString();
 
             {
               setHandler(
@@ -149,7 +150,7 @@ public class RecipeByteStrings extends RecipeTest {
           assertTrue(chunk.size() <= 2);
         }
 
-        ByteString sum = ByteString.empty();
+        ByteString sum = emptyByteString();
         for (ByteString chunk : chunks) {
           sum = sum.concat(chunk);
         }
@@ -244,7 +245,7 @@ public class RecipeByteStrings extends RecipeTest {
                 .runWith(Sink.seq(), mat)
                 .toCompletableFuture()
                 .get(3, TimeUnit.SECONDS);
-        ByteString acc = ByteString.empty();
+        ByteString acc = emptyByteString();
         for (ByteString b : got) {
           acc = acc.concat(b);
         }

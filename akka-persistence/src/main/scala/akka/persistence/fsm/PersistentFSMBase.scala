@@ -518,6 +518,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * so override that one if `onTermination` shall not be called during
    * restart.
    */
+  @throws(classOf[Exception])
   override def postStop(): Unit = {
     /*
      * setting this instance’s state to terminated does no harm during restart

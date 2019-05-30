@@ -2,7 +2,6 @@ import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, Scal
 
 enablePlugins(
   UnidocRoot,
-  TimeStampede,
   UnidocWithPrValidation,
   NoPublish,
   CopyrightHeader,
@@ -33,42 +32,45 @@ shellPrompt := { s =>
 }
 resolverSettings
 
+def isScala213: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.13")
+
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
 lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
-  actor,
-  actorTests,
-  actorTestkitTyped,
-  actorTyped,
-  actorTypedTests,
-  benchJmh,
-  benchJmhTyped,
-  cluster,
-  clusterMetrics,
-  clusterSharding,
-  clusterShardingTyped,
-  clusterTools,
-  clusterTyped,
-  coordination,
-  discovery,
-  distributedData,
-  docs,
-  multiNodeTestkit,
-  osgi,
-  persistence,
-  persistenceQuery,
-  persistenceShared,
-  persistenceTck,
-  persistenceTyped,
-  protobuf,
-  remote,
-  remoteTests,
-  slf4j,
-  stream,
-  streamTestkit,
-  streamTests,
-  streamTestsTck,
-  streamTyped,
-  testkit)
+    actor,
+    actorTests,
+    actorTestkitTyped,
+    actorTyped,
+    actorTypedTests,
+    cluster,
+    clusterMetrics,
+    clusterSharding,
+    clusterShardingTyped,
+    clusterTools,
+    clusterTyped,
+    coordination,
+    discovery,
+    distributedData,
+    docs,
+    multiNodeTestkit,
+    osgi,
+    persistence,
+    persistenceQuery,
+    persistenceShared,
+    persistenceTck,
+    persistenceTyped,
+    protobuf,
+    remote,
+    remoteTests,
+    slf4j,
+    stream,
+    streamTestkit,
+    streamTests,
+    streamTestsTck,
+    streamTyped,
+    testkit) ++
+  (if (isScala213) List.empty[ProjectReference]
+   else
+     List[ProjectReference](jackson, benchJmh, benchJmhTyped)) // FIXME #27019 remove 2.13 condition when Jackson ScalaModule has been released for Scala 2.13
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -100,7 +102,7 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, testkit).map(
+  .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
@@ -212,6 +214,7 @@ lazy val docs = akkaModule("akka-docs")
         "scala.version" -> scalaVersion.value,
         "scala.binary_version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
+        "scalatest.version" -> Dependencies.scalaTestVersion.value,
         "sigar_loader.version" -> "1.6.6-rev002",
         "algolia.docsearch.api_key" -> "543bad5ad786495d9ccd445ed34ed082",
         "algolia.docsearch.index_name" -> "akka_io",
@@ -219,7 +222,9 @@ lazy val docs = akkaModule("akka-docs")
         "google.analytics.domain.name" -> "akka.io",
         "signature.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
         "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath),
+        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+        "aeron_version" -> Dependencies.aeronVersion,
+        "netty_version" -> Dependencies.nettyVersion),
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
@@ -235,8 +240,20 @@ lazy val docs = akkaModule("akka-docs")
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
   .disablePlugins(ScalafixPlugin)
 
+lazy val jackson = akkaModule("akka-serialization-jackson")
+  .dependsOn(actor, actorTests % "test->test", testkit % "test->test")
+  .settings(Dependencies.jackson)
+  .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
+  .settings(OSGi.jackson)
+  .settings(javacOptions += "-parameters")
+  // FIXME #27019 remove when Jackson ScalaModule has been released for Scala 2.13
+  .settings(crossScalaVersions -= Dependencies.scala213Version)
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
+  .disablePlugins(MimaPlugin)
+
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
+  .settings(Dependencies.multiNodeTestkit)
   .settings(Protobuf.settings)
   .settings(AutomaticModuleName.settings("akka.remote.testkit"))
   .settings(AkkaBuild.mayChangeSettings)
@@ -351,7 +368,6 @@ lazy val testkit = akkaModule("akka-testkit")
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=
@@ -363,7 +379,6 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       import akka.util.Timeout
       implicit val timeout = Timeout(5.seconds)
     """)
-  .disablePlugins(MimaPlugin)
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -373,10 +388,8 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     actorTypedTests % "test->test",
     actorTestkitTyped % "compile->compile;test->test")
   .settings(Dependencies.persistenceShared)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
-  .disablePlugins(MimaPlugin)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
@@ -390,9 +403,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
-  .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -405,11 +416,9 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
     remoteTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
-  .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -420,9 +429,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     streamTestkit % "test->test",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.stream.typed"))
-  .disablePlugins(MimaPlugin)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
@@ -448,7 +455,6 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
-  .settings(AkkaBuild.mayChangeSettings)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

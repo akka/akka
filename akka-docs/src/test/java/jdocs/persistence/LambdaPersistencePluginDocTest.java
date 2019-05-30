@@ -44,7 +44,7 @@ public class LambdaPersistencePluginDocTest {
         class SharedStorageUsage extends AbstractActor {
           @Override
           public void preStart() throws Exception {
-            String path = "akka.tcp://example@127.0.0.1:2552/user/store";
+            String path = "akka://example@127.0.0.1:2552/user/store";
             ActorSelection selection = getContext().actorSelection(path);
             selection.tell(new Identify(1), getSelf());
           }
@@ -169,6 +169,7 @@ public class LambdaPersistencePluginDocTest {
 
   static Object o4 =
       new Object() {
+        // https://github.com/akka/akka/issues/26826
         // #journal-tck-before-after-java
         @RunWith(JUnitRunner.class)
         class MyJournalSpecTest extends JavaJournalSpec {

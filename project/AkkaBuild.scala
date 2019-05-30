@@ -6,6 +6,9 @@ package akka
 
 import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
+import java.time.format.DateTimeFormatter
+import java.time.ZonedDateTime
+import java.time.ZoneOffset
 
 import sbt.Keys._
 import sbt._
@@ -19,18 +22,37 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  lazy val buildSettings = Dependencies.Versions ++ Seq(
+  lazy val buildSettings = Def.settings(
     organization := "com.typesafe.akka",
-    // use the same value as in the build scope, so it can be overriden by stampVersion
+    Dependencies.Versions,
+    // use the same value as in the build scope
     version := (version in ThisBuild).value)
 
-  lazy val rootSettings = Release.settings ++
-    UnidocRoot.akkaSettings ++
-    Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.6-SNAPSHOT"
-    )
- 
+  lazy val currentDateTime = {
+    // storing the first accessed timestamp in system property so that it will be the
+    // same when build is reloaded or when using `+`.
+    // `+` actually doesn't re-initialize this part of the build but that may change in the future.
+    sys.props.getOrElseUpdate("akka.build.timestamp",
+      DateTimeFormatter
+        .ofPattern("yyyyMMdd-HHmmss")
+        .format(ZonedDateTime.now(ZoneOffset.UTC)))
+  }
+
+  def akkaVersion: String = {
+    sys.props.getOrElse("akka.build.version", "2.6-SNAPSHOT") match {
+      case "timestamp" => s"2.6-$currentDateTime" // used when publishing timestamped snapshots
+      case v => v
+    }
+  }
+
+  lazy val rootSettings = Def.settings(
+    Release.settings,
+    UnidocRoot.akkaSettings,
+    Protobuf.settings,
+    parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+      version in ThisBuild := akkaVersion
+  )
+
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
                       |'may change', which means that it is in early
@@ -67,18 +89,16 @@ object AkkaBuild {
             overwrite = true)))
     }
 
-  lazy val resolverSettings = {
+  lazy val resolverSettings = Def.settings(
     // should we be allowed to use artifacts published to the local maven repository
     if (System.getProperty("akka.build.useLocalMavenResolver", "false").toBoolean)
-      Seq(resolvers += mavenLocalResolver)
-    else Seq.empty
-  } ++ {
+      resolvers += mavenLocalResolver
+    else Seq.empty,
     // should we be allowed to use artifacts from sonatype snapshots
     if (System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
-      Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
-    else Seq.empty
-  } ++ Seq(
-    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
+      resolvers += Resolver.sonatypeRepo("snapshots")
+    else Seq.empty,
+    pomIncludeRepository := (_ => false), // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
@@ -88,50 +108,52 @@ object AkkaBuild {
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
 
-  lazy val defaultSettings = resolverSettings ++
-    TestExtras.Filter.settings ++
-    Protobuf.settings ++ Seq[Setting[_]](
-      // compile options
-      scalacOptions in Compile ++= DefaultScalacOptions,
-      // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
-      // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
-      // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
-      // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
-      scalacOptions in Compile ++= (
-        if (JavaVersion.isJdk8)
-          Seq("-target:jvm-1.8")
-        else
-          // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
-      scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
-        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
-      javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
-      javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-      javacOptions in doc ++= Seq(),
+  lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
+    resolverSettings,
+    TestExtras.Filter.settings,
+    Protobuf.settings,
 
-      crossVersion := CrossVersion.binary,
+    // compile options
+    scalacOptions in Compile ++= DefaultScalacOptions,
+    // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
+    // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
+    // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
+    // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
+    scalacOptions in Compile ++= (
+      if (JavaVersion.isJdk8)
+        Seq("-target:jvm-1.8")
+      else
+        // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
+        Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+    scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
+    scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
+      opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
+    javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+    javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+    javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
+    javacOptions in doc ++= Seq(),
 
-      // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
-      // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
-      unmanagedSourceDirectories in Compile += {
-        val sourceDir = (sourceDirectory in Compile).value
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
-          case _                       => sourceDir / "scala-2.13-"
-        }
-      },
+    crossVersion := CrossVersion.binary,
 
-      ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
+    // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
+    // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
+    unmanagedSourceDirectories in Compile += {
+      val sourceDir = (sourceDirectory in Compile).value
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+        case _                       => sourceDir / "scala-2.13-"
+      }
+    },
 
-      licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-      homepage := Some(url("https://akka.io/")),
+    ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
-      apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
+    licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    homepage := Some(url("https://akka.io/")),
 
-      initialCommands :=
-        """|import language.postfixOps
+    apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
+
+    initialCommands :=
+      """|import language.postfixOps
          |import akka.actor._
          |import scala.concurrent._
          |import com.typesafe.config.ConfigFactory
@@ -146,73 +168,75 @@ object AkkaBuild {
          |implicit val timeout = Timeout(5 seconds)
          |""".stripMargin,
 
-      /**
-       * Test settings
-       */
-      fork in Test := true,
+    /**
+     * Test settings
+     */
+    fork in Test := true,
 
-      // default JVM config for tests
-      javaOptions in Test ++= {
-        val defaults = Seq(
-          // ## core memory settings
-          "-XX:+UseG1GC",
-          // most tests actually don't really use _that_ much memory (>1g usually)
-          // twice used (and then some) keeps G1GC happy - very few or to no full gcs
-          "-Xms3g", "-Xmx3g",
-          // increase stack size (todo why?)
-          "-Xss2m",
+    // default JVM config for tests
+    javaOptions in Test ++= {
+      val defaults = Seq(
+        // ## core memory settings
+        "-XX:+UseG1GC",
+        // most tests actually don't really use _that_ much memory (>1g usually)
+        // twice used (and then some) keeps G1GC happy - very few or to no full gcs
+        "-Xms3g", "-Xmx3g",
+        // increase stack size (todo why?)
+        "-Xss2m",
 
-          // ## extra memory/gc tuning
-          // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
-          "-XX:+PerfDisableSharedMem",
-          // tell G1GC that we would be really happy if all GC pauses could be kept below this as higher would
-          // likely start causing test failures in timing tests
-          "-XX:MaxGCPauseMillis=300",
-          // nio direct memory limit for artery/aeron (probably)
-          "-XX:MaxDirectMemorySize=256m",
+        // ## extra memory/gc tuning
+        // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
+        "-XX:+PerfDisableSharedMem",
+        // tell G1GC that we would be really happy if all GC pauses could be kept below this as higher would
+        // likely start causing test failures in timing tests
+        "-XX:MaxGCPauseMillis=300",
+        // nio direct memory limit for artery/aeron (probably)
+        "-XX:MaxDirectMemorySize=256m",
 
-          // faster random source
-          "-Djava.security.egd=file:/dev/./urandom")
+        // faster random source
+        "-Djava.security.egd=file:/dev/./urandom")
 
-        if (sys.props.contains("akka.ci-server"))
-          defaults ++ Seq("-XX:+PrintGCTimeStamps", "-XX:+PrintGCDetails")
-        else
-          defaults
-      },
+      if (sys.props.contains("akka.ci-server"))
+        defaults ++ Seq("-XX:+PrintGCTimeStamps", "-XX:+PrintGCDetails")
+      else
+        defaults
+    },
 
-      // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
-      javaOptions in Test := {
-        val base = (javaOptions in Test).value
-        val akkaSysProps: Seq[String] =
-          sys.props.filter(_._1.startsWith("akka"))
-            .map { case (key, value) => s"-D$key=$value" }(breakOut)
+    // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
+    javaOptions in Test := {
+      val base = (javaOptions in Test).value
+      val akkaSysProps: Seq[String] =
+        sys.props.filter(_._1.startsWith("akka"))
+          .map { case (key, value) => s"-D$key=$value" }(breakOut)
 
-        base ++ akkaSysProps
-      },
+      base ++ akkaSysProps
+    },
 
-      // with forked tests the working directory is set to each module's home directory
-      // rather than the Akka root, some tests depend on Akka root being working dir, so reset
-      testGrouping in Test := {
-        val original: Seq[Tests.Group] = (testGrouping in Test).value
+    // with forked tests the working directory is set to each module's home directory
+    // rather than the Akka root, some tests depend on Akka root being working dir, so reset
+    testGrouping in Test := {
+      val original: Seq[Tests.Group] = (testGrouping in Test).value
 
-        original.map { group =>
-          group.runPolicy match {
-            case Tests.SubProcess(forkOptions) =>
-              group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
-                workingDirectory = Some(new File(System.getProperty("user.dir"))))))
-            case _ => group
-          }
+      original.map { group =>
+        group.runPolicy match {
+          case Tests.SubProcess(forkOptions) =>
+            group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
+              workingDirectory = Some(new File(System.getProperty("user.dir"))))))
+          case _ => group
         }
-      },
+      }
+    },
 
-      parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
+    parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+    logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
-      // show full stack traces and test case durations
-      testOptions in Test += Tests.Argument("-oDF")) ++
-      mavenLocalResolverSettings ++
-      docLintingSettings ++
-      CrossJava.crossJavaSettings
+    // show full stack traces and test case durations
+    testOptions in Test += Tests.Argument("-oDF"),
+
+    mavenLocalResolverSettings,
+    docLintingSettings,
+    CrossJava.crossJavaSettings,
+  )
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),

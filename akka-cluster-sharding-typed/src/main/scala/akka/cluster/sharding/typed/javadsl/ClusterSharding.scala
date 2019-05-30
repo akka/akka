@@ -208,7 +208,7 @@ object Entity {
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
-   * is very common and therefore the [[Entity.ofPersistentEntity]] is provided as convenience.
+   * is very common and therefore the [[Entity.ofEventSourcedEntity]] is provided as convenience.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
@@ -238,10 +238,45 @@ object Entity {
    * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
    * @tparam Command The type of message the entity accepts
    */
-  def ofPersistentEntity[Command, Event, State](
+  def ofEventSourcedEntity[Command, Event, State](
       typeKey: EntityTypeKey[Command],
       createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]])
       : Entity[Command, ShardingEnvelope[Command]] = {
+
+    of(
+      typeKey,
+      new JFunction[EntityContext[Command], Behavior[Command]] {
+        override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
+          val persistentEntity = createPersistentEntity(ctx)
+          if (persistentEntity.entityTypeKey != typeKey)
+            throw new IllegalArgumentException(
+              s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
+              s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
+          persistentEntity
+        }
+      })
+  }
+
+  /**
+   * Defines how the [[EventSourcedEntityWithEnforcedReplies]] should be created. Used in [[ClusterSharding#init]]. Any [[Behavior]] can
+   * be used as a sharded entity actor, but the combination of sharding and persistent actors is very common
+   * and therefore this factory is provided as convenience.
+   *
+   * A [[EventSourcedEntityWithEnforcedReplies]] enforces that replies to commands are not forgotten.
+   * There will be compilation errors if the returned effect isn't a [[akka.persistence.typed.javadsl.ReplyEffect]], which can be
+   * created with `Effects().reply`, `Effects().noReply`, [[akka.persistence.typed.javadsl.Effect.thenReply]], or [[akka.persistence.typed.javadsl.Effect.thenNoReply]].
+   *
+   * More optional settings can be defined using the `with` methods of the returned [[Entity]].
+   *
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
+   * @tparam Command The type of message the entity accepts
+   */
+  def ofEventSourcedEntityWithEnforcedReplies[Command, Event, State](
+      typeKey: EntityTypeKey[Command],
+      createPersistentEntity: JFunction[
+        EntityContext[Command],
+        EventSourcedEntityWithEnforcedReplies[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
 
     of(
       typeKey,
