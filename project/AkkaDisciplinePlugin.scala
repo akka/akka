@@ -43,7 +43,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     })
 
   lazy val silencerSettings = {
-    val silencerVersion = "1.3.3"
+    val silencerVersion = "1.4.0"
     Seq(
       libraryDependencies ++= Seq(
           compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
