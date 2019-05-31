@@ -214,7 +214,7 @@ akka {
     config {
       services {
         service1 {
-          endpoints [
+          endpoints = [
             {
               host = "host1"
               port = 1233
