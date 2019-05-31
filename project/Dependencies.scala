@@ -21,7 +21,7 @@ object Dependencies {
   val aeronVersion = "1.15.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.8", "2.13.0-RC2"),
+    crossScalaVersions := Seq("2.12.8", "2.13.0-RC3"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.9.1"),
     scalaCheckVersion := sys.props
@@ -32,7 +32,7 @@ object Dependencies {
         }),
     scalaTestVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "3.0.8-RC4"
+        case Some((2, n)) if n >= 13 => "3.0.8-RC5"
         case _                       => "3.0.7"
       }
     },
