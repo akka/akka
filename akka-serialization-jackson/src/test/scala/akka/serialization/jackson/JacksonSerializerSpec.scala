@@ -39,7 +39,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
 import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -251,7 +251,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
           if (bindingName == "jackson-json") {
-            configuredModules.filterNot(_.isInstanceOf[AfterburnerModule])
+            configuredModules.filterNot(_.isInstanceOf[JavaTimeModule])
           } else
             super.overrideConfiguredModules(bindingName, configuredModules)
       }
