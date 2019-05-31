@@ -12,7 +12,6 @@ import akka.remote.artery.ArteryMessage
 import scala.collection.mutable
 import scala.concurrent.duration._
 
-import akka.dispatch.Dispatchers
 import akka.remote.artery.ArteryTransport
 import com.github.ghik.silencer.silent
 
@@ -24,20 +23,19 @@ private[akka] object RemoteWatcher {
   /**
    * Factory method for `RemoteWatcher` [[akka.actor.Props]].
    */
-  def props(
-      failureDetector: FailureDetectorRegistry[Address],
-      heartbeatInterval: FiniteDuration,
-      unreachableReaperInterval: FiniteDuration,
-      heartbeatExpectedResponseAfter: FiniteDuration): Props =
-    Props(
-      classOf[RemoteWatcher],
-      failureDetector,
-      heartbeatInterval,
-      unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
+  def props(settings: RemoteSettings, failureDetector: FailureDetectorRegistry[Address]): Props =
+    settings.configureDispatcher(
+      Props(
+        new RemoteWatcher(
+          failureDetector,
+          heartbeatInterval = settings.WatchHeartBeatInterval,
+          unreachableReaperInterval = settings.WatchUnreachableReaperInterval,
+          heartbeatExpectedResponseAfter = settings.WatchHeartbeatExpectedResponseAfter)))
 
-  final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
-  final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
+  /** Marker trait for unsafe usage without Cluster. */
+  sealed trait UnsafeWithoutCluster
+  final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef) extends UnsafeWithoutCluster
+  final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef) extends UnsafeWithoutCluster
 
   @SerialVersionUID(1L) case object Heartbeat extends HeartbeatMessage
   @SerialVersionUID(1L) final case class HeartbeatRsp(addressUid: Int) extends HeartbeatMessage
@@ -139,7 +137,7 @@ private[akka] class RemoteWatcher(
     failureDetectorReaperTask.cancel()
   }
 
-  def receive = {
+  def receive: Receive = {
     case HeartbeatTick                             => sendHeartbeat()
     case Heartbeat | ArteryHeartbeat               => receiveHeartbeat()
     case HeartbeatRsp(uid)                         => receiveHeartbeatRsp(uid.toLong)
@@ -202,15 +200,15 @@ private[akka] class RemoteWatcher(
     }
   }
 
-  def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
-    assert(watcher != self)
-    log.debug("Watching: [{} -> {}]", watcher, watchee)
-    watching.addBinding(watchee, watcher)
-    watchNode(watchee)
+  def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit =
+    if (remoteProvider.canWatch(self, watcher, watchee)) {
+      log.debug("Watching: [{} -> {}]", watcher, watchee)
+      watching.addBinding(watchee, watcher)
+      watchNode(watchee)
 
-    // add watch from self, this will actually send a Watch to the target when necessary
-    context.watch(watchee)
-  }
+      // add watch from self, this will actually send a Watch to the target when necessary
+      context.watch(watchee)
+    }
 
   def watchNode(watchee: InternalActorRef): Unit = {
     val watcheeAddress = watchee.path.address

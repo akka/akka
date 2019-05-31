@@ -17,6 +17,7 @@ import akka.dispatch.Dispatchers
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
 import akka.remote.RARP
+import akka.remote.RemoteSettings
 
 /**
  * INTERNAL API
@@ -26,17 +27,13 @@ private[cluster] object ClusterRemoteWatcher {
   /**
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
-  def props(
-      failureDetector: FailureDetectorRegistry[Address],
-      heartbeatInterval: FiniteDuration,
-      unreachableReaperInterval: FiniteDuration,
-      heartbeatExpectedResponseAfter: FiniteDuration): Props =
-    Props(
-      classOf[ClusterRemoteWatcher],
+  def props(failureDetector: FailureDetectorRegistry[Address], settings: RemoteSettings): Props =
+    Props(new ClusterRemoteWatcher(
       failureDetector,
-      heartbeatInterval,
-      unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
+      heartbeatInterval = settings.WatchHeartBeatInterval,
+      unreachableReaperInterval = settings.WatchUnreachableReaperInterval,
+      heartbeatExpectedResponseAfter = settings.WatchHeartbeatExpectedResponseAfter)
+    ).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
 
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
       extends NoSerializationVerificationNeeded
@@ -81,7 +78,7 @@ private[cluster] class ClusterRemoteWatcher(
     cluster.unsubscribe(self)
   }
 
-  override def receive = receiveClusterEvent.orElse(super.receive)
+  override def receive: Receive = receiveClusterEvent.orElse(super.receive)
 
   def receiveClusterEvent: Actor.Receive = {
     case state: CurrentClusterState =>

@@ -4,10 +4,12 @@
 
 package akka.remote
 
-import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
-import com.typesafe.config.Config
-import akka.event.EventStream
 import akka.ConfigurationException
+import akka.actor.ActorContext
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.event.EventStream
+import com.typesafe.config.Config
 
 /**
  * Interface for a registry of Akka failure detectors. New resources are implicitly registered when heartbeat is first
@@ -86,8 +88,9 @@ private[akka] object FailureDetectorLoader {
    *
    * @param fqcn Fully qualified class name of the implementation to be loaded.
    * @param config Configuration that will be passed to the implementation
-   * @return
    */
-  def apply(fqcn: String, config: Config)(implicit ctx: ActorContext) = load(fqcn, config, ctx.system)
+  def apply(fqcn: String, config: Config)(implicit ctx: ActorContext): FailureDetector = load(fqcn, config, ctx.system)
 
+  def apply(system: ExtendedActorSystem, settings: RemoteSettings): FailureDetector =
+    load(settings.WatchFailureDetectorImplementationClass, settings.WatchFailureDetectorConfig, system)
 }

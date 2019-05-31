@@ -124,6 +124,9 @@ final class RemoteSettings(val config: Config) {
     Timeout(config.getMillisDuration("akka.remote.classic.command-ack-timeout"))
   }.requiring(_.duration > Duration.Zero, "command-ack-timeout must be > 0")
 
+  val UseUnsafeRemoteFeaturesWithoutCluster: Boolean = getBoolean(
+    "akka.remote.use-unsafe-remote-features-without-cluster")
+
   val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
   val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")
   val WatchHeartBeatInterval: FiniteDuration = {

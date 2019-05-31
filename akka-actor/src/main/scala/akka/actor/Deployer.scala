@@ -109,7 +109,7 @@ case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: LocalScope.type = this
 
   def withFallback(other: Scope): Scope = this
 }
@@ -127,7 +127,7 @@ case object NoScopeGiven extends NoScopeGiven {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance = this
+  def getInstance: NoScopeGiven.type = this
 }
 
 /**
@@ -153,12 +153,11 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       .toMap
 
   config.root.asScala
-    .map {
+    .flatMap {
       case ("default", _)             => None
       case (key, value: ConfigObject) => parseConfig(key, value.toConfig)
       case _                          => None
     }
-    .flatten
     .foreach(deploy)
 
   def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1))

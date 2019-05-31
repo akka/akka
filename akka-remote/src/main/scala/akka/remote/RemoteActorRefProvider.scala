@@ -4,32 +4,38 @@
 
 package akka.remote
 
-import akka.Done
-import akka.actor._
-import akka.dispatch.sysmsg._
-import akka.event.{ EventStream, Logging, LoggingAdapter }
-import akka.event.Logging.Error
-import akka.pattern.pipe
-
-import scala.util.control.NonFatal
-import scala.util.Failure
-import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
-
-import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.control.Exception.Catcher
+import scala.util.control.NonFatal
+
 import akka.ConfigurationException
+import akka.Done
+import akka.actor.SystemGuardian.RegisterTerminationHook
+import akka.actor.SystemGuardian.TerminationHook
+import akka.actor.SystemGuardian.TerminationHookDone
+import akka.actor._
 import akka.annotation.InternalApi
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.remote.artery.ArteryTransport
-import akka.remote.artery.aeron.ArteryAeronUdpTransport
+import akka.dispatch.sysmsg._
+import akka.dispatch.RequiresMessageQueue
+import akka.dispatch.UnboundedMessageQueueSemantics
+import akka.event.Logging.Error
+import akka.event.EventStream
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.pattern.pipe
 import akka.remote.artery.ArterySettings
 import akka.remote.artery.ArterySettings.AeronUpd
-import akka.util.{ ErrorMessages, OptionVal }
+import akka.remote.artery.ArteryTransport
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
-import akka.remote.serialization.ActorRefResolveThreadLocalCache
+import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.tcp.ArteryTcpTransport
+import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.serialization.Serialization
+import akka.util.ErrorMessages
+import akka.util.OptionVal
+import akka.util.unused
 import com.github.ghik.silencer.silent
 
 /**
@@ -152,11 +158,26 @@ private[akka] class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config)
 
-  override val deployer: Deployer = createDeployer
+  private[akka] final val hasClusterOrUseUnsafe = settings.HasCluster || remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
+
+  private final val usingUnsafe = !settings.HasCluster && remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
+
+  /** The [[Deployer]] created depends on whether Cluster is used or
+   * `akka.remote.use-unsafe-remote-features-without-cluster`.
+   */
+  override val deployer: Deployer =
+    if (hasClusterOrUseUnsafe) {
+      val d = createDeployer
+      if (usingUnsafe) log.warning("Using deployer [{}] when Cluster is not in use.", d)
+      d
+    } else {
+      log.info("Using a local deployer - Cluster not in use.")
+      new Deployer(settings, dynamicAccess)
+    }
 
   /**
-   * Factory method to make it possible to override deployer in subclass
-   * Creates a new instance every time
+   * Factory method to make it possible to override deployer in subclass.
+   * Creates a new instance every time.
    */
   protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
@@ -194,10 +215,10 @@ private[akka] class RemoteActorRefProvider(
   // This actor ensures the ordering of shutdown between remoteDaemon and the transport
   @volatile private var remotingTerminator: ActorRef = _
 
-  @volatile private var _remoteWatcher: ActorRef = _
-  private[akka] def remoteWatcher = _remoteWatcher
+  @volatile private var _remoteWatcher: Option[ActorRef] = None
+  private[akka] def remoteWatcher: Option[ActorRef] = _remoteWatcher
 
-  @volatile private var remoteDeploymentWatcher: ActorRef = _
+  @volatile private var remoteDeploymentWatcher: Option[ActorRef] = None
 
   @volatile private var actorRefResolveThreadLocalCache: ActorRefResolveThreadLocalCache = _
 
@@ -244,9 +265,12 @@ private[akka] class RemoteActorRefProvider(
     // this enables reception of remote requests
     transport.start()
 
-    _remoteWatcher = createRemoteWatcher(system)
-    remoteDeploymentWatcher = createRemoteDeploymentWatcher(system)
+    _remoteWatcher = createOrNone(createRemoteWatcher(system))
+    remoteDeploymentWatcher = createOrNone(createRemoteDeploymentWatcher(system))
   }
+
+  private def createOrNone(func: => ActorRef): Option[ActorRef] =
+    if (hasClusterOrUseUnsafe) Some(func) else None
 
   private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
     // TODO change link to current once 2.6 is out
@@ -280,42 +304,42 @@ private[akka] class RemoteActorRefProvider(
     }
   }
 
-  protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
-    import remoteSettings._
-    val failureDetector = createRemoteWatcherFailureDetector(system)
+  /**
+   * If using Cluster a `ClusterRemoteWatcher` is returned by the Cluster implementation.
+   * Or if not using Cluster and `akka.remote.use-unsafe-remote-features-without-cluster`
+   * is `on`, a `RemoteWatcher` is returned.
+   * If not using Cluster and `akka.remote.use-unsafe-remote-features-without-cluster`
+   * is `off` (default) then this function is not called during initialization, and no
+   * watcher is created. Additionally in this last case, no remote watcher
+   * `FailureDetector` is created or needed.
+   */
+  protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef =
     system.systemActorOf(
-      configureDispatcher(
-        RemoteWatcher.props(
-          failureDetector,
-          heartbeatInterval = WatchHeartBeatInterval,
-          unreachableReaperInterval = WatchUnreachableReaperInterval,
-          heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter)),
+      RemoteWatcher.props(remoteSettings, createRemoteWatcherFailureDetector(system)),
       "remote-watcher")
-  }
 
-  protected def createRemoteWatcherFailureDetector(system: ExtendedActorSystem): FailureDetectorRegistry[Address] = {
-    def createFailureDetector(): FailureDetector =
-      FailureDetectorLoader.load(
-        remoteSettings.WatchFailureDetectorImplementationClass,
-        remoteSettings.WatchFailureDetectorConfig,
-        system)
-
-    new DefaultFailureDetectorRegistry(() => createFailureDetector())
-  }
+  protected def createRemoteWatcherFailureDetector(system: ExtendedActorSystem): FailureDetectorRegistry[Address] =
+    new DefaultFailureDetectorRegistry(() => FailureDetectorLoader(system, remoteSettings))
 
   protected def createRemoteDeploymentWatcher(system: ActorSystemImpl): ActorRef =
-    system.systemActorOf(
-      remoteSettings.configureDispatcher(Props[RemoteDeploymentWatcher]()),
-      "remote-deployment-watcher")
+    system.systemActorOf(RemoteDeploymentWatcher.props(remoteSettings), "remote-deployment-watcher")
 
   /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
-  protected def showDirectUseWarningIfRequired() = {
+  protected def showDirectUseWarningIfRequired(): Unit = {
     if (remoteSettings.WarnAboutDirectUse) {
       log.warning(
         "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
         "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
     }
   }
+
+  /** Returns true if the `watcher` is not `self` and . */
+  @InternalApi
+  private[akka] def canWatch(
+      self: ActorRef,
+      watcher: InternalActorRef,
+      @unused watchee: InternalActorRef): Boolean =
+    watcher != self && hasClusterOrUseUnsafe
 
   def actorOf(
       system: ActorSystemImpl,
@@ -464,7 +488,7 @@ private[akka] class RemoteActorRefProvider(
   }
 
   def resolveActorRef(path: String): ActorRef = {
-    // using thread local LRU cache, which will call internalRresolveActorRef
+    // using thread local LRU cache, which will call internalResolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
       case null => internalResolveActorRef(path) // not initialized yet
@@ -521,17 +545,18 @@ private[akka] class RemoteActorRefProvider(
   /**
    * Using (checking out) actor on a specific node.
    */
-  def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit = {
-    log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, ref.path)
+  def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit =
+    remoteDeploymentWatcher.foreach { watcher =>
+      log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, ref.path)
 
-    // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
-    // actorSelection can't be used here because then it is not guaranteed that the actor is created
-    // before someone can send messages to it
-    resolveActorRef(RootActorPath(ref.path.address) / "remote") !
-    DaemonMsgCreate(props, deploy, ref.path.toSerializationFormat, supervisor)
+      // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
+      // actorSelection can't be used here because then it is not guaranteed that the actor is created
+      // before someone can send messages to it
+      resolveActorRef(RootActorPath(ref.path.address) / "remote") !
+      DaemonMsgCreate(props, deploy, ref.path.toSerializationFormat, supervisor)
 
-    remoteDeploymentWatcher ! RemoteDeploymentWatcher.WatchRemote(ref, supervisor)
-  }
+      watcher ! RemoteDeploymentWatcher.WatchRemote(ref, supervisor)
+    }
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
     addr match {
@@ -601,8 +626,7 @@ private[akka] class RemoteActorRef private[akka] (
     case t: ArteryTransport =>
       // detect mistakes such as using "akka.tcp" with Artery
       if (path.address.protocol != t.localAddress.address.protocol)
-        throw new IllegalArgumentException(
-          s"Wrong protocol of [${path}], expected [${t.localAddress.address.protocol}]")
+        throw new IllegalArgumentException(s"Wrong protocol of [$path], expected [${t.localAddress.address.protocol}]")
     case _ =>
   }
   @volatile private[remote] var cachedAssociation: artery.Association = null
@@ -639,7 +663,7 @@ private[akka] class RemoteActorRef private[akka] (
   def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-    watcher != provider.remoteWatcher && watchee == this
+    provider.remoteWatcher.exists(rm => watcher != rm) && watchee == this
   }
 
   def sendSystemMessage(message: SystemMessage): Unit =
@@ -647,10 +671,10 @@ private[akka] class RemoteActorRef private[akka] (
       //send to remote, unless watch message is intercepted by the remoteWatcher
       message match {
         case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
+          provider.remoteWatcher.foreach(_ ! RemoteWatcher.WatchRemote(watchee, watcher))
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
         case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
+          provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
         case _ => remote.send(message, OptionVal.None, this)
       }
     } catch handleException(message, Actor.noSender)

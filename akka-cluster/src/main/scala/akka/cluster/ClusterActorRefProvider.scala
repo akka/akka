@@ -5,18 +5,25 @@
 package akka.cluster
 
 import akka.ConfigurationException
-import akka.actor.{ ActorRef, ActorSystem, ActorSystemImpl, Deploy, DynamicAccess, NoScopeGiven, Scope }
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
+import akka.actor.Deploy
+import akka.actor.DynamicAccess
+import akka.actor.InternalActorRef
+import akka.actor.NoScopeGiven
+import akka.actor.Scope
 import akka.annotation.InternalApi
-import akka.cluster.routing.{
-  ClusterRouterGroup,
-  ClusterRouterGroupSettings,
-  ClusterRouterPool,
-  ClusterRouterPoolSettings
-}
+import akka.cluster.routing.ClusterRouterGroup
+import akka.cluster.routing.ClusterRouterGroupSettings
+import akka.cluster.routing.ClusterRouterPool
+import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.event.EventStream
-import akka.remote.{ RemoteActorRefProvider, RemoteDeployer }
+import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteDeployer
 import akka.remote.routing.RemoteRouterConfig
-import akka.routing.{ Group, Pool }
+import akka.routing.Group
+import akka.routing.Pool
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -36,9 +43,11 @@ private[akka] class ClusterActorRefProvider(
     _dynamicAccess: DynamicAccess)
     extends RemoteActorRefProvider(_systemName, _settings, _eventStream, _dynamicAccess) {
 
+  @volatile private var localSystem: Option[ActorSystem] = None
+
   override def init(system: ActorSystemImpl): Unit = {
     super.init(system)
-
+    localSystem = Some(system)
     // initialize/load the Cluster extension
     Cluster(system)
   }
@@ -46,16 +55,8 @@ private[akka] class ClusterActorRefProvider(
   override protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
     // make sure Cluster extension is initialized/loaded from init thread
     Cluster(system)
-
-    import remoteSettings._
-    val failureDetector = createRemoteWatcherFailureDetector(system)
     system.systemActorOf(
-      ClusterRemoteWatcher.props(
-        failureDetector,
-        heartbeatInterval = WatchHeartBeatInterval,
-        unreachableReaperInterval = WatchUnreachableReaperInterval,
-        heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter),
-      "remote-watcher")
+      ClusterRemoteWatcher.props(createRemoteWatcherFailureDetector(system), remoteSettings), "remote-watcher")
   }
 
   /**
@@ -63,6 +64,12 @@ private[akka] class ClusterActorRefProvider(
    * Creates a new instance every time
    */
   override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
+
+  /** Returns true if the `watcher` is not `self` and the `watchee` is inside the cluster. */
+  @InternalApi
+  override private[akka] def canWatch(self: ActorRef, watcher: InternalActorRef, watchee: InternalActorRef): Boolean =
+    super.canWatch(self, watcher, watchee) &&
+      localSystem.exists(Cluster(_).state.members.exists(_.address == watchee.path.address))
 
   override protected def showDirectUseWarningIfRequired(): Unit = ()
 }
