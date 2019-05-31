@@ -25,7 +25,7 @@ object Dependencies {
   val jacksonVersion = "2.9.9"
 
   val scala212Version = "2.12.8"
-  val scala213Version = "2.13.0-RC2"
+  val scala213Version = "2.13.0-RC3"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
@@ -33,7 +33,7 @@ object Dependencies {
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
     scalaTestVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "3.0.8-RC4"
+        case Some((2, n)) if n >= 13 => "3.0.8-RC5"
         case _                       => "3.0.7"
       }
     },
