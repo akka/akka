@@ -62,7 +62,7 @@ Leases can be used for @ref[Cluster Singletons](cluster-singleton.md#lease) and 
 
 ## Lease implementations
 
-* [Kubernetes API](https://developer.lightbend.com/docs/akka-commercial-addons/current/kubernetes-lease.html)
+* [Kubernetes API](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html)
 
 ## Implementing a lease
 
