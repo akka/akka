@@ -10,7 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.cluster.{Cluster, UniqueAddress}
+import akka.cluster.{ Cluster, UniqueAddress }
 import akka.event.Logging
 
 object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProvider {
@@ -44,7 +44,8 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
       else
         log.warning(
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
-            "Node has roles [], Distributed Data is configured for roles []", Cluster(system).selfRoles.mkString(","),
+          "Node has roles [], Distributed Data is configured for roles []",
+          Cluster(system).selfRoles.mkString(","),
           settings.roles.mkString(","))
       system.deadLetters
     } else {

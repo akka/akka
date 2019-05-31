@@ -4,10 +4,10 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
-import akka.actor.typed.{ActorRef, ActorSystem, Extension, ExtensionId, Props}
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.ExtendedActorSystem
 import akka.cluster.Cluster
-import akka.cluster.{ddata => dd}
+import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.SelfUniqueAddress
 
 object DistributedData extends ExtensionId[DistributedData] {
@@ -46,8 +46,9 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
       else
         log.warning(
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
-            "Node has roles [], Distributed Data is configured for roles []",
-          Cluster(untypedSystem).selfRoles.mkString(","), settings.roles.mkString(","))
+          "Node has roles [], Distributed Data is configured for roles []",
+          Cluster(untypedSystem).selfRoles.mkString(","),
+          settings.roles.mkString(","))
       system.deadLetters
     } else {
       val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
