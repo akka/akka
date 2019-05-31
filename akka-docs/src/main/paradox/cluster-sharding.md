@@ -130,7 +130,7 @@ Java
 @@@ div { .group-scala }
 
 A more comprehensive sample is available in the
-tutorial named [Akka Cluster Sharding with Scala!](https://github.com/typesafehub/activator-akka-cluster-sharding-scala).
+tutorial named [Akka Cluster Sharding with Scala](https://github.com/typesafehub/activator-akka-cluster-sharding-scala).
 
 @@@
 
