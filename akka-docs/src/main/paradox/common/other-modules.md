@@ -4,7 +4,7 @@
 
 A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
-## [Alpakka](https://developer.lightbend.com/docs/alpakka/current/)
+## [Alpakka](https://doc.akka.io/docs/alpakka/current/)
 
 Various Akka Streams connectors, integration patterns, and data transformations for integration use cases
 
@@ -20,11 +20,11 @@ A Akka Persistence journal and snapshot store backed by Apache Cassandra.
 
 A Akka Persistence journal and snapshot store backed by Couchbase.
 
-## [Akka Management](https://developer.lightbend.com/docs/akka-management/current/)
+## [Akka Management](https://doc.akka.io/docs/akka-management/current/)
 
 Utilities for managing a running Akka Cluster.
 
-## [Akka gRPC](https://developer.lightbend.com/docs/akka-grpc/current/)
+## [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
 
 Akka gRPC provides support for building streaming gRPC servers and clients on top of Akka Streams.
 
@@ -45,16 +45,16 @@ Lagom is a microservice framework which strives to be opinionated and encode bes
 
 ### Akka Resilience Enhancements:
 
-* [Akka Split Brain Resolver](https://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html)
-* [Kubernetes Lease](https://developer.lightbend.com/docs/akka-commercial-addons/current/kubernetes-lease.html)
-* [Akka Thread Starvation Detector](https://developer.lightbend.com/docs/akka-commercial-addons/current/starvation-detector.html)
-* [Akka Configuration Checker](https://developer.lightbend.com/docs/akka-commercial-addons/current/config-checker.html)
-* [Akka Diagnostics Recorder](https://developer.lightbend.com/docs/akka-commercial-addons/current/diagnostics-recorder.html)
+* [Akka Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
+* [Kubernetes Lease](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html)
+* [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html)
+* [Akka Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html)
+* [Akka Diagnostics Recorder](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html)
 
 ### Akka Persistence Enhancements:
 
-* [Akka Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
-* [Akka GDPR for Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/gdpr/index.html)
+* [Akka Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+* [Akka GDPR for Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
 
 ### [Lightbend Telemetry](https://developer.lightbend.com/docs/telemetry/current/home.html)
 

@@ -9,7 +9,7 @@ When building an Akka application, you would usually not use the Remoting concep
 directly, but instead use the more high-level
 @ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
 such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
-[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) etc.
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
 
 @@@
 
