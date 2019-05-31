@@ -6,7 +6,7 @@ Akka Discovery provides an interface around various ways of locating services. T
 * DNS
 * Aggregate
 
-In addition [Akka Management](https://developer.lightbend.com/docs/akka-management/current/) contains methods such as:
+In addition [Akka Management](https://doc.akka.io/docs/akka-management/current/) contains methods such as:
 
 * Kubernetes API
 * AWS
