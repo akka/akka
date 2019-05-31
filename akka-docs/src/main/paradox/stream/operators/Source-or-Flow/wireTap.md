@@ -2,7 +2,7 @@
 
 Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements that pass through will also be sent to the wire-tap `Sink`, without the latter affecting the mainline flow.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
 @@@div { .group-scala }
 
