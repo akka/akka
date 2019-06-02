@@ -289,3 +289,18 @@ than the following configuration are compressed with GZIP.
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
 TODO: The binary formats are currently also compressed. That may change since it might not be needed for those.
+
+## Additional configuration
+
+### Configuration per binding
+
+By default the configuration for the Jackson serializers and their `ObjectMapper`s is defined in
+the `akka.serialization.jackson` section. It is possible to override that configuration in a more
+specific `akka.serialization.jackson.<binding name>` section.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #specific-config }
+
+It's also possible to define several bindings and use different configuration for them. For example,
+different settings for remote messages and persisted events.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #several-config }

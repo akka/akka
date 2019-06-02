@@ -31,6 +31,7 @@ import akka.testkit.TestKit
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -98,23 +99,9 @@ class ScalaTestEventMigration extends JacksonMigration {
   }
 }
 
-class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor") {
-  "JacksonCborSerializer" must {
-    "have right configured identifier" in {
-      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
-        JacksonCborSerializer.Identifier)
-    }
-  }
-}
+class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
 
-class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile") {
-  "JacksonSmileSerializer" must {
-    "have right configured identifier" in {
-      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
-        JacksonSmileSerializer.Identifier)
-    }
-  }
-}
+class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile")
 
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
@@ -133,23 +120,38 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
   }
 
   "JacksonJsonSerializer" must {
-    "have right configured identifier" in {
-      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
-        JacksonJsonSerializer.Identifier)
-    }
 
     "support lookup of same ObjectMapper via JacksonObjectMapperProvider" in {
       val mapper = serialization()
         .serializerFor(classOf[JavaTestMessages.TestMessage])
         .asInstanceOf[JacksonSerializer]
         .objectMapper
-      JacksonObjectMapperProvider(system)
-        .getOrCreate(JacksonJsonSerializer.Identifier, None) shouldBe theSameInstanceAs(mapper)
+      JacksonObjectMapperProvider(system).getOrCreate("jackson-json", None) shouldBe theSameInstanceAs(mapper)
 
-      val anotherIdentifier = 999
-      val mapper2 = JacksonObjectMapperProvider(system).getOrCreate(anotherIdentifier, None)
+      val anotherBindingName = "jackson-json2"
+      val mapper2 = JacksonObjectMapperProvider(system).getOrCreate(anotherBindingName, None)
       mapper2 should not be theSameInstanceAs(mapper)
-      JacksonObjectMapperProvider(system).getOrCreate(anotherIdentifier, None) shouldBe theSameInstanceAs(mapper2)
+      JacksonObjectMapperProvider(system).getOrCreate(anotherBindingName, None) shouldBe theSameInstanceAs(mapper2)
+    }
+
+    "support several different configurations" in {
+      withSystem("""
+        akka.actor.serializers.jackson-json2 = "akka.serialization.jackson.JacksonJsonSerializer"
+        akka.actor.serialization-identifiers.jackson-json2 = 999
+        akka.serialization.jackson.jackson-json2 {
+          deserialization-features.FAIL_ON_UNKNOWN_PROPERTIES = on
+        }
+        """) { sys =>
+        val objMapper2 = serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
+        objMapper2.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
+        val objMapper3 = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
+        objMapper3.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
+
+        // default has different config, different instance but same JacksonJsonSerializer class
+        val objMapper =
+          serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
+        objMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(false)
+      }
     }
   }
 
@@ -203,33 +205,33 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
     "be possible to create custom ObjectMapper" in {
       val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
-        override def newObjectMapper(serializerIdentifier: Int, jsonFactory: Option[JsonFactory]): ObjectMapper = {
-          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+        override def newObjectMapper(bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper = {
+          if (bindingName == "jackson-json") {
             val mapper = new ObjectMapper(jsonFactory.orNull)
             // some customer configuration of the mapper
             mapper.setLocale(Locale.US)
             mapper
           } else
-            super.newObjectMapper(serializerIdentifier, jsonFactory)
+            super.newObjectMapper(bindingName, jsonFactory)
         }
 
         override def overrideConfiguredSerializationFeatures(
-            serializerIdentifier: Int,
+            bindingName: String,
             configuredFeatures: immutable.Seq[(SerializationFeature, Boolean)])
             : immutable.Seq[(SerializationFeature, Boolean)] = {
-          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+          if (bindingName == "jackson-json") {
             configuredFeatures :+ (SerializationFeature.INDENT_OUTPUT -> true)
           } else
-            super.overrideConfiguredSerializationFeatures(serializerIdentifier, configuredFeatures)
+            super.overrideConfiguredSerializationFeatures(bindingName, configuredFeatures)
         }
 
         override def overrideConfiguredModules(
-            serializerIdentifier: Int,
+            bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
-          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+          if (bindingName == "jackson-json") {
             configuredModules.filterNot(_.isInstanceOf[AfterburnerModule])
           } else
-            super.overrideConfiguredModules(serializerIdentifier, configuredModules)
+            super.overrideConfiguredModules(bindingName, configuredModules)
       }
 
       val config = system.settings.config

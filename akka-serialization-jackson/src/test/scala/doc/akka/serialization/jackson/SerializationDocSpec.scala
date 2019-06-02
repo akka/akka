@@ -43,6 +43,52 @@ object SerializationDocSpec {
     #//#migrations-conf-rename
   """
 
+  val configSpecific = """
+    #//#specific-config
+    akka.serialization.jackson.jackson-json {
+      serialization-features {
+        WRITE_DATES_AS_TIMESTAMPS = off
+      }
+    }
+    akka.serialization.jackson.jackson-cbor {
+      serialization-features {
+        WRITE_DATES_AS_TIMESTAMPS = on
+      }
+    }
+    #//#specific-config
+  """
+
+  val configSeveral = """
+    #//#several-config
+    akka.actor {
+      serializers {
+        jackson-json-message = "akka.serialization.jackson.JacksonJsonSerializer"
+        jackson-json-event   = "akka.serialization.jackson.JacksonJsonSerializer"
+      }
+      serialization-identifiers {
+        jackson-json-message = 9001
+        jackson-json-event = 9002
+      }
+      serialization-bindings {
+        "com.myservice.MyMessage" = jackson-json-message
+        "com.myservice.MyEvent" = jackson-json-event
+      }
+    }
+    akka.serialization.jackson {
+      jackson-json-message {
+        serialization-features {
+          WRITE_DATES_AS_TIMESTAMPS = on
+        }
+      }
+      jackson-json-event {
+        serialization-features {
+          WRITE_DATES_AS_TIMESTAMPS = off
+        }
+      }
+    }
+    #//#several-config
+  """
+
   //#polymorphism
   final case class Zoo(primaryAttraction: Animal) extends MySerializable
 

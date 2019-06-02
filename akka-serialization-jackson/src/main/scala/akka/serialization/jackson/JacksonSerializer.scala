@@ -82,47 +82,38 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 
 }
 
-object JacksonJsonSerializer {
-  val Identifier = 31
-}
-
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with JSON.
  */
-@InternalApi private[akka] final class JacksonJsonSerializer(system: ExtendedActorSystem)
+@InternalApi private[akka] final class JacksonJsonSerializer(system: ExtendedActorSystem, bindingName: String)
     extends JacksonSerializer(
       system,
-      JacksonObjectMapperProvider(system).getOrCreate(JacksonJsonSerializer.Identifier, None))
-
-object JacksonSmileSerializer {
-  val Identifier = 33
-}
+      bindingName: String,
+      JacksonObjectMapperProvider(system).getOrCreate(bindingName, None))
 
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with Smile.
  */
-@InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem)
+@InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem, bindingName: String)
     extends JacksonSerializer(
       system,
-      JacksonObjectMapperProvider(system).getOrCreate(JacksonSmileSerializer.Identifier, Some(new SmileFactory)))
-
-object JacksonCborSerializer {
-  val Identifier = 32
-}
+      bindingName: String,
+      JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new SmileFactory)))
 
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with CBOR.
  */
-@InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem)
+@InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem, bindingName: String)
     extends JacksonSerializer(
       system,
-      JacksonObjectMapperProvider(system).getOrCreate(JacksonCborSerializer.Identifier, Some(new CBORFactory)))
+      bindingName,
+      JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new CBORFactory)))
 
 // FIXME Look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
 //       Make dependencies optional/provided.
@@ -138,16 +129,16 @@ object JacksonCborSerializer {
  */
 @InternalApi private[akka] abstract class JacksonSerializer(
     val system: ExtendedActorSystem,
+    val bindingName: String,
     val objectMapper: ObjectMapper)
-    extends SerializerWithStringManifest
-    with BaseSerializer {
+    extends SerializerWithStringManifest {
   import JacksonSerializer.GadgetClassBlacklist
 
   // FIXME it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //       ByteBufferBackedOutputStream/ByteBufferBackedInputStream
 
   private val log = Logging.withMarker(system, getClass)
-  private val conf = system.settings.config.getConfig("akka.serialization.jackson")
+  private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4
   private val compressLargerThan: Long = conf.getBytes("compress-larger-than")
@@ -166,6 +157,8 @@ object JacksonCborSerializer {
 
   // doesn't have to be volatile, doesn't matter if check is run more than once
   private var serializationBindingsCheckedOk = false
+
+  override val identifier: Int = BaseSerializer.identifierFromConfig(bindingName, system)
 
   override def manifest(obj: AnyRef): String = {
     checkAllowedSerializationBindings()
