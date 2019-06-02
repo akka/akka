@@ -288,7 +288,8 @@ than the following configuration are compressed with GZIP.
 
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
-TODO: The binary formats are currently also compressed. That may change since it might not be needed for those.
+Compression can be disabled by setting this configuration property to `off`. It will still be able to decompress
+payloads that were compressed when serialized, e.g. if this configuration is changed.
 
 ## Additional configuration
 

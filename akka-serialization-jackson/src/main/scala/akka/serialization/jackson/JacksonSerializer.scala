@@ -22,6 +22,7 @@ import akka.event.Logging
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
+import akka.util.Helpers.toRootLowerCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
@@ -141,7 +142,13 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
   private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4
-  private val compressLargerThan: Long = conf.getBytes("compress-larger-than")
+  private val compressLargerThan: Long = {
+    val key = "compress-larger-than"
+    toRootLowerCase(conf.getString(key)) match {
+      case "off" => Long.MaxValue
+      case _     => conf.getBytes(key)
+    }
+  }
   private val migrations: Map[String, JacksonMigration] = {
     import scala.collection.JavaConverters._
     conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
@@ -175,7 +182,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
     val bytes = objectMapper.writeValueAsBytes(obj)
-    // FIXME investigate if compression should be used for the binary formats
     val result =
       if (bytes.length > compressLargerThan) compress(bytes)
       else bytes
@@ -254,8 +260,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
           "Deserialization of [{}] took [{}] µs, compressed size [{}] bytes, uncompressed size [{}] bytes",
           clazz.getName,
           durationMicros,
-          decompressBytes.length,
-          bytes.length)
+          bytes.length,
+          decompressBytes.length)
     }
 
     result
