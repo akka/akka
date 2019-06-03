@@ -6,6 +6,7 @@ package akka.remote.artery
 package tcp
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -134,7 +135,10 @@ private[remote] class ArteryTcpTransport(
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
+      val restartCount = new AtomicInteger(0)
+
       val flowFactory = () => {
+        val onFailureLogLevel = if (restartCount.incrementAndGet() == 1) Logging.WarningLevel else Logging.DebugLevel
 
         def flow(controlIdleKillSwitch: OptionVal[SharedKillSwitch]) =
           Flow[ByteString]
@@ -153,7 +157,7 @@ private[remote] class ArteryTcpTransport(
             }))
             .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal => Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
-            .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
+            .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = onFailureLogLevel))
 
         if (streamId == ControlStreamId) {
           // must replace the KillSwitch when restarted
