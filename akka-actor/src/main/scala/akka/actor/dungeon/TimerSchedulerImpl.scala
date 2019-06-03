@@ -70,7 +70,6 @@ import akka.util.OptionVal
         ctx.system.scheduler.scheduleOnce(timeout, ctx.self, timerMsg)(ctx.dispatcher)
 
     val nextTimer = Timer(key, msg, repeat, nextGen, task)
-    log.debug("Start timer [{}] with generation [{}]", key, nextGen)
     timers = timers.updated(key, nextTimer)
   }
 
