@@ -8,6 +8,7 @@ import java.util.concurrent._
 import java.{ util => ju }
 
 import akka.actor._
+import akka.annotation.InternalStableApi
 import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
@@ -315,6 +316,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
+  @InternalStableApi
   protected[akka] def shutdown(): Unit
 }
 
