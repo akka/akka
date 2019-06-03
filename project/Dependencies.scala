@@ -193,7 +193,7 @@ object Dependencies {
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml) ++ remoteDependencies
 
-  val multiNodeTestkit = l ++= remoteOptionalDependencies
+  val multiNodeTestkit = l ++= remoteDependencies
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
 
