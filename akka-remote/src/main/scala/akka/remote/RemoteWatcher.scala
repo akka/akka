@@ -4,15 +4,17 @@
 
 package akka.remote
 
+import scala.collection.mutable
+import scala.concurrent.duration._
+
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-import scala.collection.mutable
-import scala.concurrent.duration._
-
 import akka.remote.artery.ArteryTransport
+import akka.util.unused
 import com.github.ghik.silencer.silent
 
 /**
@@ -200,8 +202,15 @@ private[akka] class RemoteWatcher(
     }
   }
 
+  /** Returns true if the `watcher` is not `self` and `akka.remote.use-unsafe-remote-features-without-cluster` is `on`. */
+  @InternalApi protected def isSafeWatch(
+      self: ActorRef,
+      watcher: InternalActorRef,
+      @unused watchee: InternalActorRef): Boolean =
+    watcher != self && remoteProvider.hasClusterOrUseUnsafe
+
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit =
-    if (remoteProvider.canWatch(self, watcher, watchee)) {
+    if (isSafeWatch(self, watcher, watchee)) {
       log.debug("Watching: [{} -> {}]", watcher, watchee)
       watching.addBinding(watchee, watcher)
       watchNode(watchee)
@@ -210,7 +219,7 @@ private[akka] class RemoteWatcher(
       context.watch(watchee)
     }
 
-  def watchNode(watchee: InternalActorRef): Unit = {
+  private def watchNode(watchee: InternalActorRef): Unit = {
     val watcheeAddress = watchee.path.address
     if (!watcheeByNodes.contains(watcheeAddress) && unreachable(watcheeAddress)) {
       // first watch to that node after a previous unreachable

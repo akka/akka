@@ -10,14 +10,14 @@ import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberJoined
-import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.dispatch.Dispatchers
 import akka.remote.FailureDetectorRegistry
-import akka.remote.RemoteWatcher
 import akka.remote.RARP
 import akka.remote.RemoteSettings
+import akka.remote.RemoteWatcher
 
 /**
  * INTERNAL API
@@ -28,12 +28,14 @@ private[cluster] object ClusterRemoteWatcher {
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
   def props(failureDetector: FailureDetectorRegistry[Address], settings: RemoteSettings): Props =
-    Props(new ClusterRemoteWatcher(
-      failureDetector,
-      heartbeatInterval = settings.WatchHeartBeatInterval,
-      unreachableReaperInterval = settings.WatchUnreachableReaperInterval,
-      heartbeatExpectedResponseAfter = settings.WatchHeartbeatExpectedResponseAfter)
-    ).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
+    Props(
+      new ClusterRemoteWatcher(
+        failureDetector,
+        heartbeatInterval = settings.WatchHeartBeatInterval,
+        unreachableReaperInterval = settings.WatchUnreachableReaperInterval,
+        heartbeatExpectedResponseAfter = settings.WatchHeartbeatExpectedResponseAfter))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
       extends NoSerializationVerificationNeeded
@@ -154,8 +156,11 @@ private[cluster] class ClusterRemoteWatcher(
     }
   }
 
-  override def watchNode(watchee: InternalActorRef): Unit =
-    if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
+  private def inCluster(address: Address): Boolean = clusterNodes(address)
+
+  /** Returns true if the `watcher` is not `self` and the `watchee` is in the cluster. */
+  override protected def isSafeWatch(self: ActorRef, watcher: InternalActorRef, watchee: InternalActorRef): Boolean =
+    inCluster(watchee.path.address) && super.isSafeWatch(self, watcher, watchee)
 
   /**
    * When a cluster node is added this class takes over the

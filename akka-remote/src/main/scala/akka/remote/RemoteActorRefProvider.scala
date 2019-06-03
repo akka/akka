@@ -16,12 +16,12 @@ import akka.actor.SystemGuardian.TerminationHook
 import akka.actor.SystemGuardian.TerminationHookDone
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.dispatch.sysmsg._
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
-import akka.event.Logging.Error
+import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging
+import akka.event.Logging.Error
 import akka.event.LoggingAdapter
 import akka.pattern.pipe
 import akka.remote.artery.ArterySettings
@@ -35,7 +35,6 @@ import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.serialization.Serialization
 import akka.util.ErrorMessages
 import akka.util.OptionVal
-import akka.util.unused
 import com.github.ghik.silencer.silent
 
 /**
@@ -160,20 +159,11 @@ private[akka] class RemoteActorRefProvider(
 
   private[akka] final val hasClusterOrUseUnsafe = settings.HasCluster || remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
 
-  private final val usingUnsafe = !settings.HasCluster && remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
-
   /** The [[Deployer]] created depends on whether Cluster is used or
    * `akka.remote.use-unsafe-remote-features-without-cluster`.
    */
   override val deployer: Deployer =
-    if (hasClusterOrUseUnsafe) {
-      val d = createDeployer
-      if (usingUnsafe) log.warning("Using deployer [{}] when Cluster is not in use.", d)
-      d
-    } else {
-      log.info("Using a local deployer - Cluster not in use.")
-      new Deployer(settings, dynamicAccess)
-    }
+    createOrNone[Deployer](createDeployer).getOrElse(new Deployer(settings, dynamicAccess))
 
   /**
    * Factory method to make it possible to override deployer in subclass.
@@ -260,30 +250,27 @@ private[akka] class RemoteActorRefProvider(
 
     _log = Logging.withMarker(eventStream, getClass.getName)
 
-    showDirectUseWarningIfRequired()
-
     // this enables reception of remote requests
     transport.start()
 
-    _remoteWatcher = createOrNone(createRemoteWatcher(system))
-    remoteDeploymentWatcher = createOrNone(createRemoteDeploymentWatcher(system))
+    _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
+    remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
+
+    showWarningsIfApplicable()
   }
 
-  private def createOrNone(func: => ActorRef): Option[ActorRef] =
-    if (hasClusterOrUseUnsafe) Some(func) else None
+  /** Will call the provided `func` if using Cluster or explicitly enabled unsafe remote features. */
+  private def createOrNone[T](func: => T): Option[T] = if (hasClusterOrUseUnsafe) Some(func) else None
 
-  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
-    // TODO change link to current once 2.6 is out
+  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit =
     checkClassOrThrow(
       system,
       "org.jboss.netty.channel.Channel",
       "Classic",
       "Netty",
       "https://doc.akka.io/docs/akka/2.6/remoting.html")
-  }
 
   private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
-    // TODO change link to current once 2.6 is out
     val arteryLink = "https://doc.akka.io/docs/akka/2.6/remoting-artery.html"
     // using classes that are used so will fail to compile if they get removed from Aeron
     checkClassOrThrow(system, "io.aeron.driver.MediaDriver", "Artery", "Aeron driver", arteryLink)
@@ -325,21 +312,23 @@ private[akka] class RemoteActorRefProvider(
     system.systemActorOf(RemoteDeploymentWatcher.props(remoteSettings), "remote-deployment-watcher")
 
   /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
-  protected def showDirectUseWarningIfRequired(): Unit = {
+  protected def showWarningsIfApplicable(): Unit = {
+    val recommended = "For most use cases, the 'cluster' abstraction on top of remoting is more suitable."
     if (remoteSettings.WarnAboutDirectUse) {
-      log.warning(
-        "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
-        "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
+      log.warning("Using the 'remote' ActorRefProvider directly, which is a low-level layer. {}", recommended)
+    }
+
+    if (!settings.HasCluster) {
+      if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
+        log.warning(
+          "`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled. " +
+          "Using the 'remote' deployer [{}] and watcher. {}",
+          deployer,
+          recommended)
+      else
+        log.info("Cluster not in use, using the 'local' deployer [{}], 'remote' watcher not created.", deployer)
     }
   }
-
-  /** Returns true if the `watcher` is not `self` and . */
-  @InternalApi
-  private[akka] def canWatch(
-      self: ActorRef,
-      watcher: InternalActorRef,
-      @unused watchee: InternalActorRef): Boolean =
-    watcher != self && hasClusterOrUseUnsafe
 
   def actorOf(
       system: ActorSystemImpl,
@@ -663,21 +652,23 @@ private[akka] class RemoteActorRef private[akka] (
   def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-    provider.remoteWatcher.exists(rm => watcher != rm) && watchee == this
+    provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher && watchee == this)
   }
 
   def sendSystemMessage(message: SystemMessage): Unit =
-    try {
-      //send to remote, unless watch message is intercepted by the remoteWatcher
-      message match {
-        case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher.foreach(_ ! RemoteWatcher.WatchRemote(watchee, watcher))
-        //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
-        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
-        case _ => remote.send(message, OptionVal.None, this)
-      }
-    } catch handleException(message, Actor.noSender)
+    provider.remoteWatcher.foreach { remoteWatcher =>
+      try {
+        //send to remote, unless watch message is intercepted by the remoteWatcher
+        message match {
+          case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
+            remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
+          //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
+          case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
+            remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
+          case _ => remote.send(message, OptionVal.None, this)
+        }
+      } catch handleException(message, Actor.noSender)
+    }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw InvalidMessageException("Message is null")

@@ -22,3 +22,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySet
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySettings#Advanced.DriverTimeout")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySettings#Advanced.ConnectionTimeout")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySettings.LogAeronCounters")
+
+# Disable remote watch and remote deployment outside Cluster #26176
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteActorRefProvider.remoteWatcher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.props")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.watchNode")

@@ -10,7 +10,6 @@ import akka.actor.ActorSystem
 import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.DynamicAccess
-import akka.actor.InternalActorRef
 import akka.actor.NoScopeGiven
 import akka.actor.Scope
 import akka.annotation.InternalApi
@@ -43,11 +42,9 @@ private[akka] class ClusterActorRefProvider(
     _dynamicAccess: DynamicAccess)
     extends RemoteActorRefProvider(_systemName, _settings, _eventStream, _dynamicAccess) {
 
-  @volatile private var localSystem: Option[ActorSystem] = None
-
   override def init(system: ActorSystemImpl): Unit = {
     super.init(system)
-    localSystem = Some(system)
+
     // initialize/load the Cluster extension
     Cluster(system)
   }
@@ -56,7 +53,8 @@ private[akka] class ClusterActorRefProvider(
     // make sure Cluster extension is initialized/loaded from init thread
     Cluster(system)
     system.systemActorOf(
-      ClusterRemoteWatcher.props(createRemoteWatcherFailureDetector(system), remoteSettings), "remote-watcher")
+      ClusterRemoteWatcher.props(createRemoteWatcherFailureDetector(system), remoteSettings),
+      "remote-watcher")
   }
 
   /**
@@ -65,13 +63,6 @@ private[akka] class ClusterActorRefProvider(
    */
   override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
-  /** Returns true if the `watcher` is not `self` and the `watchee` is inside the cluster. */
-  @InternalApi
-  override private[akka] def canWatch(self: ActorRef, watcher: InternalActorRef, watchee: InternalActorRef): Boolean =
-    super.canWatch(self, watcher, watchee) &&
-      localSystem.exists(Cluster(_).state.members.exists(_.address == watchee.path.address))
-
-  override protected def showDirectUseWarningIfRequired(): Unit = ()
 }
 
 /**
