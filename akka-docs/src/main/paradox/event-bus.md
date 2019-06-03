@@ -176,7 +176,6 @@ how a simple subscription works. Given a simple actor:
 @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
 
 it can be subscribed like this:
-It can be subscribed like this:
 
 @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletters }
 
