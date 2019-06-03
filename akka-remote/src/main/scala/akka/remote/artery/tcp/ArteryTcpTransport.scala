@@ -168,11 +168,15 @@ private[remote] class ArteryTcpTransport(
       // Restart of inner connection part important in control stream, since system messages
       // are buffered and resent from the outer SystemMessageDelivery stage. No maxRestarts limit for control
       // stream. For message stream it's best effort retry a few times.
-      RestartFlow.withBackoff[ByteString, ByteString](
-        settings.Advanced.OutboundRestartBackoff,
-        settings.Advanced.OutboundRestartBackoff * 5,
-        0.1,
-        maxRestarts)(flowFactory)
+      RestartFlow
+        .withBackoff[ByteString, ByteString](
+          settings.Advanced.OutboundRestartBackoff,
+          settings.Advanced.OutboundRestartBackoff * 5,
+          0.1,
+          maxRestarts)(flowFactory)
+        // silence "Restarting graph due to failure" logging by RestartFlow
+        .addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+
     }
 
     Flow[EnvelopeBuffer]
