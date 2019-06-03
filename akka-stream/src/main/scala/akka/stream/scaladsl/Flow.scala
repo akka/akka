@@ -2604,12 +2604,12 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
    */
-  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[List[U]] =
+  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[immutable.Seq[U]] =
     via(mergeLatestGraph(that, eagerComplete))
 
   protected def mergeLatestGraph[U >: Out, M](
       that: Graph[SourceShape[U], M],
-      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, List[U]], M] =
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, immutable.Seq[U]], M] =
     GraphDSL.create(that) { implicit b => r =>
       val merge = b.add(MergeLatest[U](2, eagerComplete))
       r ~> merge.in(1)
@@ -3086,7 +3086,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def mergeLatestMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerClose: Boolean)(
-      matF: (Mat, Mat2) => Mat3): ReprMat[List[U], Mat3] =
+      matF: (Mat, Mat2) => Mat3): ReprMat[immutable.Seq[U], Mat3] =
     viaMat(mergeLatestGraph(that, eagerClose))(matF)
 
   /**
