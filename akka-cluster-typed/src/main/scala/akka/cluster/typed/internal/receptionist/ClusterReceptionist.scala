@@ -12,7 +12,6 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
@@ -25,6 +24,7 @@ import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
+import akka.cluster.ddata.SelfUniqueAddress
 
 // just to provide a log class
 /** INTERNAL API */
@@ -75,7 +75,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       case _                 => throw new IllegalStateException("Cannot actually happen")
     }
     val cluster = Cluster(untypedSystem)
-    implicit val selfNodeAddress = DistributedData(ctx.system).selfUniqueAddress
+    // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
+    // isn't used otherwise by the ClusterReceptionist
+    implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
 
     val replicator = ctx.actorOf(Replicator.props(settings.replicatorSettings), "replicator")
 
