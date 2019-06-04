@@ -58,7 +58,7 @@ For this reason, it is best to avoid `--cpus` and `--cpu-quota` entirely, and in
 
 ### Cluster bootstrap
 
-To take advantage of the fact that your are running inside of Kubernetes while forming a cluster, you can use the [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/) module.
+To take advantage of the fact that your are running inside of Kubernetes while forming a cluster, you can use the [Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) module.
 
 You can look at the
 @extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
