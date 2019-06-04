@@ -26,7 +26,7 @@ can both connect and be connected to with Akka Remoting from all the nodes in th
 This creates a tight coupling in that the client and cluster systems may need to have the same version of 
 both Akka, libraries, message classes, serializers and potentially even the JVM. In many cases it is a better solution 
 to use a more explicit and decoupling protocol such as [HTTP](https://doc.akka.io/docs/akka-http/current/index.html) or 
-[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/).
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/).
 
 Additionally since Akka Remoting is primarily designed as a protocol for Akka Cluster there is no explicit resource
 management, when a @apidoc[ClusterClient] has been used it will cause connections with the cluster until the ActorSystem is 
