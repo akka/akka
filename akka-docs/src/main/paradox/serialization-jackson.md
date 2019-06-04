@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Serialization, you must add the following dependency in your project:
+To use Jackson Serialization, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -14,7 +14,7 @@ To use Serialization, you must add the following dependency in your project:
 
 You find general concepts for for Akka serialization in the @ref:[Serialization](serialization.md) section.
 This section describes how to use the Jackson serializer for application specific messages and persistent
-event and snapshots.
+events and snapshots.
 
 [Jackson](https://github.com/FasterXML/jackson) has support for both text based JSON and
 binary formats.
@@ -34,7 +34,7 @@ Scala
 Java
 :  @@snip [MySerializable.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/MySerializable.java) { #marker-interface }
 
-Then you configure the class name of marker @scala[trait]@java[interface] in `serialization-bindings` to
+Then you configure the class name of the marker @scala[trait]@java[interface] in `serialization-bindings` to
 one of the supported Jackson formats: `jackson-json`, `jackson-cbor` or `jackson-smile`
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #serialization-bindings }
@@ -55,7 +55,7 @@ It reduces the need for some annotations.
 ## Security
 
 For security reasons it is disallowed to bind the Jackson serializers to
-open ended types that might be target for [serialization gadgets](https://medium.com/@cowtowncoder/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
+open ended types that might be a target for [serialization gadgets](https://medium.com/@cowtowncoder/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
 such as:
 
 * `java.lang.Object`
