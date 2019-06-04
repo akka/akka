@@ -12,13 +12,13 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.dungeon.ChildrenContainer
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
+import akka.ConfigurationException
 import akka.dispatch._
 import akka.event._
 import akka.japi.Util.immutableSeq
 import akka.util.Helpers.toRootLowerCase
 import akka.util._
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters
@@ -385,14 +385,14 @@ object ActorSystem {
       case "on" | "true"   => Int.MaxValue
       case _               => config.getInt("akka.log-dead-letters")
     }
-    final val LogDeadLettersSuspendDuration: Duration =
-      toRootLowerCase(config.getString("akka.log-dead-letters-suspend-duration")) match {
-        case "infinite" ⇒ Duration.Inf
-        case _ ⇒
-          import JavaDurationConverters._
-          config.getDuration("akka.log-dead-letters-suspend-duration").asScala
-      }
     final val LogDeadLettersDuringShutdown: Boolean = config.getBoolean("akka.log-dead-letters-during-shutdown")
+    final val LogDeadLettersSuspendDuration: Duration = {
+      val key = "akka.log-dead-letters-suspend-duration"
+      toRootLowerCase(config.getString(key)) match {
+        case "infinite" => Duration.Inf
+        case _          => config.getMillisDuration(key)
+      }
+    }
 
     final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
