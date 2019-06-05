@@ -1,13 +1,5 @@
 # How the Actor Model Meets the Needs of Modern, Distributed Systems
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 As described in the previous topic, common programming practices do not properly
 address the needs of demanding modern systems. Thankfully, we
 don't need to scrap everything we know. Instead, the actor model addresses these

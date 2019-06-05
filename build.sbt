@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, ScalafixIgnoreFilePlugin }
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, CrossJava, ParadoxSupport, ScalafixIgnoreFilePlugin }
 
 enablePlugins(
   UnidocRoot,
@@ -23,6 +23,7 @@ import spray.boilerplate.BoilerplatePlugin
 initialize := {
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
+  assert(CrossJava.Keys.fullJavaHomes.value.contains("8"), "JDK 8 is not installed but required to build akka")
   initialize.value
 }
 
@@ -222,7 +223,9 @@ lazy val docs = akkaModule("akka-docs")
         "google.analytics.domain.name" -> "akka.io",
         "signature.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
         "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath),
+        "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+        "aeron_version" -> Dependencies.aeronVersion,
+        "netty_version" -> Dependencies.nettyVersion),
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
@@ -251,6 +254,7 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
+  .settings(Dependencies.multiNodeTestkit)
   .settings(Protobuf.settings)
   .settings(AutomaticModuleName.settings("akka.remote.testkit"))
   .settings(AkkaBuild.mayChangeSettings)
@@ -365,7 +369,6 @@ lazy val testkit = akkaModule("akka-testkit")
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=
@@ -377,7 +380,6 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       import akka.util.Timeout
       implicit val timeout = Timeout(5.seconds)
     """)
-  .disablePlugins(MimaPlugin)
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -387,10 +389,8 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     actorTypedTests % "test->test",
     actorTestkitTyped % "compile->compile;test->test")
   .settings(Dependencies.persistenceShared)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
-  .disablePlugins(MimaPlugin)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
@@ -404,9 +404,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
-  .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -419,11 +417,9 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
     remoteTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
-  .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -434,9 +430,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     streamTestkit % "test->test",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test")
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.stream.typed"))
-  .disablePlugins(MimaPlugin)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
@@ -462,7 +456,6 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
-  .settings(AkkaBuild.mayChangeSettings)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

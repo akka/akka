@@ -1,8 +1,8 @@
-# balance
+# Balance
 
 Fan-out the stream to several streams.
 
-@ref[Fan-out operators](../index.md#fan-out-operators)
+@ref[Fan-out operators](index.md#fan-out-operators)
 
 ## Description
 

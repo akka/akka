@@ -9,7 +9,7 @@ When building an Akka application, you would usually not use the Remoting concep
 directly, but instead use the more high-level
 @ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
 such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
-[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) etc.
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
 
 @@@
 
@@ -21,6 +21,18 @@ To use Artery Remoting, you must add the following dependency in your project:
   group=com.typesafe.akka
   artifact=akka-remote_$scala.binary_version$
   version=$akka.version$
+}
+
+Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
+not using Artery remoting do not have Aeron on the classpath:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=io.aeron
+  artifact=aeron-driver
+  version="$aeron_version$"
+  group2=io.aeron
+  artifact2=aeron-client
+  version2="$aeron_version$"
 }
 
 If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)

@@ -11,7 +11,7 @@ import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
 import akka.util.Timeout
 import akka.{ Done, actor => untyped }
@@ -29,7 +29,6 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] =>
 
   /**

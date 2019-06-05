@@ -1,13 +1,5 @@
 # Introduction to the Example
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 When writing prose, the hardest part is often composing the first few sentences. There is a similar "blank canvas" feeling
 when starting to build an Akka system. You might wonder: Which should be the first actor? Where should it live? What should it do?
 Fortunately &#8212; unlike with prose &#8212; established best practices can guide us through these initial steps. In the remainder of this guide, we examine the core logic of a simple Akka application to introduce you to actors and show you how to formulate solutions with them. The example demonstrates common patterns that will help you kickstart your Akka projects.

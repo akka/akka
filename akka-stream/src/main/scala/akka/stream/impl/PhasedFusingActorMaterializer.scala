@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, ExtendedActorSystem, PoisonPill }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi, InternalStableApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -429,6 +429,7 @@ private final case class SavedIslandData(
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
     materialize(_runnableGraph, defaultAttributes)
 
+  @InternalStableApi
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
@@ -612,14 +613,19 @@ private final case class SavedIslandData(
 
   def name: String
 
+  @InternalStableApi
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (M, Any)
 
+  @InternalStableApi
   def assignPort(in: InPort, slot: Int, logic: M): Unit
 
+  @InternalStableApi
   def assignPort(out: OutPort, slot: Int, logic: M): Unit
 
+  @InternalStableApi
   def createPublisher(out: OutPort, logic: M): Publisher[Any]
 
+  @InternalStableApi
   def takePublisher(slot: Int, publisher: Publisher[Any]): Unit
 
   def onIslandReady(): Unit

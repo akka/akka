@@ -31,6 +31,7 @@ import akka.util.OptionVal
 
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
+import akka.annotation.InternalStableApi
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 
@@ -291,6 +292,7 @@ private[remote] object EndpointManager {
   final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
+  @InternalStableApi
   final case class Send(
       message: Any,
       senderOption: OptionVal[ActorRef],

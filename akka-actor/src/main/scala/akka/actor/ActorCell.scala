@@ -18,7 +18,7 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
 import akka.util.{ unused, Reflect }
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import com.github.ghik.silencer.silent
 
 /**
@@ -312,6 +312,7 @@ private[akka] trait Cell {
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
    */
+  @InternalStableApi
   def sendMessage(msg: Envelope): Unit
 
   /**
