@@ -262,9 +262,9 @@ class JacksonSerializationBench {
     serializeDeserialize(jLargeMsg)
   }
 
-//  @Benchmark
-//  def timeMessage(): TimeMessage = {
-//    serializeDeserialize(timeMsg)
-//  }
+  @Benchmark
+  def timeMessage(): TimeMessage = {
+    serializeDeserialize(timeMsg)
+  }
 
 }
