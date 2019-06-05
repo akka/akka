@@ -814,6 +814,21 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseMapAsyncForFutureWithNullResult() throws Exception {
+    final Iterable<Integer> input = Arrays.asList(1, 2, 3);
+    Flow<Integer, Void, NotUsed> flow =
+        Flow.of(Integer.class).mapAsync(1, x -> CompletableFuture.completedFuture(null));
+    List<Void> result =
+        Source.from(input)
+            .via(flow)
+            .runWith(Sink.seq(), materializer)
+            .toCompletableFuture()
+            .get(3, TimeUnit.SECONDS);
+
+    assertEquals(0, result.size());
+  }
+
+  @Test
   public void mustBeAbleToUseCollectType() throws Exception {
     final TestKit probe = new TestKit(system);
     final Iterable<FlowSpec.Fruit> input =
@@ -1300,5 +1315,12 @@ public class FlowTest extends StreamTest {
             .get(3, TimeUnit.SECONDS);
 
     assertEquals((Object) 1, result);
+  }
+
+  @Test
+  public void mustBeAbleToConvertToJavaInJava() {
+    final akka.stream.scaladsl.Flow<Integer, Integer, NotUsed> scalaFlow =
+        akka.stream.scaladsl.Flow.apply();
+    Flow<Integer, Integer, NotUsed> javaFlow = scalaFlow.asJava();
   }
 }

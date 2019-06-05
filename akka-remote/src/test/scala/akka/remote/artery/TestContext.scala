@@ -21,10 +21,11 @@ import akka.dispatch.ExecutionContexts
 import com.typesafe.config.ConfigFactory
 
 private[remote] class TestInboundContext(
-  override val localAddress: UniqueAddress,
-  val controlSubject:        TestControlMessageSubject = new TestControlMessageSubject,
-  val controlProbe:          Option[ActorRef]          = None,
-  val replyDropRate:         Double                    = 0.0) extends InboundContext {
+    override val localAddress: UniqueAddress,
+    val controlSubject: TestControlMessageSubject = new TestControlMessageSubject,
+    val controlProbe: Option[ActorRef] = None,
+    val replyDropRate: Double = 0.0)
+    extends InboundContext {
 
   private val associationsByAddress = new ConcurrentHashMap[Address, OutboundContext]()
   private val associationsByUid = new ConcurrentHashMap[Long, OutboundContext]()
@@ -36,13 +37,13 @@ private[remote] class TestInboundContext(
 
   override def association(remoteAddress: Address): OutboundContext =
     associationsByAddress.get(remoteAddress) match {
-      case null ⇒
+      case null =>
         val a = createAssociation(remoteAddress)
         associationsByAddress.putIfAbsent(remoteAddress, a) match {
-          case null     ⇒ a
-          case existing ⇒ existing
+          case null     => a
+          case existing => existing
         }
-      case existing ⇒ existing
+      case existing => existing
     }
 
   override def association(uid: Long): OptionVal[OutboundContext] =
@@ -51,7 +52,7 @@ private[remote] class TestInboundContext(
   override def completeHandshake(peer: UniqueAddress): Future[Done] = {
     val a = association(peer.address).asInstanceOf[TestOutboundContext]
     val done = a.completeHandshake(peer)
-    done.foreach { _ ⇒
+    done.foreach { _ =>
       associationsByUid.put(peer.uid, a)
     }(ExecutionContexts.sameThreadExecutionContext)
     done
@@ -65,10 +66,11 @@ private[remote] class TestInboundContext(
 }
 
 private[remote] class TestOutboundContext(
-  override val localAddress:   UniqueAddress,
-  override val remoteAddress:  Address,
-  override val controlSubject: TestControlMessageSubject,
-  val controlProbe:            Option[ActorRef]          = None) extends OutboundContext {
+    override val localAddress: UniqueAddress,
+    override val remoteAddress: Address,
+    override val controlSubject: TestControlMessageSubject,
+    val controlProbe: Option[ActorRef] = None)
+    extends OutboundContext {
 
   // access to this is synchronized (it's a test utility)
   private var _associationState = AssociationState()
@@ -80,8 +82,8 @@ private[remote] class TestOutboundContext(
   def completeHandshake(peer: UniqueAddress): Future[Done] = synchronized {
     _associationState.uniqueRemoteAddressPromise.trySuccess(peer)
     _associationState.uniqueRemoteAddress.value match {
-      case Some(Success(`peer`)) ⇒ // our value
-      case _ ⇒
+      case Some(Success(`peer`)) => // our value
+      case _ =>
         _associationState = _associationState.newIncarnation(Promise.successful(peer))
     }
     Future.successful(Done)
@@ -95,8 +97,8 @@ private[remote] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(OptionVal.None, message, OptionVal.None, localAddress.uid,
-      OptionVal.None))
+    controlSubject.sendControl(
+      InboundEnvelope(OptionVal.None, message, OptionVal.None, localAddress.uid, OptionVal.None))
   }
 
   override lazy val settings: ArterySettings =
@@ -119,16 +121,16 @@ private[remote] class TestControlMessageSubject extends ControlMessageSubject {
 
   def sendControl(env: InboundEnvelope): Unit = {
     val iter = observers.iterator()
-    while (iter.hasNext())
-      iter.next().notify(env)
+    while (iter.hasNext()) iter.next().notify(env)
   }
 
 }
 
 private[remote] class ManualReplyInboundContext(
-  replyProbe:     ActorRef,
-  localAddress:   UniqueAddress,
-  controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {
+    replyProbe: ActorRef,
+    localAddress: UniqueAddress,
+    controlSubject: TestControlMessageSubject)
+    extends TestInboundContext(localAddress, controlSubject) {
 
   private var lastReply: Option[(Address, ControlMessage)] = None
 
@@ -138,7 +140,7 @@ private[remote] class ManualReplyInboundContext(
   }
 
   def deliverLastReply(): Unit = synchronized {
-    lastReply.foreach { case (to, message) ⇒ super.sendControl(to, message) }
+    lastReply.foreach { case (to, message) => super.sendControl(to, message) }
     lastReply = None
   }
 }

@@ -24,13 +24,14 @@ class FlowDelaySpec extends StreamSpec {
   "A Delay" must {
 
     "deliver elements with some time shift" taggedAs TimingTest in {
-      Await.result(
-        Source(1 to 10).delay(1.seconds).grouped(100).runWith(Sink.head),
-        1200.millis) should ===(1 to 10)
+      Await.result(Source(1 to 10).delay(1.seconds).grouped(100).runWith(Sink.head), 1200.millis) should ===(1 to 10)
     }
 
     "add delay to initialDelay if exists upstream" taggedAs TimingTest in {
-      Source(1 to 10).initialDelay(1.second).delay(1.second).runWith(TestSink.probe[Int])
+      Source(1 to 10)
+        .initialDelay(1.second)
+        .delay(1.second)
+        .runWith(TestSink.probe[Int])
         .request(10)
         .expectNoMsg(1800.millis)
         .expectNext(300.millis, 1)
@@ -39,7 +40,9 @@ class FlowDelaySpec extends StreamSpec {
     }
 
     "deliver element after time passed from actual receiving element" in {
-      Source(1 to 3).delay(300.millis).runWith(TestSink.probe[Int])
+      Source(1 to 3)
+        .delay(300.millis)
+        .runWith(TestSink.probe[Int])
         .request(2)
         .expectNoMsg(200.millis) //delay
         .expectNext(200.millis, 1) //delayed element
@@ -90,7 +93,9 @@ class FlowDelaySpec extends StreamSpec {
 
     "drop tail for internal buffer if it's full in DropTail mode" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 20).delay(1.seconds, DelayOverflowStrategy.dropTail).withAttributes(inputBuffer(16, 16))
+        Source(1 to 20)
+          .delay(1.seconds, DelayOverflowStrategy.dropTail)
+          .withAttributes(inputBuffer(16, 16))
           .grouped(100)
           .runWith(Sink.head),
         1200.millis) should ===((1 to 15).toList :+ 20)
@@ -98,7 +103,9 @@ class FlowDelaySpec extends StreamSpec {
 
     "drop head for internal buffer if it's full in DropHead mode" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 20).delay(1.seconds, DelayOverflowStrategy.dropHead).withAttributes(inputBuffer(16, 16))
+        Source(1 to 20)
+          .delay(1.seconds, DelayOverflowStrategy.dropHead)
+          .withAttributes(inputBuffer(16, 16))
           .grouped(100)
           .runWith(Sink.head),
         1200.millis) should ===(5 to 20)
@@ -106,14 +113,19 @@ class FlowDelaySpec extends StreamSpec {
 
     "clear all for internal buffer if it's full in DropBuffer mode" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 20).delay(1.seconds, DelayOverflowStrategy.dropBuffer).withAttributes(inputBuffer(16, 16))
+        Source(1 to 20)
+          .delay(1.seconds, DelayOverflowStrategy.dropBuffer)
+          .withAttributes(inputBuffer(16, 16))
           .grouped(100)
           .runWith(Sink.head),
         1200.millis) should ===(17 to 20)
     }
 
     "pass elements with delay through normally in backpressured mode" in assertAllStagesStopped {
-      Source(1 to 3).delay(300.millis, DelayOverflowStrategy.backpressure).withAttributes(inputBuffer(1, 1)).runWith(TestSink.probe[Int])
+      Source(1 to 3)
+        .delay(300.millis, DelayOverflowStrategy.backpressure)
+        .withAttributes(inputBuffer(1, 1))
+        .runWith(TestSink.probe[Int])
         .request(5)
         .expectNoMsg(200.millis)
         .expectNext(200.millis, 1)
@@ -124,7 +136,8 @@ class FlowDelaySpec extends StreamSpec {
     }
 
     "fail on overflow in Fail mode" in assertAllStagesStopped {
-      Source(1 to 20).delay(300.millis, DelayOverflowStrategy.fail)
+      Source(1 to 20)
+        .delay(300.millis, DelayOverflowStrategy.fail)
         .withAttributes(inputBuffer(16, 16))
         .runWith(TestSink.probe[Int])
         .request(100)
@@ -136,12 +149,17 @@ class FlowDelaySpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[Int]()
       val p = TestPublisher.manualProbe[Int]()
 
-      Source.fromPublisher(p).delay(10.seconds, DelayOverflowStrategy.emitEarly).withAttributes(inputBuffer(16, 16)).to(Sink.fromSubscriber(c)).run()
+      Source
+        .fromPublisher(p)
+        .delay(10.seconds, DelayOverflowStrategy.emitEarly)
+        .withAttributes(inputBuffer(16, 16))
+        .to(Sink.fromSubscriber(c))
+        .run()
       val cSub = c.expectSubscription()
       val pSub = p.expectSubscription()
       cSub.request(20)
 
-      for (i ← 1 to 16) pSub.sendNext(i)
+      for (i <- 1 to 16) pSub.sendNext(i)
       c.expectNoMsg(300.millis)
       pSub.sendNext(17)
       c.expectNext(100.millis, 1)
@@ -157,7 +175,8 @@ class FlowDelaySpec extends StreamSpec {
       Source(1 to 5)
         .delay(500.millis, DelayOverflowStrategy.backpressure)
         .withAttributes(Attributes.inputBuffer(initial = 1, max = 1))
-        .runWith(Sink.ignore).pipeTo(testActor)
+        .runWith(Sink.ignore)
+        .pipeTo(testActor)
 
       expectNoMsg(2.seconds)
       expectMsg(Done)
@@ -166,39 +185,39 @@ class FlowDelaySpec extends StreamSpec {
       Source(1 to 100)
         .delay(1.second, DelayOverflowStrategy.backpressure)
         .withAttributes(Attributes.inputBuffer(initial = 100, max = 100))
-        .runWith(Sink.ignore).pipeTo(testActor)
+        .runWith(Sink.ignore)
+        .pipeTo(testActor)
 
       expectMsg(Done)
 
       // Delays that are already present are preserved when buffer is large enough
-      Source.tick(100.millis, 100.millis, ()).take(10)
+      Source
+        .tick(100.millis, 100.millis, ())
+        .take(10)
         .delay(1.second, DelayOverflowStrategy.backpressure)
         .withAttributes(Attributes.inputBuffer(initial = 10, max = 10))
-        .runWith(Sink.ignore).pipeTo(testActor)
+        .runWith(Sink.ignore)
+        .pipeTo(testActor)
 
       expectNoMsg(900.millis)
       expectMsg(Done)
     }
 
     "not overflow buffer when DelayOverflowStrategy.backpressure" in {
-      val probe = Source(1 to 6).delay(100.millis, DelayOverflowStrategy.backpressure)
+      val probe = Source(1 to 6)
+        .delay(100.millis, DelayOverflowStrategy.backpressure)
         .withAttributes(Attributes.inputBuffer(2, 2))
         .throttle(1, 200.millis, 1, ThrottleMode.Shaping)
         .runWith(TestSink.probe)
 
-      probe.request(10)
-        .expectNextN(1 to 6)
-        .expectComplete()
+      probe.request(10).expectNextN(1 to 6).expectComplete()
     }
 
     "not drop messages on overflow when EmitEarly" in {
-      val probe = Source(1 to 2)
-        .delay(1.second, EmitEarly).withAttributes(Attributes.inputBuffer(1, 1))
-        .runWith(TestSink.probe)
+      val probe =
+        Source(1 to 2).delay(1.second, EmitEarly).withAttributes(Attributes.inputBuffer(1, 1)).runWith(TestSink.probe)
 
-      probe.request(10)
-        .expectNextN(1 to 2)
-        .expectComplete()
+      probe.request(10).expectNextN(1 to 2).expectComplete()
     }
   }
 }

@@ -17,6 +17,7 @@ import scala.util.Try
  * unless they are extending Akka in ways which go beyond simple Extensions.
  */
 abstract class DynamicAccess {
+
   /**
    * Convenience method which given a `Class[_]` object and a constructor description
    * will create a new instance of that class.

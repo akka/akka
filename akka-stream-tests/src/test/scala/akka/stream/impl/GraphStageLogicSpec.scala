@@ -29,8 +29,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       setHandler(in, eagerTerminateInput)
       setHandler(out, eagerTerminateOutput)
       override def preStart(): Unit = {
-        emit(out, 1, () ⇒ emit(out, 2))
-        emit(out, 3, () ⇒ emit(out, 4))
+        emit(out, 1, () => emit(out, 2))
+        emit(out, 3, () => emit(out, 4))
       }
     }
   }
@@ -66,8 +66,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onUpstreamFinish(): Unit = {
-          emit(out, 5, () ⇒ emit(out, 6))
-          emit(out, 7, () ⇒ emit(out, 8))
+          emit(out, 5, () => emit(out, 6))
+          emit(out, 7, () => emit(out, 8))
           completeStage()
         }
       })
@@ -102,7 +102,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = emitMultiple(out, Iterator.empty, () ⇒ emit(out, 42, () ⇒ completeStage()))
+        override def onPull(): Unit = emitMultiple(out, Iterator.empty, () => emit(out, 42, () => completeStage()))
       })
     }
     override def toString = "GraphStageLogicSpec.emitEmptyIterable"
@@ -115,7 +115,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       new GraphStageLogic(shape) {
         setHandler(shape.in, EagerTerminateInput)
         setHandler(shape.out, EagerTerminateOutput)
-        override def preStart(): Unit = readN(shape.in, n)(e ⇒ emitMultiple(shape.out, e.iterator, () ⇒ completeStage()), (_) ⇒ ())
+        override def preStart(): Unit =
+          readN(shape.in, n)(e => emitMultiple(shape.out, e.iterator, () => completeStage()), (_) => ())
       }
   }
 
@@ -128,35 +129,35 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         setHandler(shape.out, EagerTerminateOutput)
         override def preStart(): Unit =
           readN(shape.in, n)(
-            _ ⇒ failStage(new IllegalStateException("Shouldn't happen!")),
-            e ⇒ emitMultiple(shape.out, e.iterator, () ⇒ completeStage()))
+            _ => failStage(new IllegalStateException("Shouldn't happen!")),
+            e => emitMultiple(shape.out, e.iterator, () => completeStage()))
       }
   }
 
   "A GraphStageLogic" must {
 
     "read N and emit N before completing" in assertAllStagesStopped {
-      Source(1 to 10).via(ReadNEmitN(2)).runWith(TestSink.probe)
-        .request(10)
-        .expectNext(1, 2)
-        .expectComplete()
+      Source(1 to 10).via(ReadNEmitN(2)).runWith(TestSink.probe).request(10).expectNext(1, 2).expectComplete()
     }
 
     "read N should not emit if upstream completes before N is sent" in assertAllStagesStopped {
-      Source(1 to 5).via(ReadNEmitN(6)).runWith(TestSink.probe)
-        .request(10)
-        .expectComplete()
+      Source(1 to 5).via(ReadNEmitN(6)).runWith(TestSink.probe).request(10).expectComplete()
     }
 
     "read N should not emit if upstream fails before N is sent" in assertAllStagesStopped {
       val error = new IllegalArgumentException("Don't argue like that!")
-      Source(1 to 5).map(x ⇒ if (x > 3) throw error else x).via(ReadNEmitN(6)).runWith(TestSink.probe)
+      Source(1 to 5)
+        .map(x => if (x > 3) throw error else x)
+        .via(ReadNEmitN(6))
+        .runWith(TestSink.probe)
         .request(10)
         .expectError(error)
     }
 
     "read N should provide elements read if onComplete happens before N elements have been seen" in assertAllStagesStopped {
-      Source(1 to 5).via(ReadNEmitRestOnComplete(6)).runWith(TestSink.probe)
+      Source(1 to 5)
+        .via(ReadNEmitRestOnComplete(6))
+        .runWith(TestSink.probe)
         .request(10)
         .expectNext(1, 2, 3, 4, 5)
         .expectComplete()
@@ -164,7 +165,9 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
     "emit all things before completing" in assertAllStagesStopped {
 
-      Source.empty.via(emit1234.named("testStage")).runWith(TestSink.probe)
+      Source.empty
+        .via(emit1234.named("testStage"))
+        .runWith(TestSink.probe)
         .request(5)
         .expectNext(1)
         //emitting with callback gives nondeterminism whether 2 or 3 will be pushed first
@@ -264,7 +267,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
     "give a good error message if in handler missing" in {
       val ex = intercept[IllegalStateException] {
-        Source.maybe[String]
+        Source
+          .maybe[String]
           .via(new GraphStage[FlowShape[String, String]] {
             val in = Inlet[String]("in")
             val out = Outlet[String]("out")
@@ -276,14 +280,16 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
               }
 
             override def toString = "stage-name"
-          }).runWith(Sink.ignore)
+          })
+          .runWith(Sink.ignore)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for in port [in")
     }
 
     "give a good error message if out handler missing" in {
       val ex = intercept[IllegalStateException] {
-        Source.maybe[String]
+        Source
+          .maybe[String]
           .via(new GraphStage[FlowShape[String, String]] {
             val in = Inlet[String]("in")
             val out = Outlet[String]("out")
@@ -300,7 +306,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
             override def toString = "stage-name"
           })
           // just to have another graphstage downstream
-          .map(_ ⇒ "whatever")
+          .map(_ => "whatever")
           .runWith(Sink.ignore)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
@@ -308,7 +314,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
     "give a good error message if out handler missing with downstream boundary" in {
       val ex = intercept[IllegalStateException] {
-        Source.maybe[String]
+        Source
+          .maybe[String]
           .via(new GraphStage[FlowShape[String, String]] {
             val in = Inlet[String]("in")
             val out = Outlet[String]("out")
@@ -323,14 +330,17 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
               }
 
             override def toString = "stage-name"
-          }).runWith(Sink.ignore.async)
+          })
+          .runWith(Sink.ignore.async)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
     }
 
     "give a good error message if handler missing with downstream publisher" in {
       val ex = intercept[IllegalStateException] {
-        Source.maybe[String].async
+        Source
+          .maybe[String]
+          .async
           .via(new GraphStage[FlowShape[String, String]] {
             val in = Inlet[String]("in")
             val out = Outlet[String]("out")
@@ -345,14 +355,16 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
               }
 
             override def toString = "stage-name"
-          }).runWith(Sink.ignore)
+          })
+          .runWith(Sink.ignore)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
     }
 
     "give a good error message if handler missing when stage is an island" in {
       val ex = intercept[IllegalStateException] {
-        Source.maybe[String]
+        Source
+          .maybe[String]
           .via(new GraphStage[FlowShape[String, String]] {
             val in = Inlet[String]("in")
             val out = Outlet[String]("out")
@@ -367,7 +379,9 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
               }
 
             override def toString = "stage-name"
-          }).async.runWith(Sink.ignore)
+          })
+          .async
+          .runWith(Sink.ignore)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
     }
@@ -375,7 +389,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     "give a good error message if sub source is pushed twice" in {
       intercept[Exception] {
         Source.fromGraph(new SubstreamEmit()).async.runWith(Sink.ignore).futureValue
-      }.getCause.getMessage should startWith("Cannot push port (SubSourceOutlet(subOut)) twice, or before it being pulled")
+      }.getCause.getMessage should startWith(
+        "Cannot push port (SubSourceOutlet(subOut)) twice, or before it being pulled")
     }
 
   }

@@ -14,7 +14,7 @@ and Java counterparts. The artifact can be included in Maven builds using:
 ```
 <dependency>
   <groupId>org.scala-lang.modules</groupId>
-  <artifactId>scala-java8-compat_2.11</artifactId>
+  <artifactId>scala-java8-compat_2.12</artifactId>
   <version>0.7.0</version>
 </dependency>
 ```

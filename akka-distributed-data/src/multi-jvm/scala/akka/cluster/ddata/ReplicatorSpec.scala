@@ -42,8 +42,9 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
   val cluster = Cluster(system)
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
-  val replicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
+  val replicator = system.actorOf(
+    Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)),
+    "replicator")
   val timeout = 3.seconds.dilated
   val writeTwo = WriteTo(2, timeout)
   val writeMajority = WriteMajority(timeout)
@@ -75,7 +76,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -164,10 +165,10 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       // in case user is not using the passed in existing value
       replicator ! Update(KeyJ, GSet(), WriteLocal)(_ + "a" + "b")
       expectMsg(UpdateSuccess(KeyJ, None))
-      replicator ! Update(KeyJ, GSet(), WriteLocal)(_ ⇒ GSet.empty[String] + "c") // normal usage would be `_ + "c"`
+      replicator ! Update(KeyJ, GSet(), WriteLocal)(_ => GSet.empty[String] + "c") // normal usage would be `_ + "c"`
       expectMsg(UpdateSuccess(KeyJ, None))
       replicator ! Get(KeyJ, ReadLocal)
-      val s = expectMsgPF() { case g @ GetSuccess(KeyJ, _) ⇒ g.get(KeyJ) }
+      val s = expectMsgPF() { case g @ GetSuccess(KeyJ, _) => g.get(KeyJ) }
       s should ===(GSet.empty[String] + "a" + "b" + "c")
     }
     enterBarrierAfterTestStep()
@@ -175,7 +176,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
   "reply with ModifyFailure if exception is thrown by modify function" in {
     val e = new RuntimeException("errr")
-    replicator ! Update(KeyA, GCounter(), WriteLocal)(_ ⇒ throw e)
+    replicator ! Update(KeyA, GCounter(), WriteLocal)(_ => throw e)
     expectMsgType[ModifyFailure[_]].cause should be(e)
   }
 
@@ -200,11 +201,11 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       within(5.seconds) {
         awaitAssert {
           replicator ! Get(KeyA, ReadLocal)
-          val c = expectMsgPF() { case g @ GetSuccess(KeyA, _) ⇒ g.get(KeyA) }
+          val c = expectMsgPF() { case g @ GetSuccess(KeyA, _) => g.get(KeyA) }
           c.value should be(6)
         }
       }
-      val c = changedProbe.expectMsgPF() { case c @ Changed(KeyA) ⇒ c.get(KeyA) }
+      val c = changedProbe.expectMsgPF() { case c @ Changed(KeyA) => c.get(KeyA) }
       c.value should be(6)
     }
 
@@ -225,7 +226,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       // the total, after replication should be 42
       awaitAssert {
         replicator ! Get(KeyB, readTwo)
-        val c = expectMsgPF() { case g @ GetSuccess(KeyB, _) ⇒ g.get(KeyB) }
+        val c = expectMsgPF() { case g @ GetSuccess(KeyB, _) => g.get(KeyB) }
         c.value should be(42)
       }
     }
@@ -239,7 +240,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       // the total, after replication should be 44
       awaitAssert {
         replicator ! Get(KeyB, readAll)
-        val c = expectMsgPF() { case g @ GetSuccess(KeyB, _) ⇒ g.get(KeyB) }
+        val c = expectMsgPF() { case g @ GetSuccess(KeyB, _) => g.get(KeyB) }
         c.value should be(44)
       }
     }
@@ -253,7 +254,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       // the total, after replication should be 46
       awaitAssert {
         replicator ! Get(KeyB, readMajority)
-        val c = expectMsgPF() { case g @ GetSuccess(KeyB, _) ⇒ g.get(KeyB) }
+        val c = expectMsgPF() { case g @ GetSuccess(KeyB, _) => g.get(KeyB) }
         c.value should be(46)
       }
     }
@@ -270,7 +271,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     runOn(first) {
       replicator ! Update(KeyC, GCounter(), writeTwo)(_ :+ 30)
       expectMsg(UpdateSuccess(KeyC, None))
-      changedProbe.expectMsgPF() { case c @ Changed(KeyC) ⇒ c.get(KeyC).value } should be(30)
+      changedProbe.expectMsgPF() { case c @ Changed(KeyC) => c.get(KeyC).value } should be(30)
 
       replicator ! Update(KeyY, GCounter(), writeTwo)(_ :+ 30)
       expectMsg(UpdateSuccess(KeyY, None))
@@ -282,20 +283,20 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(second) {
       replicator ! Get(KeyC, ReadLocal)
-      val c30 = expectMsgPF() { case g @ GetSuccess(KeyC, _) ⇒ g.get(KeyC) }
+      val c30 = expectMsgPF() { case g @ GetSuccess(KeyC, _) => g.get(KeyC) }
       c30.value should be(30)
-      changedProbe.expectMsgPF() { case c @ Changed(KeyC) ⇒ c.get(KeyC).value } should be(30)
+      changedProbe.expectMsgPF() { case c @ Changed(KeyC) => c.get(KeyC).value } should be(30)
 
       // replicate with gossip after WriteLocal
       replicator ! Update(KeyC, GCounter(), WriteLocal)(_ :+ 1)
       expectMsg(UpdateSuccess(KeyC, None))
-      changedProbe.expectMsgPF() { case c @ Changed(KeyC) ⇒ c.get(KeyC).value } should be(31)
+      changedProbe.expectMsgPF() { case c @ Changed(KeyC) => c.get(KeyC).value } should be(31)
 
       replicator ! Delete(KeyY, WriteLocal, Some(777))
       expectMsg(DeleteSuccess(KeyY, Some(777)))
 
       replicator ! Get(KeyZ, readMajority)
-      expectMsgPF() { case g @ GetSuccess(KeyZ, _) ⇒ g.get(KeyZ).value } should be(30)
+      expectMsgPF() { case g @ GetSuccess(KeyZ, _) => g.get(KeyZ).value } should be(30)
     }
     enterBarrier("update-c31")
 
@@ -304,21 +305,21 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       within(5.seconds) {
         awaitAssert {
           replicator ! Get(KeyC, ReadLocal)
-          val c = expectMsgPF() { case g @ GetSuccess(KeyC, _) ⇒ g.get(KeyC) }
+          val c = expectMsgPF() { case g @ GetSuccess(KeyC, _) => g.get(KeyC) }
           c.value should be(31)
 
           replicator ! Get(KeyY, ReadLocal, Some(777))
           expectMsg(DataDeleted(KeyY, Some(777)))
         }
       }
-      changedProbe.expectMsgPF() { case c @ Changed(KeyC) ⇒ c.get(KeyC).value } should be(31)
+      changedProbe.expectMsgPF() { case c @ Changed(KeyC) => c.get(KeyC).value } should be(31)
     }
     enterBarrier("verified-c31")
 
     // and also for concurrent updates
     runOn(first, second) {
       replicator ! Get(KeyC, ReadLocal)
-      val c31 = expectMsgPF() { case g @ GetSuccess(KeyC, _) ⇒ g.get(KeyC) }
+      val c31 = expectMsgPF() { case g @ GetSuccess(KeyC, _) => g.get(KeyC) }
       c31.value should be(31)
 
       replicator ! Update(KeyC, GCounter(), WriteLocal)(_ :+ 1)
@@ -327,7 +328,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       within(5.seconds) {
         awaitAssert {
           replicator ! Get(KeyC, ReadLocal)
-          val c = expectMsgPF() { case g @ GetSuccess(KeyC, _) ⇒ g.get(KeyC) }
+          val c = expectMsgPF() { case g @ GetSuccess(KeyC, _) => g.get(KeyC) }
           c.value should be(33)
         }
       }
@@ -347,7 +348,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(first, second) {
       replicator ! Get(KeyD, ReadLocal)
-      val c40 = expectMsgPF() { case g @ GetSuccess(KeyD, _) ⇒ g.get(KeyD) }
+      val c40 = expectMsgPF() { case g @ GetSuccess(KeyD, _) => g.get(KeyD) }
       c40.value should be(40)
       replicator ! Update(KeyD, GCounter() :+ 1, writeTwo)(_ :+ 1)
       expectMsg(timeout + 1.second, UpdateTimeout(KeyD, None))
@@ -355,7 +356,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       expectMsg(timeout + 1.second, UpdateTimeout(KeyD, None))
     }
     runOn(first) {
-      for (n ← 1 to 30) {
+      for (n <- 1 to 30) {
         val KeyDn = GCounterKey("D" + n)
         replicator ! Update(KeyDn, GCounter(), WriteLocal)(_ :+ n)
         expectMsg(UpdateSuccess(KeyDn, None))
@@ -370,15 +371,15 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(first, second) {
       replicator ! Get(KeyD, readTwo)
-      val c44 = expectMsgPF() { case g @ GetSuccess(KeyD, _) ⇒ g.get(KeyD) }
+      val c44 = expectMsgPF() { case g @ GetSuccess(KeyD, _) => g.get(KeyD) }
       c44.value should be(44)
 
       within(10.seconds) {
         awaitAssert {
-          for (n ← 1 to 30) {
+          for (n <- 1 to 30) {
             val KeyDn = GCounterKey("D" + n)
             replicator ! Get(KeyDn, ReadLocal)
-            expectMsgPF() { case g @ GetSuccess(KeyDn, _) ⇒ g.get(KeyDn) }.value should be(n)
+            expectMsgPF() { case g @ GetSuccess(KeyDn, _) => g.get(KeyDn) }.value should be(n)
           }
         }
       }
@@ -408,7 +409,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(first, second, third) {
       replicator ! Get(KeyE, readMajority)
-      val c150 = expectMsgPF() { case g @ GetSuccess(KeyE, _) ⇒ g.get(KeyE) }
+      val c150 = expectMsgPF() { case g @ GetSuccess(KeyE, _) => g.get(KeyE) }
       c150.value should be(150)
     }
     enterBarrier("read-initial-majority")
@@ -431,7 +432,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       val probe2 = TestProbe()
       replicator.tell(Get(KeyE, readMajority), probe2.ref)
       probe2.expectMsgType[GetSuccess[_]]
-      replicator.tell(Update(KeyE, GCounter(), writeMajority, None) { data ⇒
+      replicator.tell(Update(KeyE, GCounter(), writeMajority, None) { data =>
         probe1.ref ! data.value
         data :+ 1
       }, probe2.ref)
@@ -441,7 +442,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       replicator.tell(Get(KeyE, readMajority), probe3.ref)
       probe1.expectMsg(151)
       probe2.expectMsg(UpdateSuccess(KeyE, None))
-      val c152 = probe3.expectMsgPF() { case g @ GetSuccess(KeyE, _) ⇒ g.get(KeyE) }
+      val c152 = probe3.expectMsgPF() { case g @ GetSuccess(KeyE, _) => g.get(KeyE) }
       c152.value should be(152)
     }
     enterBarrier("majority-update-from-first")
@@ -462,7 +463,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       probe1.expectMsg(UpdateSuccess(KeyE, Some(153)))
       probe2.expectMsg(UpdateSuccess(KeyE, Some(154)))
       probe3.expectMsg(UpdateSuccess(KeyE, Some(155)))
-      val c155 = probe5.expectMsgPF() { case g @ GetSuccess(KeyE, _) ⇒ g.get(KeyE) }
+      val c155 = probe5.expectMsgPF() { case g @ GetSuccess(KeyE, _) => g.get(KeyE) }
       c155.value should be(155)
     }
     enterBarrier("majority-update-from-second")
@@ -483,7 +484,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(third) {
       replicator ! Get(KeyE, readMajority)
-      val c155 = expectMsgPF() { case g @ GetSuccess(KeyE, _) ⇒ g.get(KeyE) }
+      val c155 = expectMsgPF() { case g @ GetSuccess(KeyE, _) => g.get(KeyE) }
       c155.value should be(155)
     }
 
@@ -493,7 +494,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   "converge after many concurrent updates" in within(10.seconds) {
     runOn(first, second, third) {
       var c = GCounter()
-      for (_ ← 0 until 100) {
+      for (_ <- 0 until 100) {
         c :+= 1
         replicator ! Update(KeyF, GCounter(), writeTwo)(_ :+ 1)
       }
@@ -503,7 +504,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     enterBarrier("100-updates-done")
     runOn(first, second, third) {
       replicator ! Get(KeyF, readTwo)
-      val c = expectMsgPF() { case g @ GetSuccess(KeyF, _) ⇒ g.get(KeyF) }
+      val c = expectMsgPF() { case g @ GetSuccess(KeyF, _) => g.get(KeyF) }
       c.value should be(3 * 100)
     }
     enterBarrierAfterTestStep()
@@ -517,9 +518,9 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     enterBarrier("a-b-added-to-G")
     runOn(second) {
       replicator ! Get(KeyG, readAll)
-      expectMsgPF() { case g @ GetSuccess(KeyG, _) ⇒ g.get(KeyG).elements } should be(Set("a", "b"))
+      expectMsgPF() { case g @ GetSuccess(KeyG, _) => g.get(KeyG).elements } should be(Set("a", "b"))
       replicator ! Get(KeyG, ReadLocal)
-      expectMsgPF() { case g @ GetSuccess(KeyG, _) ⇒ g.get(KeyG).elements } should be(Set("a", "b"))
+      expectMsgPF() { case g @ GetSuccess(KeyG, _) => g.get(KeyG).elements } should be(Set("a", "b"))
     }
     enterBarrierAfterTestStep()
   }
@@ -529,22 +530,22 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(second) {
       replicator ! Subscribe(KeyH, changedProbe.ref)
-      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ :+ ("a" → Flag.Disabled))
-      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag.Disabled))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ :+ ("a" -> Flag.Disabled))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) => c.get(KeyH).entries } should be(Map("a" -> Flag.Disabled))
     }
 
     enterBarrier("update-h1")
 
     runOn(first) {
-      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ :+ ("a" → Flag.Enabled))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ :+ ("a" -> Flag.Enabled))
     }
 
     runOn(second) {
-      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag.Enabled))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) => c.get(KeyH).entries } should be(Map("a" -> Flag.Enabled))
 
-      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ :+ ("b" → Flag.Enabled))
-      changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(
-        Map("a" → Flag.Enabled, "b" → Flag.Enabled))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ :+ ("b" -> Flag.Enabled))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyH) => c.get(KeyH).entries } should be(
+        Map("a" -> Flag.Enabled, "b" -> Flag.Enabled))
     }
 
     enterBarrierAfterTestStep()
@@ -556,11 +557,11 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     enterBarrier("subscribed-I")
 
     runOn(second) {
-      replicator ! Update(KeyI, GSet.empty[String], writeTwo)(a ⇒ a.add("a"))
+      replicator ! Update(KeyI, GSet.empty[String], writeTwo)(a => a.add("a"))
     }
 
     within(5.seconds) { // gossip to third
-      changedProbe.expectMsgPF() { case c @ Changed(KeyI) ⇒ c.get(KeyI).elements } should be(Set("a"))
+      changedProbe.expectMsgPF() { case c @ Changed(KeyI) => c.get(KeyI).elements } should be(Set("a"))
     }
 
     enterBarrier("update-I")
@@ -575,4 +576,3 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   }
 
 }
-

@@ -98,7 +98,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
 
   @Override
   public Receive<DeviceGroupMessage> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         .onMessage(RequestTrackDevice.class, this::onTrackDevice)
         // #device-group-register
         // #device-group-remove

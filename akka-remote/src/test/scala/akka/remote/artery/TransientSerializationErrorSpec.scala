@@ -6,5 +6,4 @@ package akka.remote.artery
 
 import akka.remote.AbstractTransientSerializationErrorSpec
 
-class TransientSerializationErrorSpec extends AbstractTransientSerializationErrorSpec(
-  ArterySpecSupport.defaultConfig)
+class TransientSerializationErrorSpec extends AbstractTransientSerializationErrorSpec(ArterySpecSupport.defaultConfig)

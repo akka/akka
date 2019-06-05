@@ -2,15 +2,6 @@
 
 ## Introduction
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
-
 The conversational patterns that we have seen so far are simple in the sense that they require the actor to keep little or no state. Specifically:
 
 * Device actors return a reading, which requires no state change

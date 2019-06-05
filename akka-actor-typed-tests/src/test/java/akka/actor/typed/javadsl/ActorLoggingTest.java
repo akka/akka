@@ -4,12 +4,12 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.event.Logging;
 import akka.japi.pf.PFBuilder;
 import akka.testkit.CustomEventFilter;
-import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -42,6 +42,28 @@ public class ActorLoggingTest extends JUnitSuite {
     public String getTransactionId() {
       return transactionId;
     }
+  }
+
+  @Test
+  public void loggingProvidesClassWhereLogWasCalled() {
+    CustomEventFilter eventFilter =
+        new CustomEventFilter(
+            new PFBuilder<Logging.LogEvent, Object>()
+                .match(
+                    Logging.LogEvent.class, (event) -> event.logClass() == ActorLoggingTest.class)
+                .build(),
+            1);
+
+    Behavior<String> behavior =
+        Behaviors.setup(
+            (context) -> {
+              context.getLog().info("Starting up");
+
+              return Behaviors.empty();
+            });
+
+    testKit.spawn(behavior);
+    eventFilter.awaitDone(FiniteDuration.create(3, TimeUnit.SECONDS));
   }
 
   @Test

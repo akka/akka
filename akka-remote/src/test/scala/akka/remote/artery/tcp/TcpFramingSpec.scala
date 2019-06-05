@@ -32,7 +32,7 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
   private val payload5 = ByteString((1 to 5).map(_.toByte).toArray)
 
   private def frameBytes(numberOfFrames: Int): ByteString =
-    (1 to numberOfFrames).foldLeft(ByteString.empty)((acc, _) ⇒ acc ++ encodeFrameHeader(payload5.size) ++ payload5)
+    (1 to numberOfFrames).foldLeft(ByteString.empty)((acc, _) => acc ++ encodeFrameHeader(payload5.size) ++ payload5)
 
   private val rndSeed = System.currentTimeMillis()
   private val rnd = new Random(rndSeed)
@@ -60,15 +60,14 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
     }
 
     "grab streamId from connection header in single chunk" in {
-      val frames = Source(List(TcpFraming.encodeConnectionHeader(1), frameBytes(1))).via(framingFlow)
-        .runWith(Sink.seq).futureValue
+      val frames =
+        Source(List(TcpFraming.encodeConnectionHeader(1), frameBytes(1))).via(framingFlow).runWith(Sink.seq).futureValue
       frames.head.streamId should ===(1)
     }
 
     "reject invalid magic" in {
       val bytes = frameBytes(2)
-      val fail = Source(List(bytes)).via(framingFlow).runWith(Sink.seq)
-        .failed.futureValue
+      val fail = Source(List(bytes)).via(framingFlow).runWith(Sink.seq).failed.futureValue
       fail shouldBe a[ParsingException]
       fail.getCause shouldBe a[FramingException]
     }
@@ -85,9 +84,9 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
       val numberOfFrames = 100
       val bytes = TcpFraming.encodeConnectionHeader(3) ++ frameBytes(numberOfFrames)
       withClue(s"Random chunks seed: $rndSeed") {
-        val frames = Source.fromIterator(() ⇒ rechunk(bytes)).via(framingFlow).runWith(Sink.seq).futureValue
+        val frames = Source.fromIterator(() => rechunk(bytes)).via(framingFlow).runWith(Sink.seq).futureValue
         frames.size should ===(numberOfFrames)
-        frames.foreach { frame ⇒
+        frames.foreach { frame =>
           frame.byteBuffer.limit() should ===(payload5.size)
           val payload = new Array[Byte](frame.byteBuffer.limit())
           frame.byteBuffer.get(payload)
@@ -99,8 +98,7 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
 
     "report truncated frames" in {
       val bytes = TcpFraming.encodeConnectionHeader(3) ++ frameBytes(3).drop(1)
-      Source(List(bytes)).via(framingFlow).runWith(Sink.seq)
-        .failed.futureValue shouldBe a[FramingException]
+      Source(List(bytes)).via(framingFlow).runWith(Sink.seq).failed.futureValue shouldBe a[FramingException]
     }
 
     "work with empty stream" in {

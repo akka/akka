@@ -28,6 +28,7 @@ import scala.util.control.NonFatal
  * }}}
  */
 object Throwables {
+
   /**
    * Returns true if the provided `Throwable` is to be considered non-fatal,
    * or false if it is to be considered fatal

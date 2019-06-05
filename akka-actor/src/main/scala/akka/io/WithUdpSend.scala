@@ -5,8 +5,8 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.channels.{ SelectionKey, DatagramChannel }
-import akka.actor.{ ActorRef, ActorLogging, Actor }
+import java.nio.channels.{ DatagramChannel, SelectionKey }
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
 
@@ -16,7 +16,7 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[io] trait WithUdpSend {
-  me: Actor with ActorLogging ⇒
+  me: Actor with ActorLogging =>
 
   private var pendingSend: Send = null
   private var pendingCommander: ActorRef = null
@@ -32,38 +32,34 @@ private[io] trait WithUdpSend {
   import settings._
 
   def sendHandlers(registration: ChannelRegistration): Receive = {
-    case send: Send if hasWritePending ⇒
+    case send: Send if hasWritePending =>
       if (TraceLogging) log.debug("Dropping write because queue is full")
       sender() ! CommandFailed(send)
 
-    case send: Send if send.payload.isEmpty ⇒
+    case send: Send if send.payload.isEmpty =>
       if (send.wantsAck)
         sender() ! send.ack
 
-    case send: Send ⇒
+    case send: Send =>
       pendingSend = send
       pendingCommander = sender()
       if (send.target.isUnresolved) {
         Dns.resolve(send.target.getHostName)(context.system, self) match {
-          case Some(r) ⇒
+          case Some(r) =>
             try {
               pendingSend = pendingSend.copy(target = new InetSocketAddress(r.addr, pendingSend.target.getPort))
               doSend(registration)
             } catch {
-              case NonFatal(e) ⇒
+              case NonFatal(e) =>
                 sender() ! CommandFailed(send)
-                log.debug(
-                  "Failure while sending UDP datagram to remote address [{}]: {}",
-                  send.target, e)
+                log.debug("Failure while sending UDP datagram to remote address [{}]: {}", send.target, e)
                 retriedSend = false
                 pendingSend = null
                 pendingCommander = null
             }
-          case None ⇒
+          case None =>
             sender() ! CommandFailed(send)
-            log.debug(
-              "Name resolution failed for remote address [{}]",
-              send.target)
+            log.debug("Name resolution failed for remote address [{}]", send.target)
             retriedSend = false
             pendingSend = null
             pendingCommander = null
@@ -72,7 +68,7 @@ private[io] trait WithUdpSend {
         doSend(registration)
       }
 
-    case ChannelWritable ⇒ if (hasWritePending) doSend(registration)
+    case ChannelWritable => if (hasWritePending) doSend(registration)
   }
 
   private def doSend(registration: ChannelRegistration): Unit = {

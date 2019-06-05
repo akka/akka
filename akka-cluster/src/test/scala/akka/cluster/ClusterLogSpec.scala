@@ -17,7 +17,7 @@ object ClusterLogSpec {
     }
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.loglevel = "INFO"
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -31,9 +31,9 @@ abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with Impl
 
   protected val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
-  protected val upLogMessage = " - event MemberUp"
+  protected val upLogMessage = "event MemberUp"
 
-  protected val downLogMessage = " - event MemberDowned"
+  protected val downLogMessage = "event MemberDowned"
 
   protected val cluster = Cluster(system)
 
@@ -48,15 +48,11 @@ abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with Impl
 
   /** The expected log info pattern to intercept after a `cluster.join`. */
   protected def join(expected: String): Unit =
-    EventFilter.
-      info(occurrences = 1, pattern = expected).
-      intercept(cluster.join(selfAddress))
+    EventFilter.info(occurrences = 1, pattern = expected).intercept(cluster.join(selfAddress))
 
   /** The expected log info pattern to intercept after a `cluster.down`. */
   protected def down(expected: String): Unit =
-    EventFilter.
-      info(occurrences = 1, pattern = expected).
-      intercept(cluster.down(selfAddress))
+    EventFilter.info(occurrences = 1, pattern = expected).intercept(cluster.down(selfAddress))
 }
 
 class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
@@ -73,8 +69,7 @@ class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
   }
 }
 
-class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(
-  ConfigFactory.parseString(ClusterLogSpec.config)) {
+class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(ConfigFactory.parseString(ClusterLogSpec.config)) {
 
   "A Cluster" must {
 
@@ -87,9 +82,11 @@ class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(
   }
 }
 
-class ClusterLogVerboseEnabledSpec extends ClusterLogSpec(
-  ConfigFactory.parseString("akka.cluster.log-info-verbose = on").
-    withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
+class ClusterLogVerboseEnabledSpec
+    extends ClusterLogSpec(
+      ConfigFactory
+        .parseString("akka.cluster.log-info-verbose = on")
+        .withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
 
   "A Cluster" must {
 

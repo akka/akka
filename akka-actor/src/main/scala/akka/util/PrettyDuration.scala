@@ -21,7 +21,8 @@ private[akka] object PrettyDuration {
    * JAVA API
    * Selects most appropriate TimeUnit for given duration and formats it accordingly
    */
-  def format(duration: Duration, includeNanos: Boolean, precision: Int): String = duration.pretty(includeNanos, precision)
+  def format(duration: Duration, includeNanos: Boolean, precision: Int): String =
+    duration.pretty(includeNanos, precision)
 
   implicit class PrettyPrintableDuration(val duration: Duration) extends AnyVal {
 
@@ -33,16 +34,20 @@ private[akka] object PrettyDuration {
       require(precision > 0, "precision must be > 0")
 
       duration match {
-        case d: FiniteDuration ⇒
+        case d: FiniteDuration =>
           val nanos = d.toNanos
           val unit = chooseUnit(nanos)
           val value = nanos.toDouble / NANOSECONDS.convert(1, unit)
 
-          s"%.${precision}g %s%s".formatLocal(Locale.ROOT, value, abbreviate(unit), if (includeNanos) s" ($nanos ns)" else "")
+          s"%.${precision}g %s%s".formatLocal(
+            Locale.ROOT,
+            value,
+            abbreviate(unit),
+            if (includeNanos) s" ($nanos ns)" else "")
 
-        case Duration.MinusInf ⇒ s"-∞ (minus infinity)"
-        case Duration.Inf      ⇒ s"∞ (infinity)"
-        case _                 ⇒ "undefined"
+        case Duration.MinusInf => s"-∞ (minus infinity)"
+        case Duration.Inf      => s"∞ (infinity)"
+        case _                 => "undefined"
       }
     }
 
@@ -59,13 +64,13 @@ private[akka] object PrettyDuration {
     }
 
     def abbreviate(unit: TimeUnit): String = unit match {
-      case NANOSECONDS  ⇒ "ns"
-      case MICROSECONDS ⇒ "μs"
-      case MILLISECONDS ⇒ "ms"
-      case SECONDS      ⇒ "s"
-      case MINUTES      ⇒ "min"
-      case HOURS        ⇒ "h"
-      case DAYS         ⇒ "d"
+      case NANOSECONDS  => "ns"
+      case MICROSECONDS => "μs"
+      case MILLISECONDS => "ms"
+      case SECONDS      => "s"
+      case MINUTES      => "min"
+      case HOURS        => "h"
+      case DAYS         => "d"
     }
   }
 

@@ -127,7 +127,7 @@ public class OptionalBlogState {
         initialCommandHandler() {
       return newCommandHandlerBuilder()
           .forState(state -> !state.isPresent())
-          .matchCommand(
+          .onCommand(
               AddPost.class,
               (state, cmd) -> {
                 PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
@@ -142,13 +142,13 @@ public class OptionalBlogState {
         postCommandHandler() {
       return newCommandHandlerBuilder()
           .forState(Optional::isPresent)
-          .matchCommand(
+          .onCommand(
               ChangeBody.class,
               (state, cmd) -> {
                 BodyChanged event = new BodyChanged(state.get().postId(), cmd.newBody);
                 return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
               })
-          .matchCommand(
+          .onCommand(
               Publish.class,
               (state, cmd) ->
                   Effect()
@@ -158,13 +158,13 @@ public class OptionalBlogState {
                             System.out.println("Blog post published: " + state.get().postId());
                             cmd.replyTo.tell(Done.getInstance());
                           }))
-          .matchCommand(
+          .onCommand(
               GetPost.class,
               (state, cmd) -> {
                 cmd.replyTo.tell(state.get().postContent);
                 return Effect().none();
               })
-          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
+          .onCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
 
     public BlogBehavior(PersistenceId persistenceId) {
@@ -188,12 +188,12 @@ public class OptionalBlogState {
 
       builder
           .forState(state -> !state.isPresent())
-          .matchEvent(
+          .onEvent(
               PostAdded.class, (state, event) -> Optional.of(new BlogState(event.content, false)));
 
       builder
           .forState(Optional::isPresent)
-          .matchEvent(
+          .onEvent(
               BodyChanged.class,
               (state, chg) ->
                   state.map(
@@ -201,7 +201,7 @@ public class OptionalBlogState {
                           blogState.withContent(
                               new PostContent(
                                   blogState.postId(), blogState.postContent.title, chg.newBody))))
-          .matchEvent(
+          .onEvent(
               Published.class,
               (state, event) -> state.map(blogState -> new BlogState(blogState.postContent, true)));
 

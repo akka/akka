@@ -2,7 +2,7 @@
 
 Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
 @@@div { .group-scala }
 

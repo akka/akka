@@ -34,12 +34,10 @@ class InterpreterBenchmark {
         val source = new GraphDataSource("source", data100k)
         val sink = new GraphDataSink[Int]("sink", data100k.size)
 
-        val b = builder(identities: _*)
-          .connect(source, identities.head.in)
-          .connect(identities.last.out, sink)
+        val b = builder(identities: _*).connect(source, identities.head.in).connect(identities.last.out, sink)
 
         // FIXME: This should not be here, this is pure setup overhead
-        for (i ← (0 until identities.size - 1)) {
+        for (i <- (0 until identities.size - 1)) {
           b.connect(identities(i).out, identities(i + 1).in)
         }
 
@@ -58,20 +56,23 @@ object InterpreterBenchmark {
     override val out: akka.stream.Outlet[T] = Outlet[T]("out")
     out.id = 0
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
-        if (idx < data.size) {
-          push(out, data(idx))
-          idx += 1
-        } else {
-          completeStage()
+    setHandler(
+      out,
+      new OutHandler {
+        override def onPull(): Unit = {
+          if (idx < data.size) {
+            push(out, data(idx))
+            idx += 1
+          } else {
+            completeStage()
+          }
         }
-      }
-      override def onDownstreamFinish(): Unit = completeStage()
-    })
+        override def onDownstreamFinish(): Unit = completeStage()
+      })
   }
 
-  case class GraphDataSink[T](override val toString: String, var expected: Int) extends DownstreamBoundaryStageLogic[T] {
+  case class GraphDataSink[T](override val toString: String, var expected: Int)
+      extends DownstreamBoundaryStageLogic[T] {
     override val in: akka.stream.Inlet[T] = Inlet[T]("in")
     in.id = 0
 

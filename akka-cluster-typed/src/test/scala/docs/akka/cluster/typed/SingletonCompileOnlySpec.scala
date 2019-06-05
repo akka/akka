@@ -22,12 +22,12 @@ object SingletonCompileOnlySpec {
 
   def counter(value: Int): Behavior[CounterCommand] =
     Behaviors.receiveMessage[CounterCommand] {
-      case Increment ⇒
+      case Increment =>
         counter(value + 1)
-      case GetValue(replyTo) ⇒
+      case GetValue(replyTo) =>
         replyTo ! value
         Behaviors.same
-      case GoodByeCounter ⇒
+      case GoodByeCounter =>
         // Do async action then stop
         Behaviors.stopped
     }
@@ -39,9 +39,7 @@ object SingletonCompileOnlySpec {
   val singletonManager = ClusterSingleton(system)
   // Start if needed and provide a proxy to a named singleton
   val proxy: ActorRef[CounterCommand] = singletonManager.init(
-    SingletonActor(Behaviors.supervise(counter(0))
-      .onFailure[Exception](SupervisorStrategy.restart), "GlobalCounter")
-  )
+    SingletonActor(Behaviors.supervise(counter(0)).onFailure[Exception](SupervisorStrategy.restart), "GlobalCounter"))
 
   proxy ! Increment
   //#singleton
@@ -53,8 +51,10 @@ object SingletonCompileOnlySpec {
 
   //#backoff
   val proxyBackOff: ActorRef[CounterCommand] = singletonManager.init(
-    SingletonActor(Behaviors.supervise(counter(0))
-      .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)), "GlobalCounter")
-  )
+    SingletonActor(
+      Behaviors
+        .supervise(counter(0))
+        .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)),
+      "GlobalCounter"))
   //#backoff
 }

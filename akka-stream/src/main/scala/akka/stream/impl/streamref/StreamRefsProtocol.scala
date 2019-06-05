@@ -15,6 +15,7 @@ private[akka] sealed trait StreamRefsProtocol
 /** INTERNAL API */
 @InternalApi
 private[akka] object StreamRefsProtocol {
+
   /**
    * Sequenced `Subscriber#onNext` equivalent.
    * The receiving end of these messages MUST fail the stream if it observes gaps in the sequence,
@@ -23,7 +24,9 @@ private[akka] object StreamRefsProtocol {
    * Sequence numbers start from `0`.
    */
   @InternalApi
-  private[akka] final case class SequencedOnNext[T](seqNr: Long, payload: T) extends StreamRefsProtocol with DeadLetterSuppression {
+  private[akka] final case class SequencedOnNext[T](seqNr: Long, payload: T)
+      extends StreamRefsProtocol
+      with DeadLetterSuppression {
     if (payload == null) throw ReactiveStreamsCompliance.elementMustNotBeNullException
   }
 
@@ -31,7 +34,9 @@ private[akka] object StreamRefsProtocol {
    * INTERNAL API: Initial message sent to remote side to establish partnership between origin and remote stream refs.
    */
   @InternalApi
-  private[akka] final case class OnSubscribeHandshake(targetRef: ActorRef) extends StreamRefsProtocol with DeadLetterSuppression
+  private[akka] final case class OnSubscribeHandshake(targetRef: ActorRef)
+      extends StreamRefsProtocol
+      with DeadLetterSuppression
 
   /**
    * INTERNAL API: Sent to a the receiver side of a stream ref, once the sending side of the SinkRef gets signalled a Failure.

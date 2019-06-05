@@ -12,28 +12,28 @@ class AtomicWriteSpec extends WordSpec with Matchers {
     "only contain messages for the same persistence id" in {
       AtomicWrite(
         PersistentRepr("", 1, "p1") ::
-          PersistentRepr("", 2, "p1") :: Nil).persistenceId should ===("p1")
+        PersistentRepr("", 2, "p1") :: Nil).persistenceId should ===("p1")
 
       intercept[IllegalArgumentException] {
         AtomicWrite(
           PersistentRepr("", 1, "p1") ::
-            PersistentRepr("", 2, "p1") ::
-            PersistentRepr("", 3, "p2") :: Nil)
+          PersistentRepr("", 2, "p1") ::
+          PersistentRepr("", 3, "p2") :: Nil)
       }
     }
 
     "have highestSequenceNr" in {
       AtomicWrite(
         PersistentRepr("", 1, "p1") ::
-          PersistentRepr("", 2, "p1") ::
-          PersistentRepr("", 3, "p1") :: Nil).highestSequenceNr should ===(3)
+        PersistentRepr("", 2, "p1") ::
+        PersistentRepr("", 3, "p1") :: Nil).highestSequenceNr should ===(3)
     }
 
     "have lowestSequenceNr" in {
       AtomicWrite(
         PersistentRepr("", 2, "p1") ::
-          PersistentRepr("", 3, "p1") ::
-          PersistentRepr("", 4, "p1") :: Nil).lowestSequenceNr should ===(2)
+        PersistentRepr("", 3, "p1") ::
+        PersistentRepr("", 4, "p1") :: Nil).lowestSequenceNr should ===(2)
     }
   }
 

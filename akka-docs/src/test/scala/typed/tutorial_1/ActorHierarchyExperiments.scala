@@ -20,14 +20,14 @@ import akka.actor.typed.scaladsl.Behaviors
 
 object PrintMyActorRefActor {
   def apply(): Behavior[String] =
-    Behaviors.setup(context ⇒ new PrintMyActorRefActor(context))
+    Behaviors.setup(context => new PrintMyActorRefActor(context))
 }
 
 class PrintMyActorRefActor(context: ActorContext[String]) extends AbstractBehavior[String] {
 
   override def onMessage(msg: String): Behavior[String] =
     msg match {
-      case "printit" ⇒
+      case "printit" =>
         val secondRef = context.spawn(Behaviors.empty[String], "second-actor")
         println(s"Second: $secondRef")
         this
@@ -38,7 +38,7 @@ class PrintMyActorRefActor(context: ActorContext[String]) extends AbstractBehavi
 //#start-stop
 object StartStopActor1 {
   def apply(): Behavior[String] =
-    Behaviors.setup(context ⇒ new StartStopActor1(context))
+    Behaviors.setup(context => new StartStopActor1(context))
 }
 
 class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[String] {
@@ -47,11 +47,11 @@ class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[St
 
   override def onMessage(msg: String): Behavior[String] =
     msg match {
-      case "stop" ⇒ Behaviors.stopped
+      case "stop" => Behaviors.stopped
     }
 
   override def onSignal: PartialFunction[Signal, Behavior[String]] = {
-    case PostStop ⇒
+    case PostStop =>
       println("first stopped")
       this
   }
@@ -60,7 +60,7 @@ class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[St
 
 object StartStopActor2 {
   def apply(): Behavior[String] =
-    Behaviors.setup(_ ⇒ new StartStopActor2)
+    Behaviors.setup(_ => new StartStopActor2)
 }
 
 class StartStopActor2 extends AbstractBehavior[String] {
@@ -72,7 +72,7 @@ class StartStopActor2 extends AbstractBehavior[String] {
   }
 
   override def onSignal: PartialFunction[Signal, Behavior[String]] = {
-    case PostStop ⇒
+    case PostStop =>
       println("second stopped")
       this
   }
@@ -83,7 +83,7 @@ class StartStopActor2 extends AbstractBehavior[String] {
 //#supervise
 object SupervisingActor {
   def apply(): Behavior[String] =
-    Behaviors.setup(context ⇒ new SupervisingActor(context))
+    Behaviors.setup(context => new SupervisingActor(context))
 }
 
 class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[String] {
@@ -93,7 +93,7 @@ class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[S
 
   override def onMessage(msg: String): Behavior[String] =
     msg match {
-      case "failChild" ⇒
+      case "failChild" =>
         child ! "fail"
         this
     }
@@ -101,7 +101,7 @@ class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[S
 
 object SupervisedActor {
   def apply(): Behavior[String] =
-    Behaviors.setup(_ ⇒ new SupervisedActor)
+    Behaviors.setup(_ => new SupervisedActor)
 }
 
 class SupervisedActor extends AbstractBehavior[String] {
@@ -109,16 +109,16 @@ class SupervisedActor extends AbstractBehavior[String] {
 
   override def onMessage(msg: String): Behavior[String] =
     msg match {
-      case "fail" ⇒
+      case "fail" =>
         println("supervised actor fails now")
         throw new Exception("I failed!")
     }
 
   override def onSignal: PartialFunction[Signal, Behavior[String]] = {
-    case PreRestart ⇒
+    case PreRestart =>
       println("supervised actor will be restarted")
       this
-    case PostStop ⇒
+    case PostStop =>
       println("supervised actor stopped")
       this
   }
@@ -130,14 +130,14 @@ class SupervisedActor extends AbstractBehavior[String] {
 
 object Main {
   def apply(): Behavior[String] =
-    Behaviors.setup(context ⇒ new Main(context))
+    Behaviors.setup(context => new Main(context))
 
 }
 
 class Main(context: ActorContext[String]) extends AbstractBehavior[String] {
   override def onMessage(msg: String): Behavior[String] =
     msg match {
-      case "start" ⇒
+      case "start" =>
         val firstRef = context.spawn(PrintMyActorRefActor(), "first-actor")
         println(s"First: $firstRef")
         firstRef ! "printit"

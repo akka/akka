@@ -7,7 +7,7 @@ package akka.cluster.sharding
 import akka.annotation.InternalApi
 import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker }
 import com.typesafe.config.Config
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 /**
  * INTERNAL API

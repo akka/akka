@@ -6,6 +6,7 @@ package jdocs.persistence;
 
 import static akka.pattern.Patterns.ask;
 
+import java.sql.Connection;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,9 +22,8 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
-import docs.persistence.query.MyEventsByTagPublisher;
+import jdocs.persistence.query.MyEventsByTagSource;
 import org.reactivestreams.Subscriber;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,12 +92,11 @@ public class PersistenceQueryDocTest {
           akka.persistence.query.javadsl.PersistenceIdsQuery,
           akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
-    private final FiniteDuration refreshInterval;
+    private final Duration refreshInterval;
+    private Connection conn;
 
     public MyJavadslReadJournal(ExtendedActorSystem system, Config config) {
-      refreshInterval =
-          FiniteDuration.create(
-              config.getDuration("refresh-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
+      refreshInterval = config.getDuration("refresh-interval");
     }
 
     /**
@@ -115,10 +114,8 @@ public class PersistenceQueryDocTest {
     public Source<EventEnvelope, NotUsed> eventsByTag(String tag, Offset offset) {
       if (offset instanceof Sequence) {
         Sequence sequenceOffset = (Sequence) offset;
-        final Props props =
-            MyEventsByTagPublisher.props(tag, sequenceOffset.value(), refreshInterval);
-        return Source.<EventEnvelope>actorPublisher(props)
-            .mapMaterializedValue(m -> NotUsed.getInstance());
+        return Source.fromGraph(
+            new MyEventsByTagSource(conn, tag, sequenceOffset.value(), refreshInterval));
       } else if (offset == NoOffset.getInstance())
         return eventsByTag(tag, Offset.sequence(0L)); // recursive
       else

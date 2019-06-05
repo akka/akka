@@ -5,12 +5,13 @@
 package akka.aeron
 
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.util.unused
 import io.aeron.driver.MediaDriver
 
 // TODO should we expose the media driver directly or just a subset of properties e.g.
 //  the directory
 // TODO shut down and delete directory via CoordinatedShutdown?
-class MediaDriverExtensionImpl(system: ExtendedActorSystem) extends Extension {
+class MediaDriverExtensionImpl(@unused system: ExtendedActorSystem) extends Extension {
 
   // TODO settings
   private val mediaDriver: MediaDriver = MediaDriver.launchEmbedded()
@@ -19,8 +20,7 @@ class MediaDriverExtensionImpl(system: ExtendedActorSystem) extends Extension {
 
 }
 
-object MediaDriverExtension extends ExtensionId[MediaDriverExtensionImpl]
-  with ExtensionIdProvider {
+object MediaDriverExtension extends ExtensionId[MediaDriverExtensionImpl] with ExtensionIdProvider {
   /**
    * Is used by Akka to instantiate the Extension identified by this ExtensionId,
    * internal use only.

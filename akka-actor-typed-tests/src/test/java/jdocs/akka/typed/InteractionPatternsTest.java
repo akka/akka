@@ -207,7 +207,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       @Override
       public Receive<Command> createReceive() {
-        return receiveBuilder()
+        return newReceiveBuilder()
             .onMessage(
                 Translate.class,
                 cmd -> {
@@ -603,7 +603,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
     @Override
     public Receive<Object> createReceive() {
-      return receiveBuilder()
+      return newReceiveBuilder()
           .onMessage(
               Wallet.class,
               (wallet) -> {

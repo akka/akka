@@ -49,7 +49,7 @@ private[akka] object Collections {
     }
 
     override lazy val size: Int = iterator.size
-    override def foreach[C](f: To ⇒ C) = iterator foreach f
+    override def foreach[C](f: To => C) = iterator.foreach(f)
   }
 
 }

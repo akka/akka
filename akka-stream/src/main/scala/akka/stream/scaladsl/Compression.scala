@@ -29,7 +29,7 @@ object Compression {
    * @param level Compression level (0-9)
    */
   def gzip(level: Int): Flow[ByteString, ByteString, NotUsed] =
-    CompressionUtils.compressorFlow(() ⇒ new GzipCompressor(level))
+    CompressionUtils.compressorFlow(() => new GzipCompressor(level))
 
   /**
    * Creates a Flow that decompresses a gzip-compressed stream of data.
@@ -37,8 +37,7 @@ object Compression {
    * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
    */
   def gunzip(maxBytesPerChunk: Int = MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].via(new GzipDecompressor(maxBytesPerChunk))
-      .named("gunzip")
+    Flow[ByteString].via(new GzipDecompressor(maxBytesPerChunk)).named("gunzip")
 
   /**
    * Creates a flow that deflate-compresses a stream of ByteString. Note that the compressor
@@ -58,7 +57,7 @@ object Compression {
    *
    */
   def deflate(level: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
-    CompressionUtils.compressorFlow(() ⇒ new DeflateCompressor(level, nowrap))
+    CompressionUtils.compressorFlow(() => new DeflateCompressor(level, nowrap))
 
   /**
    * Creates a Flow that decompresses a deflate-compressed stream of data.
@@ -75,6 +74,5 @@ object Compression {
    * @param nowrap if true then use GZIP compatible decompression
    */
   def inflate(maxBytesPerChunk: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].via(new DeflateDecompressor(maxBytesPerChunk, nowrap))
-      .named("inflate")
+    Flow[ByteString].via(new DeflateDecompressor(maxBytesPerChunk, nowrap)).named("inflate")
 }

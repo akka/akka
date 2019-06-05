@@ -71,11 +71,11 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi private[remote] class SystemMessageDelivery(
-  outboundContext: OutboundContext,
-  deadLetters:     ActorRef,
-  resendInterval:  FiniteDuration,
-  maxBufferSize:   Int)
-  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
+    outboundContext: OutboundContext,
+    deadLetters: ActorRef,
+    resendInterval: FiniteDuration,
+    maxBufferSize: Int)
+    extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   import SystemMessageDelivery._
 
@@ -106,7 +106,7 @@ import akka.util.OptionVal
       override def preStart(): Unit = {
         implicit val ec = materializer.executionContext
         outboundContext.controlSubject.attach(this).foreach {
-          getAsyncCallback[Done] { _ ⇒
+          getAsyncCallback[Done] { _ =>
             replyObserverAttached = true
             if (isAvailable(out))
               pull(in) // onPull from downstream already called
@@ -132,7 +132,7 @@ import akka.util.OptionVal
 
       override protected def onTimer(timerKey: Any): Unit =
         timerKey match {
-          case ResendTick ⇒
+          case ResendTick =>
             checkGiveUp()
             if (resending.isEmpty && !unacknowledged.isEmpty) {
               resending = unacknowledged.clone()
@@ -145,30 +145,31 @@ import akka.util.OptionVal
       // ControlMessageObserver, external call
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
         inboundEnvelope.message match {
-          case ack: Ack   ⇒ if (ack.from.address == remoteAddress) ackCallback.invoke(ack)
-          case nack: Nack ⇒ if (nack.from.address == remoteAddress) nackCallback.invoke(nack)
-          case _          ⇒ // not interested
+          case ack: Ack   => if (ack.from.address == remoteAddress) ackCallback.invoke(ack)
+          case nack: Nack => if (nack.from.address == remoteAddress) nackCallback.invoke(nack)
+          case _          => // not interested
         }
       }
 
       // ControlMessageObserver, external call
       override def controlSubjectCompleted(signal: Try[Done]): Unit = {
         getAsyncCallback[Try[Done]] {
-          case Success(_)     ⇒ completeStage()
-          case Failure(cause) ⇒ failStage(cause)
+          case Success(_)     => completeStage()
+          case Failure(cause) => failStage(cause)
         }.invoke(signal)
       }
 
-      private val ackCallback = getAsyncCallback[Ack] { reply ⇒
+      private val ackCallback = getAsyncCallback[Ack] { reply =>
         ack(reply.seqNo)
       }
 
-      private val nackCallback = getAsyncCallback[Nack] { reply ⇒
+      private val nackCallback = getAsyncCallback[Nack] { reply =>
         if (reply.seqNo <= seqNo) {
           ack(reply.seqNo)
           log.warning(
             "Received negative acknowledgement of system message from [{}], highest acknowledged [{}]",
-            outboundContext.remoteAddress, reply.seqNo)
+            outboundContext.remoteAddress,
+            reply.seqNo)
           // Nack should be very rare (connection issue) so no urgency of resending, it will be resent
           // by the scheduled tick.
         }
@@ -182,7 +183,7 @@ import akka.util.OptionVal
 
       @tailrec private def clearUnacknowledged(ackedSeqNo: Long): Unit = {
         if (!unacknowledged.isEmpty &&
-          unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
+            unacknowledged.peek().message.asInstanceOf[SystemMessageEnvelope].seqNo <= ackedSeqNo) {
           unacknowledged.removeFirst()
           if (unacknowledged.isEmpty)
             cancelTimer(resendInterval)
@@ -200,9 +201,9 @@ import akka.util.OptionVal
 
           if (log.isDebugEnabled) {
             env.message match {
-              case SystemMessageEnvelope(msg, n, _) ⇒
+              case SystemMessageEnvelope(msg, n, _) =>
                 log.debug("Resending system message [{}] [{}]", Logging.simpleName(msg), n)
-              case _ ⇒
+              case _ =>
                 log.debug("Resending control message [{}]", Logging.simpleName(env.message))
             }
           }
@@ -225,7 +226,7 @@ import akka.util.OptionVal
       override def onPush(): Unit = {
         val outboundEnvelope = grab(in)
         outboundEnvelope.message match {
-          case msg @ (_: SystemMessage | _: AckedDeliveryMessage) ⇒
+          case msg @ (_: SystemMessage | _: AckedDeliveryMessage) =>
             if (unacknowledged.size < maxBufferSize) {
               if (seqNo == 0) {
                 incarnation = outboundContext.associationState.incarnation
@@ -253,17 +254,17 @@ import akka.util.OptionVal
               deadLetters ! outboundEnvelope
               pull(in)
             }
-          case _: HandshakeReq ⇒
+          case _: HandshakeReq =>
             // pass on HandshakeReq
             if (isAvailable(out))
               pushCopy(outboundEnvelope)
-          case ClearSystemMessageDelivery(i) ⇒
+          case ClearSystemMessageDelivery(i) =>
             if (i <= incarnation) {
               log.debug("Clear system message delivery of [{}]", remoteAddressLogParam)
               clear()
             }
             pull(in)
-          case _ ⇒
+          case _ =>
             // e.g. ActorSystemTerminating or ActorSelectionMessage with PriorityMessage, no need for acked delivery
             if (resending.isEmpty && isAvailable(out))
               push(out, outboundEnvelope)
@@ -278,7 +279,7 @@ import akka.util.OptionVal
         if (!unacknowledged.isEmpty && (System.nanoTime() - ackTimestamp > giveUpAfterNanos))
           throw new GaveUpSystemMessageException(
             s"Gave up sending system message to [${outboundContext.remoteAddress}] after " +
-              s"${outboundContext.settings.Advanced.GiveUpSystemMessageAfter.pretty}.")
+            s"${outboundContext.settings.Advanced.GiveUpSystemMessageAfter.pretty}.")
       }
 
       private def clear(): Unit = {
@@ -321,7 +322,8 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+@InternalApi private[remote] class SystemMessageAcker(inboundContext: InboundContext)
+    extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   import SystemMessageDelivery._
   import SystemMessageAcker._
 
@@ -346,15 +348,15 @@ import akka.util.OptionVal
 
         // for logging
         def fromRemoteAddressStr: String = env.association match {
-          case OptionVal.Some(a) ⇒ a.remoteAddress.toString
-          case OptionVal.None    ⇒ "N/A"
+          case OptionVal.Some(a) => a.remoteAddress.toString
+          case OptionVal.None    => "N/A"
         }
 
         env.message match {
-          case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) ⇒
+          case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) =>
             val expectedSeqNo = sequenceNumbers.get(ackReplyTo) match {
-              case None        ⇒ 1L
-              case Some(seqNo) ⇒ seqNo
+              case None        => 1L
+              case Some(seqNo) => seqNo
             }
             if (n == expectedSeqNo) {
               inboundContext.sendControl(ackReplyTo.address, Ack(n, localAddress))
@@ -365,7 +367,9 @@ import akka.util.OptionVal
               if (log.isDebugEnabled)
                 log.debug(
                   "Deduplicate system message [{}] from [{}], expected [{}]",
-                  n, fromRemoteAddressStr, expectedSeqNo)
+                  n,
+                  fromRemoteAddressStr,
+                  expectedSeqNo)
               inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {
@@ -377,12 +381,15 @@ import akka.util.OptionVal
                   else ""
                 log.warning(
                   "Sending negative acknowledgement of system message [{}] from [{}], highest acknowledged [{}]{}",
-                  n, fromRemoteAddressStr, expectedSeqNo - 1, maxNackReached)
+                  n,
+                  fromRemoteAddressStr,
+                  expectedSeqNo - 1,
+                  maxNackReached)
               }
               inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
               pull(in)
             }
-          case _ ⇒
+          case _ =>
             // messages that don't need acking
             push(out, env)
         }
@@ -394,4 +401,3 @@ import akka.util.OptionVal
       setHandlers(in, out, this)
     }
 }
-

@@ -14,7 +14,7 @@ private[stream] abstract class GraphCreate {
    * Creates a new [[Graph]] of the given [[Shape]] by passing a [[GraphDSL.Builder]] to the given create function.
    */
   def create[S <: Shape](block: function.Function[GraphDSL.Builder[NotUsed], S]): Graph[S, NotUsed] =
-    scaladsl.GraphDSL.create() { b ⇒ block.apply(b.asJava) }
+    scaladsl.GraphDSL.create() { b => block.apply(b.asJava) }
 
   /**
    * Creates a new [[Graph]] by importing the given graph `g1` and its [[Shape]]
@@ -22,7 +22,7 @@ private[stream] abstract class GraphCreate {
    */
   def create[S1 <: Shape, S <: Shape, M](g1: Graph[S1, M],
       block: function.Function2[GraphDSL.Builder[M], S1, S]): Graph[S, M] =
-    scaladsl.GraphDSL.create(g1) { b ⇒ s => block.apply(b.asJava, s) }
+    scaladsl.GraphDSL.create(g1) { b => s => block.apply(b.asJava, s) }
 
   /**
    * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s

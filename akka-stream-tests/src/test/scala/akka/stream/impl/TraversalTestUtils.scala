@@ -69,12 +69,12 @@ object TraversalTestUtils {
   }
 
   class MaterializationResult(
-    val connections:           Int,
-    val inlets:                Array[InPort],
-    val outlets:               Array[OutPort],
-    val matValue:              Any,
-    val attributesAssignments: List[(AtomicModule[Shape, Any], Attributes)],
-    val islandAssignments:     List[(AtomicModule[Shape, Any], Attributes, IslandTag)]) {
+      val connections: Int,
+      val inlets: Array[InPort],
+      val outlets: Array[OutPort],
+      val matValue: Any,
+      val attributesAssignments: List[(AtomicModule[Shape, Any], Attributes)],
+      val islandAssignments: List[(AtomicModule[Shape, Any], Attributes, IslandTag)]) {
 
     override def toString = {
       outlets.iterator.zip(inlets.iterator).mkString("connections: ", ", ", "")
@@ -121,7 +121,7 @@ object TraversalTestUtils {
         var nextStep: Traversal = EmptyTraversal
 
         current match {
-          case MaterializeAtomic(mod, outToSlot) ⇒
+          case MaterializeAtomic(mod, outToSlot) =>
             var i = 0
             val inletsIter = mod.shape.inlets.iterator
             while (inletsIter.hasNext) {
@@ -137,44 +137,50 @@ object TraversalTestUtils {
             }
 
             // Recording attributes assignment results for testing purposes
-            attributesResult = (mod → attributesStack.getLast) :: attributesResult
+            attributesResult = (mod -> attributesStack.getLast) :: attributesResult
             islandsResult = (mod, islandStack.head._2, islandStack.head._1) :: islandsResult
 
             // Dummy materialized value is simply the name of the module
             matValueStack.addLast(mod.toString)
             inOffs += mod.shape.inlets.size
-          case Pop ⇒
+          case Pop =>
             matValueStack.removeLast()
-          case PushNotUsed ⇒
+          case PushNotUsed =>
             matValueStack.addLast(NotUsed)
-          case transform: Transform ⇒
+          case transform: Transform =>
             val prev = matValueStack.removeLast()
             val result = transform(prev)
             matValueStack.addLast(result)
-          case compose: Compose ⇒
+          case compose: Compose =>
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
             val result = compose(first, second)
             matValueStack.addLast(result)
-          case PushAttributes(attr) ⇒
+          case PushAttributes(attr) =>
             attributesStack.addLast(attributesStack.getLast and attr)
-          case PopAttributes ⇒
+          case PopAttributes =>
             attributesStack.removeLast()
-          case Concat(first, next) ⇒
+          case Concat(first, next) =>
             if (next ne EmptyTraversal) traversalStack.add(next)
             nextStep = first
-          case EnterIsland(tag) ⇒
+          case EnterIsland(tag) =>
             islandStack = (tag, attributesStack.getLast) :: islandStack
-          case ExitIsland ⇒
+          case ExitIsland =>
             islandStack = islandStack.tail
-          case _ ⇒
+          case _ =>
         }
 
         current = nextStep
       }
     }
 
-    new MaterializationResult(connections, inlets, outlets, matValueStack.peekLast(), attributesResult.reverse, islandsResult.reverse)
+    new MaterializationResult(
+      connections,
+      inlets,
+      outlets,
+      matValueStack.peekLast(),
+      attributesResult.reverse,
+      islandsResult.reverse)
   }
 
 }

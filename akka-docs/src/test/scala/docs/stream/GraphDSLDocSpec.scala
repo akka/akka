@@ -47,7 +47,7 @@ class GraphDSLDocSpec extends AkkaSpec {
   "flow connection errors" in {
     intercept[IllegalStateException] {
       //#simple-graph
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit builder ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
         val source1 = Source(1 to 10)
         val source2 = Source(1 to 10)
@@ -97,10 +97,8 @@ class GraphDSLDocSpec extends AkkaSpec {
     //#graph-dsl-components-shape
     // A shape represents the input and output ports of a reusable
     // processing module
-    case class PriorityWorkerPoolShape[In, Out](
-      jobsIn:         Inlet[In],
-      priorityJobsIn: Inlet[In],
-      resultsOut:     Outlet[Out]) extends Shape {
+    case class PriorityWorkerPoolShape[In, Out](jobsIn: Inlet[In], priorityJobsIn: Inlet[In], resultsOut: Outlet[Out])
+        extends Shape {
 
       // It is important to provide the list of all input and output
       // ports with a stable order. Duplicates are not allowed.
@@ -111,10 +109,8 @@ class GraphDSLDocSpec extends AkkaSpec {
 
       // A Shape must be able to create a copy of itself. Basically
       // it means a new instance with copies of the ports
-      override def deepCopy() = PriorityWorkerPoolShape(
-        jobsIn.carbonCopy(),
-        priorityJobsIn.carbonCopy(),
-        resultsOut.carbonCopy())
+      override def deepCopy() =
+        PriorityWorkerPoolShape(jobsIn.carbonCopy(), priorityJobsIn.carbonCopy(), resultsOut.carbonCopy())
 
     }
     //#graph-dsl-components-shape
@@ -122,10 +118,10 @@ class GraphDSLDocSpec extends AkkaSpec {
     //#graph-dsl-components-create
     object PriorityWorkerPool {
       def apply[In, Out](
-        worker:      Flow[In, Out, Any],
-        workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
+          worker: Flow[In, Out, Any],
+          workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
 
-        GraphDSL.create() { implicit b ⇒
+        GraphDSL.create() { implicit b =>
           import GraphDSL.Implicits._
 
           val priorityMerge = b.add(MergePreferred[In](1))
@@ -137,7 +133,7 @@ class GraphDSLDocSpec extends AkkaSpec {
 
           // Wire up each of the outputs of the balancer to a worker flow
           // then merge them back
-          for (i ← 0 until workerCount)
+          for (i <- 0 until workerCount)
             balance.out(i) ~> worker ~> resultsMerge.in(i)
 
           // We now expose the input ports of the priorityMerge and the output
@@ -160,28 +156,30 @@ class GraphDSLDocSpec extends AkkaSpec {
     val worker1 = Flow[String].map("step 1 " + _)
     val worker2 = Flow[String].map("step 2 " + _)
 
-    RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
+    RunnableGraph
+      .fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
 
-      val priorityPool1 = b.add(PriorityWorkerPool(worker1, 4))
-      val priorityPool2 = b.add(PriorityWorkerPool(worker2, 2))
+        val priorityPool1 = b.add(PriorityWorkerPool(worker1, 4))
+        val priorityPool2 = b.add(PriorityWorkerPool(worker2, 2))
 
-      Source(1 to 100).map("job: " + _) ~> priorityPool1.jobsIn
-      Source(1 to 100).map("priority job: " + _) ~> priorityPool1.priorityJobsIn
+        Source(1 to 100).map("job: " + _) ~> priorityPool1.jobsIn
+        Source(1 to 100).map("priority job: " + _) ~> priorityPool1.priorityJobsIn
 
-      priorityPool1.resultsOut ~> priorityPool2.jobsIn
-      Source(1 to 100).map("one-step, priority " + _) ~> priorityPool2.priorityJobsIn
+        priorityPool1.resultsOut ~> priorityPool2.jobsIn
+        Source(1 to 100).map("one-step, priority " + _) ~> priorityPool2.priorityJobsIn
 
-      priorityPool2.resultsOut ~> Sink.foreach(println)
-      ClosedShape
-    }).run()
+        priorityPool2.resultsOut ~> Sink.foreach(println)
+        ClosedShape
+      })
+      .run()
     //#graph-dsl-components-use
 
     //#graph-dsl-components-shape2
     import FanInShape.{ Init, Name }
 
     class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
-      extends FanInShape[Out](_init) {
+        extends FanInShape[Out](_init) {
       protected override def construct(i: Init[Out]) = new PriorityWorkerPoolShape2(i)
 
       val jobsIn = newInlet[In]("jobsIn")
@@ -195,8 +193,9 @@ class GraphDSLDocSpec extends AkkaSpec {
   "access to materialized value" in {
     //#graph-dsl-matvalue
     import GraphDSL.Implicits._
-    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) { implicit builder ⇒ fold ⇒
-      FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
+    val foldFlow: Flow[Int, Int, Future[Int]] = Flow.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) {
+      implicit builder => fold =>
+        FlowShape(fold.in, builder.materializedValue.mapAsync(4)(identity).outlet)
     })
     //#graph-dsl-matvalue
 
@@ -205,15 +204,16 @@ class GraphDSLDocSpec extends AkkaSpec {
     //#graph-dsl-matvalue-cycle
     import GraphDSL.Implicits._
     // This cannot produce any value:
-    val cyclicFold: Source[Int, Future[Int]] = Source.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) { implicit builder ⇒ fold ⇒
-      // - Fold cannot complete until its upstream mapAsync completes
-      // - mapAsync cannot complete until the materialized Future produced by
-      //   fold completes
-      // As a result this Source will never emit anything, and its materialited
-      // Future will never complete
-      builder.materializedValue.mapAsync(4)(identity) ~> fold
-      SourceShape(builder.materializedValue.mapAsync(4)(identity).outlet)
-    })
+    val cyclicFold: Source[Int, Future[Int]] =
+      Source.fromGraph(GraphDSL.create(Sink.fold[Int, Int](0)(_ + _)) { implicit builder => fold =>
+        // - Fold cannot complete until its upstream mapAsync completes
+        // - mapAsync cannot complete until the materialized Future produced by
+        //   fold completes
+        // As a result this Source will never emit anything, and its materialited
+        // Future will never complete
+        builder.materializedValue.mapAsync(4)(identity) ~> fold
+        SourceShape(builder.materializedValue.mapAsync(4)(identity).outlet)
+      })
     //#graph-dsl-matvalue-cycle
   }
 

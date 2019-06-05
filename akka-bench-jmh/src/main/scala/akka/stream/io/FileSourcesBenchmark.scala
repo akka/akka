@@ -8,12 +8,12 @@ import java.nio.file.{ Files, Path }
 import java.util.concurrent.TimeUnit
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
-import akka.stream.{ Attributes, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 import scala.concurrent.duration._
-import scala.concurrent.{ Promise, Await, Future }
+import scala.concurrent.{ Await, Future, Promise }
 import akka.stream.IOResult
 
 /**
@@ -33,7 +33,8 @@ class FileSourcesBenchmark {
 
     val f = Files.createTempFile(getClass.getName, ".bench.tmp")
 
-    val ft = Source.fromIterator(() ⇒ Iterator.continually(line))
+    val ft = Source
+      .fromIterator(() => Iterator.continually(line))
       .take(10 * 39062) // adjust as needed
       .runWith(FileIO.toPath(f))
     Await.result(ft, 30.seconds)
@@ -51,8 +52,9 @@ class FileSourcesBenchmark {
   @Setup
   def setup(): Unit = {
     fileChannelSource = FileIO.fromPath(file, bufSize)
-    fileInputStreamSource = StreamConverters.fromInputStream(() ⇒ Files.newInputStream(file), bufSize)
-    ioSourceLinesIterator = Source.fromIterator(() ⇒ scala.io.Source.fromFile(file.toFile).getLines()).map(ByteString(_))
+    fileInputStreamSource = StreamConverters.fromInputStream(() => Files.newInputStream(file), bufSize)
+    ioSourceLinesIterator =
+      Source.fromIterator(() => scala.io.Source.fromFile(file.toFile).getLines()).map(ByteString(_))
   }
 
   @TearDown

@@ -47,11 +47,11 @@ akka {
 }
 
 class ConfigServiceDiscoverySpec
-  extends TestKit(ActorSystem("ConfigDiscoverySpec", ConfigServiceDiscoverySpec.config))
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with ScalaFutures {
+    extends TestKit(ActorSystem("ConfigDiscoverySpec", ConfigServiceDiscoverySpec.config))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   override protected def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -65,8 +65,7 @@ class ConfigServiceDiscoverySpec
       result.serviceName shouldEqual "service1"
       result.addresses shouldEqual immutable.Seq(
         ResolvedTarget(host = "cat", port = Some(1233), address = None),
-        ResolvedTarget(host = "dog", port = None, address = None)
-      )
+        ResolvedTarget(host = "dog", port = None, address = None))
     }
 
     "return no resolved targets if not in config" in {

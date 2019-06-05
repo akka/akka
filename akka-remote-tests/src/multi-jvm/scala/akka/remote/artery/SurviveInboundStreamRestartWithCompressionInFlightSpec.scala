@@ -10,7 +10,6 @@ import akka.actor.Identify
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -20,9 +19,9 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(
-      """
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
         akka.loglevel = INFO
         akka.remote.artery {
           enabled = on
@@ -33,7 +32,8 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
             compression.manifests.advertisement-interval = 1 minute
           }
         }
-        """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+        """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   testTransport(on = true)
 
@@ -44,7 +44,7 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
    */
   case class TellAndEcho(ref: ActorRef) extends Actor {
     override def receive = {
-      case msg ⇒
+      case msg =>
         ref ! msg
         val reply = s"${self.path.name}-$msg"
         sender() ! reply
@@ -57,13 +57,16 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
 
 }
 
-class SurviveInboundStreamRestartWithCompressionInFlightSpecMultiJvmNode1 extends SurviveInboundStreamRestartWithCompressionInFlightSpec
+class SurviveInboundStreamRestartWithCompressionInFlightSpecMultiJvmNode1
+    extends SurviveInboundStreamRestartWithCompressionInFlightSpec
 
-class SurviveInboundStreamRestartWithCompressionInFlightSpecMultiJvmNode2 extends SurviveInboundStreamRestartWithCompressionInFlightSpec
+class SurviveInboundStreamRestartWithCompressionInFlightSpecMultiJvmNode2
+    extends SurviveInboundStreamRestartWithCompressionInFlightSpec
 
-abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends RemotingMultiNodeSpec(SurviveInboundStreamRestartWithCompressionInFlightSpec)
-  with ImplicitSender
-  with ScalaFutures {
+abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec
+    extends RemotingMultiNodeSpec(SurviveInboundStreamRestartWithCompressionInFlightSpec)
+    with ImplicitSender
+    with ScalaFutures {
 
   import SurviveInboundStreamRestartWithCompressionInFlightSpec._
 
@@ -72,7 +75,6 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
   "Decompression table" must {
 
     import scala.concurrent.duration._
-    implicit val timeout = Timeout(10.seconds)
 
     "be kept even if inbound lane is restarted, and decode into correct actors still" taggedAs LongRunningTest in {
       val probeA = TestProbe()
@@ -93,10 +95,14 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
       val sendToB = expectMsgType[ActorIdentity].ref.get
 
       runOn(second) {
-        1 to 100 foreach { i ⇒ pingPong(sendToA, s"a$i") }
+        (1 to 100).foreach { i =>
+          pingPong(sendToA, s"a$i")
+        }
         info("done sending to A, first round")
 
-        1 to 100 foreach { i ⇒ pingPong(sendToB, s"a$i") }
+        (1 to 100).foreach { i =>
+          pingPong(sendToB, s"a$i")
+        }
         info("done sending to B, first round")
       }
       enterBarrier("sender-started")
@@ -120,17 +126,19 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
         Thread.sleep(2000)
 
         // we poke the remote system, awaiting its inbound stream recovery, then it should reply
-        awaitAssert(
-          {
-            sendToB ! "alive-again"
-            expectMsg(300.millis, s"${sendToB.path.name}-alive-again")
-          },
-          max = 5.seconds, interval = 500.millis)
+        awaitAssert({
+          sendToB ! "alive-again"
+          expectMsg(300.millis, s"${sendToB.path.name}-alive-again")
+        }, max = 5.seconds, interval = 500.millis)
 
         // we continue sending messages using the "old table".
         // if a new table was being built, it would cause the b to be compressed as 1 causing a wrong reply to come back
-        1 to 100 foreach { i ⇒ pingPong(sendToB, s"b$i") }
-        1 to 100 foreach { i ⇒ pingPong(sendToA, s"a$i") }
+        (1 to 100).foreach { i =>
+          pingPong(sendToB, s"b$i")
+        }
+        (1 to 100).foreach { i =>
+          pingPong(sendToA, s"a$i")
+        }
 
         info("received correct replies from restarted system!")
       }
@@ -148,4 +156,3 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
     expectMsg(s"${target.path.name}-$msg")
   }
 }
-

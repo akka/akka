@@ -16,8 +16,8 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of Akka 2.5.x
-* `release-2.4` – maintenance branch of Akka 2.4.x
+* `master` – active development branch of Akka 2.6.x
+* `release-2.5` – maintenance branch of Akka 2.5.x
 * similarly `release-2.#` branches contain legacy versions of Akka
 
 ## Tags
@@ -83,7 +83,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
     - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
 1. If the code change needs to be applied to other branches as well (for example a bugfix needing to be backported to a previous version), one of the team will either ask you to submit a PR with the same commit to the old branch, or do this for you.
-   - Backport pull requests such as these are marked using the phrase `for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if there are no conflicts).
+   - Follow the [backporting steps](#backporting) below.
 1. Once everything is said and done, your pull request gets merged :tada: Your feature will be available with the next “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release). And of course you will be given credit for the fix in the release stats during the release's announcement. You've made it!
 
 The TL;DR; of the above very precise workflow version is:
@@ -95,6 +95,22 @@ The TL;DR; of the above very precise workflow version is:
 5. Sign the CLA if necessary
 6. Keep polishing it until received enough LGTM
 7. Profit!
+
+### Backporting
+Backport pull requests such as these are marked using the phrase `for validation` in the title to make the purpose clear in the pull request list. 
+They can be merged once validation passes without additional review (if there are no conflicts). 
+Using, for example: current.version 2.5.22, previous.version 2.5, milestone.version 2.6.0-M1    
+1. Label this PR with `to-be-backported`
+1. Mark this PR with Milestone `${milestone.version}`
+1. Mark the issue with Milestone `${current.version}`
+1. `git checkout release-${previous.version}`
+1. `git pull`
+1. Create wip branch
+1. `git cherry-pick <commit>`
+1. Open PR, target `release-${previous.version}`
+1. Label that PR with `backport`
+1. Merge backport PR after validation (no need for full PR reviews)
+1. Close issue
 
 ## sbt
 
@@ -147,6 +163,13 @@ project akka-cluster
 multi-jvm:testOnly akka.cluster.SunnyWeather
 ```
 
+To format the Scala source code:
+```
+sbt
+akka-cluster/scalafmtAll
+akka-persistence/scalafmtAll
+```
+
 ### Do not use `-optimize` Scala compiler flag
 
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
@@ -184,6 +207,11 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
+If you have already run all tests and now just need to check that everything is formatted and or mima passes there
+are a set of `all*` commands aliases for running `test:compile` (also formats), `mimaReportBinaryIssues`, and `validateCompile` 
+(compiles `multi-jvm` if enabled for that project). See `build.sbt` or use completion to find the most appropriate one 
+e.g. `allCluster`, `allTyped`.
+
 ## Binary compatibility
 
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
@@ -194,7 +222,7 @@ validate binary compatibility of incoming pull requests. If your PR fails due to
 an error like this:
 
 ```
-[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.11:2.4.2  (filtered 222)
+[info] akka-stream: found 1 potential binary incompatibilities while checking against com.typesafe.akka:akka-stream_2.12:2.4.2  (filtered 222)
 [error]  * method foldAsync(java.lang.Object,scala.Function2)akka.stream.scaladsl.FlowOps in trait akka.stream.scaladsl.FlowOps is present only in current version
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
@@ -209,6 +237,22 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - other tricky situations
 
 The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
+
+## Wire compatibility
+
+Changes to the binary protocol of remoting, cluster and the cluster tools require great care so that it is possible
+to do rolling upgrades. Note that this may include older nodes communicating with a newer node so compatibility
+may have to be both ways. 
+
+Since during a rolling upgrade nodes producing the 'new' format and nodes producing the 'old' format coexist, a change can require a two-release process: 
+the first change is to add a new binary format but still use the old. A second step then starts actually emitting the
+new wire format. This ensures users can complete a rolling upgrade first to the intermediate version and then another
+rolling upgrade to the next version.
+
+All wire protocol changes that may concern rolling upgrades should be documented in the 
+[Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
+(found in akka-docs/src/main/paradox/project/rolling-update.md)
+
 
 ## Pull request requirements
 
@@ -260,6 +304,9 @@ Akka generates class diagrams for the API documentation using ScalaDoc.
 Links to methods in ScalaDoc comments should be formatted
 `[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
 IntelliJ warns about `[[#this]]`.
+For further hints on how to disambiguate links in scaladoc comments see
+[this StackOverflow answer](https://stackoverflow.com/a/31569861/354132),
+though note that this syntax may not correctly render as Javadoc.
 
 The Scaladoc tool needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 
@@ -274,7 +321,7 @@ If you'd like to check if your links and formatting look good in JavaDoc (and no
 sbt -Dakka.genjavadoc.enabled=true javaunidoc:doc
 ```
 
-Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`.
+Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`. This requires a jdk version 9 or later.
 
 ## External dependencies
 
@@ -355,7 +402,12 @@ In such situations we prefer 'internal' over 'impl' as a package name.
 
 ### Scala style 
 
-Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+Akka uses [Scalafmt](https://scalameta.org/scalafmt/docs/installation.html) to enforce some of the code style rules.
+
+It's recommended to enable Scalafmt formatting in IntelliJ. Use version 2019.1 or later. In
+Preferences > Editor > Code Style > Scala, select Scalafmt as formatter and enable "Reformat on file save".
+IntelliJ will then use the same settings and version as defined in `.scalafmt.conf` file. Then it's
+not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
 ### Java style
 
@@ -403,8 +455,7 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Have methods in the `javadsl` package delegate to the methods in the Scala API, or the common internal implementation. 
    The Akka Stream Scala instances for example have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts.
    
-1. When using Scala `object` instances, offer a `getInstance()` method and add a sealed abstract class 
-   (to support Scala 2.11) to get the return type. See `akka.Done` for an example.
+1. When using Scala `object` instances, offer a `getInstance()` method. See `akka.Done` for an example.
    
 1. When the Scala API contains an `apply` method, use `create` or `of` for Java users.
 
@@ -413,9 +464,6 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Do not define traits nested in other classes or in objects deeper than one level.
 
 1. Be careful to convert values within data structures (eg. for `scala.Long` vs. `java.lang.Long`, use `scala.Long.box(value)`)
-
-1. When compiling with both Scala 2.11 and 2.12, some methods considered overloads in 2.11, become ambiguous in 
-   2.12 as both may be functional interfaces.
 
 1. Complement any methods with Scala collections with a Java collection version
 
@@ -437,8 +485,6 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Place classes not part of the public APIs in a shared `internal` package. This package can contain implementations of 
    both Java and Scala APIs. Make such classes `private[akka]` and also, since that becomes `public` from Java's point of
    view, annotate with `@InternalApi` and add a scaladoc saying `INTERNAL API`
-   
-1. Companion objects (in Scala 2.11) cannot be accessed from Java if their companion is a trait, use an `abstract class` instead 
    
 1. Traits that are part of the Java API should only be used to define pure interfaces, as soon as there are implementations of methods, prefer 
    `abstract class`.

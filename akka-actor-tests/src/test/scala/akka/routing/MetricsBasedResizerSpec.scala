@@ -16,7 +16,7 @@ import akka.util.Timeout
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Try, Random }
+import scala.util.{ Random, Try }
 import akka.pattern.ask
 
 object MetricsBasedResizerSpec {
@@ -30,7 +30,7 @@ object MetricsBasedResizerSpec {
   class TestLatchingActor(implicit timeout: Timeout) extends Actor {
 
     def receive = {
-      case Latches(first, second) ⇒
+      case Latches(first, second) =>
         first.countDown()
         Try(Await.ready(second, timeout.duration))
     }
@@ -39,16 +39,16 @@ object MetricsBasedResizerSpec {
   def routee(implicit system: ActorSystem, timeout: Timeout): ActorRefRoutee =
     ActorRefRoutee(system.actorOf(Props(new TestLatchingActor)))
 
-  def routees(num: Int = 10)(implicit system: ActorSystem, timeout: Timeout) = (1 to num).map(_ ⇒ routee).toVector
+  def routees(num: Int = 10)(implicit system: ActorSystem, timeout: Timeout) = (1 to num).map(_ => routee).toVector
 
   case class TestRouter(routees: Vector[ActorRefRoutee])(implicit system: ActorSystem, timeout: Timeout) {
 
     var msgs: Set[TestLatch] = Set()
 
     def mockSend(
-      await:     Boolean,
-      l:         TestLatch = TestLatch(),
-      routeeIdx: Int       = Random.nextInt(routees.length)): Latches = {
+        await: Boolean,
+        l: TestLatch = TestLatch(),
+        routeeIdx: Int = Random.nextInt(routees.length)): Latches = {
       val target = routees(routeeIdx)
       val first = TestLatch()
       val latches = Latches(first, l)
@@ -61,7 +61,7 @@ object MetricsBasedResizerSpec {
     def close(): Unit = msgs.foreach(_.open())
 
     def sendToAll(await: Boolean): Seq[Latches] = {
-      val sentMessages = routees.indices.map(i ⇒ mockSend(await, routeeIdx = i))
+      val sentMessages = routees.indices.map(i => mockSend(await, routeeIdx = i))
       sentMessages
     }
 
@@ -135,7 +135,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     "stop an underutilizationStreak when fully utilized" in {
       val resizer = DefaultOptimalSizeExploringResizer()
       resizer.record = ResizeRecord(
-        underutilizationStreak = Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(1), highestUtilization = 1)))
+        underutilizationStreak =
+          Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(1), highestUtilization = 1)))
 
       val router = TestRouter(routees(2))
       router.sendToAll(await = true)
@@ -149,8 +150,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     "leave the underutilizationStreak start date unchanged when not fully utilized" in {
       val start: LocalDateTime = LocalDateTime.now.minusHours(1)
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak = Some(UnderUtilizationStreak(start = start, highestUtilization = 1)))
+      resizer.record =
+        ResizeRecord(underutilizationStreak = Some(UnderUtilizationStreak(start = start, highestUtilization = 1)))
 
       resizer.reportMessageCount(routees(2), 0)
       resizer.record.underutilizationStreak.get.start shouldBe start
@@ -200,10 +201,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "not record the performance log when no message is processed" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        totalQueueLength = 2,
-        messageCount = 2,
-        checkTime = System.nanoTime())
+      resizer.record = ResizeRecord(totalQueueLength = 2, messageCount = 2, checkTime = System.nanoTime())
 
       val router = TestRouter(routees(2))
 
@@ -245,7 +243,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       Thread.sleep(300)
 
       // wait for routees to update their mail boxes
-      msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
+      msgs2.foreach(l => Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
@@ -259,10 +257,9 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "update the old performance log entry with updated speed " in {
       val oldSpeed = 50
-      val resizer = DefaultOptimalSizeExploringResizer(
-        weightOfLatestMetric = 0.5)
+      val resizer = DefaultOptimalSizeExploringResizer(weightOfLatestMetric = 0.5)
 
-      resizer.performanceLog = Map(2 → oldSpeed.milliseconds)
+      resizer.performanceLog = Map(2 -> oldSpeed.milliseconds)
 
       val router = TestRouter(routees(2))
       val msgs1 = router.sendToAll(await = true)
@@ -277,7 +274,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       Thread.sleep(300)
 
       // wait for routees to update their mail boxes
-      msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
+      msgs2.foreach(l => Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
@@ -295,12 +292,11 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
   "MetricsBasedResizer resize" must {
     "downsize to close to the highest retention when a streak of underutilization started downsizeAfterUnderutilizedFor" in {
-      val resizer = DefaultOptimalSizeExploringResizer(
-        downsizeAfterUnderutilizedFor = 72.hours,
-        downsizeRatio = 0.5)
+      val resizer = DefaultOptimalSizeExploringResizer(downsizeAfterUnderutilizedFor = 72.hours, downsizeRatio = 0.5)
 
-      resizer.record = ResizeRecord(underutilizationStreak = Some(
-        UnderUtilizationStreak(start = LocalDateTime.now.minusHours(73), highestUtilization = 8)))
+      resizer.record = ResizeRecord(
+        underutilizationStreak =
+          Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(73), highestUtilization = 8)))
       resizer.resize(routees(20)) should be(4 - 20)
     }
 
@@ -320,13 +316,11 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     }
 
     "explore when there is performance log but not go beyond exploreStepSize" in {
-      val resizer = DefaultOptimalSizeExploringResizer(
-        exploreStepSize = 0.3,
-        explorationProbability = 1)
-      resizer.performanceLog = Map(11 → 1.milli, 13 → 1.millis, 12 → 3.millis)
+      val resizer = DefaultOptimalSizeExploringResizer(exploreStepSize = 0.3, explorationProbability = 1)
+      resizer.performanceLog = Map(11 -> 1.milli, 13 -> 1.millis, 12 -> 3.millis)
 
-      val exploreSamples = (1 to 100).map(_ ⇒ resizer.resize(routees(10)))
-      exploreSamples.forall(change ⇒ Math.abs(change) >= 1 && Math.abs(change) <= (10 * 0.3)) should be(true)
+      val exploreSamples = (1 to 100).map(_ => resizer.resize(routees(10)))
+      exploreSamples.forall(change => Math.abs(change) >= 1 && Math.abs(change) <= (10 * 0.3)) should be(true)
 
     }
   }
@@ -334,21 +328,18 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
   "MetricsBasedResizer optimize" must {
     "optimize towards the fastest pool size" in {
       val resizer = DefaultOptimalSizeExploringResizer(explorationProbability = 0)
-      resizer.performanceLog = Map(7 → 5.millis, 10 → 3.millis, 11 → 2.millis, 12 → 4.millis)
+      resizer.performanceLog = Map(7 -> 5.millis, 10 -> 3.millis, 11 -> 2.millis, 12 -> 4.millis)
       resizer.resize(routees(10)) should be(1)
       resizer.resize(routees(12)) should be(-1)
       resizer.resize(routees(7)) should be(2)
     }
 
     "ignore further away sample data when optmizing" in {
-      val resizer = DefaultOptimalSizeExploringResizer(explorationProbability = 0, numOfAdjacentSizesToConsiderDuringOptimization = 4)
-      resizer.performanceLog = Map(
-        7 → 5.millis,
-        8 → 2.millis,
-        10 → 3.millis,
-        11 → 4.millis,
-        12 → 3.millis,
-        13 → 1.millis)
+      val resizer = DefaultOptimalSizeExploringResizer(
+        explorationProbability = 0,
+        numOfAdjacentSizesToConsiderDuringOptimization = 4)
+      resizer.performanceLog =
+        Map(7 -> 5.millis, 8 -> 2.millis, 10 -> 3.millis, 11 -> 4.millis, 12 -> 3.millis, 13 -> 1.millis)
 
       resizer.resize(routees(10)) should be(-1)
     }
@@ -362,7 +353,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     "start with lowerbound pool size" in {
 
       val resizer = DefaultOptimalSizeExploringResizer(lowerBound = 2)
-      val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(Props(new TestLatchingActor)))
+      val router =
+        system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(Props(new TestLatchingActor)))
       val latches = Latches(TestLatch(), TestLatch(0))
       router ! latches
       Await.ready(latches.first, timeout.duration)

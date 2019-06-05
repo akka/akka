@@ -11,6 +11,5 @@ import scala.util.control.NoStackTrace
  * A finite limit is imposed so that memory usage is controlled.
  */
 final class TooManySubstreamsOpenException
-  extends IllegalStateException("Cannot open a new substream as there are too many substreams open")
-  with NoStackTrace {
-}
+    extends IllegalStateException("Cannot open a new substream as there are too many substreams open")
+    with NoStackTrace {}

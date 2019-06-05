@@ -27,7 +27,7 @@ public class SinkAsJavaSourceTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("OutputStreamSource", Utils.UnboundedMailboxConfig());
+      new AkkaJUnitActorSystemResource("SinkAsJavaSourceTest", Utils.UnboundedMailboxConfig());
 
   @Test
   public void mustBeAbleToUseAsJavaStream() throws Exception {

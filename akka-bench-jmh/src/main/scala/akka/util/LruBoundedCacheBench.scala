@@ -46,7 +46,7 @@ class LruBoundedCacheBench {
     }
 
     // Loading
-    for (i ← 1 to threshold) {
+    for (i <- 1 to threshold) {
       val value = random.nextString(stringSize)
       if (i == 1) toGet = value
       toRemove = value

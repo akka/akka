@@ -3,6 +3,7 @@
 @@@ index
 
 * [Persistence - coding style](persistence-style.md)
+* [Persistence - snapshotting](persistence-snapshot.md)
 
 @@@
 
@@ -21,15 +22,6 @@ To use Akka Persistence Typed, add the module to your project:
 Akka Persistence is a library for building event sourced actors. For background about how it works
 see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
-
-@@@ warning
-
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
 
 ## Example
 
@@ -81,11 +73,14 @@ are executed sequentially after successful execution of the persist statement (o
 
 When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
 
-The event handler returns the new state, which must be immutable so you return a new instance of the state.
+The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
+You may choose to use a mutable class for the state, and then the event handler may update the state instance and
+return the same instance. Both immutable and mutable state is supported.
+
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-It is not recommended to perform side effects
-in the event handler, as those are also executed during recovery of an persistent actor
+The event handler should only update the state and never perform side effects, as those would also be
+executed during recovery of the persistent actor.
 
 ### Completing the example
 
@@ -140,7 +135,7 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster and address them by id.
 
-The `EventSourcedBehavior` can then be run as with any plain typed actor as described in [actors documentation](actors-typed.md),
+The `EventSourcedBehavior` can then be run as with any plain typed actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 If multiple instances were to persist events at the same time, the events would be interleaved and might not be
@@ -200,7 +195,7 @@ Java
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
-Delegating to methods is a good practise because the one-line cases give a nice overview of the message dispatch.
+Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
 
 Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #command-handler }
@@ -244,14 +239,14 @@ Note that there is only one of these. It is not possible to both persist and say
 These are created using @java[a factory that is returned via the `Effect()` method]
 @scala[the `Effect` factory] and once created additional `SideEffects` can be added.
 
-Most of them time this will be done with the `thenRun` method on the `Effect` above. It is also possible
-factor out common `SideEffect`s. For example:
+Most of them time this will be done with the `thenRun` method on the `Effect` above. You can factor out
+common side effects into functions and reuse for several commands. For example:
 
 Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
+:  @@snip [PersistentActorCompileOnlyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
 
 Java
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+:  @@snip [PersistentActorCompileOnlyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
 
 ### Side effects ordering and guarantees
 
@@ -307,6 +302,9 @@ Java
 The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
 @scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
 
+@java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
+`EventSourcedBehaviorWithEnforcedReplies`], as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
+
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
 
@@ -329,7 +327,7 @@ Strategies for that can be found in the @ref:[schema evolution](../persistence-s
 ## Recovery
 
 It is strongly discouraged to perform side effects in `applyEvent`,
-so side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
+so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
@@ -337,8 +335,9 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes @scala[an `ActorContext` and] the current `State`,
-and doesn't return anything.
+The `RecoveryCompleted` contains the current `State`.
+
+@ref[Snapshots](persistence-snapshot.md) can be used for optimizing recovery times.
 
 ## Tagging
 

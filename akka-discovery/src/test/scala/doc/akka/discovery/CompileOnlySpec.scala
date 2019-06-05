@@ -25,7 +25,8 @@ object CompileOnlySpec {
   //#basic
 
   //#full
-  val lookup: Future[ServiceDiscovery.Resolved] = serviceDiscovery.lookup(Lookup("akka.io").withPortName("remoting").withProtocol("tcp"), 1.second)
+  val lookup: Future[ServiceDiscovery.Resolved] =
+    serviceDiscovery.lookup(Lookup("akka.io").withPortName("remoting").withProtocol("tcp"), 1.second)
   //#full
 
   // compiler

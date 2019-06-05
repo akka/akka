@@ -44,7 +44,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val Tick = "tick"
       class TickActor extends Actor {
         def receive = {
-          case Tick ⇒ //Do something
+          case Tick => //Do something
         }
       }
       val tickActor = system.actorOf(Props(classOf[TickActor], this))
@@ -54,11 +54,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       //This will schedule to send the Tick-message
       //to the tickActor after 0ms repeating every 50ms
       val cancellable =
-        system.scheduler.schedule(
-          0 milliseconds,
-          50 milliseconds,
-          tickActor,
-          Tick)
+        system.scheduler.schedule(0 milliseconds, 50 milliseconds, tickActor, Tick)
 
       //This cancels further Ticks to be sent
       cancellable.cancel()

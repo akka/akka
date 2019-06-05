@@ -5,9 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.actor.ActorRef
-import akka.stream.{ Attributes, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.stage.{ TimerGraphStageLogic, OutHandler, AsyncCallback, InHandler }
+import akka.stream.stage.{ AsyncCallback, InHandler, OutHandler, TimerGraphStageLogic }
 import akka.testkit.TestDuration
 
 import scala.concurrent.Promise
@@ -44,7 +44,7 @@ class GraphStageTimersSpec extends StreamSpec {
 
   class TestStage(probe: ActorRef, sideChannel: SideChannel) extends SimpleLinearGraphStage[Int] {
     override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
-      val tickCount = Iterator from 1
+      val tickCount = Iterator.from(1)
 
       setHandler(in, new InHandler {
         override def onPush() = push(out, grab(in))
@@ -68,17 +68,17 @@ class GraphStageTimersSpec extends StreamSpec {
       }
 
       private def onTestEvent(event: Any): Unit = event match {
-        case TestSingleTimer ⇒
+        case TestSingleTimer =>
           scheduleOnce("TestSingleTimer", 500.millis.dilated)
-        case TestSingleTimerResubmit ⇒
+        case TestSingleTimerResubmit =>
           scheduleOnce("TestSingleTimerResubmit", 500.millis.dilated)
-        case TestCancelTimer ⇒
+        case TestCancelTimer =>
           scheduleOnce("TestCancelTimer", 1.milli.dilated)
           // Likely in mailbox but we cannot guarantee
           cancelTimer("TestCancelTimer")
           probe ! TestCancelTimerAck
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
-        case TestRepeatedTimer ⇒
+        case TestRepeatedTimer =>
           schedulePeriodically("TestRepeatedTimer", 100.millis.dilated)
       }
     }
@@ -144,9 +144,9 @@ class GraphStageTimersSpec extends StreamSpec {
 
       driver ! TestRepeatedTimer
       val seq = receiveWhile(2.seconds) {
-        case t: Tick ⇒ t
+        case t: Tick => t
       }
-      seq should have length 5
+      (seq should have).length(5)
       expectNoMsg(1.second)
 
       driver.stopStage()
@@ -199,21 +199,24 @@ class GraphStageTimersSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(upstream).via(new SimpleLinearGraphStage[Int] {
-        override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
-          override def preStart(): Unit = scheduleOnce("tick", 100.millis)
+      Source
+        .fromPublisher(upstream)
+        .via(new SimpleLinearGraphStage[Int] {
+          override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
+            override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
-          setHandler(in, new InHandler {
-            override def onPush() = () // Ingore
-          })
+            setHandler(in, new InHandler {
+              override def onPush() = () // Ingore
+            })
 
-          setHandler(out, new OutHandler {
-            override def onPull(): Unit = pull(in)
-          })
+            setHandler(out, new OutHandler {
+              override def onPull(): Unit = pull(in)
+            })
 
-          override def onTimer(timerKey: Any) = throw exception
-        }
-      }).runWith(Sink.fromSubscriber(downstream))
+            override def onTimer(timerKey: Any) = throw exception
+          }
+        })
+        .runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(1)
       downstream.expectError(exception)

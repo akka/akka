@@ -22,6 +22,7 @@ import akka.routing.Routee
 import akka.routing.Router
 import akka.routing.RouterActor
 import akka.routing.RouterConfig
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -39,7 +40,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
   def this(local: Pool, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
+  @silent @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
   // need this counter as instance variable since Resizer may call createRoutees several times
   @transient private val childNameCounter = new AtomicInteger
 
@@ -49,14 +50,17 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
 
   override def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
     val name = "c" + childNameCounter.incrementAndGet
-    val deploy = Deploy(config = ConfigFactory.empty(), routerConfig = routeeProps.routerConfig,
+    val deploy = Deploy(
+      config = ConfigFactory.empty(),
+      routerConfig = routeeProps.routerConfig,
       scope = RemoteScope(nodeAddressIter.next))
 
     // attachChild means that the provider will treat this call as if possibly done out of the wrong
     // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal
     // choice in a corner case (and hence not worth fixing).
-    val ref = context.asInstanceOf[ActorCell].attachChild(
-      local.enrichWithPoolDispatcher(routeeProps, context).withDeploy(deploy), name, systemService = false)
+    val ref = context
+      .asInstanceOf[ActorCell]
+      .attachChild(local.enrichWithPoolDispatcher(routeeProps, context).withDeploy(deploy), name, systemService = false)
     ActorRefRoutee(ref)
   }
 
@@ -69,11 +73,11 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
   override def resizer: Option[Resizer] = local.resizer
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case RemoteRouterConfig(_: RemoteRouterConfig, _) ⇒ throw new IllegalStateException(
-      "RemoteRouterConfig is not allowed to wrap a RemoteRouterConfig")
-    case RemoteRouterConfig(local: Pool, _) ⇒
+    case RemoteRouterConfig(_: RemoteRouterConfig, _) =>
+      throw new IllegalStateException("RemoteRouterConfig is not allowed to wrap a RemoteRouterConfig")
+    case RemoteRouterConfig(local: Pool, _) =>
       copy(local = this.local.withFallback(local).asInstanceOf[Pool])
-    case _ ⇒ copy(local = this.local.withFallback(other).asInstanceOf[Pool])
+    case _ => copy(local = this.local.withFallback(other).asInstanceOf[Pool])
   }
 
 }

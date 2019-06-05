@@ -5,10 +5,9 @@
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-import java.util.function.{ BiFunction, Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
@@ -36,7 +35,6 @@ import scala.concurrent.ExecutionContextExecutor
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 trait ActorContext[T] extends TypedActorContext[T] {
   // this must be a pure interface, i.e. only abstract methods
 
@@ -73,6 +71,15 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
   def getLog: Logger
+
+  /**
+   * Replace the current logger (or initialize a new logger if the logger was not touched before) with one that
+   * has ghe given class as logging class. Logger source will be actor path.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   */
+  def setLoggerClass(clazz: Class[_]): Unit
 
   /**
    * The list of child Actors created by this Actor during its lifetime that
@@ -273,11 +280,11 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](
-    resClass:        Class[Res],
-    target:          RecipientRef[Req],
-    responseTimeout: Duration,
-    createRequest:   java.util.function.Function[ActorRef[Res], Req],
-    applyToResponse: BiFunction[Res, Throwable, T]): Unit
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: java.util.function.Function[ActorRef[Res], Req],
+      applyToResponse: BiFunction[Res, Throwable, T]): Unit
 
   /**
    * Sends the result of the given `CompletionStage` to this Actor (“`self`”), after adapted it with

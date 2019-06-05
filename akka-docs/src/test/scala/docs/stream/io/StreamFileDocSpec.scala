@@ -52,25 +52,20 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     //#file-source
 
-    val foreach: Future[IOResult] = FileIO.fromPath(file)
-      .to(Sink.ignore)
-      .run()
+    val foreach: Future[IOResult] = FileIO.fromPath(file).to(Sink.ignore).run()
     //#file-source
   }
 
   "configure dispatcher in code" in {
     //#custom-dispatcher-code
-    FileIO.fromPath(file)
-      .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
+    FileIO.fromPath(file).withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
     //#custom-dispatcher-code
   }
 
   "write data into a file" in {
     //#file-sink
     val text = Source.single("Hello Akka Stream!")
-    val result: Future[IOResult] = text
-      .map(t ⇒ ByteString(t))
-      .runWith(FileIO.toPath(file))
+    val result: Future[IOResult] = text.map(t => ByteString(t)).runWith(FileIO.toPath(file))
     //#file-sink
   }
 }

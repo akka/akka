@@ -19,6 +19,7 @@ import scala.concurrent.{ Await, Future }
  * [[AsyncSerializerWithStringManifestCS]] that delegates synchronous calls to their async equivalents.
  */
 trait AsyncSerializer {
+
   /**
    * Serializes the given object into an Array of Byte
    */
@@ -34,14 +35,20 @@ trait AsyncSerializer {
  * Scala API: Async serializer with string manifest that delegates synchronous calls to the asynchronous calls
  * and blocks.
  */
-abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem) extends SerializerWithStringManifest with AsyncSerializer {
+abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem)
+    extends SerializerWithStringManifest
+    with AsyncSerializer {
   final override def toBinary(o: AnyRef): Array[Byte] = {
-    system.log.warning("Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Class: {}", o.getClass)
+    system.log.warning(
+      "Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Class: {}",
+      o.getClass)
     Await.result(toBinaryAsync(o), Duration.Inf)
   }
 
   final override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
-    system.log.warning("Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Manifest: [{}]", manifest)
+    system.log.warning(
+      "Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Manifest: [{}]",
+      manifest)
     Await.result(fromBinaryAsync(bytes, manifest), Duration.Inf)
   }
 }
@@ -50,7 +57,8 @@ abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem) ex
  * Java API: Async serializer with string manifest that delegates synchronous calls to the asynchronous calls
  * and blocks.
  */
-abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem) extends AsyncSerializerWithStringManifest(system) {
+abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem)
+    extends AsyncSerializerWithStringManifest(system) {
   import scala.compat.java8.FutureConverters._
 
   def toBinaryAsyncCS(o: AnyRef): CompletionStage[Array[Byte]]
@@ -69,4 +77,3 @@ abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem) 
   def fromBinaryAsync(bytes: Array[Byte], manifest: String): Future[AnyRef] =
     fromBinaryAsyncCS(bytes, manifest).toScala
 }
-

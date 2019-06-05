@@ -5,3 +5,4 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#A
 # Below is for Scala 2.11.x
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getSender")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getReceiveTimeout")
+

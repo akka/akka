@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.util.Timeout
 import de.kalpatec.pojosr.framework.launch.BundleDescriptor
-import test.{ RuntimeNameActorSystemActivator, TestActivators, PingPongActorSystemActivator }
+import test.{ PingPongActorSystemActivator, RuntimeNameActorSystemActivator, TestActivators }
 import test.PingPong._
 import PojoSRTestSupport.bundle
 import org.scalatest.Matchers
@@ -34,8 +34,8 @@ class PingPongActorSystemActivatorTest extends WordSpec with Matchers with PojoS
 
   import ActorSystemActivatorTest._
 
-  val testBundles: immutable.Seq[BundleDescriptor] = buildTestBundles(List(
-    bundle(TEST_BUNDLE_NAME).withActivator(classOf[PingPongActorSystemActivator])))
+  val testBundles: immutable.Seq[BundleDescriptor] = buildTestBundles(
+    List(bundle(TEST_BUNDLE_NAME).withActivator(classOf[PingPongActorSystemActivator])))
 
   "PingPongActorSystemActivator" must {
 
@@ -74,7 +74,8 @@ class RuntimeNameActorSystemActivatorTest extends WordSpec with Matchers with Po
 
     "register an ActorSystem and add the bundle id to the system name" in {
       filterErrors() {
-        serviceForType[ActorSystem].name should be(TestActivators.ACTOR_SYSTEM_NAME_PATTERN.format(bundleForName(TEST_BUNDLE_NAME).getBundleId))
+        serviceForType[ActorSystem].name should be(
+          TestActivators.ACTOR_SYSTEM_NAME_PATTERN.format(bundleForName(TEST_BUNDLE_NAME).getBundleId))
       }
     }
   }

@@ -4,15 +4,21 @@
 
 package docs.akka.actor.testkit.typed.scaladsl
 
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
+//#test-header
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+
+//#test-header
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+//#test-header
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
+
+//#test-header
 import scala.concurrent.duration._
 
 import scala.concurrent.Future
@@ -24,9 +30,9 @@ object AsyncTestingExampleSpec {
   case class Ping(message: String, response: ActorRef[Pong])
   case class Pong(message: String)
 
-  val echoActor: Behavior[Ping] = Behaviors.receive { (_, message) ⇒
+  val echoActor: Behavior[Ping] = Behaviors.receive { (_, message) =>
     message match {
-      case Ping(m, replyTo) ⇒
+      case Ping(m, replyTo) =>
         replyTo ! Pong(m)
         Behaviors.same
     }
@@ -43,7 +49,7 @@ object AsyncTestingExampleSpec {
     }
 
     private def publish(i: Int)(implicit timeout: Timeout): Future[Try[Int]] = {
-      publisher ? (ref ⇒ Message(i, ref))
+      publisher.ask(ref => Message(i, ref))
     }
 
   }
@@ -100,7 +106,7 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Match
       import testKit._
 
       // simulate the happy path
-      val mockedBehavior = Behaviors.receiveMessage[Message] { msg ⇒
+      val mockedBehavior = Behaviors.receiveMessage[Message] { msg =>
         msg.replyTo ! Success(msg.i)
         Behaviors.same
       }
@@ -113,7 +119,7 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Match
       producer.produce(messages)
 
       // verify expected behavior
-      for (i ← 0 until messages) {
+      for (i <- 0 until messages) {
         val msg = probe.expectMessageType[Message]
         msg.i shouldBe i
       }
@@ -124,4 +130,6 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Match
   //#test-shutdown
   override def afterAll(): Unit = testKit.shutdownTestKit()
   //#test-shutdown
+//#test-header
 }
+//#test-header

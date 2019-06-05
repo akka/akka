@@ -460,6 +460,4 @@ package akka.stream
  *     debugging if everything is wired to the right thing.
  *
  */
-package object impl {
-
-}
+package object impl {}

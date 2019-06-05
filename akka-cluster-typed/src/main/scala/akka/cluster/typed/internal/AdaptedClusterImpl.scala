@@ -25,106 +25,109 @@ private[akka] object AdapterClusterImpl {
   private case object Up extends SeenState
   private case class Removed(previousStatus: MemberStatus) extends SeenState
 
-  private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.setup[ClusterStateSubscription] { ctx ⇒
-    var seenState: SeenState = BeforeUp
-    var upSubscribers: List[ActorRef[SelfUp]] = Nil
-    var removedSubscribers: List[ActorRef[SelfRemoved]] = Nil
+  private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.setup[ClusterStateSubscription] {
+    ctx =>
+      var seenState: SeenState = BeforeUp
+      var upSubscribers: List[ActorRef[SelfUp]] = Nil
+      var removedSubscribers: List[ActorRef[SelfRemoved]] = Nil
 
-    adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
+      adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
 
-    // important to not eagerly refer to it or we get a cycle here
-    lazy val cluster = Cluster(ctx.system)
-    def onSelfMemberEvent(event: MemberEvent): Unit = {
-      event match {
-        case ClusterEvent.MemberUp(_) ⇒
-          seenState = Up
-          val upMessage = SelfUp(cluster.state)
-          upSubscribers.foreach(_ ! upMessage)
-          upSubscribers = Nil
+      // important to not eagerly refer to it or we get a cycle here
+      lazy val cluster = Cluster(ctx.system)
+      def onSelfMemberEvent(event: MemberEvent): Unit = {
+        event match {
+          case ClusterEvent.MemberUp(_) =>
+            seenState = Up
+            val upMessage = SelfUp(cluster.state)
+            upSubscribers.foreach(_ ! upMessage)
+            upSubscribers = Nil
 
-        case ClusterEvent.MemberRemoved(_, previousStatus) ⇒
-          seenState = Removed(previousStatus)
-          val removedMessage = SelfRemoved(previousStatus)
-          removedSubscribers.foreach(_ ! removedMessage)
-          removedSubscribers = Nil
+          case ClusterEvent.MemberRemoved(_, previousStatus) =>
+            seenState = Removed(previousStatus)
+            val removedMessage = SelfRemoved(previousStatus)
+            removedSubscribers.foreach(_ ! removedMessage)
+            removedSubscribers = Nil
 
-        case _ ⇒ // This is fine.
+          case _ => // This is fine.
+        }
       }
-    }
 
-    Behaviors.receive[AnyRef] { (ctx, msg) ⇒
+      Behaviors
+        .receive[AnyRef] { (ctx, msg) =>
+          msg match {
+            case Subscribe(subscriber: ActorRef[SelfUp] @unchecked, clazz) if clazz == classOf[SelfUp] =>
+              seenState match {
+                case Up => subscriber ! SelfUp(adaptedCluster.state)
+                case BeforeUp =>
+                  ctx.watch(subscriber)
+                  upSubscribers = subscriber :: upSubscribers
+                case _: Removed =>
+                // self did join, but is now no longer up, we want to avoid subscribing
+                // to not get a memory leak, but also not signal anything
+              }
+              Behaviors.same
 
-      msg match {
-        case Subscribe(subscriber: ActorRef[SelfUp] @unchecked, clazz) if clazz == classOf[SelfUp] ⇒
-          seenState match {
-            case Up ⇒ subscriber ! SelfUp(adaptedCluster.state)
-            case BeforeUp ⇒
-              ctx.watch(subscriber)
-              upSubscribers = subscriber :: upSubscribers
-            case _: Removed ⇒
-            // self did join, but is now no longer up, we want to avoid subscribing
-            // to not get a memory leak, but also not signal anything
+            case Subscribe(subscriber: ActorRef[SelfRemoved] @unchecked, clazz) if clazz == classOf[SelfRemoved] =>
+              seenState match {
+                case BeforeUp | Up => removedSubscribers = subscriber :: removedSubscribers
+                case Removed(s)    => subscriber ! SelfRemoved(s)
+              }
+              Behaviors.same
+
+            case Subscribe(subscriber, eventClass) =>
+              adaptedCluster
+                .subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
+              Behaviors.same
+
+            case Unsubscribe(subscriber) =>
+              adaptedCluster.unsubscribe(subscriber.toUntyped)
+              Behaviors.same
+
+            case GetCurrentState(sender) =>
+              adaptedCluster.sendCurrentClusterState(sender.toUntyped)
+              Behaviors.same
+
+            case evt: MemberEvent if evt.member.uniqueAddress == cluster.selfMember.uniqueAddress =>
+              onSelfMemberEvent(evt)
+              Behaviors.same
+
+            case _: MemberEvent =>
+              Behaviors.same
+
           }
-          Behaviors.same
+        }
+        .receiveSignal {
 
-        case Subscribe(subscriber: ActorRef[SelfRemoved] @unchecked, clazz) if clazz == classOf[SelfRemoved] ⇒
-          seenState match {
-            case BeforeUp | Up ⇒ removedSubscribers = subscriber :: removedSubscribers
-            case Removed(s)    ⇒ subscriber ! SelfRemoved(s)
-          }
-          Behaviors.same
+          case (_, Terminated(ref)) =>
+            upSubscribers = upSubscribers.filterNot(_ == ref)
+            removedSubscribers = removedSubscribers.filterNot(_ == ref)
+            Behaviors.same
 
-        case Subscribe(subscriber, eventClass) ⇒
-          adaptedCluster.subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
-          Behaviors.same
-
-        case Unsubscribe(subscriber) ⇒
-          adaptedCluster.unsubscribe(subscriber.toUntyped)
-          Behaviors.same
-
-        case GetCurrentState(sender) ⇒
-          adaptedCluster.sendCurrentClusterState(sender.toUntyped)
-          Behaviors.same
-
-        case evt: MemberEvent if evt.member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
-          onSelfMemberEvent(evt)
-          Behaviors.same
-
-        case _: MemberEvent ⇒
-          Behaviors.same
-
-      }
-    }.receiveSignal {
-
-      case (_, Terminated(ref)) ⇒
-        upSubscribers = upSubscribers.filterNot(_ == ref)
-        removedSubscribers = removedSubscribers.filterNot(_ == ref)
-        Behaviors.same
-
-    }.narrow[ClusterStateSubscription]
+        }
+        .narrow[ClusterStateSubscription]
   }
 
-  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((_, msg) ⇒
-    msg match {
-      case Join(address) ⇒
-        adaptedCluster.join(address)
-        Behaviors.same
+  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) =
+    Behaviors.receive[ClusterCommand]((_, msg) =>
+      msg match {
+        case Join(address) =>
+          adaptedCluster.join(address)
+          Behaviors.same
 
-      case Leave(address) ⇒
-        adaptedCluster.leave(address)
-        Behaviors.same
+        case Leave(address) =>
+          adaptedCluster.leave(address)
+          Behaviors.same
 
-      case Down(address) ⇒
-        adaptedCluster.down(address)
-        Behaviors.same
+        case Down(address) =>
+          adaptedCluster.down(address)
+          Behaviors.same
 
-      case JoinSeedNodes(addresses) ⇒
-        adaptedCluster.joinSeedNodes(addresses)
-        Behaviors.same
+        case JoinSeedNodes(addresses) =>
+          adaptedCluster.joinSeedNodes(addresses)
+          Behaviors.same
 
-    }
-
-  )
+      })
 
 }
 
@@ -144,11 +147,9 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
 
   // must not be lazy as it also updates the cached selfMember
   override val subscriptions: ActorRef[ClusterStateSubscription] =
-    system.internalSystemActorOf(
-      subscriptionsBehavior(untypedCluster), "clusterStateSubscriptions", Props.empty)
+    system.internalSystemActorOf(subscriptionsBehavior(untypedCluster), "clusterStateSubscriptions", Props.empty)
 
   override lazy val manager: ActorRef[ClusterCommand] =
-    system.internalSystemActorOf(
-      managerBehavior(untypedCluster), "clusterCommandManager", Props.empty)
+    system.internalSystemActorOf(managerBehavior(untypedCluster), "clusterCommandManager", Props.empty)
 
 }

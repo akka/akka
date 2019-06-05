@@ -13,7 +13,7 @@ object DispatchSpec {
   class UnserializableMessageClass
   class EmptyActor extends Actor {
     override def receive = {
-      case _: UnserializableMessageClass ⇒ // OK
+      case _: UnserializableMessageClass => // OK
     }
   }
 }
@@ -23,10 +23,9 @@ class DispatchSpec extends AkkaSpec("akka.actor.serialize-messages = on") with D
   "The dispatcher" should {
     "log an appropriate message when akka.actor.serialize-messages triggers a serialization error" in {
       val actor = system.actorOf(Props[EmptyActor])
-      EventFilter[Exception](pattern = ".*NoSerializationVerificationNeeded.*", occurrences = 1) intercept {
+      EventFilter[Exception](pattern = ".*NoSerializationVerificationNeeded.*", occurrences = 1).intercept {
         actor ! new UnserializableMessageClass
       }
     }
   }
 }
-

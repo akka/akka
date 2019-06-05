@@ -7,28 +7,44 @@ package akka.actor.testkit.typed.internal
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.typed.internal.ActorRefImpl
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
+import akka.actor.typed.Dispatchers
+import akka.actor.typed.Extension
+import akka.actor.typed.ExtensionId
+import akka.actor.typed.Logger
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
+import akka.actor.typed.Settings
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
+import akka.Done
 import com.typesafe.config.ConfigFactory
+
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
-
 import akka.actor.ActorRefProvider
 import akka.actor.typed.internal.InternalRecipientRef
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorSystemStub(val name: String)
-  extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] with InternalRecipientRef[Nothing] {
+@silent @InternalApi private[akka] final class ActorSystemStub(val name: String)
+    extends ActorSystem[Nothing]
+    with ActorRef[Nothing]
+    with ActorRefImpl[Nothing]
+    with InternalRecipientRef[Nothing] {
 
   override val path: untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
-  override def tell(message: Nothing): Unit = throw new UnsupportedOperationException("must not send message to ActorSystemStub")
+  override def tell(message: Nothing): Unit =
+    throw new UnsupportedOperationException("must not send message to ActorSystemStub")
 
   // impl ActorRefImpl
   override def isLocal: Boolean = true
@@ -55,15 +71,12 @@ import akka.actor.typed.internal.InternalRecipientRef
 
   override def logConfiguration(): Unit = log.info(settings.toString)
 
-  override def scheduler: untyped.Scheduler = throw new UnsupportedOperationException("no scheduler")
+  override def scheduler: Scheduler = throw new UnsupportedOperationException("no scheduler")
 
-  private val terminationPromise = Promise[Terminated]
-  override def terminate(): Future[akka.actor.typed.Terminated] = {
-    terminationPromise.trySuccess(Terminated(this))
-    terminationPromise.future
-  }
-  override def whenTerminated: Future[akka.actor.typed.Terminated] = terminationPromise.future
-  override def getWhenTerminated: CompletionStage[Terminated] = FutureConverters.toJava(whenTerminated)
+  private val terminationPromise = Promise[Done]
+  override def terminate(): Unit = terminationPromise.trySuccess(Done)
+  override def whenTerminated: Future[Done] = terminationPromise.future
+  override def getWhenTerminated: CompletionStage[Done] = FutureConverters.toJava(whenTerminated)
   override val startTime: Long = System.currentTimeMillis()
   override def uptime: Long = System.currentTimeMillis() - startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = new ThreadFactory {
@@ -72,7 +85,8 @@ import akka.actor.typed.internal.InternalRecipientRef
 
   override def printTree: String = "no tree for ActorSystemStub"
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(
+      implicit timeout: Timeout): Future[ActorRef[U]] = {
     Future.failed(new UnsupportedOperationException("ActorSystemStub cannot create system actors"))
   }
 

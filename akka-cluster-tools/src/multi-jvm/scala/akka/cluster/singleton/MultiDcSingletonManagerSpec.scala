@@ -55,7 +55,7 @@ class MultiDcSingleton extends Actor with ActorLogging {
   val cluster = Cluster(context.system)
 
   override def receive: Receive = {
-    case Ping ⇒
+    case Ping =>
       sender() ! Pong(cluster.settings.SelfDataCenter, cluster.selfAddress, cluster.selfRoles)
   }
 }
@@ -64,7 +64,10 @@ object MultiDcSingleton {
   case class Pong(fromDc: String, fromAddress: Address, roles: Set[String])
 }
 
-abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingletonManagerSpec) with STMultiNodeSpec with ImplicitSender {
+abstract class MultiDcSingletonManagerSpec
+    extends MultiNodeSpec(MultiDcSingletonManagerSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import MultiDcSingletonManagerSpec._
 
   override def initialParticipants = roles.size
@@ -80,16 +83,13 @@ abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingleto
 
       runOn(first, second, third) {
         system.actorOf(
-          ClusterSingletonManager.props(
-            Props[MultiDcSingleton](),
-            PoisonPill,
-            ClusterSingletonManagerSettings(system).withRole(worker)),
+          ClusterSingletonManager
+            .props(Props[MultiDcSingleton](), PoisonPill, ClusterSingletonManagerSettings(system).withRole(worker)),
           "singletonManager")
       }
 
-      val proxy = system.actorOf(ClusterSingletonProxy.props(
-        "/user/singletonManager",
-        ClusterSingletonProxySettings(system).withRole(worker)))
+      val proxy = system.actorOf(
+        ClusterSingletonProxy.props("/user/singletonManager", ClusterSingletonProxySettings(system).withRole(worker)))
 
       enterBarrier("managers-started")
 
@@ -112,9 +112,10 @@ abstract class MultiDcSingletonManagerSpec extends MultiNodeSpec(MultiDcSingleto
 
     "be able to use proxy across different data centers" in {
       runOn(third) {
-        val proxy = system.actorOf(ClusterSingletonProxy.props(
-          "/user/singletonManager",
-          ClusterSingletonProxySettings(system).withRole(worker).withDataCenter("one")))
+        val proxy = system.actorOf(
+          ClusterSingletonProxy.props(
+            "/user/singletonManager",
+            ClusterSingletonProxySettings(system).withRole(worker).withDataCenter("one")))
         proxy ! MultiDcSingleton.Ping
         val pong = expectMsgType[MultiDcSingleton.Pong](10.seconds)
         pong.fromDc should ===("one")

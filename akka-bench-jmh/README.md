@@ -1,6 +1,8 @@
 # Akka Microbenchmarks
 
-This subproject contains some microbenchmarks excercising key parts of Akka.
+This subproject contains some microbenchmarks excercising key parts of Akka. (Excluding typed which has its 
+own jmh module)
+
 
 You can run them like:
 

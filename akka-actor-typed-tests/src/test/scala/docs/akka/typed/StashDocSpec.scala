@@ -33,19 +33,18 @@ object StashDocSpec {
     private final case class DBError(cause: Throwable) extends Command
 
     def behavior(id: String, db: DB): Behavior[Command] =
-      Behaviors.setup[Command] { context ⇒
-
+      Behaviors.setup[Command] { context =>
         val buffer = StashBuffer[Command](capacity = 100)
 
         def init(): Behavior[Command] =
-          Behaviors.receive[Command] { (context, message) ⇒
+          Behaviors.receive[Command] { (context, message) =>
             message match {
-              case InitialState(value) ⇒
+              case InitialState(value) =>
                 // now we are ready to handle stashed messages if any
                 buffer.unstashAll(context, active(value))
-              case DBError(cause) ⇒
+              case DBError(cause) =>
                 throw cause
-              case other ⇒
+              case other =>
                 // stash all other messages for later processing
                 buffer.stash(other)
                 Behaviors.same
@@ -53,37 +52,37 @@ object StashDocSpec {
           }
 
         def active(state: String): Behavior[Command] =
-          Behaviors.receive { (context, message) ⇒
+          Behaviors.receive { (context, message) =>
             message match {
-              case Get(replyTo) ⇒
+              case Get(replyTo) =>
                 replyTo ! state
                 Behaviors.same
-              case Save(value, replyTo) ⇒
+              case Save(value, replyTo) =>
                 context.pipeToSelf(db.save(id, value)) {
-                  case Success(_)     ⇒ SaveSuccess
-                  case Failure(cause) ⇒ DBError(cause)
+                  case Success(_)     => SaveSuccess
+                  case Failure(cause) => DBError(cause)
                 }
                 saving(value, replyTo)
             }
           }
 
         def saving(state: String, replyTo: ActorRef[Done]): Behavior[Command] =
-          Behaviors.receive[Command] { (context, message) ⇒
+          Behaviors.receive[Command] { (context, message) =>
             message match {
-              case SaveSuccess ⇒
+              case SaveSuccess =>
                 replyTo ! Done
                 buffer.unstashAll(context, active(state))
-              case DBError(cause) ⇒
+              case DBError(cause) =>
                 throw cause
-              case other ⇒
+              case other =>
                 buffer.stash(other)
                 Behaviors.same
             }
           }
 
         context.pipeToSelf(db.load(id)) {
-          case Success(value) ⇒ InitialState(value)
-          case Failure(cause) ⇒ DBError(cause)
+          case Success(value) => InitialState(value)
+          case Failure(cause) => DBError(cause)
         }
 
         init()

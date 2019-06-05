@@ -111,7 +111,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         finally unregisterSubscriptionInternal(subscription)
       } else {
         endOfStream match {
-          case eos @ (NotReached | Completed) ⇒
+          case eos @ (NotReached | Completed) =>
             val d = subscription.totalDemand + elements
             // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
             val demand = if (d < 1) Long.MaxValue else d
@@ -126,7 +126,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
                   subscription.dispatch(buffer.read(subscription))
                   true
                 } catch {
-                  case _: SpecViolation ⇒
+                  case _: SpecViolation =>
                     unregisterSubscriptionInternal(subscription)
                     false
                 }
@@ -136,14 +136,14 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
               else requested
 
             dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
-              case Long.MinValue ⇒
+              case Long.MinValue =>
                 eos(subscription.subscriber)
                 unregisterSubscriptionInternal(subscription)
-              case x ⇒
+              case x =>
                 subscription.totalDemand = x
                 requestFromUpstreamIfRequired()
             }
-          case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
+          case ErrorCompleted(_) => // ignore, the Subscriber might not have seen our error event yet
         }
       }
     }
@@ -151,10 +151,11 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   private[this] final def requestFromUpstreamIfRequired(): Unit = {
     @tailrec def maxRequested(remaining: Subscriptions, result: Long = 0): Long =
       remaining match {
-        case head :: tail ⇒ maxRequested(tail, math.max(head.totalDemand, result))
-        case _            ⇒ result
+        case head :: tail => maxRequested(tail, math.max(head.totalDemand, result))
+        case _            => result
       }
-    val desired = Math.min(Int.MaxValue, Math.min(maxRequested(subscriptions), buffer.maxAvailable) - pendingFromUpstream).toInt
+    val desired =
+      Math.min(Int.MaxValue, Math.min(maxRequested(subscriptions), buffer.maxAvailable) - pendingFromUpstream).toInt
     if (desired > 0) {
       pendingFromUpstream += desired
       requestFromUpstream(desired)
@@ -167,22 +168,22 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   protected def pushToDownstream(value: T): Unit = {
     @tailrec def dispatch(remaining: Subscriptions, sent: Boolean = false): Boolean =
       remaining match {
-        case head :: tail ⇒
+        case head :: tail =>
           if (head.totalDemand > 0) {
             val element = buffer.read(head)
             head.dispatch(element)
             head.totalDemand -= 1
             dispatch(tail, sent = true)
           } else dispatch(tail, sent)
-        case _ ⇒ sent
+        case _ => sent
       }
 
     endOfStream match {
-      case NotReached ⇒
+      case NotReached =>
         pendingFromUpstream -= 1
         if (!buffer.write(value)) throw new IllegalStateException("Output buffer overflow")
         if (dispatch(subscriptions)) requestFromUpstreamIfRequired()
-      case _ ⇒
+      case _ =>
         throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
     }
   }
@@ -195,13 +196,13 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     if (endOfStream eq NotReached) {
       @tailrec def completeDoneSubscriptions(remaining: Subscriptions, result: Subscriptions = Nil): Subscriptions =
         remaining match {
-          case head :: tail ⇒
+          case head :: tail =>
             if (buffer.count(head) == 0) {
               head.active = false
               Completed(head.subscriber)
               completeDoneSubscriptions(tail, result)
             } else completeDoneSubscriptions(tail, head :: result)
-          case _ ⇒ result
+          case _ => result
         }
       endOfStream = Completed
       subscriptions = completeDoneSubscriptions(subscriptions)
@@ -214,7 +215,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    */
   protected def abortDownstream(cause: Throwable): Unit = {
     endOfStream = ErrorCompleted(cause)
-    subscriptions.foreach(s ⇒ endOfStream(s.subscriber))
+    subscriptions.foreach(s => endOfStream(s.subscriber))
     subscriptions = Nil
   }
 
@@ -222,10 +223,11 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    * Register a new subscriber.
    */
   protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
-    case NotReached if subscriptions.exists(_.subscriber == subscriber) ⇒ ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
-    case NotReached ⇒ addSubscription(subscriber)
-    case Completed if buffer.nonEmpty ⇒ addSubscription(subscriber)
-    case eos ⇒ eos(subscriber)
+    case NotReached if subscriptions.exists(_.subscriber == subscriber) =>
+      ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
+    case NotReached                   => addSubscription(subscriber)
+    case Completed if buffer.nonEmpty => addSubscription(subscriber)
+    case eos                          => eos(subscriber)
   }
 
   private def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
@@ -235,7 +237,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     buffer.initCursor(newSubscription)
     try tryOnSubscribe(subscriber, newSubscription)
     catch {
-      case _: SpecViolation ⇒ unregisterSubscriptionInternal(newSubscription)
+      case _: SpecViolation => unregisterSubscriptionInternal(newSubscription)
     }
   }
 
@@ -250,8 +252,8 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   private def unregisterSubscriptionInternal(subscription: S): Unit = {
     @tailrec def removeFrom(remaining: Subscriptions, result: Subscriptions = Nil): Subscriptions =
       remaining match {
-        case head :: tail ⇒ if (head eq subscription) tail reverse_::: result else removeFrom(tail, head :: result)
-        case _            ⇒ throw new IllegalStateException("Subscription to unregister not found")
+        case head :: tail => if (head eq subscription) result.reverse_:::(tail) else removeFrom(tail, head :: result)
+        case _            => throw new IllegalStateException("Subscription to unregister not found")
       }
     if (subscription.active) {
       subscriptions = removeFrom(subscriptions)
@@ -267,4 +269,3 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     } // else ignore, we need to be idempotent
   }
 }
-

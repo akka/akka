@@ -20,7 +20,7 @@ object ConcurrentStartupShardingSpec {
   val config =
     """
     akka.actor.provider = "cluster"
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
@@ -44,14 +44,15 @@ object ConcurrentStartupShardingSpec {
   class Starter(n: Int, probe: ActorRef) extends Actor {
 
     override def preStart(): Unit = {
-      val region = ClusterSharding(context.system).start(s"type-$n", Props.empty, ClusterShardingSettings(context.system),
-        { case msg ⇒ (msg.toString, msg) },
-        _ ⇒ "1")
+      val region =
+        ClusterSharding(context.system).start(s"type-$n", Props.empty, ClusterShardingSettings(context.system), {
+          case msg => (msg.toString, msg)
+        }, _ => "1")
       probe ! region
     }
 
     def receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 }
@@ -72,7 +73,7 @@ class ConcurrentStartupShardingSpec extends AkkaSpec(ConcurrentStartupShardingSp
       awaitAssert(Cluster(system).selfMember.status should ===(MemberStatus.Up))
 
       val total = 20
-      (1 to total).foreach { n ⇒
+      (1 to total).foreach { n =>
         system.actorOf(Starter.props(n, testActor))
       }
 

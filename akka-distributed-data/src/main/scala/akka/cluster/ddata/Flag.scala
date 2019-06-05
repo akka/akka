@@ -5,6 +5,7 @@
 package akka.cluster.ddata
 
 object Flag {
+
   /**
    * `Flag` that is initialized to `false`.
    */

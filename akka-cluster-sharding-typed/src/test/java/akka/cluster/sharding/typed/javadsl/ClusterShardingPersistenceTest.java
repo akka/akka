@@ -28,7 +28,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
   public static final Config config =
       ConfigFactory.parseString(
           "akka.actor.provider = cluster \n"
-              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
               + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
@@ -68,10 +68,6 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
   }
 
-  static enum StopPlz implements Command {
-    INSTANCE
-  }
-
   static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
@@ -90,9 +86,9 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     public CommandHandler<Command, String, String> commandHandler() {
       return newCommandHandlerBuilder()
           .forAnyState()
-          .matchCommand(Add.class, this::add)
-          .matchCommand(AddWithConfirmation.class, this::addWithConfirmation)
-          .matchCommand(Get.class, this::getState)
+          .onCommand(Add.class, this::add)
+          .onCommand(AddWithConfirmation.class, this::addWithConfirmation)
+          .onCommand(Get.class, this::getState)
           .build();
     }
 
@@ -111,10 +107,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return newEventHandlerBuilder()
-          .forAnyState()
-          .matchEvent(String.class, this::applyEvent)
-          .build();
+      return newEventHandlerBuilder().forAnyState().onEvent(String.class, this::applyEvent).build();
     }
 
     private String applyEvent(String state, String evt) {
@@ -134,10 +127,9 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
       sharding.init(
-          Entity.ofPersistentEntity(
-                  TestPersistentEntity.ENTITY_TYPE_KEY,
-                  entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
-              .withStopMessage(StopPlz.INSTANCE));
+          Entity.ofEventSourcedEntity(
+              TestPersistentEntity.ENTITY_TYPE_KEY,
+              entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
 
       _sharding = sharding;
     }

@@ -18,11 +18,13 @@ private[typed] object SystemMessageList {
   final val ENil: EarliestFirstSystemMessageList = new EarliestFirstSystemMessageList(null)
 
   @tailrec
-  private[internal] def sizeInner(head: SystemMessage, acc: Int): Int = if (head eq null) acc else sizeInner(head.next, acc + 1)
+  private[internal] def sizeInner(head: SystemMessage, acc: Int): Int =
+    if (head eq null) acc else sizeInner(head.next, acc + 1)
 
   @tailrec
   private[internal] def reverseInner(head: SystemMessage, acc: SystemMessage): SystemMessage = {
-    if (head eq null) acc else {
+    if (head eq null) acc
+    else {
       val next = head.next
       head.next = acc
       reverseInner(next, head)
@@ -157,7 +159,7 @@ private[typed] class EarliestFirstSystemMessageList(val head: SystemMessage) ext
    *
    * The cost of this operation is linear in the size of the list that is to be prepended.
    */
-  final def reverse_:::(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
+  final def reversePrepend(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
     var remaining = other
     var result = this
     while (remaining.nonEmpty) {
@@ -222,7 +224,8 @@ private[akka] final case class Unwatch(watchee: ActorRef[Nothing], watcher: Acto
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] final case class DeathWatchNotification(actor: ActorRef[Nothing], failureCause: Throwable) extends SystemMessage
+private[akka] final case class DeathWatchNotification(actor: ActorRef[Nothing], failureCause: Throwable)
+    extends SystemMessage
 
 /**
  * INTERNAL API

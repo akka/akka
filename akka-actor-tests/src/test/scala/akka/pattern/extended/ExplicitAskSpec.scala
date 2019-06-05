@@ -23,11 +23,11 @@ class ExplicitAskSpec extends AkkaSpec {
 
       val target = system.actorOf(Props(new Actor {
         def receive = {
-          case Request(respondTo) ⇒ respondTo ! Response(self)
+          case Request(respondTo) => respondTo ! Response(self)
         }
       }))
 
-      val f = target ? (respondTo ⇒ Request(respondTo))
+      val f = target ? (respondTo => Request(respondTo))
       f.futureValue should ===(Response(target))
     }
 
@@ -36,12 +36,12 @@ class ExplicitAskSpec extends AkkaSpec {
 
       val target = system.actorOf(Props(new Actor {
         def receive = {
-          case Request(respondTo) ⇒ respondTo ! Response(self)
+          case Request(respondTo) => respondTo ! Response(self)
         }
       }), "select-echo")
 
       val selection = system.actorSelection("/user/select-echo")
-      val f = selection ? (respondTo ⇒ Request(respondTo))
+      val f = selection ? (respondTo => Request(respondTo))
       f.futureValue should ===(Response(target))
     }
   }

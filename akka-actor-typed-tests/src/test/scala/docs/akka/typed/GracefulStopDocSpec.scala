@@ -28,29 +28,27 @@ object GracefulStopDocSpec {
     // Predefined cleanup operation
     def cleanup(log: Logger): Unit = log.info("Cleaning up!")
 
-    val mcpa = Behaviors.receive[JobControlLanguage] { (context, message) ⇒
-      message match {
-        case SpawnJob(jobName) ⇒
-          context.log.info("Spawning job {}!", jobName)
-          context.spawn(Job.job(jobName), name = jobName)
-          Behaviors.same
-        case GracefulShutdown ⇒
-          context.log.info("Initiating graceful shutdown...")
-          // perform graceful stop, executing cleanup before final system termination
-          // behavior executing cleanup is passed as a parameter to Actor.stopped
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (context, PostStop) ⇒
-                cleanup(context.system.log)
-                Behaviors.same
+    val mcpa = Behaviors
+      .receive[JobControlLanguage] { (context, message) =>
+        message match {
+          case SpawnJob(jobName) =>
+            context.log.info("Spawning job {}!", jobName)
+            context.spawn(Job.job(jobName), name = jobName)
+            Behaviors.same
+          case GracefulShutdown =>
+            context.log.info("Initiating graceful shutdown...")
+            // perform graceful stop, executing cleanup before final system termination
+            // behavior executing cleanup is passed as a parameter to Actor.stopped
+            Behaviors.stopped { () =>
+              cleanup(context.system.log)
             }
-          }
+        }
       }
-    }.receiveSignal {
-      case (context, PostStop) ⇒
-        context.log.info("MCPA stopped")
-        Behaviors.same
-    }
+      .receiveSignal {
+        case (context, PostStop) =>
+          context.log.info("MCPA stopped")
+          Behaviors.same
+      }
   }
   //#master-actor
 
@@ -60,7 +58,7 @@ object GracefulStopDocSpec {
     import GracefulStopDocSpec.MasterControlProgramActor.JobControlLanguage
 
     def job(name: String) = Behaviors.receiveSignal[JobControlLanguage] {
-      case (context, PostStop) ⇒
+      case (context, PostStop) =>
         context.log.info("Worker {} stopped", name)
         Behaviors.same
     }

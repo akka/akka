@@ -5,15 +5,14 @@
 package akka.cluster
 
 import scala.concurrent.duration._
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 import akka.testkit.LongRunningTest
 import com.typesafe.config.{ Config, ConfigFactory }
 
 object JoinConfigCompatCheckerRollingUpdateSpec {
 
-  val baseConfig = ConfigFactory.parseString(
-    s"""
+  val baseConfig = ConfigFactory.parseString(s"""
       akka.log-dead-letters = off
       akka.log-dead-letters-during-shutdown = off
       akka.remote.log-remote-lifecycle-events = off
@@ -24,13 +23,11 @@ object JoinConfigCompatCheckerRollingUpdateSpec {
       akka.cluster.periodic-tasks-initial-delay      = 100 ms
       akka.cluster.publish-stats-interval            = 0 s
       failure-detector.heartbeat-interval            = 100 ms
-    """)
-    .withFallback(JoinConfigCompatCheckerSpec.baseConfig)
+    """).withFallback(JoinConfigCompatCheckerSpec.baseConfig)
 
   val v1Config: Config = baseConfig.withFallback(JoinConfigCompatCheckerSpec.configWithChecker)
 
-  private val v2 = ConfigFactory.parseString(
-    """
+  private val v2 = ConfigFactory.parseString("""
       akka.cluster.new-configuration = "v2"
       akka.cluster.configuration-compatibility-check.checkers {
         rolling-upgrade-test = "akka.cluster.JoinConfigCompatRollingUpdateChecker"
@@ -43,8 +40,8 @@ object JoinConfigCompatCheckerRollingUpdateSpec {
 
 }
 
-class JoinConfigCompatCheckerRollingUpdateSpec extends RollingUpgradeClusterSpec(
-  JoinConfigCompatCheckerRollingUpdateSpec.v1Config) {
+class JoinConfigCompatCheckerRollingUpdateSpec
+    extends RollingUpgradeClusterSpec(JoinConfigCompatCheckerRollingUpdateSpec.v1Config) {
 
   import JoinConfigCompatCheckerRollingUpdateSpec._
 

@@ -19,6 +19,9 @@ import akka.io.UdpConnected;
 import akka.io.UdpConnectedMessage;
 import akka.io.UdpSO;
 import akka.util.ByteString;
+
+import static akka.util.ByteString.emptyByteString;
+
 // #imports
 
 public class UdpConnectedDocTest {
@@ -79,7 +82,7 @@ public class UdpConnectedDocTest {
       builder.matchEquals(
           "send",
           x -> {
-            ByteString data = ByteString.empty();
+            ByteString data = emptyByteString();
             // #send
             connectionActor.tell(UdpConnectedMessage.send(data), getSelf());
             // #send

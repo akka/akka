@@ -12,15 +12,6 @@ Add the following dependency in your project:
 
 ## Introduction
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
-
 Use of Akka relieves you from creating the infrastructure for an actor system and from writing the low-level code necessary to control basic behavior. To appreciate this, let's look at the relationships between actors you create in your code and those that Akka creates and manages for you internally, the actor lifecycle, and failure handling.
 
 ## The Akka actor hierarchy
@@ -42,7 +33,7 @@ In fact, before you create an actor in your code, Akka has already created three
    you, it has nothing to do with end users, nor with user handling. Every actor you create using the Akka library will have the constant path `/user/` prepended to it.
  - `/system` the _system guardian_. Akka or other libraries built on top of Akka may create actors in the _system_ namespace.
 
-The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-java)].
+The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
 
 FIXME update link to Quickstart to the Typed version, when it's ready, issue https://github.com/akka/akka/issues/25997
 

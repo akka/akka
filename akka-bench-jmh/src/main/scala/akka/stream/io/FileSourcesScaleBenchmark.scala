@@ -23,6 +23,7 @@ import scala.concurrent.{ Await, Future }
 @Warmup(iterations = 5, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 @Measurement(iterations = 10, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class FileSourcesScaleBenchmark {
+
   /**
    * Benchmark                               (bufSize)  Mode  Cnt  Score   Error  Units
    * FileSourcesScaleBenchmark.flatMapMerge       2048  avgt   10  1.587 ± 0.118   s/op
@@ -33,10 +34,11 @@ class FileSourcesScaleBenchmark {
   val FILES_NUMBER = 40
   val files: Seq[Path] = {
     val line = ByteString("x" * 2048 + "\n")
-    (1 to FILES_NUMBER).map(i ⇒ {
+    (1 to FILES_NUMBER).map(i => {
       val f = Files.createTempFile(getClass.getName, i + ".bench.tmp")
 
-      val ft = Source.fromIterator(() ⇒ Iterator.continually(line))
+      val ft = Source
+        .fromIterator(() => Iterator.continually(line))
         .take(20000) // adjust as needed
         .runWith(FileIO.toPath(f))
       Await.result(ft, 300.seconds)
@@ -66,16 +68,20 @@ class FileSourcesScaleBenchmark {
 
   @Benchmark
   def flatMapMerge(): Unit = {
-    val h = Source.fromIterator(() ⇒ files.iterator)
-      .flatMapMerge(FILES_NUMBER, path ⇒ FileIO.fromPath(path, bufSize)).runWith(Sink.ignore)
+    val h = Source
+      .fromIterator(() => files.iterator)
+      .flatMapMerge(FILES_NUMBER, path => FileIO.fromPath(path, bufSize))
+      .runWith(Sink.ignore)
 
     Await.result(h, 300.seconds)
   }
 
   @Benchmark
   def mapAsync(): Unit = {
-    val h = Source.fromIterator(() ⇒ files.iterator)
-      .mapAsync(FILES_NUMBER)(path ⇒ FileIO.fromPath(path, bufSize).runWith(Sink.ignore)).runWith(Sink.ignore)
+    val h = Source
+      .fromIterator(() => files.iterator)
+      .mapAsync(FILES_NUMBER)(path => FileIO.fromPath(path, bufSize).runWith(Sink.ignore))
+      .runWith(Sink.ignore)
 
     Await.result(h, 300.seconds)
   }

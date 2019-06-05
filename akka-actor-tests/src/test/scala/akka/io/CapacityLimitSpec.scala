@@ -4,7 +4,7 @@
 
 package akka.io
 
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import Tcp._
 
@@ -12,12 +12,12 @@ class CapacityLimitSpec extends AkkaSpec("""
     akka.loglevel = ERROR
     akka.io.tcp.max-channels = 4
     akka.actor.serialize-creators = on
-    """)
-  with TcpIntegrationSpecSupport {
+    """) with TcpIntegrationSpecSupport {
 
   "The TCP transport implementation" should {
 
-    "reply with CommandFailed to a Bind or Connect command if max-channels capacity has been reached" in new TestSetup(runClientInExtraSystem = false) {
+    "reply with CommandFailed to a Bind or Connect command if max-channels capacity has been reached" in new TestSetup(
+      runClientInExtraSystem = false) {
       establishNewClientConnection()
 
       // we now have three channels registered: a listener, a server connection and a client connection
@@ -31,11 +31,11 @@ class CapacityLimitSpec extends AkkaSpec("""
 
       val bindToFail = Bind(bindHandler.ref, addresses(1))
       commander.send(IO(Tcp), bindToFail)
-      commander.expectMsgType[CommandFailed].cmd should be theSameInstanceAs (bindToFail)
+      (commander.expectMsgType[CommandFailed].cmd should be).theSameInstanceAs(bindToFail)
 
       val connectToFail = Connect(endpoint)
       commander.send(IO(Tcp), connectToFail)
-      commander.expectMsgType[CommandFailed].cmd should be theSameInstanceAs (connectToFail)
+      (commander.expectMsgType[CommandFailed].cmd should be).theSameInstanceAs(connectToFail)
     }
 
   }

@@ -13,7 +13,7 @@ import akka.event.Logging
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -53,9 +53,9 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
 
   private val methods = {
     val serviceDiscovery = Discovery(system)
-    settings.discoveryMethods.map(mech ⇒ (mech, serviceDiscovery.loadServiceDiscovery(mech)))
+    settings.discoveryMethods.map(mech => (mech, serviceDiscovery.loadServiceDiscovery(mech)))
   }
-  private implicit val ec = system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   /**
    * Each discovery method is given the resolveTimeout rather than reducing it each time between methods.
@@ -65,15 +65,15 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
 
   private def resolve(sds: Methods, query: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     sds match {
-      case (method, next) :: Nil ⇒
+      case (method, next) :: Nil =>
         log.debug("Looking up [{}] with [{}]", query, method)
         next.lookup(query, resolveTimeout)
-      case (method, next) :: tail ⇒
+      case (method, next) :: tail =>
         log.debug("Looking up [{}] with [{}]", query, method)
         // If nothing comes back then try the next one
         next
           .lookup(query, resolveTimeout)
-          .flatMap { resolved ⇒
+          .flatMap { resolved =>
             if (resolved.addresses.isEmpty) {
               log.debug("Method[{}] returned no ResolvedTargets, trying next", query)
               resolve(tail, query, resolveTimeout)
@@ -81,11 +81,11 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
               Future.successful(resolved)
           }
           .recoverWith {
-            case NonFatal(t) ⇒
+            case NonFatal(t) =>
               log.error(t, "[{}] Service discovery failed. Trying next discovery method", method)
               resolve(tail, query, resolveTimeout)
           }
-      case Nil ⇒
+      case Nil =>
         // this is checked in `discoveryMethods`, but silence compiler warning
         throw new IllegalStateException("At least one discovery method should be specified")
     }

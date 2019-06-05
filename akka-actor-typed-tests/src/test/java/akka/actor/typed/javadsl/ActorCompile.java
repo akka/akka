@@ -62,7 +62,7 @@ public class ActorCompile {
           });
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
   Behavior<MyMsg> actor10 =
-      Behaviors.receive((context, message) -> stopped(actor4), (context, signal) -> same());
+      Behaviors.receive((context, message) -> stopped(() -> {}), (context, signal) -> same());
 
   ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
 

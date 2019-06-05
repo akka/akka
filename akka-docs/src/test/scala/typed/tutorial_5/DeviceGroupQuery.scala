@@ -27,13 +27,12 @@ import typed.tutorial_5.DeviceManager.TemperatureReading
 object DeviceGroupQuery {
 
   def apply(
-    deviceIdToActor: Map[String, ActorRef[Device.DeviceMessage]],
-    requestId:       Long,
-    requester:       ActorRef[RespondAllTemperatures],
-    timeout:         FiniteDuration
-  ): Behavior[DeviceGroupQueryMessage] = {
-    Behaviors.setup { context ⇒
-      Behaviors.withTimers { timers ⇒
+      deviceIdToActor: Map[String, ActorRef[Device.DeviceMessage]],
+      requestId: Long,
+      requester: ActorRef[RespondAllTemperatures],
+      timeout: FiniteDuration): Behavior[DeviceGroupQueryMessage] = {
+    Behaviors.setup { context =>
+      Behaviors.withTimers { timers =>
         new DeviceGroupQuery(deviceIdToActor, requestId, requester, timeout, context, timers)
       }
     }
@@ -49,13 +48,13 @@ object DeviceGroupQuery {
 }
 
 class DeviceGroupQuery(
-  deviceIdToActor: Map[String, ActorRef[DeviceMessage]],
-  requestId:       Long,
-  requester:       ActorRef[RespondAllTemperatures],
-  timeout:         FiniteDuration,
-  context:         ActorContext[DeviceGroupQuery.DeviceGroupQueryMessage],
-  timers:          TimerScheduler[DeviceGroupQuery.DeviceGroupQueryMessage])
-  extends AbstractBehavior[DeviceGroupQuery.DeviceGroupQueryMessage] {
+    deviceIdToActor: Map[String, ActorRef[DeviceMessage]],
+    requestId: Long,
+    requester: ActorRef[RespondAllTemperatures],
+    timeout: FiniteDuration,
+    context: ActorContext[DeviceGroupQuery.DeviceGroupQueryMessage],
+    timers: TimerScheduler[DeviceGroupQuery.DeviceGroupQueryMessage])
+    extends AbstractBehavior[DeviceGroupQuery.DeviceGroupQueryMessage] {
 
   import DeviceGroupQuery._
   timers.startSingleTimer(CollectionTimeout, CollectionTimeout, timeout)
@@ -71,7 +70,7 @@ class DeviceGroupQuery(
   //#query-outline
 
   deviceIdToActor.foreach {
-    case (deviceId, device) ⇒
+    case (deviceId, device) =>
       context.watchWith(device, DeviceTerminated(deviceId))
       device ! ReadTemperature(0, respondTemperatureAdapter)
   }
@@ -80,15 +79,15 @@ class DeviceGroupQuery(
   //#query-state
   override def onMessage(msg: DeviceGroupQueryMessage): Behavior[DeviceGroupQueryMessage] =
     msg match {
-      case WrappedRespondTemperature(response) ⇒ onRespondTemperature(response)
-      case DeviceTerminated(deviceId)          ⇒ onDeviceTerminated(deviceId)
-      case CollectionTimeout                   ⇒ onCollectionTimout()
+      case WrappedRespondTemperature(response) => onRespondTemperature(response)
+      case DeviceTerminated(deviceId)          => onDeviceTerminated(deviceId)
+      case CollectionTimeout                   => onCollectionTimout()
     }
 
   private def onRespondTemperature(response: RespondTemperature): Behavior[DeviceGroupQueryMessage] = {
     val reading = response.value match {
-      case Some(value) ⇒ Temperature(value)
-      case None        ⇒ TemperatureNotAvailable
+      case Some(value) => Temperature(value)
+      case None        => TemperatureNotAvailable
     }
 
     val deviceId = response.deviceId
@@ -107,7 +106,7 @@ class DeviceGroupQuery(
   }
 
   private def onCollectionTimout(): Behavior[DeviceGroupQueryMessage] = {
-    repliesSoFar ++= stillWaiting.map(deviceId ⇒ deviceId -> DeviceTimedOut)
+    repliesSoFar ++= stillWaiting.map(deviceId => deviceId -> DeviceTimedOut)
     stillWaiting = Set.empty
     respondWhenAllCollected()
   }

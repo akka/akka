@@ -13,7 +13,7 @@ import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int)
-  extends ByteStringParser[ByteString] {
+    extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
     val inflater: Inflater

@@ -12,7 +12,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 // #blocking-in-actor
 class BlockingActor extends Actor {
   def receive = {
-    case i: Int ⇒
+    case i: Int =>
       Thread.sleep(5000) //block for 5 seconds, representing blocking I/O, etc
       println(s"Blocking operation finished: ${i}")
   }
@@ -24,7 +24,7 @@ class BlockingFutureActor extends Actor {
   implicit val executionContext: ExecutionContext = context.dispatcher
 
   def receive = {
-    case i: Int ⇒
+    case i: Int =>
       println(s"Calling blocking Future: ${i}")
       Future {
         Thread.sleep(5000) //block for 5 seconds
@@ -39,7 +39,7 @@ class SeparateDispatcherFutureActor extends Actor {
   implicit val executionContext: ExecutionContext = context.system.dispatchers.lookup("my-blocking-dispatcher")
 
   def receive = {
-    case i: Int ⇒
+    case i: Int =>
       println(s"Calling blocking Future: ${i}")
       Future {
         Thread.sleep(5000) //block for 5 seconds
@@ -52,7 +52,7 @@ class SeparateDispatcherFutureActor extends Actor {
 // #print-actor
 class PrintActor extends Actor {
   def receive = {
-    case i: Int ⇒
+    case i: Int =>
       println(s"PrintActor: ${i}")
   }
 }
@@ -67,7 +67,7 @@ object BlockingDispatcherSample {
       val actor1 = system.actorOf(Props(new BlockingFutureActor))
       val actor2 = system.actorOf(Props(new PrintActor))
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         actor1 ! i
         actor2 ! i
       }
@@ -82,8 +82,7 @@ object BlockingDispatcherSample {
 object SeparateDispatcherSample {
   def main(args: Array[String]) = {
 
-    val config = ConfigFactory.parseString(
-      """
+    val config = ConfigFactory.parseString("""
       //#my-blocking-dispatcher-config
       my-blocking-dispatcher {
         type = Dispatcher
@@ -94,8 +93,7 @@ object SeparateDispatcherSample {
         throughput = 1
       }
       //#my-blocking-dispatcher-config
-      """
-    )
+      """)
     val system = ActorSystem("SeparateDispatcherSample", config)
 
     try {
@@ -103,7 +101,7 @@ object SeparateDispatcherSample {
       val actor1 = system.actorOf(Props(new SeparateDispatcherFutureActor))
       val actor2 = system.actorOf(Props(new PrintActor))
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         actor1 ! i
         actor2 ! i
       }

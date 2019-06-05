@@ -18,7 +18,7 @@ import akka.cluster.sharding.typed.{ ClusterShardingQuery, GetShardRegionState }
 object ShardingState {
 
   def behavior(untypedSharding: ClusterSharding): Behavior[ClusterShardingQuery] = Behaviors.receiveMessage {
-    case GetShardRegionState(key, replyTo) ⇒
+    case GetShardRegionState(key, replyTo) =>
       if (untypedSharding.getShardTypeNames.contains(key.name)) {
         untypedSharding.shardRegion(key.name).tell(ShardRegion.GetShardRegionState, replyTo.toUntyped)
       } else {

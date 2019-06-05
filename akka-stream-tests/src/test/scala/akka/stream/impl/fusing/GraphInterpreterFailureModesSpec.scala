@@ -113,4 +113,3 @@ class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterS
   }
 
 }
-

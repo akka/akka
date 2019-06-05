@@ -7,15 +7,21 @@ package akka.actor.testkit.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
+import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.testkit.typed.internal.ActorTestKitGuardian
+import akka.actor.testkit.typed.internal.TestKitUtils
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.Scheduler
 import akka.util.Timeout
 
 object ActorTestKit {
@@ -32,8 +38,7 @@ object ActorTestKit {
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
       config = noConfigSet,
-      settings = None
-    )
+      settings = None)
 
   /**
    * Create a named testkit.
@@ -44,11 +49,7 @@ object ActorTestKit {
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
   def apply(name: String): ActorTestKit =
-    new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(name),
-      config = noConfigSet,
-      settings = None
-    )
+    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = noConfigSet, settings = None)
 
   /**
    * Create a named testkit, and use a custom config for the actor system.
@@ -59,11 +60,7 @@ object ActorTestKit {
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
   def apply(name: String, customConfig: Config): ActorTestKit =
-    new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(name),
-      config = customConfig,
-      settings = None
-    )
+    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = customConfig, settings = None)
 
   /**
    * Create a named testkit, and use a custom config for the actor system,
@@ -75,11 +72,7 @@ object ActorTestKit {
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
   def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
-    new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(name),
-      config = customConfig,
-      settings = Some(settings)
-    )
+    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = customConfig, settings = Some(settings))
 
   /**
    * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
@@ -87,21 +80,14 @@ object ActorTestKit {
    */
   def shutdown(system: ActorSystem[_]): Unit = {
     val settings = TestKitSettings(system)
-    TestKitUtils.shutdown(
-      system,
-      settings.DefaultActorSystemShutdownTimeout,
-      settings.ThrowOnShutdownTimeout
-    )
+    TestKitUtils.shutdown(system, settings.DefaultActorSystemShutdownTimeout, settings.ThrowOnShutdownTimeout)
   }
 
   /**
    * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down
    * or the `duration` hits. If the timeout hits `verifySystemShutdown` decides
    */
-  def shutdown(
-    system:               ActorSystem[_],
-    timeout:              Duration,
-    throwIfShutdownFails: Boolean        = false): Unit =
+  def shutdown(system: ActorSystem[_], timeout: Duration, throwIfShutdownFails: Boolean = false): Unit =
     TestKitUtils.shutdown(system, timeout, throwIfShutdownFails)
 
   // place holder for no custom config specified to avoid the boilerplate
@@ -143,8 +129,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
     ActorTestKit.shutdown(
       system,
       testKitSettings.DefaultActorSystemShutdownTimeout,
-      testKitSettings.ThrowOnShutdownTimeout
-    )
+      testKitSettings.ThrowOnShutdownTimeout)
   }
 
   /**
@@ -159,7 +144,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * guardian
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
-    Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
+    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
@@ -173,19 +158,22 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * guardian
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
-    Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
   /**
    * Stop the actor under test and wait until it terminates.
    * It can only be used for actors that were spawned by this `ActorTestKit`.
    * Other actors will not be stopped by this method.
    */
-  def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit = try {
-    Await.result(internalSystem ? { x: ActorRef[ActorTestKitGuardian.Ack.type] ⇒ ActorTestKitGuardian.StopActor(ref, x) }, max)
-  } catch {
-    case _: TimeoutException ⇒
-      assert(false, s"timeout ($max) during stop() waiting for actor [${ref.path}] to stop")
-  }
+  def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit =
+    try {
+      Await.result(internalSystem.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] =>
+        ActorTestKitGuardian.StopActor(ref, x)
+      }, max)
+    } catch {
+      case _: TimeoutException =>
+        assert(false, s"timeout ($max) during stop() waiting for actor [${ref.path}] to stop")
+    }
 
   /**
    * Shortcut for creating a new test probe for the testkit actor system

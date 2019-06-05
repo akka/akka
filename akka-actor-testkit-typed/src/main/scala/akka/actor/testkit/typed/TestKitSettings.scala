@@ -12,6 +12,7 @@ import akka.util.Timeout
 import akka.actor.typed.ActorSystem
 
 object TestKitSettings {
+
   /**
    * Reads configuration settings from `akka.actor.testkit.typed` section.
    */
@@ -43,15 +44,19 @@ final class TestKitSettings(val config: Config) {
 
   import akka.util.Helpers._
 
-  val TestTimeFactor = config.getDouble("timefactor").
-    requiring(tf ⇒ !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
+  val TestTimeFactor = config
+    .getDouble("timefactor")
+    .requiring(tf => !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
 
   /** dilated with `TestTimeFactor` */
   val SingleExpectDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("single-expect-default"))
+
   /** dilated with `TestTimeFactor` */
   val ExpectNoMessageDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("expect-no-message-default"))
+
   /** dilated with `TestTimeFactor` */
   val DefaultTimeout: Timeout = Timeout(dilated(config.getMillisDuration("default-timeout")))
+
   /** dilated with `TestTimeFactor` */
   val DefaultActorSystemShutdownTimeout: FiniteDuration = dilated(config.getMillisDuration("system-shutdown-default"))
 

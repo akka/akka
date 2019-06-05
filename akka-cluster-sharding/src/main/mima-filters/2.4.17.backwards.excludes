@@ -1,7 +1,0 @@
-# Internal MessageBuffer for actors
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.totalBufferSize")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.Shard.messageBuffers")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.messageBuffers_=")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.totalBufferSize")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")

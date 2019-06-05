@@ -24,7 +24,11 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "A lazy async source" should {
 
     "work in happy path scenario" in assertAllStagesStopped {
-      val stream = Source.lazilyAsync { () ⇒ Future(42) }.runWith(Sink.head)
+      val stream = Source
+        .lazilyAsync { () =>
+          Future(42)
+        }
+        .runWith(Sink.head)
 
       stream.futureValue should ===(42)
     }
@@ -33,7 +37,10 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
 
-      val result = Source.lazilyAsync { () ⇒ constructed.set(true); Future(42) }
+      val result = Source
+        .lazilyAsync { () =>
+          constructed.set(true); Future(42)
+        }
         .runWith(Sink.fromSubscriber(probe))
       probe.cancel()
 
@@ -41,7 +48,10 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "fail materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
-      val materialization = Source.lazilyAsync { () ⇒ Future(42) }
+      val materialization = Source
+        .lazilyAsync { () =>
+          Future(42)
+        }
         .toMat(Sink.cancelled)(Keep.left)
         .run()
 
@@ -54,8 +64,11 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val probe = TestSubscriber.probe[Int]()
 
       val materialization: Future[Done] =
-        Source.lazilyAsync { () ⇒ Future(42) }
-          .mapMaterializedValue(_.map(_ ⇒ Done))
+        Source
+          .lazilyAsync { () =>
+            Future(42)
+          }
+          .mapMaterializedValue(_.map(_ => Done))
           .to(Sink.fromSubscriber(probe))
           .run()
 
@@ -70,7 +83,10 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "propagate failed future from factory" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val failure = new RuntimeException("too bad")
-      val materialization = Source.lazilyAsync { () ⇒ Future.failed(failure) }
+      val materialization = Source
+        .lazilyAsync { () =>
+          Future.failed(failure)
+        }
         .to(Sink.fromSubscriber(probe))
         .run()
 

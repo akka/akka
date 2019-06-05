@@ -27,10 +27,10 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   "source is immutable" in {
     //#source-immutable
     val source = Source(1 to 10)
-    source.map(_ ⇒ 0) // has no effect on source, since it's immutable
+    source.map(_ => 0) // has no effect on source, since it's immutable
     source.runWith(Sink.fold(0)(_ + _)) // 55
 
-    val zeroes = source.map(_ ⇒ 0) // returns new Source[Int], with `map()` appended
+    val zeroes = source.map(_ => 0) // returns new Source[Int], with `map()` appended
     zeroes.runWith(Sink.fold(0)(_ + _)) // 0
     //#source-immutable
   }
@@ -81,12 +81,12 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     import scala.concurrent.duration._
     case object Tick
 
-    val timer = Source.tick(initialDelay = 1.second, interval = 1.seconds, tick = () ⇒ Tick)
+    val timer = Source.tick(initialDelay = 1.second, interval = 1.seconds, tick = () => Tick)
 
     val timerCancel: Cancellable = Sink.ignore.runWith(timer)
     timerCancel.cancel()
 
-    val timerMap = timer.map(tick ⇒ "tick")
+    val timerMap = timer.map(tick => "tick")
     // materialize the flow and retrieve the timers Cancellable
     val timerCancellable = Sink.ignore.runWith(timerMap)
     timerCancellable.cancel()
@@ -152,11 +152,12 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.fromGraph(GraphDSL.create(Source.tick(1.second, 1.second, "test")) { implicit builder ⇒ tickSource ⇒
-      import GraphDSL.Implicits._
-      val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
-      tickSource ~> zip.in0
-      FlowShape(zip.in1, zip.out)
+    val throttler = Flow.fromGraph(GraphDSL.create(Source.tick(1.second, 1.second, "test")) {
+      implicit builder => tickSource =>
+        import GraphDSL.Implicits._
+        val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
+        tickSource ~> zip.in0
+        FlowShape(zip.in1, zip.out)
     })
 
     //#flow-mat-combine
@@ -200,7 +201,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     // doubly nested pair, but we want to flatten it out
     val r11: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
       r9.mapMaterializedValue {
-        case ((promise, cancellable), future) ⇒
+        case ((promise, cancellable), future) =>
           (promise, cancellable, future)
       }
 
@@ -214,7 +215,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
     // The result of r11 can be also achieved by using the Graph API
     val r12: RunnableGraph[(Promise[Option[Int]], Cancellable, Future[Int])] =
-      RunnableGraph.fromGraph(GraphDSL.create(source, flow, sink)((_, _, _)) { implicit builder ⇒ (src, f, dst) ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(source, flow, sink)((_, _, _)) { implicit builder => (src, f, dst) =>
         import GraphDSL.Implicits._
         src ~> f ~> dst
         ClosedShape
@@ -225,10 +226,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "defining asynchronous boundaries" in {
     //#flow-async
-    Source(List(1, 2, 3))
-      .map(_ + 1).async
-      .map(_ * 2)
-      .to(Sink.ignore)
+    Source(List(1, 2, 3)).map(_ + 1).async.map(_ * 2).to(Sink.ignore)
     //#flow-async
   }
 
@@ -261,14 +259,13 @@ object FlowDocSpec {
   final class RunWithMyself extends Actor {
     implicit val mat = ActorMaterializer()
 
-    Source.maybe
-      .runWith(Sink.onComplete {
-        case Success(done) ⇒ println(s"Completed: $done")
-        case Failure(ex)   ⇒ println(s"Failed: ${ex.getMessage}")
-      })
+    Source.maybe.runWith(Sink.onComplete {
+      case Success(done) => println(s"Completed: $done")
+      case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
+    })
 
     def receive = {
-      case "boom" ⇒
+      case "boom" =>
         context.stop(self) // will also terminate the stream
     }
   }
@@ -277,14 +274,13 @@ object FlowDocSpec {
   //#materializer-from-system-in-actor
   final class RunForever(implicit val mat: Materializer) extends Actor {
 
-    Source.maybe
-      .runWith(Sink.onComplete {
-        case Success(done) ⇒ println(s"Completed: $done")
-        case Failure(ex)   ⇒ println(s"Failed: ${ex.getMessage}")
-      })
+    Source.maybe.runWith(Sink.onComplete {
+      case Success(done) => println(s"Completed: $done")
+      case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
+    })
 
     def receive = {
-      case "boom" ⇒
+      case "boom" =>
         context.stop(self) // will NOT terminate the stream (it's bound to the system!)
     }
   }

@@ -7,7 +7,6 @@ package akka.testkit
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 
 import akka.actor.ExtendedActorSystem
@@ -43,4 +42,3 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends BaseSeriali
     obj
   }
 }
-

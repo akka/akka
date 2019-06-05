@@ -59,7 +59,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.2032242"
-     inkscape:cx="360.36313"
+     inkscape:cx="361.19423"
      inkscape:cy="627.74786"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -349,10 +349,10 @@
          id="tspan1794"
          x="24.195574"
          y="169.90053"
-         style="fill:#ce5c00;stroke-width:0.26458332">context.actorOf()</tspan></text>
+         style="fill:#ce5c00;stroke-width:0.26458332">context.spawn()</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:4.23333311px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ce5c00;fill-opacity:0.94509804;stroke:none;stroke-width:0.26458332;"
+       style="font-style:normal;font-weight:normal;font-size:4.23333311px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ce5c00;fill-opacity:0.94509804;stroke:none;stroke-width:0.26458332"
        x="6.3769622"
        y="150.10995"
        id="text4164"><tspan
@@ -360,6 +360,6 @@
          id="tspan4162"
          x="6.3769622"
          y="150.10995"
-         style="font-size:4.23333311px;stroke-width:0.26458332;fill:#ce5c00;fill-opacity:0.94509804;">context.actorOf()</tspan></text>
+         style="font-size:4.23333311px;fill:#ce5c00;fill-opacity:0.94509804;stroke-width:0.26458332">context.spawn()</tspan></text>
   </g>
 </svg>

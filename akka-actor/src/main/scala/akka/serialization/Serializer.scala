@@ -76,8 +76,8 @@ object Serializers {
 
   // NOTE!!! If you change this method it is likely that DaemonMsgCreateSerializer.serialize needs the changes too.
   def manifestFor(s: Serializer, message: AnyRef): String = s match {
-    case s2: SerializerWithStringManifest ⇒ s2.manifest(message)
-    case _                                ⇒ if (s.includeManifest) message.getClass.getName else ""
+    case s2: SerializerWithStringManifest => s2.manifest(message)
+    case _                                => if (s.includeManifest) message.getClass.getName else ""
   }
 
 }
@@ -147,8 +147,8 @@ abstract class SerializerWithStringManifest extends Serializer {
 
   final def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
     val manifestString = manifest match {
-      case Some(c) ⇒ c.getName
-      case None    ⇒ ""
+      case Some(c) => c.getName
+      case None    => ""
     }
     fromBinary(bytes, manifestString)
   }
@@ -213,6 +213,7 @@ trait ByteBufferSerializer {
  *  when globally unique serialization identifier is configured in the `reference.conf`.
  */
 trait BaseSerializer extends Serializer {
+
   /**
    *  Actor system which is required by most serializer implementations.
    */
@@ -243,6 +244,7 @@ trait BaseSerializer extends Serializer {
     BaseSerializer.identifierFromConfig(getClass, system)
 }
 object BaseSerializer {
+
   /**
    * Configuration namespace of serialization identifiers in the `reference.conf`.
    *
@@ -298,6 +300,7 @@ object JavaSerializer {
    */
   val currentSystem = new CurrentSystem
   final class CurrentSystem extends DynamicVariable[ExtendedActorSystem](null) {
+
     /**
      * Java API: invoke the callable with the current system being set to the given value for this thread.
      *
@@ -314,7 +317,8 @@ object JavaSerializer {
  */
 class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   if (!system.settings.AllowJavaSerialization)
-    throw new DisabledJavaSerializer.JavaSerializationException("Attempted creation of `JavaSerializer` while `akka.actor.allow-java-serialization = off` was set!")
+    throw new DisabledJavaSerializer.JavaSerializationException(
+      "Attempted creation of `JavaSerializer` while `akka.actor.allow-java-serialization = off` was set!")
 
   def includeManifest: Boolean = false
 
@@ -351,21 +355,28 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
   def includeManifest: Boolean = false
 
   override def toBinary(o: AnyRef, buf: ByteBuffer): Unit = {
-    log.warning(LogMarker.Security, "Outgoing message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set! " +
-      "Message type was: [{}]", o.getClass)
+    log.warning(
+      LogMarker.Security,
+      "Outgoing message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set! " +
+      "Message type was: [{}]",
+      o.getClass)
     throw IllegalSerialization
   }
 
   @throws(classOf[NotSerializableException])
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-    log.warning(LogMarker.Security, "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set!")
+    log.warning(
+      LogMarker.Security,
+      "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set!")
     throw IllegalDeserialization
   }
 
   @throws(classOf[NotSerializableException])
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
     // we don't capture the manifest or mention it in the log as the default setting for includeManifest is set to false.
-    log.warning(LogMarker.Security, "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set!")
+    log.warning(
+      LogMarker.Security,
+      "Incoming message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set!")
     throw IllegalDeserialization
   }
 
@@ -378,8 +389,10 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
 
 object DisabledJavaSerializer {
   final class JavaSerializationException(msg: String) extends RuntimeException(msg) with NoStackTrace
-  final val IllegalSerialization = new JavaSerializationException("Attempted to serialize message using Java serialization while `akka.actor.allow-java-serialization` was disabled. Check WARNING logs for more details.")
-  final val IllegalDeserialization = new JavaSerializationException("Attempted to deserialize message using Java serialization while `akka.actor.allow-java-serialization` was disabled. Check WARNING logs for more details.")
+  final val IllegalSerialization = new JavaSerializationException(
+    "Attempted to serialize message using Java serialization while `akka.actor.allow-java-serialization` was disabled. Check WARNING logs for more details.")
+  final val IllegalDeserialization = new JavaSerializationException(
+    "Attempted to deserialize message using Java serialization while `akka.actor.allow-java-serialization` was disabled. Check WARNING logs for more details.")
 }
 
 /**
@@ -402,10 +415,11 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
 
   def includeManifest: Boolean = false
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case null           ⇒ null
-    case o: Array[Byte] ⇒ o
-    case other ⇒ throw new IllegalArgumentException(
-      s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
+    case null           => null
+    case o: Array[Byte] => o
+    case other =>
+      throw new IllegalArgumentException(
+        s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
   }
 
   @throws(classOf[NotSerializableException])
@@ -413,10 +427,11 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
 
   override def toBinary(o: AnyRef, buf: ByteBuffer): Unit =
     o match {
-      case null               ⇒
-      case bytes: Array[Byte] ⇒ buf.put(bytes)
-      case other ⇒ throw new IllegalArgumentException(
-        s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
+      case null               =>
+      case bytes: Array[Byte] => buf.put(bytes)
+      case other =>
+        throw new IllegalArgumentException(
+          s"${getClass.getName} only serializes byte arrays, not [${other.getClass.getName}]")
     }
 
   @throws(classOf[NotSerializableException])

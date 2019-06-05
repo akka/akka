@@ -5,10 +5,9 @@
 package akka.actor.typed.scaladsl
 
 import scala.concurrent.Promise
-
 import akka.Done
-import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
@@ -21,69 +20,83 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "Stopping an actor" should {
 
-    "execute the post stop" in {
-      val sawSignal = Promise[Done]()
-      spawn(Behaviors.setup[AnyRef] { _ ⇒
-        Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-          case (context, PostStop) ⇒
-            sawSignal.success(Done)
-            Behaviors.empty
-        })
+    "execute the post stop when stopping after setup" in {
+      val probe = TestProbe[Done]()
+      spawn(Behaviors.setup[AnyRef] { _ =>
+        Behaviors.stopped { () =>
+          probe.ref ! Done
+        }
       })
-      sawSignal.future.futureValue should ===(Done)
+      probe.expectMessage(Done)
+    }
+
+    "execute the post stop" in {
+      val probe = TestProbe[Done]()
+      val ref = spawn(Behaviors.receiveMessage[String] {
+        case "stop" =>
+          Behaviors.stopped { () =>
+            probe.ref ! Done
+          }
+      })
+      ref ! "stop"
+      probe.expectMessage(Done)
+    }
+
+    "signal PostStop and then execute the post stop" in {
+      val probe = TestProbe[String]()
+      val ref = spawn(
+        Behaviors
+          .receiveMessage[String] {
+            case "stop" =>
+              Behaviors.stopped { () =>
+                probe.ref ! "callback"
+              }
+          }
+          .receiveSignal {
+            case (_, PostStop) =>
+              probe.ref ! "signal"
+              Behaviors.same
+          })
+      ref ! "stop"
+      probe.expectMessage("signal")
+      probe.expectMessage("callback")
     }
 
     // #25082
     "execute the post stop when wrapped" in {
-      val sawSignal = Promise[Done]()
-      val ref = spawn(Behaviors.setup[AnyRef] { _ ⇒
-        Behaviors.intercept(
-          new BehaviorInterceptor[AnyRef, AnyRef] {
-            override def aroundReceive(context: typed.TypedActorContext[AnyRef], message: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
-              target(context, message)
-            }
-
-            override def aroundSignal(context: typed.TypedActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
-              target(context, signal)
-            }
+      val probe = TestProbe[Done]()
+      spawn(Behaviors.setup[AnyRef] { _ =>
+        Behaviors.intercept(new BehaviorInterceptor[AnyRef, AnyRef] {
+          override def aroundReceive(
+              context: typed.TypedActorContext[AnyRef],
+              message: AnyRef,
+              target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
+            target(context, message)
           }
-        )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-            case (context, PostStop) ⇒
-              sawSignal.success(Done)
-              Behaviors.empty
-          }))
+
+          override def aroundSignal(
+              context: typed.TypedActorContext[AnyRef],
+              signal: Signal,
+              target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
+            target(context, signal)
+          }
+        })(Behaviors.stopped { () =>
+          probe.ref ! Done
+        })
       })
-      ref ! "stopit"
-      sawSignal.future.futureValue should ===(Done)
+      probe.expectMessage(Done)
     }
 
     // #25096
     "execute the post stop early" in {
-      val sawSignal = Promise[Done]()
-      spawn(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-        case (context, PostStop) ⇒
-          sawSignal.success(Done)
-          Behaviors.empty
-      }))
+      val probe = TestProbe[Done]()
+      spawn(Behaviors.stopped { () =>
+        probe.ref ! Done
+      })
 
-      sawSignal.future.futureValue should ===(Done)
+      probe.expectMessage(Done)
     }
 
-  }
-
-  "PostStop" should {
-    "immediately throw when a deferred behavior (setup) is passed in as postStop" in {
-      val ex = intercept[IllegalArgumentException] {
-        Behaviors.stopped(
-          // illegal:
-          Behaviors.setup[String] { _ ⇒
-            throw TestException("boom!")
-          }
-        )
-      }
-
-      ex.getMessage should include("Behavior used as `postStop` behavior in Stopped(...) was a deferred one ")
-    }
   }
 
 }

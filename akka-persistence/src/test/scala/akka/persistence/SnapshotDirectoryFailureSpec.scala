@@ -12,27 +12,31 @@ import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
 object SnapshotDirectoryFailureSpec {
   val inUseSnapshotPath = "target/inUseSnapshotPath"
 
-  class TestPersistentActor(name: String, probe: ActorRef) extends PersistentActor
-    with TurnOffRecoverOnStart {
+  class TestPersistentActor(name: String, probe: ActorRef) extends PersistentActor with TurnOffRecoverOnStart {
 
     override def persistenceId: String = name
 
     override def receiveRecover: Receive = {
-      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
+      case SnapshotOffer(md, s) => probe ! ((md, s))
     }
 
     override def receiveCommand = {
-      case s: String               ⇒ saveSnapshot(s)
-      case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
-      case other                   ⇒ probe ! other
+      case s: String               => saveSnapshot(s)
+      case SaveSnapshotSuccess(md) => probe ! md.sequenceNr
+      case other                   => probe ! other
     }
   }
 }
 
-class SnapshotDirectoryFailureSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotDirectoryFailureSpec", extraConfig = Some(
-  s"""
+class SnapshotDirectoryFailureSpec
+    extends AkkaSpec(
+      PersistenceSpec.config(
+        "leveldb",
+        "SnapshotDirectoryFailureSpec",
+        extraConfig = Some(s"""
   akka.persistence.snapshot-store.local.dir = "${SnapshotDirectoryFailureSpec.inUseSnapshotPath}"
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
 
   import SnapshotDirectoryFailureSpec._
 

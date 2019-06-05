@@ -18,7 +18,7 @@ object ActorConfigurationVerificationSpec {
 
   class TestActor extends Actor {
     def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -34,7 +34,10 @@ object ActorConfigurationVerificationSpec {
     """
 }
 
-class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVerificationSpec.config) with DefaultTimeout with BeforeAndAfterEach {
+class ActorConfigurationVerificationSpec
+    extends AkkaSpec(ActorConfigurationVerificationSpec.config)
+    with DefaultTimeout
+    with BeforeAndAfterEach {
   import ActorConfigurationVerificationSpec._
 
   override def atStartup: Unit = {
@@ -64,8 +67,10 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
     }
     "fail verification with a ConfigurationException if also configured with a ScatterGatherFirstCompletedPool" in {
       intercept[ConfigurationException] {
-        system.actorOf(ScatterGatherFirstCompletedPool(nrOfInstances = 2, within = 2 seconds).
-          withDispatcher("balancing-dispatcher").props(Props[TestActor]))
+        system.actorOf(
+          ScatterGatherFirstCompletedPool(nrOfInstances = 2, within = 2 seconds)
+            .withDispatcher("balancing-dispatcher")
+            .props(Props[TestActor]))
       }
     }
     "not fail verification with a ConfigurationException also not configured with a Router" in {

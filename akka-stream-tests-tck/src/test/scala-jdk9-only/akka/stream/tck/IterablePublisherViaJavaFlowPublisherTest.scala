@@ -4,7 +4,7 @@
 
 package akka.stream.tck
 
-import java.util.concurrent.{ Flow ⇒ JavaFlow }
+import java.util.concurrent.{ Flow => JavaFlow }
 
 import akka.NotUsed
 import akka.stream.scaladsl.{ Flow, JavaFlowSupport, Sink, Source }

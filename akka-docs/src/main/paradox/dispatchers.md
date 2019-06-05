@@ -25,6 +25,13 @@ dispatchers in this ActorSystem. If no ExecutionContext is given, it will fallba
 `akka.actor.default-dispatcher.default-executor.fallback`. By default this is a "fork-join-executor", which
 gives excellent performance in most cases.
 
+## Internal dispatcher
+
+To protect the internal Actors that is spawned by the various Akka modules, a separate internal dispatcher is used by default.
+The internal dispatcher can be tuned in a fine grained way with the setting `akka.actor.internal-dispatcher`, it can also
+be replaced by another dispatcher by making `akka.actor.internal-dispatcher` an @ref[alias](#dispatcher-aliases).
+ 
+
 <a id="dispatcher-lookup"></a>
 ## Looking up a Dispatcher
 
@@ -183,6 +190,19 @@ Note that it's not guaranteed that the *same* thread is used over time, since th
 is used for `PinnedDispatcher` to keep resource usage down in case of idle actors. To use the same
 thread all the time you need to add `thread-pool-executor.allow-core-timeout=off` to the
 configuration of the `PinnedDispatcher`.
+
+## Dispatcher aliases
+
+When a dispatcher is looked up, and the given setting contains a string rather than a dispatcher config block, 
+the lookup will treat it as an alias, and follow that string to an alternate location for a dispatcher config.
+If the dispatcher config is referenced both through an alias and through the absolute path only one dispatcher will
+be used and shared among the two ids.
+
+Example: configuring `internal-dispatcher` to be an alias for `default-dispatcher`: 
+
+```
+akka.actor.internal-dispatcher = akka.actor.default-dispatcher
+``` 
 
 ## Blocking Needs Careful Management
 

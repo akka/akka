@@ -32,9 +32,9 @@ class TestBarrier(count: Int) {
     try {
       barrier.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     } catch {
-      case _: TimeoutException ⇒
-        throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s"
-          format (timeout.toString, TestKitExtension(system).TestTimeFactor))
+      case _: TimeoutException =>
+        throw new TestBarrierTimeoutException(
+          "Timeout of %s and time factor of %s".format(timeout.toString, TestKitExtension(system).TestTimeFactor))
     }
   }
 

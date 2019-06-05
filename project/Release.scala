@@ -20,7 +20,7 @@ object Release extends ParadoxKeys {
   lazy val commandSettings = Seq(
     commands ++= Seq(buildReleaseCommand, buildDocsCommand))
 
-  def buildReleaseCommand = Command.command("buildRelease") { state ⇒
+  def buildReleaseCommand = Command.command("buildRelease") { state =>
     val extracted = Project.extract(state)
     val release = extracted.get(releaseDirectory)
     val releaseVersion = extracted.get(version)

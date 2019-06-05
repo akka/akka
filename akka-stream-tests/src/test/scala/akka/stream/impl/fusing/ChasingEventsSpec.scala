@@ -20,17 +20,18 @@ class ChasingEventsSpec extends AkkaSpec {
     val out = Outlet[Int]("Propagate.out")
     override val shape: FlowShape[Int, Int] = FlowShape(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      private var first = true
-      override def onPush(): Unit = push(out, grab(in))
-      override def onPull(): Unit = {
-        pull(in)
-        if (!first) cancel(in)
-        first = false
-      }
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        private var first = true
+        override def onPush(): Unit = push(out, grab(in))
+        override def onPull(): Unit = {
+          pull(in)
+          if (!first) cancel(in)
+          first = false
+        }
 
-      setHandlers(in, out, this)
-    }
+        setHandlers(in, out, this)
+      }
   }
 
   class CompleteInChasedPush extends GraphStage[FlowShape[Int, Int]] {
@@ -38,16 +39,17 @@ class ChasingEventsSpec extends AkkaSpec {
     val out = Outlet[Int]("Propagate.out")
     override val shape: FlowShape[Int, Int] = FlowShape(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      private var first = true
-      override def onPush(): Unit = {
-        push(out, grab(in))
-        complete(out)
-      }
-      override def onPull(): Unit = pull(in)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        private var first = true
+        override def onPush(): Unit = {
+          push(out, grab(in))
+          complete(out)
+        }
+        override def onPull(): Unit = pull(in)
 
-      setHandlers(in, out, this)
-    }
+        setHandlers(in, out, this)
+      }
   }
 
   class FailureInChasedPush extends GraphStage[FlowShape[Int, Int]] {
@@ -55,16 +57,17 @@ class ChasingEventsSpec extends AkkaSpec {
     val out = Outlet[Int]("Propagate.out")
     override val shape: FlowShape[Int, Int] = FlowShape(in, out)
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      private var first = true
-      override def onPush(): Unit = {
-        push(out, grab(in))
-        fail(out, TE("test failure"))
-      }
-      override def onPull(): Unit = pull(in)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        private var first = true
+        override def onPush(): Unit = {
+          push(out, grab(in))
+          fail(out, TE("test failure"))
+        }
+        override def onPull(): Unit = pull(in)
 
-      setHandlers(in, out, this)
-    }
+        setHandlers(in, out, this)
+      }
   }
 
   class ChasableSink extends GraphStage[SinkShape[Int]] {
@@ -72,11 +75,12 @@ class ChasingEventsSpec extends AkkaSpec {
     override val shape: SinkShape[Int] = SinkShape(in)
 
     @throws(classOf[Exception])
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
-      override def preStart(): Unit = pull(in)
-      override def onPush(): Unit = pull(in)
-      setHandler(in, this)
-    }
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler {
+        override def preStart(): Unit = pull(in)
+        override def onPush(): Unit = pull(in)
+        setHandler(in, this)
+      }
   }
 
   "Event chasing" must {

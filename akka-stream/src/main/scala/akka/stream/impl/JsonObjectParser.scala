@@ -29,11 +29,11 @@ import scala.annotation.switch
   final val Space = 32 // ' '
 
   def isWhitespace(b: Byte): Boolean = (b: @switch) match {
-    case Space      ⇒ true
-    case LineBreak  ⇒ true
-    case LineBreak2 ⇒ true
-    case Tab        ⇒ true
-    case _          ⇒ false
+    case Space      => true
+    case LineBreak  => true
+    case LineBreak2 => true
+    case Tab        => true
+    case _          => false
   }
 
 }
@@ -56,7 +56,6 @@ import scala.annotation.switch
   private var trimFront = 0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
   private var depth = 0 // counter of object-nesting depth, once hits 0 an object should be emitted
 
-  private var charsInObject = 0
   private var completedObject = false
   private var inStringExpression = false
   private var isStartOfEscapeSequence = false
@@ -80,8 +79,8 @@ import scala.annotation.switch
     if (!foundObject) None
     else
       (pos: @switch) match {
-        case -1 | 0 ⇒ None
-        case _ ⇒
+        case -1 | 0 => None
+        case _ =>
           val (emit, buf) = buffer.splitAt(pos)
           buffer = buf.compact
           pos = 0
@@ -102,8 +101,7 @@ import scala.annotation.switch
   private def seekObject(): Boolean = {
     completedObject = false
     val bufSize = buffer.size
-    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject)
-      proceed(buffer(pos))
+    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) proceed(buffer(pos))
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")
@@ -140,7 +138,6 @@ import scala.annotation.switch
       depth -= 1
       pos += 1
       if (depth == 0) {
-        charsInObject = 0
         completedObject = true
       }
     } else if (isWhitespace(input) && !inStringExpression) {

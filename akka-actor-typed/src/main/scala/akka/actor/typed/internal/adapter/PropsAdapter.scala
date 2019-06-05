@@ -13,16 +13,15 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[akka] object PropsAdapter {
-  def apply[T](behavior: () ⇒ Behavior[T], deploy: Props = Props.empty, isGuardian: Boolean = false): akka.actor.Props = {
-    val props =
-      if (isGuardian)
-        akka.actor.Props(new GuardianActorAdapter(behavior()))
-      else
-        akka.actor.Props(new ActorAdapter(behavior()))
+  def apply[T](
+      behavior: () => Behavior[T],
+      deploy: Props = Props.empty,
+      rethrowTypedFailure: Boolean = true): akka.actor.Props = {
+    val props = akka.actor.Props(new ActorAdapter(behavior(), rethrowTypedFailure))
 
     (deploy.firstOrElse[DispatcherSelector](DispatcherDefault()) match {
-      case _: DispatcherDefault          ⇒ props
-      case DispatcherFromConfig(name, _) ⇒ props.withDispatcher(name)
+      case _: DispatcherDefault          => props
+      case DispatcherFromConfig(name, _) => props.withDispatcher(name)
     }).withDeploy(Deploy.local) // disallow remote deployment for typed actors
   }
 

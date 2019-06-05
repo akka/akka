@@ -36,7 +36,10 @@ class ReplicatorORSetDeltaSpecMultiJvmNode1 extends ReplicatorORSetDeltaSpec
 class ReplicatorORSetDeltaSpecMultiJvmNode2 extends ReplicatorORSetDeltaSpec
 class ReplicatorORSetDeltaSpecMultiJvmNode3 extends ReplicatorORSetDeltaSpec
 
-class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) with STMultiNodeSpec with ImplicitSender {
+class ReplicatorORSetDeltaSpec
+    extends MultiNodeSpec(ReplicatorORSetDeltaSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import Replicator._
   import ReplicatorORSetDeltaSpec._
 
@@ -44,8 +47,8 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
 
   val cluster = Cluster(system)
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
-  val replicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)), "replicator")
+  val replicator =
+    system.actorOf(Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)), "replicator")
   val timeout = 3.seconds.dilated
 
   val KeyA = ORSetKey[String]("A")
@@ -54,7 +57,7 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -64,9 +67,10 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       awaitAssert {
         replicator ! Get(key, ReadLocal)
         val value = expectMsgPF() {
-          case g @ GetSuccess(`key`, _) ⇒ g.dataValue match {
-            case c: ORSet[_] ⇒ c.elements
-          }
+          case g @ GetSuccess(`key`, _) =>
+            g.dataValue match {
+              case c: ORSet[_] => c.elements
+            }
         }
         value should be(expected)
       }
@@ -166,4 +170,3 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
   }
 
 }
-

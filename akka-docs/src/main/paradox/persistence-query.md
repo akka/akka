@@ -286,7 +286,7 @@ their exposed semantics as well as handled query scenarios.
 
 A read journal plugin must implement `akka.persistence.query.ReadJournalProvider` which
 creates instances of `akka.persistence.query.scaladsl.ReadJournal` and
-`akka.persistence.query.javaadsl.ReadJournal`. The plugin must implement both the `scaladsl`
+`akka.persistence.query.javadsl.ReadJournal`. The plugin must implement both the `scaladsl`
 and the `javadsl` @scala[traits]@java[interfaces] because the `akka.stream.scaladsl.Source` and 
 `akka.stream.javadsl.Source` are different types and even though those types can be converted
 to each other it is most convenient for the end user to get access to the Java or Scala `Source` directly.
@@ -300,13 +300,13 @@ Scala
 Java
 :  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
 
-And the `eventsByTag` could be backed by such an Actor for example:
+And the `eventsByTag` could be backed by a GraphStage for example:
 
 Scala
-:  @@snip [MyEventsByTagPublisher.scala](/akka-docs/src/test/scala/docs/persistence/query/MyEventsByTagPublisher.scala) { #events-by-tag-publisher }
+:  @@snip [MyEventsByTagSource.scala](/akka-docs/src/test/scala/docs/persistence/query/MyEventsByTagSource.scala) { #events-by-tag-publisher }
 
 Java
-:  @@snip [MyEventsByTagJavaPublisher.java](/akka-docs/src/test/java/jdocs/persistence/query/MyEventsByTagJavaPublisher.java) { #events-by-tag-publisher }
+:  @@snip [MyEventsByTagSource.java](/akka-docs/src/test/java/jdocs/persistence/query/MyEventsByTagSource.java) { #events-by-tag-publisher }
 
 The `ReadJournalProvider` class must have a constructor with one of these signatures:
 

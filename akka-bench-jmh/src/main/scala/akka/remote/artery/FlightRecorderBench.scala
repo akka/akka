@@ -30,7 +30,8 @@ class FlightRecorderBench {
   def setup(): Unit = {
     file = File.createTempFile("akka-flightrecorder", "dat")
     file.deleteOnExit()
-    fileChannel = FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+    fileChannel =
+      FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
     recorder = new FlightRecorder(fileChannel)
   }
 
@@ -46,7 +47,7 @@ class FlightRecorderBench {
   @OperationsPerInvocation(10000000)
   def flight_recorder_writes(): Unit = {
     val latch = new CountDownLatch(writers)
-    (1 to writers).foreach { _ ⇒
+    (1 to writers).foreach { _ =>
       val sink = recorder.createEventSink()
       new Thread {
         override def run(): Unit = {

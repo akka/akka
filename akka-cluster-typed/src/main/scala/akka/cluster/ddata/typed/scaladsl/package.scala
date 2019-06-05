@@ -4,9 +4,10 @@
 
 package akka.cluster.ddata.typed
 
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 
 package object scaladsl {
+
   /**
    * @see [[akka.cluster.ddata.ReplicatorSettings]].
    */

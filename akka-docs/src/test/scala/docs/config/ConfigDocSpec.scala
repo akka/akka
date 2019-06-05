@@ -34,13 +34,14 @@ class ConfigDocSpec extends WordSpec with Matchers {
   }
 
   "deployment section" in {
-    val conf = ConfigFactory.parseString("""
+    val conf =
+      ConfigFactory.parseString("""
   #//#deployment-section
   akka.actor.deployment {
   
     # '/user/actorA/actorB' is a remote deployed actor
     /actorA/actorB {
-      remote = "akka.tcp://sampleActorSystem@127.0.0.1:2553"
+      remote = "akka://sampleActorSystem@127.0.0.1:2553"
     }
     
     # all direct children of '/user/actorC' have a dedicated dispatcher 

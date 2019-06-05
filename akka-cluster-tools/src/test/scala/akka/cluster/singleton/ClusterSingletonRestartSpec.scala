@@ -19,7 +19,7 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.auto-down-unreachable-after = 2s
   akka.remote {
-    netty.tcp {
+    classic.netty.tcp {
       hostname = "127.0.0.1"
       port = 0
     }
@@ -34,6 +34,8 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
   val sys2 = ActorSystem(system.name, system.settings.config)
   var sys3: ActorSystem = null
 
+  import akka.util.ccompat._
+  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     from.actorOf(
       ClusterSingletonManager.props(
@@ -43,9 +45,8 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       name = "echo")
 
     within(10.seconds) {
-      import akka.util.ccompat.imm._
       awaitAssert {
-        Cluster(from) join Cluster(to).selfAddress
+        Cluster(from).join(Cluster(to).selfAddress)
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
         Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
@@ -74,10 +75,9 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
         val sys1port = Cluster(sys1).selfAddress.port.get
 
         val sys3Config =
-          ConfigFactory.parseString(
-            s"""
+          ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$sys1port
-            akka.remote.netty.tcp.port=$sys1port
+            akka.remote.classic.netty.tcp.port=$sys1port
             """).withFallback(system.settings.config)
 
         ActorSystem(system.name, sys3Config)
@@ -120,4 +120,3 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       shutdown(sys3)
   }
 }
-

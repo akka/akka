@@ -17,12 +17,16 @@ import scala.util.{ Failure, Success }
 // a few useful helpers copied over from akka-http
 object CompressionTestingTools {
   implicit class AddFutureAwaitResult[T](val future: Future[T]) extends AnyVal {
+
     /** "Safe" Await.result that doesn't throw away half of the stacktrace */
     def awaitResult(atMost: Duration): T = {
       Await.ready(future, atMost)
       future.value.get match {
-        case Success(t)  ⇒ t
-        case Failure(ex) ⇒ throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
+        case Success(t) => t
+        case Failure(ex) =>
+          throw new RuntimeException(
+            "Trying to await result of failed Future, see the cause for the original problem.",
+            ex)
       }
     }
   }

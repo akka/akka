@@ -56,7 +56,7 @@ Java
 ## Use with Actors
 
 There are generally two ways of getting a reply from an @scala[`Actor`]@java[`AbstractActor`]: the first is by a sent message (@scala[`actor ! msg`]@java[`actorRef.tell(msg, sender)`]),
-which only works if the original sender was an @scala[`Actor`]@java[`AbstractActor`]) and the second is through a `Future`.
+which only works if the original sender was an @scala[`Actor`]@java[`AbstractActor`] and the second is through a `Future`.
 
 Using @scala[an `Actor`'s `?`]@java[the `ActorRef`'s `ask`] method to send a message will return a `Future`.
 To wait for and retrieve the actual result the simplest method is:
@@ -110,11 +110,11 @@ In this example, when you need information about a user, you send a request mess
 then it gets the corresponding result from the appropriate backend actor based on the request message type.
 
 <p align="center">
-  <img src="images/futures-pipeto1.png">
+  <img src="images/futures-pipeto1.png"/>
 </p>
 
 <p align="center">
-  <img src="images/futures-pipeto2.png">
+  <img src="images/futures-pipeto2.png"/>
 </p>
 
 The message types you send to `UserProxyActor` are `GetUserData` and `GetUserActivities`:

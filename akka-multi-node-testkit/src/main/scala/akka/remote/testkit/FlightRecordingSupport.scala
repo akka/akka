@@ -26,7 +26,7 @@ import akka.remote.artery.FlightRecorderReader
  * You need to hook in dump and deletion of files where it makes sense in your tests. (For example, dump after all tests has
  * run and there was a failure and then delete)
  */
-trait FlightRecordingSupport { self: MultiNodeSpec ⇒
+trait FlightRecordingSupport { self: MultiNodeSpec =>
   private lazy val arteryEnabled =
     RARP(system).provider.remoteSettings.Artery.Enabled
   private lazy val flightRecorderFile: Path =

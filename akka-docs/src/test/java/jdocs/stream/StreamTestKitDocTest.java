@@ -205,7 +205,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
                         Duration.ofMillis(10),
                         system.scheduler(),
                         system.dispatcher(),
-                        CompletableFuture.completedFuture(sleep)));
+                        () -> CompletableFuture.completedFuture(sleep)));
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubAndSub =
         TestSource.<Integer>probe(system)

@@ -101,7 +101,7 @@ class SystemMessageListSpec extends AkkaSpec {
       val fwdList = create3 :: create4 :: create5 :: ENil
       val revList = create2 :: create1 :: create0 :: LNil
 
-      val list = revList reverse_::: fwdList
+      val list = fwdList.reversePrepend(revList)
 
       (list.head eq create0) should ===(true)
       (list.tail.head eq create1) should ===(true)
@@ -111,9 +111,9 @@ class SystemMessageListSpec extends AkkaSpec {
       (list.tail.tail.tail.tail.tail.head eq create5) should ===(true)
       (list.tail.tail.tail.tail.tail.tail.head eq null) should ===(true)
 
-      (LNil reverse_::: ENil) == ENil should ===(true)
-      ((create0 :: LNil reverse_::: ENil).head eq create0) should ===(true)
-      ((LNil reverse_::: create0 :: ENil).head eq create0) should ===(true)
+      ENil.reversePrepend(LNil) == ENil should ===(true)
+      (ENil.reversePrepend(create0 :: LNil).head eq create0) should ===(true)
+      ((create0 :: ENil).reversePrepend(LNil).head eq create0) should ===(true)
     }
 
   }

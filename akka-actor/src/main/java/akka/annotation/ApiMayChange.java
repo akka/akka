@@ -33,4 +33,8 @@ import java.lang.annotation.*;
   ElementType.TYPE,
   ElementType.PACKAGE
 })
-public @interface ApiMayChange {}
+public @interface ApiMayChange {
+
+  /** Reference to issue discussing the future evolvement of this API */
+  String issue() default "";
+}

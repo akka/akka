@@ -26,16 +26,16 @@ import akka.pattern.ask
 object ClusterShardingCustomShardAllocationSpec {
   class Entity extends Actor {
     def receive = {
-      case id: Int ⇒ sender() ! id
+      case id: Int => sender() ! id
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
   case object AllocateReq
@@ -49,15 +49,15 @@ object ClusterShardingCustomShardAllocationSpec {
     var useRegion: Option[ActorRef] = None
     var rebalance = Set.empty[String]
     def receive = {
-      case UseRegion(region) ⇒
+      case UseRegion(region) =>
         useRegion = Some(region)
         sender() ! UseRegionAck
-      case AllocateReq ⇒
+      case AllocateReq =>
         useRegion.foreach { sender() ! _ }
-      case RebalanceShards(shards) ⇒
+      case RebalanceShards(shards) =>
         rebalance = shards
         sender() ! RebalanceShardsAck
-      case RebalanceReq ⇒
+      case RebalanceReq =>
         sender() ! rebalance
         rebalance = Set.empty
     }
@@ -65,11 +65,16 @@ object ClusterShardingCustomShardAllocationSpec {
 
   case class TestAllocationStrategy(ref: ActorRef) extends ShardAllocationStrategy {
     implicit val timeout = Timeout(3.seconds)
-    override def allocateShard(requester: ActorRef, shardId: ShardRegion.ShardId, currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]]): Future[ActorRef] = {
+    override def allocateShard(
+        requester: ActorRef,
+        shardId: ShardRegion.ShardId,
+        currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]]): Future[ActorRef] = {
       (ref ? AllocateReq).mapTo[ActorRef]
     }
 
-    override def rebalance(currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]], rebalanceInProgress: Set[ShardRegion.ShardId]): Future[Set[ShardRegion.ShardId]] = {
+    override def rebalance(
+        currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]],
+        rebalanceInProgress: Set[ShardRegion.ShardId]): Future[Set[ShardRegion.ShardId]] = {
       (ref ? RebalanceReq).mapTo[Set[String]]
     }
   }
@@ -99,19 +104,28 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-object PersistentClusterShardingCustomShardAllocationSpecConfig extends ClusterShardingCustomShardAllocationSpecConfig("persistence")
-object DDataClusterShardingCustomShardAllocationSpecConfig extends ClusterShardingCustomShardAllocationSpecConfig("ddata")
+object PersistentClusterShardingCustomShardAllocationSpecConfig
+    extends ClusterShardingCustomShardAllocationSpecConfig("persistence")
+object DDataClusterShardingCustomShardAllocationSpecConfig
+    extends ClusterShardingCustomShardAllocationSpecConfig("ddata")
 
-class PersistentClusterShardingCustomShardAllocationSpec extends ClusterShardingCustomShardAllocationSpec(PersistentClusterShardingCustomShardAllocationSpecConfig)
-class DDataClusterShardingCustomShardAllocationSpec extends ClusterShardingCustomShardAllocationSpec(DDataClusterShardingCustomShardAllocationSpecConfig)
+class PersistentClusterShardingCustomShardAllocationSpec
+    extends ClusterShardingCustomShardAllocationSpec(PersistentClusterShardingCustomShardAllocationSpecConfig)
+class DDataClusterShardingCustomShardAllocationSpec
+    extends ClusterShardingCustomShardAllocationSpec(DDataClusterShardingCustomShardAllocationSpecConfig)
 
-class PersistentClusterShardingCustomShardAllocationMultiJvmNode1 extends PersistentClusterShardingCustomShardAllocationSpec
-class PersistentClusterShardingCustomShardAllocationMultiJvmNode2 extends PersistentClusterShardingCustomShardAllocationSpec
+class PersistentClusterShardingCustomShardAllocationMultiJvmNode1
+    extends PersistentClusterShardingCustomShardAllocationSpec
+class PersistentClusterShardingCustomShardAllocationMultiJvmNode2
+    extends PersistentClusterShardingCustomShardAllocationSpec
 
 class DDataClusterShardingCustomShardAllocationMultiJvmNode1 extends DDataClusterShardingCustomShardAllocationSpec
 class DDataClusterShardingCustomShardAllocationMultiJvmNode2 extends DDataClusterShardingCustomShardAllocationSpec
 
-abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingCustomShardAllocationSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingCustomShardAllocationSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingCustomShardAllocationSpec._
   import config._
 
@@ -119,7 +133,7 @@ abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingC
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       startSharding()
     }
     enterBarrier(from.name + "-joined")

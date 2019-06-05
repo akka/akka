@@ -16,7 +16,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
   val regionC = system.actorOf(Props.empty, "regionC")
 
   def createAllocations(aCount: Int, bCount: Int = 0, cCount: Int = 0): Map[ActorRef, Vector[String]] = {
-    val shards = (1 to (aCount + bCount + cCount)).map(n ⇒ ("00" + n.toString).takeRight(3))
+    val shards = (1 to (aCount + bCount + cCount)).map(n => ("00" + n.toString).takeRight(3))
     Map(
       regionA -> shards.take(aCount).toVector,
       regionB -> shards.slice(aCount, aCount + bCount).toVector,
@@ -125,8 +125,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocations = createAllocations(aCount = 50, cCount = 50)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001", "002"))
       allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set("051", "052"))
-      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052"))
-        .futureValue should ===(Set("003", "004"))
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(
+        Set("003", "004"))
     }
 
     "limit number of simultaneous rebalance" in {

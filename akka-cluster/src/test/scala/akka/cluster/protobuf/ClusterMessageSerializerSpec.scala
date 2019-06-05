@@ -12,10 +12,10 @@ import akka.routing.RoundRobinPool
 
 import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
-
-class ClusterMessageSerializerSpec extends AkkaSpec(
-  "akka.actor.provider = cluster") {
+@silent
+class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
@@ -27,11 +27,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   def checkSerialization(obj: AnyRef): Unit = {
     (obj, roundtrip(obj)) match {
-      case (env: GossipEnvelope, env2: GossipEnvelope) ⇒
+      case (env: GossipEnvelope, env2: GossipEnvelope) =>
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
-      case (_, ref) ⇒
+      case (_, ref) =>
         ref should ===(obj)
     }
 
@@ -39,19 +39,19 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty[String])
-  val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1"), "foo")
-  val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
-  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
+  val a1 = TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String])
+  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"))
+  val c1 = TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
+  val d1 = TestMember(Address("akka", "sys", "d", 2552), Exiting, Set("r1"), "foo")
+  val e1 = TestMember(Address("akka", "sys", "e", 2552), Down, Set("r3"))
+  val f1 = TestMember(Address("akka", "sys", "f", 2552), Removed, Set("r3"), "foo")
 
   "ClusterMessages" must {
 
     "be serializable" in {
-      val address = Address("akka.tcp", "system", "some.host.org", 4711)
+      val address = Address("akka", "system", "some.host.org", 4711)
       val uniqueAddress = UniqueAddress(address, 17L)
-      val address2 = Address("akka.tcp", "system", "other.host.org", 4711)
+      val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
       checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
       checkSerialization(ClusterUserAction.Leave(address))
@@ -69,8 +69,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       val node4 = VectorClock.Node("node4")
       val g1 = (Gossip(SortedSet(a1, b1, c1, d1)) :+ node1 :+ node2).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
       val g2 = (g1 :+ node3 :+ node4).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
-      val reachability3 = Reachability.empty.unreachable(a1.uniqueAddress, e1.uniqueAddress).unreachable(b1.uniqueAddress, e1.uniqueAddress)
-      val g3 = g2.copy(members = SortedSet(a1, b1, c1, d1, e1), overview = g2.overview.copy(reachability = reachability3))
+      val reachability3 = Reachability.empty
+        .unreachable(a1.uniqueAddress, e1.uniqueAddress)
+        .unreachable(b1.uniqueAddress, e1.uniqueAddress)
+      val g3 =
+        g2.copy(members = SortedSet(a1, b1, c1, d1, e1), overview = g2.overview.copy(reachability = reachability3))
       val g4 = g1.remove(d1.uniqueAddress, 352684800)
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g2))
@@ -100,17 +103,18 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       // we must use the old singleton class name so that the other side will see an InitJoin
       // but discard the config as it does not know about the config check
       val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        Address("akka", "cluster", "127.0.0.1", 2552),
         InternalClusterAction.UncheckedConfig)
       val serializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
 
-      val deserialized = serializer.fromBinary(serializedInitJoinAckPre2510, ClusterMessageSerializer.InitJoinAckManifest)
+      val deserialized =
+        serializer.fromBinary(serializedInitJoinAckPre2510, ClusterMessageSerializer.InitJoinAckManifest)
       deserialized shouldEqual initJoinAck
     }
 
     "serialize to wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
       val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        Address("akka", "cluster", "127.0.0.1", 2552),
         InternalClusterAction.ConfigCheckUnsupportedByJoiningNode)
       val bytes = serializer.toBinary(initJoinAck)
 
@@ -131,7 +135,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
           val bytes = serializer.toBinary(
             ClusterRouterPool(RoundRobinPool(nrOfInstances = 4), ClusterRouterPoolSettings(123, 345, true, Some("role ABC"))))
           println(String.valueOf(encodeHex(bytes)))
-        */
+         */
 
         val oldBytesHex = "0a0f08101205524f5252501a04080418001211087b10d90218012208726f6c6520414243"
 
@@ -140,7 +144,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
         val result = serializer.fromBinary(oldBytes, classOf[ClusterRouterPool])
 
         result match {
-          case pool: ClusterRouterPool ⇒
+          case pool: ClusterRouterPool =>
             pool.settings.totalInstances should ===(123)
             pool.settings.maxInstancesPerNode should ===(345)
             pool.settings.allowLocalRoutees should ===(true)
@@ -166,43 +170,32 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
   }
   "Cluster router pool" must {
     "be serializable with no role" in {
-      checkSerialization(ClusterRouterPool(
-        RoundRobinPool(
-          nrOfInstances = 4
-        ),
-        ClusterRouterPoolSettings(
-          totalInstances = 2,
-          maxInstancesPerNode = 5,
-          allowLocalRoutees = true
-        )
-      ))
+      checkSerialization(
+        ClusterRouterPool(
+          RoundRobinPool(nrOfInstances = 4),
+          ClusterRouterPoolSettings(totalInstances = 2, maxInstancesPerNode = 5, allowLocalRoutees = true)))
     }
 
     "be serializable with one role" in {
-      checkSerialization(ClusterRouterPool(
-        RoundRobinPool(
-          nrOfInstances = 4
-        ),
-        ClusterRouterPoolSettings(
-          totalInstances = 2,
-          maxInstancesPerNode = 5,
-          allowLocalRoutees = true,
-          useRoles = Set("Richard, Duke of Gloucester")
-        )
-      ))
+      checkSerialization(
+        ClusterRouterPool(
+          RoundRobinPool(nrOfInstances = 4),
+          ClusterRouterPoolSettings(
+            totalInstances = 2,
+            maxInstancesPerNode = 5,
+            allowLocalRoutees = true,
+            useRoles = Set("Richard, Duke of Gloucester"))))
     }
 
     "be serializable with many roles" in {
-      checkSerialization(ClusterRouterPool(
-        RoundRobinPool(
-          nrOfInstances = 4),
-        ClusterRouterPoolSettings(
-          totalInstances = 2,
-          maxInstancesPerNode = 5,
-          allowLocalRoutees = true,
-          useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham")
-        )
-      ))
+      checkSerialization(
+        ClusterRouterPool(
+          RoundRobinPool(nrOfInstances = 4),
+          ClusterRouterPoolSettings(
+            totalInstances = 2,
+            maxInstancesPerNode = 5,
+            allowLocalRoutees = true,
+            useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham"))))
     }
   }
 

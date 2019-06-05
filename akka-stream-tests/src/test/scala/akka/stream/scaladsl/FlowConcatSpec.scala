@@ -38,7 +38,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       res.subscribe(subs)
       val sub = subs.expectSubscription()
       sub.request(9)
-      (1 to 6).foreach(e ⇒ subs.expectNext(e.toString + "-s"))
+      (1 to 6).foreach(e => subs.expectNext(e.toString + "-s"))
       subs.expectComplete()
     }
 
@@ -55,7 +55,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       res.subscribe(subs)
       val sub = subs.expectSubscription()
       sub.request(9)
-      (1 to 6).foreach(e ⇒ subs.expectNext(e.toString + "-s"))
+      (1 to 6).foreach(e => subs.expectNext(e.toString + "-s"))
       subs.expectComplete()
     }
 
@@ -98,7 +98,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       val subscriber = setup(nonemptyPublisher(1 to 4), failedPublisher)
       subscriber.expectSubscription().request(5)
 
-      val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) ⇒
+      val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) =>
         if (!errorSignalled) subscriber.expectNextOrError(e, TestException).isLeft else true)
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
@@ -112,7 +112,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       val subscriber = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       subscriber.expectSubscription().request(5)
 
-      val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) ⇒
+      val errorSignalled = (1 to 4).foldLeft(false)((errorSignalled, e) =>
         if (!errorSignalled) subscriber.expectNextOrError(e, TestException).isLeft else true)
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
@@ -138,11 +138,12 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       m1.isInstanceOf[NotUsed] should be(true)
       m2.isInstanceOf[NotUsed] should be(true)
 
-      runnable.mapMaterializedValue((_) ⇒ "boo").run() should be("boo")
+      runnable.mapMaterializedValue((_) => "boo").run() should be("boo")
     }
 
     "work with Flow DSL" in {
-      val testFlow: Flow[Int, Seq[Int], (NotUsed, NotUsed)] = Flow[Int].concatMat(Source(6 to 10))(Keep.both).grouped(1000)
+      val testFlow: Flow[Int, Seq[Int], (NotUsed, NotUsed)] =
+        Flow[Int].concatMat(Source(6 to 10))(Keep.both).grouped(1000)
       Await.result(Source(1 to 5).viaMat(testFlow)(Keep.both).runWith(Sink.head), 3.seconds) should ===(1 to 10)
 
       val runnable = Source(1 to 5).viaMat(testFlow)(Keep.both).to(Sink.ignore)
@@ -152,7 +153,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       m2.isInstanceOf[NotUsed] should be(true)
       m3.isInstanceOf[NotUsed] should be(true)
 
-      runnable.mapMaterializedValue((_) ⇒ "boo").run() should be("boo")
+      runnable.mapMaterializedValue((_) => "boo").run() should be("boo")
     }
 
     "work with Flow DSL2" in {
@@ -160,7 +161,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
       Await.result(Source(1 to 5).viaMat(testFlow)(Keep.both).runWith(Sink.head), 3.seconds) should ===(1 to 10)
 
       val sink = testFlow.concatMat(Source(1 to 5))(Keep.both).to(Sink.ignore).mapMaterializedValue[String] {
-        case ((m1, m2), m3) ⇒
+        case ((m1, m2), m3) =>
           m1.isInstanceOf[NotUsed] should be(true)
           m2.isInstanceOf[NotUsed] should be(true)
           m3.isInstanceOf[NotUsed] should be(true)
@@ -172,8 +173,8 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
     "subscribe at once to initial source and to one that it's concat to" in {
       val publisher1 = TestPublisher.probe[Int]()
       val publisher2 = TestPublisher.probe[Int]()
-      val probeSink = Source.fromPublisher(publisher1).concat(Source.fromPublisher(publisher2))
-        .runWith(TestSink.probe[Int])
+      val probeSink =
+        Source.fromPublisher(publisher1).concat(Source.fromPublisher(publisher2)).runWith(TestSink.probe[Int])
 
       val sub1 = publisher1.expectSubscription()
       val sub2 = publisher2.expectSubscription()

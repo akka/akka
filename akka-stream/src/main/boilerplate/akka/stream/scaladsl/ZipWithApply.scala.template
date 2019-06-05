@@ -14,7 +14,7 @@ trait ZipWithApply {
    *
    * @param zipper zipping-function from the input values to the output value
    */
-  def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): ZipWith1[[#A1#], O] =
+  def apply[[#A1#], O](zipper: ([#A1#]) => O): ZipWith1[[#A1#], O] =
     new ZipWith1(zipper)
   #
 
@@ -23,7 +23,7 @@ trait ZipWithApply {
 }
 
 [2..22#/** `ZipWith` specialized for 1 inputs */
-class ZipWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape1[[#A1#], O]] {
+class ZipWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[FanInShape1[[#A1#], O]] {
   override def initialAttributes = Attributes.name("ZipWith1")
   override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipWith1")
   def out: Outlet[O] = shape.out

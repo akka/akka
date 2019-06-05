@@ -17,11 +17,11 @@ object OptionalSnapshotStoreSpec {
 
     override def persistenceId = name
     override def receiveCommand: Receive = {
-      case s: String ⇒
+      case s: String =>
         lastSender = sender()
         saveSnapshot(s)
-      case f: SaveSnapshotFailure ⇒ lastSender ! f
-      case s: SaveSnapshotSuccess ⇒ lastSender ! s
+      case f: SaveSnapshotFailure => lastSender ! f
+      case s: SaveSnapshotSuccess => lastSender ! s
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
@@ -31,8 +31,7 @@ object OptionalSnapshotStoreSpec {
   }
 }
 
-class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
@@ -67,4 +66,3 @@ class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseStrin
     }
   }
 }
-

@@ -7,4 +7,5 @@ package akka.util
 import org.scalatest.{ Ignore, Tag }
 import scala.util.Properties
 
-object IgnoreForScala212 extends Tag(if (Properties.versionNumberString.startsWith("2.12")) classOf[Ignore].getName else "")
+object IgnoreForScala212
+    extends Tag(if (Properties.versionNumberString.startsWith("2.12")) classOf[Ignore].getName else "")

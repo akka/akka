@@ -28,8 +28,10 @@ private[cluster] object VectorClock {
 
     private def hash(name: String): String = {
       val digester = MessageDigest.getInstance("MD5")
-      digester update name.getBytes("UTF-8")
-      digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
+      digester.update(name.getBytes("UTF-8"))
+      digester.digest.map { h =>
+        "%02x".format(0xFF & h)
+      }.mkString
     }
   }
 
@@ -43,6 +45,7 @@ private[cluster] object VectorClock {
   case object Before extends Ordering
   case object Same extends Ordering
   case object Concurrent extends Ordering
+
   /**
    * Marker to ensure that we do a full order comparison instead of bailing out early.
    */
@@ -66,8 +69,7 @@ private[cluster] object VectorClock {
  * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
 @SerialVersionUID(1L)
-final case class VectorClock(
-  versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
+final case class VectorClock(versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
 
   import VectorClock._
 
@@ -119,12 +121,15 @@ final case class VectorClock(
         if ((requestedOrder ne FullOrder) && (currentOrder ne Same) && (currentOrder ne requestedOrder)) currentOrder
         else if ((nt1 eq cmpEndMarker) && (nt2 eq cmpEndMarker)) currentOrder
         // i1 is empty but i2 is not, so i1 can only be Before
-        else if (nt1 eq cmpEndMarker) { if (currentOrder eq After) Concurrent else Before }
+        else if (nt1 eq cmpEndMarker) {
+          if (currentOrder eq After) Concurrent else Before
+        }
         // i2 is empty but i1 is not, so i1 can only be After
-        else if (nt2 eq cmpEndMarker) { if (currentOrder eq Before) Concurrent else After }
-        else {
+        else if (nt2 eq cmpEndMarker) {
+          if (currentOrder eq Before) Concurrent else After
+        } else {
           // compare the nodes
-          val nc = nt1._1 compareTo nt2._1
+          val nc = nt1._1.compareTo(nt2._1)
           if (nc == 0) {
             // both nodes exist compare the timestamps
             // same timestamp so just continue with the next nodes
@@ -175,7 +180,7 @@ final case class VectorClock(
    */
   def merge(that: VectorClock): VectorClock = {
     var mergedVersions = that.versions
-    for ((node, time) ← versions) {
+    for ((node, time) <- versions) {
       val mergedVersionsCurrentTime = mergedVersions.getOrElse(node, Timestamp.Zero)
       if (time > mergedVersionsCurrentTime)
         mergedVersions = mergedVersions.updated(node, time)
@@ -189,5 +194,5 @@ final case class VectorClock(
     else
       this
 
-  override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")
+  override def toString = versions.map { case ((n, t)) => n + " -> " + t }.mkString("VectorClock(", ", ", ")")
 }

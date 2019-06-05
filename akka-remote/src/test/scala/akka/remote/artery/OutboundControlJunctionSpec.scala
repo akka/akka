@@ -35,10 +35,11 @@ class OutboundControlJunctionSpec extends AkkaSpec with ImplicitSender {
       val inboundContext = new TestInboundContext(localAddress = addressA)
       val outboundContext = inboundContext.association(addressB.address)
 
-      val ((upstream, controlIngress), downstream) = TestSource.probe[String]
-        .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
+      val ((upstream, controlIngress), downstream) = TestSource
+        .probe[String]
+        .map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
         .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.both)
-        .map(env ⇒ env.message)
+        .map(env => env.message)
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

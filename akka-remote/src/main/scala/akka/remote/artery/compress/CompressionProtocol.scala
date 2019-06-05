@@ -27,8 +27,10 @@ private[remote] object CompressionProtocol {
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given [[akka.actor.ActorRef]]
    */
-  private[remote] final case class ActorRefCompressionAdvertisement(from: UniqueAddress, table: CompressionTable[ActorRef])
-    extends CompressionAdvertisement[ActorRef]
+  private[remote] final case class ActorRefCompressionAdvertisement(
+      from: UniqueAddress,
+      table: CompressionTable[ActorRef])
+      extends CompressionAdvertisement[ActorRef]
 
   /**
    * INTERNAL API
@@ -38,14 +40,17 @@ private[remote] object CompressionProtocol {
    * table.
    */
   private[remote] final case class ActorRefCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Byte)
-    extends ControlMessage with CompressionAckMessage
+      extends ControlMessage
+      with CompressionAckMessage
 
   /**
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given class manifest
    */
-  private[remote] final case class ClassManifestCompressionAdvertisement(from: UniqueAddress, table: CompressionTable[String])
-    extends CompressionAdvertisement[String]
+  private[remote] final case class ClassManifestCompressionAdvertisement(
+      from: UniqueAddress,
+      table: CompressionTable[String])
+      extends CompressionAdvertisement[String]
 
   /**
    * INTERNAL API
@@ -55,10 +60,12 @@ private[remote] object CompressionProtocol {
    * table.
    */
   private[remote] final case class ClassManifestCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Byte)
-    extends ControlMessage with CompressionAckMessage
+      extends ControlMessage
+      with CompressionAckMessage
 
   /** INTERNAL API */
   private[remote] object Events {
+
     /** INTERNAL API */
     private[remote] sealed trait Event
 
@@ -66,10 +73,12 @@ private[remote] object CompressionProtocol {
     final case class HeavyHitterDetected(key: Any, id: Int, count: Long) extends Event
 
     /** INTERNAL API */
-    final case class ReceivedActorRefCompressionTable(from: UniqueAddress, table: CompressionTable[ActorRef]) extends Event
+    final case class ReceivedActorRefCompressionTable(from: UniqueAddress, table: CompressionTable[ActorRef])
+        extends Event
 
     /** INTERNAL API */
-    final case class ReceivedClassManifestCompressionTable(from: UniqueAddress, table: CompressionTable[String]) extends Event
+    final case class ReceivedClassManifestCompressionTable(from: UniqueAddress, table: CompressionTable[String])
+        extends Event
 
   }
 

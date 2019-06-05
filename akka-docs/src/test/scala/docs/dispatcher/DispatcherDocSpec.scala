@@ -225,21 +225,21 @@ object DispatcherDocSpec {
   // We inherit, in this case, from UnboundedStablePriorityMailbox
   // and seed it with the priority generator
   class MyPrioMailbox(settings: ActorSystem.Settings, config: Config)
-    extends UnboundedStablePriorityMailbox(
-      // Create a new PriorityGenerator, lower prio means more important
-      PriorityGenerator {
-        // 'highpriority messages should be treated first if possible
-        case 'highpriority ⇒ 0
+      extends UnboundedStablePriorityMailbox(
+        // Create a new PriorityGenerator, lower prio means more important
+        PriorityGenerator {
+          // 'highpriority messages should be treated first if possible
+          case 'highpriority => 0
 
-        // 'lowpriority messages should be treated last if possible
-        case 'lowpriority  ⇒ 2
+          // 'lowpriority messages should be treated last if possible
+          case 'lowpriority => 2
 
-        // PoisonPill when no other left
-        case PoisonPill    ⇒ 3
+          // PoisonPill when no other left
+          case PoisonPill => 3
 
-        // We default to 1, which is in between high and low
-        case otherwise     ⇒ 1
-      })
+          // We default to 1, which is in between high and low
+          case otherwise => 1
+        })
   //#prio-mailbox
 
   //#control-aware-mailbox-messages
@@ -250,7 +250,7 @@ object DispatcherDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case x ⇒
+      case x =>
     }
   }
 
@@ -258,16 +258,14 @@ object DispatcherDocSpec {
   import akka.dispatch.RequiresMessageQueue
   import akka.dispatch.BoundedMessageQueueSemantics
 
-  class MyBoundedActor extends MyActor
-    with RequiresMessageQueue[BoundedMessageQueueSemantics]
+  class MyBoundedActor extends MyActor with RequiresMessageQueue[BoundedMessageQueueSemantics]
   //#required-mailbox-class
 
   //#require-mailbox-on-actor
-  class MySpecialActor extends Actor
-    with RequiresMessageQueue[MyUnboundedMessageQueueSemantics] {
+  class MySpecialActor extends Actor with RequiresMessageQueue[MyUnboundedMessageQueueSemantics] {
     //#require-mailbox-on-actor
     def receive = {
-      case _ ⇒
+      case _ =>
     }
     //#require-mailbox-on-actor
     // ...
@@ -370,11 +368,10 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         self ! PoisonPill
 
         def receive = {
-          case x ⇒ log.info(x.toString)
+          case x => log.info(x.toString)
         }
       }
-      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
-        "prio-dispatcher"))
+      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher("prio-dispatcher"))
 
       /*
        * Logs:
@@ -389,7 +386,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
       //#prio-dispatcher
 
       watch(a)
-      expectMsgPF() { case Terminated(`a`) ⇒ () }
+      expectMsgPF() { case Terminated(`a`) => () }
     }
   }
 
@@ -407,11 +404,10 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         self ! PoisonPill
 
         def receive = {
-          case x ⇒ log.info(x.toString)
+          case x => log.info(x.toString)
         }
       }
-      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
-        "control-aware-dispatcher"))
+      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher("control-aware-dispatcher"))
 
       /*
        * Logs:
@@ -422,13 +418,12 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
       //#control-aware-dispatcher
 
       watch(a)
-      expectMsgPF() { case Terminated(`a`) ⇒ () }
+      expectMsgPF() { case Terminated(`a`) => () }
     }
   }
 
   "require custom mailbox on dispatcher" in {
-    val myActor = system.actorOf(Props[MyActor].withDispatcher(
-      "custom-dispatcher"))
+    val myActor = system.actorOf(Props[MyActor].withDispatcher("custom-dispatcher"))
   }
 
   "require custom mailbox on actor" in {

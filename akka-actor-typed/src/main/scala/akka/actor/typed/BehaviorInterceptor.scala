@@ -11,6 +11,9 @@ import akka.annotation.{ DoNotInherit, InternalApi }
  * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors. Many built-in
  * intercepting behaviors are provided through factories in the respective `Behaviors`.
  *
+ * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
+ * so that a new instance is created per spawned actor rather than shared among actor instance.
+ *
  * @tparam O The outer message type – the type of messages the intercepting behavior will accept
  * @tparam I The inner message type - the type of message the wrapped behavior accepts
  */

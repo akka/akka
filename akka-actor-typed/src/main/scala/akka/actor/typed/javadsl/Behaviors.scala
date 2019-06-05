@@ -5,22 +5,20 @@
 package akka.actor.typed.javadsl
 
 import java.util.Collections
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
-import akka.annotation.ApiMayChange
-import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
+import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
-@ApiMayChange
 object Behaviors {
 
   private[this] val _two2same = new JapiFunction2[ActorContext[Any], Any, Behavior[Any]] {
@@ -40,7 +38,7 @@ object Behaviors {
    * processed by the started behavior.
    */
   def setup[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
-    Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx.asJava))
+    Behavior.DeferredBehavior(ctx => factory.apply(ctx.asJava))
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -63,7 +61,7 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
-   * The PostStop signal that results from stopping this actor will be passed to the
+   * The `PostStop` signal that results from stopping this actor will be passed to the
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
@@ -74,11 +72,11 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
-   * The PostStop signal that results from stopping this actor will be passed to the
-   * given `postStop` behavior. All other messages and signals will effectively be
-   * ignored.
+   * The `PostStop` signal that results from stopping this actor will first be passed to the
+   * current behavior and then the provided `postStop` callback will be invoked.
+   * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: Behavior[T]): Behavior[T] = Behavior.stopped(postStop)
+  def stopped[T](postStop: Effect): Behavior[T] = Behavior.stopped(postStop.apply _)
 
   /**
    * A behavior that treats every incoming message as unhandled.
@@ -103,7 +101,7 @@ object Behaviors {
    * a new behavior that holds the new immutable state.
    */
   def receive[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ReceiveBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
+    new BehaviorImpl.ReceiveBehavior((ctx, msg) => onMessage.apply(ctx.asJava, msg))
 
   /**
    * Simplified version of [[receive]] with only a single argument - the message
@@ -122,7 +120,7 @@ object Behaviors {
    * a new behavior that holds the new immutable state.
    */
   def receiveMessage[T](onMessage: akka.japi.Function[T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ReceiveBehavior((_, msg) ⇒ onMessage.apply(msg))
+    new BehaviorImpl.ReceiveBehavior((_, msg) => onMessage.apply(msg))
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -137,11 +135,11 @@ object Behaviors {
    * a new behavior that holds the new immutable state.
    */
   def receive[T](
-    onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
-    onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
-    new BehaviorImpl.ReceiveBehavior(
-      (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
-      { case (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig) })
+      onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
+      onSignal: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
+    new BehaviorImpl.ReceiveBehavior((ctx, msg) => onMessage.apply(ctx.asJava, msg), {
+      case (ctx, sig) => onSignal.apply(ctx.asJava, sig)
+    })
   }
 
   /**
@@ -171,6 +169,9 @@ object Behaviors {
    * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
    * the same interceptor (defined by the [[akka.actor.typed.BehaviorInterceptor#isSame]] method) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
+   *
+   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
+   * so that a new instance is created per spawned actor rather than shared among actor instance.
    */
   def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I], behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(behaviorInterceptor)(behavior)
@@ -229,6 +230,7 @@ object Behaviors {
     new Supervise[T](wrapped)
 
   final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
+
     /**
      * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
      *
@@ -282,10 +284,11 @@ object Behaviors {
    * Support for scheduled `self` messages in an actor.
    * It takes care of the lifecycle of the timers such as cancelling them when the actor
    * is restarted or stopped.
+   *
    * @see [[TimerScheduler]]
    */
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
+    TimerSchedulerImpl.withTimers(timers => factory.apply(timers))
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
@@ -298,7 +301,8 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
+      mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
+      behavior: Behavior[T]): Behavior[T] =
     withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
 
   /**
@@ -331,25 +335,22 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-    staticMdc:     java.util.Map[String, Any],
-    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
-    behavior:      Behavior[T]): Behavior[T] = {
+      staticMdc: java.util.Map[String, Any],
+      mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
+      behavior: Behavior[T]): Behavior[T] = {
 
     def asScalaMap(m: java.util.Map[String, Any]): Map[String, Any] = {
       if (m == null || m.isEmpty) Map.empty[String, Any]
       else m.asScala.toMap
     }
 
-    val mdcForMessageFun: T ⇒ Map[String, Any] =
+    val mdcForMessageFun: T => Map[String, Any] =
       if (mdcForMessage == null) Map.empty
-      else {
-        message ⇒ asScalaMap(mdcForMessage.apply(message))
+      else { message =>
+        asScalaMap(mdcForMessage.apply(message))
       }
 
-    WithMdcBehaviorInterceptor[T](
-      asScalaMap(staticMdc),
-      mdcForMessageFun,
-      behavior)
+    WithMdcBehaviorInterceptor[T](asScalaMap(staticMdc), mdcForMessageFun, behavior)
   }
 
 }

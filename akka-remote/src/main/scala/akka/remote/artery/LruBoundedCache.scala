@@ -23,7 +23,9 @@ private[akka] case class CacheStatistics(entries: Int, maxProbeDistance: Int, av
  * to kick out entires that are considered old. The implementation tries to keep the map close to full, only evicting
  * old entries when needed.
  */
-private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag](capacity: Int, evictAgeThreshold: Int) {
+private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag](
+    capacity: Int,
+    evictAgeThreshold: Int) {
   require(capacity > 0, "Capacity must be larger than zero")
   require((capacity & (capacity - 1)) == 0, "Capacity must be power of two")
   require(evictAgeThreshold <= capacity, "Age threshold must be less than capacity.")
@@ -184,9 +186,9 @@ private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag]
 
   override def toString =
     s"LruBoundedCache(" +
-      s" values = ${values.mkString("[", ",", "]")}," +
-      s" hashes = ${hashes.map(_ & Mask).mkString("[", ",", "]")}," +
-      s" epochs = ${epochs.mkString("[", ",", "]")}," +
-      s" distances = ${hashes.indices.map(probeDistanceOf).mkString("[", ",", "]")}," +
-      s" $epoch)"
+    s" values = ${values.mkString("[", ",", "]")}," +
+    s" hashes = ${hashes.map(_ & Mask).mkString("[", ",", "]")}," +
+    s" epochs = ${epochs.mkString("[", ",", "]")}," +
+    s" distances = ${hashes.indices.map(probeDistanceOf).mkString("[", ",", "]")}," +
+    s" $epoch)"
 }

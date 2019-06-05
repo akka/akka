@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.actor.{ Actor, Props }
 
 object ControlAwareDispatcherSpec {
@@ -40,7 +40,7 @@ class ControlAwareDispatcherSpec extends AkkaSpec(ControlAwareDispatcherSpec.con
     // with RepointableActorRef, since messages might be queued in
     // UnstartedCell and the sent to the PriorityQueue and consumed immediately
     // without the ordering taking place.
-    val actor = system.actorOf(Props(new Actor {
+    system.actorOf(Props(new Actor {
       context.actorOf(Props(new Actor {
 
         self ! "test"
@@ -48,7 +48,7 @@ class ControlAwareDispatcherSpec extends AkkaSpec(ControlAwareDispatcherSpec.con
         self ! ImportantMessage
 
         def receive = {
-          case x ⇒ testActor ! x
+          case x => testActor ! x
         }
       }).withDispatcher(dispatcherKey))
 

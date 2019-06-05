@@ -10,8 +10,7 @@ import com.typesafe.config.ConfigFactory
 
 class InmemEventAdaptersSpec extends AkkaSpec {
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
       |akka.persistence.journal {
       |  plugin = "akka.persistence.journal.inmem"
       |
@@ -69,8 +68,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
     }
 
     "fail with useful message when binding to not defined adapter" in {
-      val badConfig = ConfigFactory.parseString(
-        """
+      val badConfig = ConfigFactory.parseString("""
           |akka.persistence.journal.inmem {
           |  event-adapter-bindings {
           |    "java.lang.Integer" = undefined-adapter
@@ -109,8 +107,7 @@ class InmemEventAdaptersSpec extends AkkaSpec {
       val r: EventAdapter = adapters.get(classOf[ReadMeTwiceEvent])
       r.fromJournal(r.toJournal(ReadMeTwiceEvent()), "").events.map(_.toString) shouldBe Seq(
         "from-ReadMeTwiceEvent()",
-        "again-ReadMeTwiceEvent()"
-      )
+        "again-ReadMeTwiceEvent()")
     }
   }
 
@@ -122,12 +119,9 @@ abstract class BaseTestAdapter extends EventAdapter {
   override def manifest(event: Any): String = ""
 }
 
-class ExampleEventAdapter extends BaseTestAdapter {
-}
-class MarkerInterfaceAdapter extends BaseTestAdapter {
-}
-class PreciseAdapter extends BaseTestAdapter {
-}
+class ExampleEventAdapter extends BaseTestAdapter {}
+class MarkerInterfaceAdapter extends BaseTestAdapter {}
+class PreciseAdapter extends BaseTestAdapter {}
 
 case class ReadMeEvent()
 case class ReadMeTwiceEvent()
@@ -149,4 +143,3 @@ class WriterAdapter extends WriteEventAdapter {
 trait EventMarkerInterface
 final case class SampleEvent() extends EventMarkerInterface
 final case class PreciseAdapterEvent() extends EventMarkerInterface
-

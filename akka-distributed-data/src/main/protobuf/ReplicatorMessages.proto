@@ -11,7 +11,7 @@ message Get {
   required OtherMessage key = 1;
   required sint32 consistency = 2;
   required uint32 timeout = 3;
-  optional OtherMessage request = 4;   
+  optional OtherMessage request = 4;
 }
 
 message GetSuccess {
@@ -48,6 +48,7 @@ message Changed {
 message Write {
   required string key = 1;
   required DataEnvelope envelope = 2;
+  optional UniqueAddress fromNode = 3;
 }
 
 // message WriteAck, via Empty
@@ -57,6 +58,7 @@ message Empty {
 
 message Read {
   required string key = 1;
+  optional UniqueAddress fromNode = 2;
 }
 
 message ReadResult {
@@ -86,6 +88,8 @@ message Status {
   required uint32 chunk = 1;
   required uint32 totChunks = 2;
   repeated Entry entries = 3;
+  optional sfixed64 toSystemUid = 4;
+  optional sfixed64 fromSystemUid = 5;
 }
 
 message Gossip {
@@ -96,6 +100,8 @@ message Gossip {
   
   required bool sendBack = 1;
   repeated Entry entries = 2;
+  optional sfixed64 toSystemUid = 3;
+  optional sfixed64 fromSystemUid = 4;
 }
 
 message DeltaPropagation {
@@ -108,7 +114,7 @@ message DeltaPropagation {
   
   required UniqueAddress fromNode = 1;
   repeated Entry entries = 2;
-  optional bool reply = 3; // no reply if not set 
+  optional bool reply = 3; // no reply if not set
 }
 
 message UniqueAddress {

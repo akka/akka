@@ -6,23 +6,25 @@ package akka.io.dns.internal
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import akka.io.{ Dns, PeriodicCacheCleanup }
 import akka.io.dns.CachePolicy.CachePolicy
 import akka.io.SimpleDnsCache._
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Resolved }
 import akka.io.dns.{ AAAARecord, ARecord }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 
 /**
  * Internal API
  */
-@InternalApi class AsyncDnsCache extends Dns with PeriodicCacheCleanup {
-  private val cacheRef = new AtomicReference(new Cache[(String, RequestType), Resolved](
-    immutable.SortedSet()(expiryEntryOrdering()),
-    immutable.Map(), () ⇒ clock))
+@InternalApi class AsyncDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationVerificationNeeded {
+  private val cacheRef = new AtomicReference(
+    new Cache[(String, RequestType), Resolved](
+      immutable.SortedSet()(expiryEntryOrdering()),
+      immutable.Map(),
+      () => clock))
 
   private val nanoBase = System.nanoTime()
 
@@ -36,8 +38,8 @@ import scala.collection.immutable
     val both = cacheRef.get().get((name, Ip())).toList.flatMap(_.records)
 
     val all = (ipv4 ++ ipv6 ++ both).collect {
-      case r: ARecord    ⇒ r.ip
-      case r: AAAARecord ⇒ r.ip
+      case r: ARecord    => r.ip
+      case r: AAAARecord => r.ip
     }
     if (all.isEmpty) None
     else Some(Dns.Resolved(name, all))
@@ -50,7 +52,7 @@ import scala.collection.immutable
     else (now - nanoBase) / 1000000
   }
 
-  private[io] final def get(key: (String, RequestType)): Option[Resolved] = {
+  private[akka] final def get(key: (String, RequestType)): Option[Resolved] = {
     cacheRef.get().get(key)
   }
 

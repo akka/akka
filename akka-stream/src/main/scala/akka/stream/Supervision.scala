@@ -4,7 +4,7 @@
 
 package akka.stream
 
-import akka.japi.{ function ⇒ japi }
+import akka.japi.{ function => japi }
 
 object Supervision {
   sealed trait Directive

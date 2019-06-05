@@ -4,7 +4,7 @@
 
 package docs.stream
 
-import akka.stream.{ ClosedShape, OverflowStrategy, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 
@@ -13,7 +13,7 @@ class GraphCyclesSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
 
   "Cycle demonstration" must {
-    val source = Source.fromIterator(() ⇒ Iterator.from(0))
+    val source = Source.fromIterator(() => Iterator.from(0))
 
     "include a deadlocked cycle" in {
 

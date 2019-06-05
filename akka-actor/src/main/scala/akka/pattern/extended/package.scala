@@ -41,4 +41,3 @@ package pattern
  * }}}
  */
 package object extended extends ExplicitAskSupport
-

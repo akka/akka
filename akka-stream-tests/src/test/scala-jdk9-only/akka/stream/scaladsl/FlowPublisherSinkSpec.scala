@@ -27,7 +27,7 @@ class FlowPublisherSinkSpec extends StreamSpec {
 
     "be able to use Publisher in materialized value transformation" in {
       val f = Source(1 to 3).runWith(
-        JavaFlowSupport.Sink.asPublisher[Int](false).mapMaterializedValue { p ⇒
+        JavaFlowSupport.Sink.asPublisher[Int](false).mapMaterializedValue { p =>
           JavaFlowSupport.Source.fromPublisher(p).runFold(0)(_ + _)
         })
 

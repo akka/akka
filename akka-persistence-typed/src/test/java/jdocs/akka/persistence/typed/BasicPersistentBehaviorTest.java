@@ -8,12 +8,21 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.DeleteEventsFailed;
+import akka.persistence.typed.DeleteSnapshotsFailed;
+import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.SnapshotFailed;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
+// #behavior
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
-import java.time.Duration;
+import akka.persistence.typed.PersistenceId;
 
+// #behavior
+import akka.persistence.typed.javadsl.RetentionCriteria;
+import akka.persistence.typed.javadsl.SignalHandler;
+
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -136,8 +145,8 @@ public class BasicPersistentBehaviorTest {
       public CommandHandler<Command, Event, State> commandHandler() {
         return newCommandHandlerBuilder()
             .forAnyState()
-            .matchCommand(Add.class, command -> Effect().persist(new Added(command.data)))
-            .matchCommand(Clear.class, command -> Effect().persist(Cleared.INSTANCE))
+            .onCommand(Add.class, command -> Effect().persist(new Added(command.data)))
+            .onCommand(Clear.class, command -> Effect().persist(Cleared.INSTANCE))
             .build();
       }
       // #command-handler
@@ -147,8 +156,8 @@ public class BasicPersistentBehaviorTest {
       public EventHandler<State, Event> eventHandler() {
         return newEventHandlerBuilder()
             .forAnyState()
-            .matchEvent(Added.class, (state, event) -> state.addItem(event.data))
-            .matchEvent(Cleared.class, () -> new State())
+            .onEvent(Added.class, (state, event) -> state.addItem(event.data))
+            .onEvent(Cleared.class, () -> new State())
             .build();
       }
       // #event-handler
@@ -194,9 +203,16 @@ public class BasicPersistentBehaviorTest {
       }
 
       // #recovery
+
       @Override
-      public void onRecoveryCompleted(State state) {
-        throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
+      public SignalHandler signalHandler() {
+        return newSignalHandlerBuilder()
+            .onSignal(
+                RecoveryCompleted.instance(),
+                state -> {
+                  throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
+                })
+            .build();
       }
       // #recovery
 
@@ -227,6 +243,85 @@ public class BasicPersistentBehaviorTest {
               };
             });
     // #wrapPersistentBehavior
+
+    public static class BookingCompleted implements Event {}
+
+    public static class Snapshotting extends EventSourcedBehavior<Command, Event, State> {
+      public Snapshotting(PersistenceId persistenceId) {
+        super(persistenceId);
+      }
+
+      @Override
+      public State emptyState() {
+        return new State();
+      }
+
+      @Override
+      public CommandHandler<Command, Event, State> commandHandler() {
+        return (state, command) -> {
+          throw new RuntimeException("TODO: process the command & return an Effect");
+        };
+      }
+
+      @Override
+      public EventHandler<State, Event> eventHandler() {
+        return (state, event) -> {
+          throw new RuntimeException("TODO: process the event return the next state");
+        };
+      }
+
+      // #snapshottingPredicate
+      @Override // override shouldSnapshot in EventSourcedBehavior
+      public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
+        return event instanceof BookingCompleted;
+      }
+      // #snapshottingPredicate
+
+      // #retentionCriteria
+      @Override // override retentionCriteria in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.snapshotEvery(100, 2);
+      }
+      // #retentionCriteria
+
+      // #retentionCriteriaWithSignals
+      @Override
+      public SignalHandler signalHandler() {
+        return newSignalHandlerBuilder()
+            .onSignal(
+                SnapshotFailed.class,
+                (state, completed) -> {
+                  throw new RuntimeException("TODO: add some on-snapshot-failed side-effect here");
+                })
+            .onSignal(
+                DeleteSnapshotsFailed.class,
+                (state, completed) -> {
+                  throw new RuntimeException(
+                      "TODO: add some on-delete-snapshot-failed side-effect here");
+                })
+            .onSignal(
+                DeleteEventsFailed.class,
+                (state, completed) -> {
+                  throw new RuntimeException(
+                      "TODO: add some on-delete-snapshot-failed side-effect here");
+                })
+            .build();
+      }
+      // #retentionCriteriaWithSignals
+    }
+
+    public static class Snapshotting2 extends Snapshotting {
+      public Snapshotting2(PersistenceId persistenceId) {
+        super(persistenceId);
+      }
+
+      // #snapshotAndEventDeletes
+      @Override // override retentionCriteria in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.snapshotEvery(100, 2).withDeleteEventsOnSnapshot();
+      }
+      // #snapshotAndEventDeletes
+    }
   }
 
   interface WithActorContext {

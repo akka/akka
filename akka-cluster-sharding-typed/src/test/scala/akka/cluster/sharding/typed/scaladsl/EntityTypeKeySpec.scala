@@ -16,13 +16,13 @@ class EntityTypeKeySpec extends WordSpec with Matchers {
     }
 
     "support custom entityIdSeparator for compatibility with Lagom's javadsl" in {
-      EntityTypeKey[String]("MyType").withEntityIdSeparator("")
-        .persistenceIdFrom("abc") should ===(PersistenceId("MyTypeabc"))
+      EntityTypeKey[String]("MyType").withEntityIdSeparator("").persistenceIdFrom("abc") should ===(
+        PersistenceId("MyTypeabc"))
     }
 
     "support custom entityIdSeparator for compatibility with other naming" in {
-      EntityTypeKey[String]("MyType").withEntityIdSeparator("#/#")
-        .persistenceIdFrom("abc") should ===(PersistenceId("MyType#/#abc"))
+      EntityTypeKey[String]("MyType").withEntityIdSeparator("#/#").persistenceIdFrom("abc") should ===(
+        PersistenceId("MyType#/#abc"))
     }
 
     "not allow | in name because it's the default entityIdSeparator" in {

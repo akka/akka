@@ -15,16 +15,21 @@ object LoadJournalSpec {
 
   class JournalWithConfig(val config: Config) extends InmemJournal {
     override def receivePluginInternal: Actor.Receive = {
-      case GetConfig ⇒ sender() ! config
+      case GetConfig => sender() ! config
     }
   }
 }
 
-class LoadJournalSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "LoadJournalSpec", extraConfig = Some(
-  """
+class LoadJournalSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config(
+        "inmem",
+        "LoadJournalSpec",
+        extraConfig = Some("""
   akka.persistence.journal.inmem.class = "akka.persistence.LoadJournalSpec$JournalWithConfig"
   akka.persistence.journal.inmem.extra-property = 17
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
   import LoadJournalSpec._
 
   "A journal with config parameter" must {
@@ -35,4 +40,3 @@ class LoadJournalSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "L
     }
   }
 }
-

@@ -8,6 +8,9 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 | |Operator|Description|
 |--|--|--|
 |Source|<a name="actorref"></a>@ref[actorRef](Source/actorRef.md)|Materialize an `ActorRef`; sending messages to it will emit them on the stream.|
+|Source|<a name="actorrefwithack"></a>@ref[actorRefWithAck](Source/actorRefWithAck.md)|Materialize an `ActorRef`; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.|
+|ActorSource|<a name="actorrefwithack"></a>@ref[actorRefWithAck](ActorSource/actorRefWithAck.md)|Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.|
+|Source|<a name="assourcewithcontext"></a>@ref[asSourceWithContext](Source/asSourceWithContext.md)|Turns a Source into a SourceWithContext which can propagate a context per element along a stream.|
 |Source|<a name="assubscriber"></a>@ref[asSubscriber](Source/asSubscriber.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Subscriber`.|
 |Source|<a name="combine"></a>@ref[combine](Source/combine.md)|Combine several sources, using a given strategy such as merge or concat, into one source.|
 |Source|<a name="cycle"></a>@ref[cycle](Source/cycle.md)|Stream iterator in cycled manner.|
@@ -27,7 +30,6 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="range"></a>@ref[range](Source/range.md)|Emit each integer in a range, with an option to take bigger steps than 1.|
 |Source|<a name="repeat"></a>@ref[repeat](Source/repeat.md)|Stream a single object repeatedly|
 |Source|<a name="single"></a>@ref[single](Source/single.md)|Stream a single object|
-|Source|<a name="startcontextpropagation"></a>@ref[startContextPropagation](Source/startContextPropagation.md)|Turns a Source into a SourceWithContext which can propagate a context per element along a stream.|
 |Source|<a name="tick"></a>@ref[tick](Source/tick.md)|A periodical repetition of an arbitrary object.|
 |Source|<a name="unfold"></a>@ref[unfold](Source/unfold.md)|Stream the result of a function as long as it returns a @scala[`Some`] @java[`Optional`].|
 |Source|<a name="unfoldasync"></a>@ref[unfoldAsync](Source/unfoldAsync.md)|Just like `unfold` but the fold function returns a @scala[`Future`] @java[`CompletionStage`].|
@@ -64,6 +66,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
 |Sink|<a name="reduce"></a>@ref[reduce](Sink/reduce.md)|Apply a reduction function on the incoming elements and pass the result to the next invocation.|
 |Sink|<a name="seq"></a>@ref[seq](Sink/seq.md)|Collect values emitted from the stream into a collection.|
+|Sink|<a name="setup"></a>@ref[setup](Sink/setup.md)|Defer the creation of a `Sink` until materialization and access `ActorMaterializer` and `Attributes`|
 |Sink|<a name="takelast"></a>@ref[takeLast](Sink/takeLast.md)|Collect the last `n` values emitted from the stream into a collection.|
 
 ## Additional Sink and Source converters
@@ -82,7 +85,7 @@ For example, following snippet will fall with timeout exception:
 
 ```scala
 ...
-.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream ⇒
+.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream =>
         inputStream.read()  // this could block forever
         ...
 }).run()
@@ -123,11 +126,10 @@ depending on being backpressured by downstream or not.
 
 | |Operator|Description|
 |--|--|--|
-|Source/Flow|<a name="alsoto"></a>@ref[alsoTo](Source-or-Flow/alsoTo.md)|Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.|
+|Flow|<a name="asflowwithcontext"></a>@ref[asFlowWithContext](Flow/asFlowWithContext.md)|Turns a Flow into a FlowWithContext which can propagate a context per element along a stream.|
 |Source/Flow|<a name="collect"></a>@ref[collect](Source-or-Flow/collect.md)|Apply a partial function to each incoming element, if the partial function is defined for a value the returned value is passed downstream.|
 |Source/Flow|<a name="collecttype"></a>@ref[collectType](Source-or-Flow/collectType.md)|Transform this stream by testing the type of each of the elements on which the element is an instance of the provided type as they pass through this processing step.|
 |Source/Flow|<a name="detach"></a>@ref[detach](Source-or-Flow/detach.md)|Detach upstream demand from downstream demand without detaching the stream rates.|
-|Source/Flow|<a name="divertto"></a>@ref[divertTo](Source-or-Flow/divertTo.md)|Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.|
 |Source/Flow|<a name="drop"></a>@ref[drop](Source-or-Flow/drop.md)|Drop `n` elements and then pass any subsequent element downstream.|
 |Source/Flow|<a name="dropwhile"></a>@ref[dropWhile](Source-or-Flow/dropWhile.md)|Drop elements as long as a predicate function return true for the element|
 |Source/Flow|<a name="filter"></a>@ref[filter](Source-or-Flow/filter.md)|Filter the incoming elements using a predicate.|
@@ -149,13 +151,13 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="reduce"></a>@ref[reduce](Source-or-Flow/reduce.md)|Start with first element and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.|
 |Source/Flow|<a name="scan"></a>@ref[scan](Source-or-Flow/scan.md)|Emit its current value, which starts at `zero`, and then apply the current and next value to the given function, emitting the next current value.|
 |Source/Flow|<a name="scanasync"></a>@ref[scanAsync](Source-or-Flow/scanAsync.md)|Just like `scan` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
+|Source/Flow|<a name="setup"></a>@ref[setup](Source-or-Flow/setup.md)|Defer the creation of a `Source/Flow` until materialization and access `ActorMaterializer` and `Attributes`|
 |Source/Flow|<a name="sliding"></a>@ref[sliding](Source-or-Flow/sliding.md)|Provide a sliding window over the incoming stream and pass the windows as groups of elements downstream.|
 |Source/Flow|<a name="statefulmapconcat"></a>@ref[statefulMapConcat](Source-or-Flow/statefulMapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
 |Source/Flow|<a name="take"></a>@ref[take](Source-or-Flow/take.md)|Pass `n` incoming elements downstream and then complete|
 |Source/Flow|<a name="takewhile"></a>@ref[takeWhile](Source-or-Flow/takeWhile.md)|Pass elements downstream as long as a predicate function return true for the element include the element when the predicate first return false and then complete.|
 |Source/Flow|<a name="throttle"></a>@ref[throttle](Source-or-Flow/throttle.md)|Limit the throughput to a specific number of elements per time unit, or a specific total cost per time unit, where a function has to be provided to calculate the individual cost of each element.|
 |Source/Flow|<a name="watch"></a>@ref[watch](Source-or-Flow/watch.md)|Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.|
-|Source/Flow|<a name="wiretap"></a>@ref[wireTap](Source-or-Flow/wireTap.md)|Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements that pass through will also be sent to the wire-tap `Sink`, without the latter affecting the mainline flow.|
 
 ## Flow operators composed of Sinks and Sources
 
@@ -252,6 +254,25 @@ the inputs in different ways.
 |Source/Flow|<a name="zipwith"></a>@ref[zipWith](Source-or-Flow/zipWith.md)|Combines elements from multiple sources through a `combine` function and passes the returned value downstream.|
 |Source/Flow|<a name="zipwithindex"></a>@ref[zipWithIndex](Source-or-Flow/zipWithIndex.md)|Zips elements of current flow with its indices.|
 
+## Fan-out operators
+
+These have one input and multiple outputs. They might route the elements between different outputs, or emit elements on
+multiple outputs at the same time.
+
+There is a number of fan-out operators for which currently no 'fluent' is API available. To use those you will have to use the @ref[Graph DSL](../stream-graphs.md#constructing-graphs).
+
+
+| |Operator|Description|
+|--|--|--|
+| |<a name="balance"></a>@ref[Balance](Balance.md)|Fan-out the stream to several streams.|
+| |<a name="broadcast"></a>@ref[Broadcast](Broadcast.md)|Emit each incoming element each of `n` outputs.|
+| |<a name="partition"></a>@ref[Partition](Partition.md)|Fan-out the stream to several streams.|
+| |<a name="unzip"></a>@ref[Unzip](Unzip.md)|Takes a stream of two element tuples and unzips the two elements ino two different downstreams.|
+| |<a name="unzipwith"></a>@ref[UnzipWith](UnzipWith.md)|Splits each element of input into multiple downstreams using a function|
+|Source/Flow|<a name="alsoto"></a>@ref[alsoTo](Source-or-Flow/alsoTo.md)|Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.|
+|Source/Flow|<a name="divertto"></a>@ref[divertTo](Source-or-Flow/divertTo.md)|Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.|
+|Source/Flow|<a name="wiretap"></a>@ref[wireTap](Source-or-Flow/wireTap.md)|Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements that pass through will also be sent to the wire-tap `Sink`, without the latter affecting the mainline flow.|
+
 ## Watching status operators
 
 
@@ -277,19 +298,20 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 
 | |Operator|Description|
 |--|--|--|
-|RestartSource|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)|Wrap the given @unidoc[Source] with a @unidoc[Source] that will restart it when it fails using an exponential backoff.|
-|RestartFlow|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)|Wrap the given @unidoc[Flow] with a @unidoc[Flow] that will restart it when it fails using an exponential backoff. Notice that this @unidoc[Flow] will not restart on completion of the wrapped flow.|
-|RestartSource|<a name="withbackoff"></a>@ref[withBackoff](RestartSource/withBackoff.md)|Wrap the given @unidoc[Source] with a @unidoc[Source] that will restart it when it fails or complete using an exponential backoff.|
-|RestartFlow|<a name="withbackoff"></a>@ref[withBackoff](RestartFlow/withBackoff.md)|Wrap the given @unidoc[Flow] with a @unidoc[Flow] that will restart it when it fails or complete using an exponential backoff.|
-|RestartSink|<a name="withbackoff"></a>@ref[withBackoff](RestartSink/withBackoff.md)|Wrap the given @unidoc[Sink] with a @unidoc[Sink] that will restart it when it fails or complete using an exponential backoff.|
+|RestartSource|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)|Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails using an exponential backoff.|
+|RestartFlow|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)|Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails using an exponential backoff. Notice that this @apidoc[Flow] will not restart on completion of the wrapped flow.|
+|RestartSource|<a name="withbackoff"></a>@ref[withBackoff](RestartSource/withBackoff.md)|Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails or complete using an exponential backoff.|
+|RestartFlow|<a name="withbackoff"></a>@ref[withBackoff](RestartFlow/withBackoff.md)|Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails or complete using an exponential backoff.|
+|RestartSink|<a name="withbackoff"></a>@ref[withBackoff](RestartSink/withBackoff.md)|Wrap the given @apidoc[Sink] with a @apidoc[Sink] that will restart it when it fails or complete using an exponential backoff.|
 
 @@@ index
 
 * [combine](Source/combine.md)
-* [startContextPropagation](Source/startContextPropagation.md)
+* [asSourceWithContext](Source/asSourceWithContext.md)
 * [fromPublisher](Source/fromPublisher.md)
 * [fromIterator](Source/fromIterator.md)
 * [cycle](Source/cycle.md)
+* [setup](Source-or-Flow/setup.md)
 * [fromFuture](Source/fromFuture.md)
 * [fromCompletionStage](Source/fromCompletionStage.md)
 * [fromFutureSource](Source/fromFutureSource.md)
@@ -306,6 +328,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [lazilyAsync](Source/lazilyAsync.md)
 * [asSubscriber](Source/asSubscriber.md)
 * [actorRef](Source/actorRef.md)
+* [actorRefWithAck](Source/actorRefWithAck.md)
 * [zipN](Source/zipN.md)
 * [zipWithN](Source/zipWithN.md)
 * [queue](Source/queue.md)
@@ -385,10 +408,12 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [monitor](Source-or-Flow/monitor.md)
 * [initialDelay](Source-or-Flow/initialDelay.md)
 * [log](Source-or-Flow/log.md)
+* [asFlowWithContext](Flow/asFlowWithContext.md)
 * [fromSinkAndSource](Flow/fromSinkAndSource.md)
 * [fromSinkAndSourceCoupled](Flow/fromSinkAndSourceCoupled.md)
 * [lazyInitAsync](Flow/lazyInitAsync.md)
 * [preMaterialize](Sink/preMaterialize.md)
+* [setup](Sink/setup.md)
 * [fromSubscriber](Sink/fromSubscriber.md)
 * [cancelled](Sink/cancelled.md)
 * [head](Sink/head.md)
@@ -427,7 +452,13 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [withBackoff](RestartFlow/withBackoff.md)
 * [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
 * [withBackoff](RestartSink/withBackoff.md)
+* [actorRefWithAck](ActorSource/actorRefWithAck.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)
+* [Partition](Partition.md)
+* [Broadcast](Broadcast.md)
+* [Balance](Balance.md)
+* [Unzip](Unzip.md)
+* [UnzipWith](UnzipWith.md)
 
 @@@

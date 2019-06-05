@@ -1,14 +1,5 @@
 # How the Actor Model Meets the Needs of Modern, Distributed Systems
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
-
 As described in the previous topic, common programming practices do not properly
 address the needs of demanding modern systems. Thankfully, we
 don't need to scrap everything we know. Instead, the actor model addresses these
@@ -50,7 +41,7 @@ different actors work concurrently with each other so that an actor system can p
 Since there is always at most one message being processed per actor,
 the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
-![messages don't invalidate invariants as they are processed sequentially](../../guide/diagrams/serialized_timeline_invariants.png)
+![messages do not invalidate invariants as they are processed sequentially](../../guide/diagrams/serialized_timeline_invariants.png)
 
 In summary, this is what happens when an actor receives a message:
 

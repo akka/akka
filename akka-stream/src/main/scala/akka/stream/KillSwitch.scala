@@ -53,23 +53,26 @@ object KillSwitches {
   def singleBidi[T1, T2]: Graph[BidiShape[T1, T1, T2, T2], UniqueKillSwitch] =
     UniqueBidiKillSwitchStage.asInstanceOf[Graph[BidiShape[T1, T1, T2, T2], UniqueKillSwitch]]
 
-  abstract class KillableGraphStageLogic(val terminationSignal: Future[Done], _shape: Shape) extends GraphStageLogic(_shape) {
+  abstract class KillableGraphStageLogic(val terminationSignal: Future[Done], _shape: Shape)
+      extends GraphStageLogic(_shape) {
     override def preStart(): Unit = {
       terminationSignal.value match {
-        case Some(status) ⇒ onSwitch(status)
-        case _ ⇒
+        case Some(status) => onSwitch(status)
+        case _            =>
           // callback.invoke is a simple actor send, so it is fine to run on the invoking thread
-          terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(
+            akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
       }
     }
 
     private def onSwitch(mode: Try[Done]): Unit = mode match {
-      case Success(_)  ⇒ completeStage()
-      case Failure(ex) ⇒ failStage(ex)
+      case Success(_)  => completeStage()
+      case Failure(ex) => failStage(ex)
     }
   }
 
-  private[stream] object UniqueKillSwitchStage extends GraphStageWithMaterializedValue[FlowShape[Any, Any], UniqueKillSwitch] {
+  private[stream] object UniqueKillSwitchStage
+      extends GraphStageWithMaterializedValue[FlowShape[Any, Any], UniqueKillSwitch] {
     override val initialAttributes = Attributes.name("breaker")
     override val shape = FlowShape(Inlet[Any]("KillSwitch.in"), Outlet[Any]("KillSwitch.out"))
     override def toString: String = "UniqueKillSwitchFlow"
@@ -89,12 +92,15 @@ object KillSwitches {
     }
   }
 
-  private[stream] object UniqueBidiKillSwitchStage extends GraphStageWithMaterializedValue[BidiShape[Any, Any, Any, Any], UniqueKillSwitch] {
+  private[stream] object UniqueBidiKillSwitchStage
+      extends GraphStageWithMaterializedValue[BidiShape[Any, Any, Any, Any], UniqueKillSwitch] {
 
     override val initialAttributes = Attributes.name("breaker")
     override val shape = BidiShape(
-      Inlet[Any]("KillSwitchBidi.in1"), Outlet[Any]("KillSwitchBidi.out1"),
-      Inlet[Any]("KillSwitchBidi.in2"), Outlet[Any]("KillSwitchBidi.out2"))
+      Inlet[Any]("KillSwitchBidi.in1"),
+      Outlet[Any]("KillSwitchBidi.out1"),
+      Inlet[Any]("KillSwitchBidi.in2"),
+      Outlet[Any]("KillSwitchBidi.out2"))
     override def toString: String = "UniqueKillSwitchBidi"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
@@ -138,10 +144,12 @@ object KillSwitches {
  */
 //#kill-switch
 trait KillSwitch {
+
   /**
    * After calling [[KillSwitch#shutdown()]] the linked [[Graph]]s of [[FlowShape]] are completed normally.
    */
   def shutdown(): Unit
+
   /**
    * After calling [[KillSwitch#abort()]] the linked [[Graph]]s of [[FlowShape]] are failed.
    */
@@ -161,18 +169,18 @@ private[stream] final class TerminationSignal {
 
   def tryComplete(result: Try[Done]): Unit = {
     if (_completedWith.compareAndSet(None, Some(result))) {
-      for ((listener, _) ← _listeners) listener.promise.tryComplete(result)
+      for ((listener, _) <- _listeners) listener.promise.tryComplete(result)
     }
   }
 
   def createListener(): Listener = {
     val listener = new Listener
     if (_completedWith.get.isEmpty) {
-      _listeners += (listener → NotUsed)
+      _listeners += (listener -> NotUsed)
     }
     _completedWith.get match {
-      case Some(result) ⇒ listener.promise.tryComplete(result)
-      case None         ⇒ // Ignore.
+      case Some(result) => listener.promise.tryComplete(result)
+      case None         => // Ignore.
     }
     listener
   }
@@ -281,9 +289,11 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
 
     override def toString: String = s"SharedKillSwitchFlow(switch: $name)"
 
-    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SharedKillSwitch) = {
+    override def createLogicAndMaterializedValue(
+        inheritedAttributes: Attributes): (GraphStageLogic, SharedKillSwitch) = {
       val shutdownListener = terminationSignal.createListener()
-      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape) with InHandler with OutHandler {
+      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape) with InHandler
+      with OutHandler {
         setHandler(shape.in, this)
         setHandler(shape.out, this)
 

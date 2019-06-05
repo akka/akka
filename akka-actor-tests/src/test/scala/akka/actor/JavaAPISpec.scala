@@ -6,4 +6,6 @@ package akka.actor
 
 import org.scalatest.junit.JUnitSuiteLike
 
+import com.github.ghik.silencer.silent
+@silent
 class JavaAPISpec extends JavaAPI with JUnitSuiteLike

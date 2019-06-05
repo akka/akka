@@ -17,8 +17,10 @@ private[persistence] object JournalProtocol {
 
   /** Marker trait shared by internal journal messages. */
   sealed trait Message extends Protocol.Message
+
   /** Internal journal command. */
   sealed trait Request extends Message
+
   /** Internal journal acknowledgement. */
   sealed trait Response extends Message
 
@@ -27,7 +29,7 @@ private[persistence] object JournalProtocol {
    * (inclusive). `Long.MaxValue` may be used as `toSequenceNr` to delete all persistent messages.
    */
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, persistentActor: ActorRef)
-    extends Request
+      extends Request
 
   /**
    * Request to write messages.
@@ -35,15 +37,18 @@ private[persistence] object JournalProtocol {
    * @param messages messages to be written.
    * @param persistentActor write requestor.
    */
-  final case class WriteMessages(messages: immutable.Seq[PersistentEnvelope], persistentActor: ActorRef, actorInstanceId: Int)
-    extends Request with NoSerializationVerificationNeeded
+  final case class WriteMessages(
+      messages: immutable.Seq[PersistentEnvelope],
+      persistentActor: ActorRef,
+      actorInstanceId: Int)
+      extends Request
+      with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
    * before all subsequent [[WriteMessageSuccess]] replies.
    */
-  case object WriteMessagesSuccessful
-    extends Response
+  case object WriteMessagesSuccessful extends Response
 
   /**
    * Reply message to a failed [[WriteMessages]] request. This reply is sent to the requestor
@@ -51,8 +56,7 @@ private[persistence] object JournalProtocol {
    *
    * @param cause failure cause.
    */
-  final case class WriteMessagesFailed(cause: Throwable)
-    extends Response
+  final case class WriteMessagesFailed(cause: Throwable) extends Response
 
   /**
    * Reply message to a successful [[WriteMessages]] request. For each contained [[PersistentRepr]] message
@@ -60,8 +64,7 @@ private[persistence] object JournalProtocol {
    *
    * @param persistent successfully written message.
    */
-  final case class WriteMessageSuccess(persistent: PersistentRepr, actorInstanceId: Int)
-    extends Response
+  final case class WriteMessageSuccess(persistent: PersistentRepr, actorInstanceId: Int) extends Response
 
   /**
    * Reply message to a rejected [[WriteMessages]] request. The write of this message was rejected before
@@ -72,7 +75,8 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class WriteMessageRejected(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
-    extends Response with NoSerializationVerificationNeeded
+      extends Response
+      with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a failed [[WriteMessages]] request. For each contained [[PersistentRepr]] message
@@ -82,7 +86,8 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class WriteMessageFailure(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
-    extends Response with NoSerializationVerificationNeeded
+      extends Response
+      with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a [[WriteMessages]] with a non-persistent message.
@@ -90,7 +95,8 @@ private[persistence] object JournalProtocol {
    * @param message looped message.
    */
   final case class LoopMessageSuccess(message: Any, actorInstanceId: Int)
-    extends Response with NoSerializationVerificationNeeded
+      extends Response
+      with NoSerializationVerificationNeeded
 
   /**
    * Request to replay messages to `persistentActor`.
@@ -101,8 +107,13 @@ private[persistence] object JournalProtocol {
    * @param persistenceId requesting persistent actor id.
    * @param persistentActor requesting persistent actor.
    */
-  final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
-                                  persistenceId: String, persistentActor: ActorRef) extends Request
+  final case class ReplayMessages(
+      fromSequenceNr: Long,
+      toSequenceNr: Long,
+      max: Long,
+      persistenceId: String,
+      persistentActor: ActorRef)
+      extends Request
 
   /**
    * Reply message to a [[ReplayMessages]] request. A separate reply is sent to the requestor for each
@@ -111,7 +122,9 @@ private[persistence] object JournalProtocol {
    * @param persistent replayed message.
    */
   final case class ReplayedMessage(persistent: PersistentRepr)
-    extends Response with DeadLetterSuppression with NoSerializationVerificationNeeded
+      extends Response
+      with DeadLetterSuppression
+      with NoSerializationVerificationNeeded
 
   /**
    * Reply message to a successful [[ReplayMessages]] request. This reply is sent to the requestor
@@ -122,14 +135,22 @@ private[persistence] object JournalProtocol {
    *
    * @param highestSequenceNr highest stored sequence number.
    */
-  case class RecoverySuccess(highestSequenceNr: Long)
-    extends Response with DeadLetterSuppression
+  case class RecoverySuccess(highestSequenceNr: Long) extends Response with DeadLetterSuppression
 
   /**
    * Reply message to a failed [[ReplayMessages]] request. This reply is sent to the requestor
    * if a replay could not be successfully completed.
    */
-  final case class ReplayMessagesFailure(cause: Throwable)
-    extends Response with DeadLetterSuppression
+  final case class ReplayMessagesFailure(cause: Throwable) extends Response with DeadLetterSuppression
 
 }
+
+/**
+ * Reply message to a successful [[JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesSuccess(toSequenceNr: Long) extends JournalProtocol.Response
+
+/**
+ * Reply message to a failed [[JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long) extends JournalProtocol.Response

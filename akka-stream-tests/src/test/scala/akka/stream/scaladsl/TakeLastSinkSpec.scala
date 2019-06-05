@@ -12,8 +12,7 @@ import scala.concurrent.{ Await, Future }
 
 class TakeLastSinkSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val mat = ActorMaterializer(settings)
 
@@ -30,16 +29,21 @@ class TakeLastSinkSpec extends StreamSpec {
       //#takeLast-operator-example
       case class Student(name: String, gpa: Double)
 
-      val students = List(Student("Alison", 4.7), Student("Adrian", 3.1), Student("Alexis", 4),
-        Student("Benita", 2.1), Student("Kendra", 4.2), Student("Jerrie", 4.3)).sortBy(_.gpa)
+      val students = List(
+        Student("Alison", 4.7),
+        Student("Adrian", 3.1),
+        Student("Alexis", 4),
+        Student("Benita", 2.1),
+        Student("Kendra", 4.2),
+        Student("Jerrie", 4.3)).sortBy(_.gpa)
 
       val sourceOfStudents = Source(students)
 
       val result: Future[Seq[Student]] = sourceOfStudents.runWith(Sink.takeLast(3))
 
-      result.foreach { topThree ⇒
+      result.foreach { topThree =>
         println("#### Top students ####")
-        topThree.reverse foreach { s ⇒
+        topThree.reverse.foreach { s =>
           println(s"Name: ${s.name}, GPA: ${s.gpa}")
         }
       }
@@ -48,7 +52,7 @@ class TakeLastSinkSpec extends StreamSpec {
           Name: Alison, GPA: 4.7
           Name: Jerrie, GPA: 4.3
           Name: Kendra, GPA: 4.2
-      */
+       */
 
       //#takeLast-operator-example
 

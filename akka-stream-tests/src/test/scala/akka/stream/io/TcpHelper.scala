@@ -5,7 +5,7 @@
 package akka.stream.io
 
 import akka.actor._
-import akka.io.Tcp.{ ResumeReading, ConnectionClosed }
+import akka.io.Tcp.{ ConnectionClosed, ResumeReading }
 import akka.io.{ IO, Tcp }
 import akka.stream.testkit._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -49,26 +49,26 @@ object TcpHelper {
 
     // FIXME: various close scenarios
     def receive = {
-      case ClientWrite(bytes) if !writePending ⇒
+      case ClientWrite(bytes) if !writePending =>
         writePending = true
         connection ! Tcp.Write(bytes, WriteAck)
-      case ClientWrite(bytes) ⇒
+      case ClientWrite(bytes) =>
         queuedWrites = queuedWrites.enqueue(bytes)
-      case WriteAck if queuedWrites.nonEmpty ⇒
+      case WriteAck if queuedWrites.nonEmpty =>
         val (next, remaining) = queuedWrites.dequeue
         queuedWrites = remaining
         connection ! Tcp.Write(next, WriteAck)
-      case WriteAck ⇒
+      case WriteAck =>
         writePending = false
         closeAfterWrite match {
-          case Some(cmd) ⇒ connection ! cmd
-          case None      ⇒
+          case Some(cmd) => connection ! cmd
+          case None      =>
         }
-      case ClientRead(count, requester) ⇒
+      case ClientRead(count, requester) =>
         readTo = requester
         toRead = count
         connection ! Tcp.ResumeReading
-      case Tcp.Received(bytes) ⇒
+      case Tcp.Received(bytes) =>
         readBuffer ++= bytes
         if (readBuffer.size >= toRead) {
           readTo ! ReadResult(readBuffer)
@@ -76,13 +76,13 @@ object TcpHelper {
           toRead = 0
           readTo = context.system.deadLetters
         } else connection ! Tcp.ResumeReading
-      case PingClose(requester) ⇒
+      case PingClose(requester) =>
         readTo = requester
         connection ! ResumeReading
-      case c: ConnectionClosed ⇒
+      case c: ConnectionClosed =>
         readTo ! c
         if (!c.isPeerClosed) context.stop(self)
-      case ClientClose(cmd) ⇒
+      case ClientClose(cmd) =>
         if (!writePending) connection ! cmd
         else closeAfterWrite = Some(cmd)
     }
@@ -97,15 +97,15 @@ object TcpHelper {
     var listener: ActorRef = _
 
     def receive = {
-      case b @ Tcp.Bound(_) ⇒
+      case b @ Tcp.Bound(_) =>
         listener = sender()
         listener ! Tcp.ResumeAccepting(1)
         probe ! b
-      case Tcp.Connected(_, _) ⇒
+      case Tcp.Connected(_, _) =>
         val handler = context.actorOf(testClientProps(sender()))
         listener ! Tcp.ResumeAccepting(1)
         probe ! handler
-      case ServerClose ⇒
+      case ServerClose =>
         listener ! Tcp.Unbind
         context.stop(self)
     }
@@ -114,11 +114,10 @@ object TcpHelper {
 
 }
 
-trait TcpHelper { this: TestKitBase ⇒
+trait TcpHelper { this: TestKitBase =>
   import akka.stream.io.TcpHelper._
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 4, maxSize = 4)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -145,11 +144,11 @@ trait TcpHelper { this: TestKitBase ⇒
 
     def expectClosed(expected: ConnectionClosed): Unit = expectClosed(_ == expected)
 
-    def expectClosed(p: (ConnectionClosed) ⇒ Boolean, max: Duration = 3.seconds): Unit = {
+    def expectClosed(p: (ConnectionClosed) => Boolean, max: Duration = 3.seconds): Unit = {
       connectionActor ! PingClose(connectionProbe.ref)
       connectionProbe.fishForMessage(max) {
-        case c: ConnectionClosed if p(c) ⇒ true
-        case other                       ⇒ false
+        case c: ConnectionClosed if p(c) => true
+        case other                       => false
       }
     }
 

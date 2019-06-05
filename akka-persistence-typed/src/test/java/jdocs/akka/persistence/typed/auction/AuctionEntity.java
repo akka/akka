@@ -22,7 +22,7 @@ import java.util.UUID;
  * https://github.com/lagom/online-auction-java/blob/master/bidding-impl/src/main/java/com/example/auction/bidding/impl/AuctionEntity.java
  */
 public class AuctionEntity
-    extends EventSourcedBehavior<AuctionCommand, AuctionEvent, AuctionState> {
+    extends EventSourcedBehaviorWithEnforcedReplies<AuctionCommand, AuctionEvent, AuctionState> {
 
   private final UUID entityUUID;
 
@@ -33,86 +33,94 @@ public class AuctionEntity
   }
 
   // Command handler for the not started state.
-  private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
+  private CommandHandlerWithReplyBuilderByState<
+          AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       notStartedHandler =
-          newCommandHandlerBuilder()
+          newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.NOT_STARTED)
-              .matchCommand(StartAuction.class, this::startAuction)
-              .matchCommand(
+              .onCommand(StartAuction.class, this::startAuction)
+              .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
                       Effect().reply(cmd, createResult(state, PlaceBidStatus.NOT_STARTED)));
 
   // Command handler for the under auction state.
-  private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
+  private CommandHandlerWithReplyBuilderByState<
+          AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       underAuctionHandler =
-          newCommandHandlerBuilder()
+          newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.UNDER_AUCTION)
-              .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(PlaceBid.class, this::placeBid)
-              .matchCommand(FinishBidding.class, this::finishBidding);
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(PlaceBid.class, this::placeBid)
+              .onCommand(FinishBidding.class, this::finishBidding);
 
   // Command handler for the completed state.
-  private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
+  private CommandHandlerWithReplyBuilderByState<
+          AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       completedHandler =
-          newCommandHandlerBuilder()
+          newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.COMPLETE)
-              .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
                       Effect().reply(cmd, createResult(state, PlaceBidStatus.FINISHED)));
 
   // Command handler for the cancelled state.
-  private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
+  private CommandHandlerWithReplyBuilderByState<
+          AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       cancelledHandler =
-          newCommandHandlerBuilder()
+          newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.CANCELLED)
-              .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(CancelAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(CancelAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
                       Effect().reply(cmd, createResult(state, PlaceBidStatus.CANCELLED)));
 
-  private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
+  private CommandHandlerWithReplyBuilderByState<
+          AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       getAuctionHandler =
-          newCommandHandlerBuilder()
+          newCommandHandlerWithReplyBuilder()
               .forStateType(AuctionState.class)
-              .matchCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd, state));
+              .onCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd, state));
 
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       cancelHandler =
           newCommandHandlerBuilder()
               .forStateType(AuctionState.class)
-              .matchCommand(CancelAuction.class, this::cancelAuction);
+              .onCommand(CancelAuction.class, this::cancelAuction);
   // Note, an item can go from completed to cancelled, since it is the item service that controls
   // whether an auction is cancelled or not. If it cancels before it receives a bidding finished
   // event from us, it will ignore the bidding finished event, so we need to update our state
   // to reflect that.
 
-  private Effect<AuctionEvent, AuctionState> startAuction(AuctionState state, StartAuction cmd) {
+  private ReplyEffect<AuctionEvent, AuctionState> startAuction(
+      AuctionState state, StartAuction cmd) {
     return Effect()
         .persist(new AuctionStarted(entityUUID, cmd.getAuction()))
         .thenReply(cmd, __ -> Done.getInstance());
   }
 
-  private Effect<AuctionEvent, AuctionState> finishBidding(AuctionState state, FinishBidding cmd) {
+  private ReplyEffect<AuctionEvent, AuctionState> finishBidding(
+      AuctionState state, FinishBidding cmd) {
     return Effect()
         .persist(new BiddingFinished(entityUUID))
         .thenReply(cmd, __ -> Done.getInstance());
   }
 
-  private Effect<AuctionEvent, AuctionState> cancelAuction(AuctionState state, CancelAuction cmd) {
+  private ReplyEffect<AuctionEvent, AuctionState> cancelAuction(
+      AuctionState state, CancelAuction cmd) {
     return Effect()
         .persist(new AuctionCancelled(entityUUID))
         .thenReply(cmd, __ -> Done.getInstance());
   }
 
   /** The main logic for handling of bids. */
-  private Effect<AuctionEvent, AuctionState> placeBid(AuctionState state, PlaceBid bid) {
+  private ReplyEffect<AuctionEvent, AuctionState> placeBid(AuctionState state, PlaceBid bid) {
     Auction auction = state.getAuction().get();
 
     Instant now = Instant.now();
@@ -187,7 +195,7 @@ public class AuctionEntity
    * <p>This emits two events, one for the bid currently being replace, and another automatic bid
    * for the current bidder.
    */
-  private Effect<AuctionEvent, AuctionState> handleAutomaticOutbid(
+  private ReplyEffect<AuctionEvent, AuctionState> handleAutomaticOutbid(
       PlaceBid bid,
       Auction auction,
       Instant now,
@@ -215,7 +223,7 @@ public class AuctionEntity
   }
 
   /** Handle the situation where a bid will be accepted as the new winning bidder. */
-  private Effect<AuctionEvent, AuctionState> handleNewWinningBidder(
+  private ReplyEffect<AuctionEvent, AuctionState> handleNewWinningBidder(
       PlaceBid bid, Auction auction, Instant now, int currentBidMaximum) {
     int nextIncrement = Math.min(currentBidMaximum + auction.getIncrement(), bid.getBidPrice());
     int newBidPrice;
@@ -247,7 +255,7 @@ public class AuctionEntity
   }
 
   @Override
-  public CommandHandler<AuctionCommand, AuctionEvent, AuctionState> commandHandler() {
+  public CommandHandlerWithReply<AuctionCommand, AuctionEvent, AuctionState> commandHandler() {
     return notStartedHandler
         .orElse(underAuctionHandler)
         .orElse(completedHandler)
@@ -263,14 +271,13 @@ public class AuctionEntity
 
     builder
         .forState(auction -> auction.getStatus() == AuctionStatus.NOT_STARTED)
-        .matchEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()));
+        .onEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()));
 
     builder
         .forState(auction -> auction.getStatus() == AuctionStatus.UNDER_AUCTION)
-        .matchEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
-        .matchEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
-        .matchEvent(
-            AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
+        .onEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
+        .onEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
+        .onEvent(AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
 
     return builder.build();
   }
@@ -285,7 +292,7 @@ public class AuctionEntity
     }
   }
 
-  private Effect<AuctionEvent, AuctionState> alreadyDone(ExpectingReply<Done> cmd) {
+  private ReplyEffect<AuctionEvent, AuctionState> alreadyDone(ExpectingReply<Done> cmd) {
     return Effect().reply(cmd, Done.getInstance());
   }
 }

@@ -30,6 +30,7 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
@@ -42,10 +43,10 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case "stop" ⇒
+      case "stop" =>
         testActor ! "stop"
         context.stop(self)
-      case _ ⇒
+      case _ =>
         sender() ! self
     }
   }
@@ -55,7 +56,10 @@ class ClusterSingletonManagerLeaveMultiJvmNode1 extends ClusterSingletonManagerL
 class ClusterSingletonManagerLeaveMultiJvmNode2 extends ClusterSingletonManagerLeaveSpec
 class ClusterSingletonManagerLeaveMultiJvmNode3 extends ClusterSingletonManagerLeaveSpec
 
-class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonManagerLeaveSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerLeaveSpec
+    extends MultiNodeSpec(ClusterSingletonManagerLeaveSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerLeaveSpec._
 
   override def initialParticipants = roles.size
@@ -64,7 +68,7 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       createSingleton()
     }
   }
@@ -81,11 +85,11 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
   val echoProxyTerminatedProbe = TestProbe()
 
   lazy val echoProxy: ActorRef = {
-    echoProxyTerminatedProbe.watch(system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = "/user/echo",
-        settings = ClusterSingletonProxySettings(system)),
-      name = "echoProxy"))
+    echoProxyTerminatedProbe.watch(
+      system.actorOf(
+        ClusterSingletonProxy
+          .props(singletonManagerPath = "/user/echo", settings = ClusterSingletonProxySettings(system)),
+        name = "echoProxy"))
   }
 
   "Leaving ClusterSingletonManager" must {
@@ -105,14 +109,14 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       join(second, first)
       runOn(first, second) {
         within(10.seconds) {
-          awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(2))
+          awaitAssert(cluster.state.members.count(m => m.status == MemberStatus.Up) should be(2))
         }
       }
       enterBarrier("second-up")
 
       join(third, first)
       within(10.seconds) {
-        awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(3))
+        awaitAssert(cluster.state.members.count(m => m.status == MemberStatus.Up) should be(3))
       }
       enterBarrier("all-up")
 

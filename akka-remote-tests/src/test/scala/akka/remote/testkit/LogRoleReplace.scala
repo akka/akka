@@ -55,9 +55,7 @@ object LogRoleReplace extends ClipboardOwner {
       if (contents != null && contents.isDataFlavorSupported(DataFlavor.stringFlavor)) {
         val text = contents.getTransferData(DataFlavor.stringFlavor).asInstanceOf[String]
         val result = new StringWriter
-        replacer.process(
-          new BufferedReader(new StringReader(text)),
-          new PrintWriter(result))
+        replacer.process(new BufferedReader(new StringReader(text)), new PrintWriter(result))
         clipboard.setContents(new StringSelection(result.toString), this)
         println("Replaced clipboard contents")
       }
@@ -65,9 +63,7 @@ object LogRoleReplace extends ClipboardOwner {
     } else if (args.length == 1) {
       val inputFile = new BufferedReader(new FileReader(args(0)))
       try {
-        replacer.process(
-          inputFile,
-          new PrintWriter(new OutputStreamWriter(System.out)))
+        replacer.process(inputFile, new PrintWriter(new OutputStreamWriter(System.out)))
       } finally {
         inputFile.close()
       }
@@ -92,7 +88,8 @@ object LogRoleReplace extends ClipboardOwner {
 
 class LogRoleReplace {
 
-  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[[\w\-\+\.]+://.*@([\w\-\.]+):([0-9]+)\]""".r
+  private val RoleStarted =
+    """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[[\w\-\+\.]+://.*@([\w\-\.]+):([0-9]+)\]""".r
   private val ColorCode = """\u001B?\[[0-9]+m"""
 
   private var replacements: Map[String, String] = Map.empty
@@ -127,17 +124,17 @@ class LogRoleReplace {
     }
 
     line match {
-      case RoleStarted(jvm, role, host, port) ⇒
-        replacements += (jvm → role)
-        replacements += ((host + ":" + port) → role)
+      case RoleStarted(jvm, role, host, port) =>
+        replacements += (jvm -> role)
+        replacements += ((host + ":" + port) -> role)
         false
-      case _ ⇒ true
+      case _ => true
     }
   }
 
   private def replaceLine(line: String): String = {
     var result = line
-    for ((from, to) ← replacements) {
+    for ((from, to) <- replacements) {
       result = result.replaceAll(from, to)
     }
     result

@@ -25,11 +25,11 @@ import akka.util.OptionVal
 abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
   private var _receive: OptionVal[Receive[T]] = OptionVal.None
   private def receive: Receive[T] = _receive match {
-    case OptionVal.None ⇒
+    case OptionVal.None =>
       val receive = createReceive
       _receive = OptionVal.Some(receive)
       receive
-    case OptionVal.Some(r) ⇒ r
+    case OptionVal.Some(r) => r
   }
 
   @throws(classOf[Exception])
@@ -42,13 +42,13 @@ abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
 
   /**
    * Implement this to define how messages and signals are processed. Use the
-   * [[AbstractBehavior.receiveBuilder]] to define the message dispatch.
+   * [[AbstractBehavior.newReceiveBuilder]] to define the message dispatch.
    */
   def createReceive: Receive[T]
 
   /**
-   * Create a [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
+   * Create a new [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
    * Typically used from [[AbstractBehavior.createReceive]].
    */
-  def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
+  def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
 }

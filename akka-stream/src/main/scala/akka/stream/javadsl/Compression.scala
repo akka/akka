@@ -9,6 +9,7 @@ import akka.stream.scaladsl
 import akka.util.ByteString
 
 object Compression {
+
   /**
    * Creates a Flow that decompresses gzip-compressed stream of data.
    *

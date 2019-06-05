@@ -19,13 +19,13 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
   "The Future2Actor bridge" must {
 
     "support convenient sending to multiple destinations" in {
-      Future(42) pipeTo testActor pipeTo testActor
+      Future(42).pipeTo(testActor).pipeTo(testActor)
       expectMsgAllOf(1 second, 42, 42)
     }
 
     "support convenient sending to multiple destinations with implicit sender" in {
       implicit val someActor = system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }))
-      Future(42) pipeTo testActor pipeTo testActor
+      Future(42).pipeTo(testActor).pipeTo(testActor)
       expectMsgAllOf(1 second, 42, 42)
       lastSender should ===(someActor)
     }
@@ -40,8 +40,8 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
     "support reply via sender" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "do" ⇒ Future(31) pipeTo context.sender()
-          case "ex" ⇒ Future(throw new AssertionError) pipeTo context.sender()
+          case "do" => Future(31).pipeTo(context.sender())
+          case "ex" => Future(throw new AssertionError).pipeTo(context.sender())
         }
       }))
       Await.result(actor ? "do", timeout.duration) should ===(31)

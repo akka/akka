@@ -14,14 +14,16 @@ import Tcp._
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 
-trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
+trait TcpIntegrationSpecSupport { _: AkkaSpec =>
 
   class TestSetup(shouldBindServer: Boolean = true, runClientInExtraSystem: Boolean = true) {
     val clientSystem =
       if (runClientInExtraSystem) {
         val res = ActorSystem("TcpIntegrationSpec-client", system.settings.config)
         // terminate clientSystem after server system
-        system.whenTerminated.onComplete { _ ⇒ res.terminate() }(ExecutionContexts.sameThreadExecutionContext)
+        system.whenTerminated.onComplete { _ =>
+          res.terminate()
+        }(ExecutionContexts.sameThreadExecutionContext)
         res
       } else system
     val bindHandler = TestProbe()
@@ -38,11 +40,17 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
     def establishNewClientConnection(): (TestProbe, ActorRef, TestProbe, ActorRef) = {
       val connectCommander = TestProbe()(clientSystem)
       connectCommander.send(IO(Tcp)(clientSystem), Connect(endpoint, options = connectOptions))
-      val Connected(`endpoint`, localAddress) = connectCommander.expectMsgType[Connected]
+      val localAddress = connectCommander.expectMsgType[Connected] match {
+        case Connected(`endpoint`, localAddress) => localAddress
+        case Connected(other, _)                 => fail(s"No match: $other")
+      }
       val clientHandler = TestProbe()(clientSystem)
       connectCommander.sender() ! Register(clientHandler.ref)
 
-      val Connected(`localAddress`, `endpoint`) = bindHandler.expectMsgType[Connected]
+      bindHandler.expectMsgType[Connected] match {
+        case Connected(`localAddress`, `endpoint`) => //ok
+        case other                                 => fail(s"No match: ${other}")
+      }
       val serverHandler = TestProbe()
       bindHandler.sender() ! Register(serverHandler.ref)
 

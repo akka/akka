@@ -16,4 +16,3 @@ class SingleElementSourceTest extends AkkaPublisherVerification[Int] {
 
   override def maxElementsFromPublisher(): Long = 1
 }
-

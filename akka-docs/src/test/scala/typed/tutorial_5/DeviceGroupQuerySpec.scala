@@ -29,12 +29,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
-      val queryActor = spawn(DeviceGroupQuery(
-        deviceIdToActor,
-        requestId = 1,
-        requester = requester.ref,
-        timeout = 3.seconds
-      ))
+      val queryActor =
+        spawn(DeviceGroupQuery(deviceIdToActor, requestId = 1, requester = requester.ref, timeout = 3.seconds))
 
       device1.expectMessageType[Device.ReadTemperature]
       device2.expectMessageType[Device.ReadTemperature]
@@ -42,13 +38,10 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
       queryActor ! WrappedRespondTemperature(Device.RespondTemperature(requestId = 0, "device1", Some(1.0)))
       queryActor ! WrappedRespondTemperature(Device.RespondTemperature(requestId = 0, "device2", Some(2.0)))
 
-      requester.expectMessage(RespondAllTemperatures(
-        requestId = 1,
-        temperatures = Map(
-          "device1" -> Temperature(1.0),
-          "device2" -> Temperature(2.0)
-        )
-      ))
+      requester.expectMessage(
+        RespondAllTemperatures(
+          requestId = 1,
+          temperatures = Map("device1" -> Temperature(1.0), "device2" -> Temperature(2.0))))
     }
     //#query-test-normal
 
@@ -61,12 +54,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
-      val queryActor = spawn(DeviceGroupQuery(
-        deviceIdToActor,
-        requestId = 1,
-        requester = requester.ref,
-        timeout = 3.seconds
-      ))
+      val queryActor =
+        spawn(DeviceGroupQuery(deviceIdToActor, requestId = 1, requester = requester.ref, timeout = 3.seconds))
 
       device1.expectMessageType[Device.ReadTemperature]
       device2.expectMessageType[Device.ReadTemperature]
@@ -74,13 +63,10 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
       queryActor ! WrappedRespondTemperature(Device.RespondTemperature(requestId = 0, "device1", None))
       queryActor ! WrappedRespondTemperature(Device.RespondTemperature(requestId = 0, "device2", Some(2.0)))
 
-      requester.expectMessage(RespondAllTemperatures(
-        requestId = 1,
-        temperatures = Map(
-          "device1" -> TemperatureNotAvailable,
-          "device2" -> Temperature(2.0)
-        )
-      ))
+      requester.expectMessage(
+        RespondAllTemperatures(
+          requestId = 1,
+          temperatures = Map("device1" -> TemperatureNotAvailable, "device2" -> Temperature(2.0))))
     }
     //#query-test-no-reading
 
@@ -93,12 +79,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
-      val queryActor = spawn(DeviceGroupQuery(
-        deviceIdToActor,
-        requestId = 1,
-        requester = requester.ref,
-        timeout = 3.seconds
-      ))
+      val queryActor =
+        spawn(DeviceGroupQuery(deviceIdToActor, requestId = 1, requester = requester.ref, timeout = 3.seconds))
 
       device1.expectMessageType[Device.ReadTemperature]
       device2.expectMessageType[Device.ReadTemperature]
@@ -107,13 +89,10 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       device2.stop()
 
-      requester.expectMessage(RespondAllTemperatures(
-        requestId = 1,
-        temperatures = Map(
-          "device1" -> Temperature(2.0),
-          "device2" -> DeviceNotAvailable
-        )
-      ))
+      requester.expectMessage(
+        RespondAllTemperatures(
+          requestId = 1,
+          temperatures = Map("device1" -> Temperature(2.0), "device2" -> DeviceNotAvailable)))
     }
     //#query-test-stopped
 
@@ -126,12 +105,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
-      val queryActor = spawn(DeviceGroupQuery(
-        deviceIdToActor,
-        requestId = 1,
-        requester = requester.ref,
-        timeout = 3.seconds
-      ))
+      val queryActor =
+        spawn(DeviceGroupQuery(deviceIdToActor, requestId = 1, requester = requester.ref, timeout = 3.seconds))
 
       device1.expectMessageType[Device.ReadTemperature]
       device2.expectMessageType[Device.ReadTemperature]
@@ -141,13 +116,10 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       device2.stop()
 
-      requester.expectMessage(RespondAllTemperatures(
-        requestId = 1,
-        temperatures = Map(
-          "device1" -> Temperature(1.0),
-          "device2" -> Temperature(2.0)
-        )
-      ))
+      requester.expectMessage(
+        RespondAllTemperatures(
+          requestId = 1,
+          temperatures = Map("device1" -> Temperature(1.0), "device2" -> Temperature(2.0))))
     }
     //#query-test-stopped-later
 
@@ -160,12 +132,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
-      val queryActor = spawn(DeviceGroupQuery(
-        deviceIdToActor,
-        requestId = 1,
-        requester = requester.ref,
-        timeout = 200.millis
-      ))
+      val queryActor =
+        spawn(DeviceGroupQuery(deviceIdToActor, requestId = 1, requester = requester.ref, timeout = 200.millis))
 
       device1.expectMessageType[Device.ReadTemperature]
       device2.expectMessageType[Device.ReadTemperature]
@@ -174,13 +142,10 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       // no reply from device2
 
-      requester.expectMessage(RespondAllTemperatures(
-        requestId = 1,
-        temperatures = Map(
-          "device1" -> Temperature(1.0),
-          "device2" -> DeviceTimedOut
-        )
-      ))
+      requester.expectMessage(
+        RespondAllTemperatures(
+          requestId = 1,
+          temperatures = Map("device1" -> Temperature(1.0), "device2" -> DeviceTimedOut)))
     }
     //#query-test-timeout
 

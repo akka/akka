@@ -30,7 +30,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def disableInterest(op: Int) = ()
         def enableInterest(op: Int) = ()
-        def cancelAndClose(andThen: () ⇒ Unit): Unit = ()
+        def cancelAndClose(andThen: () => Unit): Unit = ()
       }
       bindCommander.expectMsgType[Bound]
     }
@@ -47,7 +47,7 @@ class TcpListenerSpec extends AkkaSpec("""
 
       expectWorkerForCommand
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       // and pick up the last remaining connection on the next ChannelAcceptable
@@ -61,13 +61,13 @@ class TcpListenerSpec extends AkkaSpec("""
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
     }
 
@@ -75,16 +75,16 @@ class TcpListenerSpec extends AkkaSpec("""
       bindListener()
 
       attemptConnectionToEndpoint()
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
 
       listener ! ResumeAccepting(batchSize = 1)
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       // No more accepts are allowed now
-      interestCallReceiver.expectNoMsg(100.millis)
+      interestCallReceiver.expectNoMessage(100.millis)
 
       listener ! ResumeAccepting(batchSize = 2)
       interestCallReceiver.expectMsg(OP_ACCEPT)
@@ -92,17 +92,17 @@ class TcpListenerSpec extends AkkaSpec("""
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
       // There is still one token remaining, accepting
       interestCallReceiver.expectMsg(OP_ACCEPT)
 
       attemptConnectionToEndpoint()
       listener ! ChannelAcceptable
       expectWorkerForCommand
-      selectorRouter.expectNoMsg(100.millis)
+      selectorRouter.expectNoMessage(100.millis)
 
       // Tokens are depleted now
-      interestCallReceiver.expectNoMsg(100.millis)
+      interestCallReceiver.expectNoMessage(100.millis)
     }
 
     "react to Unbind commands by replying with Unbound and stopping itself" in new TestSetup(pullMode = false) {
@@ -123,7 +123,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! ChannelAcceptable
       val channel = expectWorkerForCommand
 
-      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
+      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1).intercept {
         listener ! FailedRegisterIncoming(channel)
         awaitCond(!channel.isOpen)
       }
@@ -152,7 +152,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
-        def cancelAndClose(andThen: () ⇒ Unit): Unit = {
+        def cancelAndClose(andThen: () => Unit): Unit = {
           register.channel.close()
           require(!register.channel.isRegistered)
           andThen()
@@ -167,7 +167,7 @@ class TcpListenerSpec extends AkkaSpec("""
 
     def expectWorkerForCommand: SocketChannel =
       selectorRouter.expectMsgPF() {
-        case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
+        case WorkerForCommand(RegisterIncoming(chan), commander, _) =>
           chan.isOpen should ===(true)
           commander should ===(listener)
           chan
@@ -175,12 +175,17 @@ class TcpListenerSpec extends AkkaSpec("""
 
     private class ListenerParent(pullMode: Boolean) extends Actor with ChannelRegistry {
       val listener = context.actorOf(
-        props = Props(classOf[TcpListener], selectorRouter.ref, Tcp(system), this, bindCommander.ref,
+        props = Props(
+          classOf[TcpListener],
+          selectorRouter.ref,
+          Tcp(system),
+          this,
+          bindCommander.ref,
           Bind(handler.ref, endpoint, 100, Nil, pullMode)).withDeploy(Deploy.local),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
       def receive: Receive = {
-        case msg ⇒ parent.ref forward msg
+        case msg => parent.ref.forward(msg)
       }
       override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -191,5 +196,6 @@ class TcpListenerSpec extends AkkaSpec("""
 
 }
 object TcpListenerSpec {
-  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
+  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
+      extends NoSerializationVerificationNeeded
 }

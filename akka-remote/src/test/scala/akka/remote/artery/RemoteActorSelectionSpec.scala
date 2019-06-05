@@ -4,7 +4,18 @@
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorRefScope, ActorSelection, Identify, PoisonPill, Props, Terminated }
+import akka.actor.{
+  Actor,
+  ActorIdentity,
+  ActorLogging,
+  ActorRef,
+  ActorRefScope,
+  ActorSelection,
+  Identify,
+  PoisonPill,
+  Props,
+  Terminated
+}
 import akka.testkit.{ ImplicitSender, TestActors }
 
 import scala.concurrent.duration._
@@ -18,11 +29,11 @@ object RemoteActorSelectionSpec {
     log.info("Started")
     def receive = {
       // if we get props and a name, create a child, send ref back
-      case ActorCreateReq(p, n) ⇒
+      case ActorCreateReq(p, n) =>
         log.info(s"Creating child $n")
         sender() ! context.actorOf(p, n)
       // or select actor from here
-      case ActorSelReq(s) ⇒ sender() ! context.actorSelection(s)
+      case ActorSelReq(s) => sender() ! context.actorSelection(s)
     }
   }
   def selectionActorProps = Props(new SelectionActor)
@@ -54,13 +65,9 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
           }
         """
 
-      val localSystem = newRemoteSystem(
-        extraConfig = Some(config(localPort)),
-        name = Some(localSysName))
+      val localSystem = newRemoteSystem(extraConfig = Some(config(localPort)), name = Some(localSysName))
 
-      newRemoteSystem(
-        extraConfig = Some(config(remotePort)),
-        name = Some(remoteSysName))
+      newRemoteSystem(extraConfig = Some(config(remotePort)), name = Some(remoteSysName))
 
       val localLooker2 = localSystem.actorOf(selectionActorProps, "looker2")
 
@@ -79,7 +86,7 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
       localGrandchildSelection ! 54
       expectMsg(54)
       lastSender should ===(localGrandchild)
-      lastSender should be theSameInstanceAs localGrandchild
+      (lastSender should be).theSameInstanceAs(localGrandchild)
       localGrandchildSelection ! Identify(localGrandchildSelection)
       val grandchild2 = expectMsgType[ActorIdentity].ref
       grandchild2 should ===(Some(localGrandchild))
@@ -89,11 +96,11 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
       localLooker2 ! ActorSelReq("child/..")
       expectMsgType[ActorSelection] ! Identify(None)
-      expectMsgType[ActorIdentity].ref.get should be theSameInstanceAs localLooker2
+      (expectMsgType[ActorIdentity].ref.get should be).theSameInstanceAs(localLooker2)
 
       localSystem.actorSelection(localSystem / "looker2" / "child") ! ActorSelReq("..")
       expectMsgType[ActorSelection] ! Identify(None)
-      expectMsgType[ActorIdentity].ref.get should be theSameInstanceAs localLooker2
+      (expectMsgType[ActorIdentity].ref.get should be).theSameInstanceAs(localLooker2)
 
       localGrandchild ! ((TestActors.echoActorProps, "grandgrandchild"))
       val grandgrandchild = expectMsgType[ActorRef]

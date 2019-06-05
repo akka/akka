@@ -9,20 +9,19 @@ import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.event.Logging;
 import akka.japi.Pair;
-import akka.persistence.SnapshotMetadata;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.NoOffset;
 import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
-import akka.persistence.typed.EventAdapter;
-import akka.persistence.typed.ExpectingReply;
-import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.testkit.javadsl.EventFilter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
@@ -42,7 +41,9 @@ import static org.junit.Assert.assertEquals;
 
 public class PersistentActorJavaDslTest extends JUnitSuite {
 
-  public static final Config config = conf().withFallback(ConfigFactory.load());
+  public static final Config config =
+      ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]")
+          .withFallback(conf().withFallback(ConfigFactory.load()));
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -189,9 +190,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
     private final ActorContext<Command> ctx;
 
-    CounterBehavior(PersistenceId persistentId, ActorContext<Command> ctx) {
+    CounterBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
       super(
-          persistentId,
+          persistenceId,
           SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
       this.ctx = ctx;
     }
@@ -200,16 +201,16 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     public CommandHandler<Command, Incremented, State> commandHandler() {
       return newCommandHandlerBuilder()
           .forAnyState()
-          .matchCommand(Increment.class, this::increment)
-          .matchCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
-          .matchCommand(GetValue.class, this::getValue)
-          .matchCommand(IncrementLater.class, this::incrementLater)
-          .matchCommand(DelayFinished.class, this::delayFinished)
-          .matchCommand(Increment100OnTimeout.class, this::increment100OnTimeout)
-          .matchCommand(Timeout.class, this::timeout)
-          .matchCommand(EmptyEventsListAndThenLog.class, this::emptyEventsListAndThenLog)
-          .matchCommand(StopThenLog.class, this::stopThenLog)
-          .matchCommand(IncrementTwiceAndLog.class, this::incrementTwiceAndLog)
+          .onCommand(Increment.class, this::increment)
+          .onCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
+          .onCommand(GetValue.class, this::getValue)
+          .onCommand(IncrementLater.class, this::incrementLater)
+          .onCommand(DelayFinished.class, this::delayFinished)
+          .onCommand(Increment100OnTimeout.class, this::increment100OnTimeout)
+          .onCommand(Timeout.class, this::timeout)
+          .onCommand(EmptyEventsListAndThenLog.class, this::emptyEventsListAndThenLog)
+          .onCommand(StopThenLog.class, this::stopThenLog)
+          .onCommand(IncrementTwiceAndLog.class, this::incrementTwiceAndLog)
           .build();
     }
 
@@ -272,7 +273,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     public EventHandler<State, Incremented> eventHandler() {
       return newEventHandlerBuilder()
           .forAnyState()
-          .matchEvent(Incremented.class, this::applyIncremented)
+          .onEvent(Incremented.class, this::applyIncremented)
           .build();
     }
 
@@ -411,8 +412,19 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
-                  public void onSnapshot(SnapshotMetadata meta, Optional<Throwable> result) {
-                    snapshotProbe.ref().tell(result);
+                  public SignalHandler<State> signalHandler() {
+                    return newSignalHandlerBuilder()
+                        .onSignal(
+                            SnapshotCompleted.class,
+                            (state, completed) -> {
+                              snapshotProbe.ref().tell(Optional.empty());
+                            })
+                        .onSignal(
+                            SnapshotFailed.class,
+                            (state, signal) -> {
+                              snapshotProbe.ref().tell(Optional.of(signal.getFailure()));
+                            })
+                        .build();
                   }
                 });
     ActorRef<Command> c = testKit.spawn(snapshoter);
@@ -449,7 +461,31 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
     c.tell(StopThenLog.INSTANCE);
-    probe.expectTerminated(c, Duration.ofSeconds(1));
+    probe.expectTerminated(c);
+  }
+
+  @Test
+  public void postStop() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    Behavior<Command> counter =
+        Behaviors.setup(
+            ctx ->
+                new CounterBehavior(new PersistenceId("c5"), ctx) {
+
+                  @Override
+                  public SignalHandler<State> signalHandler() {
+                    return newSignalHandlerBuilder()
+                        .onSignal(
+                            PostStop.instance(),
+                            state -> {
+                              probe.ref().tell("stopped");
+                            })
+                        .build();
+                  }
+                });
+    ActorRef<Command> c = testKit.spawn(counter);
+    c.tell(StopThenLog.INSTANCE);
+    probe.expectMessage("stopped");
   }
 
   @Test
@@ -458,6 +494,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
         new BehaviorInterceptor<Command, Command>() {
+
+          @Override
+          public Class<? extends Command> interceptMessageType() {
+            return Command.class;
+          }
+
           @Override
           public Behavior<Command> aroundReceive(
               TypedActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
@@ -559,4 +601,145 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
   // event-wrapper
 
+  static class IncorrectExpectedStateForThenRun
+      extends EventSourcedBehavior<String, String, Object> {
+
+    private final ActorRef<String> startedProbe;
+
+    public IncorrectExpectedStateForThenRun(
+        ActorRef<String> startedProbe, PersistenceId persistenceId) {
+      super(persistenceId);
+      this.startedProbe = startedProbe;
+    }
+
+    @Override
+    public Object emptyState() {
+      return 1;
+    }
+
+    @Override
+    public CommandHandler<String, String, Object> commandHandler() {
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .onCommand(
+              msg -> msg.equals("expect wrong type"),
+              (context) ->
+                  Effect()
+                      .none()
+                      .thenRun(
+                          (String wrongType) -> {
+                            // wont happen
+                          }))
+          .build();
+    }
+
+    @Override
+    public SignalHandler<Object> signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (state, completed) -> {
+                startedProbe.tell("started!");
+              })
+          .build();
+    }
+
+    @Override
+    public EventHandler<Object, String> eventHandler() {
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .onAnyEvent((event, state) -> state); // keep Integer state
+    }
+  }
+
+  @Test
+  public void failOnIncorrectExpectedStateForThenRun() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    ActorRef<String> c =
+        testKit.spawn(
+            new IncorrectExpectedStateForThenRun(probe.getRef(), new PersistenceId("foiesftr")));
+
+    probe.expectMessage("started!"); // workaround for #26256
+
+    new EventFilter(Logging.Error.class, Adapter.toUntyped(testKit.system()))
+        .occurrences(1)
+        // the error messages slightly changed in later JDKs
+        .matches("(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
+        .intercept(
+            () -> {
+              c.tell("expect wrong type");
+              return null;
+            });
+
+    probe.expectTerminated(c);
+  }
+
+  class SequenceNumberBehavior extends EventSourcedBehavior<String, String, String> {
+    private final ActorRef<String> probe;
+    private final ActorContext<String> context;
+
+    public SequenceNumberBehavior(
+        PersistenceId persistenceId, ActorRef<String> probe, ActorContext<String> context) {
+      super(persistenceId);
+      this.probe = probe;
+      this.context = context;
+    }
+
+    @Override
+    public String emptyState() {
+      return "";
+    }
+
+    @Override
+    public CommandHandler<String, String, String> commandHandler() {
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .onAnyCommand(
+              (state, cmd) -> {
+                probe.tell(lastSequenceNumber(context) + " onCommand");
+                return Effect()
+                    .persist(cmd)
+                    .thenRun((newState) -> probe.tell(lastSequenceNumber(context) + " thenRun"));
+              });
+    }
+
+    @Override
+    public EventHandler<String, String> eventHandler() {
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .onAnyEvent(
+              (state, event) -> {
+                probe.tell(lastSequenceNumber(context) + " applyEvent");
+                return state + event;
+              });
+    }
+
+    @Override
+    public SignalHandler<String> signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (state, completed) -> {
+                probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
+              })
+          .build();
+    }
+  }
+
+  @Test
+  public void accessLastSequenceNumber() {
+    TestProbe<String> probe = testKit.createTestProbe(String.class);
+    ActorRef<String> ref =
+        testKit.spawn(
+            Behaviors.<String>setup(
+                context ->
+                    new SequenceNumberBehavior(
+                        new PersistenceId("seqnr1"), probe.getRef(), context)));
+
+    probe.expectMessage("0 onRecoveryCompleted");
+    ref.tell("cmd");
+    probe.expectMessage("0 onCommand");
+    probe.expectMessage("0 applyEvent");
+    probe.expectMessage("1 thenRun");
+  }
 }

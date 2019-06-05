@@ -88,6 +88,7 @@ sealed abstract class EventSeq {
   def events: immutable.Seq[Any]
 }
 object EventSeq {
+
   /** Java API */
   final def empty: EventSeq = EmptyEventSeq
 

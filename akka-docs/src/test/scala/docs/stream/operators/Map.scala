@@ -14,6 +14,6 @@ object Map {
 
   //#map
   val source: Source[Int, NotUsed] = Source(1 to 10)
-  val mapped: Source[String, NotUsed] = source.map(elem ⇒ elem.toString)
+  val mapped: Source[String, NotUsed] = source.map(elem => elem.toString)
   //#map
 }

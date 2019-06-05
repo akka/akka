@@ -21,9 +21,7 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
     val builder = ContainerFormats.Payload.newBuilder()
     val serializer = serialization.findSerializerFor(payload)
 
-    builder
-      .setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(payload)))
-      .setSerializerId(serializer.identifier)
+    builder.setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(payload))).setSerializerId(serializer.identifier)
 
     val ms = Serializers.manifestFor(serializer, payload)
     if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
@@ -33,10 +31,7 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
 
   def deserializePayload(payload: ContainerFormats.Payload): Any = {
     val manifest = if (payload.hasMessageManifest) payload.getMessageManifest.toStringUtf8 else ""
-    serialization.deserialize(
-      payload.getEnclosedMessage.toByteArray,
-      payload.getSerializerId,
-      manifest).get
+    serialization.deserialize(payload.getEnclosedMessage.toByteArray, payload.getSerializerId, manifest).get
   }
 
 }

@@ -14,7 +14,7 @@ import akka.actor.typed.scaladsl.Behaviors
 
 object IotSupervisor {
   def apply(): Behavior[Nothing] =
-    Behaviors.setup[Nothing](context ⇒ new IotSupervisor(context))
+    Behaviors.setup[Nothing](context => new IotSupervisor(context))
 }
 
 class IotSupervisor(context: ActorContext[Nothing]) extends AbstractBehavior[Nothing] {
@@ -26,7 +26,7 @@ class IotSupervisor(context: ActorContext[Nothing]) extends AbstractBehavior[Not
   }
 
   override def onSignal: PartialFunction[Signal, Behavior[Nothing]] = {
-    case PostStop ⇒
+    case PostStop =>
       context.log.info("IoT Application stopped")
       this
   }

@@ -15,7 +15,7 @@ import akka.actor.Props
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {
     def receive = {
-      case msg ⇒ ref forward msg
+      case msg => ref.forward(msg)
     }
   }
 }
@@ -36,7 +36,8 @@ class ActorRefSinkSpec extends StreamSpec {
 
     "cancel stream when actor terminates" in assertAllStagesStopped {
       val fw = system.actorOf(Props(classOf[Fw], testActor).withDispatcher("akka.test.stream-dispatcher"))
-      val publisher = TestSource.probe[Int].to(Sink.actorRef(fw, onCompleteMessage = "done")).run().sendNext(1).sendNext(2)
+      val publisher =
+        TestSource.probe[Int].to(Sink.actorRef(fw, onCompleteMessage = "done")).run().sendNext(1).sendNext(2)
       expectMsg(1)
       expectMsg(2)
       system.stop(fw)

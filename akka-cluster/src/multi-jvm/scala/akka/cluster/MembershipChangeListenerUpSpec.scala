@@ -24,8 +24,8 @@ class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUp
 class MembershipChangeListenerUpMultiJvmNode3 extends MembershipChangeListenerUpSpec
 
 abstract class MembershipChangeListenerUpSpec
-  extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import MembershipChangeListenerUpMultiJvmSpec._
   import ClusterEvent._
@@ -38,16 +38,16 @@ abstract class MembershipChangeListenerUpSpec
 
       runOn(first, second) {
         val latch = TestLatch()
-        val expectedAddresses = Set(first, second) map address
+        val expectedAddresses = Set(first, second).map(address)
         cluster.subscribe(system.actorOf(Props(new Actor {
           var members = Set.empty[Member]
           def receive = {
-            case state: CurrentClusterState ⇒ members = state.members
-            case MemberUp(m) ⇒
+            case state: CurrentClusterState => members = state.members
+            case MemberUp(m) =>
               members = members - m + m
               if (members.map(_.address) == expectedAddresses)
                 latch.countDown()
-            case _ ⇒ // ignore
+            case _ => // ignore
           }
         }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("listener-1-registered")
@@ -65,16 +65,16 @@ abstract class MembershipChangeListenerUpSpec
     "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       val latch = TestLatch()
-      val expectedAddresses = Set(first, second, third) map address
+      val expectedAddresses = Set(first, second, third).map(address)
       cluster.subscribe(system.actorOf(Props(new Actor {
         var members = Set.empty[Member]
         def receive = {
-          case state: CurrentClusterState ⇒ members = state.members
-          case MemberUp(m) ⇒
+          case state: CurrentClusterState => members = state.members
+          case MemberUp(m) =>
             members = members - m + m
             if (members.map(_.address) == expectedAddresses)
               latch.countDown()
-          case _ ⇒ // ignore
+          case _ => // ignore
         }
       }).withDeploy(Deploy.local)), classOf[MemberEvent])
       enterBarrier("listener-2-registered")

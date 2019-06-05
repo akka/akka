@@ -14,16 +14,18 @@ import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
  * Internal API
  */
 @InternalApi
-final class ServiceKeySerializer(val system: akka.actor.ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
+final class ServiceKeySerializer(val system: akka.actor.ExtendedActorSystem)
+    extends SerializerWithStringManifest
+    with BaseSerializer {
   def manifest(o: AnyRef): String = o match {
-    case key: DefaultServiceKey[_] ⇒ key.typeName
-    case _ ⇒
+    case key: DefaultServiceKey[_] => key.typeName
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case serviceKey: DefaultServiceKey[_] ⇒ serviceKey.id.getBytes(StandardCharsets.UTF_8)
-    case _ ⇒
+    case serviceKey: DefaultServiceKey[_] => serviceKey.id.getBytes(StandardCharsets.UTF_8)
+    case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
 

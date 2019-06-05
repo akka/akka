@@ -39,19 +39,19 @@ trait Timers extends Actor {
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     msg match {
-      case timerMsg: TimerSchedulerImpl.TimerMsg ⇒
+      case timerMsg: TimerSchedulerImpl.TimerMsg =>
         _timers.interceptTimerMsg(timerMsg) match {
-          case OptionVal.Some(m: AutoReceivedMessage) ⇒
+          case OptionVal.Some(m: AutoReceivedMessage) =>
             context.asInstanceOf[ActorCell].autoReceiveMessage(Envelope(m, self))
-          case OptionVal.Some(m) ⇒
+          case OptionVal.Some(m) =>
             if (this.isInstanceOf[Stash]) {
               // this is important for stash interaction, as stash will look directly at currentMessage #24557
               actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
             }
             super.aroundReceive(receive, m)
-          case OptionVal.None ⇒ // discard
+          case OptionVal.None => // discard
         }
-      case _ ⇒
+      case _ =>
         super.aroundReceive(receive, msg)
     }
   }
@@ -65,6 +65,7 @@ trait Timers extends Actor {
  * and thus are cancelled automatically when it is restarted or stopped.
  */
 abstract class AbstractActorWithTimers extends AbstractActor with Timers {
+
   /**
    * Start and cancel timers via the enclosed `TimerScheduler`.
    */

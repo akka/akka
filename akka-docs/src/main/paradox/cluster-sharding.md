@@ -130,7 +130,8 @@ Java
 @@@ div { .group-scala }
 
 A more comprehensive sample is available in the
-tutorial named [Akka Cluster Sharding with Scala!](https://github.com/typesafehub/activator-akka-cluster-sharding-scala).
+@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
+@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)].
 
 @@@
 
@@ -173,8 +174,8 @@ Where `#` is a number to distinguish between instances as there are multiple in 
  1. Incoming message `M1` to `ShardRegion` instance `SR1`.
  2. `M1` is mapped to shard `S1`. `SR1` doesn't know about `S1`, so it asks the `SC` for the location of `S1`.
  3. `SC` answers that the home of `S1` is `SR1`.
- 4. `R1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
- 5. All incoming messages for `S1` which arrive at `R1` can be handled by `R1` without `SC`. It creates entity children as needed, and forwards messages to them.
+ 4. `SR1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
+ 5. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. It creates entity children as needed, and forwards messages to them.
 
 #### Scenario 2: Message to an unknown shard that belongs to a remote ShardRegion 
 
@@ -344,12 +345,12 @@ are thereafter delivered to a new incarnation of the entity.
 
 ### Automatic Passivation
 
-The entities can be configured to be automatically passivated if they haven't received
-a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
+The entities are automatically passivated if they haven't received a message within the duration configured in
+`akka.cluster.sharding.passivate-idle-entity-after` 
 or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
 time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity. 
-By default automatic passivation is disabled. 
+to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
+Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
 
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
@@ -378,6 +379,14 @@ configuration of the `akka.cluster.sharding.distributed-data.durable.lmdb.dir`, 
 the default directory contains the remote port of the actor system. If using a dynamically
 assigned port (0) it will be different each time and the previously stored data will not
 be loaded.
+
+The reason for storing the identifiers of the active entities in durable storage, i.e. stored to
+disk, is that the same entities should be started also after a complete cluster restart. If this is not needed
+you can disable durable storage and benefit from better performance by using the following configuration:
+
+```
+akka.cluster.sharding.distributed-data.durable.keys = []
+```
 
 When `rememberEntities` is set to false, a `Shard` will not automatically restart any entities
 after a rebalance or recovering from a crash. Entities will only be started once the first message
@@ -412,6 +421,8 @@ Java
 :  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
+
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#Sharding)
 
 ## Graceful Shutdown
 
@@ -515,3 +526,24 @@ When doing rolling upgrades special care must be taken to not change any of the 
  * the persistence mode
 
  If any one of these needs a change it will require a full cluster restart.
+ 
+
+## Lease
+
+A @ref[lease](coordination.md) can be used as an additional safety measure to ensure a shard 
+does not run on two nodes.
+
+Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+
+A lease can be a final backup that means that each shard won't create child entity actors unless it has the lease. 
+
+To use a lease for sharding set `akka.cluster.sharding.use-lease` to the configuration location
+of the lease to use. Each shard will try and acquire a lease with with the name `<actor system name>-shard-<type name>-<shard id>` and
+the owner is set to the `Cluster(system).selfAddress.hostPort`.
+
+If a shard can't acquire a lease it will remain uninitialized so messages for entities it owns will
+be buffered in the `ShardRegion`. If the lease is lost after initialization the Shard will be terminated.

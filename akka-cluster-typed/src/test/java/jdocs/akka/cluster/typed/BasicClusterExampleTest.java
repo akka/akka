@@ -14,16 +14,15 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-// FIXME these tests are awaiting typed Java testkit to be able to await cluster forming like in
-// BasicClusterExampleSpec
+// FIXME use awaitAssert to await cluster forming like in BasicClusterExampleSpec
 public class BasicClusterExampleTest { // extends JUnitSuite {
 
   private Config clusterConfig =
       ConfigFactory.parseString(
           "akka { \n"
               + "  actor.provider = cluster \n"
-              + "  remote { \n"
-              + "    netty.tcp { \n"
+              + "  remote.artery { \n"
+              + "    canonical { \n"
               + "      hostname = \"127.0.0.1\" \n"
               + "      port = 2551 \n"
               + "    } \n"
@@ -32,7 +31,7 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
 
   private Config noPort =
       ConfigFactory.parseString(
-          "      akka.remote.netty.tcp.port = 0 \n"
+          "      akka.remote.classic.netty.tcp.port = 0 \n"
               + "      akka.remote.artery.canonical.port = 0 \n");
 
   // @Test

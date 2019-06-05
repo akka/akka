@@ -35,8 +35,7 @@ object SystemMessageDeliverySpec {
 
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
        akka.loglevel = INFO
        akka.remote.artery.advanced.stop-idle-outbound-after = 1000 ms
        akka.remote.artery.advanced.inject-handshake-interval = 500 ms
@@ -50,13 +49,9 @@ object SystemMessageDeliverySpec {
 class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
   import SystemMessageDeliverySpec._
 
-  val addressA = UniqueAddress(
-    address(system),
-    AddressUidExtension(system).longAddressUid)
+  val addressA = UniqueAddress(address(system), AddressUidExtension(system).longAddressUid)
   val systemB = newRemoteSystem(name = Some("systemB"))
-  val addressB = UniqueAddress(
-    address(systemB),
-    AddressUidExtension(systemB).longAddressUid)
+  val addressB = UniqueAddress(address(systemB), AddressUidExtension(systemB).longAddressUid)
   val rootB = RootActorPath(addressB.address)
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
@@ -66,47 +61,48 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
   system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
   systemB.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
 
-  private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
+  private def send(
+      sendCount: Int,
+      resendInterval: FiniteDuration,
+      outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
     Source(1 to sendCount)
-      .map(n ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, TestSysMsg("msg-" + n), OptionVal.None))
+      .map(n => outboundEnvelopePool.acquire().init(OptionVal.None, TestSysMsg("msg-" + n), OptionVal.None))
       .via(new SystemMessageDelivery(outboundContext, deadLetters, resendInterval, maxBufferSize = 1000))
   }
 
   private def inbound(inboundContext: InboundContext): Flow[OutboundEnvelope, InboundEnvelope, NotUsed] = {
     val recipient = OptionVal.None // not used
     Flow[OutboundEnvelope]
-      .map(outboundEnvelope ⇒ outboundEnvelope.message match {
-        case sysEnv: SystemMessageEnvelope ⇒
-          InboundEnvelope(recipient, sysEnv, OptionVal.None, addressA.uid,
-            inboundContext.association(addressA.uid))
-      })
+      .map(outboundEnvelope =>
+        outboundEnvelope.message match {
+          case sysEnv: SystemMessageEnvelope =>
+            InboundEnvelope(recipient, sysEnv, OptionVal.None, addressA.uid, inboundContext.association(addressA.uid))
+        })
       .async
       .via(new SystemMessageAcker(inboundContext))
   }
 
   private def drop(dropSeqNumbers: Vector[Long]): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] = {
-    Flow[OutboundEnvelope]
-      .statefulMapConcat(() ⇒ {
-        var dropping = dropSeqNumbers
+    Flow[OutboundEnvelope].statefulMapConcat(() => {
+      var dropping = dropSeqNumbers
 
-        {
-          outboundEnvelope ⇒
-            outboundEnvelope.message match {
-              case SystemMessageEnvelope(_, seqNo, _) ⇒
-                val i = dropping.indexOf(seqNo)
-                if (i >= 0) {
-                  dropping = dropping.updated(i, -1L)
-                  Nil
-                } else
-                  List(outboundEnvelope)
-              case _ ⇒ Nil
-            }
+      { outboundEnvelope =>
+        outboundEnvelope.message match {
+          case SystemMessageEnvelope(_, seqNo, _) =>
+            val i = dropping.indexOf(seqNo)
+            if (i >= 0) {
+              dropping = dropping.updated(i, -1L)
+              Nil
+            } else
+              List(outboundEnvelope)
+          case _ => Nil
         }
-      })
+      }
+    })
   }
 
-  private def randomDrop[T](dropRate: Double): Flow[T, T, NotUsed] = Flow[T].mapConcat { elem ⇒
+  private def randomDrop[T](dropRate: Double): Flow[T, T, NotUsed] = Flow[T].mapConcat { elem =>
     if (ThreadLocalRandom.current().nextDouble() < dropRate) Nil
     else List(elem)
   }
@@ -137,11 +133,12 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
         expectMsgType[ActorIdentity].ref.get
       }
 
-      val idleTimeout = RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Advanced.StopIdleOutboundAfter
+      val idleTimeout =
+        RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Advanced.StopIdleOutboundAfter
       val rnd = ThreadLocalRandom.current()
 
-      (1 to 5).foreach { _ ⇒
-        (1 to 1).foreach { _ ⇒
+      (1 to 5).foreach { _ =>
+        (1 to 1).foreach { _ =>
           watch(remoteRef)
           unwatch(remoteRef)
         }
@@ -289,7 +286,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
           .map(_.message.asInstanceOf[TestSysMsg])
           .runWith(Sink.seq)
 
-      Await.result(output, 30.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
+      Await.result(output, 30.seconds) should ===((1 to N).map(n => TestSysMsg("msg-" + n)).toVector)
     }
 
     "deliver all during throttling and random dropping" in {
@@ -308,7 +305,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
           .map(_.message.asInstanceOf[TestSysMsg])
           .runWith(Sink.seq)
 
-      Await.result(output, 30.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
+      Await.result(output, 30.seconds) should ===((1 to N).map(n => TestSysMsg("msg-" + n)).toVector)
     }
   }
 }

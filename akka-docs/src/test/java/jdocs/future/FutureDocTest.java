@@ -637,7 +637,6 @@ public class FutureDocTest extends AbstractJavaTest {
   public void useOnOnComplete() throws Exception {
     {
       Future<String> future = Futures.successful("foo");
-
       // #onComplete
       final ExecutionContext ec = system.dispatcher();
 

@@ -9,13 +9,16 @@ import akka.actor.setup.ActorSystemSetup
 import akka.remote.RARP
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.Outcome
+import org.scalatest.Pending
 
 /**
  * Base class for remoting tests what needs to test interaction between a "local" actor system
  * which is always created (the usual AkkaSpec system), and multiple additional actor systems over artery
  */
-abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withFallback(ArterySpecSupport.defaultConfig))
-  with FlightRecorderSpecIntegration {
+abstract class ArteryMultiNodeSpec(config: Config)
+    extends AkkaSpec(config.withFallback(ArterySpecSupport.defaultConfig))
+    with FlightRecorderSpecIntegration {
 
   def this() = this(ConfigFactory.empty())
   def this(extraConfig: String) = this(ConfigFactory.parseString(extraConfig))
@@ -30,32 +33,38 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   def freePort(): Int = {
     val udp = ArteryMultiNodeSpec.arteryUdpEnabled(system.settings.config)
     (address(system).host match {
-      case Some(host) ⇒ SocketUtil.temporaryServerAddress(host, udp)
-      case None       ⇒ SocketUtil.temporaryServerAddress(udp = udp)
+      case Some(host) => SocketUtil.temporaryServerAddress(host, udp)
+      case None       => SocketUtil.temporaryServerAddress(udp = udp)
     }).getPort
   }
 
   private var remoteSystems: Vector[ActorSystem] = Vector.empty
+
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    // note that withFixture is also used in FlightRecorderSpecIntegration
+    if (!RARP(system).provider.remoteSettings.Artery.Enabled) {
+      info(s"${getClass.getName} is only enabled for Artery")
+      Pending
+    } else
+      super.withFixture(test)
+  }
 
   /**
    * @return A new actor system configured with artery enabled. The system will
    *         automatically be terminated after test is completed to avoid leaks.
    */
   def newRemoteSystem(
-    extraConfig: Option[String]           = None,
-    name:        Option[String]           = None,
-    setup:       Option[ActorSystemSetup] = None): ActorSystem = {
+      extraConfig: Option[String] = None,
+      name: Option[String] = None,
+      setup: Option[ActorSystemSetup] = None): ActorSystem = {
     val config =
-      ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(
-        localSystem.settings.config
-      )(
-          str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
-        ))
+      ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(localSystem.settings.config)(str =>
+        ConfigFactory.parseString(str).withFallback(localSystem.settings.config)))
     val sysName = name.getOrElse(nextGeneratedSystemName)
 
     val remoteSystem = setup match {
-      case None    ⇒ ActorSystem(sysName, config)
-      case Some(s) ⇒ ActorSystem(sysName, s.and(BootstrapSetup.apply(config)))
+      case None    => ActorSystem(sysName, config)
+      case Some(s) => ActorSystem(sysName, s.and(BootstrapSetup.apply(config)))
     }
 
     remoteSystems = remoteSystems :+ remoteSystem
@@ -64,7 +73,7 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   }
 
   override def afterTermination(): Unit = {
-    remoteSystems.foreach(sys ⇒ shutdown(sys))
+    remoteSystems.foreach(sys => shutdown(sys))
     (system +: remoteSystems).foreach(handleFlightRecorderFile)
     remoteSystems = Vector.empty
     super.afterTermination()

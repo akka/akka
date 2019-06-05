@@ -16,7 +16,7 @@ object HandshakeDenySpec {
   val commonConfig = ConfigFactory.parseString(s"""
      akka.loglevel = WARNING
      akka.remote.artery.advanced.handshake-timeout = 2s
-     akka.remote.artery.advanced.image-liveness-timeout = 1.9s
+     akka.remote.artery.advanced.aeron.image-liveness-timeout = 1.9s
   """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
@@ -32,12 +32,14 @@ class HandshakeDenySpec extends ArteryMultiNodeSpec(HandshakeDenySpec.commonConf
 
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
-      EventFilter.warning(start = "Dropping Handshake Request from").intercept {
-        sel ! Identify("hi echo")
-        // handshake timeout and Identify message in SendQueue is sent to deadLetters,
-        // which generates the ActorIdentity(None)
-        expectMsg(5.seconds, ActorIdentity("hi echo", None))
-      }(systemB)
+      EventFilter
+        .warning(start = "Dropping Handshake Request from")
+        .intercept {
+          sel ! Identify("hi echo")
+          // handshake timeout and Identify message in SendQueue is sent to deadLetters,
+          // which generates the ActorIdentity(None)
+          expectMsg(5.seconds, ActorIdentity("hi echo", None))
+        }(systemB)
     }
 
   }

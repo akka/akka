@@ -586,6 +586,15 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustWorkFromFutureVoid() throws Exception {
+    CompletionStage<Void> future = CompletableFuture.completedFuture(null);
+    CompletionStage<List<Void>> future2 =
+        Source.fromCompletionStage(future).runWith(Sink.seq(), materializer);
+    List<Void> result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(0, result.size());
+  }
+
+  @Test
   public void mustWorkFromRange() throws Exception {
     CompletionStage<List<Integer>> f =
         Source.range(0, 10).grouped(20).runWith(Sink.<List<Integer>>head(), materializer);
@@ -1111,5 +1120,12 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUsePreMaterialize() {
     final Pair<NotUsed, Source<Integer, NotUsed>> p =
         Source.<Integer>empty().preMaterialize(materializer);
+  }
+
+  @Test
+  public void mustBeAbleToConvertToJavaInJava() {
+    final akka.stream.scaladsl.Source<Integer, NotUsed> scalaSource =
+        akka.stream.scaladsl.Source.empty();
+    Source<Integer, NotUsed> javaSource = scalaSource.asJava();
   }
 }

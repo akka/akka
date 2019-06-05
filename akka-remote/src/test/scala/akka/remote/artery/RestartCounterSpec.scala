@@ -24,7 +24,7 @@ class RestartCounterSpec extends WordSpec with Matchers {
 
     "allow sporadic restarts" in {
       val counter = new RestartCounter(3, 10.millis)
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         counter.restart() should ===(true)
         Thread.sleep(20)
       }

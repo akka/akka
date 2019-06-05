@@ -23,9 +23,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
   trait Fixture {
     //#authors
-    val authors = Flow[Tweet]
-      .filter(_.hashtags.contains(akkaTag))
-      .map(_.author)
+    val authors = Flow[Tweet].filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     //#authors
 
@@ -110,8 +108,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
     //#source-fanoutPublisher
     val authorPublisher: Publisher[Author] =
-      Source.fromPublisher(tweets).via(authors)
-        .runWith(Sink.asPublisher(fanout = true))
+      Source.fromPublisher(tweets).via(authors).runWith(Sink.asPublisher(fanout = true))
 
     authorPublisher.subscribe(storage)
     authorPublisher.subscribe(alert)
@@ -142,7 +139,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     // An example Processor factory
     def createProcessor: Processor[Int, Int] = Flow[Int].toProcessor.run()
 
-    val flow: Flow[Int, Int, NotUsed] = Flow.fromProcessor(() ⇒ createProcessor)
+    val flow: Flow[Int, Int, NotUsed] = Flow.fromProcessor(() => createProcessor)
     //#use-processor
 
   }

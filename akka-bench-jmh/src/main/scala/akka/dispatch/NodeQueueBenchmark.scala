@@ -42,8 +42,8 @@ mailbox {
   implicit val sys = ActorSystem("ANQ", config)
   val ref = sys.actorOf(Props(new Actor {
     def receive = {
-      case Stop ⇒ sender() ! Stop
-      case _    ⇒
+      case Stop => sender() ! Stop
+      case _    =>
     }
   }).withDispatcher("dispatcher").withMailbox("mailbox"), "receiver")
 

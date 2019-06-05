@@ -35,6 +35,7 @@ object DistributedData extends ExtensionId[DistributedData] {
  */
 @DoNotInherit
 abstract class DistributedData extends Extension {
+
   /**
    * `ActorRef` of the [[Replicator]] .
    */
@@ -57,7 +58,7 @@ abstract class DistributedData extends Extension {
 }
 
 object DistributedDataSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ DistributedData): DistributedDataSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => DistributedData): DistributedDataSetup =
     new DistributedDataSetup(new java.util.function.Function[ActorSystem[_], DistributedData] {
       override def apply(sys: ActorSystem[_]): DistributedData = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12
@@ -70,4 +71,4 @@ object DistributedDataSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class DistributedDataSetup(createExtension: java.util.function.Function[ActorSystem[_], DistributedData])
-  extends ExtensionSetup[DistributedData](DistributedData, createExtension)
+    extends ExtensionSetup[DistributedData](DistributedData, createExtension)

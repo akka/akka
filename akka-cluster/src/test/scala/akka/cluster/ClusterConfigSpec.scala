@@ -6,16 +6,16 @@ package akka.cluster
 
 import language.postfixOps
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
-
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
 
+import com.github.ghik.silencer.silent
+
+@silent
 class ClusterConfigSpec extends AkkaSpec {
 
   "Clustering" must {
@@ -49,7 +49,7 @@ class ClusterConfigSpec extends AkkaSpec {
       SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
-      UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      UseDispatcher should ===(Dispatchers.InternalDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)
@@ -57,15 +57,16 @@ class ClusterConfigSpec extends AkkaSpec {
     }
 
     "be able to parse non-default cluster config elements" in {
-      val settings = new ClusterSettings(ConfigFactory.parseString(
-        """
+      val settings = new ClusterSettings(
+        ConfigFactory.parseString("""
           |akka {
           |  cluster {
           |    roles = [ "hamlet" ]
           |    multi-data-center.self-data-center = "blue"
           |  }
           |}
-        """.stripMargin).withFallback(ConfigFactory.load()), system.name)
+        """.stripMargin).withFallback(ConfigFactory.load()),
+        system.name)
       import settings._
       Roles should ===(Set("hamlet", ClusterSettings.DcRolePrefix + "blue"))
       SelfDataCenter should ===("blue")

@@ -10,19 +10,19 @@ package akka.util
 
 object LineNumberSpecCodeForScala {
 
-  val oneline = (s: String) ⇒ println(s)
+  val oneline = (s: String) => println(s)
 
-  val twoline = (s: String) ⇒ {
+  val twoline = (s: String) => {
     println(s)
     Integer.parseInt(s)
   }
 
   val partial: PartialFunction[String, Unit] = {
-    case "a" ⇒
-    case "b" ⇒
+    case "a" =>
+    case "b" =>
   }
 
-  def method(s: String) = () ⇒ {
+  def method(s: String) = () => {
     println(s)
     Integer.parseInt(s)
   }

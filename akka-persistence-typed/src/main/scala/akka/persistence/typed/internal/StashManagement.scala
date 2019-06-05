@@ -4,23 +4,18 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.ActorRef
-import akka.actor.DeadLetter
-import akka.actor.StashOverflowException
 import akka.actor.typed.Behavior
+import akka.actor.typed.Dropped
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.scaladsl.StashOverflowException
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.annotation.InternalApi
-import akka.persistence.DiscardToDeadLetterStrategy
-import akka.persistence.ReplyToStrategy
-import akka.persistence.ThrowOverflowExceptionStrategy
 import akka.util.ConstantFun
-import akka.{ actor ⇒ untyped }
 
 /** INTERNAL API: Stash management for persistent behaviors */
 @InternalApi
 private[akka] trait StashManagement[C, E, S] {
-  import akka.actor.typed.scaladsl.adapter._
 
   def setup: BehaviorSetup[C, E, S]
 
@@ -45,17 +40,20 @@ private[akka] trait StashManagement[C, E, S] {
   private def stash(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
     logStashMessage(msg, buffer)
 
-    try buffer.stash(msg) catch {
-      case e: StashOverflowException ⇒
-        setup.stashOverflowStrategy match {
-          case DiscardToDeadLetterStrategy ⇒
-            val noSenderBecauseAkkaTyped: ActorRef = untyped.ActorRef.noSender
-            context.system.deadLetters.tell(DeadLetter(msg, noSenderBecauseAkkaTyped, context.self.toUntyped))
-
-          case ReplyToStrategy(_) ⇒
-            throw new RuntimeException("ReplyToStrategy does not make sense at all in Akka Typed, since there is no sender()!")
-
-          case ThrowOverflowExceptionStrategy ⇒
+    try buffer.stash(msg)
+    catch {
+      case e: StashOverflowException =>
+        setup.settings.stashOverflowStrategy match {
+          case StashOverflowStrategy.Drop =>
+            if (context.log.isWarningEnabled) {
+              val dropName = msg match {
+                case InternalProtocol.IncomingCommand(actual) => actual.getClass.getName
+                case other                                    => other.getClass.getName
+              }
+              context.log.warning("Stash buffer is full, dropping message [{}]", dropName)
+            }
+            context.system.toUntyped.eventStream.publish(Dropped(msg, context.self))
+          case StashOverflowStrategy.Fail =>
             throw e
         }
     }
@@ -98,21 +96,27 @@ private[akka] trait StashManagement[C, E, S] {
     stashState.isUnstashAllInProgress
 
   private def logStashMessage(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
-    if (setup.settings.logOnStashing) setup.log.debug(
-      "Stashing message to {} stash: [{}] ",
-      if (buffer eq stashState.internalStashBuffer) "internal" else "user", msg)
+    if (setup.settings.logOnStashing)
+      setup.log.debug(
+        "Stashing message to {} stash: [{}] ",
+        if (buffer eq stashState.internalStashBuffer) "internal" else "user",
+        msg)
   }
 
   private def logUnstashMessage(buffer: StashBuffer[InternalProtocol]): Unit = {
-    if (setup.settings.logOnStashing) setup.log.debug(
-      "Unstashing message from {} stash: [{}]",
-      if (buffer eq stashState.internalStashBuffer) "internal" else "user", buffer.head)
+    if (setup.settings.logOnStashing)
+      setup.log.debug(
+        "Unstashing message from {} stash: [{}]",
+        if (buffer eq stashState.internalStashBuffer) "internal" else "user",
+        buffer.head)
   }
 
   private def logUnstashAll(): Unit = {
-    if (setup.settings.logOnStashing) setup.log.debug(
-      "Unstashing all [{}] messages from user stash, first is: [{}]",
-      stashState.userStashBuffer.size, stashState.userStashBuffer.head)
+    if (setup.settings.logOnStashing)
+      setup.log.debug(
+        "Unstashing all [{}] messages from user stash, first is: [{}]",
+        stashState.userStashBuffer.size,
+        stashState.userStashBuffer.head)
   }
 
 }

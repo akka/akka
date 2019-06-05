@@ -148,13 +148,13 @@ class VectorClockSpec extends AkkaSpec {
       val clock2_2 = clock1_2 :+ node2
       val clock3_2 = clock2_2 :+ node2
 
-      val merged1 = clock3_2 merge clock5_1
+      val merged1 = clock3_2.merge(clock5_1)
       merged1.versions.size should ===(3)
       merged1.versions.contains(node1) should ===(true)
       merged1.versions.contains(node2) should ===(true)
       merged1.versions.contains(node3) should ===(true)
 
-      val merged2 = clock5_1 merge clock3_2
+      val merged2 = clock5_1.merge(clock3_2)
       merged2.versions.size should ===(3)
       merged2.versions.contains(node1) should ===(true)
       merged2.versions.contains(node2) should ===(true)
@@ -185,14 +185,14 @@ class VectorClockSpec extends AkkaSpec {
       val clock2_2 = clock1_2 :+ node4
       val clock3_2 = clock2_2 :+ node4
 
-      val merged1 = clock3_2 merge clock5_1
+      val merged1 = clock3_2.merge(clock5_1)
       merged1.versions.size should ===(4)
       merged1.versions.contains(node1) should ===(true)
       merged1.versions.contains(node2) should ===(true)
       merged1.versions.contains(node3) should ===(true)
       merged1.versions.contains(node4) should ===(true)
 
-      val merged2 = clock5_1 merge clock3_2
+      val merged2 = clock5_1.merge(clock3_2)
       merged2.versions.size should ===(4)
       merged2.versions.contains(node1) should ===(true)
       merged2.versions.contains(node2) should ===(true)
@@ -263,7 +263,7 @@ class VectorClockSpec extends AkkaSpec {
       c1.versions.contains(node1) should be(false)
       (c1 <> c) should be(true)
 
-      (c.prune(node1) merge c1).versions.contains(node1) should be(false)
+      c.prune(node1).merge(c1).versions.contains(node1) should be(false)
 
       val c2 = c :+ node2
       (c1 <> c2) should be(true)

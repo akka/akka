@@ -14,10 +14,13 @@ class FlatMapConcatDoubleSubscriberTest extends AkkaSubscriberBlackboxVerificati
 
   def createSubscriber(): Subscriber[Int] = {
     val subscriber = Promise[Subscriber[Int]]()
-    Source.single(Source.fromPublisher(new Publisher[Int] {
-      def subscribe(s: Subscriber[_ >: Int]): Unit =
-        subscriber.success(s.asInstanceOf[Subscriber[Int]])
-    })).flatMapConcat(identity).runWith(Sink.ignore)
+    Source
+      .single(Source.fromPublisher(new Publisher[Int] {
+        def subscribe(s: Subscriber[_ >: Int]): Unit =
+          subscriber.success(s.asInstanceOf[Subscriber[Int]])
+      }))
+      .flatMapConcat(identity)
+      .runWith(Sink.ignore)
 
     Await.result(subscriber.future, 1.second)
   }

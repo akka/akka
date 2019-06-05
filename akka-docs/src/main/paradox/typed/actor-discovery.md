@@ -29,38 +29,47 @@ The registry is dynamic. New actors can be registered during the lifecycle of th
 registered actors are stopped or a node is removed from the cluster. To facilitate this dynamic aspect you can also subscribe 
 to changes with the `Receptionist.Subscribe` message. It will send `Listing` messages to the subscriber when entries for a key are changed.
 
-The first scenario is an actor running that needs to be discovered by another actor but you are unable
+The primary scenario for using the receptionist is when an actor needs to be discovered by another actor but you are unable
 to put a reference to it in an incoming message.
 
-First we create a `PingService` actor and register it with the `Receptionist` against a
+These imports are used in the following example:
+
+Scala
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #import }
+
+Java
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #import }
+
+First we create a @scala[`pingService`]@java[`PingService`] actor and register it with the `Receptionist` against a
 `ServiceKey` that will later be used to lookup the reference:
 
 Scala
-:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExampleSpec.scala) { #ping-service }
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #ping-service }
 
 Java
-:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExampleTest.java) { #ping-service }
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #ping-service }
 
-Then we have another actor that requires a `PingService` to be constructed:
+Then we have another actor that requires a @scala[`pingService`]@java[`PingService`] to be constructed:
 
 Scala
-:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExampleSpec.scala) { #pinger }
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #pinger }
 
 Java
-:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExampleTest.java) { #pinger }
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #pinger }
 
 Finally in the guardian actor we spawn the service as well as subscribing to any actors registering
 against the `ServiceKey`. Subscribing means that the guardian actor will be informed of any
 new registrations via a `Listing` message:
 
 Scala
-:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExampleSpec.scala) { #pinger-guardian }
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #pinger-guardian }
 
 Java
-:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExampleTest.java) { #pinger-guardian }
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #pinger-guardian }
 
-Each time a new (which is just a single time in this example) `PingService` is registered the 
-guardian actor spawns a pinger to ping it.
+Each time a new (which is just a single time in this example) @scala[`pingService`]@java[`PingService`] is registered the
+guardian actor spawns a @scala[`pinger`]@java[`Pinger`] for each currently known `PingService`. The @scala[`pinger`]@java[`Pinger`]
+sends a `Ping` message and when receiving the `Pong` reply it stops.
 
 ## Cluster Receptionist
 

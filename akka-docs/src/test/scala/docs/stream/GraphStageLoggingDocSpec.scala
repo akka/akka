@@ -44,12 +44,8 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   "demonstrate logging in custom graphstage" in {
     val n = 10
     EventFilter.debug(start = "Randomly generated", occurrences = n).intercept {
-      Source.fromGraph(new RandomLettersSource)
-        .take(n)
-        .runWith(Sink.ignore)
-        .futureValue
+      Source.fromGraph(new RandomLettersSource).take(n).runWith(Sink.ignore).futureValue
     }
   }
 
 }
-

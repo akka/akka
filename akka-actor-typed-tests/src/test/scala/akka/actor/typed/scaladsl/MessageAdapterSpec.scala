@@ -17,8 +17,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object MessageAdapterSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.loggers = ["akka.testkit.TestEventListener"]
       akka.log-dead-letters = off
       ping-pong-dispatcher {
@@ -34,7 +33,7 @@ object MessageAdapterSpec {
 
 class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.config) with WordSpecLike {
 
-  implicit val untyped = system.toUntyped // FIXME no typed event filter yet
+  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
 
   "Message adapters" must {
 
@@ -45,25 +44,24 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       case class AnotherPong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.receive[Ping] { (context, message) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (context, message) =>
         message.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[AnotherPong]()
 
-      val snitch = Behaviors.setup[AnotherPong] { context ⇒
-
-        val replyTo = context.messageAdapter[Response](_ ⇒
-          AnotherPong(context.self.path.name, Thread.currentThread().getName))
+      val snitch = Behaviors.setup[AnotherPong] { context =>
+        val replyTo =
+          context.messageAdapter[Response](_ => AnotherPong(context.self.path.name, Thread.currentThread().getName))
         pingPong ! Ping(replyTo)
 
         // also verify the internal spawnMessageAdapter
-        val replyTo2: ActorRef[Response] = context.spawnMessageAdapter(_ ⇒
-          AnotherPong(context.self.path.name, Thread.currentThread().getName))
+        val replyTo2: ActorRef[Response] =
+          context.spawnMessageAdapter(_ => AnotherPong(context.self.path.name, Thread.currentThread().getName))
         pingPong ! Ping(replyTo2)
 
-        Behaviors.receiveMessage { anotherPong ⇒
+        Behaviors.receiveMessage { anotherPong =>
           probe.ref ! anotherPong
           Behaviors.same
         }
@@ -92,25 +90,24 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
       case class Wrapped(qualifier: String, response: Response)
 
       val pingPong = spawn(Behaviors.receiveMessage[Ping] {
-        case Ping1(sender) ⇒
+        case Ping1(sender) =>
           sender ! Pong1("hello-1")
           Behaviors.same
-        case Ping2(sender) ⇒
+        case Ping2(sender) =>
           sender ! Pong2("hello-2")
           Behaviors.same
       })
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.setup[Wrapped] { context ⇒
-
-        context.messageAdapter[Response](pong ⇒ Wrapped(qualifier = "wrong", pong)) // this is replaced
-        val replyTo1: ActorRef[Response] = context.messageAdapter(pong ⇒ Wrapped(qualifier = "1", pong))
-        val replyTo2 = context.messageAdapter[Pong2](pong ⇒ Wrapped(qualifier = "2", pong))
+      val snitch = Behaviors.setup[Wrapped] { context =>
+        context.messageAdapter[Response](pong => Wrapped(qualifier = "wrong", pong)) // this is replaced
+        val replyTo1: ActorRef[Response] = context.messageAdapter(pong => Wrapped(qualifier = "1", pong))
+        val replyTo2 = context.messageAdapter[Pong2](pong => Wrapped(qualifier = "2", pong))
         pingPong ! Ping1(replyTo1)
         pingPong ! Ping2(replyTo2)
 
-        Behaviors.receiveMessage { wrapped ⇒
+        Behaviors.receiveMessage { wrapped =>
           probe.ref ! wrapped
           Behaviors.same
         }
@@ -133,10 +130,10 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
       case class Wrapped(qualifier: String, response: Response)
 
       val pingPong = spawn(Behaviors.receiveMessage[Ping] {
-        case Ping1(sender) ⇒
+        case Ping1(sender) =>
           sender ! Pong1("hello-1")
           Behaviors.same
-        case Ping2(sender) ⇒
+        case Ping2(sender) =>
           // doing something terribly wrong
           sender ! Pong2("hello-2")
           Behaviors.same
@@ -144,16 +141,15 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.setup[Wrapped] { context ⇒
-
-        val replyTo1 = context.messageAdapter[Pong1](pong ⇒ Wrapped(qualifier = "1", pong))
+      val snitch = Behaviors.setup[Wrapped] { context =>
+        val replyTo1 = context.messageAdapter[Pong1](pong => Wrapped(qualifier = "1", pong))
         pingPong ! Ping1(replyTo1)
         // doing something terribly wrong
         // Pong2 message adapter not registered
         pingPong ! Ping2(replyTo1.asInstanceOf[ActorRef[Pong2]])
         pingPong ! Ping1(replyTo1)
 
-        Behaviors.receiveMessage { wrapped ⇒
+        Behaviors.receiveMessage { wrapped =>
           probe.ref ! wrapped
           Behaviors.same
         }
@@ -173,33 +169,34 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
       case class Pong(greeting: String)
       case class Wrapped(count: Int, response: Pong)
 
-      val pingPong = spawn(Behaviors.receiveMessage[Ping] { ping ⇒
+      val pingPong = spawn(Behaviors.receiveMessage[Ping] { ping =>
         ping.sender ! Pong("hello")
         Behaviors.same
       })
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.setup[Wrapped] { context ⇒
-
+      val snitch = Behaviors.setup[Wrapped] { context =>
         var count = 0
-        val replyTo = context.messageAdapter[Pong] { pong ⇒
+        val replyTo = context.messageAdapter[Pong] { pong =>
           count += 1
           if (count == 3) throw new TestException("boom")
           else Wrapped(count, pong)
         }
-        (1 to 4).foreach { _ ⇒
+        (1 to 4).foreach { _ =>
           pingPong ! Ping(replyTo)
         }
 
-        Behaviors.receiveMessage[Wrapped] { wrapped ⇒
-          probe.ref ! wrapped
-          Behaviors.same
-        }.receiveSignal {
-          case (_, PostStop) ⇒
-            probe.ref ! "stopped"
+        Behaviors
+          .receiveMessage[Wrapped] { wrapped =>
+            probe.ref ! wrapped
             Behaviors.same
-        }
+          }
+          .receiveSignal {
+            case (_, PostStop) =>
+              probe.ref ! "stopped"
+              Behaviors.same
+          }
       }
 
       EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
@@ -220,33 +217,35 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
       case class Pong(greeting: String)
       case class Wrapped(response: Pong)
 
-      val pingPong = spawn(Behaviors.receiveMessage[Ping] { ping ⇒
+      val pingPong = spawn(Behaviors.receiveMessage[Ping] { ping =>
         ping.sender ! Pong("hello")
         Behaviors.same
       })
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.setup[Wrapped] { context ⇒
-
-        val replyTo = context.messageAdapter[Pong] { pong ⇒
+      val snitch = Behaviors.setup[Wrapped] { context =>
+        val replyTo = context.messageAdapter[Pong] { pong =>
           Wrapped(pong)
         }
-        (1 to 5).foreach { _ ⇒
+        (1 to 5).foreach { _ =>
           pingPong ! Ping(replyTo)
         }
 
-        def behv(count: Int): Behavior[Wrapped] = Behaviors.receiveMessage[Wrapped] { wrapped ⇒
-          probe.ref ! count
-          if (count == 3) {
-            throw new TestException("boom")
-          }
-          behv(count + 1)
-        }.receiveSignal {
-          case (_, PostStop) ⇒
-            probe.ref ! "stopped"
-            Behaviors.same
-        }
+        def behv(count: Int): Behavior[Wrapped] =
+          Behaviors
+            .receiveMessage[Wrapped] { wrapped =>
+              probe.ref ! count
+              if (count == 3) {
+                throw new TestException("boom")
+              }
+              behv(count + 1)
+            }
+            .receiveSignal {
+              case (_, PostStop) =>
+                probe.ref ! "stopped"
+                Behaviors.same
+            }
 
         behv(count = 1)
       }

@@ -15,6 +15,7 @@ import scala.annotation.unchecked.uncheckedVariance
  * @see [[akka.stream.stage.GraphStage]]
  */
 trait Graph[+S <: Shape, +M] {
+
   /**
    * Type-level accessor for the shape parameter of this graph.
    */
@@ -23,6 +24,7 @@ trait Graph[+S <: Shape, +M] {
    * The shape of a graph is all that is externally visible: its inlets and outlets.
    */
   def shape: S
+
   /**
    * INTERNAL API.
    *
@@ -45,9 +47,7 @@ trait Graph[+S <: Shape, +M] {
    * @param dispatcher Run the graph on this dispatcher
    */
   def async(dispatcher: String) =
-    addAttributes(
-      Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
-    )
+    addAttributes(Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher))
 
   /**
    * Put an asynchronous boundary around this `Graph`
@@ -58,8 +58,7 @@ trait Graph[+S <: Shape, +M] {
   def async(dispatcher: String, inputBufferSize: Int) =
     addAttributes(
       Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
-        and Attributes.inputBuffer(inputBufferSize, inputBufferSize)
-    )
+      and Attributes.inputBuffer(inputBufferSize, inputBufferSize))
 
   /**
    * Add the given attributes to this [[Graph]]. If the specific attribute was already present
@@ -80,5 +79,4 @@ trait Graph[+S <: Shape, +M] {
 private[stream] abstract class GraphDelegate[+S <: Shape, +Mat](delegate: Graph[S, Mat]) extends Graph[S, Mat] {
   final override def shape: S = delegate.shape
   final override private[stream] def traversalBuilder: TraversalBuilder = delegate.traversalBuilder
-  final override def withAttributes(attr: Attributes): Graph[S, Mat] = delegate.withAttributes(attr)
 }

@@ -20,8 +20,8 @@ class FlowForeachSpec extends StreamSpec {
   "A runForeach" must {
 
     "call the procedure for each element" in assertAllStagesStopped {
-      Source(1 to 3).runForeach(testActor ! _) foreach {
-        _ ⇒ testActor ! "done"
+      Source(1 to 3).runForeach(testActor ! _).foreach { _ =>
+        testActor ! "done"
       }
       expectMsg(1)
       expectMsg(2)
@@ -30,16 +30,16 @@ class FlowForeachSpec extends StreamSpec {
     }
 
     "complete the future for an empty stream" in assertAllStagesStopped {
-      Source.empty[String].runForeach(testActor ! _) foreach {
-        _ ⇒ testActor ! "done"
+      Source.empty[String].runForeach(testActor ! _).foreach { _ =>
+        testActor ! "done"
       }
       expectMsg("done")
     }
 
     "yield the first error" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
-      Source.fromPublisher(p).runForeach(testActor ! _).failed foreach {
-        ex ⇒ testActor ! ex
+      Source.fromPublisher(p).runForeach(testActor ! _).failed.foreach { ex =>
+        testActor ! ex
       }
       val proc = p.expectSubscription()
       proc.expectRequest()
@@ -50,7 +50,7 @@ class FlowForeachSpec extends StreamSpec {
 
     "complete future with failure when function throws" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val future = Source.single(1).runForeach(_ ⇒ throw error)
+      val future = Source.single(1).runForeach(_ => throw error)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 

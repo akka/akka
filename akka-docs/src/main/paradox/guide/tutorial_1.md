@@ -34,7 +34,7 @@ In the Hello World example, we have already seen how `system.actorOf()`, creates
 _user defined_ hierarchy. You typically have only one (or very few) top level actors in your `ActorSystem`.
 We create child, or non-top-level, actors by invoking `context.actorOf()` from an existing actor. The `context.actorOf()` method has a signature identical to `system.actorOf()`, its top-level counterpart.
 
-The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&project=akka-quickstart-java)].
+The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
 
 
 In your Hello World project, navigate to the `com.example` package and create a new @scala[Scala file called `ActorHierarchyExperiments.scala`]@java[Java file called `ActorHierarchyExperiments.java`] here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt "runMain com.example.ActorHierarchyExperiments"` to observe the output.
@@ -145,10 +145,10 @@ java.lang.Exception: I failed!
         at akka.dispatch.Mailbox.processMailbox(Mailbox.scala:257)
         at akka.dispatch.Mailbox.run(Mailbox.scala:224)
         at akka.dispatch.Mailbox.exec(Mailbox.scala:234)
-        at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)
-        at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
-        at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
-        at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
+        at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:260)
+        at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
+        at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
+        at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
 ```
 
 We see that after failure the supervised actor is stopped and immediately restarted. We also see a log entry reporting the exception that was handled, in this case, our test exception. In this example we used `preStart()` and `postStop()` hooks

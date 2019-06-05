@@ -14,7 +14,7 @@ trait ZipLatestWithApply {
    *
    * @param zipper zipping-function from the input values to the output value
    */
-  def apply[[#A1#], O](zipper: ([#A1#]) ⇒ O): ZipLatestWith1[[#A1#], O] =
+  def apply[[#A1#], O](zipper: ([#A1#]) => O): ZipLatestWith1[[#A1#], O] =
     new ZipLatestWith1(zipper)
   #
 
@@ -23,7 +23,7 @@ trait ZipLatestWithApply {
 }
 
 [2..22#/** `ZipLatestWith` specialized for 1 inputs */
-class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape1[[#A1#], O]] {
+class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[FanInShape1[[#A1#], O]] {
   override def initialAttributes = Attributes.name("ZipLatestWith1")
   override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipLatestWith1")
   def out: Outlet[O] = shape.out
@@ -32,12 +32,12 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) { outer =>
       // Without this field the completion signalling would take one extra pull
-      var willShutDown = false
+      private var willShutDown = false
 
       [#val inlet0 = new ZipLatestInlet(in0)#
       ]
-      var waitingForTuple = false
-      var staleTupleValues = true
+      private var waitingForTuple = false
+      private var staleTupleValues = true
 
       override def preStart(): Unit = {
         [#pull(in0)#
@@ -96,8 +96,8 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
          }
 
          override def onUpstreamFinish(): Unit = {
-           if (outer.staleTupleValues) completeStage()
-           outer.willShutDown = true
+           if (!hasValue || outer.staleTupleValues) completeStage()
+           else outer.willShutDown = true
          }
        }
     }

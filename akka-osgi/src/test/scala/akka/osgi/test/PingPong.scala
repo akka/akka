@@ -18,7 +18,7 @@ object PingPong {
 
   class PongActor extends Actor {
     def receive = {
-      case Ping ⇒
+      case Ping =>
         sender() ! Pong
     }
   }

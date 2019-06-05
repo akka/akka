@@ -11,4 +11,4 @@ import akka.actor.ActorRef
  * See `Flow.ask` and `Flow.watch`.
  */
 final class WatchedActorTerminatedException(val watchingStageName: String, val ref: ActorRef)
-  extends RuntimeException(s"Actor watched by [$watchingStageName] has terminated! Was: $ref")
+    extends RuntimeException(s"Actor watched by [$watchingStageName] has terminated! Was: $ref")

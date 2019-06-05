@@ -89,7 +89,7 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template="Akka" layout="v75" minheight="400px" }
 
 @@@
 
@@ -265,7 +265,7 @@ calling the constructor manually:
 ### Dependency Injection
 
 If your `Actor` has a constructor that takes parameters then those need to
-be part of the `Props` as well, as described [above](Props_). But there
+be part of the `Props` as well, as described @ref:[above](#props). But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
 
@@ -291,42 +291,6 @@ Techniques for dependency injection and integration with dependency injection fr
 are described in more depth in the
 [Using Akka with Dependency Injection](http://letitcrash.com/post/55958814293/akka-dependency-injection)
 guideline and the [Akka Java Spring](https://github.com/typesafehub/activator-akka-java-spring) tutorial.
-
-### The Inbox
-
-When writing code outside of actors which shall communicate with actors, the
-`ask` pattern can be a solution (see below), but there are two things it
-cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
-to a notification service) and watching other actors’ lifecycle. For these
-purposes there is the `Inbox` class:
-
-Scala
-:  @@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
-
-Java
-:  @@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #inbox }
-
-
-@@@ div { .group-scala }
-
-There is an implicit conversion from inbox to actor reference which means that
-in this example the sender reference will be that of the actor hidden away
-within the inbox. This allows the reply to be received on the last line.
-Watching an actor is quite simple as well:
-
-@@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
-
-@@@
-
-@@@ div { .group-java }
-
-The `send` method wraps a normal `tell` and supplies the internal
-actor’s reference as the sender. This allows the reply to be received on the
-last line.  Watching an actor is quite simple as well:
-
-@@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #watch }
-
-@@@
 
 ## Actor API
 
@@ -505,8 +469,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1.
-    The old actor is informed by calling `preRestart` with the exception
+ 1. The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
 message, e.g. when a supervisor does not trap the exception and is restarted
@@ -633,7 +596,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting-artery.md#looking-up-remote-actors).
 
 ## Messages and immutability
 
@@ -662,7 +625,7 @@ Messages are sent to an Actor through one of the following methods.
 
  * @scala[`!`] @java[`tell` ] means “fire-and-forget”, e.g. send a message asynchronously and return
 immediately. @scala[Also known as `tell`.]
- * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a @scala:[`Future`]@java:[`CompletionStage`]
+ * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a @scala[`Future`]@java[`CompletionStage`]
 representing a possible reply. @scala[Also known as `ask`.]
 
 Message ordering is guaranteed on a per-sender basis.
@@ -737,24 +700,24 @@ Java
 This example demonstrates `ask` together with the `pipeTo` pattern on
 futures, because this is likely to be a common combination. Please note that
 all of the above is completely non-blocking and asynchronous: `ask` produces
-a @scala:[`Future`]@java:[`CompletionStage`], @scala[three] @java[two] of which are composed into a new future using the
+a @scala[`Future`]@java[`CompletionStage`], @scala[three] @java[two] of which are composed into a new future using the
 @scala[for-comprehension and then `pipeTo` installs an `onComplete`-handler on the `Future` to affect]
 @java[`CompletableFuture.allOf` and `thenApply` methods and then `pipe` installs a handler on the `CompletionStage` to effect]
 the submission of the aggregated `Result` to another actor.
 
 Using `ask` will send a message to the receiving Actor as with `tell`, and
 the receiving actor must reply with @scala[`sender() ! reply`] @java[`getSender().tell(reply, getSelf())` ] in order to
-complete the returned @scala:[`Future`]@java:[`CompletionStage`] with a value. The `ask` operation involves creating
+complete the returned @scala[`Future`]@java[`CompletionStage`] with a value. The `ask` operation involves creating
 an internal actor for handling this reply, which needs to have a timeout after
 which it is destroyed in order not to leak resources; see more below.
 
 @@@ warning
 
-To complete the @scala:[`Future`]@java:[`CompletionStage`] with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
+To complete the @scala[`Future`]@java[`CompletionStage`] with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
 This is *not done automatically* when an actor throws an exception while processing a message. 
 
-@scala:[Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated
-specially, and would complete the ask @scala:[`Future`]@java:[`CompletionStage`] with the given value - only the `akka.actor.Status` messages
+@scala[Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated
+specially, and would complete the ask @scala[`Future`]@java[`CompletionStage`] with the given value - only the `akka.actor.Status` messages
 are treated specially by the ask pattern.]
 
 @@@
@@ -765,7 +728,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #reply-exception }
 
-If the actor does not complete the @scala:[`Future`]@java:[`CompletionStage`], it will expire after the timeout period,
+If the actor does not complete the @scala[`Future`]@java[`CompletionStage`], it will expire after the timeout period,
 @scala[completing it with an `AskTimeoutException`. The timeout is taken from one of the following locations in order of precedence:]
 @java[specified as parameter to the `ask` method; this will complete the `CompletionStage` with an `AskTimeoutException`.]
 
@@ -783,8 +746,8 @@ See @ref:[Futures](futures.md) for more information on how to await or query a f
 
 @@@
 
-The @scala:[`onComplete` method of the `Future`]@java:[`thenRun` method of the `CompletionStage`] can be
-used to register a callback to get a notification when the @scala:[`Future`]@java:[`CompletionStage`] completes, giving
+The @scala[`onComplete` method of the `Future`]@java[`thenRun` method of the `CompletionStage`] can be
+used to register a callback to get a notification when the @scala[`Future`]@java[`CompletionStage`] completes, giving
 you a way to avoid blocking.
 
 @@@ warning
@@ -1131,6 +1094,8 @@ To enable a hard `System.exit` as a final action you can configure:
 akka.coordinated-shutdown.exit-jvm = on
 ```
 
+The coordinated shutdown process can also be started by calling `ActorSystem.terminate()`.
+
 When using @ref:[Akka Cluster](cluster-usage.md) the `CoordinatedShutdown` will automatically run
 when the cluster node sees itself as `Exiting`, i.e. leaving from another node will trigger
 the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
@@ -1161,6 +1126,7 @@ used in the test:
 ```
 # Don't terminate ActorSystem via CoordinatedShutdown in tests
 akka.coordinated-shutdown.terminate-actor-system = off
+akka.coordinated-shutdown.run-by-actor-system-terminate = off
 akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
 akka.cluster.run-coordinated-shutdown-when-down = off
 ```

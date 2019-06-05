@@ -6,7 +6,6 @@ package akka.actor.typed.internal
 
 import akka.actor.typed
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
-import akka.actor.typed.LogOptions.LogOptionsImpl
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
@@ -21,7 +20,7 @@ import akka.util.LineNumbers
 private[akka] object InterceptorImpl {
 
   def apply[O, I](interceptor: BehaviorInterceptor[O, I], nestedBehavior: Behavior[I]): Behavior[O] = {
-    Behavior.DeferredBehavior[O] { ctx ⇒
+    Behavior.DeferredBehavior[O] { ctx =>
       val interceptorBehavior = new InterceptorImpl[O, I](interceptor, nestedBehavior)
       interceptorBehavior.preStart(ctx)
     }
@@ -34,8 +33,10 @@ private[akka] object InterceptorImpl {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterceptor[O, I], val nestedBehavior: Behavior[I])
-  extends ExtensibleBehavior[O] with WrappingBehavior[O, I] {
+private[akka] final class InterceptorImpl[O, I](
+    val interceptor: BehaviorInterceptor[O, I],
+    val nestedBehavior: Behavior[I])
+    extends ExtensibleBehavior[O] {
 
   import BehaviorInterceptor._
 
@@ -43,6 +44,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     override def start(ctx: TypedActorContext[_]): Behavior[I] = {
       Behavior.start[I](nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]])
     }
+    override def toString: String = s"PreStartTarget($nestedBehavior)"
   }
 
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
@@ -51,11 +53,14 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
     override def signalRestart(ctx: TypedActorContext[_]): Unit =
       Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], PreRestart)
+
+    override def toString: String = s"ReceiveTarget($nestedBehavior)"
   }
 
   private val signalTarget = new SignalTarget[I] {
     override def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] =
       Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], signal)
+    override def toString: String = s"SignalTarget($nestedBehavior)"
   }
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
@@ -64,7 +69,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     deduplicate(started, ctx)
   }
 
-  override def replaceNested(newNested: Behavior[I]): Behavior[O] =
+  def replaceNested(newNested: Behavior[I]): Behavior[O] =
     new InterceptorImpl(interceptor, newNested)
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
@@ -89,8 +94,10 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
       val duplicateInterceptExists = Behavior.existsInStack(started) {
-        case i: InterceptorImpl[O, I] if interceptor.isSame(i.interceptor.asInstanceOf[BehaviorInterceptor[Any, Any]]) ⇒ true
-        case _ ⇒ false
+        case i: InterceptorImpl[O, I]
+            if interceptor.isSame(i.interceptor.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
+          true
+        case _ => false
       }
 
       if (duplicateInterceptExists) started.unsafeCast[O]
@@ -121,8 +128,8 @@ private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) exte
 
   // only once to the same actor in the same behavior stack
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case MonitorInterceptor(`actorRef`) ⇒ true
-    case _                              ⇒ false
+    case MonitorInterceptor(`actorRef`) => true
+    case _                              => false
   }
 
 }
@@ -151,8 +158,8 @@ private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) exten
 
   // only once in the same behavior stack
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case LogMessagesInterceptor(`opts`) ⇒ true
-    case _                              ⇒ false
+    case LogMessagesInterceptor(`opts`) => true
+    case _                              => false
   }
 }
 
@@ -162,40 +169,42 @@ private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) exten
 @InternalApi
 private[akka] object WidenedInterceptor {
 
-  private final val _any2null = (_: Any) ⇒ null
-  private final def any2null[T] = _any2null.asInstanceOf[Any ⇒ T]
+  private final val _any2null = (_: Any) => null
+  private final def any2null[T] = _any2null.asInstanceOf[Any => T]
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I]) extends BehaviorInterceptor[O, I] {
+private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I])
+    extends BehaviorInterceptor[O, I] {
   import WidenedInterceptor._
   import BehaviorInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     // If they use the same pf instance we can allow it, to have one way to workaround defining
     // "recursive" narrowed behaviors.
-    case WidenedInterceptor(`matcher`) ⇒ true
-    case WidenedInterceptor(otherMatcher) ⇒
+    case WidenedInterceptor(`matcher`)    => true
+    case WidenedInterceptor(otherMatcher) =>
       // there is no safe way to allow this
-      throw new IllegalStateException("Widen can only be used one time in the same behavior stack. " +
+      throw new IllegalStateException(
+        "Widen can only be used one time in the same behavior stack. " +
         s"One defined in ${LineNumbers(matcher)}, and another in ${LineNumbers(otherMatcher)}")
-    case _ ⇒ false
+    case _ => false
   }
 
   def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
     // widen would wrap the TimerMessage, which would be wrong, see issue #25318
     msg match {
-      case t: TimerMsg ⇒ throw new IllegalArgumentException(
-        s"Timers and widen can't be used together, [${t.key}]. See issue #25318")
-      case _ ⇒ ()
+      case t: TimerMsg =>
+        throw new IllegalArgumentException(s"Timers and widen can't be used together, [${t.key}]. See issue #25318")
+      case _ => ()
     }
 
     matcher.applyOrElse(msg, any2null) match {
-      case null        ⇒ Behavior.unhandled
-      case transformed ⇒ target(ctx, transformed)
+      case null        => Behavior.unhandled
+      case transformed => target(ctx, transformed)
     }
   }
 

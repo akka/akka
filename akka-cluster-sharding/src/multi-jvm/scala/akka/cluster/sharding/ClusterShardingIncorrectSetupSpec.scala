@@ -13,8 +13,7 @@ object ClusterShardingIncorrectSetupSpecConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  val commonConfig = ConfigFactory.parseString(
-    """
+  val commonConfig = ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.cluster.sharding {
          waiting-for-state-timeout = 100ms
@@ -29,15 +28,18 @@ class ClusterShardingIncorrectSetupMultiJvmNode2 extends ClusterShardingIncorrec
 
 object ClusterShardingIncorrectSetupSpec {
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 }
 
-abstract class ClusterShardingIncorrectSetupSpec extends MultiNodeSpec(ClusterShardingIncorrectSetupSpecConfig) with MultiNodeClusterSpec with ImplicitSender {
+abstract class ClusterShardingIncorrectSetupSpec
+    extends MultiNodeSpec(ClusterShardingIncorrectSetupSpecConfig)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import ClusterShardingIncorrectSetupSpec._
   import ClusterShardingIncorrectSetupSpecConfig._
@@ -60,4 +62,3 @@ abstract class ClusterShardingIncorrectSetupSpec extends MultiNodeSpec(ClusterSh
     }
   }
 }
-

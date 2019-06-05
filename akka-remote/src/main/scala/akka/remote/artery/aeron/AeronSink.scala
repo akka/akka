@@ -43,14 +43,14 @@ private[remote] object AeronSink {
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
 private[remote] class AeronSink(
-  channel:        String,
-  streamId:       Int,
-  aeron:          Aeron,
-  taskRunner:     TaskRunner,
-  pool:           EnvelopeBufferPool,
-  giveUpAfter:    Duration,
-  flightRecorder: EventSink)
-  extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
+    channel: String,
+    streamId: Int,
+    aeron: Aeron,
+    taskRunner: TaskRunner,
+    pool: EnvelopeBufferPool,
+    giveUpAfter: Duration,
+    flightRecorder: EventSink)
+    extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
   import FlightRecorderEvents._
@@ -71,8 +71,14 @@ private[remote] class AeronSink(
       private val spinning = 2 * taskRunner.idleCpuLevel
       private var backoffCount = spinning
       private var lastMsgSize = 0
-      private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ ⇒ taskOnOfferSuccess()),
-        giveUpAfter, getAsyncCallback(_ ⇒ onGiveUp()), getAsyncCallback(_ ⇒ onPublicationClosed()))
+      private val offerTask = new OfferTask(
+        pub,
+        null,
+        lastMsgSize,
+        getAsyncCallback(_ => taskOnOfferSuccess()),
+        giveUpAfter,
+        getAsyncCallback(_ => onGiveUp()),
+        getAsyncCallback(_ => onPublicationClosed()))
       private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false

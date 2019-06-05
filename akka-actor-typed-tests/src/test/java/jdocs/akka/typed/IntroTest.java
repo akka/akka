@@ -293,7 +293,7 @@ public class IntroTest {
           .onMessage(
               ChatRoom.SessionDenied.class,
               (context, message) -> {
-                System.out.println("cannot start chat room session: " + message.reason);
+                context.getLog().info("cannot start chat room session: {}", message.reason);
                 return Behaviors.stopped();
               })
           .onMessage(
@@ -305,8 +305,10 @@ public class IntroTest {
           .onMessage(
               ChatRoom.MessagePosted.class,
               (context, message) -> {
-                System.out.println(
-                    "message has been posted by '" + message.screenName + "': " + message.message);
+                context
+                    .getLog()
+                    .info(
+                        "message has been posted by '{}': {}", message.screenName, message.message);
                 return Behaviors.stopped();
               })
           .build();

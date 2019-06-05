@@ -6,11 +6,12 @@ package jdocs.persistence;
 
 import akka.actor.*;
 import akka.japi.Procedure;
+import akka.pattern.BackoffOpts;
 import akka.pattern.BackoffSupervisor;
 import akka.persistence.*;
-import java.time.Duration;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.Optional;
 
 public class LambdaPersistenceDocTest {
@@ -20,6 +21,7 @@ public class LambdaPersistenceDocTest {
   public interface PersistentActorMethods {
     // #persistence-id
     public String persistenceId();
+
     // #persistence-id
     // #recovery-status
     public boolean recoveryRunning();
@@ -136,7 +138,8 @@ public class LambdaPersistenceDocTest {
             final Props childProps = Props.create(MyPersistentActor1.class);
             final Props props =
                 BackoffSupervisor.props(
-                    childProps, "myActor", Duration.ofSeconds(3), Duration.ofSeconds(30), 0.2);
+                    BackoffOpts.onStop(
+                        childProps, "myActor", Duration.ofSeconds(3), Duration.ofSeconds(30), 0.2));
             getContext().actorOf(props, "mySupervisor");
             super.preStart();
           }

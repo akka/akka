@@ -43,7 +43,7 @@ public class HelloWorldPersistentEntityExample {
       sharding = ClusterSharding.get(system);
 
       sharding.init(
-          Entity.ofPersistentEntity(
+          Entity.ofEventSourcedEntity(
               HelloWorld.ENTITY_TYPE_KEY,
               ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
     }
@@ -132,10 +132,7 @@ public class HelloWorldPersistentEntityExample {
 
     @Override
     public CommandHandler<Command, Greeted, KnownPeople> commandHandler() {
-      return newCommandHandlerBuilder()
-          .forAnyState()
-          .matchCommand(Greet.class, this::greet)
-          .build();
+      return newCommandHandlerBuilder().forAnyState().onCommand(Greet.class, this::greet).build();
     }
 
     private Effect<Greeted, KnownPeople> greet(KnownPeople state, Greet cmd) {

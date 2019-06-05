@@ -51,11 +51,11 @@ class MessageBufferSpec extends WordSpec with Matchers {
       buffer.append("m2", "s2")
       buffer.append("m3", "s3")
       val sb1 = new StringBuilder()
-      buffer.foreach((m, s) ⇒ sb1.append(s"$m->$s:"))
+      buffer.foreach((m, s) => sb1.append(s"$m->$s:"))
       sb1.toString() should ===("m1->s1:m2->s2:m3->s3:")
       buffer.dropHead()
       val sb2 = new StringBuilder()
-      buffer.foreach((m, s) ⇒ sb2.append(s"$m->$s:"))
+      buffer.foreach((m, s) => sb2.append(s"$m->$s:"))
       sb2.toString() should ===("m2->s2:m3->s3:")
     }
   }
@@ -89,8 +89,8 @@ class MessageBufferSpec extends WordSpec with Matchers {
       map.append("id2", "m22", "s22")
       map.totalSize should ===(4)
       val sb = new StringBuilder()
-      map.getOrEmpty("id1").foreach((m, s) ⇒ sb.append(s"id1->$m->$s:"))
-      map.getOrEmpty("id2").foreach((m, s) ⇒ sb.append(s"id2->$m->$s:"))
+      map.getOrEmpty("id1").foreach((m, s) => sb.append(s"id1->$m->$s:"))
+      map.getOrEmpty("id2").foreach((m, s) => sb.append(s"id2->$m->$s:"))
       sb.toString() should ===("id1->m11->s11:id1->m12->s12:id2->m21->s21:id2->m22->s22:")
     }
   }

@@ -14,6 +14,7 @@ To use Utilities, you must add the following dependency in your project:
 
 @@@ index
 
+* [futures](futures.md)
 * [event-bus](event-bus.md)
 * [logging](logging.md)
 * [scheduler](scheduler.md)

@@ -55,20 +55,23 @@ object HoldOps {
       private var currentValue: T = _
       private var waitingFirstValue = true
 
-      setHandlers(in, out, new InHandler with OutHandler {
-        override def onPush(): Unit = {
-          currentValue = grab(in)
-          if (waitingFirstValue) {
-            waitingFirstValue = false
-            if (isAvailable(out)) push(out, currentValue)
+      setHandlers(
+        in,
+        out,
+        new InHandler with OutHandler {
+          override def onPush(): Unit = {
+            currentValue = grab(in)
+            if (waitingFirstValue) {
+              waitingFirstValue = false
+              if (isAvailable(out)) push(out, currentValue)
+            }
+            pull(in)
           }
-          pull(in)
-        }
 
-        override def onPull(): Unit = {
-          if (!waitingFirstValue) push(out, currentValue)
-        }
-      })
+          override def onPull(): Unit = {
+            if (!waitingFirstValue) push(out, currentValue)
+          }
+        })
 
       override def preStart(): Unit = {
         pull(in)
@@ -90,9 +93,7 @@ class RecipeHold extends RecipeSpec {
       val source = Source.fromPublisher(pub)
       val sink = Sink.fromSubscriber(sub)
 
-      source.via(new HoldWithInitial(0)).to(sink)
-        .withAttributes(Attributes.inputBuffer(1, 1))
-        .run()
+      source.via(new HoldWithInitial(0)).to(sink).withAttributes(Attributes.inputBuffer(1, 1)).run()
 
       val subscription = sub.expectSubscription()
       sub.expectNoMessage(100.millis)

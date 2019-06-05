@@ -1,6 +1,0 @@
-# #21688
-ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
-ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo")
-
-# #21989 - add more information in tcp connection shutdown logs (add mapError)
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError")

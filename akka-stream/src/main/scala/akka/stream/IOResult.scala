@@ -35,8 +35,8 @@ final case class IOResult(count: Long, status: Try[Done]) {
    * or throws [[UnsupportedOperationException]] otherwise.
    */
   def getError: Throwable = status match {
-    case Failure(t) ⇒ t
-    case Success(_) ⇒ throw new UnsupportedOperationException("IO operation was successful.")
+    case Failure(t) => t
+    case Success(_) => throw new UnsupportedOperationException("IO operation was successful.")
   }
 
 }
@@ -57,4 +57,5 @@ object IOResult {
  * while there was still IO operations in progress.
  */
 final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwable)
-  extends RuntimeException("Stream terminated without completing IO operation.", cause) with NoStackTrace
+    extends RuntimeException("Stream terminated without completing IO operation.", cause)
+    with NoStackTrace

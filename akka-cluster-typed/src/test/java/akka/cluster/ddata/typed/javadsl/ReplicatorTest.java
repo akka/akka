@@ -134,7 +134,7 @@ public class ReplicatorTest extends JUnitSuite {
 
     @Override
     public Receive<ClientCommand> createReceive() {
-      return receiveBuilder()
+      return newReceiveBuilder()
           .onMessage(Increment.class, this::onIncrement)
           .onMessage(InternalUpdateResponse.class, msg -> Behaviors.same())
           .onMessage(GetValue.class, this::onGetValue)
@@ -191,7 +191,7 @@ public class ReplicatorTest extends JUnitSuite {
   static Config config =
       ConfigFactory.parseString(
           "akka.actor.provider = cluster \n"
-              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n");
 

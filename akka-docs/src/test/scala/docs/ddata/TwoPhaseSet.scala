@@ -8,10 +8,7 @@ import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.GSet
 
 //#twophaseset
-case class TwoPhaseSet(
-  adds:     GSet[String] = GSet.empty,
-  removals: GSet[String] = GSet.empty)
-  extends ReplicatedData {
+case class TwoPhaseSet(adds: GSet[String] = GSet.empty, removals: GSet[String] = GSet.empty) extends ReplicatedData {
   type T = TwoPhaseSet
 
   def add(element: String): TwoPhaseSet =
@@ -20,11 +17,9 @@ case class TwoPhaseSet(
   def remove(element: String): TwoPhaseSet =
     copy(removals = removals.add(element))
 
-  def elements: Set[String] = adds.elements diff removals.elements
+  def elements: Set[String] = adds.elements.diff(removals.elements)
 
   override def merge(that: TwoPhaseSet): TwoPhaseSet =
-    copy(
-      adds = this.adds.merge(that.adds),
-      removals = this.removals.merge(that.removals))
+    copy(adds = this.adds.merge(that.adds), removals = this.removals.merge(that.removals))
 }
 //#twophaseset

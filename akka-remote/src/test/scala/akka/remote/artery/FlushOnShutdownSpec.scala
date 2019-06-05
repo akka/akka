@@ -23,16 +23,16 @@ class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultC
 
       localSystem.actorOf(Props(new Actor {
         def receive = {
-          case msg ⇒ probeRef ! msg
+          case msg => probeRef ! msg
         }
       }), "receiver")
 
       val actorOnSystemB = remoteSystem.actorOf(Props(new Actor {
         def receive = {
-          case "start" ⇒
+          case "start" =>
             context.actorSelection(rootActorPath(localSystem) / "user" / "receiver") ! Identify(None)
 
-          case ActorIdentity(_, Some(receiverRef)) ⇒
+          case ActorIdentity(_, Some(receiverRef)) =>
             receiverRef ! "msg1"
             receiverRef ! "msg2"
             receiverRef ! "msg3"

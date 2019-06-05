@@ -212,6 +212,10 @@ from other nodes might not be visible yet.
 When using @scala[`WriteLocal`]@java[`writeLocal`] the update is only written to the local replica and then disseminated
 in the background with the gossip protocol, which can take few seconds to spread to all nodes.
 
+When using `ReadLocal`, you will never receive a `GetFailure` response, since the local replica is always available to
+local readers. `WriteLocal` however may still reply with `UpdateFailure` messages, in the event that the `modify` function
+threw an exception, or, if using durable storage, if storing failed.
+
 `WriteAll` and `ReadAll` is the strongest consistency level, but also the slowest and with
 lowest availability. For example, it is enough that one node is unavailable for a `Get` request
 and you will not receive the value.
@@ -783,7 +787,7 @@ data entries, because then the remote message size will be too large.
 
  * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
 talk by Sean Cribbs
- * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&feature=youtu.be)
+ * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&amp;feature=youtu.be)
 talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.

@@ -17,8 +17,8 @@ object StreamTestKit {
    */
   def assertAllStagesStopped(mat: Materializer): Unit =
     mat match {
-      case impl: PhasedFusingActorMaterializer ⇒
+      case impl: PhasedFusingActorMaterializer =>
         scaladsl.StreamTestKit.assertNoChildren(impl.system, impl.supervisor)
-      case _ ⇒
+      case _ =>
     }
 }

@@ -35,11 +35,11 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
   override def postStop(): Unit = log.info("DeviceGroup {} stopped", groupId)
 
   override def receive: Receive = {
-    case trackMsg @ RequestTrackDevice(`groupId`, _) ⇒
+    case trackMsg @ RequestTrackDevice(`groupId`, _) =>
       deviceIdToActor.get(trackMsg.deviceId) match {
-        case Some(deviceActor) ⇒
-          deviceActor forward trackMsg
-        case None ⇒
+        case Some(deviceActor) =>
+          deviceActor.forward(trackMsg)
+        case None =>
           log.info("Creating device actor for {}", trackMsg.deviceId)
           val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), s"device-${trackMsg.deviceId}")
           //#device-group-register
@@ -47,22 +47,19 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
           actorToDeviceId += deviceActor -> trackMsg.deviceId
           //#device-group-register
           deviceIdToActor += trackMsg.deviceId -> deviceActor
-          deviceActor forward trackMsg
+          deviceActor.forward(trackMsg)
       }
 
-    case RequestTrackDevice(groupId, deviceId) ⇒
-      log.warning(
-        "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-        groupId, this.groupId
-      )
+    case RequestTrackDevice(groupId, deviceId) =>
+      log.warning("Ignoring TrackDevice request for {}. This actor is responsible for {}.", groupId, this.groupId)
     //#device-group-register
     //#device-group-remove
 
-    case RequestDeviceList(requestId) ⇒
+    case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
     //#device-group-remove
 
-    case Terminated(deviceActor) ⇒
+    case Terminated(deviceActor) =>
       val deviceId = actorToDeviceId(deviceActor)
       log.info("Device actor for {} has been terminated", deviceId)
       actorToDeviceId -= deviceActor

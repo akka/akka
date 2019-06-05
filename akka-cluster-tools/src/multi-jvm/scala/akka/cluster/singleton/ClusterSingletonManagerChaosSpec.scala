@@ -39,6 +39,7 @@ object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
@@ -46,7 +47,7 @@ object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
     testActor ! EchoStarted
 
     def receive = {
-      case _ ⇒ sender() ! self
+      case _ => sender() ! self
     }
   }
 }
@@ -59,14 +60,17 @@ class ClusterSingletonManagerChaosMultiJvmNode5 extends ClusterSingletonManagerC
 class ClusterSingletonManagerChaosMultiJvmNode6 extends ClusterSingletonManagerChaosSpec
 class ClusterSingletonManagerChaosMultiJvmNode7 extends ClusterSingletonManagerChaosSpec
 
-class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonManagerChaosSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerChaosSpec
+    extends MultiNodeSpec(ClusterSingletonManagerChaosSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerChaosSpec._
 
   override def initialParticipants = roles.size
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createSingleton()
     }
   }
@@ -82,7 +86,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def crash(roles: RoleName*): Unit = {
     runOn(controller) {
-      roles foreach { r ⇒
+      roles.foreach { r =>
         log.info("Shutdown [{}]", node(r).address)
         testConductor.exit(r, 0).await
       }
@@ -97,7 +101,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
       memberProbe.expectMsgType[MemberUp](15.seconds).member.address should ===(node(nodes.head).address)
     }
     runOn(nodes.head) {
-      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet should ===(
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) => m.address }.toSet should ===(
         nodes.map(node(_).address).toSet)
     }
     enterBarrier(nodes.head.name + "-up")

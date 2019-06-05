@@ -18,7 +18,8 @@ class PropsSpec extends WordSpec with Matchers {
     }
 
     "yield all configs of some type" in {
-      dispatcherFirst.allOf[DispatcherSelector] should ===(DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
+      dispatcherFirst.allOf[DispatcherSelector] should ===(
+        DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
     }
   }
 }

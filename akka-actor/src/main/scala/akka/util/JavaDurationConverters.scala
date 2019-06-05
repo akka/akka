@@ -3,9 +3,10 @@
  */
 
 package akka.util
-import java.time.{ Duration ⇒ JDuration }
+import java.time.{ Duration => JDuration }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 /**
  * INTERNAL API
  */

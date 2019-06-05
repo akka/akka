@@ -90,7 +90,7 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       expectMsgType[Tcp.Write]
       val fullResponse =
         encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.write() ++
-          encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.copy(id = 43).write()
+        encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.copy(id = 43).write()
       registered ! Tcp.Received(fullResponse.take(8))
       registered ! Tcp.Received(fullResponse.drop(8))
 

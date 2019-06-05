@@ -13,13 +13,13 @@ object MultiDcClusterActors {
   case class Ping(ref: ActorRef[Pong]) extends PingProtocol
   case object NoMore extends PingProtocol
 
-  val multiDcPinger = Behaviors.setup[PingProtocol] { ctx ⇒
+  val multiDcPinger = Behaviors.setup[PingProtocol] { ctx =>
     val cluster = Cluster(ctx.system)
     Behaviors.receiveMessage[PingProtocol] {
-      case Ping(ref) ⇒
+      case Ping(ref) =>
         ref ! Pong(cluster.selfMember.dataCenter)
         Behaviors.same
-      case NoMore ⇒
+      case NoMore =>
         Behaviors.stopped
     }
   }

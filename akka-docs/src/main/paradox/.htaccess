@@ -1,3 +1,24 @@
 RedirectMatch 301 ^(.*)/scala/(.*) $1/$2?language=scala
 RedirectMatch 301 ^(.*)/java/(.*) $1/$2?language=java
+
 RedirectMatch 301 ^(.*)/stream/stages-overview\.html.* $1/stream/operators/index.html
+RedirectMatch 301 ^(.*)/project/migration-guide-1\.3\.x-2\.0\.x\.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-2\.0\.x-2\.1\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-2\.1\.x-2\.2\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-2\.2\.x-2\.3\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-2\.2\.x-2\.3\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-2\.3\.x-2\.4\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-eventsourced-2\.3\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-persistence-experimental-2\.3\.x-2\.4\.x.html.* $1/project/migration-guide-old.html
+RedirectMatch 301 ^(.*)/project/migration-guide-stream-2\.0-2\.4.html.* $1/project/migration-guide-old.html
+
+RedirectMatch 301 ^(.*)/stream/stages-overview\.html$ $1/stream/operators/index.html
+RedirectMatch 301 ^(.*)/agents\.html$ $1/project/migration-guide-2.5.x-2.6.x.html
+RedirectMatch 301 ^(.*)/typed-actors\.html$ $1/project/migration-guide-2.5.x-2.6.x.html#typedactor
+
+
+RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/balance\.html$ $1/stream/operators/Balance.html
+RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/broadcast\.html$ $1/stream/operators/Broadcast.html
+RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/partition\.html$ $1/stream/operators/Partition.html
+RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/unzip\.html$ $1/stream/operators/unzip.html
+RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/UnzipWith\.html$ $1/stream/operators/UnzipWith.html

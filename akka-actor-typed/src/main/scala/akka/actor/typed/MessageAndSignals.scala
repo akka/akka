@@ -8,9 +8,10 @@ import akka.annotation.DoNotInherit
 
 /**
  * Envelope that is published on the eventStream for every message that is
- * dropped due to overfull queues.
+ * dropped due to overfull queues or routers with no routees.
  */
 final case class Dropped(msg: Any, recipient: ActorRef[Nothing]) {
+
   /** Java API */
   def getRecipient(): ActorRef[Void] = recipient.asInstanceOf[ActorRef[Void]]
 }
@@ -18,7 +19,9 @@ final case class Dropped(msg: Any, recipient: ActorRef[Nothing]) {
 /**
  * Exception that an actor fails with if it does not handle a Terminated message.
  */
-final case class DeathPactException(ref: ActorRef[Nothing]) extends RuntimeException(s"death pact with $ref was triggered") {
+final case class DeathPactException(ref: ActorRef[Nothing])
+    extends RuntimeException(s"death pact with $ref was triggered") {
+
   /** Java API */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 }
@@ -77,6 +80,7 @@ object Terminated {
  */
 @DoNotInherit
 sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
+
   /** Java API: The actor that was watched and got terminated */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 
@@ -85,8 +89,8 @@ sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
   override def hashCode(): Int = ref.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case Terminated(`ref`) ⇒ true
-    case _                 ⇒ false
+    case Terminated(`ref`) => true
+    case _                 => false
   }
 }
 
@@ -110,7 +114,7 @@ final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Te
   override def hashCode(): Int = ref.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case ChildFailed(`ref`, `cause`) ⇒ true
-    case _                           ⇒ false
+    case ChildFailed(`ref`, `cause`) => true
+    case _                           => false
   }
 }

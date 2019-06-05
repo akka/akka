@@ -6,6 +6,7 @@ package jdocs.pattern;
 
 import akka.actor.*;
 import akka.pattern.Backoff;
+import akka.pattern.BackoffOpts;
 import akka.pattern.BackoffSupervisor;
 import akka.testkit.TestActors.EchoActor;
 // #backoff-imports
@@ -20,7 +21,7 @@ public class BackoffSupervisorDocTest {
 
     final Props supervisorProps =
         BackoffSupervisor.props(
-            Backoff.onStop(
+            BackoffOpts.onStop(
                 childProps,
                 "myEcho",
                 Duration.ofSeconds(3),
@@ -37,7 +38,7 @@ public class BackoffSupervisorDocTest {
 
     final Props supervisorProps =
         BackoffSupervisor.props(
-            Backoff.onFailure(
+            BackoffOpts.onFailure(
                 childProps,
                 "myEcho",
                 Duration.ofSeconds(3),

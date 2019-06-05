@@ -5,15 +5,14 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.internal._
 
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.{ classTag, ClassTag }
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
-@ApiMayChange
 object Behaviors {
 
   /**
@@ -27,7 +26,7 @@ object Behaviors {
    * case it will be started immediately after it is returned, i.e. next message will be
    * processed by the started behavior.
    */
-  def setup[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
+  def setup[T](factory: ActorContext[T] => Behavior[T]): Behavior[T] =
     Behavior.DeferredBehavior(factory)
 
   /**
@@ -51,7 +50,7 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
-   * The PostStop signal that results from stopping this actor will be passed to the
+   * The `PostStop` signal that results from stopping this actor will be passed to the
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
@@ -62,11 +61,11 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
-   * The PostStop signal that results from stopping this actor will be passed to the
-   * given `postStop` behavior. All other messages and signals will effectively be
-   * ignored.
+   * The `PostStop` signal that results from stopping this actor will first be passed to the
+   * current behavior and then the provided `postStop` callback will be invoked.
+   * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: Behavior[T]): Behavior[T] = Behavior.stopped(postStop)
+  def stopped[T](postStop: () => Unit): Behavior[T] = Behavior.stopped(postStop)
 
   /**
    * A behavior that treats every incoming message as unhandled.
@@ -90,7 +89,7 @@ object Behaviors {
    * that can potentially be different from this one. State is maintained by returning
    * a new behavior that holds the new immutable state.
    */
-  def receive[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Receive[T] =
+  def receive[T](onMessage: (ActorContext[T], T) => Behavior[T]): Receive[T] =
     new ReceiveImpl(onMessage)
 
   /**
@@ -109,7 +108,7 @@ object Behaviors {
    * that can potentially be different from this one. State is maintained by returning
    * a new behavior that holds the new immutable state.
    */
-  def receiveMessage[T](onMessage: T ⇒ Behavior[T]): Receive[T] =
+  def receiveMessage[T](onMessage: T => Behavior[T]): Receive[T] =
     new ReceiveMessageImpl(onMessage)
 
   /**
@@ -118,8 +117,8 @@ object Behaviors {
    * Behaviors can also be composed with [[Behavior#orElse]].
    */
   def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Receive[T] =
-    Behaviors.receive[T] { (ctx, t) ⇒
-      onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T])
+    Behaviors.receive[T] { (ctx, t) =>
+      onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) => Behaviors.unhandled[T])
     }
 
   /**
@@ -128,15 +127,15 @@ object Behaviors {
    * Behaviors can also be composed with [[Behavior#orElse]].
    */
   def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Receive[T] =
-    Behaviors.receive[T] { (_, t) ⇒
-      onMessage.applyOrElse(t, (_: T) ⇒ Behaviors.unhandled[T])
+    Behaviors.receive[T] { (_, t) =>
+      onMessage.applyOrElse(t, (_: T) => Behaviors.unhandled[T])
     }
 
   /**
    * Construct an actor `Behavior` that can react to lifecycle signals only.
    */
   def receiveSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-    receive[T]((_, _) ⇒ same).receiveSignal(handler)
+    receive[T]((_, _) => same).receiveSignal(handler)
 
   /**
    * Intercept messages and signals for a `behavior` by first passing them to a [[akka.actor.typed.BehaviorInterceptor]]
@@ -144,6 +143,9 @@ object Behaviors {
    * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
    * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
+   *
+   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
+   * so that a new instance is created per spawned actor rather than shared among actor instance.
    */
   def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(behaviorInterceptor)(behavior)
@@ -202,6 +204,7 @@ object Behaviors {
 
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
+
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = classTag[Thr]
@@ -214,9 +217,10 @@ object Behaviors {
    * Support for scheduled `self` messages in an actor.
    * It takes care of the lifecycle of the timers such as cancelling them when the actor
    * is restarted or stopped.
+   *
    * @see [[TimerScheduler]]
    */
-  def withTimers[T](factory: TimerScheduler[T] ⇒ Behavior[T]): Behavior[T] =
+  def withTimers[T](factory: TimerScheduler[T] => Behavior[T]): Behavior[T] =
     TimerSchedulerImpl.withTimers(factory)
 
   /**
@@ -229,7 +233,7 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T](mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
 
   /**
@@ -242,7 +246,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any])(behavior)
+    withMdc[T](staticMdc, (_: T) => Map.empty[String, Any])(behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -261,7 +265,8 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
+      behavior: Behavior[T]): Behavior[T] =
     WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 
   /**
@@ -274,15 +279,17 @@ object Behaviors {
   }
 
   @InternalApi
-  private[akka] final class ReceiveImpl[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
-    extends BehaviorImpl.ReceiveBehavior[T](onMessage) with Receive[T] {
+  private[akka] final class ReceiveImpl[T](onMessage: (ActorContext[T], T) => Behavior[T])
+      extends BehaviorImpl.ReceiveBehavior[T](onMessage)
+      with Receive[T] {
 
     override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
       new BehaviorImpl.ReceiveBehavior(onMessage, onSignal)
   }
   @InternalApi
-  private[akka] final class ReceiveMessageImpl[T](onMessage: T ⇒ Behavior[T])
-    extends BehaviorImpl.ReceiveMessageBehavior[T](onMessage) with Receive[T] {
+  private[akka] final class ReceiveMessageImpl[T](onMessage: T => Behavior[T])
+      extends BehaviorImpl.ReceiveMessageBehavior[T](onMessage)
+      with Receive[T] {
 
     override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
       new BehaviorImpl.ReceiveMessageBehavior[T](onMessage, onSignal)

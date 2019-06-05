@@ -17,8 +17,8 @@ private[remote] final case class CompressionTable[T](originUid: Long, version: B
 
   def compress(value: T): Int =
     dictionary.get(value) match {
-      case Some(id) ⇒ id
-      case None     ⇒ NotCompressedId
+      case Some(id) => id
+      case None     => NotCompressedId
     }
 
   def invert: DecompressionTable[T] =
@@ -27,8 +27,12 @@ private[remote] final case class CompressionTable[T](originUid: Long, version: B
       // TODO: these are some expensive sanity checks, about the numbers being consecutive, without gaps
       // TODO: we can remove them, make them re-map (not needed I believe though)
       val expectedGaplessSum = Integer.valueOf((dictionary.size * (dictionary.size + 1)) / 2) /* Dirichlet */
-      require(dictionary.values.min == 0, "Compression table should start allocating from 0, yet lowest allocated id was " + dictionary.values.min)
-      require(dictionary.values.sum + dictionary.size == expectedGaplessSum, "Given compression map does not seem to be gap-less and starting from zero, " +
+      require(
+        dictionary.values.min == 0,
+        "Compression table should start allocating from 0, yet lowest allocated id was " + dictionary.values.min)
+      require(
+        dictionary.values.sum + dictionary.size == expectedGaplessSum,
+        "Given compression map does not seem to be gap-less and starting from zero, " +
         "which makes compressing it into an Array difficult, bailing out! Map was: " + dictionary)
 
       val tups = new Array[(Object, Int)](dictionary.size).asInstanceOf[Array[(T, Int)]]
@@ -51,13 +55,14 @@ private[remote] final case class CompressionTable[T](originUid: Long, version: B
       DecompressionTable[T](originUid, version, ts)
     }
 }
+
 /** INTERNAL API */
 private[remote] object CompressionTable {
   final val NotCompressedId = -1
 
   final val CompareBy2ndValue: Comparator[(Object, Int)] = new Comparator[(Object, Int)] {
     override def compare(o1: (Object, Int), o2: (Object, Int)): Int =
-      o1._2 compare o2._2
+      o1._2.compare(o2._2)
   }
   def compareBy2ndValue[T]: Comparator[Tuple2[T, Int]] = CompareBy2ndValue.asInstanceOf[Comparator[(T, Int)]]
 

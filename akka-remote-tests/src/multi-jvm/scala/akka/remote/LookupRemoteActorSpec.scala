@@ -16,8 +16,7 @@ import com.typesafe.config.ConfigFactory
 
 class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -29,19 +28,21 @@ class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 class LookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = false))
 class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = false))
 
-class ArteryLookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
-class ArteryLookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
+class ArteryLookupRemoteActorMultiJvmNode1
+    extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
+class ArteryLookupRemoteActorMultiJvmNode2
+    extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
 
 object LookupRemoteActorSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 }
 
 abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmSpec)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import LookupRemoteActorSpec._
 
@@ -67,4 +68,3 @@ abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmS
   }
 
 }
-

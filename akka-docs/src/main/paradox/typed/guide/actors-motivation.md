@@ -1,14 +1,5 @@
 # Why modern systems need a new programming model
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
-
 The actor model was proposed decades ago by @extref[Carl Hewitt](wikipedia:Carl_Hewitt#Actor_model) as a way to handle parallel processing in a high performance network &#8212; an environment that was not available at the time. Today, hardware and infrastructure capabilities have caught up with and exceeded Hewitt's vision. Consequently, organizations building distributed systems with demanding requirements encounter challenges that cannot fully be solved with a traditional object-oriented programming (OOP) model, but that can benefit from the actor model.
 
 Today, the actor model is not only recognized as a highly effective solution &#8212; it has been proven in production for some of the world's most demanding applications. To highlight issues that the actor model addresses, this topic discusses the following mismatches between traditional programming assumptions and the reality of modern multi-threaded, multi-CPU architectures:

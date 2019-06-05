@@ -15,7 +15,7 @@ import scala.concurrent.Await
 
 class CoronerSpec extends WordSpec with Matchers {
 
-  private def captureOutput[A](f: PrintStream ⇒ A): (A, String) = {
+  private def captureOutput[A](f: PrintStream => A): (A, String) = {
     val bytes = new ByteArrayOutputStream()
     val out = new PrintStream(bytes, true, "UTF-8")
     val result = f(out)
@@ -25,7 +25,7 @@ class CoronerSpec extends WordSpec with Matchers {
   "A Coroner" must {
 
     "generate a report if enough time passes" in {
-      val (_, report) = captureOutput(out ⇒ {
+      val (_, report) = captureOutput(out => {
         val coroner = Coroner.watch(100.milliseconds, "XXXX", out)
         Await.ready(coroner, 5.seconds)
         coroner.cancel()
@@ -35,7 +35,7 @@ class CoronerSpec extends WordSpec with Matchers {
     }
 
     "not generate a report if cancelled early" in {
-      val (_, report) = captureOutput(out ⇒ {
+      val (_, report) = captureOutput(out => {
         val coroner = Coroner.watch(60.seconds, "XXXX", out)
         coroner.cancel()
         Await.ready(coroner, 1.seconds)
@@ -44,7 +44,7 @@ class CoronerSpec extends WordSpec with Matchers {
     }
 
     "display thread counts if enabled" in {
-      val (_, report) = captureOutput(out ⇒ {
+      val (_, report) = captureOutput(out => {
         val coroner = Coroner.watch(60.seconds, "XXXX", out, displayThreadCounts = true)
         coroner.cancel()
         Await.ready(coroner, 1.second)
@@ -52,7 +52,7 @@ class CoronerSpec extends WordSpec with Matchers {
       report should include("Coroner Thread Count starts at ")
       report should include("Coroner Thread Count started at ")
       report should include("XXXX")
-      report should not include ("Coroner's Report")
+      (report should not).include("Coroner's Report")
     }
 
     "display deadlock information in its report" in {
@@ -69,12 +69,14 @@ class CoronerSpec extends WordSpec with Matchers {
         val ready = new Semaphore(0)
         val proceed = new Semaphore(0)
         val t = new Thread(new Runnable {
-          def run = try recursiveLock(initialLocks) catch { case _: InterruptedException ⇒ () }
+          def run =
+            try recursiveLock(initialLocks)
+            catch { case _: InterruptedException => () }
 
           def recursiveLock(locks: List[ReentrantLock]): Unit = {
             locks match {
-              case Nil ⇒ ()
-              case lock :: rest ⇒ {
+              case Nil => ()
+              case lock :: rest => {
                 ready.release()
                 proceed.acquire()
                 lock.lockInterruptibly() // Allows us to break deadlock and free threads
@@ -130,8 +132,8 @@ class CoronerSpec extends WordSpec with Matchers {
         report should include(sectionHeading)
         val deadlockSection = report.split(sectionHeading)(1)
         deadlockSection should include("None")
-        deadlockSection should not include ("deadlock-thread-a")
-        deadlockSection should not include ("deadlock-thread-b")
+        (deadlockSection should not).include("deadlock-thread-a")
+        (deadlockSection should not).include("deadlock-thread-b")
       }
     }
 

@@ -23,9 +23,8 @@ These tests rely on a DNS server with 2 zones configured, foo.test and bar.examp
 The configuration to start a bind DNS server in Docker with this configuration
 is included, and the test will automatically start this container when the
 test starts and tear it down when it finishes.
-*/
-class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
-  s"""
+ */
+class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
@@ -64,15 +63,15 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       answer.name shouldEqual name
       answer.records.map(_.asInstanceOf[ARecord].ip).toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.21"),
-        InetAddress.getByName("192.168.1.22")
-      )
+        InetAddress.getByName("192.168.1.22"))
     }
 
     "resolve single AAAA record" in {
       val name = "aaaa-single.foo.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.records.map(_.asInstanceOf[AAAARecord].ip) shouldEqual Seq(InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:1"))
+      answer.records.map(_.asInstanceOf[AAAARecord].ip) shouldEqual Seq(
+        InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:1"))
     }
 
     "resolve double AAAA records" in {
@@ -81,8 +80,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       answer.name shouldEqual name
       answer.records.map(_.asInstanceOf[AAAARecord].ip).toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:2"),
-        InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:3")
-      )
+        InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:3"))
     }
 
     "resolve mixed A/AAAA records" in {
@@ -90,40 +88,31 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name)
       answer.name shouldEqual name
 
-      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.23"),
-        InetAddress.getByName("192.168.1.24")
-      )
+        InetAddress.getByName("192.168.1.24"))
 
-      answer.records.collect { case r: AAAARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: AAAARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:4"),
-        InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:5")
-      )
+        InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:5"))
     }
 
     "resolve external CNAME record" in {
       val name = "cname-ext.foo.test"
       val answer = (IO(Dns) ? DnsProtocol.Resolve(name)).mapTo[DnsProtocol.Resolved].futureValue
       answer.name shouldEqual name
-      answer.records.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
-        "a-single.bar.example"
-      )
-      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
-        InetAddress.getByName("192.168.2.20")
-      )
+      answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set("a-single.bar.example")
+      answer.records.collect { case r: ARecord     => r.ip }.toSet shouldEqual Set(InetAddress.getByName("192.168.2.20"))
     }
 
     "resolve internal CNAME record" in {
       val name = "cname-in.foo.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.records.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
-        "a-double.foo.test"
-      )
-      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set("a-double.foo.test")
+      answer.records.collect { case r: ARecord     => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.21"),
-        InetAddress.getByName("192.168.1.22")
-      )
+        InetAddress.getByName("192.168.1.22"))
     }
 
     "resolve SRV record" in {
@@ -131,15 +120,16 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name, Srv)
 
       answer.name shouldEqual name
-      answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
+      answer.records.collect { case r: SRVRecord => r }.toSet shouldEqual Set(
         SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
-        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
-      )
+        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test"))
     }
 
     "resolve same address twice" in {
-      resolve("a-single.foo.test").records.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
-      resolve("a-single.foo.test").records.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
+      resolve("a-single.foo.test").records.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(
+        InetAddress.getByName("192.168.1.20"))
+      resolve("a-single.foo.test").records.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(
+        InetAddress.getByName("192.168.1.20"))
     }
 
     "handle nonexistent domains" in {

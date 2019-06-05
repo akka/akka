@@ -17,14 +17,16 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object MaybeSource extends GraphStageWithMaterializedValue[SourceShape[AnyRef], Promise[Option[AnyRef]]] {
+@InternalApi private[akka] object MaybeSource
+    extends GraphStageWithMaterializedValue[SourceShape[AnyRef], Promise[Option[AnyRef]]] {
   val out = Outlet[AnyRef]("MaybeSource.out")
   override val shape = SourceShape(out)
 
   override protected def initialAttributes = DefaultAttributes.maybeSource
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Promise[Option[AnyRef]]) = {
-    import scala.util.{ Success ⇒ ScalaSuccess, Failure ⇒ ScalaFailure }
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, Promise[Option[AnyRef]]) = {
+    import scala.util.{ Success => ScalaSuccess, Failure => ScalaFailure }
     val promise = Promise[Option[AnyRef]]()
     val logic = new GraphStageLogic(shape) with OutHandler {
 
@@ -32,36 +34,35 @@ import scala.util.Try
 
       override def preStart(): Unit = {
         promise.future.value match {
-          case Some(value) ⇒
+          case Some(value) =>
             // already completed, shortcut
             handleCompletion(value)
-          case None ⇒
+          case None =>
             // callback on future completion
-            promise.future.onComplete(
-              getAsyncCallback(handleCompletion).invoke
-            )(ExecutionContexts.sameThreadExecutionContext)
+            promise.future.onComplete(getAsyncCallback(handleCompletion).invoke)(
+              ExecutionContexts.sameThreadExecutionContext)
         }
       }
 
       override def onPull(): Unit = arrivedEarly match {
-        case OptionVal.Some(value) ⇒
+        case OptionVal.Some(value) =>
           push(out, value)
           completeStage()
-        case OptionVal.None ⇒
+        case OptionVal.None =>
       }
 
       private def handleCompletion(elem: Try[Option[AnyRef]]): Unit = {
         elem match {
-          case ScalaSuccess(None) ⇒
+          case ScalaSuccess(None) =>
             completeStage()
-          case ScalaSuccess(Some(value)) ⇒
+          case ScalaSuccess(Some(value)) =>
             if (isAvailable(out)) {
               push(out, value)
               completeStage()
             } else {
               arrivedEarly = OptionVal.Some(value)
             }
-          case ScalaFailure(ex) ⇒
+          case ScalaFailure(ex) =>
             failStage(ex)
         }
       }

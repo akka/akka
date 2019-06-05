@@ -18,7 +18,7 @@ class PropsEdgeCaseSpec extends WordSpec with CompileOnlySpec {
     //#props-edge-cases-value-class-example
     class ValueActor(value: MyValueClass) extends Actor {
       def receive = {
-        case multiplier: Long ⇒ sender() ! (value.v * multiplier)
+        case multiplier: Long => sender() ! (value.v * multiplier)
       }
     }
     val valueClassProp = Props(classOf[ValueActor], MyValueClass(5)) // Unsupported
@@ -27,7 +27,7 @@ class PropsEdgeCaseSpec extends WordSpec with CompileOnlySpec {
     //#props-edge-cases-default-values
     class DefaultValueActor(a: Int, b: Int = 5) extends Actor {
       def receive = {
-        case x: Int ⇒ sender() ! ((a + x) * b)
+        case x: Int => sender() ! ((a + x) * b)
       }
     }
 
@@ -35,7 +35,7 @@ class PropsEdgeCaseSpec extends WordSpec with CompileOnlySpec {
 
     class DefaultValueActor2(b: Int = 5) extends Actor {
       def receive = {
-        case x: Int ⇒ sender() ! (x * b)
+        case x: Int => sender() ! (x * b)
       }
     }
     val defaultValueProp2 = Props[DefaultValueActor2] // Unsupported

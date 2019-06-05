@@ -17,5 +17,5 @@ final case class UniqueAddress(address: Address, uid: Long) extends Ordered[Uniq
   }
 
   override def toString(): String =
-    address + "#" + uid
+    address.toString + "#" + uid
 }

@@ -39,4 +39,3 @@ trait EventsByTagQuery extends ReadJournal {
   def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed]
 
 }
-
