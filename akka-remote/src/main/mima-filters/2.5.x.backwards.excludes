@@ -27,3 +27,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySet
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteActorRefProvider.remoteWatcher")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.props")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.watchNode")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteActorRefProvider.createDeployer")

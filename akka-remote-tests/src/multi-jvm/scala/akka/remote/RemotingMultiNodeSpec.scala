@@ -80,11 +80,9 @@ abstract class RemotingMultiNodeSpec(config: MultiNodeConfig)
       path: String,
       actorName: String,
       within: FiniteDuration = 10.seconds): ActorRef = {
-    import system.dispatcher
-    //(system.actorSelection(node(role) / "user" / actorName)).tell(Identify(actorName), p.ref)
-    system.actorSelection(node(role) / path / actorName).resolveOne(within).map(probe.send(_, Identify(actorName)))
-    val actorIdentity = probe.expectMsgType[ActorIdentity](remainingOrDefault)
-    assert(actorIdentity.ref.isDefined, s"Unable to Identify actor: $actorName on node: $role")
+    system.actorSelection(node(role) / path.split("/") / actorName).tell(Identify(actorName), probe.ref)
+    val actorIdentity = probe.expectMsgType[ActorIdentity](within)
+    assert(actorIdentity.ref.isDefined, s"Unable to Identify actor [$actorName] on node [$role]")
     actorIdentity.ref.get
   }
 }

@@ -109,7 +109,7 @@ case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance: LocalScope.type = this
+  def getInstance = this
 
   def withFallback(other: Scope): Scope = this
 }
@@ -127,7 +127,7 @@ case object NoScopeGiven extends NoScopeGiven {
   /**
    * Java API: get the singleton instance
    */
-  def getInstance: NoScopeGiven.type = this
+  def getInstance = this
 }
 
 /**

@@ -32,7 +32,7 @@ object RemoteDeployerSpec {
 
 }
 
-class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
+abstract class AbstractRemoteDeployerSpec(c: Config) extends AkkaSpec(c.withFallback(RemoteDeployerSpec.deployerConf)) {
 
   "A RemoteDeployer" must {
 
@@ -54,9 +54,38 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
       intercept[ConfigurationException] {
         system.actorOf(Props.empty.withDeploy(Deploy.local), "service2")
       }.getMessage should ===(
-        "configuration requested remote deployment for local-only Props at [akka://RemoteDeployerSpec/user/service2]")
+        s"configuration requested remote deployment for local-only Props at [akka://${getClass.getSimpleName}/user/service2]")
+    }
+  }
+}
+
+class RemoteDeployerSpec extends AbstractRemoteDeployerSpec(ConfigFactory.empty)
+
+class RemoteDeployerUnsafeWithoutClusterSpec
+    extends AbstractRemoteDeployerSpec(
+      ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on")) {
+
+  "A RemoteDeployer" must {
+
+    "Using `RARP` be able to parse 'akka.actor.deployment._' with specified remote nodes" in {
+      val service = "/service2"
+      val deployment = RARP(system).provider.deployer.lookup(service.split("/").drop(1))
+
+      deployment should ===(
+        Some(
+          Deploy(
+            service,
+            deployment.get.config,
+            RoundRobinPool(3),
+            RemoteScope(Address("akka", "sys", "wallace", 2552)),
+            "mydispatcher")))
     }
 
+    "reject remote deployment when the source requires RemoteScope" in {
+      intercept[ConfigurationException] {
+        system.actorOf(Props.empty.withDeploy(Deploy.local), "service2")
+      }.getMessage should ===(
+        s"configuration requested remote deployment for local-only Props at [akka://${getClass.getSimpleName}/user/service2]")
+    }
   }
-
 }

@@ -62,8 +62,9 @@ abstract class RemoteNodeDeathWatchSlowSpec(artery: Boolean)
 }
 
 object RemoteNodeDeathWatchSpec {
-  final case class WatchIt(watchee: ActorRef)
-  final case class UnwatchIt(watchee: ActorRef)
+  sealed trait DeathWatchIt
+  final case class WatchIt(watchee: ActorRef) extends DeathWatchIt
+  final case class UnwatchIt(watchee: ActorRef) extends DeathWatchIt
   case object Ack
 
   /**

@@ -7,12 +7,13 @@ package akka.remote
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
-import akka.actor.InternalActorRef
 import akka.actor.Nobody
 import akka.actor.Props
-import akka.dispatch.sysmsg.Watch
+import akka.remote.RemoteWatcher.Stats
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
+import akka.testkit.EventFilter
+import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends MultiNodeConfig {
@@ -48,42 +49,22 @@ abstract class RemotingFeaturesSafeSpec
 
   "Remoting without Cluster" must {
 
-    "not create 'remoteWatcher' in `RemoteActorRefProvider`" in {
+    "not use 'remoteWatcher' and use a local deployer in `RemoteActorRefProvider`" in {
+      provider.settings.HasCluster shouldBe false
+      provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe false
       provider.remoteWatcher.isEmpty shouldBe true
     }
 
-    "not intercept system `Watch`/`Unwatch` for `remoteWatcher`" in {
+    "not intercept and send system messages `Watch`/`Unwatch` to `RemoteWatcher` in the provider" in {
       runOn(second) {
-        system.actorOf(Props(new ProbeActor(testActor)), "watchee1")
-        enterBarrier("started-watchee1")
+        val watchee = system.actorOf(Props(new ProbeActor(probe.ref)), "watchee")
+        enterBarrier("started")
+        assertWatchNotIntercepted(identify(first, "watcher"), watchee)
       }
-
       runOn(first) {
-        val watcher = system.actorOf(Props(new ProbeActor(testActor)), "watcher1")
-        enterBarrier("started-watchee1")
-
-        val watchee = identify(second, "watchee1")
-        watcher ! WatchIt(watchee) // will never get sent to internal destination
-        expectMsg(1.second, Ack) // just for show that context.watch(remote) is not happening
-        watchee ! "hello1"
-        enterBarrier("received-hello1")
-
-        assertWatchNotIntercepted(watcher, watchee)
-        enterBarrier("watchee1-stopped")
-        expectNoMessage(2.seconds)
-        info(s"$myself did not receive Terminated")
-        enterBarrier("watch-not-established")
-      }
-      runOn(second) {
-        expectMsg(5.seconds, "hello1")
-        enterBarrier("received-hello1")
-
-        val watchee = identify(second, "watchee1")
-        assertWatchNotIntercepted(identify(first, "watcher1"), watchee)
-        info(s"$myself stopping watchee.")
-        system.stop(watchee)
-        enterBarrier("watchee1-stopped")
-        enterBarrier("watch-not-established")
+        val watcher = system.actorOf(Props(new ProbeActor(probe.ref)), "watcher")
+        enterBarrier("started")
+        assertWatchNotIntercepted(watcher, identify(second, "watchee"))
       }
 
       def assertWatchNotIntercepted(watcher: ActorRef, watchee: ActorRef): Unit = {
@@ -94,27 +75,19 @@ abstract class RemotingFeaturesSafeSpec
       }
     }
 
-    "not send remote system messages" in {
-      runOn(second) {
-        system.actorOf(Props(new ProbeActor(testActor)), "watchee2")
-        enterBarrier("started-watchee2")
-        enterBarrier("finished")
-      }
+    "not `Watch` and `Unwatch` from `RemoteWatcher`" in {
       runOn(first) {
-        val watcher = identify(first, "watcher1").asInstanceOf[InternalActorRef]
-        val watchee = identify(second, "watchee2").asInstanceOf[InternalActorRef]
-        enterBarrier("started-watchee2")
+        val watcher = identify(first, "watcher")
+        val watchee = identify(second, "watchee")
 
-        watcher ! WatchIt(watchee) // will never get sent to internal destination
-        expectMsg(1.second, Ack) // meaningless
-
-        val rar = remoteActorRef(second)
-        rar.sendSystemMessage(Watch(watchee, watcher))
-        expectNoMessage()
-
-        rar.suspend()
-        expectNoMessage()
-        enterBarrier("finished")
+        EventFilter
+          .warning(pattern = "Dropped remote Watch/Unwatch: remote watch disabled for*", occurrences = 1)
+          .intercept(probe.send(watcher, WatchIt(watchee)))
+        probe.expectMsg(1.second, Ack)
+        enterBarrier("system-message-not-sent")
+      }
+      runOn(second) {
+        enterBarrier("system-message-not-sent")
       }
     }
   }
@@ -124,47 +97,40 @@ abstract class RemotingFeaturesUnsafeSpec
     extends RemotingFeaturesSpec(new RemotingFeaturesConfig(useUnsafe = true, artery = true)) {
 
   import RemoteNodeDeathWatchSpec.Ack
+  import RemoteNodeDeathWatchSpec.DeathWatchIt
   import RemoteNodeDeathWatchSpec.ProbeActor
+  import RemoteNodeDeathWatchSpec.UnwatchIt
   import RemoteNodeDeathWatchSpec.WatchIt
-  import RemoteNodeDeathWatchSpec.WrappedTerminated
   import multiNodeConfig._
 
-  "Remoting without Cluster" must {
+  def stats(watcher: ActorRef, message: DeathWatchIt): Stats = {
+    probe.send(watcher, message)
+    probe.expectMsg(1.second, Ack)
+    provider.remoteWatcher.get ! Stats
+    expectMsgType[Stats]
+  }
+
+  "Remoting with UseUnsafeRemoteFeaturesWithoutCluster enabled" must {
 
     "create 'remoteWatcher' in `RemoteActorRefProvider`" in {
+      provider.settings.HasCluster shouldBe false
+      provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe true
       provider.remoteWatcher.isDefined shouldBe true
+      provider.deployer.getClass shouldEqual classOf[RemoteDeployer]
     }
 
-    "intercept system `Watch`/`Unwatch` for `remoteWatcher`" in {
+    "intercept and send system messages `Watch`/`Unwatch` to `RemoteWatcher` in the provider" in {
       runOn(second) {
-        system.actorOf(Props(new ProbeActor(testActor)), "watchee1")
-        enterBarrier("started-watchee1")
+        val watchee = system.actorOf(Props(new ProbeActor(probe.ref)), "watchee")
+        enterBarrier("watchee-started")
+        enterBarrier("watcher-started")
+        assertWatchIntercepted(identify(first, "watcher"), watchee)
       }
-
       runOn(first) {
-        val watcher = system.actorOf(Props(new ProbeActor(testActor)), "watcher1")
-        enterBarrier("started-watchee1")
-
-        val watchee = identify(second, "watchee1")
-        watcher ! WatchIt(watchee)
-        expectMsg(1.second, Ack)
-        watchee ! "hello1"
-        enterBarrier("received-hello1")
-
-        assertWatchIntercepted(watcher, watchee)
-        enterBarrier("watchee1-stopped")
-        expectMsgType[WrappedTerminated].t.actor shouldEqual watchee
-        enterBarrier("watch-established")
-      }
-      runOn(second) {
-        expectMsg(5.seconds, "hello1")
-        enterBarrier("received-hello1")
-
-        val watchee = identify(second, "watchee1")
-        assertWatchIntercepted(identify(first, "watcher1"), watchee)
-        system.stop(watchee)
-        enterBarrier("watchee1-stopped")
-        enterBarrier("watch-established")
+        enterBarrier("watchee-started")
+        val watcher = system.actorOf(Props(new ProbeActor(probe.ref)), "watcher")
+        enterBarrier("watcher-started")
+        assertWatchIntercepted(watcher, identify(second, "watchee"))
       }
 
       def assertWatchIntercepted(watcher: ActorRef, watchee: ActorRef): Unit = {
@@ -179,8 +145,27 @@ abstract class RemotingFeaturesUnsafeSpec
       }
     }
 
-    "send remote system messages" in {
-      // TODO test
+    "`Watch` from `RemoteWatcher`" in {
+      runOn(first) {
+        val watcher = identify(first, "watcher")
+        val watchee = identify(second, "watchee")
+        awaitCond(stats(watcher, WatchIt(watchee)).watchingRefs == Set((watchee, watcher)), 2.seconds)
+        enterBarrier("system-message1-received-by-remoteWatcher")
+      }
+      runOn(second) {
+        enterBarrier("system-message1-received-by-remoteWatcher")
+      }
+    }
+
+    "`Unwatch` from `RemoteWatcher`" in {
+      runOn(first) {
+        val watchee = identify(second, "watchee")
+        awaitCond(stats(identify(first, "watcher"), UnwatchIt(watchee)).watching == 0, 2.seconds)
+        enterBarrier("system-message2-received-by-remoteWatcher")
+      }
+      runOn(second) {
+        enterBarrier("system-message2-received-by-remoteWatcher")
+      }
     }
   }
 }
@@ -194,7 +179,9 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
 
   muteDeadLetters(Heartbeat.getClass)()
 
-  val provider: RemoteActorRefProvider = RARP(system).provider
+  protected val probe = TestProbe()
+
+  lazy val provider: RemoteActorRefProvider = RARP(system).provider
 
   val remoteRole: RoleName = multiNodeConfig.remoteRole(myself)
 

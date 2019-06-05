@@ -4,13 +4,16 @@
 
 package akka.remote.classic
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import akka.actor._
 import akka.remote._
 import akka.testkit._
+import akka.remote.RemoteWatcher.HeartbeatRsp
 import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 object RemoteWatcherSpec {
 
@@ -64,10 +67,11 @@ object RemoteWatcherSpec {
     }
 
   }
-
 }
 
-class RemoteWatcherSpec extends AkkaSpec("""akka {
+object AbstractRemoteWatcherSpec {
+
+  val config = ConfigFactory.parseString("""akka {
        loglevel = INFO
        log-dead-letters-during-shutdown = false
        actor.provider = remote
@@ -76,10 +80,12 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
          port = 0
        }
        remote.artery.enabled = off
-     }""") with ImplicitSender {
+     }""")
+}
 
-  import RemoteWatcher._
-  import RemoteWatcherSpec._
+abstract class AbstractRemoteWatcherSpec(config: Config)
+    extends AkkaSpec(config.withFallback(AbstractRemoteWatcherSpec.config))
+    with ImplicitSender {
 
   override def expectedTestDuration = 2.minutes
 
@@ -105,7 +111,16 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
     expectMsgType[ActorIdentity].ref.get.asInstanceOf[InternalActorRef]
   }
 
-  "A RemoteWatcher" must {
+}
+
+class RemoteWatcherSpec
+    extends AbstractRemoteWatcherSpec(
+      ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on")) {
+
+  import RemoteWatcher._
+  import RemoteWatcherSpec._
+
+  "A RemoteWatcher with 'use-unsafe-remote-features-without-cluster' enabled" must {
 
     "have correct interaction when watching" in {
       val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor1")
@@ -275,6 +290,7 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
       remoteSystem.stop(b)
       awaitAssert {
         monitorA ! Stats
+        // TODO FIXME expects 0 but has 1 watcher still
         expectMsg(Stats.empty)
       }
       expectNoMessage(2 seconds)
@@ -320,6 +336,39 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
       expectNoMessage(2 seconds)
     }
 
-  }
+    "have the expected settings and create a RemoteWatcher" in {
+      val provider = RARP(system).provider
 
+      provider.transport.system.settings.HasCluster shouldBe false
+      provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe true
+      provider.remoteSettings.WarnUnsafeWatchWithoutCluster shouldBe true
+      provider.hasClusterOrUseUnsafe shouldBe true
+      provider.remoteWatcher.isDefined shouldBe true
+    }
+  }
+}
+
+class DisableRemoteWatcherWithoutClusterSpec
+    extends AkkaSpec(ConfigFactory.parseString("""
+    akka.actor.provider = remote
+    akka.remote.artery.enabled = on
+    akka.remote.artery.canonical.port = 0
+    akka.log-dead-letters-during-shutdown = off
+    """)) {
+
+  val provider = RARP(system).provider
+
+  "Remote watch without Cluster" must {
+
+    "have the expected settings" in {
+      provider.transport.system.settings.HasCluster shouldBe false
+      provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe false
+      provider.remoteSettings.WarnUnsafeWatchWithoutCluster shouldBe true
+      provider.hasClusterOrUseUnsafe shouldBe false
+    }
+
+    "not create a RemoteWatcher" in {
+      provider.remoteWatcher shouldEqual None
+    }
+  }
 }

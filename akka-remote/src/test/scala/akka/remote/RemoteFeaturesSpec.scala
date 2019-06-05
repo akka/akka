@@ -5,8 +5,11 @@
 package akka.remote
 
 import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Deployer
+import akka.actor.ActorSystemImpl
+import akka.actor.AddressFromURIString
+import akka.actor.InternalActorRef
+import akka.actor.Props
+import akka.routing.FromConfig
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import com.typesafe.config.Config
@@ -14,65 +17,160 @@ import com.typesafe.config.ConfigFactory
 
 object RemoteFeaturesSpec {
 
-  val remote: Config =
-    ConfigFactory.parseString("""
-        akka.actor.provider = "remote"
-        akka.remote.artery.canonical.port = 0
-        akka.log-dead-letters-during-shutdown = off
-        """)
+  val remote: Config = ConfigFactory.parseString("""
+    akka.actor.provider = remote
+    akka.remote.artery.canonical.port = 0
+    akka.log-dead-letters-during-shutdown = off
+    """)
 
   // no cluster, with remote watcher & deployer enabled
-  val unsafe: Config = ConfigFactory.parseString("""
-      akka.remote.use-unsafe-remote-features-without-cluster = "on"
-      """).withFallback(remote)
+  val unsafe: Config = ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on").withFallback(remote)
 
-  class RemoteActor(listener: ActorRef) extends Actor {
-    def receive: Actor.Receive = {
-      case e => listener ! e
+  val remoteSystem = "remoteSystem"
+  val remoteHost = "hostcat"
+  val remoteAddressStr = s"akka://$remoteSystem@$remoteHost:2552"
+  val remoteAddress = AddressFromURIString(remoteAddressStr)
+
+  val groupRouterConfig: Config =
+    ConfigFactory.parseString(s"""
+      akka.actor.deployment {
+        /service2 {
+           remote = "$remoteAddressStr"
+           router = round-robin-group
+           routees.paths = [
+             "$remoteAddressStr/user/service2/w1",
+             "$remoteAddressStr/user/service2/w2",
+             "$remoteAddressStr/user/service2/w3"
+           ]
+        }
+      }
+      """)
+
+  val poolRouterConfig: Config =
+    ConfigFactory.parseString(s"""
+      akka.actor.deployment {
+        /service {
+          remote = "$remoteAddressStr"
+          router = round-robin-pool
+          nr-of-instances = 3
+        }
+      }
+      """)
+
+  case object Ping
+  case object RouteePing
+  case object Pong
+  case object RouteePong
+  class Parent(routerType: String) extends Actor {
+
+    val router = {
+      val p = Props(new Worker)
+      val props = FromConfig.props(p)
+      if (routerType == "group") (1 to 3).map(n => context.actorOf(p, "w" + n))
+      context.actorOf(props, name = "router")
+    }
+
+    override def receive: Receive = {
+      case Ping       => sender() ! Pong
+      case RouteePing => router.forward(RouteePing)
+    }
+  }
+  class Worker extends Actor {
+    override def receive: Receive = {
+      case RouteePing => sender() ! RouteePong
     }
   }
 }
 
+/** See the remote watcher specs for watcher additional tests. */
 abstract class RemoteFeaturesSpec(c: Config) extends AkkaSpec(c) with ImplicitSender {
 
   protected val provider = RARP(system).provider
 
+  protected val sys = system.asInstanceOf[ActorSystemImpl]
 }
 
-class DisableRemoteFeaturesWithoutClusterSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.remote) {
-  "Remoting without Cluster" must {
+class GroupRouterDisableRemoteFeaturesWithoutClusterSpec
+    extends RemoteFeaturesSpec(RemoteFeaturesSpec.groupRouterConfig.withFallback(RemoteFeaturesSpec.remote)) {
 
-    "have the expected settings" in {
-      provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe false
-      provider.transport.system.settings.HasCluster shouldBe false
-      provider.remoteSettings.WarnUnsafeWatchWithoutCluster shouldBe true
-    }
+  "Remote deploy without Cluster" must {
 
-    "not create a RemoteWatcher" in {
-      provider.remoteWatcher shouldEqual None
-    }
+    "have expected actoRef, deployer and group router behavior" in {
+      import RemoteFeaturesSpec._
 
-    "use a local Deployer" in {
-      provider.deployer.getClass shouldEqual classOf[Deployer]
+      val deployment = provider.deployer.lookup(List("service2"))
+      deployment.forall(_.scope == RemoteScope(remoteAddress)) shouldBe true
+
+      val parent = system.actorOf(Props(new Parent("group")), "service2")
+      parent ! Ping
+      expectMsg(Pong)
+
+      (1 to 3).foreach { n =>
+        parent ! RouteePing
+        expectMsg(RouteePong)
+        lastSender.path.name.startsWith("w" + n)
+      }
+
+      provider.actorOf(
+        sys,
+        Props(new Parent("group")),
+        parent.asInstanceOf[InternalActorRef],
+        parent.path,
+        systemService = true,
+        deploy = None, //TODO Some(remoteDeploy),
+        lookupDeploy = true,
+        async = false) ! RouteePing
+      expectMsg(RouteePong)
     }
   }
 }
 
-class EnableRemoteFeaturesWithoutClusterSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.unsafe) {
-  "Remoting without Cluster optionally set to use unsafe remote features" must {
+class PoolRouterDisableRemoteFeaturesWithoutClusterSpec
+    extends RemoteFeaturesSpec(RemoteFeaturesSpec.poolRouterConfig.withFallback(RemoteFeaturesSpec.remote)) {
+  "Remote deploy without Cluster" must {
 
-    "have the expected settings" in {
-      provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe true
-      provider.transport.system.settings.HasCluster shouldBe false
-      provider.remoteSettings.WarnUnsafeWatchWithoutCluster shouldBe true
-    }
+    "have expected actoRef, deployer and pool router behavior" in {}
+  }
+}
+class GroupRouterEnableRemoteFeaturesWithoutClusterSpec
+    extends RemoteFeaturesSpec(RemoteFeaturesSpec.groupRouterConfig.withFallback(RemoteFeaturesSpec.unsafe)) {
+  "Remote deploy without Cluster" must {
 
-    "create a RemoteWatcher" in {
-      provider.remoteWatcher.isDefined shouldBe true
-    }
+    "have expected actoRef, deployer and group router behavior" in {
+      import RemoteFeaturesSpec._
 
-    "use a RemoteDeployer" in {
-      provider.deployer.getClass shouldEqual classOf[RemoteDeployer]
+      // TODO using deploy never receives Pong
+      val deployment = provider.deployer.lookup(List("service2"))
+      deployment.forall(_.scope == RemoteScope(remoteAddress)) shouldBe true
+
+      val parent = system.actorOf(Props(new Parent("group")), "service2")
+      parent ! Ping
+      expectMsg(Pong)
+
+      (1 to 3).foreach { n =>
+        parent ! RouteePing
+        expectMsg(RouteePong)
+        lastSender.path.name.startsWith("w" + n)
+      }
+
+      provider.actorOf(
+        sys,
+        Props(new Parent("group")),
+        parent.asInstanceOf[InternalActorRef],
+        parent.path,
+        systemService = true,
+        deploy = None, //TODO Some(remoteDeploy),
+        lookupDeploy = true,
+        async = false) ! RouteePing
+      expectMsg(RouteePong)
     }
+  }
+}
+class PoolRouterEnableRemoteFeaturesWithoutClusterSpec
+    extends RemoteFeaturesSpec(RemoteFeaturesSpec.poolRouterConfig.withFallback(RemoteFeaturesSpec.unsafe)) {
+
+  "Remote deploy without Cluster" must {
+
+    "have expected actoRef, deployer and pool router behavior" in {}
   }
 }

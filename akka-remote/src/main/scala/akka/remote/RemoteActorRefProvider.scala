@@ -159,17 +159,18 @@ private[akka] class RemoteActorRefProvider(
 
   private[akka] final val hasClusterOrUseUnsafe = settings.HasCluster || remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
 
-  /** The [[Deployer]] created depends on whether Cluster is used or
-   * `akka.remote.use-unsafe-remote-features-without-cluster`.
-   */
+  private val warnOnUnsafeRemote =
+    !settings.HasCluster &&
+    !remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster &&
+    remoteSettings.WarnUnsafeWatchWithoutCluster
+
   override val deployer: Deployer = createDeployer
 
   /**
    * Factory method to make it possible to override deployer in subclass.
    * Creates a new instance every time.
    */
-  protected def createDeployer: Deployer =
-    createOrNone[Deployer](new RemoteDeployer(settings, dynamicAccess)).getOrElse(new Deployer(settings, dynamicAccess))
+  protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
   private val local = new LocalActorRefProvider(
     systemName,
@@ -315,23 +316,38 @@ private[akka] class RemoteActorRefProvider(
   protected def createRemoteDeploymentWatcher(system: ActorSystemImpl): ActorRef =
     system.systemActorOf(RemoteDeploymentWatcher.props(remoteSettings), "remote-deployment-watcher")
 
-  /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
-  protected def warnIfDirectUse(): Unit = {
+  /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly. */
+  protected def warnIfDirectUse(): Unit =
     if (remoteSettings.WarnAboutDirectUse) {
       log.warning(
         "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
         "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
     }
-  }
 
-  private def warnIfUseUnsafeWithoutCluster(): Unit =
+  // Log on startup of provider.
+  def warnIfUseUnsafeWithoutCluster(): Unit =
     if (!settings.HasCluster) {
-      if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
-        log.warning("`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled.")
-      else
-        log.warning(
-          "Cluster not in use - only using local dispatchers and no remote watch. " +
-          "If you need remote dispatchers and/or remote watch, using Akka Cluster is recommended.")
+      val msg =
+        if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
+          "`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled."
+        else
+          "Using Akka Cluster is recommended if you need remote watch and deploy."
+      log.warning(s"Cluster not in use - {}", msg)
+    }
+
+  /** Potentially logs if deathwatch message intentionally dropped.
+   * To disable warnings set `akka.remote.warn-unsafe-watch-without-cluster` to `off`.
+   */
+  private[akka] def warnIfUnsafeWithoutClusterAttempted(
+      watchee: InternalActorRef,
+      watcher: InternalActorRef,
+      action: Option[String]): Unit =
+    if (warnOnUnsafeRemote) {
+      log.warning(
+        "Dropped {}: remote watch disabled for [{} -> {}]",
+        action.getOrElse("remote Watch/Unwatch"),
+        watcher,
+        watchee)
     }
 
   def actorOf(
@@ -342,8 +358,14 @@ private[akka] class RemoteActorRefProvider(
       systemService: Boolean,
       deploy: Option[Deploy],
       lookupDeploy: Boolean,
-      async: Boolean): InternalActorRef =
-    if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
+      async: Boolean): InternalActorRef = {
+
+    def createLocalActor(sysService: Boolean, lookup: Boolean, deployment: Option[Deploy]): InternalActorRef = {
+      // If systemService is true, deployment is bypassed (local-only)
+      local.actorOf(system, props, supervisor, path, sysService, deployment, lookup, async)
+    }
+
+    if (systemService) createLocalActor(sysService = systemService, lookup = lookupDeploy, deployment = deploy)
     else {
 
       if (!system.dispatchers.hasDispatcher(props.dispatcher))
@@ -403,35 +425,42 @@ private[akka] class RemoteActorRefProvider(
       (Iterator(props.deploy) ++ deployment.iterator).reduce((a, b) => b.withFallback(a)) match {
         case d @ Deploy(_, _, _, RemoteScope(address), _, _) =>
           if (hasAddress(address)) {
-            local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
+            createLocalActor(sysService = false, lookup = false, deployment = deployment.headOption)
           } else if (props.deploy.scope == LocalScope) {
             throw new ConfigurationException(
               s"${ErrorMessages.RemoteDeploymentConfigErrorPrefix} for local-only Props at [$path]")
           } else
             try {
-              try {
-                // for consistency we check configuration of dispatcher and mailbox locally
-                val dispatcher = system.dispatchers.lookup(props.dispatcher)
-                system.mailboxes.getMailboxType(props, dispatcher.configurator.config)
-              } catch {
-                case NonFatal(e) =>
-                  throw new ConfigurationException(
-                    s"configuration problem while creating [$path] with dispatcher [${props.dispatcher}] and mailbox [${props.mailbox}]",
-                    e)
+              if (hasClusterOrUseUnsafe) {
+                try {
+                  // for consistency we check configuration of dispatcher and mailbox locally
+                  val dispatcher = system.dispatchers.lookup(props.dispatcher)
+                  system.mailboxes.getMailboxType(props, dispatcher.configurator.config)
+                } catch {
+                  case NonFatal(e) =>
+                    throw new ConfigurationException(
+                      s"Configuration problem while creating [$path] with dispatcher [${props.dispatcher}] and mailbox [${props.mailbox}].",
+                      e)
+                }
+                val localAddress = transport.localAddressForRemote(address)
+                val rpath =
+                  (RootActorPath(address) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements)
+                    .withUid(path.uid)
+                new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
+              } else {
+                log.warning("Creating local versus remote `ActorRef` for {}", path)
+                createLocalActor(systemService, lookup = false, deployment = deployment.headOption)
               }
-              val localAddress = transport.localAddressForRemote(address)
-              val rpath =
-                (RootActorPath(address) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements)
-                  .withUid(path.uid)
-              new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
+
             } catch {
-              case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
+              case NonFatal(e) => throw new IllegalArgumentException(s"Remote deployment failed for [$path].", e)
             }
 
         case _ =>
-          local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+          createLocalActor(sysService = systemService, lookup = false, deployment = deployment.headOption)
       }
     }
+  }
 
   def rootGuardianAt(address: Address): ActorRef = {
     if (hasAddress(address)) rootGuardian
@@ -539,16 +568,18 @@ private[akka] class RemoteActorRefProvider(
    * Using (checking out) actor on a specific node.
    */
   def useActorOnNode(ref: ActorRef, props: Props, deploy: Deploy, supervisor: ActorRef): Unit =
-    remoteDeploymentWatcher.foreach { watcher =>
-      log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, ref.path)
+    remoteDeploymentWatcher match {
+      case Some(watcher) =>
+        log.debug("[{}] Instantiating Remote Actor [{}]", rootPath, ref.path)
 
-      // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
-      // actorSelection can't be used here because then it is not guaranteed that the actor is created
-      // before someone can send messages to it
-      resolveActorRef(RootActorPath(ref.path.address) / "remote") !
-      DaemonMsgCreate(props, deploy, ref.path.toSerializationFormat, supervisor)
+        // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
+        // actorSelection can't be used here because then it is not guaranteed that the actor is created
+        // before someone can send messages to it
+        resolveActorRef(RootActorPath(ref.path.address) / "remote") !
+        DaemonMsgCreate(props, deploy, ref.path.toSerializationFormat, supervisor)
 
-      watcher ! RemoteDeploymentWatcher.WatchRemote(ref, supervisor)
+        watcher ! RemoteDeploymentWatcher.WatchRemote(ref, supervisor)
+      case None => warnIfUseUnsafeWithoutCluster()
     }
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
@@ -653,27 +684,30 @@ private[akka] class RemoteActorRef private[akka] (
   /**
    * Determine if a watch/unwatch message must be handled by the remoteWatcher actor, or sent to this remote ref
    */
-  def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) = {
+  def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef): Boolean = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
     provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
   }
 
-  // Disable remote watch/deployment (or system messages in general) if not in cluster #26176
   def sendSystemMessage(message: SystemMessage): Unit =
-    provider.remoteWatcher.foreach { remoteWatcher =>
-      try {
-        //send to remote, unless watch message is intercepted by the remoteWatcher
-        message match {
-          case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
-            remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
-          //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
-          case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
-            remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
-          case _ => remote.send(message, OptionVal.None, this)
-        }
-      } catch handleException(message, Actor.noSender)
-    }
+    try {
+      //send to remote, unless watch message is intercepted by the remoteWatcher
+      message match {
+        case Watch(watchee, watcher) =>
+          sendDeathWatchMessage(RemoteWatcher.WatchRemote(watchee, watcher))
+        //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
+        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) =>
+          sendDeathWatchMessage(RemoteWatcher.UnwatchRemote(watchee, watcher))
+        case _ => remote.send(message, OptionVal.None, this)
+      }
+    } catch handleException(message, Actor.noSender)
+
+  private def sendDeathWatchMessage(message: RemoteWatcher.DeathWatchCommand): Unit =
+    if (isWatchIntercepted(message.watchee, message.watcher))
+      provider.remoteWatcher.foreach(_ ! message)
+    else
+      provider.warnIfUnsafeWithoutClusterAttempted(message.watchee, message.watcher, None)
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw InvalidMessageException("Message is null")
