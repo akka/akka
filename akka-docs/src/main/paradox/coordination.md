@@ -56,6 +56,16 @@ Java
 For use cases where multiple different leases on the same node then something unique must be added to the name. For example
 a lease can be used with Cluster Sharding and in this case the shard Id is included in the lease name for each shard.
 
+### Setting a lease heartbeat
+
+If a node with a lease crashes or is unresponsive the `heartbeat-timeout` is how long before other nodes can acquire the 
+the lease. Without this timeout operator intervention would be needed to release a lease in the case of a node crash.
+This is the safest option but not practical in all cases.
+
+The value should be greater than the max expected JVM pause e.g. garbage collection, otherwise a lease can be acquired
+by another node and then when the original node becomes responsive again there will be a short time before the original lease owner 
+can take action e.g. shutdown shards or singletons.
+
 ## Usages in other Akka modules
 
 Leases can be used for @ref[Cluster Singletons](cluster-singleton.md#lease) and @ref[Cluster Sharding](cluster-sharding.md#lease). 
