@@ -875,4 +875,18 @@ public class ActorDocTest extends AbstractJavaTest {
       // #coordinated-shutdown-run
     }
   }
+
+  @Test
+  public void coordinatedShutdownActorTermination() {
+    ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
+    someActor.tell(PoisonPill.getInstance(), ActorRef.noSender());
+    // #coordinated-shutdown-addActorTerminationTask
+    CoordinatedShutdown.get(system)
+        .addActorTerminationTask(
+            CoordinatedShutdown.PhaseBeforeServiceUnbind(),
+            "someTaskName",
+            someActor,
+            Optional.of("stop"));
+    // #coordinated-shutdown-addActorTerminationTask
+  }
 }
