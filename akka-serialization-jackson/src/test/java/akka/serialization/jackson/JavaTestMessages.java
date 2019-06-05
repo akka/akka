@@ -327,7 +327,8 @@ public interface JavaTestMessages {
   public class Zoo implements TestMessage {
     public final Animal first;
 
-    public Zoo(@JsonProperty("first") Animal first) {
+    @JsonCreator
+    public Zoo(Animal first) {
       this.first = first;
     }
 
@@ -357,7 +358,8 @@ public interface JavaTestMessages {
   public final class Lion implements Animal {
     public final String name;
 
-    public Lion(@JsonProperty("name") String name) {
+    @JsonCreator
+    public Lion(String name) {
       this.name = name;
     }
 
@@ -408,7 +410,8 @@ public interface JavaTestMessages {
   final class Cockroach implements Animal {
     public final String name;
 
-    public Cockroach(@JsonProperty("name") String name) {
+    @JsonCreator
+    public Cockroach(String name) {
       this.name = name;
     }
 

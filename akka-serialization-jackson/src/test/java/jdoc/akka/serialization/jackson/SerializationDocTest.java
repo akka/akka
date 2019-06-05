@@ -6,6 +6,8 @@ package jdoc.akka.serialization.jackson;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 public class SerializationDocTest {
 
@@ -45,5 +47,44 @@ public class SerializationDocTest {
       }
     }
     // #one-constructor-param-3
+  }
+
+  interface Polymorphism {
+    // #polymorphism
+    public class Zoo implements MySerializable {
+      public final Animal primaryAttraction;
+
+      @JsonCreator
+      public Zoo(Animal primaryAttraction) {
+        this.primaryAttraction = primaryAttraction;
+      }
+    }
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes({
+      @JsonSubTypes.Type(value = Lion.class, name = "lion"),
+      @JsonSubTypes.Type(value = Elephant.class, name = "elephant")
+    })
+    interface Animal {}
+
+    public final class Lion implements Animal {
+      public final String name;
+
+      @JsonCreator
+      public Lion(String name) {
+        this.name = name;
+      }
+    }
+
+    public final class Elephant implements Animal {
+      public final String name;
+      public final int age;
+
+      public Elephant(String name, int age) {
+        this.name = name;
+        this.age = age;
+      }
+    }
+    // #polymorphism
   }
 }

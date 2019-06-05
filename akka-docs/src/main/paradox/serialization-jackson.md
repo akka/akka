@@ -65,6 +65,13 @@ such as:
 The blacklist of possible serialization gadget classes defined by Jackson databind are checked
 and disallowed for deserialization.
 
+@@@ warning
+
+Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+when using @ref:[polymorphic types](#polymorphic-types).
+
+@@@
+
 ### Formats
 
 The following formats are supported, and you select which one to use in the `serialization-bindings`
@@ -111,7 +118,37 @@ The `ParameterNamesModule` is configured with `JsonCreator.Mode.PROPERTIES` as d
 
 @@@
 
-TODO examples when annotations are needed
+## Polymorphic types
+
+A polymorphic type is when a certain base type has multiple alternative implementations. When nested fields or
+collections are of polymorphic type the concrete implementations of the type must be listed with `@JsonTypeInfo`
+and `@JsonSubTypes` annotations.
+
+Example:
+
+Scala
+:  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #polymorphism }
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #polymorphism }
+
+If you haven't defined the annotations you will see an exception like this:
+
+```
+InvalidDefinitionException: Cannot construct instance of `...` (no Creators, like default construct, exist): abstract types either need to be mapped to concrete types, have custom deserializer, or contain additional type information
+```
+
+When specifying allowed subclasses with those annotations the class names will not be included in the serialized
+representation and that is important for @ref:[preventing loading of malicious serialization gadgets](#security)
+when deserializing.
+
+@@@ warning
+
+Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+when using polymorphic types.
+
+@@@
+
 
 ## Schema Evolution
 
