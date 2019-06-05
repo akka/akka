@@ -149,11 +149,11 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       Await.result(transportB.managementCommand(One(addressA, Drop(0.1, 0.1))), 3.seconds.dilated)
 
       // Schedule peridodic disassociates
-      systemA.scheduler.schedule(3.second, 8.seconds) {
+      systemA.scheduler.scheduleWithFixedDelay(3.second, 8.seconds) { () =>
         transportA.managementCommand(ForceDisassociateExplicitly(addressB, reason = AssociationHandle.Unknown))
       }
 
-      systemB.scheduler.schedule(7.seconds, 8.seconds) {
+      systemB.scheduler.scheduleWithFixedDelay(7.seconds, 8.seconds) { () =>
         transportB.managementCommand(ForceDisassociateExplicitly(addressA, reason = AssociationHandle.Unknown))
       }
 

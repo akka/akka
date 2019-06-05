@@ -77,7 +77,7 @@ private[akka] final case class TailChoppingRoutees(
     val aIdx = new AtomicInteger()
     val size = shuffled.length
 
-    val tryWithNext = scheduler.schedule(0.millis, interval) {
+    val tryWithNext = scheduler.scheduleWithFixedDelay(Duration.Zero, interval) { () =>
       val idx = aIdx.getAndIncrement
       if (idx < size) {
         shuffled(idx) match {

@@ -105,3 +105,7 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SourceQueueAdapter
 # Remove deprecated features since 2.5.0 https://github.com/akka/akka/issues/26492
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializerSettings.withAutoFusing")
 
+# #26910 scheduleWithFixedDelay vs scheduleAtFixedRate
+# Adding methods to Materializer is not compatible but we don't support other Materializer implementations
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.scheduleAtFixedRate")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.scheduleWithFixedDelay")

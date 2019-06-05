@@ -158,7 +158,8 @@ private[akka] class LiveEventsByPersistenceIdPublisher(
   import EventsByPersistenceIdPublisher._
 
   val tickTask: Cancellable =
-    context.system.scheduler.schedule(refreshInterval, refreshInterval, self, Continue)(context.dispatcher)
+    context.system.scheduler.scheduleWithFixedDelay(refreshInterval, refreshInterval, self, Continue)(
+      context.dispatcher)
 
   override def postStop(): Unit =
     tickTask.cancel()

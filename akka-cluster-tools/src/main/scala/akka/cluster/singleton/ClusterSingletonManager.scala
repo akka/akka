@@ -569,7 +569,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     // subscribe to cluster changes, re-subscribe when restart
     cluster.subscribe(self, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved], classOf[MemberDowned])
 
-    setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
+    startTimerWithFixedDelay(CleanupTimer, Cleanup, 1.minute)
 
     // defer subscription to avoid some jitter when
     // starting/joining several nodes at the same time
@@ -723,7 +723,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (count <= maxHandOverRetries) {
         logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousOldestOption.map(_.address))
         previousOldestOption.foreach(node => peer(node.address) ! HandOverToMe)
-        setTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval, repeat = false)
+        startSingleTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval)
         stay()
       } else if (previousOldestOption.forall(removed.contains)) {
         // can't send HandOverToMe, previousOldest unknown for new node (or restart)
@@ -771,7 +771,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (result) {
         gotoOldest()
       } else {
-        setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
+        startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
         stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
       }
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton =>
@@ -780,7 +780,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       tryAcquireLease()
     case Event(AcquireLeaseFailure(t), _) =>
       log.error(t, "failed to get lease (will be retried)")
-      setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
+      startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
       stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
     case Event(LeaseRetry, _) =>
       // If lease was lost (so previous state was oldest) then we don't try and get the lease
@@ -827,11 +827,11 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       case Some(a) =>
         // send TakeOver request in case the new oldest doesn't know previous oldest
         peer(a.address) ! TakeOverFromMe
-        setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
+        startSingleTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval)
         goto(WasOldest).using(WasOldestData(singleton, newOldestOption = Some(a)))
       case None =>
         // new oldest will initiate the hand-over
-        setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
+        startSingleTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval)
         goto(WasOldest).using(WasOldestData(singleton, newOldestOption = None))
     }
   }
@@ -890,7 +890,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         else
           log.debug("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
         newOldestOption.foreach(node => peer(node.address) ! TakeOverFromMe)
-        setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
+        startSingleTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval)
         stay
       } else
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [$newOldestOption] never occurred")
@@ -1043,7 +1043,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   }
 
   onTransition {
-    case _ -> BecomingOldest => setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
+    case _ -> BecomingOldest => startSingleTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval)
   }
 
   onTransition {

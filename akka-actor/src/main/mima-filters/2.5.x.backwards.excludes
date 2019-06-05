@@ -59,3 +59,16 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.LoggingReceive.c
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.Logging.getLogger")
 ProblemFilters.exclude[MissingTypesProblem]("akka.routing.RoutedActorCell")
 ProblemFilters.exclude[MissingTypesProblem]("akka.routing.ResizablePoolCell")
+
+# #26910 scheduleWithFixedDelay vs scheduleAtFixedRate
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FSM#Timer.repeat")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.FSM#Timer.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.FSM#Timer.copy$default$3")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.FSM#Timer.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.FSM#Timer.apply")
+# declared final in current version
+ProblemFilters.exclude[FinalMethodProblem]("akka.actor.TimerScheduler.startPeriodicTimer")
+ProblemFilters.exclude[FinalMethodProblem]("akka.actor.TimerScheduler.startSingleTimer")
+# only in current version
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.startTimerAtFixedRate")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.startTimerWithFixedDelay")

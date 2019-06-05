@@ -16,7 +16,6 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberExited
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import com.typesafe.config.Config
 import akka.actor.NoSerializationVerificationNeeded
 import akka.event.Logging
@@ -219,8 +218,11 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     singleton = None
     cancelTimer()
     identifyTimer = Some(
-      context.system.scheduler
-        .schedule(0 milliseconds, singletonIdentificationInterval, self, ClusterSingletonProxy.TryToIdentifySingleton))
+      context.system.scheduler.scheduleWithFixedDelay(
+        Duration.Zero,
+        singletonIdentificationInterval,
+        self,
+        ClusterSingletonProxy.TryToIdentifySingleton))
   }
 
   def trackChange(block: () => Unit): Unit = {

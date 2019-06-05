@@ -234,7 +234,7 @@ import scala.concurrent.{ Future, Promise }
           if (cancelled.get)
             completeStage()
           else
-            schedulePeriodicallyWithInitialDelay("TickTimer", initialDelay, interval)
+            scheduleWithFixedDelay("TickTimer", initialDelay, interval)
         }
 
         setHandler(out, eagerTerminateOutput)

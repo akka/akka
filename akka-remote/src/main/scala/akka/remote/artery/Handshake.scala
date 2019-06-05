@@ -75,7 +75,7 @@ private[remote] class OutboundHandshake(
       override def preStart(): Unit = {
         scheduleOnce(HandshakeTimeout, timeout)
         livenessProbeInterval match {
-          case d: FiniteDuration => schedulePeriodically(LivenessProbeTick, d)
+          case d: FiniteDuration => scheduleWithFixedDelay(LivenessProbeTick, d, d)
           case _                 => // only used in control stream
         }
       }
@@ -122,7 +122,7 @@ private[remote] class OutboundHandshake(
             } else {
               // will pull when handshake reply is received (uniqueRemoteAddress completed)
               handshakeState = ReqInProgress
-              schedulePeriodically(HandshakeRetryTick, retryInterval)
+              scheduleWithFixedDelay(HandshakeRetryTick, retryInterval, retryInterval)
 
               // The InboundHandshake stage will complete the uniqueRemoteAddress future
               // when it receives the HandshakeRsp reply

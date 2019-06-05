@@ -367,7 +367,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   var subscribers = Vector.empty[ActorRef]
 
   import context.dispatcher
-  val heartbeatTask = context.system.scheduler.schedule(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
+  val heartbeatTask =
+    context.system.scheduler.scheduleWithFixedDelay(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
   var refreshContactsTask: Option[Cancellable] = None
   scheduleRefreshContactsTick(establishingGetContactsInterval)
   self ! RefreshContactsTick
@@ -376,7 +377,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
 
   def scheduleRefreshContactsTick(interval: FiniteDuration): Unit = {
     refreshContactsTask.foreach { _.cancel() }
-    refreshContactsTask = Some(context.system.scheduler.schedule(interval, interval, self, RefreshContactsTick))
+    refreshContactsTask = Some(
+      context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, RefreshContactsTick))
   }
 
   override def postStop(): Unit = {
@@ -933,8 +935,11 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   var subscribers = Vector.empty[ActorRef]
 
   val checkDeadlinesTask =
-    context.system.scheduler.schedule(failureDetectionInterval, failureDetectionInterval, self, CheckDeadlines)(
-      context.dispatcher)
+    context.system.scheduler.scheduleWithFixedDelay(
+      failureDetectionInterval,
+      failureDetectionInterval,
+      self,
+      CheckDeadlines)(context.dispatcher)
 
   override def preStart(): Unit = {
     super.preStart()

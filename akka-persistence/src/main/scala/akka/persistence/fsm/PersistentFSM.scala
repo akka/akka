@@ -293,11 +293,35 @@ object PersistentFSM {
   @InternalApi
   private[persistence] final case class TimeoutMarker(generation: Long)
 
+  /** INTERNAL API */
+  @InternalApi
+  private[persistence] sealed trait TimerMode {
+    def repeat: Boolean
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[persistence] case object FixedRateMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[persistence] case object FixedDelayMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[persistence] case object SingleMode extends TimerMode {
+    override def repeat: Boolean = false
+  }
+
   /**
    * INTERNAL API
    */
   @InternalApi
-  private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int, owner: AnyRef)(
+  private[persistence] final case class Timer(name: String, msg: Any, mode: TimerMode, generation: Int, owner: AnyRef)(
       context: ActorContext)
       extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
@@ -309,9 +333,11 @@ object PersistentFSM {
         case m: AutoReceivedMessage => m
         case _                      => this
       }
-      ref = Some(
-        if (repeat) scheduler.schedule(timeout, timeout, actor, timerMsg)
-        else scheduler.scheduleOnce(timeout, actor, timerMsg))
+      ref = Some(mode match {
+        case SingleMode     => scheduler.scheduleOnce(timeout, actor, timerMsg)
+        case FixedDelayMode => scheduler.scheduleWithFixedDelay(timeout, timeout, actor, timerMsg)
+        case FixedRateMode  => scheduler.scheduleAtFixedRate(timeout, timeout, actor, timerMsg)
+      })
     }
     def cancel(): Unit =
       if (ref.isDefined) {
