@@ -80,6 +80,37 @@ TODO: It's undecided if we will support both CBOR or and Smile since the differe
 
 ## Annotations
 
+@@@ div {.group-java}
+
+### Constructor with single parameter
+
+You might run into an exception like this:
+
+```
+MismatchedInputException: Cannot construct instance of `...` (although at least one Creator exists): cannot deserialize from Object value (no delegate- or property-based Creator)
+```
+
+That is probably because the class has a constructor with a single parameter, like:
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-1 }
+
+That can be solved by adding `@JsonCreator` or `@JsonProperty` annotations:
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-2 }
+
+or
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-3 }
+
+
+The `ParameterNamesModule` is configured with `JsonCreator.Mode.PROPERTIES` as described in the
+[Jackson documentation](https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names#delegating-creator)
+
+@@@
+
 TODO examples when annotations are needed
 
 ## Schema Evolution

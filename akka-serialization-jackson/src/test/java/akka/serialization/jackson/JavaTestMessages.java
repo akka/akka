@@ -6,6 +6,7 @@ package akka.serialization.jackson;
 
 import akka.actor.ActorRef;
 import akka.actor.Address;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -22,10 +23,11 @@ public interface JavaTestMessages {
   public class SimpleCommand implements TestMessage {
     private final String name;
 
-    // FIXME document gotchas like this (or is there a better way?)
-    // @JsonProperty needed due to single argument constructor, see
-    // https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names
-    public SimpleCommand(@JsonProperty("name") String name) {
+    // @JsonCreator or @JsonProperty needed due to single argument constructor, see
+    // rejected change request in Jackson https://github.com/FasterXML/jackson-databind/issues/1631
+    // See also https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names
+    @JsonCreator
+    public SimpleCommand(String name) {
       this.name = name;
     }
 
