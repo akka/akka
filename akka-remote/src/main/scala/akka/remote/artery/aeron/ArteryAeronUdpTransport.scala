@@ -95,6 +95,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         driverContext.aeronDirectoryName(randomName)
       }
       driverContext.clientLivenessTimeoutNs(settings.Advanced.Aeron.ClientLivenessTimeout.toNanos)
+      driverContext.publicationUnblockTimeoutNs(settings.Advanced.Aeron.PublicationUnblockTimeout.toNanos)
       driverContext.imageLivenessTimeoutNs(settings.Advanced.Aeron.ImageLivenessTimeout.toNanos)
       driverContext.driverTimeoutMs(settings.Advanced.Aeron.DriverTimeout.toMillis)
 
