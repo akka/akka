@@ -132,13 +132,13 @@ Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we 
 
 @@ Remoting
 
-### Default remoting is now Artery TCP
+## Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
 <a id="classic-to-artery"></a>
-#### Migrating from classic remoting to Artery
+### Migrating from classic remoting to Artery
 
 Artery has the same functionality as classic remoting and you should normally only have to change the
 configuration to switch.
@@ -168,7 +168,7 @@ If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs 
 for how to do this.
 
 
-#### Migration from 2.5.x Artery to 2.6.x Artery
+### Migration from 2.5.x Artery to 2.6.x Artery
 
 The following defaults have changed:
 
@@ -193,7 +193,7 @@ For TCP:
 * `akka.remote.artery.advanced.connection-timeout` to `akka.remote.artery.advanced.tcp.connection-timeout`
 
 
-#### Remaining with Classic remoting (not recommended)
+### Remaining with Classic remoting (not recommended)
 
 Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
