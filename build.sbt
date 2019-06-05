@@ -239,7 +239,7 @@ lazy val docs = akkaModule("akka-docs")
   .disablePlugins(ScalafixPlugin)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
-  .dependsOn(actor, actorTyped % "provided->compile", actorTests % "test->test", testkit % "test->test")
+  .dependsOn(actor, actorTyped % "optional->compile", actorTests % "test->test", testkit % "test->test")
   .settings(Dependencies.jackson)
   .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
   .settings(OSGi.jackson)
