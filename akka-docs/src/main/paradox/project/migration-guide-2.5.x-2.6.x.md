@@ -126,17 +126,16 @@ blocking and protect a bit against starving the internal actors. Since the inter
 the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
 `8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
 
+## Akka now uses Fork Join Pool from JDK
+
+Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
+
 @@ Remoting
 
 ### Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
-
-## Akka now uses Fork Join Pool from JDK
-
-Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
-keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
 <a id="classic-to-artery"></a>
 #### Migrating from classic remoting to Artery
