@@ -4,17 +4,20 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import akka.actor.ActorIdentity
+import akka.actor.Identify
+import akka.actor._
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociate
+import akka.remote.RARP
+import akka.remote.RemotingMultiNodeSpec
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
 object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
   val first = role("first")
@@ -30,6 +33,7 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
       akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 60 s
+      akka.remote.use-unsafe-remote-features-without-cluster = on
     """)))
 
   testTransport(on = true)
@@ -51,11 +55,6 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
   import RemoteNodeShutdownAndComesBackSpec._
 
   override def initialParticipants = roles.size
-
-  def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    expectMsgType[ActorIdentity].ref.get
-  }
 
   "RemoteNodeShutdownAndComesBack" must {
 

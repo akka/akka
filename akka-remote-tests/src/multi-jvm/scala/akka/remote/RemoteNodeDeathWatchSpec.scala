@@ -4,19 +4,17 @@
 
 package akka.remote
 
-import language.postfixOps
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
+import scala.language.postfixOps
+
 import akka.actor.Actor
-import akka.actor.ActorIdentity
 import akka.actor.ActorRef
-import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
 class RemoteNodeDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -29,6 +27,7 @@ class RemoteNodeDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
       ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-without-cluster = on
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
@@ -90,29 +89,19 @@ object RemoteNodeDeathWatchSpec {
 
 abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteNodeDeathWatchSpec._
   import RemoteWatcher._
+  import multiNodeConfig._
 
   def scenario: String
   // Possible to override to let them heartbeat for a while.
   def sleep(): Unit = ()
 
-  override def initialParticipants = roles.size
+  override def initialParticipants: Int = roles.size
 
   muteDeadLetters(Heartbeat.getClass)()
 
-  lazy val remoteWatcher: ActorRef = {
-    system.actorSelection("/system/remote-watcher") ! Identify(None)
-    expectMsgType[ActorIdentity].ref.get
-  }
-
-  def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    val actorIdentity = expectMsgType[ActorIdentity]
-    assert(actorIdentity.ref.isDefined, s"Unable to Identify actor: $actorName on node: $role")
-    actorIdentity.ref.get
-  }
+  lazy val remoteWatcher: ActorRef = identifyWithPath(myself, "system", "remote-watcher")
 
   def assertCleanup(timeout: FiniteDuration = 5.seconds): Unit = {
     within(timeout) {

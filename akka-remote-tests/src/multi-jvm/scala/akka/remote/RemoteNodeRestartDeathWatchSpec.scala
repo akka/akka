@@ -6,19 +6,16 @@ package akka.remote
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
-import akka.actor.ActorIdentity
-import akka.actor.ActorRef
-import akka.actor.Identify
-import akka.actor.Props
-import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.remote.testkit.MultiNodeConfig
-import akka.testkit._
-import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.Props
 import akka.actor.RootActorPath
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
 class RemoteNodeRestartDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -30,6 +27,7 @@ class RemoteNodeRestartDeathWatchConfig(artery: Boolean) extends MultiNodeConfig
       akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-without-cluster = on
     """)))
 
   testTransport(on = true)
@@ -60,15 +58,10 @@ object RemoteNodeRestartDeathWatchSpec {
 
 abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestartDeathWatchConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteNodeRestartDeathWatchSpec._
+  import multiNodeConfig._
 
-  override def initialParticipants = roles.size
-
-  def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    expectMsgType[ActorIdentity].ref.get
-  }
+  override def initialParticipants: Int = roles.size
 
   "RemoteNodeRestartDeathWatch" must {
 

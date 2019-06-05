@@ -4,17 +4,13 @@
 
 package akka.remote
 
-import scala.language.postfixOps
-
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.actor.ActorIdentity
-import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
 
 class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -46,15 +42,10 @@ object RemoteDeliverySpec {
 
 abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteDeliverySpec._
+  import multiNodeConfig._
 
   override def initialParticipants = roles.size
-
-  def identify(role: RoleName, actorName: String): ActorRef = within(10 seconds) {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    expectMsgType[ActorIdentity].ref.get
-  }
 
   "Remote message delivery" must {
 

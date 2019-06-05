@@ -45,6 +45,7 @@ class DisableRemoteFeaturesWithoutClusterSpec extends RemoteFeaturesSpec(RemoteF
     "have the expected settings" in {
       provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe false
       provider.transport.system.settings.HasCluster shouldBe false
+      provider.remoteSettings.WarnUnsafeWatchWithoutCluster shouldBe true
     }
 
     "not create a RemoteWatcher" in {
@@ -63,6 +64,7 @@ class EnableRemoteFeaturesWithoutClusterSpec extends RemoteFeaturesSpec(RemoteFe
     "have the expected settings" in {
       provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster shouldBe true
       provider.transport.system.settings.HasCluster shouldBe false
+      provider.remoteSettings.WarnUnsafeWatchWithoutCluster shouldBe true
     }
 
     "create a RemoteWatcher" in {

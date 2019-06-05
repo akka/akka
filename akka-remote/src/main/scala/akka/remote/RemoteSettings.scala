@@ -127,6 +127,8 @@ final class RemoteSettings(val config: Config) {
   val UseUnsafeRemoteFeaturesWithoutCluster: Boolean = getBoolean(
     "akka.remote.use-unsafe-remote-features-without-cluster")
 
+  val WarnUnsafeWatchWithoutCluster: Boolean = getBoolean("akka.remote.warn-unsafe-watch-without-cluster")
+
   val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
   val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")
   val WatchHeartBeatInterval: FiniteDuration = {

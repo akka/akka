@@ -162,14 +162,14 @@ private[akka] class RemoteActorRefProvider(
   /** The [[Deployer]] created depends on whether Cluster is used or
    * `akka.remote.use-unsafe-remote-features-without-cluster`.
    */
-  override val deployer: Deployer =
-    createOrNone[Deployer](createDeployer).getOrElse(new Deployer(settings, dynamicAccess))
+  override val deployer: Deployer = createDeployer
 
   /**
    * Factory method to make it possible to override deployer in subclass.
    * Creates a new instance every time.
    */
-  protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
+  protected def createDeployer: Deployer =
+    createOrNone[Deployer](new RemoteDeployer(settings, dynamicAccess)).getOrElse(new Deployer(settings, dynamicAccess))
 
   private val local = new LocalActorRefProvider(
     systemName,
@@ -250,27 +250,28 @@ private[akka] class RemoteActorRefProvider(
 
     _log = Logging.withMarker(eventStream, getClass.getName)
 
+    warnIfDirectUse()
+    warnIfUseUnsafeWithoutCluster()
+
     // this enables reception of remote requests
     transport.start()
 
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
-
-    showWarningsIfApplicable()
   }
 
-  /** Will call the provided `func` if using Cluster or explicitly enabled unsafe remote features. */
-  private def createOrNone[T](func: => T): Option[T] = if (hasClusterOrUseUnsafe) Some(func) else None
-
-  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit =
+  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
+    // TODO change link to current once 2.6 is out
     checkClassOrThrow(
       system,
       "org.jboss.netty.channel.Channel",
       "Classic",
       "Netty",
       "https://doc.akka.io/docs/akka/2.6/remoting.html")
+  }
 
   private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
+    // TODO change link to current once 2.6 is out
     val arteryLink = "https://doc.akka.io/docs/akka/2.6/remoting-artery.html"
     // using classes that are used so will fail to compile if they get removed from Aeron
     checkClassOrThrow(system, "io.aeron.driver.MediaDriver", "Artery", "Aeron driver", arteryLink)
@@ -290,6 +291,9 @@ private[akka] class RemoteActorRefProvider(
       case _ =>
     }
   }
+
+  /** Will call the provided `func` if using Cluster or explicitly enabled unsafe remote features. */
+  private def createOrNone[T](func: => T): Option[T] = if (hasClusterOrUseUnsafe) Some(func) else None
 
   /**
    * If using Cluster a `ClusterRemoteWatcher` is returned by the Cluster implementation.
@@ -312,23 +316,23 @@ private[akka] class RemoteActorRefProvider(
     system.systemActorOf(RemoteDeploymentWatcher.props(remoteSettings), "remote-deployment-watcher")
 
   /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
-  protected def showWarningsIfApplicable(): Unit = {
-    val recommended = "For most use cases, the 'cluster' abstraction on top of remoting is more suitable."
+  protected def warnIfDirectUse(): Unit = {
     if (remoteSettings.WarnAboutDirectUse) {
-      log.warning("Using the 'remote' ActorRefProvider directly, which is a low-level layer. {}", recommended)
-    }
-
-    if (!settings.HasCluster) {
-      if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
-        log.warning(
-          "`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled. " +
-          "Using the 'remote' deployer [{}] and watcher. {}",
-          deployer,
-          recommended)
-      else
-        log.info("Cluster not in use, using the 'local' deployer [{}], 'remote' watcher not created.", deployer)
+      log.warning(
+        "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
+        "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
     }
   }
+
+  private def warnIfUseUnsafeWithoutCluster(): Unit =
+    if (!settings.HasCluster) {
+      if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
+        log.warning("`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled.")
+      else
+        log.warning(
+          "Cluster not in use - only using local dispatchers and no remote watch. " +
+          "If you need remote dispatchers and/or remote watch, using Akka Cluster is recommended.")
+    }
 
   def actorOf(
       system: ActorSystemImpl,
@@ -652,9 +656,10 @@ private[akka] class RemoteActorRef private[akka] (
   def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-    provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher && watchee == this)
+    provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
   }
 
+  // Disable remote watch/deployment (or system messages in general) if not in cluster #26176
   def sendSystemMessage(message: SystemMessage): Unit =
     provider.remoteWatcher.foreach { remoteWatcher =>
       try {

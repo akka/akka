@@ -4,17 +4,19 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.actor.ActorIdentity
+import akka.actor.Identify
+import akka.actor._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
+import akka.remote.RARP
+import akka.remote.RemotingMultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object RemoteNodeRestartGateSpec extends MultiNodeConfig {
   val first = role("first")
@@ -48,11 +50,6 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
   import RemoteNodeRestartGateSpec._
 
   override def initialParticipants = 2
-
-  def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    expectMsgType[ActorIdentity].ref.get
-  }
 
   "RemoteNodeRestartGate" must {
 

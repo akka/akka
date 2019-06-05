@@ -159,8 +159,8 @@ private[cluster] class ClusterRemoteWatcher(
   private def inCluster(address: Address): Boolean = clusterNodes(address)
 
   /** Returns true if the `watcher` is not `self` and the `watchee` is in the cluster. */
-  override protected def isSafeWatch(self: ActorRef, watcher: InternalActorRef, watchee: InternalActorRef): Boolean =
-    inCluster(watchee.path.address) && super.isSafeWatch(self, watcher, watchee)
+  override protected def shouldWatch(watchee: InternalActorRef): Boolean =
+    inCluster(watchee.path.address) && super.shouldWatch(watchee)
 
   /**
    * When a cluster node is added this class takes over the

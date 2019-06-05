@@ -202,22 +202,26 @@ private[akka] class RemoteWatcher(
     }
   }
 
-  /** Returns true if the `watcher` is not `self` and `akka.remote.use-unsafe-remote-features-without-cluster` is `on`. */
-  @InternalApi protected def isSafeWatch(
-      self: ActorRef,
-      watcher: InternalActorRef,
-      @unused watchee: InternalActorRef): Boolean =
-    watcher != self && remoteProvider.hasClusterOrUseUnsafe
+  /** Returns true if the `watcher` is not `self` and either has cluster or
+   * `akka.remote.use-unsafe-remote-features-without-cluster` is enabled.
+   */
+  @InternalApi protected def shouldWatch(@unused watchee: InternalActorRef): Boolean =
+    remoteProvider.hasClusterOrUseUnsafe
 
-  def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit =
-    if (isSafeWatch(self, watcher, watchee)) {
+  def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
+    assert(watcher != self)
+    if (shouldWatch(watchee)) {
       log.debug("Watching: [{} -> {}]", watcher, watchee)
       watching.addBinding(watchee, watcher)
       watchNode(watchee)
 
       // add watch from self, this will actually send a Watch to the target when necessary
       context.watch(watchee)
+    } else {
+      if (remoteProvider.remoteSettings.WarnUnsafeWatchWithoutCluster)
+        log.warning("Unsafe watch attempted, will not watch: [{} -> {}]", watcher, watchee)
     }
+  }
 
   private def watchNode(watchee: InternalActorRef): Unit = {
     val watcheeAddress = watchee.path.address
@@ -231,13 +235,13 @@ private[akka] class RemoteWatcher(
 
   def removeWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
-    log.debug("Unwatching: [{} -> {}]", watcher, watchee)
 
     // Could have used removeBinding, but it does not tell if this was the last entry. This saves a contains call.
     watching.get(watchee) match {
       case Some(watchers) =>
         watchers -= watcher
         if (watchers.isEmpty) {
+          log.debug("Unwatching: [{} -> {}]", watcher, watchee)
           // clean up self watch when no more watchers of this watchee
           log.debug("Cleanup self watch of [{}]", watchee.path)
           context.unwatch(watchee)

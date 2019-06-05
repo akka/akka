@@ -7,14 +7,12 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
-import akka.actor.ActorIdentity
 import akka.actor.ActorRef
-import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.event.EventStream
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.util.unused
@@ -27,6 +25,7 @@ object TransportFailConfig extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
+      akka.remote.use-unsafe-remote-features-without-cluster = on
       akka.remote.classic {
         transport-failure-detector {
           implementation-class = "akka.remote.TransportFailSpec$$TestFailureDetector"
@@ -99,12 +98,6 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
   import TransportFailSpec._
 
   override def initialParticipants = roles.size
-
-  def identify(role: RoleName, actorName: String): ActorRef = {
-    val p = TestProbe()
-    (system.actorSelection(node(role) / "user" / actorName)).tell(Identify(actorName), p.ref)
-    p.expectMsgType[ActorIdentity](remainingOrDefault).ref.get
-  }
 
   "TransportFail" must {
 
