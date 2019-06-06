@@ -314,6 +314,7 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and th
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
+* Java @apidoc[EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
 
 ### Akka Typed Stream API changes
 

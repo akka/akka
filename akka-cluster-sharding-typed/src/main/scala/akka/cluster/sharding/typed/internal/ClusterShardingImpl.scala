@@ -6,12 +6,13 @@ package akka.cluster.sharding.typed
 package internal
 
 import java.net.URLEncoder
+import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
+import akka.util.JavaDurationConverters._
 import scala.concurrent.Future
-
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -318,8 +319,8 @@ import akka.util.Timeout
     replyTo.future
   }
 
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Timeout): CompletionStage[U] =
-    ask[U](replyTo => message.apply(replyTo))(timeout).toJava
+  def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
+    ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
