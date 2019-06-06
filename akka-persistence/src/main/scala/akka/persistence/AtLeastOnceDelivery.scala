@@ -243,7 +243,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     if (redeliverTask.isEmpty) {
       val interval = redeliverInterval / 2
       redeliverTask = Some(
-        context.system.scheduler.schedule(interval, interval, self, RedeliveryTick)(context.dispatcher))
+        context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, RedeliveryTick)(context.dispatcher))
     }
   }
 

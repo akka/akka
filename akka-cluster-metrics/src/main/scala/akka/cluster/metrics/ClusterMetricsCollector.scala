@@ -161,12 +161,16 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
    * Start periodic gossip to random nodes in cluster
    */
   val gossipTask =
-    scheduler.schedule(PeriodicTasksInitialDelay max CollectorGossipInterval, CollectorGossipInterval, self, GossipTick)
+    scheduler.scheduleWithFixedDelay(
+      PeriodicTasksInitialDelay max CollectorGossipInterval,
+      CollectorGossipInterval,
+      self,
+      GossipTick)
 
   /**
    * Start periodic metrics collection
    */
-  val sampleTask = scheduler.schedule(
+  val sampleTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay max CollectorSampleInterval,
     CollectorSampleInterval,
     self,

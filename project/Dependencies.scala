@@ -17,7 +17,11 @@ object Dependencies {
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
+  // check agrona version when updating this
   val aeronVersion = "1.15.1"
+  // needs to be inline with the aeron version
+  val agronaVersion = "0.9.31"
+  val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
 
   val scala212Version = "2.12.8"
@@ -52,7 +56,7 @@ object Dependencies {
     // Compile
 
     val config = "com.typesafe" % "config" % "1.3.4" // ApacheV2
-    val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
+    val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
     val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
@@ -82,6 +86,8 @@ object Dependencies {
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
+    // Added explicitly for when artery tcp is used
+    val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
@@ -180,9 +186,14 @@ object Dependencies {
 
   val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
 
-  val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
+  val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
+  val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
 
-  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
+  val remote = l ++= Seq(agrona, Test.junit, Test.scalatest.value, Test.jimfs) ++ remoteOptionalDependencies
+
+  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml) ++ remoteDependencies
+
+  val multiNodeTestkit = l ++= Seq(netty)
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
 

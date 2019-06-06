@@ -43,7 +43,8 @@ public class StatsSampleClient extends AbstractActor {
         getContext()
             .getSystem()
             .scheduler()
-            .schedule(interval, interval, getSelf(), "tick", getContext().getDispatcher(), null);
+            .scheduleWithFixedDelay(
+                interval, interval, getSelf(), "tick", getContext().getDispatcher(), null);
   }
 
   // subscribe to cluster changes, MemberEvent

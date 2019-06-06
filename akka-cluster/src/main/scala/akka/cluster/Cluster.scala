@@ -164,6 +164,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
+        @silent
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
             implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)

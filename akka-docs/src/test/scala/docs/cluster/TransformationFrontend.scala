@@ -55,7 +55,7 @@ object TransformationFrontend {
 
     val counter = new AtomicInteger
     import system.dispatcher
-    system.scheduler.schedule(2.seconds, 2.seconds) {
+    system.scheduler.scheduleWithFixedDelay(2.seconds, 2.seconds) { () =>
       implicit val timeout = Timeout(5 seconds)
       (frontend ? TransformationJob("hello-" + counter.incrementAndGet())).foreach { result =>
         println(result)

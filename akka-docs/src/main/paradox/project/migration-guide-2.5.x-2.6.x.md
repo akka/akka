@@ -69,6 +69,10 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 * `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
 * `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
 
+### JavaTestKit removed
+
+The `JavaTestKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
+
 ## Deprecated features
 
 ### TypedActor
@@ -101,14 +105,16 @@ Warnings about `TypedActor` have been [mentioned in documentation](https://doc.a
 for many years.
 
 
-## Default remoting is now Artery TCP
+@@ Remoting
+
+### Default remoting is now Artery TCP
 
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
 
 <a id="classic-to-artery"></a>
-### Migrating from classic remoting to Artery
+#### Migrating from classic remoting to Artery
 
 Artery has the same functionality as classic remoting and you should normally only have to change the
 configuration to switch.
@@ -138,7 +144,7 @@ If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs 
 for how to do this.
 
 
-### Migration from 2.5.x Artery to 2.6.x Artery
+#### Migration from 2.5.x Artery to 2.6.x Artery
 
 The following defaults have changed:
 
@@ -163,7 +169,7 @@ For TCP:
 * `akka.remote.artery.advanced.connection-timeout` to `akka.remote.artery.advanced.tcp.connection-timeout`
 
 
-### Remaining with Classic remoting (not recommended)
+#### Remaining with Classic remoting (not recommended)
 
 Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
@@ -174,6 +180,30 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 
 The following documents configuration changes and behavior changes where no action is required. In come cases the old
 behavior can be restored via configuration.
+
+### Remoting dependencies have been made optional
+
+Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
+to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
+
+## Schedule periodically with fixed-delay vs. fixed-rate
+
+The `Scheduler.schedule` method has been deprecated in favor of selecting `scheduleWithFixedDelay` or
+`scheduleAtFixedRate`.
+
+The @ref:[Scheduler](../scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
+
+The deprecated `schedule` method had the same semantics as `scheduleAtFixedRate`, but since that can result in
+bursts of scheduled tasks or messages after long garbage collection pauses and in worst case cause undesired
+load on the system `scheduleWithFixedDelay` is often preferred.
+
+For the same reason the following methods have also been deprecated:
+
+* `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
+* `FSM.setTimer`, replaced by `startSingleTimer`, `startTimerWithFixedDelay` or `startTimerAtFixedRate`
+* `PersistentFSM.setTimer`, replaced by `startSingleTimer`, `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 
 ### Internal dispatcher introduced
 
@@ -244,7 +274,7 @@ keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be 
 
 ## Source incompatibilities
 
-#### StreamRefs
+### StreamRefs
 
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
@@ -279,7 +309,10 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and th
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
-* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`. Additionally `.schedule` has been renamed to `.scheduleAtFixedRate`. Actors that needs to schedule tasks should prefer `Behaviors.withTimers`.
+* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
+  Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
+  prefer `Behaviors.withTimers`.
+* `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
 
 ### Akka Typed Stream API changes

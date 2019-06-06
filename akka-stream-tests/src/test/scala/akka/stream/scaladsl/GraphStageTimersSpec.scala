@@ -79,7 +79,7 @@ class GraphStageTimersSpec extends StreamSpec {
           probe ! TestCancelTimerAck
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
         case TestRepeatedTimer =>
-          schedulePeriodically("TestRepeatedTimer", 100.millis.dilated)
+          scheduleWithFixedDelay("TestRepeatedTimer", 100.millis.dilated, 100.millis.dilated)
       }
     }
   }
@@ -156,7 +156,7 @@ class GraphStageTimersSpec extends StreamSpec {
       override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
         var tickCount = 0
 
-        override def preStart(): Unit = schedulePeriodically("tick", 100.millis)
+        override def preStart(): Unit = scheduleWithFixedDelay("tick", 100.millis, 100.millis)
 
         setHandler(out, new OutHandler {
           override def onPull() = () // Do nothing

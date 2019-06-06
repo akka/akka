@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.Done
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
@@ -55,6 +55,7 @@ import scala.util.control.NonFatal
   def props(shell: GraphInterpreterShell): Props =
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
+  @InternalStableApi
   class BatchingActorInputBoundary(
       size: Int,
       shell: GraphInterpreterShell,
@@ -144,6 +145,7 @@ import scala.util.control.NonFatal
       })
     }
 
+    @InternalStableApi
     private def dequeue(): Any = {
       val elem = inputBuffer(nextInputElementCursor)
       if (elem eq null) throw new IllegalArgumentException("Internal queue must never contain a null")
@@ -160,6 +162,7 @@ import scala.util.control.NonFatal
       elem
     }
 
+    @InternalStableApi
     private def clear(): Unit = {
       java.util.Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
       inputBufferElements = 0
@@ -174,6 +177,7 @@ import scala.util.control.NonFatal
       }
     }
 
+    @InternalStableApi
     def onNext(elem: Any): Unit = {
       if (!upstreamCompleted) {
         if (inputBufferElements == size) throw new IllegalStateException("Input buffer overrun")

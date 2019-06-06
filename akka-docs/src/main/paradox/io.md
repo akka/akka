@@ -116,3 +116,11 @@ A `ByteStringBuilder` can be wrapped in a `java.io.OutputStream` via the `asOutp
 ## Architecture in-depth
 
 For further details on the design and internal architecture see @ref:[I/O Layer Design](common/io-layer.md).
+
+@@toc
+
+@@@ index
+
+* [I/O Layer Design](common/io-layer.md)
+
+@@@

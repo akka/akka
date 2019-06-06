@@ -74,9 +74,9 @@ class LotsOfDataBot extends Actor with ActorLogging {
   val isPassive = context.system.settings.config.getBoolean("passive")
   var tickTask =
     if (isPassive)
-      context.system.scheduler.schedule(1.seconds, 1.seconds, self, Tick)
+      context.system.scheduler.scheduleWithFixedDelay(1.seconds, 1.seconds, self, Tick)
     else
-      context.system.scheduler.schedule(20.millis, 20.millis, self, Tick)
+      context.system.scheduler.scheduleWithFixedDelay(20.millis, 20.millis, self, Tick)
 
   val startTime = System.nanoTime()
   var count = 1L
@@ -94,7 +94,7 @@ class LotsOfDataBot extends Actor with ActorLogging {
         if (count == maxEntries) {
           log.info("Reached {} entries", count)
           tickTask.cancel()
-          tickTask = context.system.scheduler.schedule(1.seconds, 1.seconds, self, Tick)
+          tickTask = context.system.scheduler.scheduleWithFixedDelay(1.seconds, 1.seconds, self, Tick)
         }
         val key = ORSetKey[String]((count % maxEntries).toString)
         if (count <= 100)

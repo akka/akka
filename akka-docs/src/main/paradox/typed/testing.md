@@ -35,14 +35,6 @@ Certain @apidoc[Behavior]s will be hard to test synchronously e.g. if they spawn
 before observing the effect you want to test. Further support for controlling the scheduler and execution context used
 will be added.
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 ## Synchronous behavior testing
 
 The following demonstrates how to test:

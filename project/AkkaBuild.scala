@@ -4,6 +4,7 @@
 
 package akka
 
+import java.io.FileReader
 import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 import java.time.format.DateTimeFormatter
@@ -13,7 +14,6 @@ import java.time.ZoneOffset
 import sbt.Keys._
 import sbt._
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
-
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -39,10 +39,23 @@ object AkkaBuild {
   }
 
   def akkaVersion: String = {
-    sys.props.getOrElse("akka.build.version", "2.6-SNAPSHOT") match {
+    val default = "2.6-SNAPSHOT"
+    sys.props.getOrElse("akka.build.version", default) match {
       case "timestamp" => s"2.6-$currentDateTime" // used when publishing timestamped snapshots
+      case "file" => akkaVersionFromFile(default)  
       case v => v
     }
+  }
+
+  def akkaVersionFromFile(default: String): String = {
+    val versionFile = "akka-actor/target/classes/version.conf"
+    if (new File(versionFile).exists()) {
+      val versionProps = new Properties()
+      val reader = new FileReader(versionFile)
+      try versionProps.load(reader) finally reader.close()
+      versionProps.getProperty("akka.version", default).replaceAll("\"", "")
+    } else
+      default
   }
 
   lazy val rootSettings = Def.settings(
@@ -149,6 +162,7 @@ object AkkaBuild {
 
     licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     homepage := Some(url("https://akka.io/")),
+    description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
 
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
 

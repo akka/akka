@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.{ Comparator, Deque, PriorityQueue, Queue }
 
 import akka.actor.{ ActorCell, ActorRef, ActorSystem, DeadLetter, InternalActorRef }
+import akka.annotation.InternalStableApi
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Helpers.ConfigOps
@@ -448,6 +449,7 @@ private[akka] trait SystemMessageQueue {
   /**
    * Enqueue a new system message, e.g. by prepending atomically as new head of a single-linked list.
    */
+  @InternalStableApi
   def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit
 
   /**

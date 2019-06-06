@@ -7,6 +7,7 @@ package akka.dispatch.sysmsg
 import scala.annotation.tailrec
 import akka.actor.{ ActorInitializationException, ActorRef, InternalActorRef, PossiblyHarmful }
 import akka.actor.DeadLetterSuppression
+import akka.annotation.InternalStableApi
 
 /**
  * INTERNAL API
@@ -190,6 +191,7 @@ private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) exte
  *
  * <b>NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS</b>
  */
+@InternalStableApi
 private[akka] sealed trait SystemMessage extends PossiblyHarmful with Serializable {
   // Next fields are only modifiable via the SystemMessageList value class
   @transient

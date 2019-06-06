@@ -15,7 +15,7 @@ When building an Akka application, you would usually not use the Remoting concep
 directly, but instead use the more high-level
 @ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
 such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
-[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) etc.
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
 
 
 @@@
@@ -28,6 +28,15 @@ To use Akka Remoting, you must add the following dependency in your project:
   group=com.typesafe.akka
   artifact=akka-remote_$scala.binary_version$
   version=$akka.version$
+}
+
+Classic remoting depends on Netty. This needs to be explicitly added as a dependency so that users
+not using classic remoting do not have to have Netty on the classpath:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=io.netty
+  artifact=netty
+  version=$netty_version$
 }
 
 ## Configuration

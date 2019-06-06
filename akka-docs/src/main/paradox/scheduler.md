@@ -93,10 +93,6 @@ necessary parameters) and then call the method when the message is received.
 
 @@@
 
-## From `akka.actor.ActorSystem`
-
-@@snip [ActorSystem.scala](/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
-
 @@@ warning
 
 All scheduled task will be executed when the `ActorSystem` is terminated, i.e.
@@ -104,22 +100,60 @@ the task may execute before its timeout.
 
 @@@
 
+## Schedule periodically
+
+Scheduling of recurring tasks or messages can have two different characteristics:
+
+* fixed-delay - The delay between subsequent execution will always be (at least) the given `delay`.
+  Use `scheduleWithFixedDelay`.
+* fixed-rate - The frequency of execution over time will meet the given `interval`. Use `scheduleAtFixedRate`.
+
+If you are uncertain of which one to use you should pick `scheduleWithFixedDelay`.
+
+When using **fixed-delay** it will not compensate the delay between tasks or messages if the execution takes long
+time or if scheduling is delayed longer than specified for some reason. The delay between subsequent execution
+will always be (at least) the given `delay`. In the long run, the frequency of execution will generally be
+slightly lower than the reciprocal of the specified `delay`.
+
+Fixed-delay execution is appropriate for recurring activities that require "smoothness." In other words,
+it is appropriate for activities where it is more important to keep the frequency accurate in the short run
+than in the long run.
+
+When using **fixed-rate** it will compensate the delay for a subsequent task if the previous tasks took
+too long to execute. For example, if the given `interval` is 1000 milliseconds and a task takes 200 milliseconds to
+execute the next task will be scheduled to run after 800 milliseconds. In such cases, the actual execution
+interval will differ from the interval passed to the `scheduleAtFixedRate` method.
+
+If the execution of the tasks takes longer than the `interval`, the subsequent execution will start immediately
+after the prior one completes (there will be no overlap of executions). This also has the consequence that after
+long garbage collection pauses or other reasons when the JVM was suspended all "missed" tasks will execute
+when the process wakes up again. For example, `scheduleAtFixedRate` with an interval of 1 second and the process
+is suspended for 30 seconds will result in 30 tasks (or messages) being executed in rapid succession to catch up.
+In the long run, the frequency of execution will be exactly the reciprocal of the specified `interval`.
+
+Fixed-rate execution is appropriate for recurring activities that are sensitive to absolute time
+or where the total time to perform a fixed number of executions is important, such as a countdown
+timer that ticks once every second for ten seconds.
+
+@@@ warning
+
+`scheduleAtFixedRate` can result in bursts of scheduled tasks or messages after long garbage collection pauses,
+which may in worst case cause undesired load on the system. `scheduleWithFixedDelay` is often preferred.
+
+@@@
+
+
 ## The Scheduler interface
 
 The actual scheduler implementation is loaded reflectively upon
 `ActorSystem` start-up, which means that it is possible to provide a
 different one using the `akka.scheduler.implementation` configuration
-property. The referenced class must implement the following interface:
-
-Scala
-:  @@snip [Scheduler.scala](/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
-
-Java
-:  @@snip [AbstractScheduler.java](/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
+property. The referenced class must implement the @scala[@apidoc[akka.actor.Scheduler]]@java[@apidoc[akka.actor.AbstractScheduler]]
+interface.
 
 ## The Cancellable interface
 
-Scheduling a task will result in a `Cancellable` (or throw an
+Scheduling a task will result in a @apidoc[akka.actor.Cancellable] (or throw an
 `IllegalStateException` if attempted after the scheduler’s shutdown).
 This allows you to cancel something that has been scheduled for execution.
 
@@ -131,4 +165,3 @@ scheduled task was canceled or will (eventually) have run.
 
 @@@
 
-@@snip [Scheduler.scala](/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }

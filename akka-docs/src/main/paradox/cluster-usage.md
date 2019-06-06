@@ -54,9 +54,9 @@ intra-service communication can take advantage of Akka Cluster, failure manageme
 is convenient to use and has great performance.
 
 Between different services [Akka HTTP](https://doc.akka.io/docs/akka-http/current) or
-[Akka gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) can be used for synchronous (yet non-blocking)
+[Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/) can be used for synchronous (yet non-blocking)
 communication and [Akka Streams Kafka](https://doc.akka.io/docs/akka-stream-kafka/current/home.html) or other
-[Alpakka](https://developer.lightbend.com/docs/alpakka/current/) connectors for integration asynchronous communication.
+[Alpakka](https://doc.akka.io/docs/alpakka/current/) connectors for integration asynchronous communication.
 All those communication mechanisms work well with streaming of messages with end-to-end back-pressure, and the
 synchronous communication tools can also be used for single request response interactions. It is also important
 to note that when using these tools both sides of the communication do not have to be implemented with Akka,
@@ -165,7 +165,7 @@ It contains instructions on how to run the `SimpleClusterApp`.
 @@@ note
   When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, Azure, Mesos or others which maintain 
   DNS or other ways of discovering nodes, you may want to use the automatic joining process implemented by the open source
-  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module.
+  [Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html) module.
 @@@
 
 ### Joining configured seed nodes
@@ -217,7 +217,7 @@ and don't stop all of them at the same time.
 Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want
 to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service
 discovery (such as managed DNS). The open source Akka Management library includes the
-[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module which handles
+[Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html) module which handles
 just that. Please refer to its documentation for more details.
 
 ### Programatically joining to seed nodes with `joinSeedNodes`

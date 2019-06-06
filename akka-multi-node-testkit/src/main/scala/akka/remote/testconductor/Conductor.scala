@@ -622,7 +622,7 @@ private[akka] class BarrierCoordinator
   }
 
   onTransition {
-    case Idle -> Waiting => setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
+    case Idle -> Waiting => startSingleTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft)
     case Waiting -> Idle => cancelTimer("Timeout")
   }
 
@@ -633,7 +633,7 @@ private[akka] class BarrierCoordinator
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
       if (enterDeadline.timeLeft < deadline.timeLeft) {
-        setTimer("Timeout", StateTimeout, enterDeadline.timeLeft, false)
+        startSingleTimer("Timeout", StateTimeout, enterDeadline.timeLeft)
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else
         handleBarrier(d.copy(arrived = together))

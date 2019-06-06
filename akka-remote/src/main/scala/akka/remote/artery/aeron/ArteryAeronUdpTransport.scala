@@ -256,7 +256,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     aeronErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
     val lastTimestamp = new AtomicLong(0L)
     implicit val ec = system.dispatchers.internalDispatcher
-    aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
+    aeronErrorLogTask = system.scheduler.scheduleWithFixedDelay(3.seconds, 5.seconds) { () =>
       if (!isShutdown) {
         val newLastTimestamp = aeronErrorLog.logErrors(log, lastTimestamp.get)
         lastTimestamp.set(newLastTimestamp + 1)
@@ -266,7 +266,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   private def startAeronCounterLog(): Unit = {
     implicit val ec = system.dispatchers.internalDispatcher
-    aeronCounterTask = system.scheduler.schedule(5.seconds, 5.seconds) {
+    aeronCounterTask = system.scheduler.scheduleWithFixedDelay(5.seconds, 5.seconds) { () =>
       if (!isShutdown && log.isDebugEnabled) {
         aeron.countersReader.forEach(new MetaData() {
           def accept(counterId: Int, typeId: Int, keyBuffer: DirectBuffer, label: String): Unit = {

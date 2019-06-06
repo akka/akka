@@ -328,7 +328,7 @@ object DistributedPubSubMediator {
     trait TopicLike extends Actor {
       import context.dispatcher
       val pruneInterval: FiniteDuration = emptyTimeToLive / 2
-      val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+      val pruneTask = context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
       var pruneDeadline: Option[Deadline] = None
 
       var subscribers = Set.empty[ActorRef]
@@ -552,9 +552,9 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
 
   //Start periodic gossip to random nodes in cluster
   import context.dispatcher
-  val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
+  val gossipTask = context.system.scheduler.scheduleWithFixedDelay(gossipInterval, gossipInterval, self, GossipTick)
   val pruneInterval: FiniteDuration = removedTimeToLive / 2
-  val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+  val pruneTask = context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
 
   var registry: Map[Address, Bucket] = Map.empty.withDefault(a => Bucket(a, 0L, TreeMap.empty))
   var nodes: Set[Address] = Set.empty

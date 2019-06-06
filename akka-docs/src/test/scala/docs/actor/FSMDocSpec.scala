@@ -116,7 +116,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
       //#transition-syntax
       onTransition {
-        case Idle -> Active => setTimer("timeout", Tick, 1 second, repeat = true)
+        case Idle -> Active => startTimerWithFixedDelay("timeout", Tick, 1 second)
         case Active -> _    => cancelTimer("timeout")
         case x -> Idle      => log.info("entering Idle from " + x)
       }

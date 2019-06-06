@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, ExtendedActorSystem, PoisonPill }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.{ DoNotInherit, InternalApi, InternalStableApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -417,11 +417,23 @@ private final case class SavedIslandData(
 
   override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher)
 
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    system.scheduler.scheduleWithFixedDelay(initialDelay, delay)(task)(executionContext)
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    system.scheduler.scheduleAtFixedRate(initialDelay, interval)(task)(executionContext)
+
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
       task: Runnable): Cancellable =
-    system.scheduler.schedule(initialDelay, interval, task)(executionContext)
+    system.scheduler.scheduleAtFixedRate(initialDelay, interval)(task)(executionContext)
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
     system.scheduler.scheduleOnce(delay, task)(executionContext)
@@ -429,6 +441,7 @@ private final case class SavedIslandData(
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
     materialize(_runnableGraph, defaultAttributes)
 
+  @InternalStableApi
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
@@ -612,14 +625,19 @@ private final case class SavedIslandData(
 
   def name: String
 
+  @InternalStableApi
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (M, Any)
 
+  @InternalStableApi
   def assignPort(in: InPort, slot: Int, logic: M): Unit
 
+  @InternalStableApi
   def assignPort(out: OutPort, slot: Int, logic: M): Unit
 
+  @InternalStableApi
   def createPublisher(out: OutPort, logic: M): Publisher[Any]
 
+  @InternalStableApi
   def takePublisher(slot: Int, publisher: Publisher[Any]): Unit
 
   def onIslandReady(): Unit

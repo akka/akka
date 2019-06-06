@@ -45,7 +45,7 @@ The General Data Protection Regulation (GDPR) requires that personal information
 Deleting or modifying events that carry personal information would be difficult. Data shredding can be used to forget
 information instead of deleting or modifying it. This is achieved by encrypting the data with a key for a given data
 subject id (person) and deleting the key when that data subject is to be forgotten. Lightbend's
-[GDPR for Akka Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/gdpr/index.html)
+[GDPR for Akka Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
 provides tools to facilitate in building GDPR capable systems.
 
 @@@
@@ -722,7 +722,7 @@ Akka Persistence is based on the single-writer principle. For a particular `pers
 instance should be active at one time. If multiple instances were to persist events at the same time, the events would
 be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
 active entity (`PersistentActor`) for each id within a data center. Lightbend's
-[Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
+[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
 supports active-active persistent entities across data centers.
 
 The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices 

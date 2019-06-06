@@ -1,6 +1,6 @@
-# unzip
+# UnzipWith
 
-Takes a stream of two element tuples and unzips the two elements ino two different downstreams.
+Splits each element of input into multiple downstreams using a function
 
 @ref[Fan-out operators](../index.md#fan-out-operators)
 
@@ -8,7 +8,7 @@ Takes a stream of two element tuples and unzips the two elements ino two differe
 
 ## Description
 
-Takes a stream of two element tuples and unzips the two elements ino two different downstreams.
+Splits each element of input into multiple downstreams using a function
 
 
 @@@div { .callout }
@@ -20,4 +20,5 @@ Takes a stream of two element tuples and unzips the two elements ino two differe
 **completes** when upstream completes
 
 @@@
+
 

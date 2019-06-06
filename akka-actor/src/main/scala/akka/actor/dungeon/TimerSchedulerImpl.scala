@@ -28,6 +28,19 @@ import akka.util.OptionVal
       extends TimerMsg
       with NoSerializationVerificationNeeded
       with NotInfluenceReceiveTimeout
+
+  private sealed trait TimerMode {
+    def repeat: Boolean
+  }
+  private case object FixedRateMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object FixedDelayMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object SingleMode extends TimerMode {
+    override def repeat: Boolean = false
+  }
 }
 
 /**
@@ -44,13 +57,19 @@ import akka.util.OptionVal
     timerGen
   }
 
+  override def startTimerAtFixedRate(key: Any, msg: Any, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode)
+
+  override def startTimerWithFixedDelay(key: Any, msg: Any, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode)
+
   override def startPeriodicTimer(key: Any, msg: Any, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, repeat = true)
+    startTimerAtFixedRate(key, msg, interval)
 
   override def startSingleTimer(key: Any, msg: Any, timeout: FiniteDuration): Unit =
-    startTimer(key, msg, timeout, repeat = false)
+    startTimer(key, msg, timeout, SingleMode)
 
-  private def startTimer(key: Any, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: Any, msg: Any, timeout: FiniteDuration, mode: TimerMode): Unit = {
     timers.get(key) match {
       case Some(t) => cancelTimer(t)
       case None    =>
@@ -63,14 +82,16 @@ import akka.util.OptionVal
       else
         InfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
 
-    val task =
-      if (repeat)
-        ctx.system.scheduler.schedule(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
-      else
+    val task = mode match {
+      case SingleMode =>
         ctx.system.scheduler.scheduleOnce(timeout, ctx.self, timerMsg)(ctx.dispatcher)
+      case FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
+      case FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
+    }
 
-    val nextTimer = Timer(key, msg, repeat, nextGen, task)
-    log.debug("Start timer [{}] with generation [{}]", key, nextGen)
+    val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)
     timers = timers.updated(key, nextTimer)
   }
 

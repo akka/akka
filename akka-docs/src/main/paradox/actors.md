@@ -903,6 +903,10 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TimerDocTest.java) { #timers }
 
+The @ref:[Scheduler](scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
+
 Each timer has a key and can be replaced or cancelled. It's guaranteed that a message from the
 previous incarnation of the timer with the same key is not received, even though it might already
 be enqueued in the mailbox when it was cancelled or the new timer was started.
