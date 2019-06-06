@@ -178,7 +178,7 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 
 ## Configuration and behavior changes
 
-The following documents configuration changes and behavior changes where no action is required. In come cases the old
+The following documents configuration changes and behavior changes where no action is required. In some cases the old
 behavior can be restored via configuration.
 
 ### Remoting dependencies have been made optional
