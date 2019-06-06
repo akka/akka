@@ -437,7 +437,6 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
-  .disablePlugins(MimaPlugin)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .dependsOn(actorTyped, actorTestkitTyped % "compile->compile;test->test")
