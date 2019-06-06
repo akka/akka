@@ -513,7 +513,7 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
         target(context, signal)
       }
     }
-    (SBehaviors.intercept(tap)(super.behavior(monitor)._1), inbox)
+    (SBehaviors.intercept(() => tap)(super.behavior(monitor)._1), inbox)
   }
 }
 
@@ -632,7 +632,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
         target(context, signal)
       }
     }
-    (JBehaviors.intercept(tap, super.behavior(monitor)._1), inbox)
+    (JBehaviors.intercept(() => tap, super.behavior(monitor)._1), inbox)
   }
 }
 

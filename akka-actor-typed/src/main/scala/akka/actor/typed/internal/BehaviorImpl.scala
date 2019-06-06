@@ -21,7 +21,7 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
   }
 
   def widened[O, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
-    intercept(WidenedInterceptor(matcher))(behavior)
+    intercept(() => WidenedInterceptor(matcher))(behavior)
 
   class ReceiveBehavior[T](
       val onMessage: (SAC[T], T) => Behavior[T],
@@ -67,7 +67,7 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
    * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
-  def intercept[O, I](interceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+  def intercept[O, I](interceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     InterceptorImpl(interceptor, behavior)
 
   class OrElseBehavior[T](first: Behavior[T], second: Behavior[T]) extends ExtensibleBehavior[T] {

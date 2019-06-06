@@ -45,7 +45,7 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
             stash
               .unstashAll(
                 ctx.asInstanceOf[ActorContext[T]],
-                Behaviors.intercept(new GuardianStopInterceptor[T])(guardianBehavior))
+                Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
               .unsafeCast[Any])
       case other =>
         stash.stash(other.asInstanceOf[T])

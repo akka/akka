@@ -5,15 +5,15 @@
 package akka.actor.typed.javadsl
 
 import java.util.Collections
-import java.util.function.{ Function => JFunction }
+import java.util.function.{ Supplier, Function => JFunction }
 
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
-
 import akka.util.ccompat.JavaConverters._
+
 import scala.reflect.ClassTag
 
 /**
@@ -170,11 +170,12 @@ object Behaviors {
    * the same interceptor (defined by the [[akka.actor.typed.BehaviorInterceptor#isSame]] method) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    *
-   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
-   * so that a new instance is created per spawned actor rather than shared among actor instance.
+   * The interceptor is created with a factory function in case it has state and should not be shared.
+   * If the interceptor has no state the same instance can be returned from the factory to avoid unnecessary object
+   * creation.
    */
-  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I], behavior: Behavior[I]): Behavior[O] =
-    BehaviorImpl.intercept(behaviorInterceptor)(behavior)
+  def intercept[O, I](behaviorInterceptor: Supplier[BehaviorInterceptor[O, I]], behavior: Behavior[I]): Behavior[O] =
+    BehaviorImpl.intercept(() => behaviorInterceptor.get())(behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated

@@ -33,16 +33,11 @@ import akka.util.unused
 
     strategy match {
       case r: RestartOrBackoff =>
-        Behaviors.setup { _ =>
-          // deferred to make sure supervisor instance not shared among instances
-          Behaviors.intercept[T, T](new RestartSupervisor(initialBehavior, r))(initialBehavior)
-        }
+        Behaviors.intercept[T, T](() => new RestartSupervisor(initialBehavior, r))(initialBehavior)
       case r: Resume =>
-        // stateless so safe to share
-        Behaviors.intercept[T, T](new ResumeSupervisor(r))(initialBehavior)
+        Behaviors.intercept[T, T](() => new ResumeSupervisor(r))(initialBehavior)
       case r: Stop =>
-        // stateless so safe to share
-        Behaviors.intercept[T, T](new StopSupervisor(initialBehavior, r))(initialBehavior)
+        Behaviors.intercept[T, T](() => new StopSupervisor(initialBehavior, r))(initialBehavior)
     }
   }
 }

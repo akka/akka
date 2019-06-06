@@ -144,10 +144,11 @@ object Behaviors {
    * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    *
-   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
-   * so that a new instance is created per spawned actor rather than shared among actor instance.
+   * The interceptor is created with a factory function in case it has state and should not be shared.
+   * If the interceptor has no state the same instance can be returned from the factory to avoid unnecessary object
+   * creation.
    */
-  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+  def intercept[O, I](behaviorInterceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**
@@ -157,7 +158,7 @@ object Behaviors {
    * wrapped in a `monitor` call again.
    */
   def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(new MonitorInterceptor[T](monitor))(behavior)
+    BehaviorImpl.intercept(() => new MonitorInterceptor[T](monitor))(behavior)
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
@@ -165,7 +166,7 @@ object Behaviors {
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
   def logMessages[T](behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(new LogMessagesInterceptor[T](LogOptions()))(behavior)
+    BehaviorImpl.intercept(() => new LogMessagesInterceptor[T](LogOptions()))(behavior)
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
@@ -173,7 +174,7 @@ object Behaviors {
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
   def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(new LogMessagesInterceptor[T](logOptions))(behavior)
+    BehaviorImpl.intercept(() => new LogMessagesInterceptor[T](logOptions))(behavior)
 
   /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for

@@ -21,8 +21,7 @@ import scala.collection.immutable.HashMap
       mdcForMessage: T => Map[String, Any],
       behavior: Behavior[T]): Behavior[T] = {
 
-    val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
-    BehaviorImpl.intercept(interceptor)(behavior)
+    BehaviorImpl.intercept(() => new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage))(behavior)
   }
 
 }
