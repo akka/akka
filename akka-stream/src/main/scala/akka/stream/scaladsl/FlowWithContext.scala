@@ -7,14 +7,9 @@ package akka.stream.scaladsl
 import akka.NotUsed
 
 import scala.annotation.unchecked.uncheckedVariance
-import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.stream._
 
-/**
- * API MAY CHANGE
- */
-@ApiMayChange
 object FlowWithContext {
 
   /**
@@ -41,9 +36,7 @@ object FlowWithContext {
  *
  * An "empty" flow can be created by calling `FlowWithContext[Ctx, T]`.
  *
- * API MAY CHANGE
  */
-@ApiMayChange
 final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat])
     extends GraphDelegate(delegate)
     with FlowWithContextOps[Out, CtxOut, Mat] {
