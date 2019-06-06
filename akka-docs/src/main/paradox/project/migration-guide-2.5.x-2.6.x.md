@@ -45,6 +45,12 @@ Use plain `system.actorOf` instead of the DSL to create Actors if you have been 
 
 `actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
 
+### Netty UDP removed
+
+Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
+To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
+A full cluster restart is required to change to Artery.
+
 ### Untyped actor removed
 
 `UntypedActor` has been depcated since `2.5.0`. Use `AbstractActor` instead.
@@ -98,33 +104,6 @@ to make remote interactions look like local method calls.
 Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
 for many years.
 
-## Internal dispatcher introduced
-
-To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
-use of blocking APIs from actors) a new internal dispatcher has been added. All of Akka's internal, non-blocking actors
-now run on the internal dispatcher by default.
-
-The dispatcher can be configured through `akka.actor.internal-dispatcher`.
-
-For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
-asynchronous actors, user actors and Akka internal actors. In that case, can configure the
-`akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
-This reinstantiates the behavior from previous Akka versions but also removes the isolation between
-user and Akka internals. So, use at your own risk!
-
-Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
-dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty 
-string as value. If such an empty value is used in your `application.conf` the same result is achieved by simply removing
-that entry completely and having the default apply.
-
-For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
-
-## Default dispatcher size
-
-Previously the factor for the default dispatcher was set a bit high (`3.0`) to give some extra threads in case of accidental
-blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher
-the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
-`8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
 
 @@ Remoting
 
@@ -133,10 +112,6 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 @ref[Artery TCP](../remoting-artery.md) is now the default remoting implementation.
 Classic remoting has been deprecated and will be removed in `2.7.0`.
 
-## Akka now uses Fork Join Pool from JDK
-
-Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
-keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
 <a id="classic-to-artery"></a>
 #### Migrating from classic remoting to Artery
@@ -200,11 +175,11 @@ Classic remoting is deprecated but can be used in `2.6.` Any configuration under
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
-### Netty UDP has been removed
 
-Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
-To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
-A full cluster restart is required to change to Artery.
+## Configuration and behavior changes
+
+The following documents configuration changes and behavior changes where no action is required. In some cases the old
+behavior can be restored via configuration.
 
 ### Remoting dependencies have been made optional
 
@@ -230,16 +205,44 @@ For the same reason the following methods have also been deprecated:
 * `FSM.setTimer`, replaced by `startSingleTimer`, `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `PersistentFSM.setTimer`, replaced by `startSingleTimer`, `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 
-## Streams
+### Internal dispatcher introduced
 
-### StreamRefs
+To protect the Akka internals against starvation when user code blocks the default dispatcher (for example by accidental
+use of blocking APIs from actors) a new internal dispatcher has been added. All of Akka's internal, non-blocking actors
+now run on the internal dispatcher by default.
 
-The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
-`Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
+The dispatcher can be configured through `akka.actor.internal-dispatcher`.
 
-## Cluster Sharding
+For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
+asynchronous actors, user actors and Akka internal actors. In that case, can configure the
+`akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
+This reinstantiates the behavior from previous Akka versions but also removes the isolation between
+user and Akka internals. So, use at your own risk!
+
+Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
+dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty 
+string as value. If such an empty value is used in your `application.conf` the same result is achieved by simply removing
+that entry completely and having the default apply.
+
+For more details about configuring dispatchers, see the @ref[Dispatchers](../dispatchers.md)
+
+### Default dispatcher size
+
+Previously the factor for the default dispatcher was set a bit high (`3.0`) to give some extra threads in case of accidental
+blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher
+the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
+`8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
+
+### Cluster sharding
+
+#### waiting-for-state-timeout reduced to 2s
+
+This has been reduced to speed up ShardCoordinator initialization in smaller clusters.
+The read from ddata is a ReadMajority, for small clusters (< majority-min-cap) every node needs to respond
+so is more likely to timeout if there are nodes restarting e.g. when there is a rolling re-deploy happening.
 
 ### Passivate idle entity
+
 The configuration `akka.cluster.sharding.passivate-idle-entity-after` is now enabled by default.
 Sharding will passivate entities when they have not received any messages after this duration.
 To disable passivation you can use configuration:
@@ -248,7 +251,7 @@ To disable passivation you can use configuration:
 akka.cluster.sharding.passivate-idle-entity-after = off
 ```
 
-## CoordinatedShutdown is run from ActorSystem.terminate
+### CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
 
@@ -262,6 +265,19 @@ and then it will behave as in Akka 2.5.x:
 ```
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
+
+
+### Akka now uses Fork Join Pool from JDK
+
+Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
+keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
+
+## Source incompatibilities
+
+### StreamRefs
+
+The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
+`Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
 
 ## Akka Typed
 
