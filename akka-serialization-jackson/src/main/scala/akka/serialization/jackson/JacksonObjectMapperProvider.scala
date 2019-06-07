@@ -168,7 +168,7 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
    * modifications are not thread-safe.
    *
    * @param bindingName name of this `ObjectMapper`
-   * @param jsonFactory optional `JsonFactory` such as `SmileFactory`, for plain JSON `None` (defaults)
+   * @param jsonFactory optional `JsonFactory` such as `CBORFactory`, for plain JSON `None` (defaults)
    *                    can be used
    */
   def getOrCreate(bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper = {
@@ -183,7 +183,7 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
    * if the `ActorSystem` is started with such [[akka.actor.setup.ActorSystemSetup]].
    *
    * @param bindingName name of this `ObjectMapper`
-   * @param jsonFactory optional `JsonFactory` such as `SmileFactory`, for plain JSON `None` (defaults)
+   * @param jsonFactory optional `JsonFactory` such as `CBORFactory`, for plain JSON `None` (defaults)
    *                    can be used
    * @see [[JacksonObjectMapperProvider#getOrCreate]]
    */
@@ -239,7 +239,7 @@ class JacksonObjectMapperFactory {
    * Override this method to create a new custom instance of `ObjectMapper` for the given `serializerIdentifier`.
    *
    * @param bindingName name of this `ObjectMapper`
-   * @param jsonFactory optional `JsonFactory` such as `SmileFactory`, for plain JSON `None` (defaults)
+   * @param jsonFactory optional `JsonFactory` such as `CBORFactory`, for plain JSON `None` (defaults)
    *                    can be used
    */
   def newObjectMapper(@unused bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper =
