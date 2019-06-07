@@ -48,6 +48,14 @@ object ScalaTestMessages {
   trait TestMessage
 
   final case class SimpleCommand(name: String) extends TestMessage
+  // interesting that this doesn't have the same problem with single constructor param
+  // as JavaTestMessages.SimpleCommand
+  final class SimpleCommandNotCaseClass(val name: String) extends TestMessage {
+    override def equals(obj: Any): Boolean = obj match {
+      case other: SimpleCommandNotCaseClass => other.name == name
+    }
+    override def hashCode(): Int = name.hashCode
+  }
   final case class SimpleCommand2(name: String, name2: String) extends TestMessage
   final case class OptionCommand(maybe: Option[String]) extends TestMessage
   final case class BooleanCommand(published: Boolean) extends TestMessage
@@ -412,6 +420,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
     "serialize simple message with one constructor parameter" in {
       checkSerialization(SimpleCommand("Bob"))
+      checkSerialization(new SimpleCommandNotCaseClass("Bob"))
     }
 
     "serialize simple message with two constructor parameters" in {

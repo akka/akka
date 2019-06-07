@@ -65,6 +65,13 @@ such as:
 The blacklist of possible serialization gadget classes defined by Jackson databind are checked
 and disallowed for deserialization.
 
+@@@ warning
+
+Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+when using @ref:[polymorphic types](#polymorphic-types).
+
+@@@
+
 ### Formats
 
 The following formats are supported, and you select which one to use in the `serialization-bindings`
@@ -80,7 +87,68 @@ TODO: It's undecided if we will support both CBOR or and Smile since the differe
 
 ## Annotations
 
-TODO examples when annotations are needed
+@@@ div {.group-java}
+
+### Constructor with single parameter
+
+You might run into an exception like this:
+
+```
+MismatchedInputException: Cannot construct instance of `...` (although at least one Creator exists): cannot deserialize from Object value (no delegate- or property-based Creator)
+```
+
+That is probably because the class has a constructor with a single parameter, like:
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-1 }
+
+That can be solved by adding `@JsonCreator` or `@JsonProperty` annotations:
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-2 }
+
+or
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-3 }
+
+
+The `ParameterNamesModule` is configured with `JsonCreator.Mode.PROPERTIES` as described in the
+[Jackson documentation](https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names#delegating-creator)
+
+@@@
+
+## Polymorphic types
+
+A polymorphic type is when a certain base type has multiple alternative implementations. When nested fields or
+collections are of polymorphic type the concrete implementations of the type must be listed with `@JsonTypeInfo`
+and `@JsonSubTypes` annotations.
+
+Example:
+
+Scala
+:  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #polymorphism }
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #polymorphism }
+
+If you haven't defined the annotations you will see an exception like this:
+
+```
+InvalidDefinitionException: Cannot construct instance of `...` (no Creators, like default construct, exist): abstract types either need to be mapped to concrete types, have custom deserializer, or contain additional type information
+```
+
+When specifying allowed subclasses with those annotations the class names will not be included in the serialized
+representation and that is important for @ref:[preventing loading of malicious serialization gadgets](#security)
+when deserializing.
+
+@@@ warning
+
+Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+when using polymorphic types.
+
+@@@
+
 
 ## Schema Evolution
 
