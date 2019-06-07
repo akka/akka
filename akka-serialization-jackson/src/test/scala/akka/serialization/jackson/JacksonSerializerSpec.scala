@@ -158,32 +158,54 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
   "JacksonJsonSerializer with Java message classes" must {
     import JavaTestMessages._
 
-    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
-    "by default serialize dates and durations as numeric timestamps" in {
+    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS = off
+    "by default serialize dates and durations as text with ISO-8601 date format" in {
+      // Default format is defined in com.fasterxml.jackson.databind.util.StdDateFormat
+      // ISO-8601 yyyy-MM-dd'T'HH:mm:ss.SSSZ (rfc3339)
       val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
       val json = serializeToJsonString(msg)
-      val expected = """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}"""
+      val expected = """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}"""
       json should ===(expected)
+
+      // and full round trip
+      checkSerialization(msg)
+
+      // and it can still deserialize from numeric timestamps format
+      val serializer = serializerFor(msg)
+      val manifest = serializer.manifest(msg)
+      val serializerId = serializer.identifier
+      val deserializedFromTimestampsFormat = deserializeFromJsonString(
+        """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}""",
+        serializerId,
+        manifest)
+      deserializedFromTimestampsFormat should ===(msg)
     }
 
-    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
-    "be possible to serialize dates and durations as text with default date format " in {
+    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS = on
+    "be possible to serialize dates and durations as numeric timestamps" in {
       withSystem("""
         akka.serialization.jackson.serialization-features {
-          WRITE_DATES_AS_TIMESTAMPS = off
+          WRITE_DATES_AS_TIMESTAMPS = on
         }
         """) { sys =>
         val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
         val json = serializeToJsonString(msg, sys)
-        // Default format is defined in com.fasterxml.jackson.databind.util.StdDateFormat
-        // ISO-8601 yyyy-MM-dd'T'HH:mm:ss.SSSZ
-        // FIXME is this the same as rfc3339, or do we need something else to support interop with the format used by Play JSON?
-        // FIXME should we make this the default rather than numberic timestamps?
-        val expected = """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}"""
+        val expected = """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}"""
         json should ===(expected)
 
         // and full round trip
-        checkSerialization(msg)
+        checkSerialization(msg, sys)
+
+        // and it can still deserialize from ISO format
+        val serializer = serializerFor(msg, sys)
+        val manifest = serializer.manifest(msg)
+        val serializerId = serializer.identifier
+        val deserializedFromIsoFormat = deserializeFromJsonString(
+          """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}""",
+          serializerId,
+          manifest,
+          sys)
+        deserializedFromIsoFormat should ===(msg)
       }
     }
 
