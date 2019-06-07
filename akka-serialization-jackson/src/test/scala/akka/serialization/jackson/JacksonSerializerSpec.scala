@@ -23,6 +23,7 @@ import akka.actor.BootstrapSetup
 import akka.actor.ExtendedActorSystem
 import akka.actor.Status
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.TestActors
@@ -53,6 +54,8 @@ object ScalaTestMessages {
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration) extends TestMessage
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand]) extends TestMessage
   final case class CommandWithActorRef(name: String, replyTo: ActorRef) extends TestMessage
+  final case class CommandWithTypedActorRef(name: String, replyTo: akka.actor.typed.ActorRef[String])
+      extends TestMessage
   final case class CommandWithAddress(name: String, address: Address) extends TestMessage
 
   final case class Event1(field1: String) extends TestMessage
@@ -365,6 +368,12 @@ abstract class JacksonSerializerSpec(serializerName: String)
       checkSerialization(new CommandWithActorRef("echo", echo))
     }
 
+    "serialize with typed.ActorRef" in {
+      import akka.actor.typed.scaladsl.adapter._
+      val ref = system.spawnAnonymous(Behaviors.empty[String])
+      checkSerialization(new CommandWithTypedActorRef("echo", ref))
+    }
+
     "serialize with Address" in {
       val address = Address("akka", "sys", "localhost", 2552)
       checkSerialization(new CommandWithAddress("echo", address))
@@ -448,6 +457,12 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize with ActorRef" in {
       val echo = system.actorOf(TestActors.echoActorProps)
       checkSerialization(CommandWithActorRef("echo", echo))
+    }
+
+    "serialize with typed.ActorRef" in {
+      import akka.actor.typed.scaladsl.adapter._
+      val ref = system.spawnAnonymous(Behaviors.empty[String])
+      checkSerialization(CommandWithTypedActorRef("echo", ref))
     }
 
     "serialize with Address" in {

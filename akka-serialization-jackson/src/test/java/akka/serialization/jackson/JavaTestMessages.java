@@ -218,14 +218,42 @@ public interface JavaTestMessages {
 
       CommandWithActorRef that = (CommandWithActorRef) o;
 
-      if (name != null ? !name.equals(that.name) : that.name != null) return false;
-      return replyTo != null ? replyTo.equals(that.replyTo) : that.replyTo == null;
+      if (!name.equals(that.name)) return false;
+      return replyTo.equals(that.replyTo);
     }
 
     @Override
     public int hashCode() {
-      int result = name != null ? name.hashCode() : 0;
-      result = 31 * result + (replyTo != null ? replyTo.hashCode() : 0);
+      int result = name.hashCode();
+      result = 31 * result + replyTo.hashCode();
+      return result;
+    }
+  }
+
+  public class CommandWithTypedActorRef implements TestMessage {
+    public final String name;
+    public final akka.actor.typed.ActorRef<String> replyTo;
+
+    public CommandWithTypedActorRef(String name, akka.actor.typed.ActorRef<String> replyTo) {
+      this.name = name;
+      this.replyTo = replyTo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      CommandWithTypedActorRef that = (CommandWithTypedActorRef) o;
+
+      if (!name.equals(that.name)) return false;
+      return replyTo.equals(that.replyTo);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name.hashCode();
+      result = 31 * result + replyTo.hashCode();
       return result;
     }
   }
