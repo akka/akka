@@ -20,10 +20,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   val nonFatalWarningsFor = Set(
     // We allow warnings in docs to get the 'snippets' right
     "akka-docs",
-    // To be removed from Akka
-    "akka-agent",
-    "akka-camel",
-    "akka-contrib",
     // To be reviewed
     "akka-actor-typed-tests",
     "akka-bench-jmh",
