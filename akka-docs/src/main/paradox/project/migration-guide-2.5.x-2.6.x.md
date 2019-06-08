@@ -128,7 +128,7 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 
 ## Akka now uses Fork Join Pool from JDK
 
-Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
+Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, significant benefits of keeping our own copy were not found. From Akka 2.6 on, the default FJP is from the JDK and the Akka FJP copy is removed.
 
 @@ Remoting
 
