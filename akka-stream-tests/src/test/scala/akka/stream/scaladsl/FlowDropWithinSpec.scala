@@ -31,7 +31,7 @@ class FlowDropWithinSpec extends StreamSpec {
         pSub.sendNext(input.next())
       }
       val demand3 = pSub.expectRequest
-      c.expectNoMsg(1500.millis)
+      c.expectNoMessage(1500.millis)
       (1 to demand3.toInt).foreach { _ =>
         pSub.sendNext(input.next())
       }
@@ -40,7 +40,7 @@ class FlowDropWithinSpec extends StreamSpec {
       }
       pSub.sendComplete()
       c.expectComplete
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "deliver completion even before the duration" in {

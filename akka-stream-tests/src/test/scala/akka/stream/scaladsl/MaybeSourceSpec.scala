@@ -29,7 +29,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       val subs = c.expectSubscription()
 
       subs.request(1000)
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
 
       subs.cancel()
       f.future.futureValue shouldEqual None
@@ -94,7 +94,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
       val c = TestSubscriber.manualProbe[Int]()
       neverPub.subscribe(c)
-      val subs = c.expectSubscription()
+      c.expectSubscription()
 
       mat.shutdown()
       f.future.failed.futureValue shouldBe an[AbruptStageTerminationException]

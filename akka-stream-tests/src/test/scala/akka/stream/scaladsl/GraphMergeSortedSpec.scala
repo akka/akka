@@ -6,10 +6,12 @@ package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
+import com.github.ghik.silencer.silent
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalacheck.Shrink
 
+@silent // tests deprecated apis
 class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks {
 
   override type Outputs = Int

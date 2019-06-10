@@ -326,7 +326,7 @@ public class SourceTest extends StreamTest {
 
     List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
-    probe.expectNoMsg(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
   }
 
   @Test

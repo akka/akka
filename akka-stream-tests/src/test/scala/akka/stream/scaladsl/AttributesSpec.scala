@@ -15,6 +15,7 @@ import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.testkit.TestKit
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
@@ -102,6 +103,7 @@ object AttributesSpec {
   case class WhateverAttribute(label: String) extends Attribute
 }
 
+@silent // tests deprecated APIs
 class AttributesSpec
     extends StreamSpec(
       ConfigFactory

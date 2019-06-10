@@ -37,7 +37,7 @@ class FlowInitialDelaySpec extends StreamSpec {
       Source(1 to 10).initialDelay(0.5.second).runWith(Sink.fromSubscriber(probe))
 
       probe.ensureSubscription()
-      probe.expectNoMsg(1.5.second)
+      probe.expectNoMessage(1.5.second)
       probe.request(20)
       probe.expectNextN(1 to 10)
 

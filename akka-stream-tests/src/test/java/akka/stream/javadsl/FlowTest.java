@@ -1002,10 +1002,11 @@ public class FlowTest extends StreamTest {
                 elem -> {
                   if (elem == 2) throw new RuntimeException("ex");
                   else return elem;
-                })
-            .recoverWithRetries(
-                3,
-                new PFBuilder().match(RuntimeException.class, ex -> Source.from(recover)).build());
+                });
+
+    final Flow<Integer, Integer, NotUsed> hrmm =
+        flow.recoverWithRetries(
+            3, new PFBuilder().match(RuntimeException.class, ex -> Source.from(recover)).build());
 
     final CompletionStage<Done> future =
         source

@@ -33,7 +33,7 @@ class FlowDelaySpec extends StreamSpec {
         .delay(1.second)
         .runWith(TestSink.probe[Int])
         .request(10)
-        .expectNoMsg(1800.millis)
+        .expectNoMessage(1800.millis)
         .expectNext(300.millis, 1)
         .expectNextN(2 to 10)
         .expectComplete()
@@ -44,10 +44,10 @@ class FlowDelaySpec extends StreamSpec {
         .delay(300.millis)
         .runWith(TestSink.probe[Int])
         .request(2)
-        .expectNoMsg(200.millis) //delay
+        .expectNoMessage(200.millis) //delay
         .expectNext(200.millis, 1) //delayed element
         .expectNext(100.millis, 2) //buffered element
-        .expectNoMsg(200.millis)
+        .expectNoMessage(200.millis)
         .request(1)
         .expectNext(3) //buffered element
         .expectComplete()
@@ -62,10 +62,10 @@ class FlowDelaySpec extends StreamSpec {
       val pSub = p.expectSubscription()
       cSub.request(100)
       pSub.sendNext(1)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext(1)
       pSub.sendNext(2)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext(2)
       pSub.sendComplete()
       c.expectComplete()
@@ -81,11 +81,11 @@ class FlowDelaySpec extends StreamSpec {
       cSub.request(100)
       pSub.sendNext(1)
       pSub.sendNext(2)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       pSub.sendNext(3)
       c.expectNext(1)
       c.expectNext(2)
-      c.expectNoMsg(150.millis)
+      c.expectNoMessage(150.millis)
       c.expectNext(3)
       pSub.sendComplete()
       c.expectComplete()
@@ -127,11 +127,11 @@ class FlowDelaySpec extends StreamSpec {
         .withAttributes(inputBuffer(1, 1))
         .runWith(TestSink.probe[Int])
         .request(5)
-        .expectNoMsg(200.millis)
+        .expectNoMessage(200.millis)
         .expectNext(200.millis, 1)
-        .expectNoMsg(200.millis)
+        .expectNoMessage(200.millis)
         .expectNext(200.millis, 2)
-        .expectNoMsg(200.millis)
+        .expectNoMessage(200.millis)
         .expectNext(200.millis, 3)
     }
 
@@ -160,7 +160,7 @@ class FlowDelaySpec extends StreamSpec {
       cSub.request(20)
 
       for (i <- 1 to 16) pSub.sendNext(i)
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
       pSub.sendNext(17)
       c.expectNext(100.millis, 1)
       //fail will terminate despite of non empty internal buffer
@@ -178,7 +178,7 @@ class FlowDelaySpec extends StreamSpec {
         .runWith(Sink.ignore)
         .pipeTo(testActor)
 
-      expectNoMsg(2.seconds)
+      expectNoMessage(2.seconds)
       expectMsg(Done)
 
       // With a buffer large enough to hold all arriving elements, delays don't add up
@@ -199,7 +199,7 @@ class FlowDelaySpec extends StreamSpec {
         .runWith(Sink.ignore)
         .pipeTo(testActor)
 
-      expectNoMsg(900.millis)
+      expectNoMessage(900.millis)
       expectMsg(Done)
     }
 

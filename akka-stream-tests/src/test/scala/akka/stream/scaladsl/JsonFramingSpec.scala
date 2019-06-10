@@ -118,7 +118,7 @@ class JsonFramingSpec extends AkkaSpec {
       val input = TestPublisher.probe[ByteString]()
       val output = TestSubscriber.probe[String]()
 
-      val result = Source
+      Source
         .fromPublisher(input)
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .map(_.utf8String)

@@ -63,8 +63,8 @@ object FlowAskSpec {
 
   class FailOnAllExcept(n: Int) extends Actor {
     override def receive: Receive = {
-      case `n`      => sender() ! akka.actor.Status.Success(Reply(n))
-      case msg: Int => sender() ! akka.actor.Status.Failure(new Exception(s"Booming for $n!"))
+      case `n`    => sender() ! akka.actor.Status.Success(Reply(n))
+      case _: Int => sender() ! akka.actor.Status.Failure(new Exception(s"Booming for $n!"))
     }
   }
 
@@ -103,8 +103,7 @@ class FlowAskSpec extends StreamSpec {
 
     "produce asked elements" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 3).ask[Reply](4)(replyOnInts).runWith(Sink.fromSubscriber(c))
+      Source(1 to 3).ask[Reply](4)(replyOnInts).runWith(Sink.fromSubscriber(c))
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(Reply(1))
@@ -116,8 +115,7 @@ class FlowAskSpec extends StreamSpec {
     }
     "produce asked elements (simple ask)" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 3).ask[Reply](replyOnInts).runWith(Sink.fromSubscriber(c))
+      Source(1 to 3).ask[Reply](replyOnInts).runWith(Sink.fromSubscriber(c))
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(Reply(1))
@@ -129,8 +127,7 @@ class FlowAskSpec extends StreamSpec {
     }
     "produce asked elements, when replies are akka.actor.Status.Success" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 3).ask[Reply](4)(statusReplier).runWith(Sink.fromSubscriber(c))
+      Source(1 to 3).ask[Reply](4)(statusReplier).runWith(Sink.fromSubscriber(c))
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(Reply(1))
@@ -143,8 +140,7 @@ class FlowAskSpec extends StreamSpec {
 
     "produce future elements in order" in {
       val c = TestSubscriber.manualProbe[Reply]()
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 50).ask[Reply](4)(replyRandomDelays).to(Sink.fromSubscriber(c)).run()
+      Source(1 to 50).ask[Reply](4)(replyRandomDelays).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(1000)
       for (n <- 1 to 50) c.expectNext(Reply(n))
@@ -153,9 +149,8 @@ class FlowAskSpec extends StreamSpec {
 
     "signal ask timeout failure" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
-      implicit val ec = system.dispatcher
       Source(1 to 5)
-        .map(_ + " nope")
+        .map(s => s"$s + nope")
         .ask[Reply](4)(dontReply)(akka.util.Timeout(10.millis), implicitly[ClassTag[Reply]])
         .to(Sink.fromSubscriber(c))
         .run()
@@ -166,8 +161,7 @@ class FlowAskSpec extends StreamSpec {
     "signal ask failure" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
       val ref = failsOn1
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 5).ask[Reply](4)(ref).to(Sink.fromSubscriber(c)).run()
+      Source(1 to 5).ask[Reply](4)(ref).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError().getMessage should be("Booming for 1!")
@@ -221,9 +215,8 @@ class FlowAskSpec extends StreamSpec {
 
     "resume after ask failure" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
-      implicit val ec = system.dispatcher
       val ref = failsOn3
-      val p = Source(1 to 5)
+      Source(1 to 5)
         .ask[Reply](4)(ref)
         .withAttributes(supervisionStrategy(resumingDecider))
         .to(Sink.fromSubscriber(c))

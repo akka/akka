@@ -33,7 +33,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      Source
         .fromGraph(LazySource { () =>
           constructed.set(true); Source(List(1, 2, 3))
         })
