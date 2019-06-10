@@ -33,7 +33,7 @@ object Dependencies {
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
     scalaTestVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "3.0.8-RC4"
+        case Some((2, n)) if n >= 13 => "3.0.8"
         case _                       => "3.0.7"
       }
     },
