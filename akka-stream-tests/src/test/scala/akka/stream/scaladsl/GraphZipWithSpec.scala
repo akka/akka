@@ -171,8 +171,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
               v19: Int,
               v20: String,
               v21: Int,
-              v22: String) =>
-            s"$v1$v2$v3$v4$v5$v6$v7$v8$v9$v10$v11$v12$v13$v14$v15$v16$v17$v18$v19$v20$v21$v22"
+              v22: String) => s"$v1$v2$v3$v4$v5$v6$v7$v8$v9$v10$v11$v12$v13$v14$v15$v16$v17$v18$v19$v20$v21$v22"
 
           // odd input ports will be Int, even input ports will be String
           val zip = b.add(ZipWith(sum22))
