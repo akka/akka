@@ -23,7 +23,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 object FlowSpec {
-  class Fruit
+  class Fruit extends Serializable
   class Apple extends Fruit
   class Orange extends Fruit
   val fruits = () =>

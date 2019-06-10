@@ -123,7 +123,7 @@ class GraphUnzipWithSpec extends StreamSpec {
       leftProbe.expectNext(4)
       leftProbe.expectNoMessage(100.millis)
 
-      rightProbe.expectNext("1+1")
+      rightProbe.expectNext("1 + 1")
       rightProbe.expectNoMessage(100.millis)
 
       leftSubscription.request(1)
@@ -156,7 +156,7 @@ class GraphUnzipWithSpec extends StreamSpec {
 
         RunnableGraph
           .fromGraph(GraphDSL.create() { implicit b =>
-            val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) => (1 / b, s"1 + / $b")))
+            val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) => (1 / b, s"1 / $b")))
 
             Source(-2 to 2) ~> unzip.in
 
@@ -177,7 +177,7 @@ class GraphUnzipWithSpec extends StreamSpec {
 
         requestFromBoth()
         leftProbe.expectNext(1 / -2)
-        rightProbe.expectNext("1/-2")
+        rightProbe.expectNext("1 / -2")
 
         requestFromBoth()
         leftProbe.expectNext(1 / -1)
