@@ -38,7 +38,7 @@ object SerializationDocSpec {
   val configMigrationRenamClass = """
     #//#migrations-conf-rename
     akka.serialization.jackson.migrations {
-      "com.myservice.event.OrederAdded" = "com.myservice.event.OrderPlacedMigration"
+      "com.myservice.event.OrderAdded" = "com.myservice.event.OrderPlacedMigration"
     }
     #//#migrations-conf-rename
   """
@@ -111,5 +111,13 @@ object SerializationDocSpec {
     }
     #//#date-time
     """
+
+  val configWhitelist = """
+    #//#whitelist-class-prefix
+    akka.serialization.jackson.whitelist-class-prefix = 
+      ["com.myservice.event.OrderAdded", "com.myservice.command"]
+    #//#whitelist-class-prefix
+  """
+
 }
 // FIXME add real tests for the migrations, see EventMigrationTest.java in Lagom

@@ -158,6 +158,10 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     }
   }
   private val blacklist: GadgetClassBlacklist = new GadgetClassBlacklist
+  private val whitelistClassPrefix = {
+    import scala.collection.JavaConverters._
+    conf.getStringList("whitelist-class-prefix").asScala.toVector
+  }
 
   // This must lazy otherwise it will deadlock the ActorSystem creation
   private lazy val serialization = SerializationExtension(system)
@@ -286,7 +290,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
       val warnMsg = s"Can't serialize/deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
         "Only classes that are whitelisted are allowed for security reasons. " +
         "Configure whitelist with akka.actor.serialization-bindings or " +
-        "akka.serialization.jackson.whitelist-packages."
+        "akka.serialization.jackson.whitelist-class-prefix."
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
     }
@@ -299,29 +303,37 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
    * used for selecting serializer.
    * Here we use `serialization-bindings` also and more importantly when deserializing (fromBinary)
    * to check that the manifest class is of a known (registered) type.
-   * The drawback of using `serialization-bindings` for this is that an old class can't be removed
-   * from `serialization-bindings` when it's not used for serialization but still used for
-   * deserialization (e.g. rolling update with serialization changes). It's also
-   * not possible to change a binding from a JacksonSerializer to another serializer (e.g. protobuf)
+   *
+   * If and old class is removed from `serialization-bindings` when it's not used for serialization
+   * but still used for deserialization (e.g. rolling update with serialization changes) it can
+   * be allowed by specifying in `whitelist-class-prefix`.
+   *
+   * That is also possible when changing a binding from a JacksonSerializer to another serializer (e.g. protobuf)
    * and still bind with the same class (interface).
-   * If this is too limiting we can add another config property as an additional way to
-   * whitelist classes that are not bound to this serializer with serialization-bindings.
    */
   private def isInWhitelist(clazz: Class[_]): Boolean = {
+    isBoundToJacksonSerializer(clazz) || isInWhitelistClassPrefix(clazz.getName)
+  }
+
+  private def isBoundToJacksonSerializer(clazz: Class[_]): Boolean = {
     try {
       // The reason for using isInstanceOf rather than `eq this` is to allow change of
       // serializizer within the Jackson family, but we don't trust other serializers
       // because they might be bound to open-ended interfaces like java.io.Serializable.
       val boundSerializer = serialization.serializerFor(clazz)
       boundSerializer.isInstanceOf[JacksonSerializer] ||
+      // FIXME this is probably not needed when we have the more flexible configuration in place and
+      //       can bind use the plain JacksonJsonSerializer for the old serializerId
       // to support rolling updates in Lagom we also trust the binding to the Lagom 1.5.x JacksonJsonSerializer,
       // which is named OldJacksonJsonSerializer in Lagom 1.6.x
-      // FIXME maybe make this configurable, but I don't see any other usages than for Lagom?
       boundSerializer.getClass.getName == "com.lightbend.lagom.internal.jackson.OldJacksonJsonSerializer"
     } catch {
       case NonFatal(_) => false // not bound
     }
   }
+
+  private def isInWhitelistClassPrefix(className: String): Boolean =
+    whitelistClassPrefix.exists(className.startsWith)
 
   /**
    * Check that serialization-bindings are not configured with open-ended interfaces,

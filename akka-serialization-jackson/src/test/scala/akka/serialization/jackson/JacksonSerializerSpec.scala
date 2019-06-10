@@ -82,6 +82,8 @@ object ScalaTestMessages {
   // not defined in JsonSubTypes
   final case class Cockroach(name: String) extends Animal
 
+  final case class OldCommandNotInBindings(name: String)
+
 }
 
 class ScalaTestEventMigration extends JacksonMigration {
@@ -273,6 +275,17 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
         json should ===(expected)
       }
     }
+
+    "allow deserialization of classes in configured whitelist-class-prefix" in {
+      val json = """{"name":"abc"}"""
+
+      val old = SimpleCommand("abc")
+      val serializer = serializerFor(old)
+
+      val expected = OldCommandNotInBindings("abc")
+
+      deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
+    }
   }
 }
 
@@ -294,6 +307,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         "akka.serialization.jackson.JavaTestMessages$$TestMessage" = $serializerName
       }
     }
+    akka.serialization.jackson.whitelist-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
     """)))
     with WordSpecLike
     with Matchers
