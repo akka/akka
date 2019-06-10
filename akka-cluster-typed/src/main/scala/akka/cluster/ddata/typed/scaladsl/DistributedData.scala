@@ -4,11 +4,17 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
+import akka.cluster.ddata.ReplicatedData
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.util.JavaDurationConverters._
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -31,12 +37,20 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
 
   private val settings: ReplicatorSettings = ReplicatorSettings(system)
 
+  /** INTERNAL API */
+  @InternalApi private[akka] val unexpectedAskTimeout: FiniteDuration =
+    system.settings.config
+      .getDuration("akka.cluster.ddata.typed.replicator-message-adapter-unexpected-ask-timeout")
+      .asScala
+
   private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
 
   implicit val selfUniqueAddress: SelfUniqueAddress = dd.DistributedData(untypedSystem).selfUniqueAddress
 
   /**
-   * `ActorRef` of the [[Replicator]] .
+   * `ActorRef` of the [[Replicator]].
+   *
+   * @see [[DistributedData.replicatorMessageAdapter]]
    */
   val replicator: ActorRef[Replicator.Command] =
     if (isTerminated) {
@@ -59,6 +73,24 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
         ReplicatorSettings.name(system),
         Props.empty.withDispatcherFromConfig(settings.dispatcher))
     }
+
+  /**
+   * When interacting with the [[DistributedData.replicator]] from an actor the [[ReplicatorMessageAdapter]]
+   * provides convenient methods that adapts the response messages to the requesting actor's message protocol.
+   *
+   * One `ReplicatorMessageAdapter` instance can be used for a given `ReplicatedData` type,
+   * e.g. an `OrSet[String]`. Interaction with several [[akka.cluster.ddata.Key]]s can be used via the same adapter
+   * but they must all be of the same `ReplicatedData` type. For interaction with several different
+   * `ReplicatedData` types, e.g. an `OrSet[String]` and a `GCounter`, an adapter can be created
+   * for each type.
+   *
+   * @param context The [[ActorContext]] of the requesting actor.
+   *
+   * @tparam A Message type of the requesting actor.
+   * @tparam B Type of the [[ReplicatedData]].
+   */
+  def replicatorMessageAdapter[A, B <: ReplicatedData](context: ActorContext[A]): ReplicatorMessageAdapter[A, B] =
+    new ReplicatorMessageAdapter(context, replicator, unexpectedAskTimeout)
 
   /**
    * Returns true if this member is not tagged with the role configured for the replicas.

@@ -9,9 +9,12 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ExtensionSetup
+import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.util.JavaDurationConverters._
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -37,9 +40,28 @@ object DistributedData extends ExtensionId[DistributedData] {
 abstract class DistributedData extends Extension {
 
   /**
-   * `ActorRef` of the [[Replicator]] .
+   * `ActorRef` of the [[Replicator]].
+   *
+   * @see [[DistributedData.replicatorMessageAdapter]]
    */
   def replicator: ActorRef[Replicator.Command]
+
+  /**
+   * When interacting with the [[DistributedData.replicator]] from an actor the [[ReplicatorMessageAdapter]]
+   * provides convenient methods that adapts the response messages to the requesting actor's message protocol.
+   *
+   * One `ReplicatorMessageAdapter` instance can be used for a given `ReplicatedData` type,
+   * e.g. an `OrSet<String>`. Interaction with several [[akka.cluster.ddata.Key]]s can be used via the same adapter
+   * but they must all be of the same `ReplicatedData` type. For interaction with several different
+   * `ReplicatedData` types, e.g. an `OrSet<String>` and a `GCounter`, an adapter can be created
+   * for each type.
+   *
+   * @param context The [[ActorContext]] of the requesting actor.
+   *
+   * @tparam A Message type of the requesting actor.
+   * @tparam B Type of the [[ReplicatedData]].
+   */
+  def replicatorMessageAdapter[A, B <: ReplicatedData](context: ActorContext[A]): ReplicatorMessageAdapter[A, B]
 
   def selfUniqueAddress: SelfUniqueAddress
 }
@@ -49,8 +71,15 @@ abstract class DistributedData extends Extension {
  */
 @InternalApi private[akka] class DistributedDataImpl(system: ActorSystem[_]) extends DistributedData {
 
+  private val unexpectedAskTimeout =
+    akka.cluster.ddata.typed.scaladsl.DistributedData(system).unexpectedAskTimeout.asJava
+
   override val replicator: ActorRef[Replicator.Command] =
     akka.cluster.ddata.typed.scaladsl.DistributedData(system).replicator.narrow[Replicator.Command]
+
+  override def replicatorMessageAdapter[A, B <: ReplicatedData](
+      context: ActorContext[A]): ReplicatorMessageAdapter[A, B] =
+    new ReplicatorMessageAdapter(context, replicator, unexpectedAskTimeout)
 
   override val selfUniqueAddress: SelfUniqueAddress =
     akka.cluster.ddata.typed.scaladsl.DistributedData(system).selfUniqueAddress

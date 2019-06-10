@@ -4,17 +4,14 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
-import scala.util.Failure
-import scala.util.Success
+// FIXME move to doc package
 
 import org.scalatest.WordSpecLike
-import akka.actor.testkit.typed.TestKitSettings
 import akka.cluster.ddata.SelfUniqueAddress
 
 // #sample
 import akka.actor.typed.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey }
@@ -47,32 +44,28 @@ object ReplicatorSpec {
       extends InternalMsg
   private case class InternalChanged(chg: Replicator.Changed[GCounter]) extends InternalMsg
 
-  val Key = GCounterKey("counter")
-
-  def client(replicator: ActorRef[Replicator.Command])(implicit node: SelfUniqueAddress): Behavior[ClientCommand] =
+  def client(key: GCounterKey): Behavior[ClientCommand] =
     Behaviors.setup[ClientCommand] { ctx =>
-      val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
-        ctx.messageAdapter(InternalUpdateResponse.apply)
+      implicit val node: SelfUniqueAddress = DistributedData(ctx.system).selfUniqueAddress
 
-      val changedAdapter: ActorRef[Replicator.Changed[GCounter]] =
-        ctx.messageAdapter(InternalChanged.apply)
+      // adapter that turns the response messages from the replicator into our own protocol
+      val replicatorAdapter = DistributedData(ctx.system).replicatorMessageAdapter[ClientCommand, GCounter](ctx)
 
-      replicator ! Replicator.Subscribe(Key, changedAdapter)
-
-      implicit val askTimeout: Timeout = Timeout(10.seconds)
+      replicatorAdapter.subscribe(key, InternalChanged.apply)
 
       def behavior(cachedValue: Int): Behavior[ClientCommand] = {
         Behaviors.receiveMessage[ClientCommand] {
           case Increment =>
-            replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ :+ 1)
+            replicatorAdapter.askUpdate(
+              askReplyTo => Replicator.Update(key, GCounter.empty, Replicator.WriteLocal, askReplyTo)(_ :+ 1),
+              InternalUpdateResponse.apply)
+
             Behaviors.same
 
           case GetValue(replyTo) =>
-            ctx.ask[Replicator.Get[GCounter], Replicator.GetResponse[GCounter]](replicator)(askReplyTo =>
-              Replicator.Get(Key, Replicator.ReadLocal, askReplyTo)) {
-              case Success(value) => InternalGetResponse(value, replyTo)
-              case Failure(ex)    => throw ex // unexpected ask timeout
-            }
+            replicatorAdapter.askGet(
+              askReplyTo => Replicator.Get(key, Replicator.ReadLocal, askReplyTo),
+              value => InternalGetResponse(value, replyTo))
 
             Behaviors.same
 
@@ -84,16 +77,16 @@ object ReplicatorSpec {
             internal match {
               case InternalUpdateResponse(_) => Behaviors.same // ok
 
-              case InternalGetResponse(rsp @ Replicator.GetSuccess(Key), replyTo) =>
-                val value = rsp.get(Key).value.toInt
+              case InternalGetResponse(rsp @ Replicator.GetSuccess(`key`), replyTo) =>
+                val value = rsp.get(key).value.toInt
                 replyTo ! value
                 Behaviors.same
 
               case InternalGetResponse(_, _) =>
                 Behaviors.unhandled // not dealing with failures
 
-              case InternalChanged(chg @ Replicator.Changed(Key)) =>
-                val value = chg.get(Key).value.intValue
+              case InternalChanged(chg @ Replicator.Changed(`key`)) =>
+                val value = chg.get(key).value.intValue
                 behavior(value)
             }
         }
@@ -105,17 +98,20 @@ object ReplicatorSpec {
 
   object CompileOnlyTest {
     def shouldHaveConvenienceForAsk(): Unit = {
+      import akka.actor.typed.scaladsl.AskPattern._
+
       val replicator: ActorRef[Replicator.Command] = ???
       implicit val timeout = Timeout(3.seconds)
       implicit val scheduler: Scheduler = ???
       implicit val cluster: SelfUniqueAddress = ???
+      val key = GCounterKey("counter")
 
-      val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(Key, Replicator.ReadLocal))
+      val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(key, Replicator.ReadLocal))
 
       val reply2: Future[UpdateResponse[GCounter]] =
-        replicator.ask(Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ :+ 1))
+        replicator.ask(Replicator.Update(key, GCounter.empty, Replicator.WriteLocal)(_ :+ 1))
 
-      val reply3: Future[DeleteResponse[GCounter]] = replicator.ask(Replicator.Delete(Key, Replicator.WriteLocal))
+      val reply3: Future[DeleteResponse[GCounter]] = replicator.ask(Replicator.Delete(key, Replicator.WriteLocal))
 
       val reply4: Future[ReplicaCount] = replicator.ask(Replicator.GetReplicaCount())
 
@@ -123,28 +119,61 @@ object ReplicatorSpec {
       println("" + reply1 + reply2 + reply3 + reply4)
     }
 
+    def shouldHaveConvenienceForAsk2(): Unit = {
+      implicit val cluster: SelfUniqueAddress = ???
+      val replicatorAdapter: ReplicatorMessageAdapter[ClientCommand, GCounter] = ???
+      val replyTo: ActorRef[Int] = ???
+      val key = GCounterKey("counter")
+
+      //#curried-update
+      // alternative way to define the `createRequest` function
+      // Replicator.Update instance has a curried `apply` method
+      replicatorAdapter.askUpdate(
+        Replicator.Update(key, GCounter.empty, Replicator.WriteLocal)(_ :+ 1),
+        InternalUpdateResponse.apply)
+
+      // that is the same as
+      replicatorAdapter.askUpdate(
+        askReplyTo => Replicator.Update(key, GCounter.empty, Replicator.WriteLocal, askReplyTo)(_ :+ 1),
+        InternalUpdateResponse.apply)
+      //#curried-update
+
+      //#curried-get
+      // alternative way to define the `createRequest` function
+      // Replicator.Get instance has a curried `apply` method
+      replicatorAdapter.askGet(Replicator.Get(key, Replicator.ReadLocal), value => InternalGetResponse(value, replyTo))
+
+      // that is the same as
+      replicatorAdapter.askGet(
+        askReplyTo => Replicator.Get(key, Replicator.ReadLocal, askReplyTo),
+        value => InternalGetResponse(value, replyTo))
+      //#curried-get
+    }
+
     def shouldHaveUnapplyForResponseTypes(): Unit = {
       val getResponse: GetResponse[GCounter] = ???
+      val key = GCounterKey("counter")
+
       getResponse match {
-        case GetSuccess(Key) =>
-        case GetFailure(Key) =>
-        case NotFound(Key)   =>
+        case GetSuccess(`key`) =>
+        case GetFailure(`key`) =>
+        case NotFound(`key`)   =>
       }
 
       val updateResponse: UpdateResponse[GCounter] = ???
       updateResponse match {
-        case UpdateSuccess(Key)       =>
-        case ModifyFailure(Key, _, _) =>
-        case UpdateTimeout(Key)       =>
-        case StoreFailure(Key)        =>
-        case UpdateFailure(Key)       =>
+        case UpdateSuccess(`key`)       =>
+        case ModifyFailure(`key`, _, _) =>
+        case UpdateTimeout(`key`)       =>
+        case StoreFailure(`key`)        =>
+        case UpdateFailure(`key`)       =>
       }
 
       val deleteResponse: DeleteResponse[GCounter] = ???
       deleteResponse match {
-        case DeleteSuccess(Key)            =>
-        case ReplicationDeleteFailure(Key) =>
-        case DataDeleted(Key)              =>
+        case DeleteSuccess(`key`)            =>
+        case ReplicationDeleteFailure(`key`) =>
+        case DataDeleted(`key`)              =>
       }
 
       val replicaCount: ReplicaCount = ???
@@ -160,27 +189,23 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
 
   import ReplicatorSpec._
 
-  implicit val testSettings = TestKitSettings(system)
-  val settings = ReplicatorSettings(system)
   implicit val selfNodeAddress = DistributedData(system).selfUniqueAddress
 
   "Replicator" must {
 
     "have API for Update and Get" in {
-      val replicator = spawn(Replicator.behavior(settings))
-      val c = spawn(client(replicator))
+      val c = spawn(client(GCounterKey("counter1")))
 
-      val probe = TestProbe[Int]
+      val probe = createTestProbe[Int]()
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMessage(1)
     }
 
     "have API for Subscribe" in {
-      val replicator = spawn(Replicator.behavior(settings))
-      val c = spawn(client(replicator))
+      val c = spawn(client(GCounterKey("counter2")))
 
-      val probe = TestProbe[Int]
+      val probe = createTestProbe[Int]()
       c ! Increment
       c ! Increment
       eventually {
@@ -195,13 +220,19 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
     }
 
     "have an extension" in {
-      val replicator = DistributedData(system).replicator
-      val c = spawn(client(replicator))
+      val key = GCounterKey("counter3")
+      val c = spawn(client(key))
 
-      val probe = TestProbe[Int]
+      val probe = createTestProbe[Int]()
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMessage(1)
+
+      val getReplyProbe = createTestProbe[Replicator.GetResponse[GCounter]]()
+      val replicator = DistributedData(system).replicator
+      replicator ! Replicator.Get(key, Replicator.ReadLocal, getReplyProbe.ref)
+      val rsp = getReplyProbe.expectMessageType[GetSuccess[GCounter]]
+      rsp.get(key).value.toInt should ===(1)
     }
 
     "have the prefixed replicator name" in {
