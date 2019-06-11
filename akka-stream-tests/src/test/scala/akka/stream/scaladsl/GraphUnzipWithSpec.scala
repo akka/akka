@@ -132,15 +132,15 @@ class GraphUnzipWithSpec extends StreamSpec {
       leftProbe.expectNext(6)
       leftProbe.expectNoMessage(100.millis)
 
-      rightProbe.expectNext("2+2")
-      rightProbe.expectNext("3+3")
+      rightProbe.expectNext("2 + 2")
+      rightProbe.expectNext("3 + 3")
       rightProbe.expectNoMessage(100.millis)
 
       leftSubscription.request(1)
       rightSubscription.request(1)
 
       leftProbe.expectNext(8)
-      rightProbe.expectNext("4+4")
+      rightProbe.expectNext("4 + 4")
 
       leftProbe.expectComplete()
       rightProbe.expectComplete()
@@ -181,7 +181,7 @@ class GraphUnzipWithSpec extends StreamSpec {
 
         requestFromBoth()
         leftProbe.expectNext(1 / -1)
-        rightProbe.expectNext("1/-1")
+        rightProbe.expectNext("1 / -1")
 
         EventFilter[ArithmeticException](occurrences = 1).intercept {
           requestFromBoth()
