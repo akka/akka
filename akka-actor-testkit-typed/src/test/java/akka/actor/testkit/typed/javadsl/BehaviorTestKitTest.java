@@ -130,95 +130,98 @@ public class BehaviorTestKitTest extends JUnitSuite {
   private static Props props = Props.empty().withDispatcherFromConfig("cat");
 
   private static Behavior<Command> behavior =
-      Behaviors.receive(Command.class)
-          .onMessage(
-              SpawnChildren.class,
-              (context, message) -> {
-                IntStream.range(0, message.numberOfChildren)
-                    .forEach(
-                        i -> {
-                          context.spawn(childInitial, "child" + i);
-                        });
-                return Behaviors.same();
-              })
-          .onMessage(
-              SpawnChildrenAnonymous.class,
-              (context, message) -> {
-                IntStream.range(0, message.numberOfChildren)
-                    .forEach(
-                        i -> {
-                          context.spawnAnonymous(childInitial);
-                        });
-                return Behaviors.same();
-              })
-          .onMessage(
-              SpawnChildrenWithProps.class,
-              (context, message) -> {
-                IntStream.range(0, message.numberOfChildren)
-                    .forEach(
-                        i -> {
-                          context.spawn(childInitial, "child" + i, message.props);
-                        });
-                return Behaviors.same();
-              })
-          .onMessage(
-              SpawnChildrenAnonymousWithProps.class,
-              (context, message) -> {
-                IntStream.range(0, message.numberOfChildren)
-                    .forEach(
-                        i -> {
-                          context.spawnAnonymous(childInitial, message.props);
-                        });
-                return Behaviors.same();
-              })
-          .onMessage(
-              CreateMessageAdapter.class,
-              (context, message) -> {
-                context.messageAdapter(message.clazz, message.f);
-                return Behaviors.same();
-              })
-          .onMessage(
-              SpawnWatchAndUnWatch.class,
-              (context, message) -> {
-                ActorRef<Action> c = context.spawn(childInitial, message.name);
-                context.watch(c);
-                context.unwatch(c);
-                return Behaviors.same();
-              })
-          .onMessage(
-              SpawnAndWatchWith.class,
-              (context, message) -> {
-                ActorRef<Action> c = context.spawn(childInitial, message.name);
-                context.watchWith(c, message);
-                return Behaviors.same();
-              })
-          .onMessage(
-              SpawnSession.class,
-              (context, message) -> {
-                ActorRef<String> session =
-                    context.spawnAnonymous(
-                        Behaviors.receiveMessage(
-                            m -> {
-                              message.sessionHandler.tell(m);
-                              return Behaviors.same();
-                            }));
-                message.replyTo.tell(session);
-                return Behaviors.same();
-              })
-          .onMessage(
-              KillSession.class,
-              (context, message) -> {
-                context.stop(message.session);
-                message.replyTo.tell(Done.getInstance());
-                return Behaviors.same();
-              })
-          .onMessage(
-              Log.class,
-              (context, message) -> {
-                context.getLog().info(message.what);
-                return Behaviors.same();
-              })
-          .build();
+      Behaviors.setup(
+          context -> {
+            return Behaviors.receive(Command.class)
+                .onMessage(
+                    SpawnChildren.class,
+                    message -> {
+                      IntStream.range(0, message.numberOfChildren)
+                          .forEach(
+                              i -> {
+                                context.spawn(childInitial, "child" + i);
+                              });
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    SpawnChildrenAnonymous.class,
+                    message -> {
+                      IntStream.range(0, message.numberOfChildren)
+                          .forEach(
+                              i -> {
+                                context.spawnAnonymous(childInitial);
+                              });
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    SpawnChildrenWithProps.class,
+                    message -> {
+                      IntStream.range(0, message.numberOfChildren)
+                          .forEach(
+                              i -> {
+                                context.spawn(childInitial, "child" + i, message.props);
+                              });
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    SpawnChildrenAnonymousWithProps.class,
+                    message -> {
+                      IntStream.range(0, message.numberOfChildren)
+                          .forEach(
+                              i -> {
+                                context.spawnAnonymous(childInitial, message.props);
+                              });
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    CreateMessageAdapter.class,
+                    message -> {
+                      context.messageAdapter(message.clazz, message.f);
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    SpawnWatchAndUnWatch.class,
+                    message -> {
+                      ActorRef<Action> c = context.spawn(childInitial, message.name);
+                      context.watch(c);
+                      context.unwatch(c);
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    SpawnAndWatchWith.class,
+                    message -> {
+                      ActorRef<Action> c = context.spawn(childInitial, message.name);
+                      context.watchWith(c, message);
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    SpawnSession.class,
+                    message -> {
+                      ActorRef<String> session =
+                          context.spawnAnonymous(
+                              Behaviors.receiveMessage(
+                                  m -> {
+                                    message.sessionHandler.tell(m);
+                                    return Behaviors.same();
+                                  }));
+                      message.replyTo.tell(session);
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    KillSession.class,
+                    message -> {
+                      context.stop(message.session);
+                      message.replyTo.tell(Done.getInstance());
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    Log.class,
+                    message -> {
+                      context.getLog().info(message.what);
+                      return Behaviors.same();
+                    })
+                .build();
+          });
 
   @Test
   public void allowAssertionsOnEffectType() {
