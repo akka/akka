@@ -97,6 +97,7 @@ object Dependencies {
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
+    val lz4_java = "org.lz4" % "lz4-java" % "1.6.0"
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
@@ -243,6 +244,7 @@ object Dependencies {
         jacksonJsr310,
         jacksonParameterNames,
         jacksonCbor,
+        lz4_java,
         Test.junit,
         Test.scalatest.value)
 

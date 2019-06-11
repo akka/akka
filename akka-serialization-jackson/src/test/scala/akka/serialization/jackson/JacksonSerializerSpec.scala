@@ -350,7 +350,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     val serializer = serializerFor(obj, sys)
     val manifest = serializer.manifest(obj)
     val serializerId = serializer.identifier
-    val blob = serializeToBinary(obj)
+    val blob = serializeToBinary(obj, sys)
     val deserialized = deserializeFromBinary(blob, serializerId, manifest, sys)
     deserialized should ===(obj)
   }
@@ -383,6 +383,32 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   "JacksonSerializer with Java message classes" must {
     import JavaTestMessages._
+
+    "serialize with gzip" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = gzip
+          compress-larger-than = 1B # force compression of small objects
+        }
+      """) { sys =>
+      checkSerialization(new SimpleCommand("Bob"), sys)
+    }
+
+    "serialize with gzip (no compression since too small)" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = gzip
+          compress-larger-than = 32 kB # force no compression
+        }
+      """) { sys =>
+      checkSerialization(new SimpleCommand("Bob"), sys)
+    }
+
+    "serialize with LZ4 fast" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = lz4
+        }
+      """) { sys =>
+      checkSerialization(new SimpleCommand("Bob"), sys)
+    }
 
     "serialize simple message with one constructor parameter" in {
       checkSerialization(new SimpleCommand("Bob"))
@@ -462,6 +488,35 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   "JacksonSerializer with Scala message classes" must {
     import ScalaTestMessages._
+
+    "serialize with gzip" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = gzip
+          compress-larger-than = 1B # force compression of small objects
+        }
+      """) { sys =>
+      checkSerialization(SimpleCommand("Bob"), sys)
+      checkSerialization(new SimpleCommandNotCaseClass("Bob"), sys)
+    }
+
+    "serialize with gzip (no compression since too small)" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = gzip
+          compress-larger-than = 32 kB # force no compression
+        }
+      """) { sys =>
+      checkSerialization(SimpleCommand("Bob"), sys)
+      checkSerialization(new SimpleCommandNotCaseClass("Bob"), sys)
+    }
+
+    "serialize with LZ4 fast" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = lz4
+        }
+      """) { sys =>
+      checkSerialization(SimpleCommand("Bob"), sys)
+      checkSerialization(new SimpleCommandNotCaseClass("Bob"), sys)
+    }
 
     "serialize simple message with one constructor parameter" in {
       checkSerialization(SimpleCommand("Bob"))

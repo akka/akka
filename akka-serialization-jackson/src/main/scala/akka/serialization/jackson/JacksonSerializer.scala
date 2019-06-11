@@ -26,6 +26,7 @@ import akka.util.Helpers.toRootLowerCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
 
 /**
  * INTERNAL API
@@ -104,6 +105,12 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       bindingName,
       JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new CBORFactory)))
 
+@InternalApi object Compression {
+  sealed trait Algoritm
+  object GZip extends Algoritm
+  object LZ4 extends Algoritm
+}
+
 /**
  * INTERNAL API: Base class for Jackson serializers.
  *
@@ -132,6 +139,13 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     toRootLowerCase(conf.getString(key)) match {
       case "off" => Long.MaxValue
       case _     => conf.getBytes(key)
+    }
+  }
+  private val algorithm: Compression.Algoritm = {
+    val key = "algorithm"
+    toRootLowerCase(conf.getString(key)) match {
+      case "lz4" => Compression.LZ4
+      case _ => Compression.GZip
     }
   }
   private val migrations: Map[String, JacksonMigration] = {
@@ -171,9 +185,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
     val bytes = objectMapper.writeValueAsBytes(obj)
-    val result =
-      if (bytes.length > compressLargerThan) compress(bytes)
-      else bytes
+    val result = compress(bytes)
 
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
@@ -198,7 +210,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
-    val compressed = isGZipped(bytes)
 
     val (fromVersion, manifestClassName) = parseManifest(manifest)
     checkAllowedClassName(manifestClassName)
@@ -225,7 +236,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     }
     checkAllowedClass(clazz)
 
-    val decompressBytes = if (compressed) decompress(bytes) else bytes
+    val decompressBytes = decompress(bytes)
 
     val result = migration match {
       case Some(transformer) if fromVersion < transformer.currentVersion =>
@@ -357,29 +368,44 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   }
 
   def compress(bytes: Array[Byte]): Array[Byte] = {
-    val bos = new ByteArrayOutputStream(BufferSize)
-    val zip = new GZIPOutputStream(bos)
-    try zip.write(bytes)
-    finally zip.close()
-    bos.toByteArray
+
+    if (algorithm == Compression.GZip && bytes.length <= compressLargerThan) bytes else {
+      val bos = new ByteArrayOutputStream(BufferSize)
+      val compressed = algorithm match {
+        case Compression.GZip => new GZIPOutputStream(bos)
+        case Compression.LZ4  => new LZ4FrameOutputStream(bos)
+      }
+      try compressed.write(bytes)
+      finally compressed.close()
+      bos.toByteArray
+    }
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
-    val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
-    val out = new ByteArrayOutputStream()
-    // FIXME pool of recycled buffers?
-    val buffer = new Array[Byte](BufferSize)
+    if (algorithm == Compression.GZip && !isGZipped(bytes)) bytes else {
 
-    @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 => ()
-      case n =>
-        out.write(buffer, 0, n)
-        readChunk()
+      val bais = new ByteArrayInputStream(bytes)
+      val in = algorithm match {
+        case Compression.GZip => new GZIPInputStream(bais)
+        case Compression.LZ4 => new LZ4FrameInputStream(bais)
+      }
+
+      //    val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
+      val out = new ByteArrayOutputStream()
+      // FIXME pool of recycled buffers?
+      val buffer = new Array[Byte](BufferSize)
+
+      @tailrec def readChunk(): Unit = in.read(buffer) match {
+        case -1 ⇒ ()
+        case n ⇒
+          out.write(buffer, 0, n)
+          readChunk()
+      }
+
+      try readChunk()
+      finally in.close()
+      out.toByteArray
     }
-
-    try readChunk()
-    finally in.close()
-    out.toByteArray
   }
 
   def isGZipped(bytes: Array[Byte]): Boolean = {
