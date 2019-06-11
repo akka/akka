@@ -13,7 +13,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import akka.actor.typed.Behavior.unhandled
 import BehaviorBuilder._
 import akka.util.OptionVal
 
@@ -201,7 +200,7 @@ private final class BuiltBehavior[T](messageHandlers: List[Case[T, T]], signalHa
           handler(ctx, msg)
         else receive(ctx, msg, tail)
       case Nil =>
-        unhandled[T]
+        Behaviors.unhandled[T]
     }
 
 }

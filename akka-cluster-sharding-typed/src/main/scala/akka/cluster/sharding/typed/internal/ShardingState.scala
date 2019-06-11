@@ -24,7 +24,7 @@ object ShardingState {
       } else {
         replyTo ! CurrentShardRegionState(Set.empty)
       }
-      Behavior.same
+      Behaviors.same
   }
 
 }

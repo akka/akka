@@ -575,7 +575,7 @@ public class InteractionPatternsTest extends JUnitSuite {
                     context.spawn(
                         new PrepareToLeaveHome(message.who, message.respondTo, keyCabinet, drawer),
                         "leaving" + message.who);
-                    return Behavior.same();
+                    return Behaviors.same();
                   })
               .build();
         });
