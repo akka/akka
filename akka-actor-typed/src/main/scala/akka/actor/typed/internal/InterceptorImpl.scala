@@ -5,9 +5,10 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed
-import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ LogOptions, _ }
+import akka.actor.typed.LogOptions
+import akka.actor.typed._
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
 
@@ -179,8 +180,8 @@ private[akka] object WidenedInterceptor {
 @InternalApi
 private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I])
     extends BehaviorInterceptor[O, I] {
-  import WidenedInterceptor._
   import BehaviorInterceptor._
+  import WidenedInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     // If they use the same pf instance we can allow it, to have one way to workaround defining
@@ -195,13 +196,6 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
   }
 
   def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
-    // widen would wrap the TimerMessage, which would be wrong, see issue #25318
-    msg match {
-      case t: TimerMsg =>
-        throw new IllegalArgumentException(s"Timers and widen can't be used together, [${t.key}]. See issue #25318")
-      case _ => ()
-    }
-
     matcher.applyOrElse(msg, any2null) match {
       case null        => Behaviors.unhandled
       case transformed => target(ctx, transformed)
