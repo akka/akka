@@ -5,7 +5,6 @@
 package akka.cluster.ddata.typed.javadsl
 
 import java.time.Duration
-import java.util.Optional
 import java.util.function.{ Function => JFunction }
 
 import scala.util.control.NoStackTrace
@@ -116,33 +115,21 @@ object Replicator {
   /**
    * Send this message to the local `Replicator` to retrieve a data value for the
    * given `key`. The `Replicator` will reply with one of the [[GetResponse]] messages.
-   *
-   * The optional `request` context is included in the reply messages. This is a convenient
-   * way to pass contextual information (e.g. original sender) without having to use `ask`
-   * or maintain local correlation data structures.
    */
   final case class Get[A <: ReplicatedData](
       key: Key[A],
       consistency: ReadConsistency,
-      replyTo: ActorRef[GetResponse[A]],
-      request: Optional[Any])
-      extends Command {
-
-    def this(key: Key[A], consistency: ReadConsistency, replyTo: ActorRef[GetResponse[A]]) =
-      this(key, consistency, replyTo, Optional.empty[Any])
-  }
+      replyTo: ActorRef[GetResponse[A]])
+      extends Command
 
   @DoNotInherit sealed abstract class GetResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
-    def request: Optional[Any]
-    def getRequest: Optional[Any] = request
   }
 
   /**
    * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
    */
-  final case class GetSuccess[A <: ReplicatedData](key: Key[A], request: Optional[Any])(data: A)
-      extends GetResponse[A] {
+  final case class GetSuccess[A <: ReplicatedData](key: Key[A])(data: A) extends GetResponse[A] {
 
     /**
      * The data value, with correct type.
@@ -157,13 +144,13 @@ object Replicator {
      */
     def dataValue: A = data
   }
-  final case class NotFound[A <: ReplicatedData](key: Key[A], request: Optional[Any]) extends GetResponse[A]
+  final case class NotFound[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
 
   /**
    * The [[Get]] request could not be fulfill according to the given
    * [[ReadConsistency consistency level]] and [[ReadConsistency#timeout timeout]].
    */
-  final case class GetFailure[A <: ReplicatedData](key: Key[A], request: Optional[Any]) extends GetResponse[A]
+  final case class GetFailure[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
 
   object Update {
 
@@ -189,8 +176,7 @@ object Replicator {
   final case class Update[A <: ReplicatedData] private (
       key: Key[A],
       writeConsistency: WriteConsistency,
-      replyTo: ActorRef[UpdateResponse[A]],
-      request: Optional[Any])(val modify: Option[A] => A)
+      replyTo: ActorRef[UpdateResponse[A]])(val modify: Option[A] => A)
       extends Command
       with NoSerializationVerificationNeeded {
 
@@ -207,39 +193,14 @@ object Replicator {
         writeConsistency: WriteConsistency,
         replyTo: ActorRef[UpdateResponse[A]],
         modify: JFunction[A, A]) =
-      this(key, writeConsistency, replyTo, Optional.empty[Any])(
-        Update.modifyWithInitial(initial, data => modify.apply(data)))
-
-    /**
-     * Modify value of local `Replicator` and replicate with given `writeConsistency`.
-     *
-     * The current value for the `key` is passed to the `modify` function.
-     * If there is no current data value for the `key` the `initial` value will be
-     * passed to the `modify` function.
-     *
-     * The optional `request` context is included in the reply messages. This is a convenient
-     * way to pass contextual information (e.g. original sender) without having to use `ask`
-     * or local correlation data structures.
-     */
-    def this(
-        key: Key[A],
-        initial: A,
-        writeConsistency: WriteConsistency,
-        replyTo: ActorRef[UpdateResponse[A]],
-        request: Optional[Any],
-        modify: JFunction[A, A]) =
-      this(key, writeConsistency, replyTo, request)(Update.modifyWithInitial(initial, data => modify.apply(data)))
+      this(key, writeConsistency, replyTo)(Update.modifyWithInitial(initial, data => modify.apply(data)))
 
   }
 
   @DoNotInherit sealed abstract class UpdateResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
-    def request: Optional[Any]
-    def getRequest: Optional[Any] = request
   }
-  final case class UpdateSuccess[A <: ReplicatedData](key: Key[A], request: Optional[Any])
-      extends UpdateResponse[A]
-      with DeadLetterSuppression
+  final case class UpdateSuccess[A <: ReplicatedData](key: Key[A]) extends UpdateResponse[A] with DeadLetterSuppression
 
   @DoNotInherit sealed abstract class UpdateFailure[A <: ReplicatedData] extends UpdateResponse[A]
 
@@ -252,17 +213,13 @@ object Replicator {
    * It will eventually be disseminated to other replicas, unless the local replica
    * crashes before it has been able to communicate with other replicas.
    */
-  final case class UpdateTimeout[A <: ReplicatedData](key: Key[A], request: Optional[Any]) extends UpdateFailure[A]
+  final case class UpdateTimeout[A <: ReplicatedData](key: Key[A]) extends UpdateFailure[A]
 
   /**
    * If the `modify` function of the [[Update]] throws an exception the reply message
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
-  final case class ModifyFailure[A <: ReplicatedData](
-      key: Key[A],
-      errorMessage: String,
-      cause: Throwable,
-      request: Optional[Any])
+  final case class ModifyFailure[A <: ReplicatedData](key: Key[A], errorMessage: String, cause: Throwable)
       extends UpdateFailure[A] {
     override def toString: String = s"ModifyFailure [$key]: $errorMessage"
   }
@@ -277,12 +234,7 @@ object Replicator {
    * It will eventually be disseminated to other replicas, unless the local replica
    * crashes before it has been able to communicate with other replicas.
    */
-  final case class StoreFailure[A <: ReplicatedData](key: Key[A], request: Optional[Any])
-      extends UpdateFailure[A]
-      with DeleteResponse[A] {
-
-    override def getRequest: Optional[Any] = request
-  }
+  final case class StoreFailure[A <: ReplicatedData](key: Key[A]) extends UpdateFailure[A] with DeleteResponse[A] {}
 
   /**
    * Register a subscriber that will be notified with a [[Changed]] message
@@ -332,32 +284,20 @@ object Replicator {
   /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
-   *
-   * The optional `request` context is included in the reply messages. This is a convenient
-   * way to pass contextual information (e.g. original sender) without having to use `ask`
-   * or maintain local correlation data structures.
    */
   final case class Delete[A <: ReplicatedData](
       key: Key[A],
       consistency: WriteConsistency,
-      replyTo: ActorRef[DeleteResponse[A]],
-      request: Optional[Any])
+      replyTo: ActorRef[DeleteResponse[A]])
       extends Command
-      with NoSerializationVerificationNeeded {
-
-    def this(key: Key[A], consistency: WriteConsistency, replyTo: ActorRef[DeleteResponse[A]]) =
-      this(key, consistency, replyTo, Optional.empty())
-  }
+      with NoSerializationVerificationNeeded
 
   sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
-    def request: Optional[Any]
-    def getRequest: Optional[Any] = request
   }
-  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A], request: Optional[Any]) extends DeleteResponse[A]
-  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A], request: Optional[Any])
-      extends DeleteResponse[A]
-  final case class DataDeleted[A <: ReplicatedData](key: Key[A], request: Optional[Any])
+  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
+  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
+  final case class DataDeleted[A <: ReplicatedData](key: Key[A])
       extends RuntimeException
       with NoStackTrace
       with DeleteResponse[A] {
