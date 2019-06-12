@@ -49,7 +49,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting Flow.
    *
-   * @see [[akka.stream.scaladsl.FlowOps.viaMat]]
+   * @see [[akka.stream.scaladsl.FlowOpsMat.viaMat]]
    */
   def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
       combine: (Mat, Mat2) => Mat3): ReprMat[Out2, Ctx2, Mat3]
