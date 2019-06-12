@@ -5,8 +5,8 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed
-import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
@@ -20,7 +20,7 @@ import akka.util.LineNumbers
 private[akka] object InterceptorImpl {
 
   def apply[O, I](interceptor: BehaviorInterceptor[O, I], nestedBehavior: Behavior[I]): Behavior[O] = {
-    Behavior.DeferredBehavior[O] { ctx =>
+    BehaviorImpl.DeferredBehavior[O] { ctx =>
       val interceptorBehavior = new InterceptorImpl[O, I](interceptor, nestedBehavior)
       interceptorBehavior.preStart(ctx)
     }
@@ -89,7 +89,7 @@ private[akka] final class InterceptorImpl[O, I](
 
   private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
     val started = Behavior.start(interceptedResult, ctx.asInstanceOf[TypedActorContext[I]])
-    if (started == UnhandledBehavior || started == SameBehavior || !Behavior.isAlive(started)) {
+    if (started == BehaviorImpl.UnhandledBehavior || started == BehaviorImpl.SameBehavior || !Behavior.isAlive(started)) {
       started.unsafeCast[O]
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
@@ -203,7 +203,7 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
     }
 
     matcher.applyOrElse(msg, any2null) match {
-      case null        => Behavior.unhandled
+      case null        => Behaviors.unhandled
       case transformed => target(ctx, transformed)
     }
   }

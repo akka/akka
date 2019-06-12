@@ -148,15 +148,15 @@ class AskSpec extends ScalaTestWithActorTestKit("""
                 throw new RuntimeException("Unsupported number")
               case _ => "test"
             }
-            Behavior.same
+            Behaviors.same
           case (_, "test") =>
             probe.ref ! "got-test"
-            Behavior.same
+            Behaviors.same
           case (_, "get-state") =>
             probe.ref ! "running"
-            Behavior.same
+            Behaviors.same
           case (_, _) =>
-            Behavior.unhandled
+            Behaviors.unhandled
         }
 
       val ref = spawn(behv)

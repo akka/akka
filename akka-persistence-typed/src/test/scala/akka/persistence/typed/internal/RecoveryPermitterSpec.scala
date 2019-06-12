@@ -200,7 +200,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
               case (_, StopActor) =>
                 stopProbe.ref ! persistentActor
                 ctx.stop(persistentActor)
-                Behavior.same
+                Behaviors.same
               case (_, message) =>
                 persistentActor ! message
                 Behaviors.same

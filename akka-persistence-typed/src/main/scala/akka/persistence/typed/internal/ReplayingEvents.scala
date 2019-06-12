@@ -159,7 +159,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       }
     } else {
       // snapshot timeout, but we're already in the events recovery phase
-      Behavior.unhandled
+      Behaviors.unhandled
     }
 
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {

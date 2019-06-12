@@ -5,6 +5,7 @@
 package akka.actor.typed;
 
 import akka.Done;
+import akka.actor.typed.javadsl.Behaviors;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -18,7 +19,7 @@ public class ActorSystemTest extends JUnitSuite {
   @Test
   public void testGetWhenTerminated() throws Exception {
     final ActorSystem<Void> system =
-        ActorSystem.create(Behavior.empty(), "GetWhenTerminatedSystem");
+        ActorSystem.create(Behaviors.empty(), "GetWhenTerminatedSystem");
     system.terminate();
     final CompletionStage<Done> cs = system.getWhenTerminated();
     cs.toCompletableFuture().get(2, SECONDS);
@@ -27,7 +28,7 @@ public class ActorSystemTest extends JUnitSuite {
   @Test
   public void testGetWhenTerminatedWithoutTermination() {
     final ActorSystem<Void> system =
-        ActorSystem.create(Behavior.empty(), "GetWhenTerminatedWithoutTermination");
+        ActorSystem.create(Behaviors.empty(), "GetWhenTerminatedWithoutTermination");
     assertFalse(system.getWhenTerminated().toCompletableFuture().isDone());
   }
 }
