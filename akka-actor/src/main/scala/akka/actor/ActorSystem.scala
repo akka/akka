@@ -363,6 +363,8 @@ object ActorSystem {
 
     final val ProviderClass: String = ProviderSelectionType.fqcn
 
+    final val HasCluster: Boolean = ProviderSelectionType.hasCluster
+
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
     final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))

@@ -76,6 +76,7 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
          port = 0
        }
        remote.artery.enabled = off
+       use-unsafe-remote-features-without-cluster = on
      }""") with ImplicitSender {
 
   import RemoteWatcher._

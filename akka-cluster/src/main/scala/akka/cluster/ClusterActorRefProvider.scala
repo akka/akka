@@ -5,6 +5,9 @@
 package akka.cluster
 
 import akka.ConfigurationException
+import akka.actor.ActorPath
+import akka.actor.InternalActorRef
+import akka.actor.Props
 import akka.actor.{ ActorRef, ActorSystem, ActorSystemImpl, Deploy, DynamicAccess, NoScopeGiven, Scope }
 import akka.annotation.InternalApi
 import akka.cluster.routing.{
@@ -14,6 +17,7 @@ import akka.cluster.routing.{
   ClusterRouterPoolSettings
 }
 import akka.event.EventStream
+import akka.remote.RemoteActorRef
 import akka.remote.{ RemoteActorRefProvider, RemoteDeployer }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing.{ Group, Pool }
@@ -46,15 +50,8 @@ private[akka] class ClusterActorRefProvider(
   override protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
     // make sure Cluster extension is initialized/loaded from init thread
     Cluster(system)
-
-    import remoteSettings._
-    val failureDetector = createRemoteWatcherFailureDetector(system)
     system.systemActorOf(
-      ClusterRemoteWatcher.props(
-        failureDetector,
-        heartbeatInterval = WatchHeartBeatInterval,
-        unreachableReaperInterval = WatchUnreachableReaperInterval,
-        heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter),
+      ClusterRemoteWatcher.props(createRemoteWatcherFailureDetector(system), remoteSettings),
       "remote-watcher")
   }
 
@@ -64,7 +61,31 @@ private[akka] class ClusterActorRefProvider(
    */
   override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
-  override protected def showDirectUseWarningIfRequired(): Unit = ()
+  override def actorOf(
+      system: ActorSystemImpl,
+      props: Props,
+      supervisor: InternalActorRef,
+      path: ActorPath,
+      systemService: Boolean,
+      deploy: Option[Deploy],
+      lookupDeploy: Boolean,
+      async: Boolean): InternalActorRef = {
+    val ref = super.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
+    ref match {
+      case remoteRef: RemoteActorRef if !remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster =>
+        val remoteAddress = remoteRef.path.address
+        if (Cluster(system).state.members.exists(_.address == remoteAddress))
+          remoteRef
+        else {
+          log.warning(
+            "Remote deploy of [{}] outside this cluster is not allowed, falling back to local.",
+            remoteAddress)
+          // `super.local` is private, this creates a LARP if systemService=true
+          super.actorOf(system, props, supervisor, path, systemService = true, deploy, lookupDeploy, async)
+        }
+      case _ => ref
+    }
+  }
 }
 
 /**
