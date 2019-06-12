@@ -10,13 +10,19 @@ import akka.routing._
 import akka.util.WildcardIndex
 import com.github.ghik.silencer.silent
 import com.typesafe.config._
-
 import scala.annotation.tailrec
+
+import akka.annotation.InternalApi
 
 object Deploy {
   final val NoDispatcherGiven = ""
   final val NoMailboxGiven = ""
   val local = Deploy(scope = LocalScope)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final val DispatcherSameAsParent = ".."
 }
 
 /**

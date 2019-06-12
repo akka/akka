@@ -3,9 +3,10 @@
  */
 
 package akka.actor.typed.internal.adapter
+
+import akka.ConfigurationException
 import akka.actor.typed._
 import akka.annotation.InternalApi
-import akka.ConfigurationException
 import akka.util.ErrorMessages
 
 /**
