@@ -6,6 +6,7 @@ package akka.persistence.typed.internal
 
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
+
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
@@ -14,10 +15,14 @@ import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
+import akka.persistence.typed.EmptyEventSeq
+import akka.persistence.typed.EventsSeq
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
+import akka.util.OptionVal
 import akka.util.unused
 import akka.util.PrettyDuration._
 
@@ -103,19 +108,31 @@ private[akka] final class ReplayingEvents[C, E, S](
     try {
       response match {
         case ReplayedMessage(repr) =>
-          val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.Per])
-
+          var eventForErrorReporting: OptionVal[Any] = OptionVal.None
           try {
-            state = state.copy(
-              seqNr = repr.sequenceNr,
-              state = setup.eventHandler(state.state, event),
-              eventSeenInInterval = true)
+            val eventSeq = setup.eventAdapter.fromJournal(repr.payload, repr.manifest)
+
+            def handleEvent(event: E): Unit = {
+              eventForErrorReporting = OptionVal.Some(event)
+              state = state.copy(
+                seqNr = repr.sequenceNr,
+                state = setup.eventHandler(state.state, event),
+                eventSeenInInterval = true)
+            }
+
+            eventSeq match {
+              case SingleEventSeq(event) => handleEvent(event)
+              case EventsSeq(events)     => events.foreach(handleEvent)
+              case EmptyEventSeq         => // no events
+            }
+
             this
           } catch {
             case NonFatal(ex) =>
               state = state.copy(repr.sequenceNr)
-              onRecoveryFailure(ex, Some(event))
+              onRecoveryFailure(ex, Option(eventForErrorReporting.getOrElse(null)))
           }
+
         case RecoverySuccess(highestSeqNr) =>
           setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)

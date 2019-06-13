@@ -17,6 +17,7 @@ import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.persistence.typed.*;
+import akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -35,7 +36,6 @@ import java.time.Duration;
 import java.util.*;
 
 import static akka.Done.done;
-import static akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec.*;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -43,7 +43,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   public static final Config config =
       ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]")
-          .withFallback(conf().withFallback(ConfigFactory.load()));
+          .withFallback(EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load()));
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -583,15 +583,47 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   // event-wrapper
-  class WrapperEventAdapter extends EventAdapter<Incremented, Wrapper> {
+  public static class Wrapper<T> implements Serializable {
+    private final T t;
+
+    public Wrapper(T t) {
+      this.t = t;
+    }
+
+    public T getT() {
+      return t;
+    }
+
     @Override
-    public Wrapper toJournal(Incremented incremented) {
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Wrapper<?> wrapper = (Wrapper<?>) o;
+
+      return t.equals(wrapper.t);
+    }
+
+    @Override
+    public int hashCode() {
+      return t.hashCode();
+    }
+  }
+
+  class WrapperEventAdapter extends EventAdapter<Incremented, Wrapper<Incremented>> {
+    @Override
+    public Wrapper<Incremented> toJournal(Incremented incremented) {
       return new Wrapper<>(incremented);
     }
 
     @Override
-    public Incremented fromJournal(Wrapper wrapper) {
-      return (Incremented) wrapper.t();
+    public String manifest(Incremented event) {
+      return "";
+    }
+
+    @Override
+    public EventSeq<Incremented> fromJournal(Wrapper<Incremented> wrapper, String manifest) {
+      return EventSeq.single(wrapper.getT());
     }
   }
   // event-wrapper

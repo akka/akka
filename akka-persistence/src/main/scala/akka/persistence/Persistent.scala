@@ -6,8 +6,9 @@ package akka.persistence
 
 import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.persistence.serialization.Message
-
 import scala.collection.immutable
+
+import akka.annotation.DoNotInherit
 
 /**
  * INTERNAL API
@@ -66,15 +67,17 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
  * @see [[akka.persistence.journal.AsyncWriteJournal]]
  * @see [[akka.persistence.journal.AsyncRecovery]]
  */
-trait PersistentRepr extends Message {
+@DoNotInherit trait PersistentRepr extends Message {
 
   /**
-   * This persistent message's payload.
+   * This persistent message's payload (the event).
    */
   def payload: Any
 
   /**
-   * Returns the persistent payload's manifest if available
+   * Returns the event adapter manifest for the persistent payload (event) if available
+   * May be `""` if event adapter manifest is not used.
+   * Note that this is not the same as the manifest of the serialized representation of the `payload`.
    */
   def manifest: String
 
@@ -96,16 +99,18 @@ trait PersistentRepr extends Message {
   def writerUuid: String
 
   /**
-   * Creates a new persistent message with the specified `payload`.
+   * Creates a new persistent message with the specified `payload` (event).
    */
   def withPayload(payload: Any): PersistentRepr
 
   /**
-   * Creates a new persistent message with the specified `manifest`.
+   * Creates a new persistent message with the specified event adapter `manifest`.
    */
   def withManifest(manifest: String): PersistentRepr
 
   /**
+   * Not used, can always be `false`.
+   *
    * Not used in new records stored with Akka v2.4, but
    * old records from v2.3 may have this as `true` if
    * it was a non-permanent delete.
@@ -113,7 +118,7 @@ trait PersistentRepr extends Message {
   def deleted: Boolean
 
   /**
-   * Sender of this message.
+   * Not used, can be `null`
    */
   def sender: ActorRef
 

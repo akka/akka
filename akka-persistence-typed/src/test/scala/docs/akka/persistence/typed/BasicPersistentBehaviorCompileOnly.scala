@@ -5,11 +5,14 @@
 package docs.akka.persistence.typed
 
 import scala.concurrent.duration._
+
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsFailed
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.EventSeq
 //#behavior
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.PersistenceId
@@ -229,5 +232,24 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, _: DeleteSnapshotsFailed) => // react to failure
     }
   //#retentionCriteriaWithSignals
+
+  //#event-wrapper
+  case class Wrapper[T](event: T)
+  class WrapperEventAdapter[T] extends EventAdapter[T, Wrapper[T]] {
+    override def toJournal(e: T): Wrapper[T] = Wrapper(e)
+    override def fromJournal(p: Wrapper[T], manifest: String): EventSeq[T] = EventSeq.single(p.event)
+    override def manifest(event: T): String = ""
+  }
+  //#event-wrapper
+
+  //#install-event-adapter
+  val eventAdapterBehavior: Behavior[Command] =
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId("abc"),
+      emptyState = State(),
+      commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
+      .eventAdapter(new WrapperEventAdapter[Event])
+  //#install-event-adapter
 
 }

@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.function.Procedure;
+import akka.persistence.typed.EventSeq;
 import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
@@ -27,14 +28,14 @@ public class PersistentActorCompileOnlyTest {
 
     // #event-wrapper
     public static class Wrapper<T> {
-      private final T t;
+      private final T event;
 
-      public Wrapper(T t) {
-        this.t = t;
+      public Wrapper(T event) {
+        this.event = event;
       }
 
-      public T getT() {
-        return t;
+      public T getEvent() {
+        return event;
       }
     }
 
@@ -46,8 +47,14 @@ public class PersistentActorCompileOnlyTest {
       }
 
       @Override
-      public SimpleEvent fromJournal(Wrapper<SimpleEvent> simpleEventWrapper) {
-        return simpleEventWrapper.getT();
+      public String manifest(SimpleEvent event) {
+        return "";
+      }
+
+      @Override
+      public EventSeq<SimpleEvent> fromJournal(
+          Wrapper<SimpleEvent> simpleEventWrapper, String manifest) {
+        return EventSeq.single(simpleEventWrapper.getEvent());
       }
     }
     // #event-wrapper
