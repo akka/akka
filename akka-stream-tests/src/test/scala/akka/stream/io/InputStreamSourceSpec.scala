@@ -8,16 +8,22 @@ import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
 import akka.Done
-import akka.stream.impl.io.DownstreamFinishedException
-import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
+import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException, IOResult }
+import akka.stream.{
+  AbruptStageTerminationException,
+  ActorMaterializer,
+  ActorMaterializerSettings,
+  IOOperationIncompleteException,
+  IOResult
+}
 import akka.util.ByteString
 
 import scala.util.Success
+import scala.concurrent.duration._
 
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
@@ -55,7 +61,8 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .toMat(Sink.ignore)(Keep.left)
         .run
         .failed
-        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+        .futureValue
+        .getCause shouldEqual fail
     }
 
     "return failure if creation fails" in {
@@ -67,7 +74,8 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .toMat(Sink.ignore)(Keep.left)
         .run
         .failed
-        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+        .futureValue
+        .getCause shouldEqual fail
     }
 
     "handle failure on read" in assertAllStagesStopped {
@@ -77,19 +85,32 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .toMat(Sink.ignore)(Keep.left)
         .run
         .failed
-        .futureValue shouldEqual IOOperationIncompleteException(0, fail)
+        .futureValue
+        .getCause shouldEqual fail
     }
 
-    "fail materialized value if downstream doesn't read all of it" in {
-      StreamConverters
+    "include number of bytes when downstream doesn't read all of it" in {
+      val f = StreamConverters
         .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
         .take(1) // stream is not completely read
-        .log("cats")
         .toMat(Sink.ignore)(Keep.left)
         .run
-        .failed
         .futureValue
-        .getCause shouldEqual DownstreamFinishedException()
+
+      f.status shouldEqual Success(Done)
+      f.count shouldBe >=(1L)
+    }
+
+    "handle actor materializer shutdown" in {
+      val mat = ActorMaterializer()
+      val source = StreamConverters.fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
+      val pubSink = Sink.asPublisher[ByteString](false)
+      val (f, neverPub) = source.toMat(pubSink)(Keep.both).run()(mat)
+      val c = TestSubscriber.manualProbe[ByteString]()
+      neverPub.subscribe(c)
+      c.expectSubscription()
+      mat.shutdown()
+      f.failed.futureValue shouldBe an[AbruptStageTerminationException]
     }
 
     "emit as soon as read" in assertAllStagesStopped {

@@ -235,6 +235,9 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 
 ### Cluster sharding
 
+
+## Cluster Sharding
+
 #### waiting-for-state-timeout reduced to 2s
 
 This has been reduced to speed up ShardCoordinator initialization in smaller clusters.
@@ -266,6 +269,11 @@ and then it will behave as in Akka 2.5.x:
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
 
+### IOSources
+
+`[StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
+to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
+the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException]. 
 
 ### Akka now uses Fork Join Pool from JDK
 
