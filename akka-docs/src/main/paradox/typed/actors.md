@@ -366,7 +366,7 @@ screen name.
 To implement the logic where we spawn a child for the session we need access 
 to the `ActorContext`. This is injected as a constructor parameter upon creation 
 of the behavior, note how we combine the `AbstractBehavior` with  `Behaviors.setup`
-to do this in the `behavior` method. 
+to do this in the @scala[`apply`]@java[`create`] factory method.
 
 The behavior that we declare here can handle both subtypes of `RoomCommand`.
 `GetSession` has been explained already and the

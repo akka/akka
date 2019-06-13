@@ -104,7 +104,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     stashInternal(cmd)
-    Behavior.same
+    Behaviors.same
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {

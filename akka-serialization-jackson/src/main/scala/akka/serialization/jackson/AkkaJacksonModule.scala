@@ -12,3 +12,9 @@ class AkkaJacksonModule extends JacksonModule with ActorRefModule with AddressMo
 }
 
 object AkkaJacksonModule extends AkkaJacksonModule
+
+class AkkaTypedJacksonModule extends JacksonModule with TypedActorRefModule {
+  override def getModuleName = "AkkaTypedJacksonModule"
+}
+
+object AkkaTypedJacksonModule extends AkkaJacksonModule

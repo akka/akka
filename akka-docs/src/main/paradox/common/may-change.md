@@ -29,6 +29,5 @@ that the module or API wasn't useful.
 These are the current complete modules marked as **may change**:
 
 * @ref:[Multi Node Testing](../multi-node-testing.md)
-* @ref:[Akka Typed](../typed/actors.md)
 
 

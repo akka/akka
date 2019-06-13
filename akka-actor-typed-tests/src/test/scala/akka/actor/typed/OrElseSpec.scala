@@ -171,7 +171,7 @@ class OrElseSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       spawn(Behaviors.setup[String] { ctx =>
         // arrange with a deathwatch triggering
-        ctx.watch(ctx.spawnAnonymous(Behavior.stopped[String]))
+        ctx.watch(ctx.spawnAnonymous(Behaviors.stopped[String]))
 
         Behaviors
           .receiveSignal[String] {
@@ -195,18 +195,18 @@ class OrElseSpec extends ScalaTestWithActorTestKit("""
         EventFilter[DeathPactException](occurrences = 1).intercept {
           spawn(Behaviors.setup[String] { ctx =>
             // arrange with a deathwatch triggering
-            ctx.watch(ctx.spawnAnonymous(Behavior.stopped[String]))
+            ctx.watch(ctx.spawnAnonymous(Behaviors.stopped[String]))
 
             Behaviors
               .receiveSignal[String] {
                 case (_, Terminated(_)) =>
                   probe.ref ! "first handler saw it"
-                  Behavior.unhandled
+                  Behaviors.unhandled
               }
               .orElse(Behaviors.receiveSignal {
                 case (_, Terminated(_)) =>
                   probe.ref ! "second handler saw it"
-                  Behavior.unhandled
+                  Behaviors.unhandled
               })
           })
         }

@@ -180,7 +180,7 @@ class GraphMatValueSpec extends StreamSpec {
         ClosedShape
       })
 
-      val result = g.run()
+      g.run()
     }
 
     "ignore materialized values for a graph with no materialized values exposed, but keep side-effects" in {
@@ -199,7 +199,7 @@ class GraphMatValueSpec extends StreamSpec {
         ClosedShape
       })
 
-      var result = g.run()
+      g.run()
 
       expectMsg("side effect!")
 

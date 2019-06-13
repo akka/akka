@@ -104,7 +104,7 @@ class GraphPartialSpec extends StreamSpec {
     }
 
     "be able to expose the ports of imported graphs" in {
-      val p = GraphDSL.create(Flow[Int].map(_ + 1)) { implicit b => flow =>
+      val p = GraphDSL.create(Flow[Int].map(_ + 1)) { _ => flow =>
         FlowShape(flow.in, flow.out)
       }
 

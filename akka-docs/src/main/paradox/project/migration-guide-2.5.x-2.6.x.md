@@ -171,7 +171,7 @@ For TCP:
 
 #### Remaining with Classic remoting (not recommended)
 
-Classic remoting is deprecated but can be used in `2.6.` Any configuration under `akka.remote` that is
+Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
@@ -220,7 +220,7 @@ This reinstantiates the behavior from previous Akka versions but also removes th
 user and Akka internals. So, use at your own risk!
 
 Several `use-dispatcher` configuration settings that previously accepted an empty value to fall back to the default
-dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty 
+dispatcher has now gotten an explicit value of `akka.actor.internal-dispatcher` and no longer accept an empty
 string as value. If such an empty value is used in your `application.conf` the same result is achieved by simply removing
 that entry completely and having the default apply.
 
@@ -272,12 +272,21 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
 keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
+### Logging of dead letters
+
+When the number of dead letters have reached configured `akka.log-dead-letters` value it didn't log
+more dead letters in Akka 2.5. In Akka 2.6 the count is reset after configured `akka.log-dead-letters-suspend-duration`.
+
+`akka.log-dead-letters-during-shutdown` default configuration changed from `on` to `off`.
+
 ## Source incompatibilities
 
 ### StreamRefs
 
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
+
+`StreamRefs` was marked as [may change](../common/may-change.md).
 
 ## Akka Typed
 
@@ -304,7 +313,8 @@ it will work properly again.
 
 ### Akka Typed API changes
 
-Akka Typed APIs are still marked as [may change](../common/may-change.md) and therefore its API can still change without deprecation period. The following is a list of API changes since the latest release: 
+Akka Typed APIs are still marked as [may change](../common/may-change.md) and a few changes were
+made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
@@ -315,8 +325,14 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and th
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
+* The `request` parameter in Distributed Data commands was removed, in favor of using `ask`.
+* Removed `Behavior.same`, `Behavior.unhandled`, `Behavior.stopped`, `Behavior.empty`, and `Behavior.ignore` since
+  they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
+* `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
+   to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
 
-### Akka Typed Stream API changes
+
+#### Akka Typed Stream API changes
 
 * `ActorSoruce.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
 

@@ -16,9 +16,11 @@ import akka.stream.impl.fusing.GraphInterpreter.{
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
+import com.github.ghik.silencer.silent
 
 import scala.collection.{ Map => SMap }
 
+@silent
 object GraphInterpreterSpecKit {
 
   /**
@@ -135,7 +137,6 @@ object GraphInterpreterSpecKit {
    * Create interpreter connections for all the given `connectedPorts`.
    */
   private[stream] def createConnections(
-      logics: Seq[GraphStageLogic],
       connectedPorts: Seq[(Outlet[_], Inlet[_])],
       inOwners: SMap[Inlet[_], GraphStageLogic],
       outOwners: SMap[Outlet[_], GraphStageLogic]): Array[Connection] = {
@@ -246,7 +247,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
       def init(): Unit = {
         val (logics, inOwners, outOwners) = createLogics(operators.toArray, upstreams.toArray, downstreams.toArray)
-        val conns = createConnections(logics, connectedPorts, inOwners, outOwners)
+        val conns = createConnections(connectedPorts, inOwners, outOwners)
 
         manualInit(logics.toArray, conns)
       }
@@ -415,14 +416,14 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       if (!chasing) {
         val logics = Array[GraphStageLogic](out, in)
         setLogicIds(logics)
-        val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics)
+        val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics.toIndexedSeq)
         (logics, connections)
       } else {
         val propagateStage = new EventPropagateStage
         setPortIds(propagateStage)
         val logics = Array[GraphStageLogic](out, propagateStage.createLogic(Attributes.none), in)
         setLogicIds(logics)
-        val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics)
+        val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics.toIndexedSeq)
         (logics, connections)
       }
 
@@ -520,7 +521,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       val supervision = ActorAttributes.supervisionStrategy(decider)
       val attributes = Array.fill[Attributes](ops.length)(supervision)
       val (logics, _, _) = createLogics(ops.toArray, Array(upstream), Array(downstream), attributes)
-      val connections = createLinearFlowConnections(logics)
+      val connections = createLinearFlowConnections(logics.toIndexedSeq)
       manualInit(logics, connections)
     }
 

@@ -43,7 +43,7 @@ class LazySinkSpec extends StreamSpec {
       sourceSub.expectRequest(1)
       sourceSub.sendNext(0)
       sourceSub.expectRequest(1)
-      sourceProbe.expectNoMsg(200.millis)
+      sourceProbe.expectNoMessage(200.millis)
       a[TimeoutException] shouldBe thrownBy { Await.result(futureProbe, remainingOrDefault) }
 
       p.success(TestSink.probe[Int])

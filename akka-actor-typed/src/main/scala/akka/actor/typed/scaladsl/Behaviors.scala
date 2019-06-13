@@ -27,7 +27,7 @@ object Behaviors {
    * processed by the started behavior.
    */
   def setup[T](factory: ActorContext[T] => Behavior[T]): Behavior[T] =
-    Behavior.DeferredBehavior(factory)
+    BehaviorImpl.DeferredBehavior(factory)
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -35,7 +35,7 @@ object Behaviors {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def same[T]: Behavior[T] = Behavior.same
+  def same[T]: Behavior[T] = BehaviorImpl.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -43,7 +43,7 @@ object Behaviors {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def unhandled[T]: Behavior[T] = Behavior.unhandled
+  def unhandled[T]: Behavior[T] = BehaviorImpl.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -54,7 +54,7 @@ object Behaviors {
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T]: Behavior[T] = Behavior.stopped
+  def stopped[T]: Behavior[T] = BehaviorImpl.stopped
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -65,17 +65,17 @@ object Behaviors {
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: () => Unit): Behavior[T] = Behavior.stopped(postStop)
+  def stopped[T](postStop: () => Unit): Behavior[T] = BehaviorImpl.stopped(postStop)
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def empty[T]: Behavior[T] = Behavior.empty
+  def empty[T]: Behavior[T] = BehaviorImpl.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def ignore[T]: Behavior[T] = Behavior.ignore
+  def ignore[T]: Behavior[T] = BehaviorImpl.ignore
 
   /**
    * Construct an actor behavior that can react to both incoming messages and

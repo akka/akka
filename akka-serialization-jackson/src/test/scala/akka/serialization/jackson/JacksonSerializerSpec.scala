@@ -23,6 +23,7 @@ import akka.actor.BootstrapSetup
 import akka.actor.ExtendedActorSystem
 import akka.actor.Status
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.TestActors
@@ -30,6 +31,7 @@ import akka.testkit.TestKit
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -47,12 +49,22 @@ object ScalaTestMessages {
   trait TestMessage
 
   final case class SimpleCommand(name: String) extends TestMessage
+  // interesting that this doesn't have the same problem with single constructor param
+  // as JavaTestMessages.SimpleCommand
+  final class SimpleCommandNotCaseClass(val name: String) extends TestMessage {
+    override def equals(obj: Any): Boolean = obj match {
+      case other: SimpleCommandNotCaseClass => other.name == name
+    }
+    override def hashCode(): Int = name.hashCode
+  }
   final case class SimpleCommand2(name: String, name2: String) extends TestMessage
   final case class OptionCommand(maybe: Option[String]) extends TestMessage
   final case class BooleanCommand(published: Boolean) extends TestMessage
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration) extends TestMessage
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand]) extends TestMessage
   final case class CommandWithActorRef(name: String, replyTo: ActorRef) extends TestMessage
+  final case class CommandWithTypedActorRef(name: String, replyTo: akka.actor.typed.ActorRef[String])
+      extends TestMessage
   final case class CommandWithAddress(name: String, address: Address) extends TestMessage
 
   final case class Event1(field1: String) extends TestMessage
@@ -69,6 +81,8 @@ object ScalaTestMessages {
   final case class Elephant(name: String, age: Int) extends Animal
   // not defined in JsonSubTypes
   final case class Cockroach(name: String) extends Animal
+
+  final case class OldCommandNotInBindings(name: String)
 
 }
 
@@ -87,23 +101,9 @@ class ScalaTestEventMigration extends JacksonMigration {
   }
 }
 
-class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor") {
-  "JacksonCborSerializer" must {
-    "have right configured identifier" in {
-      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
-        JacksonCborSerializer.Identifier)
-    }
-  }
-}
+class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
 
-class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile") {
-  "JacksonSmileSerializer" must {
-    "have right configured identifier" in {
-      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
-        JacksonSmileSerializer.Identifier)
-    }
-  }
-}
+class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile")
 
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
@@ -122,55 +122,92 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
   }
 
   "JacksonJsonSerializer" must {
-    "have right configured identifier" in {
-      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
-        JacksonJsonSerializer.Identifier)
-    }
 
     "support lookup of same ObjectMapper via JacksonObjectMapperProvider" in {
       val mapper = serialization()
         .serializerFor(classOf[JavaTestMessages.TestMessage])
         .asInstanceOf[JacksonSerializer]
         .objectMapper
-      JacksonObjectMapperProvider(system)
-        .getOrCreate(JacksonJsonSerializer.Identifier, None) shouldBe theSameInstanceAs(mapper)
+      JacksonObjectMapperProvider(system).getOrCreate("jackson-json", None) shouldBe theSameInstanceAs(mapper)
 
-      val anotherIdentifier = 999
-      val mapper2 = JacksonObjectMapperProvider(system).getOrCreate(anotherIdentifier, None)
+      val anotherBindingName = "jackson-json2"
+      val mapper2 = JacksonObjectMapperProvider(system).getOrCreate(anotherBindingName, None)
       mapper2 should not be theSameInstanceAs(mapper)
-      JacksonObjectMapperProvider(system).getOrCreate(anotherIdentifier, None) shouldBe theSameInstanceAs(mapper2)
+      JacksonObjectMapperProvider(system).getOrCreate(anotherBindingName, None) shouldBe theSameInstanceAs(mapper2)
+    }
+
+    "support several different configurations" in {
+      withSystem("""
+        akka.actor.serializers.jackson-json2 = "akka.serialization.jackson.JacksonJsonSerializer"
+        akka.actor.serialization-identifiers.jackson-json2 = 999
+        akka.serialization.jackson.jackson-json2 {
+          deserialization-features.FAIL_ON_UNKNOWN_PROPERTIES = on
+        }
+        """) { sys =>
+        val objMapper2 = serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
+        objMapper2.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
+        val objMapper3 = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
+        objMapper3.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
+
+        // default has different config, different instance but same JacksonJsonSerializer class
+        val objMapper =
+          serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
+        objMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(false)
+      }
     }
   }
 
   "JacksonJsonSerializer with Java message classes" must {
     import JavaTestMessages._
 
-    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
-    "by default serialize dates and durations as numeric timestamps" in {
+    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS = off
+    "by default serialize dates and durations as text with ISO-8601 date format" in {
+      // Default format is defined in com.fasterxml.jackson.databind.util.StdDateFormat
+      // ISO-8601 yyyy-MM-dd'T'HH:mm:ss.SSSZ (rfc3339)
       val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
       val json = serializeToJsonString(msg)
-      val expected = """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}"""
+      val expected = """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}"""
       json should ===(expected)
+
+      // and full round trip
+      checkSerialization(msg)
+
+      // and it can still deserialize from numeric timestamps format
+      val serializer = serializerFor(msg)
+      val manifest = serializer.manifest(msg)
+      val serializerId = serializer.identifier
+      val deserializedFromTimestampsFormat = deserializeFromJsonString(
+        """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}""",
+        serializerId,
+        manifest)
+      deserializedFromTimestampsFormat should ===(msg)
     }
 
-    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
-    "be possible to serialize dates and durations as text with default date format " in {
+    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS = on
+    "be possible to serialize dates and durations as numeric timestamps" in {
       withSystem("""
         akka.serialization.jackson.serialization-features {
-          WRITE_DATES_AS_TIMESTAMPS = off
+          WRITE_DATES_AS_TIMESTAMPS = on
         }
         """) { sys =>
         val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
         val json = serializeToJsonString(msg, sys)
-        // Default format is defined in com.fasterxml.jackson.databind.util.StdDateFormat
-        // ISO-8601 yyyy-MM-dd'T'HH:mm:ss.SSSZ
-        // FIXME is this the same as rfc3339, or do we need something else to support interop with the format used by Play JSON?
-        // FIXME should we make this the default rather than numberic timestamps?
-        val expected = """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}"""
+        val expected = """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}"""
         json should ===(expected)
 
         // and full round trip
-        checkSerialization(msg)
+        checkSerialization(msg, sys)
+
+        // and it can still deserialize from ISO format
+        val serializer = serializerFor(msg, sys)
+        val manifest = serializer.manifest(msg)
+        val serializerId = serializer.identifier
+        val deserializedFromIsoFormat = deserializeFromJsonString(
+          """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}""",
+          serializerId,
+          manifest,
+          sys)
+        deserializedFromIsoFormat should ===(msg)
       }
     }
 
@@ -192,33 +229,33 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
     "be possible to create custom ObjectMapper" in {
       val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
-        override def newObjectMapper(serializerIdentifier: Int, jsonFactory: Option[JsonFactory]): ObjectMapper = {
-          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+        override def newObjectMapper(bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper = {
+          if (bindingName == "jackson-json") {
             val mapper = new ObjectMapper(jsonFactory.orNull)
             // some customer configuration of the mapper
             mapper.setLocale(Locale.US)
             mapper
           } else
-            super.newObjectMapper(serializerIdentifier, jsonFactory)
+            super.newObjectMapper(bindingName, jsonFactory)
         }
 
         override def overrideConfiguredSerializationFeatures(
-            serializerIdentifier: Int,
+            bindingName: String,
             configuredFeatures: immutable.Seq[(SerializationFeature, Boolean)])
             : immutable.Seq[(SerializationFeature, Boolean)] = {
-          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+          if (bindingName == "jackson-json") {
             configuredFeatures :+ (SerializationFeature.INDENT_OUTPUT -> true)
           } else
-            super.overrideConfiguredSerializationFeatures(serializerIdentifier, configuredFeatures)
+            super.overrideConfiguredSerializationFeatures(bindingName, configuredFeatures)
         }
 
         override def overrideConfiguredModules(
-            serializerIdentifier: Int,
+            bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
-          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+          if (bindingName == "jackson-json") {
             configuredModules.filterNot(_.isInstanceOf[AfterburnerModule])
           } else
-            super.overrideConfiguredModules(serializerIdentifier, configuredModules)
+            super.overrideConfiguredModules(bindingName, configuredModules)
       }
 
       val config = system.settings.config
@@ -237,6 +274,17 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
              |}""".stripMargin
         json should ===(expected)
       }
+    }
+
+    "allow deserialization of classes in configured whitelist-class-prefix" in {
+      val json = """{"name":"abc"}"""
+
+      val old = SimpleCommand("abc")
+      val serializer = serializerFor(old)
+
+      val expected = OldCommandNotInBindings("abc")
+
+      deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
     }
   }
 }
@@ -259,6 +307,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         "akka.serialization.jackson.JavaTestMessages$$TestMessage" = $serializerName
       }
     }
+    akka.serialization.jackson.whitelist-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
     """)))
     with WordSpecLike
     with Matchers
@@ -320,8 +369,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   def serializerFor(obj: AnyRef, sys: ActorSystem = system): JacksonSerializer =
     serialization(sys).findSerializerFor(obj) match {
-      case serializer: JacksonSerializer ⇒ serializer
-      case s ⇒
+      case serializer: JacksonSerializer => serializer
+      case s =>
         throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
     }
 
@@ -365,6 +414,12 @@ abstract class JacksonSerializerSpec(serializerName: String)
       checkSerialization(new CommandWithActorRef("echo", echo))
     }
 
+    "serialize with typed.ActorRef" in {
+      import akka.actor.typed.scaladsl.adapter._
+      val ref = system.spawnAnonymous(Behaviors.empty[String])
+      checkSerialization(new CommandWithTypedActorRef("echo", ref))
+    }
+
     "serialize with Address" in {
       val address = Address("akka", "sys", "localhost", 2552)
       checkSerialization(new CommandWithAddress("echo", address))
@@ -403,6 +458,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
     "serialize simple message with one constructor parameter" in {
       checkSerialization(SimpleCommand("Bob"))
+      checkSerialization(new SimpleCommandNotCaseClass("Bob"))
     }
 
     "serialize simple message with two constructor parameters" in {
@@ -448,6 +504,12 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize with ActorRef" in {
       val echo = system.actorOf(TestActors.echoActorProps)
       checkSerialization(CommandWithActorRef("echo", echo))
+    }
+
+    "serialize with typed.ActorRef" in {
+      import akka.actor.typed.scaladsl.adapter._
+      val ref = system.spawnAnonymous(Behaviors.empty[String])
+      checkSerialization(CommandWithTypedActorRef("echo", ref))
     }
 
     "serialize with Address" in {

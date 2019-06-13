@@ -148,7 +148,7 @@ trait TcpHelper { this: TestKitBase =>
       connectionActor ! PingClose(connectionProbe.ref)
       connectionProbe.fishForMessage(max) {
         case c: ConnectionClosed if p(c) => true
-        case other                       => false
+        case _                           => false
       }
     }
 

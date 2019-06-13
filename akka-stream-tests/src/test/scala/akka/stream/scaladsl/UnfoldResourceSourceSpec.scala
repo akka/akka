@@ -10,7 +10,6 @@ import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.impl.StreamSupervisor.Children
@@ -67,7 +66,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectNext() should ===(chunks.next())
       sub.request(1)
       c.expectNext() should ===(chunks.next())
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
 
       while (chunks.hasNext) {
         sub.request(1)
@@ -112,7 +111,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       p.subscribe(c)
       val sub = c.expectSubscription()
 
-      (0 to 19).foreach(i => {
+      (0 to 19).foreach(_ => {
         sub.request(1)
         c.expectNext() should ===(manyLinesArray(0))
       })
@@ -140,7 +139,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       p.subscribe(c)
       val sub = c.expectSubscription()
 
-      (0 to 121).foreach(i => {
+      (0 to 121).foreach(_ => {
         sub.request(1)
         c.expectNext().utf8String should ===(nextChunk().toString)
       })

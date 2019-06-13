@@ -21,9 +21,9 @@ class FlowFromFutureSpec extends StreamSpec {
   "A Flow based on a Future" must {
     "produce one element from already successful Future" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
-      val p = Source.fromFuture(Future.successful(1)).runWith(Sink.asPublisher(true)).subscribe(c)
+      Source.fromFuture(Future.successful(1)).runWith(Sink.asPublisher(true)).subscribe(c)
       val sub = c.expectSubscription()
-      c.expectNoMsg(100.millis)
+      c.expectNoMessage(100.millis)
       sub.request(1)
       c.expectNext(1)
       c.expectComplete()
@@ -42,11 +42,11 @@ class FlowFromFutureSpec extends StreamSpec {
       Source.fromFuture(promise.future).runWith(Sink.asPublisher(true)).subscribe(c)
       val sub = c.expectSubscription()
       sub.request(1)
-      c.expectNoMsg(100.millis)
+      c.expectNoMessage(100.millis)
       promise.success(1)
       c.expectNext(1)
       c.expectComplete()
-      c.expectNoMsg(100.millis)
+      c.expectNoMessage(100.millis)
     }
 
     "produce one element when Future is completed but not before request" in {
@@ -55,7 +55,7 @@ class FlowFromFutureSpec extends StreamSpec {
       Source.fromFuture(promise.future).runWith(Sink.asPublisher(true)).subscribe(c)
       val sub = c.expectSubscription()
       promise.success(1)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       sub.request(1)
       c.expectNext(1)
       c.expectComplete()
@@ -89,9 +89,9 @@ class FlowFromFutureSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(1)
       sub.cancel()
-      c.expectNoMsg(500.millis)
+      c.expectNoMessage(500.millis)
       promise.success(1)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
   }
 }
