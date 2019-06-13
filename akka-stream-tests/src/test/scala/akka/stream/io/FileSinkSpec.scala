@@ -145,7 +145,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .runWith(FileIO.toPath(f, options = Set(WRITE, CREATE), startPosition = startPosition))
 
         val completion1 = write()
-        val result1 = Await.result(completion1, 3.seconds)
+        Await.result(completion1, 3.seconds)
 
         val completion2 = write(testLinesPart2, startPosition)
         val result2 = Await.result(completion2, 3.seconds)

@@ -185,7 +185,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
 
       sub.request(demandAllButOneChunks)
-      for (i <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
+      for (_ <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
       c.expectNoMessage(300.millis)
 
       sub.request(1)

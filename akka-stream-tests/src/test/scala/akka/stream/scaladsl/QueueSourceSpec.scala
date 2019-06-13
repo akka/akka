@@ -305,7 +305,7 @@ class QueueSourceSpec extends StreamSpec {
       }
 
       "some elements not yet delivered to stage" in {
-        val (queue, probe) =
+        val (queue, _) =
           Source.queue[Unit](10, OverflowStrategy.fail).toMat(TestSink.probe)(Keep.both).run()
         intercept[StreamDetachedException] {
           Await.result((1 to 15).map(_ => queue.offer(())).last, 3.seconds)

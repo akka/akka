@@ -16,7 +16,6 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
-import akka.actor.ActorSystem
 import akka.pattern.{ after => later }
 import akka.stream._
 import akka.stream.TLSProtocol._
@@ -60,8 +59,7 @@ object TlsSpec {
    * independent of the traffic going through. The purpose is to include the last seen
    * element in the exception message to help in figuring out what went wrong.
    */
-  class Timeout(duration: FiniteDuration)(implicit system: ActorSystem)
-      extends GraphStage[FlowShape[ByteString, ByteString]] {
+  class Timeout(duration: FiniteDuration) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     private val in = Inlet[ByteString]("in")
     private val out = Outlet[ByteString]("out")
@@ -200,7 +198,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             case SessionBytes(s, b) if s != session =>
               setSession(s)
               SendBytes(ByteString("NEWSESSION") ++ b)
-            case SessionBytes(s, b) => SendBytes(b)
+            case SessionBytes(_, b) => SendBytes(b)
           }
         }
       def leftClosing: TLSClosing = IgnoreComplete
@@ -329,7 +327,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         case SessionBytes(s, b) if s != session =>
           setSession(s)
           SendBytes(ByteString(s.getCipherSuite) ++ b)
-        case SessionBytes(s, b) => SendBytes(b)
+        case SessionBytes(_, b) => SendBytes(b)
       }
     }
 

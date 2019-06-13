@@ -85,7 +85,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
     "completed out:Source => complete in:Sink" in {
       val probe = TestProbe()
-      val f = Flow.fromSinkAndSourceCoupledMat(Sink.onComplete(d => probe.ref ! "done"), Source.empty)(Keep.none) // completes right away, should complete the sink as well
+      val f = Flow.fromSinkAndSourceCoupledMat(Sink.onComplete(_ => probe.ref ! "done"), Source.empty)(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
 
@@ -159,11 +159,11 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     }
     val assertCompleteAndCancel = () => {
       probe.expectMsgPF() {
-        case Success(v)        => // good
+        case Success(_)        => // good
         case "cancel-received" => // good
       }
       probe.expectMsgPF() {
-        case Success(v)        => // good
+        case Success(_)        => // good
         case "cancel-received" => // good
       }
     }
@@ -174,11 +174,11 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     }
     val assertErrorAndCancel = () => {
       probe.expectMsgPF() {
-        case Failure(ex)       => // good
+        case Failure(_)        => // good
         case "cancel-received" => // good
       }
       probe.expectMsgPF() {
-        case Failure(ex)       => // good
+        case Failure(_)        => // good
         case "cancel-received" => // good
       }
     }

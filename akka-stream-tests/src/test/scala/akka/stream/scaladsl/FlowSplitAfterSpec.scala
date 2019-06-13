@@ -42,7 +42,7 @@ class FlowSplitAfterSpec extends StreamSpec {
 
     def request(demand: Int): Unit = subscription.request(demand)
     def expectNext(elem: Int): Unit = probe.expectNext(elem)
-    def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
+    def expectNoMessage(max: FiniteDuration): Unit = probe.expectNoMessage(max)
     def expectComplete(): Unit = probe.expectComplete()
     def expectError(e: Throwable) = probe.expectError(e)
     def cancel(): Unit = subscription.cancel()
@@ -77,7 +77,7 @@ class FlowSplitAfterSpec extends StreamSpec {
     "work in the happy case" in assertAllStagesStopped {
       new SubstreamsSupport(3, elementCount = 5) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.request(2)
         s1.expectNext(1)
@@ -102,7 +102,7 @@ class FlowSplitAfterSpec extends StreamSpec {
     "work when first element is split-by" in assertAllStagesStopped {
       new SubstreamsSupport(splitAfter = 1, elementCount = 3) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.request(3)
         s1.expectNext(1)
@@ -272,7 +272,7 @@ class FlowSplitAfterSpec extends StreamSpec {
     "work when last element is split-by" in assertAllStagesStopped {
       new SubstreamsSupport(splitAfter = 3, elementCount = 3) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.request(3)
         s1.expectNext(1)

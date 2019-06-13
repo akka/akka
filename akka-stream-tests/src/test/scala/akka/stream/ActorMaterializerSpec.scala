@@ -11,11 +11,13 @@ import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
 
+@silent // tests deprecated APIs
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
@@ -79,7 +81,7 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
       p.expectMsg("hello")
       a ! PoisonPill
-      val Failure(ex) = p.expectMsgType[Try[Done]]
+      val Failure(_) = p.expectMsgType[Try[Done]]
     }
 
     "handle properly broken Props" in {

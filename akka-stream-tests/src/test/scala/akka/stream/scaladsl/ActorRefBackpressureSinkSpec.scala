@@ -98,7 +98,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(initMessage)
 
       publisher.sendNext(1)
-      expectNoMsg(200.millis)
+      expectNoMessage(200.millis)
       fw ! TriggerAckMessage
       expectMsg(1)
 
@@ -150,7 +150,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(1)
 
       fw ! TriggerAckMessage
-      expectNoMsg(200.millis) // Ack received but buffer empty
+      expectNoMessage(200.millis) // Ack received but buffer empty
 
       publisher.sendNext(2) // Buffer this value
       fw ! TriggerAckMessage
@@ -177,7 +177,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
         .actorRefWithAck[String](probe.ref, initMessage, ackMessage, completeMessage)
         .withAttributes(inputBuffer(1, 1))
 
-      val maybe = Source.maybe[String].to(sink).run()(mat)
+      Source.maybe[String].to(sink).run()(mat)
 
       probe.expectMsg(initMessage)
       mat.shutdown()
