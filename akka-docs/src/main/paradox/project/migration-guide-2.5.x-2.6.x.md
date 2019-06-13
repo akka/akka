@@ -181,10 +181,22 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 The following documents configuration changes and behavior changes where no action is required. In some cases the old
 behavior can be restored via configuration.
 
-### Remoting dependencies have been made optional
+### Remoting
+
+#### Remoting dependencies have been made optional
 
 Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
 to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
+
+#### Remote watch and deployment have been disabled if Cluster is not used
+
+By default, these remoting features are disabled when not using akka Cluster, and behaviors
+will fall back to local. To optionally enable them without Cluster, if you understand
+the consequences, set `akka.remote.use-unsafe-remote-features-without-cluster = on`.
+
+When used without Cluster
+* An initial warning is logged on startup of `RemoteActorRefProvider`
+* A warning will be logged on remote watch attempts, which you can suppress by setting `akka.remote.warn-unsafe-watch-without-cluster = off`.
 
 ## Schedule periodically with fixed-delay vs. fixed-rate
 
