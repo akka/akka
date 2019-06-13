@@ -65,7 +65,8 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       config: Config,
       dynamicAccess: DynamicAccess,
       log: Option[LoggingAdapter]) = {
-    import scala.collection.JavaConverters._
+
+    import akka.util.ccompat.JavaConverters._
 
     val mapper = objectMapperFactory.newObjectMapper(bindingName, jsonFactory)
 
@@ -146,7 +147,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
   }
 
   private def features(config: Config, section: String): immutable.Seq[(String, Boolean)] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val cfg = config.getConfig(section)
     cfg.root.keySet().asScala.map(key => key -> cfg.getBoolean(key)).toList
   }

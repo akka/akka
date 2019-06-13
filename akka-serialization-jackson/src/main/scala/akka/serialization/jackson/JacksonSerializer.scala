@@ -150,7 +150,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     }
   }
   private val migrations: Map[String, JacksonMigration] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
       case (k, v) =>
         val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
@@ -159,7 +159,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
   }
   private val blacklist: GadgetClassBlacklist = new GadgetClassBlacklist
   private val whitelistClassPrefix = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     conf.getStringList("whitelist-class-prefix").asScala.toVector
   }
 

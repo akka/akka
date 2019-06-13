@@ -247,8 +247,6 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
   .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
   .settings(OSGi.jackson)
   .settings(javacOptions += "-parameters")
-  // FIXME #27019 remove when Jackson ScalaModule has been released for Scala 2.13
-  .settings(crossScalaVersions -= Dependencies.scala213Version)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
 
