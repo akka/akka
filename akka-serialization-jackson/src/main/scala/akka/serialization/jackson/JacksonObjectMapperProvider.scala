@@ -65,7 +65,8 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       config: Config,
       dynamicAccess: DynamicAccess,
       log: Option[LoggingAdapter]) = {
-    import scala.collection.JavaConverters._
+
+    import akka.util.ccompat.JavaConverters._
 
     val mapper = objectMapperFactory.newObjectMapper(bindingName, jsonFactory)
 
@@ -96,11 +97,11 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       if (configuredModules.contains("*"))
         ObjectMapper.findModules(dynamicAccess.classLoader).asScala
       else
-        configuredModules.flatMap { fqcn ⇒
+        configuredModules.flatMap { fqcn =>
           if (isModuleEnabled(fqcn, dynamicAccess)) {
             dynamicAccess.createInstanceFor[Module](fqcn, Nil) match {
-              case Success(m) ⇒ Some(m)
-              case Failure(e) ⇒
+              case Success(m) => Some(m)
+              case Failure(e) =>
                 log.foreach(
                   _.error(
                     e,
@@ -113,7 +114,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
             None
         }
 
-    val modules2 = modules1.map { module ⇒
+    val modules2 = modules1.map { module =>
       if (module.isInstanceOf[ParameterNamesModule])
         // ParameterNamesModule needs a special case for the constructor to ensure that single-parameter
         // constructors are handled the same way as constructors with multiple parameters.
@@ -146,7 +147,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
   }
 
   private def features(config: Config, section: String): immutable.Seq[(String, Boolean)] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val cfg = config.getConfig(section)
     cfg.root.keySet().asScala.map(key => key -> cfg.getBoolean(key)).toList
   }
