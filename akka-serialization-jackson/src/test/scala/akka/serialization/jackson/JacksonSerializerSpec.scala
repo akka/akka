@@ -103,8 +103,6 @@ class ScalaTestEventMigration extends JacksonMigration {
 
 class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
 
-class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile")
-
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
   def serializeToJsonString(obj: AnyRef, sys: ActorSystem = system): String = {

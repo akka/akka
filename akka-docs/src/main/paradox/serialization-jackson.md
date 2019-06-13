@@ -35,7 +35,7 @@ Java
 :  @@snip [MySerializable.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/MySerializable.java) { #marker-interface }
 
 Then you configure the class name of the marker @scala[trait]@java[interface] in `serialization-bindings` to
-one of the supported Jackson formats: `jackson-json`, `jackson-cbor` or `jackson-smile`
+one of the supported Jackson formats: `jackson-json` or `jackson-cbor`
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #serialization-bindings }
 
@@ -79,11 +79,8 @@ configuration as described above.
 
 * `jackson-json` - ordinary text based JSON
 * `jackson-cbor` - binary [CBOR data format](https://github.com/FasterXML/jackson-dataformats-binary/tree/master/cbor)
-* `jackson-smile` - binary [Smile data format](https://github.com/FasterXML/jackson-dataformats-binary/tree/master/smile)
 
-The binary formats are more compact and have slightly better better performance than the JSON format.
-
-TODO: It's undecided if we will support both CBOR or and Smile since the difference is small
+The binary format is more compact, with slightly better performance than the JSON format.
 
 ## Annotations
 

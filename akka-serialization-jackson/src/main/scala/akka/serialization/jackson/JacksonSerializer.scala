@@ -26,7 +26,6 @@ import akka.util.Helpers.toRootLowerCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
-import com.fasterxml.jackson.dataformat.smile.SmileFactory
 
 /**
  * INTERNAL API
@@ -97,17 +96,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 /**
  * INTERNAL API: only public by configuration
  *
- * Akka serializer for Jackson with Smile.
- */
-@InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem, bindingName: String)
-    extends JacksonSerializer(
-      system,
-      bindingName: String,
-      JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new SmileFactory)))
-
-/**
- * INTERNAL API: only public by configuration
- *
  * Akka serializer for Jackson with CBOR.
  */
 @InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem, bindingName: String)
@@ -115,9 +103,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
       system,
       bindingName,
       JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new CBORFactory)))
-
-// FIXME Look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
-//       Make dependencies optional/provided.
 
 /**
  * INTERNAL API: Base class for Jackson serializers.

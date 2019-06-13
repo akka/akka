@@ -123,7 +123,7 @@ class JacksonSerializationBench {
   var system: ActorSystem = _
   var serialization: Serialization = _
 
-  @Param(Array("jackson-json", "jackson-cbor", "jackson-smile")) // "java"
+  @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 
   @Setup(Level.Trial)
