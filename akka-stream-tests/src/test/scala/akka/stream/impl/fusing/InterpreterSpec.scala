@@ -10,6 +10,7 @@ import akka.testkit.EventFilter
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.util.ConstantFun
+import com.github.ghik.silencer.silent
 
 class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
@@ -533,6 +534,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
+  @silent
   private[akka] final case class Doubler[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -564,6 +566,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
+  @silent
   private[akka] final case class KeepGoing[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =

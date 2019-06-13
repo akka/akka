@@ -147,7 +147,7 @@ class ByteStringParserSpec extends StreamSpec {
       out.request(1L)
       in.expectRequest()
       in.sendNext(ByteString("aha!"))
-      out.expectNoMsg(100.millis)
+      out.expectNoMessage(100.millis)
       // no new pull
       in.sendComplete()
       out.expectError() shouldBe an[IllegalStateException]

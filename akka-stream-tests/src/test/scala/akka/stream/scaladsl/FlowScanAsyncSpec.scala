@@ -226,10 +226,9 @@ class FlowScanAsyncSpec extends StreamSpec {
     def whenEventualFuture(
         promises: immutable.Seq[Promise[Int]],
         zero: Int,
-        decider: Supervision.Decider = Supervision.stoppingDecider)
-        : (TestPublisher.Probe[Int], TestSubscriber.Probe[Int]) = {
+        decider: Supervision.Decider): (TestPublisher.Probe[Int], TestSubscriber.Probe[Int]) = {
       require(promises.nonEmpty, "must be at least one promise")
-      val promiseScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) =>
+      val promiseScanFlow = Flow[Int].scanAsync(zero) { (_: Int, next: Int) =>
         promises(next).future
       }
 

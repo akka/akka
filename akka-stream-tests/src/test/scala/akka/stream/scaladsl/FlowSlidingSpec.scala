@@ -10,7 +10,9 @@ import akka.stream.testkit._
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import akka.pattern.pipe
+import com.github.ghik.silencer.silent
 
+@silent
 class FlowSlidingSpec extends StreamSpec with GeneratorDrivenPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)

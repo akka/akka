@@ -31,8 +31,6 @@ class FlowWatchSpec extends StreamSpec {
 
   "A Flow with watch" must {
 
-    implicit val timeout = akka.util.Timeout(10.seconds)
-
     val replyOnInts =
       system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "replyOnInts")
 
@@ -40,8 +38,7 @@ class FlowWatchSpec extends StreamSpec {
 
     "pass through elements while actor is alive" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 3).watch(replyOnInts).runWith(Sink.fromSubscriber(c))
+      Source(1 to 3).watch(replyOnInts).runWith(Sink.fromSubscriber(c))
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)

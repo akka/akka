@@ -42,7 +42,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       // Constructing an assembly by hand and resolving ambiguities
       val (logics, _, _) = GraphInterpreterSpecKit.createLogics(Array(identity), Array(source), Array(sink))
-      val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics)
+      val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics.toIndexedSeq)
 
       manualInit(logics, connections)
 
