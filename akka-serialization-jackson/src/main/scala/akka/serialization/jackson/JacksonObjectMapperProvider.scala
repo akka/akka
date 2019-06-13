@@ -96,11 +96,11 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       if (configuredModules.contains("*"))
         ObjectMapper.findModules(dynamicAccess.classLoader).asScala
       else
-        configuredModules.flatMap { fqcn ⇒
+        configuredModules.flatMap { fqcn =>
           if (isModuleEnabled(fqcn, dynamicAccess)) {
             dynamicAccess.createInstanceFor[Module](fqcn, Nil) match {
-              case Success(m) ⇒ Some(m)
-              case Failure(e) ⇒
+              case Success(m) => Some(m)
+              case Failure(e) =>
                 log.foreach(
                   _.error(
                     e,
@@ -113,7 +113,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
             None
         }
 
-    val modules2 = modules1.map { module ⇒
+    val modules2 = modules1.map { module =>
       if (module.isInstanceOf[ParameterNamesModule])
         // ParameterNamesModule needs a special case for the constructor to ensure that single-parameter
         // constructors are handled the same way as constructors with multiple parameters.

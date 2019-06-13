@@ -152,7 +152,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
   private val migrations: Map[String, JacksonMigration] = {
     import scala.collection.JavaConverters._
     conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
-      case (k, v) ⇒
+      case (k, v) =>
         val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
         k -> transformer
     }
@@ -177,8 +177,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     checkAllowedClassName(className)
     checkAllowedClass(obj.getClass)
     migrations.get(className) match {
-      case Some(transformer) ⇒ className + "#" + transformer.currentVersion
-      case None ⇒ className
+      case Some(transformer) => className + "#" + transformer.currentVersion
+      case None => className
     }
   }
 
@@ -221,20 +221,20 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     val migration = migrations.get(manifestClassName)
 
     val className = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion < transformer.currentVersion =>
         transformer.transformClassName(fromVersion, manifestClassName)
-      case Some(transformer) if fromVersion > transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion > transformer.currentVersion =>
         throw new IllegalStateException(
           s"Migration version ${transformer.currentVersion} is " +
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
-      case _ ⇒ manifestClassName
+      case _ => manifestClassName
     }
     if (className ne manifestClassName)
       checkAllowedClassName(className)
 
     val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
-      case Success(c) ⇒ c
-      case Failure(_) ⇒
+      case Success(c) => c
+      case Failure(_) =>
         throw new NotSerializableException(
           s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
     }
@@ -243,11 +243,11 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     val decompressBytes = if (compressed) decompress(bytes) else bytes
 
     val result = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion < transformer.currentVersion =>
         val jsonTree = objectMapper.readTree(decompressBytes)
         val newJsonTree = transformer.transform(fromVersion, jsonTree)
         objectMapper.treeToValue(newJsonTree, clazz)
-      case _ ⇒
+      case _ =>
         objectMapper.readValue(decompressBytes, clazz)
     }
 
@@ -386,8 +386,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 ⇒ ()
-      case n ⇒
+      case -1 => ()
+      case n =>
         out.write(buffer, 0, n)
         readChunk()
     }

@@ -157,10 +157,10 @@ class JacksonSerializationBench {
 
   private def serializeDeserialize[T <: AnyRef](msg: T): T = {
     serialization.findSerializerFor(msg) match {
-      case serializer: SerializerWithStringManifest ⇒
+      case serializer: SerializerWithStringManifest =>
         val blob = serializer.toBinary(msg)
         serializer.fromBinary(blob, serializer.manifest(msg)).asInstanceOf[T]
-      case serializer ⇒
+      case serializer =>
         val blob = serializer.toBinary(msg)
         if (serializer.includeManifest)
           serializer.fromBinary(blob, Some(msg.getClass)).asInstanceOf[T]

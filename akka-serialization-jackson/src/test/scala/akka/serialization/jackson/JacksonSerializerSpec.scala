@@ -369,8 +369,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   def serializerFor(obj: AnyRef, sys: ActorSystem = system): JacksonSerializer =
     serialization(sys).findSerializerFor(obj) match {
-      case serializer: JacksonSerializer ⇒ serializer
-      case s ⇒
+      case serializer: JacksonSerializer => serializer
+      case s =>
         throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
     }
 
