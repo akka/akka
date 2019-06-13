@@ -96,7 +96,6 @@ object Dependencies {
     val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
-    val jacksonAfterburner = "com.fasterxml.jackson.module" % "jackson-module-afterburner" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
 
     object Docs {
@@ -243,7 +242,6 @@ object Dependencies {
         jacksonJdk8,
         jacksonJsr310,
         jacksonParameterNames,
-        jacksonAfterburner,
         jacksonCbor,
         Test.junit,
         Test.scalatest.value)
