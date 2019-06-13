@@ -206,7 +206,7 @@ private[akka] final class ArterySettings private (config: Config) {
       val PublicationUnblockTimeout: FiniteDuration =
         config
           .getMillisDuration("publication-unblock-timeout")
-          .requiring(interval => interval > Duration.Zero, "publication-unblock-timeout must be more than zero")
+          .requiring(interval => interval > Duration.Zero, "publication-unblock-timeout must be greater than zero")
       val ImageLivenessTimeout: FiniteDuration = config
         .getMillisDuration("image-liveness-timeout")
         .requiring(interval => interval > Duration.Zero, "image-liveness-timeout must be more than zero")
