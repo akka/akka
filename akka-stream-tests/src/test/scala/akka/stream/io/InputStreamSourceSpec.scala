@@ -30,7 +30,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           override def read(): Int = 42
         })
 
-      Await.result(f.takeWithin(5.seconds).runForeach(it => ()), 10.seconds)
+      Await.result(f.takeWithin(5.seconds).runForeach(_ => ()), 10.seconds)
     }
 
     "read bytes from InputStream" in assertAllStagesStopped {

@@ -41,7 +41,6 @@ class ChasingEventsSpec extends AkkaSpec {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
-        private var first = true
         override def onPush(): Unit = {
           push(out, grab(in))
           complete(out)
@@ -59,7 +58,6 @@ class ChasingEventsSpec extends AkkaSpec {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
-        private var first = true
         override def onPush(): Unit = {
           push(out, grab(in))
           fail(out, TE("test failure"))

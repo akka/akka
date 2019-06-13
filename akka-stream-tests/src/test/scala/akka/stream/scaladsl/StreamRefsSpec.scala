@@ -28,7 +28,6 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
-    import context.dispatcher
     implicit val mat = ActorMaterializer()
 
     def receive = {
@@ -45,7 +44,7 @@ object StreamRefsSpec {
 
       case "give-infinite" =>
         val source: Source[String, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map("ping-" + _)
-        val (r: NotUsed, ref: SourceRef[String]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
+        val (_: NotUsed, ref: SourceRef[String]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
 
         sender() ! ref
 
@@ -399,7 +398,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val p2: TestPublisher.Probe[String] = TestSource.probe[String].to(sinkRef).run()
 
       p1.ensureSubscription()
-      val req = p1.expectRequest()
+      p1.expectRequest()
 
       // will be cancelled immediately, since it's 2nd:
       p2.ensureSubscription()

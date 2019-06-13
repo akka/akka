@@ -9,7 +9,6 @@ import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
 import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
 import akka.stream.IOResult._
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
@@ -186,7 +185,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
 
       sub.request(demandAllButOneChunks)
-      for (i <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
+      for (_ <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
       c.expectNoMessage(300.millis)
 
       sub.request(1)

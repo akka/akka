@@ -146,7 +146,7 @@ class FlowLogSpec extends StreamSpec("""
       "follow supervision strategy when exception thrown" in {
         val ex = new RuntimeException() with NoStackTrace
         val future = Source(1 to 5)
-          .log("hi", n => throw ex)
+          .log("hi", _ => throw ex)
           .withAttributes(supervisionStrategy(resumingDecider))
           .runWith(Sink.fold(0)(_ + _))
         Await.result(future, 500.millis) shouldEqual 0

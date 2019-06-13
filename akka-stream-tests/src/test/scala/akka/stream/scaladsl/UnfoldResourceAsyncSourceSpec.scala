@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.Utils._
@@ -82,7 +81,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       probe.request(1)
       resource.created.futureValue
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage(200.millis)
       createPromise.success(Done)
 
       values.foreach { n =>
@@ -253,7 +252,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       Source
         .unfoldResourceAsync[Int, Iterator[Int]](
           () => Future.successful(List(1, 2, 3).iterator),
-          reader => throw TE("read-error"),
+          _ => throw TE("read-error"),
           _ => throw new TE("close-error"))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
@@ -267,7 +266,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       Source
         .unfoldResourceAsync[Int, Iterator[Int]](
           () => Future.successful(List(1, 2, 3).iterator),
-          reader => throw TE("read-error"),
+          _ => throw TE("read-error"),
           _ => Future.failed(new TE("close-error")))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
@@ -284,7 +283,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           () =>
             if (startCounter.incrementAndGet() < 2) Future.successful(List(1, 2, 3).iterator)
             else throw TE("start-error"),
-          reader => throw TE("read-error"),
+          _ => throw TE("read-error"),
           _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
@@ -301,7 +300,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           () =>
             if (startCounter.incrementAndGet() < 2) Future.successful(List(1, 2, 3).iterator)
             else Future.failed(TE("start-error")),
-          reader => throw TE("read-error"),
+          _ => throw TE("read-error"),
           _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
@@ -314,7 +313,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
-        val p = Source
+        Source
           .unfoldResourceAsync[String, Unit](
             () => Promise[Unit].future, // never complete
             _ => ???,

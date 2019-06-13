@@ -9,8 +9,6 @@ import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Sour
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.StreamSpec
 
-import scala.concurrent.duration._
-
 class MaterializerStateSpec extends StreamSpec {
 
   "The MaterializerSnapshotting" must {

@@ -25,7 +25,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-bench-jmh",
     "akka-bench-jmh-typed",
     "akka-persistence-tck",
-    "akka-stream-tests",
     "akka-stream-tests-tck")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
