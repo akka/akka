@@ -80,10 +80,10 @@ private[akka] class ClusterActorRefProvider(
           log.warning(
             "Remote deploy of [{}] outside this cluster is not allowed, falling back to local.",
             remoteAddress)
-          // `super.local` is private, this creates a LARP if systemService=true
-          super.actorOf(system, props, supervisor, path, systemService = true, deploy, lookupDeploy, async)
+          local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
         }
-      case _ => ref
+      case _ =>
+        ref
     }
   }
 }

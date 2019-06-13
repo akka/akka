@@ -47,6 +47,9 @@ class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends Mu
   commonConfig(debugConfig(on = false).withFallback(baseConfig))
 
   deployOnAll(s"""
+      /sampleActor {
+        remote = "@second@"
+      }
       /service-hello {
         router = round-robin-pool
         nr-of-instances = $workerInstances
@@ -106,6 +109,13 @@ abstract class RemotingFeaturesSafeSpec
         rar.isWatchIntercepted(watchee = rar, watcher = watcher) shouldBe false
         rar.isWatchIntercepted(watchee = watchee, watcher = watcher) shouldBe false
         enterBarrier("watch-not-intercepted")
+      }
+    }
+
+    "creation a remote actor from deployment config when remote features are disabled" in {
+      runOn(first) {
+        val sampleActor = system.actorOf(Props(new ProbeActor(probe.ref)), "sampleActor")
+        sampleActor.path.address shouldEqual node(second).address
       }
     }
   }
@@ -192,7 +202,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
 
   protected val probe = TestProbe()
 
-  lazy val provider: RemoteActorRefProvider = RARP(system).provider
+  protected val provider: RemoteActorRefProvider = RARP(system).provider
 
   protected def remoteActorRef(role: RoleName): RemoteActorRef = {
     val remotePath = node(role)
@@ -307,10 +317,9 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     }
   }
 
-  s"deploy routers with expected behavior if 'akka.remote.use-unsafe-remote-features-without-cluster=$useUnsafe'" must {
+  s"Deploy routers with expected behavior if 'akka.remote.use-unsafe-remote-features-without-cluster=$useUnsafe'" must {
     "deployments" in {
       runOn(first, second, third, fourth) {
-
         val deployment1 = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(List("service-hello"))
         val deployment2 = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(List("service-hello2"))
         val deployment3 = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(List("service-hello3"))
@@ -324,7 +333,6 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
               paths.size == 3 && !paths.forall(AddressFromURIString(_).hasLocalScope)
             case _ =>
           }
-
         }
       }
     }

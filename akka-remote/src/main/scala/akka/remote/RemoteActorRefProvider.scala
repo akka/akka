@@ -172,7 +172,7 @@ private[akka] class RemoteActorRefProvider(
    */
   protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
-  private val local = new LocalActorRefProvider(
+  private[akka] val local = new LocalActorRefProvider(
     systemName,
     settings,
     eventStream,
@@ -328,7 +328,7 @@ private[akka] class RemoteActorRefProvider(
   }
 
   // Log on `init` similar to `warnIfDirectUse`.
-  def warnIfUseUnsafeWithoutCluster(): Unit =
+  private[akka] def warnIfUseUnsafeWithoutCluster(): Unit =
     if (!settings.HasCluster) {
       val msg =
         if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
@@ -342,13 +342,14 @@ private[akka] class RemoteActorRefProvider(
    * warnings set `akka.remote.warn-unsafe-watch-without-cluster` to `off`
    * or use Akka Cluster.
    */
-  private[akka] def warnIfUnsafeWithoutClusterAttempted(
-      watchee: ActorRef,
-      watcher: ActorRef,
-      action: Option[String]): Unit =
-    if (warnOnUnsafeRemote) {
-      log.warning("Dropped {}: remote watch disabled for [{} -> {}]", action.getOrElse(":x"), watcher, watchee)
-    }
+  private[akka] def warnIfUnsafeWithoutClusterAttempted(watchee: ActorRef, watcher: ActorRef, action: String): Unit = {
+    val message = s"Dropped remote $action: disabled for [$watcher -> $watchee]"
+
+    if (warnOnUnsafeRemote)
+      log.warning(message)
+    else
+      log.debug(message)
+  }
 
   def actorOf(
       system: ActorSystemImpl,
@@ -679,7 +680,7 @@ private[akka] class RemoteActorRef private[akka] (
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
     val intercept = provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
-    if (intercept) provider.warnIfUnsafeWithoutClusterAttempted(watchee, watcher, None)
+    if (intercept) provider.warnIfUnsafeWithoutClusterAttempted(watchee, watcher, "remote Watch/Unwatch")
     intercept
   }
 

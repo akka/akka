@@ -213,14 +213,14 @@ private[akka] class RemoteWatcher(
 
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
+    log.debug("Watching: [{} -> {}]", watcher, watchee)
     if (shouldWatch(watchee)) {
       watching.addBinding(watchee, watcher)
       watchNode(watchee)
 
       // add watch from self, this will actually send a Watch to the target when necessary
       context.watch(watchee)
-      log.debug("Watching: [{} -> {}]", watcher, watchee)
-    } else remoteProvider.warnIfUnsafeWithoutClusterAttempted(watcher, watchee, Some("Watch"))
+    } else remoteProvider.warnIfUnsafeWithoutClusterAttempted(watcher, watchee, "Watch")
   }
 
   def watchNode(watchee: InternalActorRef): Unit = {
@@ -249,7 +249,7 @@ private[akka] class RemoteWatcher(
           }
         case None =>
       }
-    } else remoteProvider.warnIfUnsafeWithoutClusterAttempted(watcher, watchee, Some("Unwatch"))
+    } else remoteProvider.warnIfUnsafeWithoutClusterAttempted(watcher, watchee, "Unwatch")
   }
 
   def removeWatchee(watchee: InternalActorRef): Unit = {

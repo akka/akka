@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity
-import akka.actor.ActorSystemImpl
 import akka.actor.Address
 import akka.actor.Identify
 import akka.actor.InternalActorRef
@@ -18,9 +17,12 @@ import akka.remote.RemoteWatcher.Stats
 import akka.remote.RemoteWatcher.UnwatchRemote
 import akka.remote.RemoteWatcher.WatchRemote
 import akka.remote.artery.ArteryMultiNodeSpec
+import akka.remote.artery.ArterySpecSupport
+import akka.remote.artery.RemoteDeploymentSpec
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
+import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -39,7 +41,8 @@ object RemoteFeaturesSpec {
        akka.log-dead-letters-during-shutdown = off
        """
 
-  def disabled: Config = ConfigFactory.parseString(common(useUnsafe = false))
+  def disabled: Config =
+    ConfigFactory.parseString(common(useUnsafe = false)).withFallback(ArterySpecSupport.defaultConfig)
   def enabled: Config = ConfigFactory.parseString(common(useUnsafe = true))
 
   class EmptyActor extends Actor {
@@ -51,8 +54,6 @@ abstract class RemoteFeaturesSpec(c: Config) extends ArteryMultiNodeSpec(c) with
   import RemoteFeaturesSpec._
 
   protected final val provider = RARP(system).provider
-
-  protected final val sys = system.asInstanceOf[ActorSystemImpl]
 
   protected final val useUnsafe: Boolean = provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
 
@@ -102,8 +103,21 @@ class RARPRemoteFeaturesEnabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpe
   }
 }
 
-// see the multi-jvm RemoteFeaturesSpec for deployer/router tests
+// see the multi-jvm RemoteFeaturesSpec for deployer-router tests
 class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.disabled) {
+
+  private val port = RARP(system).provider.getDefaultAddress.port.get
+
+  // super.newRemoteSystem adds the new system to shutdown hook
+  private val masterSystem = newRemoteSystem(
+    name = Some("Master" + system.name),
+    extraConfig = Some(s"""
+      akka.actor.deployment {
+        /blub.remote = "akka://${system.name}@localhost:$port"
+        "/parent*/*".remote = "akka://${system.name}@localhost:$port"
+      }
+    """))
+
   "Remote features without Cluster" must {
 
     "have the expected settings in a RARP" in {
@@ -119,19 +133,36 @@ class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.d
 
     "not deathwatch a remote actor" in {
       EventFilter
-        .warning(pattern = s"Dropped Watch: remote watch disabled for *", occurrences = 1)
+        .warning(pattern = s"Dropped remote Watch: disabled for *", occurrences = 1)
         .intercept(monitor ! WatchRemote(remoteWatchee, watcher))
       monitor ! Stats
       expectMsg(Stats.empty)
       expectNoMessage(100.millis)
 
       EventFilter
-        .warning(pattern = s"Dropped Unwatch: remote watch disabled for *", occurrences = 1)
+        .warning(pattern = s"Dropped remote Unwatch: disabled for *", occurrences = 1)
         .intercept(monitor ! UnwatchRemote(remoteWatchee, watcher))
 
       monitor ! Stats
       expectMsg(Stats.empty)
       expectNoMessage(100.millis)
+    }
+
+    "fall back to creating local deploy children and supervise children on local node" in {
+      val senderProbe = TestProbe()(masterSystem)
+      val r = masterSystem.actorOf(Props[RemoteDeploymentSpec.Echo1], "blub")
+      r.path.toString shouldEqual "akka://MasterRemoteFeaturesSpec/user/blub"
+
+      r.tell(42, senderProbe.ref)
+      senderProbe.expectMsg(42)
+      EventFilter[Exception]("crash", occurrences = 1).intercept {
+        r ! new Exception("crash")
+      }(masterSystem)
+      senderProbe.expectMsg("preRestart")
+      r.tell(43, senderProbe.ref)
+      senderProbe.expectMsg(43)
+      system.stop(r)
+      senderProbe.expectMsg("postStop")
     }
   }
 }
