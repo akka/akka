@@ -196,7 +196,7 @@ private[remote] class Association(
     updateOutboundCompression(c => c.clearCompression())
 
   private def updateOutboundCompression(action: OutboundCompressionAccess => Future[Done]): Future[Done] = {
-    import transport.system.dispatcher
+    implicit val ec = transport.system.dispatchers.internalDispatcher
     val c = outboundCompressionAccess
     if (c.isEmpty) Future.successful(Done)
     else if (c.size == 1) action(c.head)
@@ -276,7 +276,7 @@ private[remote] class Association(
         // clear outbound compression, it's safe to do that several times if someone else
         // completes handshake at same time, but it's important to clear it before
         // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
-        import transport.system.dispatcher
+        implicit val ec = transport.system.dispatchers.internalDispatcher
         clearOutboundCompression().map { _ =>
           current.uniqueRemoteAddressPromise.trySuccess(peer)
           current.uniqueRemoteAddressValue() match {
@@ -572,7 +572,7 @@ private[remote] class Association(
     stopQuarantinedTimer.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
       if (associationState.isQuarantined())
         abortQuarantined()
-    }(transport.system.dispatcher)))
+    }(transport.system.dispatchers.internalDispatcher)))
   }
 
   private def abortQuarantined(): Unit = {
@@ -600,45 +600,46 @@ private[remote] class Association(
       val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
       val QuarantineIdleOutboundAfter = settings.Advanced.QuarantineIdleOutboundAfter
       val interval = StopIdleOutboundAfter / 2
-      val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
-      val task = transport.system.scheduler.schedule(initialDelay, interval) {
-        val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
-        if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {
-          // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
-          // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
-          quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
-        } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
-          streamMatValues.get.foreach {
-            case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
-              if (isStreamActive(queueIndex) && stopping.isEmpty) {
-                if (queueIndex != ControlQueueIndex) {
-                  streamKillSwitch match {
-                    case OptionVal.Some(k) =>
-                      // for non-control streams we can stop the entire stream
-                      log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
-                      flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
-                      setStopReason(queueIndex, OutboundStreamStopIdleSignal)
-                      clearStreamKillSwitch(queueIndex, k)
-                      k.abort(OutboundStreamStopIdleSignal)
-                    case OptionVal.None => // already aborted
-                  }
+      val initialDelay = settings.Advanced.Tcp.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
+      val task =
+        transport.system.scheduler.scheduleWithFixedDelay(initialDelay, interval) { () =>
+          val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
+          if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {
+            // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
+            // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
+            quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
+          } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
+            streamMatValues.get.foreach {
+              case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
+                if (isStreamActive(queueIndex) && stopping.isEmpty) {
+                  if (queueIndex != ControlQueueIndex) {
+                    streamKillSwitch match {
+                      case OptionVal.Some(k) =>
+                        // for non-control streams we can stop the entire stream
+                        log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
+                        flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                        setStopReason(queueIndex, OutboundStreamStopIdleSignal)
+                        clearStreamKillSwitch(queueIndex, k)
+                        k.abort(OutboundStreamStopIdleSignal)
+                      case OptionVal.None => // already aborted
+                    }
 
-                } else {
-                  // only stop the transport parts of the stream because SystemMessageDelivery stage has
-                  // state (seqno) and system messages might be sent at the same time
-                  associationState.controlIdleKillSwitch match {
-                    case OptionVal.Some(killSwitch) =>
-                      log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
-                      flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
-                      setControlIdleKillSwitch(OptionVal.None)
-                      killSwitch.abort(OutboundStreamStopIdleSignal)
-                    case OptionVal.None => // already stopped
+                  } else {
+                    // only stop the transport parts of the stream because SystemMessageDelivery stage has
+                    // state (seqno) and system messages might be sent at the same time
+                    associationState.controlIdleKillSwitch match {
+                      case OptionVal.Some(killSwitch) =>
+                        log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
+                        flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                        setControlIdleKillSwitch(OptionVal.None)
+                        killSwitch.abort(OutboundStreamStopIdleSignal)
+                      case OptionVal.None => // already stopped
+                    }
                   }
                 }
-              }
+            }
           }
-        }
-      }(transport.system.dispatcher)
+        }(transport.system.dispatcher)
 
       if (!idleTimer.compareAndSet(None, Some(task))) {
         // another thread did same thing and won
@@ -803,7 +804,7 @@ private[remote] class Association(
 
       val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 
-      import transport.system.dispatcher
+      implicit val ec = transport.system.dispatchers.internalDispatcher
 
       // tear down all parts if one part fails or completes
       Future.firstCompletedOf(laneCompletedValues).failed.foreach { reason =>

@@ -12,6 +12,7 @@ import akka.event.Logging.Error
 import akka.pattern.pipe
 
 import scala.util.control.NonFatal
+import scala.util.Failure
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
 
 import scala.util.control.Exception.Catcher
@@ -22,6 +23,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
 import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.ArterySettings
+import akka.remote.artery.ArterySettings.AeronUpd
 import akka.util.{ ErrorMessages, OptionVal }
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
@@ -35,6 +37,7 @@ import com.github.ghik.silencer.silent
  */
 @InternalApi
 private[akka] object RemoteActorRefProvider {
+
   private final case class Internals(transport: RemoteTransport, remoteDaemon: InternalActorRef)
       extends NoSerializationVerificationNeeded
 
@@ -207,6 +210,12 @@ private[akka] class RemoteActorRefProvider(
       remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
       "remoting-terminator")
 
+    if (remoteSettings.Artery.Enabled && remoteSettings.Artery.Transport == AeronUpd) {
+      checkAeronOnClassPath(system)
+    } else if (!remoteSettings.Artery.Enabled) {
+      checkNettyOnClassPath(system)
+    } // artery tcp has no dependencies
+
     val internals = Internals(
       remoteDaemon = {
         val d = new RemoteSystemDaemon(
@@ -230,11 +239,45 @@ private[akka] class RemoteActorRefProvider(
 
     _log = Logging.withMarker(eventStream, getClass.getName)
 
+    showDirectUseWarningIfRequired()
+
     // this enables reception of remote requests
     transport.start()
 
     _remoteWatcher = createRemoteWatcher(system)
     remoteDeploymentWatcher = createRemoteDeploymentWatcher(system)
+  }
+
+  private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
+    // TODO change link to current once 2.6 is out
+    checkClassOrThrow(
+      system,
+      "org.jboss.netty.channel.Channel",
+      "Classic",
+      "Netty",
+      "https://doc.akka.io/docs/akka/2.6/remoting.html")
+  }
+
+  private def checkAeronOnClassPath(system: ActorSystemImpl): Unit = {
+    // TODO change link to current once 2.6 is out
+    val arteryLink = "https://doc.akka.io/docs/akka/2.6/remoting-artery.html"
+    // using classes that are used so will fail to compile if they get removed from Aeron
+    checkClassOrThrow(system, "io.aeron.driver.MediaDriver", "Artery", "Aeron driver", arteryLink)
+    checkClassOrThrow(system, "io.aeron.Aeron", "Artery", "Aeron client", arteryLink)
+  }
+
+  private def checkClassOrThrow(
+      system: ActorSystemImpl,
+      className: String,
+      remoting: String,
+      libraryMissing: String,
+      link: String): Unit = {
+    system.dynamicAccess.getClassFor(className) match {
+      case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
+        throw new IllegalStateException(
+          s"$remoting remoting is enabled but $libraryMissing is not on the classpath, it must be added explicitly. See $link")
+      case _ =>
+    }
   }
 
   protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
@@ -265,6 +308,15 @@ private[akka] class RemoteActorRefProvider(
       remoteSettings.configureDispatcher(Props[RemoteDeploymentWatcher]()),
       "remote-deployment-watcher")
 
+  /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
+  protected def showDirectUseWarningIfRequired() = {
+    if (remoteSettings.WarnAboutDirectUse) {
+      log.warning(
+        "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
+        "For most use cases, the 'cluster' abstraction on top of remoting is more suitable instead.")
+    }
+  }
+
   def actorOf(
       system: ActorSystemImpl,
       props: Props,
@@ -292,11 +344,11 @@ private[akka] class RemoteActorRefProvider(
        *
        * Example:
        *
-       * akka.tcp://sys@home:1234/remote/akka/sys@remote:6667/remote/akka/sys@other:3333/user/a/b/c
+       * akka://sys@home:1234/remote/akka/sys@remote:6667/remote/akka/sys@other:3333/user/a/b/c
        *
-       * means that the logical parent originates from “akka.tcp://sys@other:3333” with
-       * one child (may be “a” or “b”) being deployed on “akka.tcp://sys@remote:6667” and
-       * finally either “b” or “c” being created on “akka.tcp://sys@home:1234”, where
+       * means that the logical parent originates from “akka://sys@other:3333” with
+       * one child (may be “a” or “b”) being deployed on “akka://sys@remote:6667” and
+       * finally either “b” or “c” being created on “akka://sys@home:1234”, where
        * this whole thing actually resides. Thus, the logical path is
        * “/user/a/b/c” and the physical path contains all remote placement
        * information.
@@ -363,52 +415,6 @@ private[akka] class RemoteActorRefProvider(
           local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  override private[akka] def actorFor(path: ActorPath): InternalActorRef = {
-    if (hasAddress(path.address)) actorFor(rootGuardian, path.elements)
-    else
-      try {
-        new RemoteActorRef(
-          transport,
-          transport.localAddressForRemote(path.address),
-          path,
-          Nobody,
-          props = None,
-          deploy = None)
-      } catch {
-        case NonFatal(e) =>
-          log.error(e, "Error while looking up address [{}]", path.address)
-          new EmptyLocalActorRef(this, path, eventStream)
-      }
-  }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  override private[akka] def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
-    case ActorPathExtractor(address, elems) =>
-      if (hasAddress(address)) actorFor(rootGuardian, elems)
-      else {
-        val rootPath = RootActorPath(address) / elems
-        try {
-          new RemoteActorRef(
-            transport,
-            transport.localAddressForRemote(address),
-            rootPath,
-            Nobody,
-            props = None,
-            deploy = None)
-        } catch {
-          case NonFatal(e) =>
-            log.error(e, "Error while looking up address [{}]", rootPath.address)
-            new EmptyLocalActorRef(this, rootPath, eventStream)
-        }
-      }
-    case _ => local.actorFor(ref, path)
-  }
-
-  @deprecated("use actorSelection instead of actorFor", "2.2")
-  override private[akka] def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
-    local.actorFor(ref, path)
 
   def rootGuardianAt(address: Address): ActorRef = {
     if (hasAddress(address)) rootGuardian
@@ -630,17 +636,11 @@ private[akka] class RemoteActorRef private[akka] (
   /**
    * Determine if a watch/unwatch message must be handled by the remoteWatcher actor, or sent to this remote ref
    */
-  def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) =
-    if (watchee.path.uid == akka.actor.ActorCell.undefinedUid) {
-      provider.log.debug(
-        "actorFor is deprecated, and watching a remote ActorRef acquired with actorFor is not reliable: [{}]",
-        watchee.path)
-      false // Not managed by the remote watcher, so not reliable to communication failure or remote system crash
-    } else {
-      // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
-      // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-      watcher != provider.remoteWatcher && watchee == this
-    }
+  def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef) = {
+    // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
+    // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
+    watcher != provider.remoteWatcher && watchee == this
+  }
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {

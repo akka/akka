@@ -6,8 +6,11 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
-import akka.actor.Scheduler
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.testkit.typed.scaladsl

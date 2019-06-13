@@ -37,20 +37,16 @@ object LocalActorRefProviderSpec {
 class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
   "An LocalActorRefProvider" must {
 
-    "find actor refs using actorFor" in {
-      val a = system.actorOf(Props(new Actor { def receive = { case _ => } }))
-      val b = system.actorFor(a.path)
-      a should ===(b)
-    }
-
-    "find child actor with URL encoded name using actorFor" in {
+    "find child actor with URL encoded name" in {
       val childName = "akka%3A%2F%2FClusterSystem%40127.0.0.1%3A2552"
       val a = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props.empty, name = childName)
         def receive = {
           case "lookup" =>
-            if (childName == child.path.name) sender() ! context.actorFor(childName)
-            else sender() ! s"$childName is not ${child.path.name}!"
+            if (childName == child.path.name) {
+              val resolved = system.asInstanceOf[ExtendedActorSystem].provider.resolveActorRef(child.path)
+              sender() ! resolved
+            } else sender() ! s"$childName is not ${child.path.name}!"
         }
       }))
       a.tell("lookup", testActor)
@@ -135,8 +131,9 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       for (i <- 0 until 100) {
         val address = "new-actor" + i
         implicit val timeout = Timeout(5 seconds)
-        val actors = for (_ <- 1 to 4)
-          yield Future(system.actorOf(Props(new Actor { def receive = { case _ => } }), address))
+        val actors =
+          for (_ <- 1 to 4)
+            yield Future(system.actorOf(Props(new Actor { def receive = { case _ => } }), address))
         val set = Set() ++ actors.map(a =>
             Await.ready(a, timeout.duration).value match {
               case Some(Success(_: ActorRef))                  => 1

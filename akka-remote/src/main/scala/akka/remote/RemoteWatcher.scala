@@ -9,9 +9,10 @@ import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-
 import scala.collection.mutable
 import scala.concurrent.duration._
+
+import akka.dispatch.Dispatchers
 import akka.remote.artery.ArteryTransport
 import com.github.ghik.silencer.silent
 
@@ -33,7 +34,7 @@ private[akka] object RemoteWatcher {
       failureDetector,
       heartbeatInterval,
       unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+      heartbeatExpectedResponseAfter).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
 
   final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
@@ -115,10 +116,12 @@ private[akka] class RemoteWatcher(
     }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
+  @silent
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
+  @silent
   val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet
@@ -126,9 +129,9 @@ private[akka] class RemoteWatcher(
   var unreachable: Set[Address] = Set.empty
   var addressUids: Map[Address, Long] = Map.empty
 
-  val heartbeatTask = scheduler.schedule(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
+  val heartbeatTask = scheduler.scheduleWithFixedDelay(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
   val failureDetectorReaperTask =
-    scheduler.schedule(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
+    scheduler.scheduleWithFixedDelay(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
 
   override def postStop(): Unit = {
     super.postStop()

@@ -211,6 +211,7 @@ to recover before the persistent actor is started.
 #### Supervision strategies
 
 There are two basic supervision strategies available for backoff:
+
 * 'On failure': The supervisor will terminate and then start the supervised actor if it crashes. If the supervised actor stops normally (e.g. through `context.stop`), the supervisor will be terminated and no further attempt to start the supervised actor will be done.
 * 'On stop': The supervisor will terminate and then start the supervised actor if it terminates in any way (consider this for `PersistentActor` since they stop on persistence failures instead of crashing)
 

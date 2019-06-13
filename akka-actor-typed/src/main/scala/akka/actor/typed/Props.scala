@@ -4,7 +4,6 @@
 
 package akka.actor.typed
 
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 
@@ -33,7 +32,6 @@ object Props {
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 abstract class Props private[akka] () extends Product with Serializable {
 
   /**

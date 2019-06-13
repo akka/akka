@@ -9,9 +9,11 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import org.reactivestreams.Publisher
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.testkit.EventFilter
+import akka.util.unused
 
 class GraphUnzipWithSpec extends StreamSpec {
 
@@ -26,13 +28,13 @@ class GraphUnzipWithSpec extends StreamSpec {
   type LeftOutput = Int
   type RightOutput = String
 
-  abstract class Fixture(b: GraphDSL.Builder[_]) {
+  abstract class Fixture(@unused b: GraphDSL.Builder[_]) {
     def in: Inlet[Int]
     def left: Outlet[LeftOutput]
     def right: Outlet[RightOutput]
   }
 
-  val f: (Int => (Int, String)) = b => (b + b, b + "+" + b)
+  val f: (Int => (Int, String)) = b => (b + b, s"$b + $b")
 
   def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
     val unzip = b.add(UnzipWith[Int, Int, String](f))
@@ -119,26 +121,26 @@ class GraphUnzipWithSpec extends StreamSpec {
 
       leftProbe.expectNext(2)
       leftProbe.expectNext(4)
-      leftProbe.expectNoMsg(100.millis)
+      leftProbe.expectNoMessage(100.millis)
 
-      rightProbe.expectNext("1+1")
-      rightProbe.expectNoMsg(100.millis)
+      rightProbe.expectNext("1 + 1")
+      rightProbe.expectNoMessage(100.millis)
 
       leftSubscription.request(1)
       rightSubscription.request(2)
 
       leftProbe.expectNext(6)
-      leftProbe.expectNoMsg(100.millis)
+      leftProbe.expectNoMessage(100.millis)
 
-      rightProbe.expectNext("2+2")
-      rightProbe.expectNext("3+3")
-      rightProbe.expectNoMsg(100.millis)
+      rightProbe.expectNext("2 + 2")
+      rightProbe.expectNext("3 + 3")
+      rightProbe.expectNoMessage(100.millis)
 
       leftSubscription.request(1)
       rightSubscription.request(1)
 
       leftProbe.expectNext(8)
-      rightProbe.expectNext("4+4")
+      rightProbe.expectNext("4 + 4")
 
       leftProbe.expectComplete()
       rightProbe.expectComplete()
@@ -146,50 +148,55 @@ class GraphUnzipWithSpec extends StreamSpec {
 
     "work in the sad case" in {
       val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
+      val mat = ActorMaterializer(settings)
 
-      val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
-      val rightProbe = TestSubscriber.manualProbe[RightOutput]()
+      try {
+        val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
+        val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      RunnableGraph
-        .fromGraph(GraphDSL.create() { implicit b =>
-          val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) => (1 / b, 1 + "/" + b)))
+        RunnableGraph
+          .fromGraph(GraphDSL.create() { implicit b =>
+            val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) => (1 / b, s"1 / $b")))
 
-          Source(-2 to 2) ~> unzip.in
+            Source(-2 to 2) ~> unzip.in
 
-          unzip.out0 ~> Sink.fromSubscriber(leftProbe)
-          unzip.out1 ~> Sink.fromSubscriber(rightProbe)
+            unzip.out0 ~> Sink.fromSubscriber(leftProbe)
+            unzip.out1 ~> Sink.fromSubscriber(rightProbe)
 
-          ClosedShape
-        })
-        .run()
+            ClosedShape
+          })
+          .run()(mat)
 
-      val leftSubscription = leftProbe.expectSubscription()
-      val rightSubscription = rightProbe.expectSubscription()
+        val leftSubscription = leftProbe.expectSubscription()
+        val rightSubscription = rightProbe.expectSubscription()
 
-      def requestFromBoth(): Unit = {
-        leftSubscription.request(1)
-        rightSubscription.request(1)
-      }
+        def requestFromBoth(): Unit = {
+          leftSubscription.request(1)
+          rightSubscription.request(1)
+        }
 
-      requestFromBoth()
-      leftProbe.expectNext(1 / -2)
-      rightProbe.expectNext("1/-2")
-
-      requestFromBoth()
-      leftProbe.expectNext(1 / -1)
-      rightProbe.expectNext("1/-1")
-
-      EventFilter[ArithmeticException](occurrences = 1).intercept {
         requestFromBoth()
-      }
+        leftProbe.expectNext(1 / -2)
+        rightProbe.expectNext("1 / -2")
 
-      leftProbe.expectError() match {
-        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
-      }
-      rightProbe.expectError()
+        requestFromBoth()
+        leftProbe.expectNext(1 / -1)
+        rightProbe.expectNext("1 / -1")
 
-      leftProbe.expectNoMsg(100.millis)
-      rightProbe.expectNoMsg(100.millis)
+        EventFilter[ArithmeticException](occurrences = 1).intercept {
+          requestFromBoth()
+        }
+
+        leftProbe.expectError() match {
+          case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
+        }
+        rightProbe.expectError()
+
+        leftProbe.expectNoMessage(100.millis)
+        rightProbe.expectNoMessage(100.millis)
+      } finally {
+        mat.shutdown()
+      }
     }
 
     "unzipWith expanded Person.unapply (3 outputs)" in {

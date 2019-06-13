@@ -22,14 +22,14 @@ object DnsDiscoverySpec {
      //#configure-dns
      akka {
        discovery {
-        method = akka-dns
+         method = akka-dns
        }
      }
      //#configure-dns
      akka {
        loglevel = DEBUG
      }
-      akka.io.dns.async-dns.nameservers = ["localhost:${DnsDiscoverySpec.dockerDnsServerPort}"]
+     akka.io.dns.async-dns.nameservers = ["localhost:${DnsDiscoverySpec.dockerDnsServerPort}"]
     """)
 
   lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()

@@ -4,7 +4,7 @@
 
 package akka.io.dns
 
-import collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.testkit.AkkaSpec
 import com.spotify.docker.client.DefaultDockerClient
 import com.spotify.docker.client.DockerClient.{ ListContainersParam, LogsParam }

@@ -197,7 +197,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** stopWith sets this state while waiting for the SelectionHandler to execute the `cancelAndClose` thunk */
   def unregistering: Receive = {
-    case Unregistered => context.stop(self) // postStop will notify interested parties
+    case Unregistered                                                               => context.stop(self) // postStop will notify interested parties
+    case ChannelReadable | ChannelWritable | ChannelAcceptable | ChannelConnectable => // ignore, we are going away soon anyway
   }
 
   // AUXILIARIES and IMPLEMENTATION
@@ -387,7 +388,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     val interestedInClose: Set[ActorRef] =
       (if (writePending) Set(pendingWrite.commander) else Set.empty) ++
-      closedMessage.toSet[CloseInformation].flatMap(_.notificationsTo)
+      closedMessage.toList.flatMap(_.notificationsTo).toSet
 
     if (channel.isOpen) // if channel is still open here, we didn't go through stopWith => unexpected actor termination
       prepareAbort()

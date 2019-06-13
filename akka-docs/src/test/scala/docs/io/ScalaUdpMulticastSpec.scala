@@ -13,7 +13,7 @@ import akka.testkit.TestKit
 import org.scalatest.{ BeforeAndAfter, WordSpecLike }
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.SocketUtil
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 class ScalaUdpMulticastSpec
     extends TestKit(ActorSystem("ScalaUdpMulticastSpec"))

@@ -49,7 +49,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
   def target(monitor: ActorRef[Event], timer: TimerScheduler[Command], bumpCount: Int): Behavior[Command] = {
     def bump(): Behavior[Command] = {
       val nextCount = bumpCount + 1
-      timer.startPeriodicTimer("T", Tick(nextCount), interval)
+      timer.startTimerWithFixedDelay("T", Tick(nextCount), interval)
       target(monitor, timer, nextCount)
     }
 
@@ -107,7 +107,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "schedule repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -125,7 +125,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "replace timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -145,7 +145,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "cancel timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -170,7 +170,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val startCounter = new AtomicInteger(0)
       val behv = Behaviors
         .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startPeriodicTimer("T", Tick(startCounter.incrementAndGet()), interval)
+          timer.startTimerWithFixedDelay("T", Tick(startCounter.incrementAndGet()), interval)
           target(probe.ref, timer, 1)
         })
         .onFailure[Exception](SupervisorStrategy.restart)
@@ -197,7 +197,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors
         .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startPeriodicTimer("T", Tick(1), interval)
+          timer.startTimerWithFixedDelay("T", Tick(1), interval)
           target(probe.ref, timer, 1)
         })
         .onFailure[Exception](SupervisorStrategy.restart)
@@ -226,7 +226,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "cancel timers when stopped from exception" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
@@ -239,7 +239,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "cancel timers when stopped voluntarily" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
@@ -250,9 +250,9 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "allow for nested timers" in {
       val probe = TestProbe[String]()
       val ref = spawn(Behaviors.withTimers[String] { outerTimer =>
-        outerTimer.startPeriodicTimer("outer-key", "outer-message", 50.millis)
+        outerTimer.startTimerWithFixedDelay("outer-key", "outer-message", 50.millis)
         Behaviors.withTimers { innerTimer =>
-          innerTimer.startPeriodicTimer("inner-key", "inner-message", 50.millis)
+          innerTimer.startTimerWithFixedDelay("inner-key", "inner-message", 50.millis)
           Behaviors.receiveMessage { message =>
             if (message == "stop") Behaviors.stopped
             else {
@@ -277,7 +277,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "keep timers when behavior changes" in {
       val probe = TestProbe[String]()
       def newBehavior(n: Int): Behavior[String] = Behaviors.withTimers[String] { timers =>
-        timers.startPeriodicTimer(s"key${n}", s"message${n}", 50.milli)
+        timers.startTimerWithFixedDelay(s"key${n}", s"message${n}", 50.milli)
         Behaviors.receiveMessage { message =>
           if (message == "stop") Behaviors.stopped
           else {
@@ -303,7 +303,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Any]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>
-          timers.startPeriodicTimer("test", "test", 250.millis)
+          timers.startTimerWithFixedDelay("test", "test", 250.millis)
           Behaviors.receive { (context, message) =>
             Behaviors.stopped(() => context.log.info(s"stopping"))
           }

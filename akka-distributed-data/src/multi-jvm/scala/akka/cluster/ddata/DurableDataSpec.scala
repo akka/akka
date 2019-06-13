@@ -281,7 +281,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         // use the same port
         ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port = ${address.port.get}
-            akka.remote.netty.tcp.port = ${address.port.get}
+            akka.remote.classic.netty.tcp.port = ${address.port.get}
             """).withFallback(system.settings.config))
       try {
         Cluster(sys2).join(address)

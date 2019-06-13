@@ -135,7 +135,7 @@ case object NoScopeGiven extends NoScopeGiven {
  */
 private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   private val resizerEnabled: Config = ConfigFactory.parseString("resizer.enabled=on")
   private val deployments = new AtomicReference(WildcardIndex[Deploy]())
@@ -216,18 +216,18 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       val args2 = List(classOf[Config] -> deployment2, classOf[DynamicAccess] -> dynamicAccess)
       dynamicAccess
         .createInstanceFor[RouterConfig](fqn, args1)
-        .recover({
+        .recover {
           case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
           case e: NoSuchMethodException =>
             dynamicAccess
               .createInstanceFor[RouterConfig](fqn, args2)
-              .recover({
+              .recover {
                 case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
                 case _                                                      => throwCannotInstantiateRouter(args2, e)
-              })
+              }
               .get
           case e => throwCannotInstantiateRouter(args2, e)
-        })
+        }
         .get
     }
 

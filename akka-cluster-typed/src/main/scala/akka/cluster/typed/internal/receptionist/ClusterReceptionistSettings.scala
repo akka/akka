@@ -10,9 +10,10 @@ import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.Replicator.WriteConsistency
 import akka.util.Helpers.toRootLowerCase
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
+
+import akka.cluster.ddata.ReplicatorSettings
 
 /**
  * Internal API
@@ -33,10 +34,14 @@ private[akka] object ClusterReceptionistSettings {
         case _          => Replicator.WriteTo(config.getInt(key), writeTimeout)
       }
     }
+
+    val replicatorSettings = ReplicatorSettings(config.getConfig("distributed-data"))
+
     ClusterReceptionistSettings(
       writeConsistency,
       pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
-      config.getInt("distributed-key-count"))
+      config.getInt("distributed-key-count"),
+      replicatorSettings)
   }
 }
 
@@ -47,4 +52,5 @@ private[akka] object ClusterReceptionistSettings {
 private[akka] case class ClusterReceptionistSettings(
     writeConsistency: WriteConsistency,
     pruningInterval: FiniteDuration,
-    distributedKeyCount: Int)
+    distributedKeyCount: Int,
+    replicatorSettings: ReplicatorSettings)

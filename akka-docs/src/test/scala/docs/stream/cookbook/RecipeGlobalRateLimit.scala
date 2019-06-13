@@ -37,9 +37,9 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       private var waitQueue = immutable.Queue.empty[ActorRef]
       private var permitTokens = maxAvailableTokens
-      private val replenishTimer = system.scheduler.schedule(
+      private val replenishTimer = system.scheduler.scheduleWithFixedDelay(
         initialDelay = tokenRefreshPeriod,
-        interval = tokenRefreshPeriod,
+        delay = tokenRefreshPeriod,
         receiver = self,
         ReplenishTokens)
 

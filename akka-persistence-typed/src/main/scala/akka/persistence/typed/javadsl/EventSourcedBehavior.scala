@@ -10,16 +10,14 @@ import java.util.Optional
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
 import akka.util.unused
 
-@ApiMayChange
 abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val persistenceId: PersistenceId,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
@@ -160,7 +158,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: Event => Set[String] = { event =>
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val tags = tagsFor(event)
       if (tags.isEmpty) Set.empty
       else tags.asScala.toSet
@@ -205,7 +203,6 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
  * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
-@ApiMayChange
 abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
     persistenceId: PersistenceId,
     backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])

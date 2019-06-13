@@ -25,8 +25,12 @@ class RemoteRouterSpec extends AkkaSpec(s"""
     akka.actor.provider = remote
     akka.actor.allow-java-serialization = off
     akka.actor.serialize-messages = off
-    akka.remote.netty.tcp {
+    akka.remote.classic.netty.tcp {
       hostname = localhost
+      port = 0
+    }
+    akka.remote.artery.canonical {
+      hostname = "localhost"
       port = 0
     }
     akka.actor.deployment {

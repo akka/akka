@@ -4,19 +4,23 @@
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
-import com.typesafe.config._
 import scala.concurrent.{ Await, Future }
-import TypedActorRemoteDeploySpec._
-import akka.actor.{ ActorSystem, Deploy, TypedActor, TypedProps }
-import akka.util.IgnoreForScala212
 import scala.concurrent.duration._
+
+import akka.actor.{ ActorSystem, Deploy, TypedActor, TypedProps }
+import akka.testkit.AkkaSpec
+import akka.util.IgnoreForScala212
+import TypedActorRemoteDeploySpec._
+
+import com.typesafe.config._
+import com.github.ghik.silencer.silent
 
 object TypedActorRemoteDeploySpec {
   val conf = ConfigFactory.parseString("""
       akka.actor.provider = remote
-      akka.remote.netty.tcp.port = 0
-                                                            """)
+      akka.remote.classic.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
+      """)
 
   trait RemoteNameService {
     def getName: Future[String]
@@ -24,7 +28,10 @@ object TypedActorRemoteDeploySpec {
   }
 
   class RemoteNameServiceImpl extends RemoteNameService {
+    @silent
     def getName: Future[String] = Future.successful(TypedActor.context.system.name)
+
+    @silent
     def getNameSelfDeref: Future[String] = TypedActor.self[RemoteNameService].getName
   }
 
@@ -35,6 +42,7 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
   val remoteSystem = ActorSystem(remoteName, conf)
   val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
+  @silent
   def verify[T](f: RemoteNameService => Future[T], expected: T) = {
     val ts = TypedActor(system)
     val echoService: RemoteNameService =

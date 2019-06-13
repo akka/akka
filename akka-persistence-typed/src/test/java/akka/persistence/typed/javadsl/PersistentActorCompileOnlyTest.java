@@ -4,10 +4,10 @@
 
 package akka.persistence.typed.javadsl;
 
-import akka.actor.Scheduler;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.function.Procedure;
 import akka.persistence.typed.SnapshotSelectionCriteria;

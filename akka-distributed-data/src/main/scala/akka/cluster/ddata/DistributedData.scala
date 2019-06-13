@@ -11,6 +11,7 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.cluster.{ Cluster, UniqueAddress }
+import akka.event.Logging
 
 object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProvider {
   override def get(system: ActorSystem): DistributedData = super.get(system)
@@ -37,8 +38,15 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
    */
   val replicator: ActorRef =
     if (isTerminated) {
-      system.log.warning(
-        "Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
+      val log = Logging(system, getClass)
+      if (Cluster(system).isTerminated)
+        log.warning("Replicator points to dead letters, because Cluster is terminated.")
+      else
+        log.warning(
+          "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
+          "Node has roles [], Distributed Data is configured for roles []",
+          Cluster(system).selfRoles.mkString(","),
+          settings.roles.mkString(","))
       system.deadLetters
     } else {
       system.systemActorOf(Replicator.props(settings), ReplicatorSettings.name(system, None))

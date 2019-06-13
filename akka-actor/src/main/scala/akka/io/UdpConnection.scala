@@ -4,7 +4,7 @@
 
 package akka.io
 
-import java.net.InetSocketAddress
+import java.net.{ InetSocketAddress, PortUnreachableException }
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
@@ -120,7 +120,10 @@ private[io] class UdpConnection(
     }
     val buffer = bufferPool.acquire()
     try innerRead(BatchReceiveLimit, buffer)
-    finally {
+    catch {
+      case _: PortUnreachableException =>
+        if (TraceLogging) log.debug("Ignoring PortUnreachableException in doRead")
+    } finally {
       registration.enableInterest(OP_READ)
       bufferPool.release(buffer)
     }

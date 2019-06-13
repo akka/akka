@@ -50,11 +50,11 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
             return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
                 .onMessage(
                     Typed.Pong.class,
-                    (_ctx, message) -> {
+                    message -> {
                       Adapter.stop(context, second);
                       return same();
                     })
-                .onSignal(akka.actor.typed.Terminated.class, (_ctx, sig) -> stopped())
+                .onSignal(akka.actor.typed.Terminated.class, sig -> stopped())
                 .build();
           });
     }

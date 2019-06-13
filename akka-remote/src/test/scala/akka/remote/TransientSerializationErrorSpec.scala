@@ -113,7 +113,8 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config)
 
 class TransientSerializationErrorSpec
     extends AbstractTransientSerializationErrorSpec(ConfigFactory.parseString("""
-  akka.remote.netty.tcp {
+  akka.remote.artery.enabled = false 
+  akka.remote.classic.netty.tcp {
     hostname = localhost
     port = 0
  }

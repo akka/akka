@@ -2,7 +2,7 @@
 
 Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
 @@@ div { .group-scala }
 ## Signature

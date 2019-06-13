@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter
 
 object Helpers {
 
-  def toRootLowerCase(s: String) = s.toLowerCase(Locale.ROOT)
+  def toRootLowerCase(s: String): String = s.toLowerCase(Locale.ROOT)
 
   val isWindows: Boolean = toRootLowerCase(System.getProperty("os.name", "")).indexOf("win") >= 0
 
@@ -63,7 +63,26 @@ object Helpers {
     val minutes = timeOfDay / 60000L % 60
     val seconds = timeOfDay / 1000L % 60
     val ms = timeOfDay % 1000
-    f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC"
+
+    // Initial capacity is "23:59:59.999UTC".length = 15
+    val sb = new java.lang.StringBuilder(15)
+    if (hours < 10) sb.append(0)
+    sb.append(hours)
+    sb.append(':')
+
+    if (minutes < 10) sb.append(0)
+    sb.append(minutes)
+    sb.append(':')
+
+    if (seconds < 10) sb.append(0)
+    sb.append(seconds)
+    sb.append('.')
+
+    if (ms < 100) sb.append(0)
+    if (ms < 10) sb.append(0)
+    sb.append(ms)
+    sb.append("UTC")
+    sb.toString
   }
 
   private val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss.SSS")

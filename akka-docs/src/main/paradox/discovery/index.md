@@ -6,7 +6,7 @@ Akka Discovery provides an interface around various ways of locating services. T
 * DNS
 * Aggregate
 
-In addition [Akka Management](https://developer.lightbend.com/docs/akka-management/current/) contains methods such as:
+In addition [Akka Management](https://doc.akka.io/docs/akka-management/current/) contains methods such as:
 
 * Kubernetes API
 * AWS
@@ -59,7 +59,7 @@ Port can be used when a service opens multiple ports e.g. a HTTP port and an Akk
 
 DNS discovery maps `Lookup` queries as follows:
 
-* `serviceName`, `portName` and `protocol` set: SRV query in the form: `_port._protocol._name` Where the `_`s are added.
+* `serviceName`, `portName` and `protocol` set: SRV query in the form: `_port._protocol.name` Where the `_`s are added.
 * Any query  missing any of the fields is mapped to a A/AAAA query for the `serviceName`
 
 The mapping between Akka service discovery terminology and SRV terminology:
@@ -214,7 +214,7 @@ akka {
     config {
       services {
         service1 {
-          endpoints [
+          endpoints = [
             {
               host = "host1"
               port = 1233
@@ -236,10 +236,11 @@ The above configuration will result in `akka-dns` first being checked and if it 
 targets for the given service name then `config` is queried which i configured with one service called
 `service1` which two hosts `host1` and `host2`.
 
-## Migrating from Akka Management Discovery 
+## Migrating from Akka Management Discovery (before 1.0.0)
 
-Akka Discovery is not compatible with older versions of Akka Management Discovery. At least version `1.0.0` of
-any Akka Management module should be used if also using Akka Discovery.
+Akka Discovery started out as a submodule of Akka Management, before 1.0.0 of Akka Management. Akka Discovery is not compatible with those versions of Akka Management Discovery.
+
+At least version `1.0.0` of any Akka Management module should be used if also using Akka Discovery.
 
 Migration steps:
 

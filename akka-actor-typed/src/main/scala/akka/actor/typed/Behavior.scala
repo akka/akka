@@ -4,35 +4,18 @@
 
 package akka.actor.typed
 
-import scala.annotation.tailrec
-import akka.actor.InvalidMessageException
-import akka.actor.typed.internal.{ BehaviorImpl, InterceptorImpl }
-import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
-import akka.util.{ LineNumbers, OptionVal }
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
-import akka.actor.typed.scaladsl.{ ActorContext => SAC }
-
 import scala.annotation.switch
+import scala.annotation.tailrec
 
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object BehaviorTags {
-
-  // optimization - by keeping an identifier for each concrete subtype of behavior
-  // without gaps we can do table switches instead of instance of checks when interpreting
-  // note that these must be compile time constants for it to work
-  final val ExtensibleBehavior = 1
-  final val EmptyBehavior = 2
-  final val IgnoreBehavior = 3
-  final val UnhandledBehavior = 4
-  final val DeferredBehavior = 5
-  final val SameBehavior = 6
-  final val FailedBehavior = 7
-  final val StoppedBehavior = 8
-
-}
+import akka.actor.InvalidMessageException
+import akka.actor.typed.internal.BehaviorImpl
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
+import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
+import akka.actor.typed.internal.BehaviorTags
+import akka.actor.typed.internal.InterceptorImpl
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it
@@ -54,7 +37,6 @@ private[akka] object BehaviorTags {
  *
  * Not for user extension.
  */
-@ApiMayChange
 @DoNotInherit
 abstract class Behavior[T](private[akka] val _tag: Int) { behavior =>
 
@@ -84,7 +66,7 @@ abstract class Behavior[T](private[akka] val _tag: Int) { behavior =>
    *
    *  @param that the fallback `Behavior`
    **/
-  final def orElse(that: Behavior[T]): Behavior[T] = Behavior.DeferredBehavior[T] { ctx =>
+  final def orElse(that: Behavior[T]): Behavior[T] = BehaviorImpl.DeferredBehavior[T] { ctx =>
     new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
   }
 }
@@ -152,156 +134,10 @@ object Behavior {
      * }
      * }}}
      *
-     * Scheduled messages via [[akka.actor.typed.scaladsl.TimerScheduler]] can currently
-     * not be used together with `widen`, see issue #25318.
      */
     def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
       BehaviorImpl.widened(behavior, matcher)
 
-  }
-
-  /**
-   * Return this behavior from message processing in order to advise the
-   * system to reuse the previous behavior. This is provided in order to
-   * avoid the allocation overhead of recreating the current behavior where
-   * that is not necessary.
-   */
-  def same[T]: Behavior[T] = SameBehavior.unsafeCast[T]
-
-  /**
-   * Return this behavior from message processing in order to advise the
-   * system to reuse the previous behavior, including the hint that the
-   * message has not been handled. This hint may be used by composite
-   * behaviors that delegate (partial) handling to other behaviors.
-   */
-  def unhandled[T]: Behavior[T] = UnhandledBehavior.unsafeCast[T]
-
-  /**
-   * Return this behavior from message processing to signal that this actor
-   * shall terminate voluntarily. If this actor has created child actors then
-   * these will be stopped as part of the shutdown procedure.
-   *
-   * The PostStop signal that results from stopping this actor will be passed to the
-   * current behavior. All other messages and signals will effectively be
-   * ignored.
-   */
-  def stopped[T]: Behavior[T] = StoppedBehavior.unsafeCast[T]
-
-  /**
-   * Return this behavior from message processing to signal that this actor
-   * shall terminate voluntarily. If this actor has created child actors then
-   * these will be stopped as part of the shutdown procedure.
-   *
-   * The PostStop signal that results from stopping this actor will be passed to the
-   * given `postStop` behavior. All other messages and signals will effectively be
-   * ignored.
-   */
-  def stopped[T](postStop: () => Unit): Behavior[T] =
-    new StoppedBehavior[T](OptionVal.Some((_: TypedActorContext[T]) => postStop()))
-
-  /**
-   * A behavior that treats every incoming message as unhandled.
-   */
-  def empty[T]: Behavior[T] = EmptyBehavior.unsafeCast[T]
-
-  /**
-   * A behavior that ignores every incoming message and returns “same”.
-   */
-  def ignore[T]: Behavior[T] = IgnoreBehavior.unsafeCast[T]
-
-  /**
-   * INTERNAL API.
-   */
-  @InternalApi
-  private[akka] object EmptyBehavior extends Behavior[Any](BehaviorTags.EmptyBehavior) {
-    override def toString = "Empty"
-  }
-
-  /**
-   * INTERNAL API.
-   */
-  @InternalApi
-  private[akka] object IgnoreBehavior extends Behavior[Any](BehaviorTags.IgnoreBehavior) {
-    override def toString = "Ignore"
-  }
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[akka] object UnhandledBehavior extends Behavior[Nothing](BehaviorTags.UnhandledBehavior) {
-    override def toString = "Unhandled"
-  }
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[akka] def failed[T](cause: Throwable): Behavior[T] = new FailedBehavior(cause).asInstanceOf[Behavior[T]]
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] val unhandledSignal
-      : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
-    case (_, _) => UnhandledBehavior
-  }
-
-  /**
-   * INTERNAL API
-   * Not placed in internal.BehaviorImpl because Behavior is sealed.
-   */
-  @InternalApi
-  private[akka] abstract class DeferredBehavior[T] extends Behavior[T](BehaviorTags.DeferredBehavior) {
-    def apply(ctx: TypedActorContext[T]): Behavior[T]
-  }
-
-  /** INTERNAL API */
-  @InternalApi
-  private[akka] object DeferredBehavior {
-    def apply[T](factory: SAC[T] => Behavior[T]): Behavior[T] =
-      new DeferredBehavior[T] {
-        def apply(ctx: TypedActorContext[T]): Behavior[T] = factory(ctx.asScala)
-        override def toString: String = s"Deferred(${LineNumbers(factory)})"
-      }
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] object SameBehavior extends Behavior[Nothing](BehaviorTags.SameBehavior) {
-    override def toString = "Same"
-  }
-
-  private[akka] class FailedBehavior(val cause: Throwable) extends Behavior[Nothing](BehaviorTags.FailedBehavior) {
-    override def toString: String = s"Failed($cause)"
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] object StoppedBehavior extends StoppedBehavior[Nothing](OptionVal.None)
-
-  /**
-   * INTERNAL API: When the cell is stopping this behavior is used, so
-   * that PostStop can be sent to previous behavior from `finishTerminate`.
-   */
-  private[akka] sealed class StoppedBehavior[T](val postStop: OptionVal[TypedActorContext[T] => Unit])
-      extends Behavior[T](BehaviorTags.StoppedBehavior) {
-
-    def onPostStop(ctx: TypedActorContext[T]): Unit = {
-      postStop match {
-        case OptionVal.Some(callback) => callback(ctx)
-        case OptionVal.None           =>
-      }
-    }
-
-    override def toString = "Stopped" + {
-      postStop match {
-        case OptionVal.Some(callback) => s"(${LineNumbers(callback)})"
-        case _                        => "()"
-      }
-    }
   }
 
   /**
@@ -379,7 +215,7 @@ object Behavior {
   /**
    * Returns true if the given behavior is the special `unhandled` marker.
    */
-  def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq UnhandledBehavior
+  def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq BehaviorImpl.UnhandledBehavior
 
   /**
    * Returns true if the given behavior is the special `Unhandled` marker.
@@ -399,8 +235,8 @@ object Behavior {
     val result = interpret(behavior, ctx, signal, isSignal = true)
     // we need to throw here to allow supervision of deathpact exception
     signal match {
-      case Terminated(ref) if result == UnhandledBehavior => throw DeathPactException(ref)
-      case _                                              => result
+      case Terminated(ref) if result == BehaviorImpl.UnhandledBehavior => throw DeathPactException(ref)
+      case _                                                           => result
     }
   }
 
@@ -421,7 +257,7 @@ object Behavior {
       case BehaviorTags.DeferredBehavior =>
         throw new IllegalArgumentException(s"deferred [$behavior] should not be passed to interpreter")
       case BehaviorTags.IgnoreBehavior =>
-        Behavior.same[T]
+        BehaviorImpl.same[T]
       case BehaviorTags.StoppedBehavior =>
         val s = behavior.asInstanceOf[StoppedBehavior[T]]
         if (msg == PostStop) s.onPostStop(ctx)
@@ -429,7 +265,7 @@ object Behavior {
       case BehaviorTags.FailedBehavior =>
         behavior
       case BehaviorTags.EmptyBehavior =>
-        Behavior.unhandled[T]
+        BehaviorImpl.unhandled[T]
       case BehaviorTags.ExtensibleBehavior =>
         val ext = behavior.asInstanceOf[ExtensibleBehavior[T]]
         val possiblyDeferredResult =

@@ -4,14 +4,12 @@
 
 package akka.actor.typed.receptionist
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
+import akka.actor.typed.{ ActorRef, ActorSystem, Dispatchers, Extension, ExtensionId, ExtensionSetup, Props }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
-import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
 
-import akka.actor.typed.ExtensionSetup
-import akka.actor.typed.Props
+import akka.util.ccompat.JavaConverters._
+import scala.reflect.ClassTag
 import akka.annotation.InternalApi
 
 /**
@@ -29,15 +27,9 @@ abstract class Receptionist extends Extension {
  */
 @InternalApi private[akka] class ReceptionistImpl(system: ActorSystem[_]) extends Receptionist {
 
-  private def hasCluster: Boolean = {
-    // FIXME: replace with better indicator that cluster is enabled
-    val provider = system.settings.untypedSettings.ProviderClass
-    provider == "akka.cluster.ClusterActorRefProvider"
-  }
-
   override val ref: ActorRef[Receptionist.Command] = {
     val provider: ReceptionistBehaviorProvider =
-      if (hasCluster) {
+      if (system.settings.untypedSettings.ProviderSelectionType.hasCluster) {
         system.dynamicAccess
           .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
           .recover {
@@ -51,7 +43,10 @@ abstract class Receptionist extends Extension {
       } else LocalReceptionist
 
     import akka.actor.typed.scaladsl.adapter._
-    system.internalSystemActorOf(provider.behavior, "receptionist", Props.empty)
+    system.internalSystemActorOf(
+      provider.behavior,
+      provider.name,
+      Props.empty.withDispatcherFromConfig(Dispatchers.InternalDispatcherId))
   }
 }
 

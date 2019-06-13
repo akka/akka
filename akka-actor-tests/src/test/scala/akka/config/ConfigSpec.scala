@@ -65,8 +65,17 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         getInt("akka.log-dead-letters") should ===(10)
         settings.LogDeadLetters should ===(10)
 
-        getBoolean("akka.log-dead-letters-during-shutdown") should ===(true)
-        settings.LogDeadLettersDuringShutdown should ===(true)
+        getBoolean("akka.log-dead-letters-during-shutdown") should ===(false)
+        settings.LogDeadLettersDuringShutdown should ===(false)
+
+        getDuration("akka.log-dead-letters-suspend-duration", TimeUnit.MILLISECONDS) should ===(5 * 60 * 1000L)
+        settings.LogDeadLettersSuspendDuration should ===(5.minutes)
+
+        getBoolean("akka.coordinated-shutdown.terminate-actor-system") should ===(true)
+        settings.CoordinatedShutdownTerminateActorSystem should ===(true)
+
+        getBoolean("akka.coordinated-shutdown.run-by-actor-system-terminate") should ===(true)
+        settings.CoordinatedShutdownRunByActorSystemTerminate should ===(true)
       }
 
       {
@@ -94,7 +103,7 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           val pool = c.getConfig("fork-join-executor")
           pool.getInt("parallelism-min") should ===(8)
-          pool.getDouble("parallelism-factor") should ===(3.0)
+          pool.getDouble("parallelism-factor") should ===(1.0)
           pool.getInt("parallelism-max") should ===(64)
           pool.getString("task-peeking-mode") should be("FIFO")
         }

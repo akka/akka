@@ -7,7 +7,7 @@ package akka.stream.stage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.pattern.ask
 import akka.stream._
@@ -77,7 +77,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
  *
  * Extend this `AbstractGraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ * value you can instead extend [[GraphStage]] which materializes a [[NotUsed]] value.
  *
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
@@ -389,11 +389,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
-      throw new IllegalStateException("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
+      throw new IllegalStateException(
+        "not yet initialized: only setHandler is allowed in GraphStageLogic constructor. To access materializer use Source/Flow/Sink.setup factory")
     else _interpreter
 
   /**
    * The [[akka.stream.Materializer]] that has set this GraphStage in motion.
+   *
+   * Can not be used from a `GraphStage` constructor. Access to materializer is provided by the
+   * [[akka.stream.scaladsl.Source.setup]], [[akka.stream.scaladsl.Flow.setup]] and [[akka.stream.scaladsl.Sink.setup]]
+   * and their corresponding Java API factories.
    */
   protected def materializer: Materializer = interpreter.materializer
 
@@ -737,7 +742,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       andThen: Procedure[java.util.List[T]],
       onClose: Procedure[java.util.List[T]]): Unit = {
     //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     readN(in, n)(seq => andThen(seq.asJava), seq => onClose(seq.asJava))
   }
 
@@ -847,7 +852,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * signal.
    */
   final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T]): Unit = {
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     emitMultiple(out, elems.asScala, DoNothing)
   }
 
@@ -860,7 +865,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * signal.
    */
   final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T], andThen: Effect): Unit = {
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     emitMultiple(out, elems.asScala, andThen.apply _)
   }
 
@@ -1223,7 +1228,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @param receive callback that will be called upon receiving of a message by this special Actor
    * @return minimal actor with watch method
    */
-  @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
     getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
 
@@ -1255,7 +1259,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * Returns an empty string by default, which means that the name will a unique generated String (e.g. "$$a").
    */
-  @ApiMayChange
   protected def stageActorName: String = ""
 
   // Internal hooks to avoid reliance on user calling super in preStart
@@ -1559,38 +1562,6 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
   }
 
   /**
-   * Schedule timer to call [[#onTimer]] periodically with the given interval after the specified
-   * initial delay.
-   * Any existing timer with the same key will automatically be canceled before
-   * adding the new timer.
-   */
-  final protected def schedulePeriodicallyWithInitialDelay(
-      timerKey: Any,
-      initialDelay: FiniteDuration,
-      interval: FiniteDuration): Unit = {
-    cancelTimer(timerKey)
-    val id = timerIdGen.next()
-    val task = interpreter.materializer.schedulePeriodically(initialDelay, interval, new Runnable {
-      def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = true))
-    })
-    keyToTimers(timerKey) = Timer(id, task)
-  }
-
-  /**
-   * Schedule timer to call [[#onTimer]] periodically with the given interval after the specified
-   * initial delay.
-   * Any existing timer with the same key will automatically be canceled before
-   * adding the new timer.
-   */
-  final protected def schedulePeriodicallyWithInitialDelay(
-      timerKey: Any,
-      initialDelay: java.time.Duration,
-      interval: java.time.Duration): Unit = {
-    import akka.util.JavaDurationConverters._
-    schedulePeriodicallyWithInitialDelay(timerKey, initialDelay.asScala, interval.asScala)
-  }
-
-  /**
    * Schedule timer to call [[#onTimer]] after given delay.
    * Any existing timer with the same key will automatically be canceled before
    * adding the new timer.
@@ -1615,6 +1586,130 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
   }
 
   /**
+   * Schedule timer to call [[#onTimer]] periodically with the given `delay` after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def scheduleWithFixedDelay(
+      timerKey: Any,
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration): Unit = {
+    cancelTimer(timerKey)
+    val id = timerIdGen.next()
+    val task = interpreter.materializer.scheduleWithFixedDelay(initialDelay, delay, new Runnable {
+      def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = true))
+    })
+    keyToTimers(timerKey) = Timer(id, task)
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given `delay` after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def scheduleWithFixedDelay(
+      timerKey: Any,
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration): Unit = {
+    import akka.util.JavaDurationConverters._
+    scheduleWithFixedDelay(timerKey, initialDelay.asScala, interval.asScala)
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given `interval` after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def scheduleAtFixedRate(
+      timerKey: Any,
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration): Unit = {
+    cancelTimer(timerKey)
+    val id = timerIdGen.next()
+    val task = interpreter.materializer.scheduleAtFixedRate(initialDelay, interval, new Runnable {
+      def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = true))
+    })
+    keyToTimers(timerKey) = Timer(id, task)
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given `interval` after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  final protected def scheduleAtFixedRate(
+      timerKey: Any,
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration): Unit = {
+    import akka.util.JavaDurationConverters._
+    scheduleAtFixedRate(timerKey, initialDelay.asScala, interval.asScala)
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given interval after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  @deprecated(
+    "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
+    "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
+    since = "2.6.0")
+  final protected def schedulePeriodicallyWithInitialDelay(
+      timerKey: Any,
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration): Unit =
+    scheduleAtFixedRate(timerKey, initialDelay, interval)
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given interval after the specified
+   * initial delay.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  @deprecated(
+    "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
+    "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
+    since = "2.6.0")
+  final protected def schedulePeriodicallyWithInitialDelay(
+      timerKey: Any,
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration): Unit = {
+    import akka.util.JavaDurationConverters._
+    schedulePeriodicallyWithInitialDelay(timerKey, initialDelay.asScala, interval.asScala)
+  }
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given interval.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  @deprecated(
+    "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
+    "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
+    since = "2.6.0")
+  final protected def schedulePeriodically(timerKey: Any, interval: FiniteDuration): Unit =
+    schedulePeriodicallyWithInitialDelay(timerKey, interval, interval)
+
+  /**
+   * Schedule timer to call [[#onTimer]] periodically with the given interval.
+   * Any existing timer with the same key will automatically be canceled before
+   * adding the new timer.
+   */
+  @deprecated(
+    "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
+    "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
+    since = "2.6.0")
+  final protected def schedulePeriodically(timerKey: Any, interval: java.time.Duration): Unit = {
+    import akka.util.JavaDurationConverters._
+    schedulePeriodically(timerKey, interval.asScala)
+  }
+
+  /**
    * Cancel timer, ensuring that the [[#onTimer]] is not subsequently called.
    *
    * @param timerKey key of the timer to cancel
@@ -1632,23 +1727,6 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    */
   final protected def isTimerActive(timerKey: Any): Boolean = keyToTimers contains timerKey
 
-  /**
-   * Schedule timer to call [[#onTimer]] periodically with the given interval.
-   * Any existing timer with the same key will automatically be canceled before
-   * adding the new timer.
-   */
-  final protected def schedulePeriodically(timerKey: Any, interval: FiniteDuration): Unit =
-    schedulePeriodicallyWithInitialDelay(timerKey, interval, interval)
-
-  /**
-   * Schedule timer to call [[#onTimer]] periodically with the given interval.
-   * Any existing timer with the same key will automatically be canceled before
-   * adding the new timer.
-   */
-  final protected def schedulePeriodically(timerKey: Any, interval: java.time.Duration): Unit = {
-    import akka.util.JavaDurationConverters._
-    schedulePeriodically(timerKey, interval.asScala)
-  }
 }
 
 /** Java API: [[GraphStageLogic]] with [[StageLogging]]. */

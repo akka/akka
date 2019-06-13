@@ -209,12 +209,12 @@ object ActorSelection {
    */
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
     val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator
-      .collect({
+      .collect {
         case x if !x.isEmpty =>
           if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
           else if (x == "..") SelectParent
           else SelectChildName(x)
-      })
+      }
       .to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef

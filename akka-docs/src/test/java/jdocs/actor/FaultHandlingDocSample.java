@@ -151,7 +151,7 @@ public class FaultHandlingDocSample {
                     getContext()
                         .getSystem()
                         .scheduler()
-                        .schedule(
+                        .scheduleWithFixedDelay(
                             Duration.ZERO,
                             Duration.ofSeconds(1L),
                             getSelf(),

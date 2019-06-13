@@ -312,7 +312,7 @@ by adding information to the flow graph that has been constructed up to this poi
 
 This means that everything that is inside the red bubble will be executed by one actor and everything outside of it
 by another. This scheme can be applied successively, always having one such boundary enclose the previous ones plus all
-operators that have been added since them.
+operators that have been added since then.
 
 @@@ warning
 

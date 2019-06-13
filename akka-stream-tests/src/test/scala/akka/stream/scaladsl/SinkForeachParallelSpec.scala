@@ -12,11 +12,13 @@ import akka.stream.Supervision._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.{ TestLatch, TestProbe }
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+@silent // tests deprecated APIs
 class SinkForeachParallelSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
@@ -58,7 +60,7 @@ class SinkForeachParallelSpec extends StreamSpec {
         Await.ready(latch(n), 5.seconds)
       }))
       probe.expectMsgAllOf(1, 2, 3, 4)
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage(200.millis)
 
       assert(!p.isCompleted)
 

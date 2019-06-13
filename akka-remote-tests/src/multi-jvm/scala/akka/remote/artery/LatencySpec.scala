@@ -9,7 +9,9 @@ import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
+
 import akka.actor._
+import akka.dispatch.Dispatchers
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -43,17 +45,17 @@ object LatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
-           advanced.idle-cpu-level = 7
+           advanced.aeron.idle-cpu-level = 7
 
            advanced.inbound-lanes = 1
 
            # for serious measurements when running this test on only one machine
            # it is recommended to use external media driver
            # See akka-remote/src/test/resources/aeron.properties
-           # advanced.embedded-media-driver = off
-           # advanced.aeron-dir = "akka-remote/target/aeron"
+           # advanced.aeron.embedded-media-driver = off
+           # advanced.aeron.aeron-dir = "akka-remote/target/aeron"
            # on linux, use directory on ram disk, instead
-           # advanced.aeron-dir = "/dev/shm/aeron"
+           # advanced.aeron.aeron-dir = "/dev/shm/aeron"
 
            advanced.compression {
              actor-refs.advertisement-interval = 2 second
@@ -66,7 +68,7 @@ object LatencySpec extends MultiNodeConfig {
   final case object Reset
 
   def echoProps(): Props =
-    Props(new Echo)
+    Props(new Echo).withDispatcher(Dispatchers.InternalDispatcherId)
 
   class Echo extends Actor {
     // FIXME to avoid using new RemoteActorRef each time
@@ -91,6 +93,7 @@ object LatencySpec extends MultiNodeConfig {
       plotsRef: ActorRef,
       BenchmarkFileReporter: BenchmarkFileReporter): Props =
     Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef, BenchmarkFileReporter))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
 
   class Receiver(
       reporter: RateReporter,

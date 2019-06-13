@@ -122,16 +122,16 @@ trait LoggingBus extends ActorEventBus {
         } yield {
           system.dynamicAccess
             .getClassFor[Actor](loggerName)
-            .map({
-              case actorClass => addLogger(system, actorClass, level, logName)
-            })
-            .recover({
+            .map { actorClass =>
+              addLogger(system, actorClass, level, logName)
+            }
+            .recover {
               case e =>
                 throw new ConfigurationException(
                   "Logger specified in config can't be loaded [" + loggerName +
                   "] due to [" + e.toString + "]",
                   e)
-            })
+            }
             .get
         }
       guard.withGuard {
@@ -676,17 +676,6 @@ object Logging {
   def getLogger(logSource: Actor): DiagnosticLoggingAdapter = apply(logSource)
 
   /**
-   * Obtain LoggingAdapter with MDC support for the given actor.
-   * Don't use it outside its specific Actor as it isn't thread safe
-   */
-  @deprecated("Use AbstractActor instead of UntypedActor.", since = "2.5.0")
-  def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
-    val (str, clazz) = LogSource.fromAnyRef(logSource)
-    val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]
-    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
-  }
-
-  /**
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
@@ -709,7 +698,7 @@ object Logging {
      * The thread that created this log event
      */
     @transient
-    val thread: Thread = Thread.currentThread
+    val thread: Thread = Thread.currentThread()
 
     /**
      * When this LogEvent was created according to System.currentTimeMillis
@@ -745,7 +734,7 @@ object Logging {
      * Java API: Retrieve the contents of the MDC.
      */
     def getMDC: java.util.Map[String, Any] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       mdc.asJava
     }
   }
@@ -969,7 +958,6 @@ object Logging {
 
   /**
    * LoggerInitializationException is thrown to indicate that there was a problem initializing a logger
-   * @param msg
    */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
@@ -1064,7 +1052,7 @@ object Logging {
       val size = mdc.size
       if (size == 0) ""
       else if (size == 1) s"[${mdc.head._1}:${mdc.head._2}]"
-      else mdc.map({ case (k, v) => s"$k:$v" }).mkString("[", "][", "]")
+      else mdc.map { case (k, v) => s"$k:$v" }.mkString("[", "][", "]")
     }
   }
   object StdOutLogger {
@@ -1565,7 +1553,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
   import Logging._
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   private var _mdc = emptyMDC
 

@@ -23,11 +23,12 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(
-    ConfigFactory.parseString("""
+    ConfigFactory
+      .parseString("""
       akka.loglevel = DEBUG # issue #24955
       akka.cluster.debug.verbose-heartbeat-logging = on
       akka.cluster.debug.verbose-gossip-logging = on
-      akka.remote.netty.tcp.connection-timeout = 5 s # speedup in case of connection issue
+      akka.remote.classic.netty.tcp.connection-timeout = 5 s # speedup in case of connection issue
       akka.remote.retry-gate-closed-for = 1 s
       akka.cluster.multi-data-center {
         failure-detector {
@@ -40,7 +41,8 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
         leader-actions-interval             = 1s
         auto-down-unreachable-after = 1s
       }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
@@ -240,7 +242,7 @@ abstract class MultiDcSplitBrainSpec extends MultiNodeSpec(MultiDcSplitBrainMult
         val restartedSystem = ActorSystem(
           system.name,
           ConfigFactory.parseString(s"""
-            akka.remote.netty.tcp.port = $port
+            akka.remote.classic.netty.tcp.port = $port
             akka.remote.artery.canonical.port = $port
             akka.coordinated-shutdown.terminate-actor-system = on
             """).withFallback(system.settings.config))

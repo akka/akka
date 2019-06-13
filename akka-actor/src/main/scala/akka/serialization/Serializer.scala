@@ -258,7 +258,12 @@ object BaseSerializer {
   /** INTERNAL API */
   @InternalApi
   private[akka] def identifierFromConfig(clazz: Class[_], system: ExtendedActorSystem): Int =
-    system.settings.config.getInt(s"""${SerializationIdentifiers}."${clazz.getName}"""")
+    system.settings.config.getInt(s"""$SerializationIdentifiers."${clazz.getName}"""")
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def identifierFromConfig(bindingName: String, system: ExtendedActorSystem): Int =
+    system.settings.config.getInt(s"""$SerializationIdentifiers."$bindingName"""")
 }
 
 /**

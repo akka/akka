@@ -15,12 +15,14 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.DefaultTimeout
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
+@silent // tests deprecated APIs
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
@@ -360,7 +362,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       result.map(println)(system.dispatcher)
       // 55
       //#reduce-operator-example
-      assert(result.futureValue == (1 to 10 sum))
+      assert(result.futureValue == (1 to 10).sum)
     }
   }
 

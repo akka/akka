@@ -88,7 +88,7 @@ object BehaviorTestKitSpec {
         case SpawnSession(replyTo, sessionHandler) =>
           val session = context.spawnAnonymous[String](Behaviors.receiveMessage { message =>
             sessionHandler ! message
-            Behavior.same
+            Behaviors.same
           })
           replyTo ! session
           Behaviors.same
@@ -257,8 +257,8 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
     "run behaviors with messages without canonicalization" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapterWithName("adapter"))
-      testkit.currentBehavior should not be Behavior.same
-      testkit.returnedBehavior shouldBe Behavior.same
+      testkit.currentBehavior should not be Behaviors.same
+      testkit.returnedBehavior shouldBe Behaviors.same
     }
   }
 

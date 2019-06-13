@@ -16,6 +16,8 @@ import akka.cluster.MemberStatus
 import java.util.concurrent.ThreadLocalRandom
 import akka.actor.DeadLetterSuppression
 
+import com.github.ghik.silencer.silent
+
 /**
  *  Runtime collection management commands.
  */
@@ -92,6 +94,7 @@ trait ClusterMetricsEvent
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
+  @silent
   def getNodeMetrics: java.lang.Iterable[NodeMetrics] =
     scala.collection.JavaConverters.asJavaIterableConverter(nodeMetrics).asJava
 }
@@ -158,12 +161,16 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
    * Start periodic gossip to random nodes in cluster
    */
   val gossipTask =
-    scheduler.schedule(PeriodicTasksInitialDelay max CollectorGossipInterval, CollectorGossipInterval, self, GossipTick)
+    scheduler.scheduleWithFixedDelay(
+      PeriodicTasksInitialDelay max CollectorGossipInterval,
+      CollectorGossipInterval,
+      self,
+      GossipTick)
 
   /**
    * Start periodic metrics collection
    */
-  val sampleTask = scheduler.schedule(
+  val sampleTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay max CollectorSampleInterval,
     CollectorSampleInterval,
     self,

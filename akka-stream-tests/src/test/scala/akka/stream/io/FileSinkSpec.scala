@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 import java.nio.file._
 
 import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
+import akka.dispatch.{ Dispatchers, ExecutionContexts }
 import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
@@ -145,7 +145,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .runWith(FileIO.toPath(f, options = Set(WRITE, CREATE), startPosition = startPosition))
 
         val completion1 = write()
-        val result1 = Await.result(completion1, 3.seconds)
+        Await.result(completion1, 3.seconds)
 
         val completion2 = write(testLinesPart2, startPosition)
         val result2 = Await.result(completion2, 3.seconds)
@@ -157,7 +157,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f =>
-        val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
+        val sys = ActorSystem("FileSinkSpec-dispatcher-testing-1", UnboundedMailboxConfig)
         val materializer = ActorMaterializer()(sys)
         try {
           Source.fromIterator(() => Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
@@ -167,14 +167,15 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .supervisor
             .tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
-          assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+          // haven't figured out why this returns the aliased id rather than the id, but the stage is going away so whatever
+          assertDispatcher(ref, Dispatchers.DefaultBlockingDispatcherId)
         } finally shutdown(sys)
       }
     }
 
     "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
       targetFile { f =>
-        val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
+        val sys = ActorSystem("FileSinkSpec-dispatcher-testing-2", UnboundedMailboxConfig)
         val materializer = ActorMaterializer()(sys)
 
         try {

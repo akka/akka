@@ -43,7 +43,7 @@ object FactorialBackend {
     // Override the configuration of the port when specified as program argument
     val port = if (args.isEmpty) "0" else args(0)
     val config = ConfigFactory
-      .parseString(s"akka.remote.netty.tcp.port=$port")
+      .parseString(s"akka.remote.classic.netty.tcp.port=$port")
       .withFallback(ConfigFactory.parseString("akka.cluster.roles = [backend]"))
       .withFallback(ConfigFactory.load("factorial"))
 

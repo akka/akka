@@ -55,7 +55,7 @@ private[akka] class Mailboxes(
   private val mailboxTypeConfigurators = new ConcurrentHashMap[String, MailboxType]
 
   private val mailboxBindings: Map[Class[_ <: Any], String] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     settings.config
       .getConfig("akka.actor.mailbox.requirements")
       .root
@@ -66,14 +66,14 @@ private[akka] class Mailboxes(
         case (m, (k, v)) =>
           dynamicAccess
             .getClassFor[Any](k)
-            .map {
-              case x => m.updated(x, v.toString)
+            .map { x =>
+              m.updated(x, v.toString)
             }
             .recover {
               case e =>
                 throw new ConfigurationException(
-                  s"Type [${k}] specified as akka.actor.mailbox.requirement " +
-                  s"[${v}] in config can't be loaded due to [${e.getMessage}]",
+                  s"Type [$k] specified as akka.actor.mailbox.requirement " +
+                  s"[$v] in config can't be loaded due to [${e.getMessage}]",
                   e)
             }
             .get
@@ -176,7 +176,7 @@ private[akka] class Mailboxes(
     } else if (hasRequiredType(actorClass)) {
       try verifyRequirements(lookupByQueueType(getRequiredType(actorClass)))
       catch {
-        case NonFatal(_) if (hasMailboxRequirement) => verifyRequirements(lookupByQueueType(mailboxRequirement))
+        case NonFatal(_) if hasMailboxRequirement => verifyRequirements(lookupByQueueType(mailboxRequirement))
       }
     } else if (hasMailboxRequirement) {
       verifyRequirements(lookupByQueueType(mailboxRequirement))
@@ -192,7 +192,7 @@ private[akka] class Mailboxes(
 
   private def lookupId(queueType: Class[_]): String =
     mailboxBindings.get(queueType) match {
-      case None    => throw new ConfigurationException(s"Mailbox Mapping for [${queueType}] not configured")
+      case None    => throw new ConfigurationException(s"Mailbox Mapping for [$queueType] not configured")
       case Some(s) => s
     }
 
@@ -205,7 +205,7 @@ private[akka] class Mailboxes(
           case "unbounded" => UnboundedMailbox()
           case "bounded"   => new BoundedMailbox(settings, config(id))
           case _ =>
-            if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [${id}] not configured")
+            if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [$id] not configured")
             val conf = config(id)
 
             val mailboxType = conf.getString("mailbox-type") match {
@@ -214,13 +214,13 @@ private[akka] class Mailboxes(
                 val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
                 dynamicAccess
                   .createInstanceFor[MailboxType](fqcn, args)
-                  .recover({
+                  .recover {
                     case exception =>
                       throw new IllegalArgumentException(
                         s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
                         " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters",
                         exception)
-                  })
+                  }
                   .get
             }
 
@@ -255,7 +255,7 @@ private[akka] class Mailboxes(
 
   //INTERNAL API
   private def config(id: String): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     ConfigFactory
       .parseMap(Map("id" -> id).asJava)
       .withFallback(settings.config.getConfig(id))

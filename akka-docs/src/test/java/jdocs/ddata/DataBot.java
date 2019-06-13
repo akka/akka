@@ -37,7 +37,7 @@ public class DataBot extends AbstractActor {
       getContext()
           .getSystem()
           .scheduler()
-          .schedule(
+          .scheduleWithFixedDelay(
               Duration.ofSeconds(5),
               Duration.ofSeconds(5),
               getSelf(),

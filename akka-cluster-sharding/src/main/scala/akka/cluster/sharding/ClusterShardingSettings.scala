@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
@@ -302,7 +302,6 @@ final class ClusterShardingSettings(
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration.asScala)
 
-  @ApiMayChange
   def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 

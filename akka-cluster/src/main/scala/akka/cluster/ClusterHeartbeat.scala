@@ -104,7 +104,11 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   // start periodic heartbeat to other nodes in cluster
   val heartbeatTask =
-    scheduler.schedule(PeriodicTasksInitialDelay max HeartbeatInterval, HeartbeatInterval, self, HeartbeatTick)
+    scheduler.scheduleWithFixedDelay(
+      PeriodicTasksInitialDelay max HeartbeatInterval,
+      HeartbeatInterval,
+      self,
+      HeartbeatTick)
 
   // used for logging warning if actual tick interval is unexpected (e.g. due to starvation)
   private var tickTimestamp = System.nanoTime() + (PeriodicTasksInitialDelay max HeartbeatInterval).toNanos

@@ -12,14 +12,6 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
 look like?
@@ -374,7 +366,7 @@ screen name.
 To implement the logic where we spawn a child for the session we need access 
 to the `ActorContext`. This is injected as a constructor parameter upon creation 
 of the behavior, note how we combine the `AbstractBehavior` with  `Behaviors.setup`
-to do this in the `behavior` method. 
+to do this in the @scala[`apply`]@java[`create`] factory method.
 
 The behavior that we declare here can handle both subtypes of `RoomCommand`.
 `GetSession` has been explained already and the

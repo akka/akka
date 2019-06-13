@@ -4,12 +4,9 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.Props
+import akka.cluster.Cluster
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.SelfUniqueAddress
 
@@ -43,14 +40,24 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
    */
   val replicator: ActorRef[Replicator.Command] =
     if (isTerminated) {
-      system.log.warning(
-        "Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
+      val log = system.log.withLoggerClass(getClass)
+      if (Cluster(untypedSystem).isTerminated)
+        log.warning("Replicator points to dead letters, because Cluster is terminated.")
+      else
+        log.warning(
+          "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
+          "Node has roles [], Distributed Data is configured for roles []",
+          Cluster(untypedSystem).selfRoles.mkString(","),
+          settings.roles.mkString(","))
       system.deadLetters
     } else {
       val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
       val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
 
-      system.internalSystemActorOf(replicatorBehavior, ReplicatorSettings.name(system), Props.empty)
+      system.internalSystemActorOf(
+        replicatorBehavior,
+        ReplicatorSettings.name(system),
+        Props.empty.withDispatcherFromConfig(settings.dispatcher))
     }
 
   /**

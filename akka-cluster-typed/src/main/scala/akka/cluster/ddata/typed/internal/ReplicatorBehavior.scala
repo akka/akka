@@ -4,7 +4,6 @@
 
 package akka.cluster.ddata.typed.internal
 
-import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 
 import akka.annotation.InternalApi
@@ -68,9 +67,7 @@ import akka.actor.typed.Terminated
           .receive[SReplicator.Command] { (ctx, msg) =>
             msg match {
               case cmd: SReplicator.Get[_] =>
-                untypedReplicator.tell(
-                  dd.Replicator.Get(cmd.key, cmd.consistency, cmd.request),
-                  sender = cmd.replyTo.toUntyped)
+                untypedReplicator.tell(dd.Replicator.Get(cmd.key, cmd.consistency), sender = cmd.replyTo.toUntyped)
                 Behaviors.same
 
               case cmd: JReplicator.Get[d] =>
@@ -80,23 +77,23 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toUntyped, cmd.request.asScala))
+                  (untypedReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toUntyped))
                     .mapTo[dd.Replicator.GetResponse[d]]
                     .map {
                       case rsp: dd.Replicator.GetSuccess[d] =>
-                        JReplicator.GetSuccess(rsp.key, rsp.request.asJava)(rsp.dataValue)
-                      case rsp: dd.Replicator.NotFound[d]   => JReplicator.NotFound(rsp.key, rsp.request.asJava)
-                      case rsp: dd.Replicator.GetFailure[d] => JReplicator.GetFailure(rsp.key, rsp.request.asJava)
+                        JReplicator.GetSuccess(rsp.key)(rsp.dataValue)
+                      case rsp: dd.Replicator.NotFound[d]   => JReplicator.NotFound(rsp.key)
+                      case rsp: dd.Replicator.GetFailure[d] => JReplicator.GetFailure(rsp.key)
                     }
                     .recover {
-                      case _ => JReplicator.GetFailure(cmd.key, cmd.request)
+                      case _ => JReplicator.GetFailure(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same
 
               case cmd: SReplicator.Update[_] =>
                 untypedReplicator.tell(
-                  dd.Replicator.Update(cmd.key, cmd.writeConsistency, cmd.request)(cmd.modify),
+                  dd.Replicator.Update(cmd.key, cmd.writeConsistency, None)(cmd.modify),
                   sender = cmd.replyTo.toUntyped)
                 Behaviors.same
 
@@ -107,20 +104,17 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Update(
-                    cmd.key,
-                    cmd.writeConsistency.toUntyped,
-                    cmd.request.asScala)(cmd.modify))
+                  (untypedReplicator ? dd.Replicator.Update(cmd.key, cmd.writeConsistency.toUntyped, None)(cmd.modify))
                     .mapTo[dd.Replicator.UpdateResponse[d]]
                     .map {
-                      case rsp: dd.Replicator.UpdateSuccess[d] => JReplicator.UpdateSuccess(rsp.key, rsp.request.asJava)
-                      case rsp: dd.Replicator.UpdateTimeout[d] => JReplicator.UpdateTimeout(rsp.key, rsp.request.asJava)
+                      case rsp: dd.Replicator.UpdateSuccess[d] => JReplicator.UpdateSuccess(rsp.key)
+                      case rsp: dd.Replicator.UpdateTimeout[d] => JReplicator.UpdateTimeout(rsp.key)
                       case rsp: dd.Replicator.ModifyFailure[d] =>
-                        JReplicator.ModifyFailure(rsp.key, rsp.errorMessage, rsp.cause, rsp.request.asJava)
-                      case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key, rsp.request.asJava)
+                        JReplicator.ModifyFailure(rsp.key, rsp.errorMessage, rsp.cause)
+                      case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
                     }
                     .recover {
-                      case _ => JReplicator.UpdateTimeout(cmd.key, cmd.request)
+                      case _ => JReplicator.UpdateTimeout(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same
@@ -156,9 +150,7 @@ import akka.actor.typed.Terminated
                 stopSubscribeAdapter(cmd.subscriber)
 
               case cmd: SReplicator.Delete[_] =>
-                untypedReplicator.tell(
-                  dd.Replicator.Delete(cmd.key, cmd.consistency, cmd.request),
-                  sender = cmd.replyTo.toUntyped)
+                untypedReplicator.tell(dd.Replicator.Delete(cmd.key, cmd.consistency), sender = cmd.replyTo.toUntyped)
                 Behaviors.same
 
               case cmd: JReplicator.Delete[d] =>
@@ -168,17 +160,17 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toUntyped, cmd.request.asScala))
+                  (untypedReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toUntyped))
                     .mapTo[dd.Replicator.DeleteResponse[d]]
                     .map {
-                      case rsp: dd.Replicator.DeleteSuccess[d] => JReplicator.DeleteSuccess(rsp.key, rsp.request.asJava)
+                      case rsp: dd.Replicator.DeleteSuccess[d] => JReplicator.DeleteSuccess(rsp.key)
                       case rsp: dd.Replicator.ReplicationDeleteFailure[d] =>
-                        JReplicator.ReplicationDeleteFailure(rsp.key, rsp.request.asJava)
-                      case rsp: dd.Replicator.DataDeleted[d]  => JReplicator.DataDeleted(rsp.key, rsp.request.asJava)
-                      case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key, rsp.request.asJava)
+                        JReplicator.ReplicationDeleteFailure(rsp.key)
+                      case rsp: dd.Replicator.DataDeleted[d]  => JReplicator.DataDeleted(rsp.key)
+                      case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
                     }
                     .recover {
-                      case _ => JReplicator.ReplicationDeleteFailure(cmd.key, cmd.request)
+                      case _ => JReplicator.ReplicationDeleteFailure(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same

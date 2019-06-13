@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass

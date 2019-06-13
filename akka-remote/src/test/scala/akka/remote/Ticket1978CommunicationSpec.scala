@@ -35,10 +35,12 @@ object Configuration {
         filter-leeway = 10s
         default-timeout = 10s
       }
+      
+      remote.artery.enabled = off 
 
-      remote.enabled-transports = ["akka.remote.netty.ssl"]
+      remote.classic.enabled-transports = ["akka.remote.classic.netty.ssl"]
 
-      remote.netty.ssl {
+      remote.classic.netty.ssl {
         hostname = localhost
         port = %d
         security {
@@ -64,10 +66,8 @@ object Configuration {
       provider: Option[ConfigSSLEngineProvider])
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
-    val localPort, remotePort = {
-      val s = new java.net.ServerSocket(0);
-      try s.getLocalPort
-      finally s.close()
+    val (localPort, remotePort) = SocketUtil.temporaryServerAddresses(2, "127.0.0.1").map(_.getPort) match {
+      case Seq(local, remote) => (local, remote)
     }
     try {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
@@ -77,7 +77,7 @@ object Configuration {
       val fullConfig = config
         .withFallback(AkkaSpec.testConf)
         .withFallback(ConfigFactory.load)
-        .getConfig("akka.remote.netty.ssl.security")
+        .getConfig("akka.remote.classic.netty.ssl.security")
       val settings = new SSLSettings(fullConfig)
 
       val sslEngineProvider = new ConfigSSLEngineProvider(NoMarkerLogging, settings)
@@ -125,7 +125,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
   lazy val other: ActorSystem = ActorSystem(
     "remote-sys",
     ConfigFactory
-      .parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort)
+      .parseString("akka.remote.classic.netty.ssl.port = " + cipherConfig.remotePort)
       .withFallback(system.settings.config))
 
   override def afterTermination(): Unit = {

@@ -7,8 +7,9 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
-import akka.actor.{ Address, RootActorPath, Scheduler }
+import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
+import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
