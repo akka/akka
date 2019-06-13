@@ -327,6 +327,9 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * The `request` parameter in Distributed Data commands was removed, in favor of using `ask`.
 * Removed `Behavior.same`, `Behavior.unhandled`, `Behavior.stopped`, `Behavior.empty`, and `Behavior.ignore` since
   they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
+* `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
+   to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
+
 
 #### Akka Typed Stream API changes
 
