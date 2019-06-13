@@ -178,7 +178,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     checkAllowedClass(obj.getClass)
     migrations.get(className) match {
       case Some(transformer) => className + "#" + transformer.currentVersion
-      case None => className
+      case None              => className
     }
   }
 
