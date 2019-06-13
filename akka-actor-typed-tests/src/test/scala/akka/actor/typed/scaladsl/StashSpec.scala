@@ -304,7 +304,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       Behaviors.receiveMessage[String] {
         case msg if msg.startsWith("stash") =>
           stash.stash(msg)
-          Behavior.same
+          Behaviors.same
         case "unstash" =>
           stash.unstashAll(ctx, unstashing(0))
         case "get-current" =>
@@ -329,7 +329,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
         case (ctx, "unstash") =>
           val stash = StashBuffer[String](10)
           stash.stash("one")
-          stash.unstashAll(ctx, Behavior.same)
+          stash.unstashAll(ctx, Behaviors.same)
 
         case (_, msg) =>
           probe.ref ! msg
@@ -373,7 +373,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
             case (ctx, "unstash") =>
               val stash = StashBuffer[String](10)
               stash.stash("one")
-              stash.unstashAll(ctx, Behavior.same)
+              stash.unstashAll(ctx, Behaviors.same)
 
             case (_, msg) =>
               probe.ref ! msg
@@ -570,7 +570,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
             }
           case msg =>
             probe.ref ! msg
-            Behavior.same
+            Behaviors.same
         }
       })
 
@@ -590,7 +590,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
 
         def unstashing(n: Int): Behavior[String] =
           Behaviors.receiveMessage {
-            case "unhandled" => Behavior.unhandled
+            case "unhandled" => Behaviors.unhandled
             case "handled" =>
               probe.ref ! s"handled $n"
               unstashing(n + 1)
@@ -616,7 +616,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     "fail quick on invalid start behavior" in {
       val stash = StashBuffer[String](10)
       stash.stash("one")
-      intercept[IllegalArgumentException](stash.unstashAll(null, Behavior.unhandled))
+      intercept[IllegalArgumentException](stash.unstashAll(null, Behaviors.unhandled))
     }
 
     "deal with initial stop" in {
@@ -649,10 +649,10 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
             stash.unstashAll(ctx, Behaviors.receiveMessage {
               case unstashed =>
                 probe.ref ! unstashed
-                Behavior.stopped
+                Behaviors.stopped
             })
           case _ =>
-            Behavior.same
+            Behaviors.same
         }
       })
       ref ! "unstash"
@@ -673,7 +673,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
             stash.unstashAll(ctx, Behaviors.same)
           case msg =>
             probe.ref ! msg
-            Behavior.same
+            Behaviors.same
         }
       })
       ref ! "unstash"

@@ -10,7 +10,7 @@ import java.util.Optional
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter

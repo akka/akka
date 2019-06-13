@@ -24,8 +24,6 @@ import akka.util.ByteString
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.dispatch.Dispatchers
-
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 

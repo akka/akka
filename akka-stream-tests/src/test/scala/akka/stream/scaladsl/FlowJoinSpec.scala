@@ -47,7 +47,7 @@ class FlowJoinSpec extends StreamSpec(ConfigFactory.parseString("akka.loglevel=I
         .buffer((end + 1) / 2, OverflowStrategy.backpressure)
         .take((end + 1) / 2)
 
-      val mm = flow1.join(flow2).run()
+      flow1.join(flow2).run()
 
       val sub = probe.expectSubscription()
       sub.request(1)

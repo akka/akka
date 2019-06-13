@@ -319,9 +319,9 @@ object Source {
    * completion.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
-   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately,
    * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
-   * already buffered elements will be signaled before siganling completion.
+   * already buffered elements will be signaled before signaling completion.
    * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the

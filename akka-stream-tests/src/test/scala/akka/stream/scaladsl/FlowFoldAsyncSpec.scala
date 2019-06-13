@@ -200,7 +200,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "resume when foldAsync throws" in {
       val c = TestSubscriber.manualProbe[(Int, Int)]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5)
+      Source(1 to 5)
         .foldAsync(0 -> 1) {
           case ((i, res), n) =>
             if (n == 3) throw new RuntimeException("err4") with NoStackTrace
@@ -218,7 +218,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "restart when foldAsync throws" in {
       val c = TestSubscriber.manualProbe[(Int, Int)]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5)
+      Source(1 to 5)
         .foldAsync(0 -> 1) {
           case ((i, res), n) =>
             if (n == 3) throw new RuntimeException("err4") with NoStackTrace
@@ -235,8 +235,8 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "signal NPE when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b"))
-        .foldAsync("") { (_, elem) =>
+      Source(List("a", "b"))
+        .foldAsync("") { (_, _) =>
           Future.successful(null.asInstanceOf[String])
         }
         .to(Sink.fromSubscriber(c))
@@ -248,7 +248,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "resume when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b", "c"))
+      Source(List("a", "b", "c"))
         .foldAsync("") { (str, elem) =>
           if (elem == "b") Future.successful(null.asInstanceOf[String])
           else Future.successful(str + elem)
@@ -264,7 +264,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "restart when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b", "c"))
+      Source(List("a", "b", "c"))
         .foldAsync("") { (str, elem) =>
           if (elem == "b") Future.successful(null.asInstanceOf[String])
           else Future.successful(str + elem)

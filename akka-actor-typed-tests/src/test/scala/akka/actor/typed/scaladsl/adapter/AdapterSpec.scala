@@ -180,7 +180,7 @@ class AdapterSpec extends AkkaSpec("""
         var system: akka.actor.typed.ActorSystem[NotUsed] = null
         try {
           system = ActorSystem.create(
-            Behaviors.setup[NotUsed](_ => Behavior.stopped[NotUsed]),
+            Behaviors.setup[NotUsed](_ => Behaviors.stopped[NotUsed]),
             "AdapterSpec-stopping-guardian")
         } finally if (system != null) shutdown(system.toUntyped)
       }

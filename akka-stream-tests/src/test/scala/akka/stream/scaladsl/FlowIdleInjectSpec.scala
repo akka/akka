@@ -26,9 +26,8 @@ class FlowIdleInjectSpec extends StreamSpec {
     "emit elements periodically after silent periods" in assertAllStagesStopped {
       val sourceWithIdleGap = Source(1 to 5) ++ Source(6 to 10).initialDelay(2.second)
 
-      val result = Await.result(
-          sourceWithIdleGap.keepAlive(0.6.seconds, () => 0).grouped(1000).runWith(Sink.head),
-          3.seconds) should ===(List(1, 2, 3, 4, 5, 0, 0, 0, 6, 7, 8, 9, 10))
+      Await.result(sourceWithIdleGap.keepAlive(0.6.seconds, () => 0).grouped(1000).runWith(Sink.head), 3.seconds) should ===(
+        List(1, 2, 3, 4, 5, 0, 0, 0, 6, 7, 8, 9, 10))
     }
 
     "immediately pull upstream" in {
@@ -73,7 +72,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.ensureSubscription()
-      downstream.expectNoMsg(1.5.second)
+      downstream.expectNoMessage(1.5.second)
       downstream.request(1)
       downstream.expectNext(0)
 
@@ -92,7 +91,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       downstream.request(10)
       downstream.expectNextN(1 to 10)
 
-      downstream.expectNoMsg(1.5.second)
+      downstream.expectNoMessage(1.5.second)
       downstream.request(1)
       downstream.expectNext(0)
 
@@ -107,9 +106,9 @@ class FlowIdleInjectSpec extends StreamSpec {
       Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.ensureSubscription()
-      downstream.expectNoMsg(1.5.second)
+      downstream.expectNoMessage(1.5.second)
       upstream.sendNext(1)
-      downstream.expectNoMsg(0.5.second)
+      downstream.expectNoMessage(0.5.second)
       downstream.request(1)
       downstream.expectNext(1)
 
@@ -128,9 +127,9 @@ class FlowIdleInjectSpec extends StreamSpec {
       downstream.request(10)
       downstream.expectNextN(1 to 10)
 
-      downstream.expectNoMsg(1.5.second)
+      downstream.expectNoMessage(1.5.second)
       upstream.sendNext(1)
-      downstream.expectNoMsg(0.5.second)
+      downstream.expectNoMessage(0.5.second)
       downstream.request(1)
       downstream.expectNext(1)
 
@@ -145,10 +144,10 @@ class FlowIdleInjectSpec extends StreamSpec {
       Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(2)
-      downstream.expectNoMsg(500.millis)
+      downstream.expectNoMessage(500.millis)
       downstream.expectNext(0)
 
-      downstream.expectNoMsg(500.millis)
+      downstream.expectNoMessage(500.millis)
       downstream.expectNext(0)
     }
 

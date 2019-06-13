@@ -5,7 +5,7 @@
 package akka.actor.typed.javadsl
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.GroupRouterBuilder
 import akka.actor.typed.internal.routing.PoolRouterBuilder
 import akka.actor.typed.receptionist.ServiceKey

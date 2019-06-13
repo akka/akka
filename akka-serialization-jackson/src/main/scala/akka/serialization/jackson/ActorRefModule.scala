@@ -16,8 +16,6 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
 
-// FIXME add serializer for Typed ActorRef also (probably have to be in akka-cluster-typed module)
-
 /**
  * INTERNAL API: Adds support for serializing and deserializing [[ActorRef]].
  */

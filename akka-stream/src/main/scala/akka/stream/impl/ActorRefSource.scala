@@ -53,7 +53,8 @@ private object ActorRefSource {
 
       override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
         case (_, PoisonPill) =>
-          log.warning("for backwards compatibility: PoisonPill will not be supported in the future")
+          log.warning(
+            "PoisonPill only completes ActorRefSource for backwards compatibility and not be supported in the future. Send Status.Success(CompletionStrategy) instead")
           completeStage()
         case (_, m) if failureMatcher.isDefinedAt(m) =>
           failStage(failureMatcher(m))

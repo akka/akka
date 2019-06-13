@@ -43,7 +43,7 @@ public class RouterTest {
               return Behaviors.receive(Command.class)
                   .onMessage(
                       DoLog.class,
-                      (notUsed, doLog) -> {
+                      doLog -> {
                         context.getLog().info("Got message {}", doLog.text);
                         return Behaviors.same();
                       })

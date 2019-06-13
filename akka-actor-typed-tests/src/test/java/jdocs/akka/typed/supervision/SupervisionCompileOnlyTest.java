@@ -36,14 +36,10 @@ public class SupervisionCompileOnlyTest {
 
   public static Behavior<CounterMessage> counter(int currentValue) {
     return Behaviors.receive(CounterMessage.class)
-        .onMessage(
-            Increase.class,
-            (context, o) -> {
-              return counter(currentValue + 1);
-            })
+        .onMessage(Increase.class, o -> counter(currentValue + 1))
         .onMessage(
             Get.class,
-            (context, o) -> {
+            o -> {
               o.sender.tell(new Got(currentValue));
               return Behaviors.same();
             })

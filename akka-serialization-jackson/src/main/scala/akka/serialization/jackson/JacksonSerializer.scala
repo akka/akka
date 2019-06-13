@@ -22,6 +22,7 @@ import akka.event.Logging
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
+import akka.util.Helpers.toRootLowerCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
@@ -82,47 +83,38 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 
 }
 
-object JacksonJsonSerializer {
-  val Identifier = 31
-}
-
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with JSON.
  */
-@InternalApi private[akka] final class JacksonJsonSerializer(system: ExtendedActorSystem)
+@InternalApi private[akka] final class JacksonJsonSerializer(system: ExtendedActorSystem, bindingName: String)
     extends JacksonSerializer(
       system,
-      JacksonObjectMapperProvider(system).getOrCreate(JacksonJsonSerializer.Identifier, None))
-
-object JacksonSmileSerializer {
-  val Identifier = 33
-}
+      bindingName: String,
+      JacksonObjectMapperProvider(system).getOrCreate(bindingName, None))
 
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with Smile.
  */
-@InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem)
+@InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem, bindingName: String)
     extends JacksonSerializer(
       system,
-      JacksonObjectMapperProvider(system).getOrCreate(JacksonSmileSerializer.Identifier, Some(new SmileFactory)))
-
-object JacksonCborSerializer {
-  val Identifier = 32
-}
+      bindingName: String,
+      JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new SmileFactory)))
 
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with CBOR.
  */
-@InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem)
+@InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem, bindingName: String)
     extends JacksonSerializer(
       system,
-      JacksonObjectMapperProvider(system).getOrCreate(JacksonCborSerializer.Identifier, Some(new CBORFactory)))
+      bindingName,
+      JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new CBORFactory)))
 
 // FIXME Look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
 //       Make dependencies optional/provided.
@@ -138,28 +130,38 @@ object JacksonCborSerializer {
  */
 @InternalApi private[akka] abstract class JacksonSerializer(
     val system: ExtendedActorSystem,
+    val bindingName: String,
     val objectMapper: ObjectMapper)
-    extends SerializerWithStringManifest
-    with BaseSerializer {
+    extends SerializerWithStringManifest {
   import JacksonSerializer.GadgetClassBlacklist
 
   // FIXME it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //       ByteBufferBackedOutputStream/ByteBufferBackedInputStream
 
   private val log = Logging.withMarker(system, getClass)
-  private val conf = system.settings.config.getConfig("akka.serialization.jackson")
+  private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4
-  private val compressLargerThan: Long = conf.getBytes("compress-larger-than")
+  private val compressLargerThan: Long = {
+    val key = "compress-larger-than"
+    toRootLowerCase(conf.getString(key)) match {
+      case "off" => Long.MaxValue
+      case _     => conf.getBytes(key)
+    }
+  }
   private val migrations: Map[String, JacksonMigration] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
-      case (k, v) ⇒
+      case (k, v) =>
         val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
         k -> transformer
     }
   }
   private val blacklist: GadgetClassBlacklist = new GadgetClassBlacklist
+  private val whitelistClassPrefix = {
+    import akka.util.ccompat.JavaConverters._
+    conf.getStringList("whitelist-class-prefix").asScala.toVector
+  }
 
   // This must lazy otherwise it will deadlock the ActorSystem creation
   private lazy val serialization = SerializationExtension(system)
@@ -167,14 +169,16 @@ object JacksonCborSerializer {
   // doesn't have to be volatile, doesn't matter if check is run more than once
   private var serializationBindingsCheckedOk = false
 
+  override val identifier: Int = BaseSerializer.identifierFromConfig(bindingName, system)
+
   override def manifest(obj: AnyRef): String = {
     checkAllowedSerializationBindings()
     val className = obj.getClass.getName
     checkAllowedClassName(className)
     checkAllowedClass(obj.getClass)
     migrations.get(className) match {
-      case Some(transformer) ⇒ className + "#" + transformer.currentVersion
-      case None ⇒ className
+      case Some(transformer) => className + "#" + transformer.currentVersion
+      case None              => className
     }
   }
 
@@ -182,7 +186,6 @@ object JacksonCborSerializer {
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
     val bytes = objectMapper.writeValueAsBytes(obj)
-    // FIXME investigate if compression should be used for the binary formats
     val result =
       if (bytes.length > compressLargerThan) compress(bytes)
       else bytes
@@ -218,20 +221,20 @@ object JacksonCborSerializer {
     val migration = migrations.get(manifestClassName)
 
     val className = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion < transformer.currentVersion =>
         transformer.transformClassName(fromVersion, manifestClassName)
-      case Some(transformer) if fromVersion > transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion > transformer.currentVersion =>
         throw new IllegalStateException(
           s"Migration version ${transformer.currentVersion} is " +
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
-      case _ ⇒ manifestClassName
+      case _ => manifestClassName
     }
     if (className ne manifestClassName)
       checkAllowedClassName(className)
 
     val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
-      case Success(c) ⇒ c
-      case Failure(_) ⇒
+      case Success(c) => c
+      case Failure(_) =>
         throw new NotSerializableException(
           s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
     }
@@ -240,11 +243,11 @@ object JacksonCborSerializer {
     val decompressBytes = if (compressed) decompress(bytes) else bytes
 
     val result = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion < transformer.currentVersion =>
         val jsonTree = objectMapper.readTree(decompressBytes)
         val newJsonTree = transformer.transform(fromVersion, jsonTree)
         objectMapper.treeToValue(newJsonTree, clazz)
-      case _ ⇒
+      case _ =>
         objectMapper.readValue(decompressBytes, clazz)
     }
 
@@ -261,8 +264,8 @@ object JacksonCborSerializer {
           "Deserialization of [{}] took [{}] µs, compressed size [{}] bytes, uncompressed size [{}] bytes",
           clazz.getName,
           durationMicros,
-          decompressBytes.length,
-          bytes.length)
+          bytes.length,
+          decompressBytes.length)
     }
 
     result
@@ -287,7 +290,7 @@ object JacksonCborSerializer {
       val warnMsg = s"Can't serialize/deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
         "Only classes that are whitelisted are allowed for security reasons. " +
         "Configure whitelist with akka.actor.serialization-bindings or " +
-        "akka.serialization.jackson.whitelist-packages."
+        "akka.serialization.jackson.whitelist-class-prefix."
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
     }
@@ -300,29 +303,37 @@ object JacksonCborSerializer {
    * used for selecting serializer.
    * Here we use `serialization-bindings` also and more importantly when deserializing (fromBinary)
    * to check that the manifest class is of a known (registered) type.
-   * The drawback of using `serialization-bindings` for this is that an old class can't be removed
-   * from `serialization-bindings` when it's not used for serialization but still used for
-   * deserialization (e.g. rolling update with serialization changes). It's also
-   * not possible to change a binding from a JacksonSerializer to another serializer (e.g. protobuf)
+   *
+   * If and old class is removed from `serialization-bindings` when it's not used for serialization
+   * but still used for deserialization (e.g. rolling update with serialization changes) it can
+   * be allowed by specifying in `whitelist-class-prefix`.
+   *
+   * That is also possible when changing a binding from a JacksonSerializer to another serializer (e.g. protobuf)
    * and still bind with the same class (interface).
-   * If this is too limiting we can add another config property as an additional way to
-   * whitelist classes that are not bound to this serializer with serialization-bindings.
    */
   private def isInWhitelist(clazz: Class[_]): Boolean = {
+    isBoundToJacksonSerializer(clazz) || isInWhitelistClassPrefix(clazz.getName)
+  }
+
+  private def isBoundToJacksonSerializer(clazz: Class[_]): Boolean = {
     try {
       // The reason for using isInstanceOf rather than `eq this` is to allow change of
       // serializizer within the Jackson family, but we don't trust other serializers
       // because they might be bound to open-ended interfaces like java.io.Serializable.
       val boundSerializer = serialization.serializerFor(clazz)
       boundSerializer.isInstanceOf[JacksonSerializer] ||
+      // FIXME this is probably not needed when we have the more flexible configuration in place and
+      //       can bind use the plain JacksonJsonSerializer for the old serializerId
       // to support rolling updates in Lagom we also trust the binding to the Lagom 1.5.x JacksonJsonSerializer,
       // which is named OldJacksonJsonSerializer in Lagom 1.6.x
-      // FIXME maybe make this configurable, but I don't see any other usages than for Lagom?
       boundSerializer.getClass.getName == "com.lightbend.lagom.internal.jackson.OldJacksonJsonSerializer"
     } catch {
       case NonFatal(_) => false // not bound
     }
   }
+
+  private def isInWhitelistClassPrefix(className: String): Boolean =
+    whitelistClassPrefix.exists(className.startsWith)
 
   /**
    * Check that serialization-bindings are not configured with open-ended interfaces,
@@ -375,8 +386,8 @@ object JacksonCborSerializer {
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 ⇒ ()
-      case n ⇒
+      case -1 => ()
+      case n =>
         out.write(buffer, 0, n)
         readChunk()
     }
