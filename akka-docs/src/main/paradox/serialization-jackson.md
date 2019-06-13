@@ -80,7 +80,7 @@ configuration as described above.
 * `jackson-json` - ordinary text based JSON
 * `jackson-cbor` - binary [CBOR data format](https://github.com/FasterXML/jackson-dataformats-binary/tree/master/cbor)
 
-The binary format is more compact and have slightly better better performance than the JSON format.
+The binary format is more compact, with slightly better performance than the JSON format.
 
 ## Annotations
 
