@@ -25,6 +25,8 @@ abstract class BehaviorInterceptor[O, I] {
    * protocol of an actor causes problems, for example class cast exceptions for a message not of type `O` that
    * the actor still knows how to deal with. Note that this is only possible to use when `O` and `I` are the same type.
    *
+   * FIXME description is not correct
+   *
    * @return A subtype of `O` that should be intercepted or `null` to intercept all `O`s.
    *         Subtypes of `O` matching this are passed directly to the inner behavior without interception.
    */

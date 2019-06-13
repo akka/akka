@@ -79,6 +79,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
+    val anyCtx = ctx.asInstanceOf[ActorContext[Any]]
     ctx.setLoggerClass(loggerClass)
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
@@ -105,6 +106,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         ctx.log.warning("Failed to delete events to sequence number [{}] due to [{}].", toSequenceNr, failure)
     }
 
+    val journalResponses = anyCtx.messageAdapter[JournalProtocol.Response](InternalProtocol.JournalResponse.apply)
+    val snapshotResponses = anyCtx.messageAdapter[SnapshotProtocol.Response](InternalProtocol.SnapshotterResponse.apply)
+    val permitterResponses =
+      anyCtx.messageAdapter[RecoveryPermitter.RecoveryPermitGranted.type](_ => InternalProtocol.RecoveryPermitGranted)
+
     // do this once, even if the actor is restarted
     initialize(context.asScala)
 
@@ -124,20 +130,29 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             snapshotWhen,
             recovery,
             retention,
+            journalResponses,
+            snapshotResponses,
+            permitterResponses,
             holdingRecoveryPermit = false,
             settings = settings,
             stashState = stashState)
 
-          // needs to accept Any since we also can get messages from the journal
-          // not part of the protocol
-          val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
-
+          // needs to accept Any since we can receive both Command and InternalProtocol
+          val interceptor = new BehaviorInterceptor[Any, InternalProtocol] {
+            // FIXME is replacement of this interceptor working for restarts, or do we need isSame impl?
             import BehaviorInterceptor._
-            def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
-                : Behavior[Any] = { target(ctx, msg) }
 
-            def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
-                : Behavior[Any] = {
+            def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[InternalProtocol])
+                : Behavior[InternalProtocol] = {
+              msg match {
+                case internal: InternalProtocol => target(ctx, internal) // such as RecoveryTickEvent
+                case cmd: Command @unchecked    => target(ctx, InternalProtocol.IncomingCommand(cmd))
+              }
+
+            }
+
+            def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[InternalProtocol])
+                : Behavior[InternalProtocol] = {
               if (signal == PostStop) {
                 eventSourcedSetup.cancelRecoveryTimer()
                 // clear stash to be GC friendly
@@ -145,16 +160,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
               }
               target(ctx, signal)
             }
-            override def toString: String = "onStopInterceptor"
+            override def toString: String = "commandInterceptor"
           }
-          val widened = RequestingRecoveryPermit(eventSourcedSetup).widen[Any] {
-            case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
-            case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
-            case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
-            case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-            case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
-          }
-          Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
+
+          Behaviors.intercept(interceptor)(RequestingRecoveryPermit(eventSourcedSetup)).narrow[Command]
         }
 
       }

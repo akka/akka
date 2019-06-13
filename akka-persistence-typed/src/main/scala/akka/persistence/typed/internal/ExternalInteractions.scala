@@ -39,8 +39,9 @@ private[akka] trait JournalInteractions[C, E, S] {
       sender = senderNotKnownBecauseAkkaTyped)
 
     val write = AtomicWrite(repr) :: Nil
-    setup.journal
-      .tell(JournalProtocol.WriteMessages(write, setup.selfUntyped, setup.writerIdentity.instanceId), setup.selfUntyped)
+    setup.journal.tell(
+      JournalProtocol.WriteMessages(write, setup.journalresponses, setup.writerIdentity.instanceId),
+      setup.journalresponses)
 
     newState
   }
@@ -63,8 +64,8 @@ private[akka] trait JournalInteractions[C, E, S] {
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
-        JournalProtocol.WriteMessages(write :: Nil, setup.selfUntyped, setup.writerIdentity.instanceId),
-        setup.selfUntyped)
+        JournalProtocol.WriteMessages(write :: Nil, setup.journalresponses, setup.writerIdentity.instanceId),
+        setup.journalresponses)
 
       newState
     } else state
@@ -77,11 +78,11 @@ private[akka] trait JournalInteractions[C, E, S] {
       toSeqNr,
       setup.recovery.replayMax,
       setup.persistenceId.id,
-      setup.selfUntyped)
+      setup.journalresponses)
   }
 
   protected def requestRecoveryPermit(): Unit = {
-    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfUntyped)
+    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.permitterResponses)
   }
 
   /** Intended to be used in .onSignal(returnPermitOnStop) by behaviors */
@@ -99,7 +100,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   protected def tryReturnRecoveryPermit(reason: String): Unit = {
     if (setup.holdingRecoveryPermit) {
       setup.log.debug("Returning recovery permit, reason: {}", reason)
-      setup.persistence.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, setup.selfUntyped)
+      setup.persistence.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, setup.permitterResponses)
       setup.holdingRecoveryPermit = false
     } // else, no need to return the permit
   }
@@ -111,12 +112,11 @@ private[akka] trait JournalInteractions[C, E, S] {
    */
   protected def internalDeleteEvents(lastSequenceNr: Long, toSequenceNr: Long): Unit =
     if (toSequenceNr > 0) {
-      val self = setup.selfUntyped
 
       if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
-        setup.journal ! JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, self)
+        setup.journal ! JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, setup.journalresponses)
       else
-        self ! DeleteMessagesFailure(
+        setup.journalresponses ! DeleteMessagesFailure(
           new RuntimeException(
             s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
           toSequenceNr)
@@ -134,7 +134,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
    * to the running [[PersistentActor]].
    */
   protected def loadSnapshot(criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit = {
-    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfUntyped)
+    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.snapshotResponses)
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
@@ -144,7 +144,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
     else
       setup.snapshotStore.tell(
         SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId.id, state.seqNr), state.state),
-        setup.selfUntyped)
+        setup.snapshotResponses)
   }
 
   /** Deletes the snapshots up to and including the `sequenceNr`. */
@@ -153,7 +153,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
       val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
       setup.log.debug("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
       setup.snapshotStore
-        .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
+        .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.snapshotResponses)
     }
   }
 }

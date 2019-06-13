@@ -8,9 +8,10 @@ import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 import akka.actor.Cancellable
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Logger
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef => UntypedActorRef }
 import akka.actor.typed.Signal
 import akka.annotation.InternalApi
 import akka.persistence._
@@ -48,6 +49,9 @@ private[akka] final class BehaviorSetup[C, E, S](
     val snapshotWhen: (S, E, Long) => Boolean,
     val recovery: Recovery,
     val retention: RetentionCriteria,
+    _journalresponses: ActorRef[JournalProtocol.Response],
+    _snapshotResponses: ActorRef[SnapshotProtocol.Response],
+    _permitterResponses: ActorRef[RecoveryPermitter.RecoveryPermitGranted.type],
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
     val stashState: StashState) {
@@ -58,10 +62,12 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
-  val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
-  val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+  val journal: UntypedActorRef = persistence.journalFor(settings.journalPluginId)
+  val snapshotStore: UntypedActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  def selfUntyped = context.self.toUntyped
+  val journalresponses: UntypedActorRef = _journalresponses.toUntyped
+  val snapshotResponses: UntypedActorRef = _snapshotResponses.toUntyped
+  val permitterResponses: UntypedActorRef = _permitterResponses.toUntyped
 
   private var mdc: Map[String, Any] = Map.empty
   private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed
