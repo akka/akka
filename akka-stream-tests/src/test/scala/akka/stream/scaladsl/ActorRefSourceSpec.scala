@@ -14,7 +14,6 @@ import akka.stream._
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
-import akka.stream.testkit.TestSubscriber.OnComplete
 import org.reactivestreams.Publisher
 
 class ActorRefSourceSpec extends StreamSpec {
@@ -33,7 +32,7 @@ class ActorRefSourceSpec extends StreamSpec {
       ref ! 2
       s.expectNext(2)
       ref ! 3
-      s.expectNoMsg(500.millis)
+      s.expectNoMessage(500.millis)
     }
 
     "buffer when needed" in {
@@ -138,7 +137,7 @@ class ActorRefSourceSpec extends StreamSpec {
         else
           s.expectNextOrComplete() match {
             case Right(`n`) => verifyNext(n + 1)
-            case Right(x)   => fail("expected $n, got $x")
+            case Right(x)   => fail(s"expected $n, got $x")
             case Left(_)    => // ok, completed
           }
       }
@@ -159,7 +158,7 @@ class ActorRefSourceSpec extends StreamSpec {
         else
           s.expectNextOrComplete() match {
             case Right(`n`) => verifyNext(n + 1)
-            case Right(x)   => fail("expected $n, got $x")
+            case Right(x)   => fail(s"expected $n, got $x")
             case Left(_)    => // ok, completed
           }
       }

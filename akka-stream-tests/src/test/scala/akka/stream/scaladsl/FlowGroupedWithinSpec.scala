@@ -44,16 +44,16 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       (1 to demand3).foreach { _ =>
         pSub.sendNext(input.next())
       }
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
       c.expectNext(((demand1 + demand2 + 1).toInt to (demand1 + demand2 + demand3).toInt).toVector)
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
       pSub.expectRequest
       val last = input.next()
       pSub.sendNext(last)
       pSub.sendComplete()
       c.expectNext(List(last))
       c.expectComplete
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "deliver bufferd elements onComplete before the timeout" taggedAs TimingTest in {
@@ -63,7 +63,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       cSub.request(100)
       c.expectNext((1 to 3).toList)
       c.expectComplete
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "buffer groups until requested from downstream" taggedAs TimingTest in {
@@ -83,12 +83,12 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       (1 to demand2).foreach { _ =>
         pSub.sendNext(input.next())
       }
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
       cSub.request(1)
       c.expectNext(((demand1 + 1) to (demand1 + demand2)).toVector)
       pSub.sendComplete()
       c.expectComplete
-      c.expectNoMsg(100.millis)
+      c.expectNoMessage(100.millis)
     }
 
     "drop empty groups" taggedAs TimingTest in {
@@ -99,14 +99,14 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       val cSub = c.expectSubscription
       cSub.request(2)
       pSub.expectRequest
-      c.expectNoMsg(600.millis)
+      c.expectNoMessage(600.millis)
       pSub.sendNext(1)
       pSub.sendNext(2)
       c.expectNext(List(1, 2))
       // nothing more requested
-      c.expectNoMsg(1100.millis)
+      c.expectNoMessage(1100.millis)
       cSub.request(3)
-      c.expectNoMsg(600.millis)
+      c.expectNoMessage(600.millis)
       pSub.sendComplete()
       c.expectComplete
     }
@@ -129,14 +129,14 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       Source.fromPublisher(upstream).groupedWithin(3, 2.second).to(Sink.fromSubscriber(downstream)).run()
 
       downstream.request(2)
-      downstream.expectNoMsg(1000.millis)
+      downstream.expectNoMessage(1000.millis)
 
       (1 to 4).foreach(upstream.sendNext)
       downstream.within(1000.millis) {
         downstream.expectNext((1 to 3).toVector)
       }
 
-      downstream.expectNoMsg(1500.millis)
+      downstream.expectNoMessage(1500.millis)
 
       downstream.within(1000.millis) {
         downstream.expectNext(List(4))
@@ -144,7 +144,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
       upstream.sendComplete()
       downstream.expectComplete()
-      downstream.expectNoMsg(100.millis)
+      downstream.expectNoMessage(100.millis)
     }
 
     "reset time window when exact max elements reached" taggedAs TimingTest in {
@@ -217,14 +217,14 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
         .run()
 
       downstream.ensureSubscription()
-      downstream.expectNoMsg(100.millis)
+      downstream.expectNoMessage(100.millis)
       upstream.sendNext(1)
       upstream.sendNext(2)
       upstream.sendNext(3)
       upstream.sendComplete()
       downstream.request(1)
       downstream.expectNext(Vector(1, 2): immutable.Seq[Long])
-      downstream.expectNoMsg(100.millis)
+      downstream.expectNoMessage(100.millis)
       downstream.request(1)
       downstream.expectNext(Vector(3): immutable.Seq[Long])
       downstream.expectComplete()
@@ -287,7 +287,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       upstream.sendNext("22")
       upstream.sendNext("333")
       upstream.sendNext("22")
-      downstream.expectNoMsg(50.millis)
+      downstream.expectNoMessage(50.millis)
       downstream.expectNext(Vector("333", "22", "333", "22"): immutable.Seq[String])
       upstream.sendComplete()
       downstream.expectComplete()

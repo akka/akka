@@ -231,7 +231,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       interpreter.execute(2)
 
       expectMsg("postStop2")
-      expectNoMsg(Duration.Zero)
+      expectNoMessage(Duration.Zero)
 
       interpreter.isCompleted should ===(false)
       interpreter.isSuspended should ===(false)

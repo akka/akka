@@ -15,12 +15,14 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.DefaultTimeout
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
+@silent // tests deprecated APIs
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._

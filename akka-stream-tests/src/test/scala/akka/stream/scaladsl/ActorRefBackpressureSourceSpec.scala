@@ -8,7 +8,7 @@ import akka.actor.Status
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, Attributes }
+import akka.stream.ActorMaterializer
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 

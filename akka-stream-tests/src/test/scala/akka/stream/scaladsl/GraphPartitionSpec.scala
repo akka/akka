@@ -87,7 +87,7 @@ class GraphPartitionSpec extends StreamSpec {
         .run()
 
       c1.request(1)
-      c1.expectNoMsg(1.seconds)
+      c1.expectNoMessage(1.seconds)
       c2.request(1)
       c2.expectNext(6)
       c1.expectNext(3)
@@ -193,7 +193,7 @@ class GraphPartitionSpec extends StreamSpec {
         .run()
 
       c1.request(1)
-      c1.expectNoMsg(1.second)
+      c1.expectNoMessage(1.second)
       c2.request(1)
       c2.expectNext(6)
       c1.expectComplete()
@@ -227,7 +227,7 @@ class GraphPartitionSpec extends StreamSpec {
     val even = TestSubscriber.probe[Int]()
     Source(1 to 2).divertTo(Sink.fromSubscriber(odd), _ % 2 != 0).to(Sink.fromSubscriber(even)).run()
     even.request(1)
-    even.expectNoMsg(1.second)
+    even.expectNoMessage(1.second)
     odd.request(1)
     odd.expectNext(1)
     even.expectNext(2)
