@@ -329,6 +329,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
    to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
+* Java @apidoc[EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
 
 
 #### Akka Typed Stream API changes
