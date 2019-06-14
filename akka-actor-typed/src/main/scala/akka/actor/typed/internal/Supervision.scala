@@ -83,9 +83,11 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
       strategy.logLevel match {
-        case Logging.ErrorLevel => ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case Logging.WarningLevel => ctx.asScala.log.warning(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case level  => ctx.asScala.log.log(level, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case Logging.ErrorLevel =>
+          ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case Logging.WarningLevel =>
+          ctx.asScala.log.warning(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case level => ctx.asScala.log.log(level, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
       }
     }
   }
