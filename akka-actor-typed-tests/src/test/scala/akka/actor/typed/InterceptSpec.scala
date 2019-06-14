@@ -38,6 +38,50 @@ object InterceptSpec {
     override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
       other.isInstanceOf[SameTypeInterceptor]
   }
+
+  // This is similar to how EventSourcedBehavior is implemented
+  object MultiProtocol {
+    final case class ExternalResponse(s: String)
+    final case class Command(s: String)
+
+    sealed trait InternalProtocol
+    object InternalProtocol {
+      final case class WrappedCommand(c: Command) extends InternalProtocol
+      final case class WrappedExternalResponse(r: ExternalResponse) extends InternalProtocol
+    }
+
+    private class ProtocolTransformer extends BehaviorInterceptor[Any, InternalProtocol] {
+      override def aroundReceive(
+          ctx: TypedActorContext[Any],
+          msg: Any,
+          target: BehaviorInterceptor.ReceiveTarget[InternalProtocol]): Behavior[InternalProtocol] = {
+        val wrapped = msg match {
+          case c: Command          => InternalProtocol.WrappedCommand(c)
+          case r: ExternalResponse => InternalProtocol.WrappedExternalResponse(r)
+        }
+        target(ctx, wrapped)
+      }
+
+      override def aroundSignal(
+          ctx: TypedActorContext[Any],
+          signal: Signal,
+          target: BehaviorInterceptor.SignalTarget[InternalProtocol]): Behavior[InternalProtocol] =
+        target(ctx, signal)
+    }
+
+    def apply(probe: ActorRef[String]): Behavior[Command] = {
+      Behaviors
+        .intercept(new ProtocolTransformer)(Behaviors.receiveMessage[InternalProtocol] {
+          case InternalProtocol.WrappedCommand(cmd) =>
+            probe ! cmd.s
+            Behaviors.same
+          case InternalProtocol.WrappedExternalResponse(rsp) =>
+            probe ! rsp.s
+            Behaviors.same
+        })
+        .narrow
+    }
+  }
 }
 
 class InterceptSpec extends ScalaTestWithActorTestKit("""
@@ -417,6 +461,73 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       val elements = probe.receiveMessage()
       if (elements.count(_.getClassName == "SameTypeInterceptor") > 1)
         fail(s"Stack contains SameTypeInterceptor more than once: \n${elements.mkString("\n\t")}")
+    }
+  }
+
+  "Protocol transformer interceptor" must {
+    import MultiProtocol._
+
+    "be possible to combine with another interceptor" in {
+      val probe = createTestProbe[String]()
+
+      val toUpper = new BehaviorInterceptor[Command, Command] {
+        override def aroundReceive(
+            ctx: TypedActorContext[Command],
+            msg: Command,
+            target: BehaviorInterceptor.ReceiveTarget[Command]): Behavior[Command] = {
+          target(ctx, Command(msg.s.toUpperCase()))
+        }
+
+        override def aroundSignal(
+            ctx: TypedActorContext[Command],
+            signal: Signal,
+            target: BehaviorInterceptor.SignalTarget[Command]): Behavior[Command] = {
+          target(ctx, signal)
+        }
+
+        // this test works because of this
+        override def interceptMessageType: Class[_ <: Command] = classOf[Command]
+      }
+
+      val ref = spawn(Behaviors.intercept(toUpper)(MultiProtocol(probe.ref)))
+
+      ref ! Command("a")
+      probe.expectMessage("A")
+      ref.unsafeUpcast ! ExternalResponse("b")
+      probe.expectMessage("b") // bypass toUpper interceptor
+    }
+
+    "be possible to combine with widen" in {
+      pending // FIXME #25887
+      val probe = createTestProbe[String]()
+      val ref = spawn(MultiProtocol(probe.ref).widen[String] {
+        case s => Command(s.toUpperCase())
+      })
+
+      ref ! "a"
+      probe.expectMessage("A")
+      ref.unsafeUpcast ! ExternalResponse("b")
+      probe.expectMessage("b") // bypass widen interceptor
+    }
+
+    "be possible to combine with MDC" in {
+      pending // FIXME #26953
+      val probe = createTestProbe[String]()
+      val ref = spawn(Behaviors.setup[Command] { _ =>
+        Behaviors.withMdc(staticMdc = Map("x" -> "y"), mdcForMessage = (msg: Command) => {
+          probe.ref ! s"mdc:${msg.s.toUpperCase()}"
+          Map("msg" -> msg.s.toUpperCase())
+        }) {
+          MultiProtocol(probe.ref)
+        }
+      })
+
+      ref ! Command("a")
+      probe.expectMessage("mdc:A")
+      probe.expectMessage("a")
+      ref.unsafeUpcast ! ExternalResponse("b")
+      probe.expectMessage("b") // bypass mdc interceptor
+
     }
   }
 
