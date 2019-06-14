@@ -497,7 +497,7 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    val tap = new BehaviorInterceptor[Command, Command] {
+    val tap = new BehaviorInterceptor[Command, Command, Command] {
       override def aroundReceive(
           context: TypedActorContext[Command],
           message: Command,
@@ -616,7 +616,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    val tap = new BehaviorInterceptor[Command, Command] {
+    val tap = new BehaviorInterceptor[Command, Command, Command] {
       override def aroundReceive(
           context: TypedActorContext[Command],
           message: Command,

@@ -20,18 +20,24 @@ import akka.util.BoxedType
  * @param interceptMessageClass Allows for applying the interceptor only to certain message types.
  *                              If the message is not of this class or a subclass thereof it will
  *                              bypass the interceptor and be continue to the inner behavior untouched.
- *
  * @tparam O The outer message type – the type of messages the intercepting behavior will accept
+ * @tparam M The middle message type – the type of messages the interceptor cares about. Allows for
+ *           applying the interceptor only to certain message types.
+ *           If the message is not of this class or a subclass thereof it will
+ *           bypass the interceptor and be continue to the inner behavior untouched.
  * @tparam I The inner message type - the type of message the wrapped behavior accepts
  */
-abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[_ <: O]) {
+abstract class BehaviorInterceptor[O, M <: O, I](val interceptMessageClass: Class[M]) {
   import BehaviorInterceptor._
 
   /**
    * Scala API
    */
-  def this()(implicit interceptMessageClassTag: ClassTag[O]) =
-    this(BoxedType(interceptMessageClassTag.runtimeClass).asInstanceOf[Class[O]])
+  def this()(implicit interceptMessageClassTag: ClassTag[M]) = // FIXME O or M here?
+    this({
+      val runtimeClass = interceptMessageClassTag.runtimeClass
+      (if (runtimeClass eq null) runtimeClass else BoxedType(runtimeClass)).asInstanceOf[Class[M]]
+    })
 
   /**
    * Override to intercept actor startup. To trigger startup of
@@ -39,7 +45,7 @@ abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[_ <: O
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] =
+  def aroundStart(ctx: TypedActorContext[M], target: PreStartTarget[I]): Behavior[I] =
     target.start(ctx)
 
   /**
@@ -49,7 +55,7 @@ abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[_ <: O
    *
    * @return The behavior for next message or signal
    */
-  def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
+  def aroundReceive(ctx: TypedActorContext[M], msg: M, target: ReceiveTarget[I]): Behavior[I]
 
   /**
    * Intercept a signal sent to the running actor. Pass the signal on to the next behavior
@@ -57,14 +63,14 @@ abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[_ <: O
    *
    * @return The behavior for next message or signal
    */
-  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
+  def aroundSignal(ctx: TypedActorContext[M], signal: Signal, target: SignalTarget[I]): Behavior[I]
 
   /**
    * @return `true` if this behavior logically the same as another behavior interceptor and can therefore be eliminated
    *         (to avoid building infinitely growing stacks of behaviors)? Default implementation is based on instance
    *         equality. Override to provide use case specific logic.
    */
-  def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = this eq other
+  def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean = this eq other
 
 }
 

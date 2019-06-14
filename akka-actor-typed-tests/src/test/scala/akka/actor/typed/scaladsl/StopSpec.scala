@@ -67,7 +67,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Done]()
       spawn(Behaviors.setup[AnyRef] { _ =>
         Behaviors.intercept(() =>
-          new BehaviorInterceptor[AnyRef, AnyRef] {
+          new BehaviorInterceptor[AnyRef, AnyRef, AnyRef] {
             override def aroundReceive(
                 context: typed.TypedActorContext[AnyRef],
                 message: AnyRef,

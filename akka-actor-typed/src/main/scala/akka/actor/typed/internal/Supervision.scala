@@ -35,14 +35,14 @@ import akka.util.unused
       case r: RestartOrBackoff =>
         Behaviors.setup { _ =>
           // deferred to make sure supervisor instance not shared among instances
-          Behaviors.intercept[Any, T](() => new RestartSupervisor(initialBehavior, r))(initialBehavior).narrow
+          Behaviors.intercept[Any, Any, T](() => new RestartSupervisor(initialBehavior, r))(initialBehavior).narrow
         }
       case r: Resume =>
         // stateless so safe to share
-        Behaviors.intercept[Any, T](() => new ResumeSupervisor(r))(initialBehavior).narrow
+        Behaviors.intercept[Any, Any, T](() => new ResumeSupervisor(r))(initialBehavior).narrow
       case r: Stop =>
         // stateless so safe to share
-        Behaviors.intercept[Any, T](() => new StopSupervisor(initialBehavior, r))(initialBehavior).narrow
+        Behaviors.intercept[Any, Any, T](() => new StopSupervisor(initialBehavior, r))(initialBehavior).narrow
     }
   }
 }
@@ -53,7 +53,7 @@ import akka.util.unused
 @InternalApi
 private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: SupervisorStrategy)(
     implicit ev: ClassTag[Thr])
-    extends BehaviorInterceptor[Any, I] {
+    extends BehaviorInterceptor[Any, Any, I] {
 
   // FIXME test that supervision works also when exception from a non-O message type, like InternalProtocol in EventSourcedBehavior
 
@@ -62,7 +62,7 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
   protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =
     throwableClass.isAssignableFrom(UnstashException.unwrap(t).getClass)
 
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
+  override def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean = {
     other match {
       case as: AbstractSupervisor[_, _, Thr] if throwableClass == as.throwableClass => true
       case _                                                                        => false

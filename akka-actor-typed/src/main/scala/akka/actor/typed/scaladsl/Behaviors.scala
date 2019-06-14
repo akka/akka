@@ -148,7 +148,8 @@ object Behaviors {
    * If the interceptor has no state the same instance can be returned from the factory to avoid unnecessary object
    * creation.
    */
-  def intercept[O, I](behaviorInterceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+  def intercept[O, M <: O, I](behaviorInterceptor: () => BehaviorInterceptor[O, M, I])(
+      behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**

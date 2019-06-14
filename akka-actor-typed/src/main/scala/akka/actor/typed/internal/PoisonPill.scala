@@ -4,8 +4,6 @@
 
 package akka.actor.typed.internal
 
-import scala.reflect.ClassTag
-
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
@@ -35,17 +33,17 @@ import akka.annotation.InternalApi
  * application protocol. Persistent actors handle `PoisonPill` and run side effects after persist
  * and process stashed messages before stopping.
  */
-@InternalApi private[akka] final class PoisonPillInterceptor[M: ClassTag] extends BehaviorInterceptor[M, M] {
+@InternalApi private[akka] final class PoisonPillInterceptor[T] extends BehaviorInterceptor[T, T, T](null) {
   override def aroundReceive(
-      ctx: TypedActorContext[M],
-      msg: M,
-      target: BehaviorInterceptor.ReceiveTarget[M]): Behavior[M] =
-    target(ctx, msg)
+      ctx: TypedActorContext[T],
+      msg: T,
+      target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] =
+    throw new IllegalStateException("Unexpected message in PoisonPillInterceptor.aroundReceive")
 
   override def aroundSignal(
-      ctx: TypedActorContext[M],
+      ctx: TypedActorContext[T],
       signal: Signal,
-      target: BehaviorInterceptor.SignalTarget[M]): Behavior[M] = {
+      target: BehaviorInterceptor.SignalTarget[T]): Behavior[T] = {
     signal match {
       case p: PoisonPill =>
         val next = target(ctx, p)
@@ -55,7 +53,7 @@ import akka.annotation.InternalApi
     }
   }
 
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
+  override def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean =
     // only one interceptor per behavior stack is needed
     other.isInstanceOf[PoisonPillInterceptor[_]]
 }

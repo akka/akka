@@ -174,7 +174,9 @@ object Behaviors {
    * If the interceptor has no state the same instance can be returned from the factory to avoid unnecessary object
    * creation.
    */
-  def intercept[O, I](behaviorInterceptor: Supplier[BehaviorInterceptor[O, I]], behavior: Behavior[I]): Behavior[O] =
+  def intercept[O, M <: O, I](
+      behaviorInterceptor: Supplier[BehaviorInterceptor[O, M, I]],
+      behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(() => behaviorInterceptor.get())(behavior)
 
   /**

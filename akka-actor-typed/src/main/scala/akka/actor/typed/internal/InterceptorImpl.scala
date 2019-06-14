@@ -22,9 +22,9 @@ import akka.util.LineNumbers
 @InternalApi
 private[akka] object InterceptorImpl {
 
-  def apply[O, I](interceptor: () => BehaviorInterceptor[O, I], nestedBehavior: Behavior[I]): Behavior[O] = {
+  def apply[O, M <: O, I](interceptor: () => BehaviorInterceptor[O, M, I], nestedBehavior: Behavior[I]): Behavior[O] = {
     BehaviorImpl.DeferredBehavior[O] { ctx =>
-      val interceptorBehavior = new InterceptorImpl[O, I](interceptor(), nestedBehavior)
+      val interceptorBehavior = new InterceptorImpl[O, M, I](interceptor(), nestedBehavior)
       interceptorBehavior.preStart(ctx)
     }
   }
@@ -36,8 +36,8 @@ private[akka] object InterceptorImpl {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class InterceptorImpl[O, I](
-    val interceptor: BehaviorInterceptor[O, I],
+private[akka] final class InterceptorImpl[O, M <: O, I](
+    val interceptor: BehaviorInterceptor[O, M, I],
     val nestedBehavior: Behavior[I])
     extends ExtensibleBehavior[O] {
 
@@ -66,9 +66,12 @@ private[akka] final class InterceptorImpl[O, I](
     override def toString: String = s"SignalTarget($nestedBehavior)"
   }
 
+  private def narrow(ctx: typed.TypedActorContext[O]): typed.TypedActorContext[M] =
+    ctx.asInstanceOf[typed.TypedActorContext[M]]
+
   // invoked pre-start to start/de-duplicate the initial behavior stack
   def preStart(ctx: typed.TypedActorContext[O]): Behavior[O] = {
-    val started = interceptor.aroundStart(ctx, preStartTarget)
+    val started = interceptor.aroundStart(narrow(ctx), preStartTarget)
     deduplicate(started, ctx)
   }
 
@@ -77,16 +80,17 @@ private[akka] final class InterceptorImpl[O, I](
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
     // TODO performance optimization could maybe to avoid isAssignableFrom if interceptMessageClass is Class[Object]?
+    val interceptMessageClass = interceptor.interceptMessageClass
     val result =
-      if (interceptor.interceptMessageClass.isAssignableFrom(msg.getClass))
-        interceptor.aroundReceive(ctx, msg, receiveTarget)
+      if ((interceptMessageClass ne null) && interceptor.interceptMessageClass.isAssignableFrom(msg.getClass))
+        interceptor.aroundReceive(narrow(ctx), msg.asInstanceOf[M], receiveTarget)
       else
         receiveTarget.apply(ctx, msg.asInstanceOf[I])
     deduplicate(result, ctx)
   }
 
   override def receiveSignal(ctx: typed.TypedActorContext[O], signal: Signal): Behavior[O] = {
-    val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
+    val interceptedResult = interceptor.aroundSignal(narrow(ctx), signal, signalTarget)
     deduplicate(interceptedResult, ctx)
   }
 
@@ -97,14 +101,14 @@ private[akka] final class InterceptorImpl[O, I](
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
       val duplicateInterceptExists = Behavior.existsInStack(started) {
-        case i: InterceptorImpl[O, I]
-            if interceptor.isSame(i.interceptor.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
+        case i: InterceptorImpl[O, M, I]
+            if interceptor.isSame(i.interceptor.asInstanceOf[BehaviorInterceptor[Any, Any, Any]]) =>
           true
         case _ => false
       }
 
       if (duplicateInterceptExists) started.unsafeCast[O]
-      else new InterceptorImpl[O, I](interceptor, started)
+      else new InterceptorImpl[O, M, I](interceptor, started)
     }
   }
 
@@ -118,7 +122,7 @@ private[akka] final class InterceptorImpl[O, I](
  */
 @InternalApi
 private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRef[T])
-    extends BehaviorInterceptor[T, T] {
+    extends BehaviorInterceptor[T, T, T] {
   import BehaviorInterceptor._
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
@@ -131,7 +135,7 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
   }
 
   // only once to the same actor in the same behavior stack
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
+  override def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean = other match {
     case MonitorInterceptor(`actorRef`) => true
     case _                              => false
   }
@@ -144,7 +148,8 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class LogMessagesInterceptor[T: ClassTag](opts: LogOptions) extends BehaviorInterceptor[T, T] {
+private[akka] final case class LogMessagesInterceptor[T: ClassTag](opts: LogOptions)
+    extends BehaviorInterceptor[T, T, T] {
 
   import BehaviorInterceptor._
 
@@ -161,7 +166,7 @@ private[akka] final case class LogMessagesInterceptor[T: ClassTag](opts: LogOpti
   }
 
   // only once in the same behavior stack
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
+  override def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean = other match {
     case LogMessagesInterceptor(`opts`) => true
     case _                              => false
   }
@@ -182,11 +187,11 @@ private[akka] object WidenedInterceptor {
  */
 @InternalApi
 private[akka] final case class WidenedInterceptor[O: ClassTag, I](matcher: PartialFunction[O, I])
-    extends BehaviorInterceptor[O, I] {
+    extends BehaviorInterceptor[O, O, I] { // FIXME O vs M here?
   import BehaviorInterceptor._
   import WidenedInterceptor._
 
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
+  override def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean = other match {
     // If they use the same pf instance we can allow it, to have one way to workaround defining
     // "recursive" narrowed behaviors.
     case WidenedInterceptor(`matcher`)    => true

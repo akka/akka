@@ -72,7 +72,7 @@ public class ActorLoggingTest extends JUnitSuite {
         Behaviors.setup(
             context ->
                 Behaviors.withMdc(
-                    null,
+                    Protocol.class,
                     (message) -> {
                       Map<String, Object> mdc = new HashMap<>();
                       mdc.put("txId", message.getTransactionId());

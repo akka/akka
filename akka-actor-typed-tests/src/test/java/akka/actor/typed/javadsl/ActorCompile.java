@@ -41,7 +41,7 @@ public class ActorCompile {
   Behavior<MyMsg> actor6 =
       intercept(
           () ->
-              new BehaviorInterceptor<MyMsg, MyMsg>(MyMsg.class) {
+              new BehaviorInterceptor<MyMsg, MyMsg, MyMsg>(MyMsg.class) {
                 @Override
                 public Behavior<MyMsg> aroundReceive(
                     TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
