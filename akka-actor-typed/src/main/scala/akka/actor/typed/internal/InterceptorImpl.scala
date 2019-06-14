@@ -20,9 +20,9 @@ import akka.util.LineNumbers
 @InternalApi
 private[akka] object InterceptorImpl {
 
-  def apply[O, I](interceptor: BehaviorInterceptor[O, I], nestedBehavior: Behavior[I]): Behavior[O] = {
+  def apply[O, I](interceptor: () => BehaviorInterceptor[O, I], nestedBehavior: Behavior[I]): Behavior[O] = {
     BehaviorImpl.DeferredBehavior[O] { ctx =>
-      val interceptorBehavior = new InterceptorImpl[O, I](interceptor, nestedBehavior)
+      val interceptorBehavior = new InterceptorImpl[O, I](interceptor(), nestedBehavior)
       interceptorBehavior.preStart(ctx)
     }
   }

@@ -39,19 +39,20 @@ public class ActorCompile {
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 =
       intercept(
-          new BehaviorInterceptor<MyMsg, MyMsg>() {
-            @Override
-            public Behavior<MyMsg> aroundReceive(
-                TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
-              return target.apply(context, message);
-            }
+          () ->
+              new BehaviorInterceptor<MyMsg, MyMsg>() {
+                @Override
+                public Behavior<MyMsg> aroundReceive(
+                    TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
+                  return target.apply(context, message);
+                }
 
-            @Override
-            public Behavior<MyMsg> aroundSignal(
-                TypedActorContext<MyMsg> context, Signal signal, SignalTarget<MyMsg> target) {
-              return target.apply(context, signal);
-            }
-          },
+                @Override
+                public Behavior<MyMsg> aroundSignal(
+                    TypedActorContext<MyMsg> context, Signal signal, SignalTarget<MyMsg> target) {
+                  return target.apply(context, signal);
+                }
+              },
           actor5);
   Behavior<MyMsgA> actor7 = actor6.narrow();
   Behavior<MyMsg> actor8 =

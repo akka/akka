@@ -41,7 +41,7 @@ private[akka] object BehaviorTags {
   }
 
   def widened[O, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
-    intercept(WidenedInterceptor(matcher))(behavior)
+    intercept(() => WidenedInterceptor(matcher))(behavior)
 
   def same[T]: Behavior[T] = SameBehavior.unsafeCast[T]
 
@@ -162,7 +162,7 @@ private[akka] object BehaviorTags {
    * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
-  def intercept[O, I](interceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+  def intercept[O, I](interceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     InterceptorImpl(interceptor, behavior)
 
   class OrElseBehavior[T](first: Behavior[T], second: Behavior[T]) extends ExtensibleBehavior[T] {

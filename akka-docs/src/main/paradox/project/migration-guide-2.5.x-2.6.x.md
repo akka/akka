@@ -316,6 +316,7 @@ it will work properly again.
 Akka Typed APIs are still marked as [may change](../common/may-change.md) and a few changes were
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
+* `Behaviors.intercept` now takes a factory function for the interceptor.
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
