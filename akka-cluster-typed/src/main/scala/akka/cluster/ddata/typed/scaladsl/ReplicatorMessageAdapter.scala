@@ -35,8 +35,14 @@ object ReplicatorMessageAdapter {
  * For the default replicator in the [[DistributedData]] extension a `ReplicatorMessageAdapter`
  * can be created with [[DistributedData.replicatorMessageAdapter]].
  *
- * @param context The [[ActorContext]] of the requesting actor.
- * @param replicator The replicator to interact with, typically `DistributedData(system).replicator`.
+ * *Warning*: `ReplicatorMessageAdapter` is not thread-safe and must only be used from the actor
+ * corresponding to the given `ActorContext`. It must not be accessed from threads other
+ * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+ * It must not be shared between several actor instances.
+ *
+ * @param context              The [[ActorContext]] of the requesting actor. The `ReplicatorMessageAdapter` can
+ *                             only be used in this actor.
+ * @param replicator           The replicator to interact with, typically `DistributedData(system).replicator`.
  * @param unexpectedAskTimeout The timeout to use for `ask` operations. This should be longer than
  *                             the `timeout` given in [[Replicator.WriteConsistency]] and
  *                             [[Replicator.ReadConsistency]]. The replicator will always send
@@ -45,7 +51,6 @@ object ReplicatorMessageAdapter {
  *                             If `askUpdate`, `askGet` or `askDelete` takes longer then this
  *                             `unexpectedAskTimeout` a [[java.util.concurrent.TimeoutException]]
  *                             will be thrown by the requesting actor and may be handled by supervision.
- *
  * @tparam A Message type of the requesting actor.
  * @tparam B Type of the [[ReplicatedData]].
  */

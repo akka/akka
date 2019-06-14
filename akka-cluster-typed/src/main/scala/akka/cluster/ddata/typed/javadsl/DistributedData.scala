@@ -56,8 +56,13 @@ abstract class DistributedData extends Extension {
    * `ReplicatedData` types, e.g. an `OrSet<String>` and a `GCounter`, an adapter can be created
    * for each type.
    *
-   * @param context The [[ActorContext]] of the requesting actor.
+   * *Warning*: `ReplicatorMessageAdapter` is not thread-safe and must only be used from the actor
+   * corresponding to the given `ActorContext`. It must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]]
+   * callbacks. It must not be shared between several actor instances.
    *
+   * @param context The [[ActorContext]] of the requesting actor. The `ReplicatorMessageAdapter` can only be
+   *                used in this actor.
    * @tparam A Message type of the requesting actor.
    * @tparam B Type of the [[ReplicatedData]].
    */
