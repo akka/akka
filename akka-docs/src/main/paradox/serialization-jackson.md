@@ -294,16 +294,14 @@ Java compiler option is enabled.
 
 JSON can be rather verbose and for large messages it can be beneficial compress large payloads. 
 
-@@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #algorithm }
-
-Supported compression algorithms are: GZip and LZ4.
-By default messages larger than the following configuration are compressed with GZIP.
-
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
-Compression can be disabled by setting this configuration property to `off`. It will still be able to decompress
-payloads that were compressed when serialized, e.g. if this configuration is changed.
-Note that this setting does not apply to LZ4. LZ4 will always compress any payload size.
+Supported compression algorithms are: gzip, lz4. Use 'off' to disable compression.
+
+For GZip, by default messages larger than `compress-larger-than` value are compressed.
+It will still be able to decompress payloads that were compressed when serialized, e.g. if this configuration is changed.
+
+Note that `compress-larger-than` does not apply to LZ4. LZ4 will compress any payload size.
 
 ## Additional configuration
 

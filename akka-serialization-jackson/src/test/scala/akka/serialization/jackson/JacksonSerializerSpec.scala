@@ -410,6 +410,14 @@ abstract class JacksonSerializerSpec(serializerName: String)
       checkSerialization(new SimpleCommand("Bob"), sys)
     }
 
+    "serialize without compression" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = off
+        }
+      """) { sys =>
+      checkSerialization(new SimpleCommand("Bob"), sys)
+    }
+
     "serialize simple message with one constructor parameter" in {
       checkSerialization(new SimpleCommand("Bob"))
     }
@@ -512,6 +520,15 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize with LZ4 fast" in withSystem("""
         akka.serialization.jackson {
           algorithm = lz4
+        }
+      """) { sys =>
+      checkSerialization(SimpleCommand("Bob"), sys)
+      checkSerialization(new SimpleCommandNotCaseClass("Bob"), sys)
+    }
+
+    "serialize without compression" in withSystem("""
+        akka.serialization.jackson {
+          algorithm = off
         }
       """) { sys =>
       checkSerialization(SimpleCommand("Bob"), sys)

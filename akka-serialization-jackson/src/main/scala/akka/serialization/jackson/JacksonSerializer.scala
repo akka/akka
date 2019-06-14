@@ -4,9 +4,7 @@
 
 package akka.serialization.jackson
 
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.NotSerializableException
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, NotSerializableException, OutputStream}
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
@@ -14,7 +12,6 @@ import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
-
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.event.LogMarker
@@ -107,6 +104,7 @@ import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
 
 @InternalApi object Compression {
   sealed trait Algoritm
+  object OFF extends Algoritm
   object GZip extends Algoritm
   object LZ4 extends Algoritm
 }
@@ -134,16 +132,10 @@ import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
   private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4
-  private val compressLargerThan: Long = {
-    val key = "compress-larger-than"
-    toRootLowerCase(conf.getString(key)) match {
-      case "off" => Long.MaxValue
-      case _     => conf.getBytes(key)
-    }
-  }
+  private val compressLargerThan: Long = conf.getBytes("compression.compress-larger-than")
   private val algorithm: Compression.Algoritm = {
-    val key = "algorithm"
-    toRootLowerCase(conf.getString(key)) match {
+    toRootLowerCase(conf.getString("compression.algorithm")) match {
+      case "off" => Compression.OFF
       case "lz4" => Compression.LZ4
       case _ => Compression.GZip
     }
@@ -369,33 +361,30 @@ import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
 
   def compress(bytes: Array[Byte]): Array[Byte] = {
 
-    if (algorithm == Compression.GZip && bytes.length <= compressLargerThan) bytes else {
-      val bos = new ByteArrayOutputStream(BufferSize)
-      val compressed = algorithm match {
-        case Compression.GZip => new GZIPOutputStream(bos)
-        case Compression.LZ4  => new LZ4FrameOutputStream(bos)
-      }
-      try compressed.write(bytes)
-      finally compressed.close()
-      bos.toByteArray
+    def compressWith(compress: OutputStream => OutputStream): Array[Byte] = {
+      val compressedOut = compress(new ByteArrayOutputStream(BufferSize))
+      try compressedOut.write(bytes)
+      finally compressedOut.close()
+      new ByteArrayOutputStream(BufferSize).toByteArray
+    }
+
+    algorithm match {
+      case Compression.OFF => bytes
+      case Compression.GZip if bytes.length <= compressLargerThan => bytes
+      case Compression.GZip => compressWith(new GZIPOutputStream(_))
+      case Compression.LZ4 => compressWith(new LZ4FrameOutputStream(_))
     }
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
-    if (algorithm == Compression.GZip && !isGZipped(bytes)) bytes else {
 
-      val bais = new ByteArrayInputStream(bytes)
-      val in = algorithm match {
-        case Compression.GZip => new GZIPInputStream(bais)
-        case Compression.LZ4 => new LZ4FrameInputStream(bais)
-      }
-
-      //    val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
+    def decompressWith(decompress: InputStream => InputStream): Array[Byte] = {
+      val decompressed = decompress(new ByteArrayInputStream(bytes))
       val out = new ByteArrayOutputStream()
       // FIXME pool of recycled buffers?
       val buffer = new Array[Byte](BufferSize)
 
-      @tailrec def readChunk(): Unit = in.read(buffer) match {
+      @tailrec def readChunk(): Unit = decompressed.read(buffer) match {
         case -1 ⇒ ()
         case n ⇒
           out.write(buffer, 0, n)
@@ -403,8 +392,15 @@ import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
       }
 
       try readChunk()
-      finally in.close()
+      finally decompressed.close()
       out.toByteArray
+    }
+
+    algorithm match {
+      case Compression.OFF => bytes
+      case Compression.GZip if !isGZipped(bytes) => bytes
+      case Compression.GZip => decompressWith(new GZIPInputStream(_))
+      case Compression.LZ4  => decompressWith(new LZ4FrameInputStream(_))
     }
   }
 
