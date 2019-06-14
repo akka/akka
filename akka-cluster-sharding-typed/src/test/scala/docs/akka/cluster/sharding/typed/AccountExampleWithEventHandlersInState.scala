@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.persistence.typed
+package docs.akka.cluster.sharding.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplyEffect
 
 /**
@@ -26,18 +26,18 @@ object AccountExampleWithEventHandlersInState {
   object AccountEntity {
     // Command
     //#reply-command
-    sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
+    sealed trait AccountCommand[Reply <: AccountCommandReply] extends ExpectingReply[Reply]
     //#reply-command
-    final case class CreateAccount()(override val replyTo: ActorRef[OperationResult])
+    final case class CreateAccount(override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
-    final case class Deposit(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
-        extends AccountCommand[OperationResult]
-    //#reply-command
-    final case class Withdraw(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
+    final case class Deposit(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
     //#reply-command
-    final case class GetBalance()(override val replyTo: ActorRef[CurrentBalance]) extends AccountCommand[CurrentBalance]
-    final case class CloseAccount()(override val replyTo: ActorRef[OperationResult])
+    final case class Withdraw(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
+        extends AccountCommand[OperationResult]
+    //#reply-command
+    final case class GetBalance(override val replyTo: ActorRef[CurrentBalance]) extends AccountCommand[CurrentBalance]
+    final case class CloseAccount(override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
 
     // Reply
@@ -89,17 +89,16 @@ object AccountExampleWithEventHandlersInState {
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
+    val TypeKey: EntityTypeKey[AccountCommand[_]] =
+      EntityTypeKey[AccountCommand[_]]("Account")
+
     // Note that after defining command, event and state classes you would probably start here when writing this.
     // When filling in the parameters of EventSourcedBehavior.apply you can use IntelliJ alt+Enter > createValue
     // to generate the stub with types for the command and event handlers.
 
     //#withEnforcedReplies
-    def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
-      EventSourcedBehavior.withEnforcedReplies(
-        PersistenceId(s"Account|$accountNumber"),
-        EmptyAccount,
-        commandHandler,
-        eventHandler)
+    def apply(accountNumber: String): Behavior[AccountCommand[_]] = {
+      EventSourcedEntity.withEnforcedReplies(TypeKey, accountNumber, EmptyAccount, commandHandler, eventHandler)
     }
     //#withEnforcedReplies
 
@@ -148,12 +147,10 @@ object AccountExampleWithEventHandlersInState {
 
     //#reply
     private def withdraw(acc: OpenedAccount, cmd: Withdraw): ReplyEffect[AccountEvent, Account] = {
-      if (acc.canWithdraw(cmd.amount)) {
+      if (acc.canWithdraw(cmd.amount))
         Effect.persist(Withdrawn(cmd.amount)).thenReply(cmd)(_ => Confirmed)
-
-      } else {
+      else
         Effect.reply(cmd)(Rejected(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
-      }
     }
     //#reply
 
