@@ -154,7 +154,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             case internal: InternalProtocol              => internal // such as RecoveryTickEvent
             case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
           }
-          Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
+          Behaviors.intercept(() => onStopInterceptor)(widened).narrow[Command]
         }
 
       }

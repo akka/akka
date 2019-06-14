@@ -2,35 +2,38 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package jdocs.akka.persistence.typed;
+package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
+import akka.cluster.sharding.typed.javadsl.EventSourcedEntityWithEnforcedReplies;
 import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventHandlerBuilder;
-import akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies;
 import akka.persistence.typed.javadsl.ReplyEffect;
 
 import java.math.BigDecimal;
 
 /**
  * Bank account example illustrating: - different state classes representing the lifecycle of the
- * account - null as emptyState - event handlers that delegate to methods in the state classes -
- * command handlers that delegate to methods in the EventSourcedBehavior class - replies of various
- * types, using ExpectingReply and EventSourcedBehaviorWithEnforcedReplies
+ * account - mutable state - event handlers that delegate to methods in the state classes - command
+ * handlers that delegate to methods in the EventSourcedBehavior class - replies of various types,
+ * using ExpectingReply and EventSourcedEntityWithEnforcedReplies
  */
-public interface AccountExampleWithNullState {
+public interface AccountExampleWithMutableState {
 
   // #account-entity
   public class AccountEntity
-      extends EventSourcedBehaviorWithEnforcedReplies<
+      extends EventSourcedEntityWithEnforcedReplies<
           AccountEntity.AccountCommand, AccountEntity.AccountEvent, AccountEntity.Account> {
+
+    public static final EntityTypeKey<AccountCommand> ENTITY_TYPE_KEY =
+        EntityTypeKey.create(AccountCommand.class, "Account");
 
     // Command
     interface AccountCommand<Reply> extends ExpectingReply<Reply> {}
@@ -155,29 +158,31 @@ public interface AccountExampleWithNullState {
     // State
     interface Account {}
 
+    public static class EmptyAccount implements Account {
+      OpenedAccount openedAccount() {
+        return new OpenedAccount();
+      }
+    }
+
     public static class OpenedAccount implements Account {
-      public final BigDecimal balance;
+      private BigDecimal balance = BigDecimal.ZERO;
 
-      public OpenedAccount() {
-        this.balance = BigDecimal.ZERO;
+      public BigDecimal getBalance() {
+        return balance;
       }
 
-      public OpenedAccount(BigDecimal balance) {
-        this.balance = balance;
-      }
-
-      OpenedAccount makeDeposit(BigDecimal amount) {
-        return new OpenedAccount(balance.add(amount));
+      void makeDeposit(BigDecimal amount) {
+        balance = balance.add(amount);
       }
 
       boolean canWithdraw(BigDecimal amount) {
         return (balance.subtract(amount).compareTo(BigDecimal.ZERO) >= 0);
       }
 
-      OpenedAccount makeWithdraw(BigDecimal amount) {
+      void makeWithdraw(BigDecimal amount) {
         if (!canWithdraw(amount))
           throw new IllegalStateException("Account balance can't be negative");
-        return new OpenedAccount(balance.subtract(amount));
+        balance = balance.subtract(amount);
       }
 
       ClosedAccount closedAccount() {
@@ -187,17 +192,17 @@ public interface AccountExampleWithNullState {
 
     public static class ClosedAccount implements Account {}
 
-    public static Behavior<AccountCommand> behavior(String accountNumber) {
-      return Behaviors.setup(context -> new AccountEntity(context, accountNumber));
+    public static AccountEntity create(String accountNumber) {
+      return new AccountEntity(accountNumber);
     }
 
-    public AccountEntity(ActorContext<AccountCommand> context, String accountNumber) {
-      super(new PersistenceId(accountNumber));
+    public AccountEntity(String accountNumber) {
+      super(ENTITY_TYPE_KEY, accountNumber);
     }
 
     @Override
     public Account emptyState() {
-      return null;
+      return new EmptyAccount();
     }
 
     @Override
@@ -205,7 +210,7 @@ public interface AccountExampleWithNullState {
       CommandHandlerWithReplyBuilder<AccountCommand, AccountEvent, Account> builder =
           newCommandHandlerWithReplyBuilder();
 
-      builder.forNullState().onCommand(CreateAccount.class, this::createAccount);
+      builder.forStateType(EmptyAccount.class).onCommand(CreateAccount.class, this::createAccount);
 
       builder
           .forStateType(OpenedAccount.class)
@@ -221,7 +226,8 @@ public interface AccountExampleWithNullState {
       return builder.build();
     }
 
-    private ReplyEffect<AccountEvent, Account> createAccount(CreateAccount command) {
+    private ReplyEffect<AccountEvent, Account> createAccount(
+        EmptyAccount account, CreateAccount command) {
       return Effect()
           .persist(new AccountCreated())
           .thenReply(command, account2 -> Confirmed.INSTANCE);
@@ -251,7 +257,7 @@ public interface AccountExampleWithNullState {
 
     private ReplyEffect<AccountEvent, Account> closeAccount(
         OpenedAccount account, CloseAccount command) {
-      if (account.balance.equals(BigDecimal.ZERO)) {
+      if (account.getBalance().equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
             .thenReply(command, account2 -> Confirmed.INSTANCE);
@@ -264,7 +270,9 @@ public interface AccountExampleWithNullState {
     public EventHandler<Account, AccountEvent> eventHandler() {
       EventHandlerBuilder<Account, AccountEvent> builder = newEventHandlerBuilder();
 
-      builder.forNullState().onEvent(AccountCreated.class, () -> new OpenedAccount());
+      builder
+          .forStateType(EmptyAccount.class)
+          .onEvent(AccountCreated.class, (account, event) -> account.openedAccount());
 
       builder
           .forStateType(OpenedAccount.class)

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -201,6 +202,39 @@ public interface JavaTestMessages {
     @Override
     public String toString() {
       return "TimeCommand{" + "timestamp=" + timestamp + ", duration=" + duration + '}';
+    }
+  }
+
+  public class InstantCommand implements TestMessage {
+    public final Instant instant;
+
+    @JsonCreator
+    public InstantCommand(Instant instant) {
+      this.instant = instant;
+    }
+
+    public Instant getInstant() {
+      return instant;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      InstantCommand that = (InstantCommand) o;
+
+      return instant.equals(that.instant);
+    }
+
+    @Override
+    public int hashCode() {
+      return instant.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return "InstantCommand{" + "instant=" + instant + '}';
     }
   }
 

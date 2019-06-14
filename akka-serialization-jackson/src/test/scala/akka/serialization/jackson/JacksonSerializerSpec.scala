@@ -5,6 +5,7 @@
 package akka.serialization.jackson
 
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.Arrays
@@ -39,7 +40,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
 import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -61,6 +62,7 @@ object ScalaTestMessages {
   final case class OptionCommand(maybe: Option[String]) extends TestMessage
   final case class BooleanCommand(published: Boolean) extends TestMessage
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration) extends TestMessage
+  final case class InstantCommand(instant: Instant) extends TestMessage
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand]) extends TestMessage
   final case class CommandWithActorRef(name: String, replyTo: ActorRef) extends TestMessage
   final case class CommandWithTypedActorRef(name: String, replyTo: akka.actor.typed.ActorRef[String])
@@ -209,6 +211,16 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       }
     }
 
+    "serialize Instant as text with ISO-8601 date format (default)" in {
+      val msg = new InstantCommand(Instant.ofEpochMilli(1559907792075L))
+      val json = serializeToJsonString(msg)
+      val expected = """{"instant":"2019-06-07T11:43:12.075Z"}"""
+      json should ===(expected)
+
+      // and full round trip
+      checkSerialization(msg)
+    }
+
     // FAIL_ON_UNKNOWN_PROPERTIES = off is default in reference.conf
     "not fail on unknown properties" in {
       val json = """{"name":"abc","name2":"def","name3":"ghi"}"""
@@ -251,7 +263,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
           if (bindingName == "jackson-json") {
-            configuredModules.filterNot(_.isInstanceOf[AfterburnerModule])
+            configuredModules.filterNot(_.isInstanceOf[JavaTimeModule])
           } else
             super.overrideConfiguredModules(bindingName, configuredModules)
       }
@@ -262,15 +274,12 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
         .withSetup(JacksonObjectMapperProviderSetup(customJacksonObjectMapperFactory))
         .withSetup(BootstrapSetup(config))
       withSystem(setup) { sys =>
-        val msg = SimpleCommand2("a", "b")
+        val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
-        // using the custom ObjectMapper with pretty printing enabled
-        val expected =
-          """|{
-             |  "name" : "a",
-             |  "name2" : "b"
-             |}""".stripMargin
-        json should ===(expected)
+        // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
+        json should include("""  "instant" : {""")
+        json should include("""    "seconds" : 1559907792,""")
+        json should include("""    "nanos" : 75000000,""")
       }
     }
 

@@ -1095,15 +1095,16 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         case "boom" => throw TestException("boom indeed")
         case "switch" =>
           supervise[String](setup(_ =>
-            supervise[String](Behaviors.intercept(whateverInterceptor)(supervise[String](Behaviors.receiveMessage {
-              case "boom" => throw TestException("boom indeed")
-              case "ping" =>
-                probe.ref ! "pong"
-                Behaviors.same
-              case "give me stacktrace" =>
-                probe.ref ! new RuntimeException().getStackTrace.toVector
-                Behaviors.stopped
-            }).onFailure[RuntimeException](SupervisorStrategy.resume)))
+            supervise[String](
+              Behaviors.intercept(() => whateverInterceptor)(supervise[String](Behaviors.receiveMessage {
+                case "boom" => throw TestException("boom indeed")
+                case "ping" =>
+                  probe.ref ! "pong"
+                  Behaviors.same
+                case "give me stacktrace" =>
+                  probe.ref ! new RuntimeException().getStackTrace.toVector
+                  Behaviors.stopped
+              }).onFailure[RuntimeException](SupervisorStrategy.resume)))
               .onFailure[IllegalArgumentException](SupervisorStrategy.restart.withLimit(23, 10.seconds))))
             .onFailure[RuntimeException](SupervisorStrategy.restart)
       }).onFailure[RuntimeException](SupervisorStrategy.stop)

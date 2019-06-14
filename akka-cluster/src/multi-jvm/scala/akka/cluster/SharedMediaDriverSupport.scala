@@ -64,6 +64,7 @@ object SharedMediaDriverSupport {
           val driverContext = new MediaDriver.Context
           driverContext.aeronDirectoryName(aeronDir)
           driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.Aeron.ClientLivenessTimeout.toNanos)
+          driverContext.publicationUnblockTimeoutNs(arterySettings.Advanced.Aeron.PublicationUnblockTimeout.toNanos)
           driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.Aeron.ImageLivenessTimeout.toNanos)
           driverContext.driverTimeoutMs(arterySettings.Advanced.Aeron.DriverTimeout.toMillis)
           val idleCpuLevel = arterySettings.Advanced.Aeron.IdleCpuLevel

@@ -106,6 +106,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
   .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
+  .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 

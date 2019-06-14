@@ -95,6 +95,7 @@ private final class RestartWithBackoffSink[T](
     new RestartWithBackoffLogic(
       "Sink",
       shape,
+      inheritedAttributes,
       minBackoff,
       maxBackoff,
       randomFactor,

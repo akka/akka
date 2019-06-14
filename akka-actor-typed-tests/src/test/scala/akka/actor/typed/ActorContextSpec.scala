@@ -708,5 +708,5 @@ class InterceptActorContextSpec extends ActorContextSpec {
       target(context, signal)
   }
 
-  override def decoration[T]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](tap)(b)
+  override def decoration[T]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](() => tap)(b)
 }
