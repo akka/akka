@@ -107,6 +107,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
               jFactoryOption.toList.flatMap(f => getJMethods(f).map(unspecializeName.andThen(curryLikeJava))))
           }
         }
+      case invalid => throw new RuntimeException("Invalid testcase: " + invalid)
     }
   }
 
@@ -118,7 +119,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     sClass.getMethods.filterNot(scalaIgnore contains _.getName).map(toMethod).filterNot(ignore).toList
 
   private def toMethod(m: java.lang.reflect.Method): Method =
-    Method(m.getName, List(m.getParameterTypes: _*), m.getReturnType, m.getDeclaringClass)
+    Method(m.getName, List(m.getParameterTypes.toIndexedSeq: _*), m.getReturnType, m.getDeclaringClass)
 
   private case class Ignore(
       cls: Class[_] => Boolean,
@@ -259,7 +260,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     (scalaName, javaName) match {
       case (s, j) if s == j                        => true
       case t if `scala -> java aliases` contains t => true
-      case t                                       => false
+      case _                                       => false
     }
 
   /**

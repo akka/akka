@@ -26,7 +26,6 @@ import akka.util.Helpers.toRootLowerCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
-import com.fasterxml.jackson.dataformat.smile.SmileFactory
 
 /**
  * INTERNAL API
@@ -97,17 +96,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 /**
  * INTERNAL API: only public by configuration
  *
- * Akka serializer for Jackson with Smile.
- */
-@InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem, bindingName: String)
-    extends JacksonSerializer(
-      system,
-      bindingName: String,
-      JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new SmileFactory)))
-
-/**
- * INTERNAL API: only public by configuration
- *
  * Akka serializer for Jackson with CBOR.
  */
 @InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem, bindingName: String)
@@ -115,9 +103,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
       system,
       bindingName,
       JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new CBORFactory)))
-
-// FIXME Look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
-//       Make dependencies optional/provided.
 
 /**
  * INTERNAL API: Base class for Jackson serializers.
@@ -150,16 +135,16 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     }
   }
   private val migrations: Map[String, JacksonMigration] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
-      case (k, v) ⇒
+      case (k, v) =>
         val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
         k -> transformer
     }
   }
   private val blacklist: GadgetClassBlacklist = new GadgetClassBlacklist
   private val whitelistClassPrefix = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     conf.getStringList("whitelist-class-prefix").asScala.toVector
   }
 
@@ -177,8 +162,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     checkAllowedClassName(className)
     checkAllowedClass(obj.getClass)
     migrations.get(className) match {
-      case Some(transformer) ⇒ className + "#" + transformer.currentVersion
-      case None ⇒ className
+      case Some(transformer) => className + "#" + transformer.currentVersion
+      case None              => className
     }
   }
 
@@ -221,20 +206,20 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     val migration = migrations.get(manifestClassName)
 
     val className = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion < transformer.currentVersion =>
         transformer.transformClassName(fromVersion, manifestClassName)
-      case Some(transformer) if fromVersion > transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion > transformer.currentVersion =>
         throw new IllegalStateException(
           s"Migration version ${transformer.currentVersion} is " +
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
-      case _ ⇒ manifestClassName
+      case _ => manifestClassName
     }
     if (className ne manifestClassName)
       checkAllowedClassName(className)
 
     val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
-      case Success(c) ⇒ c
-      case Failure(_) ⇒
+      case Success(c) => c
+      case Failure(_) =>
         throw new NotSerializableException(
           s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
     }
@@ -243,11 +228,11 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     val decompressBytes = if (compressed) decompress(bytes) else bytes
 
     val result = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+      case Some(transformer) if fromVersion < transformer.currentVersion =>
         val jsonTree = objectMapper.readTree(decompressBytes)
         val newJsonTree = transformer.transform(fromVersion, jsonTree)
         objectMapper.treeToValue(newJsonTree, clazz)
-      case _ ⇒
+      case _ =>
         objectMapper.readValue(decompressBytes, clazz)
     }
 
@@ -386,8 +371,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 ⇒ ()
-      case n ⇒
+      case -1 => ()
+      case n =>
         out.write(buffer, 0, n)
         readChunk()
     }

@@ -40,39 +40,42 @@ public class GracefulStopDocTest {
     }
 
     public static final Behavior<JobControlLanguage> mcpa =
-        Behaviors.receive(JobControlLanguage.class)
-            .onMessage(
-                SpawnJob.class,
-                (context, message) -> {
-                  context.getSystem().log().info("Spawning job {}!", message.name);
-                  context.spawn(Job.job(message.name), message.name);
-                  return Behaviors.same();
-                })
-            .onSignal(
-                PostStop.class,
-                (context, signal) -> {
-                  context.getSystem().log().info("Master Control Programme stopped");
-                  return Behaviors.same();
-                })
-            .onMessage(
-                GracefulShutdown.class,
-                (context, message) -> {
-                  context.getSystem().log().info("Initiating graceful shutdown...");
+        Behaviors.setup(
+            context ->
+                Behaviors.receive(JobControlLanguage.class)
+                    .onMessage(
+                        SpawnJob.class,
+                        message -> {
+                          context.getSystem().log().info("Spawning job {}!", message.name);
+                          context.spawn(Job.job(message.name), message.name);
+                          return Behaviors.same();
+                        })
+                    .onSignal(
+                        PostStop.class,
+                        signal -> {
+                          context.getSystem().log().info("Master Control Programme stopped");
+                          return Behaviors.same();
+                        })
+                    .onMessage(
+                        GracefulShutdown.class,
+                        message -> {
+                          context.getSystem().log().info("Initiating graceful shutdown...");
 
-                  // perform graceful stop, executing cleanup before final system termination
-                  // behavior executing cleanup is passed as a parameter to Actor.stopped
-                  return Behaviors.stopped(
-                      () -> {
-                        context.getSystem().log().info("Cleanup!");
-                      });
-                })
-            .onSignal(
-                PostStop.class,
-                (context, signal) -> {
-                  context.getSystem().log().info("Master Control Programme stopped");
-                  return Behaviors.same();
-                })
-            .build();
+                          // perform graceful stop, executing cleanup before final system
+                          // termination
+                          // behavior executing cleanup is passed as a parameter to Actor.stopped
+                          return Behaviors.stopped(
+                              () -> {
+                                context.getSystem().log().info("Cleanup!");
+                              });
+                        })
+                    .onSignal(
+                        PostStop.class,
+                        signal -> {
+                          context.getSystem().log().info("Master Control Programme stopped");
+                          return Behaviors.same();
+                        })
+                    .build());
   }
   // #master-actor
 

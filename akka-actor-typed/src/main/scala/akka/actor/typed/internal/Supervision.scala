@@ -33,16 +33,11 @@ import akka.util.unused
 
     strategy match {
       case r: RestartOrBackoff =>
-        Behaviors.setup { _ =>
-          // deferred to make sure supervisor instance not shared among instances
-          Behaviors.intercept[T, T](new RestartSupervisor(initialBehavior, r))(initialBehavior)
-        }
+        Behaviors.intercept[T, T](() => new RestartSupervisor(initialBehavior, r))(initialBehavior)
       case r: Resume =>
-        // stateless so safe to share
-        Behaviors.intercept[T, T](new ResumeSupervisor(r))(initialBehavior)
+        Behaviors.intercept[T, T](() => new ResumeSupervisor(r))(initialBehavior)
       case r: Stop =>
-        // stateless so safe to share
-        Behaviors.intercept[T, T](new StopSupervisor(initialBehavior, r))(initialBehavior)
+        Behaviors.intercept[T, T](() => new StopSupervisor(initialBehavior, r))(initialBehavior)
     }
   }
 }
@@ -112,7 +107,7 @@ private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: Super
 
   protected def handleException(@unused ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
-      Behavior.failed(t)
+      BehaviorImpl.failed(t)
   }
 
   // convenience if target not required to handle exception
@@ -130,7 +125,7 @@ private class StopSupervisor[T, Thr <: Throwable: ClassTag](@unused initial: Beh
   override def handleException(ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       log(ctx, t)
-      Behavior.failed(t)
+      BehaviorImpl.failed(t)
   }
 }
 
@@ -235,7 +230,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
           if (current == restartCount) {
             restartCount = 0
           }
-          Behavior.same
+          BehaviorImpl.same
         } else {
           // ResetRestartCount from nested Backoff strategy
           target(ctx, msg.asInstanceOf[T])
@@ -301,7 +296,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
           case _: Restart => throw t
           case _: Backoff =>
             log(ctx, t)
-            Behavior.failed(t)
+            BehaviorImpl.failed(t)
         }
 
       } else {

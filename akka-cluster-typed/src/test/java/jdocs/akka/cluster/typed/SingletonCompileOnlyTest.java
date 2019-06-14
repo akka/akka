@@ -31,14 +31,14 @@ public class SingletonCompileOnlyTest {
 
   public static Behavior<CounterCommand> counter(String entityId, Integer value) {
     return Behaviors.receive(CounterCommand.class)
-        .onMessage(Increment.class, (ctx, msg) -> counter(entityId, value + 1))
+        .onMessage(Increment.class, msg -> counter(entityId, value + 1))
         .onMessage(
             GetValue.class,
-            (ctx, msg) -> {
+            msg -> {
               msg.replyTo.tell(value);
               return Behaviors.same();
             })
-        .onMessage(GoodByeCounter.class, (ctx, msg) -> Behaviors.stopped())
+        .onMessage(GoodByeCounter.class, msg -> Behaviors.stopped())
         .build();
   }
   // #counter

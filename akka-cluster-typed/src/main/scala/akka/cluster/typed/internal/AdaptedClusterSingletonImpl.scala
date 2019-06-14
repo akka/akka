@@ -43,7 +43,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
       singleton.stopMessage match {
         case Some(_) => behv
-        case None    => Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+        case None    => Behaviors.intercept(() => new PoisonPillInterceptor[M])(behv)
       }
     }
 

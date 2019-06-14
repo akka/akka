@@ -10,8 +10,8 @@ import java.lang.reflect.InvocationTargetException
 
 import akka.actor.{ ActorInitializationException, ActorRefWithCell }
 import akka.{ actor => untyped }
-import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.Behavior.StoppedBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
 import scala.annotation.tailrec
@@ -51,7 +51,6 @@ import akka.util.OptionVal
 @InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
     extends untyped.Actor
     with untyped.ActorLogging {
-  import Behavior._
 
   private var behavior: Behavior[T] = _initialBehavior
   def currentBehavior: Behavior[T] = behavior
@@ -146,7 +145,7 @@ import akka.util.OptionVal
       case BehaviorTags.UnhandledBehavior =>
         unhandled(msg)
       case BehaviorTags.FailedBehavior =>
-        val f = b.asInstanceOf[FailedBehavior]
+        val f = b.asInstanceOf[BehaviorImpl.FailedBehavior]
         // For the parent untyped supervisor to pick up the exception
         if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
         else context.stop(self)
@@ -234,23 +233,23 @@ import akka.util.OptionVal
   }
 
   override def preStart(): Unit = {
-    if (isAlive(behavior)) {
-      behavior = validateAsInitial(Behavior.start(behavior, ctx))
+    if (Behavior.isAlive(behavior)) {
+      behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
     }
     // either was stopped initially or became stopped on start
-    if (!isAlive(behavior)) context.stop(self)
+    if (!Behavior.isAlive(behavior)) context.stop(self)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     ctx.cancelAllTimers()
     Behavior.interpretSignal(behavior, ctx, PreRestart)
-    behavior = Behavior.stopped
+    behavior = BehaviorImpl.stopped
   }
 
   override def postRestart(reason: Throwable): Unit = {
     ctx.cancelAllTimers()
-    behavior = validateAsInitial(Behavior.start(behavior, ctx))
-    if (!isAlive(behavior)) context.stop(self)
+    behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+    if (!Behavior.isAlive(behavior)) context.stop(self)
   }
 
   override def postStop(): Unit = {
@@ -260,7 +259,7 @@ import akka.util.OptionVal
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
       case b => Behavior.interpretSignal(b, ctx, PostStop)
     }
-    behavior = Behavior.stopped
+    behavior = BehaviorImpl.stopped
   }
 
 }
@@ -286,6 +285,6 @@ import akka.util.OptionVal
     }
     // and then to the potential stop hook, which can have a call back or not
     stopBehavior.onPostStop(ctx)
-    Behavior.empty
+    BehaviorImpl.empty
   }
 }

@@ -66,21 +66,22 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "execute the post stop when wrapped" in {
       val probe = TestProbe[Done]()
       spawn(Behaviors.setup[AnyRef] { _ =>
-        Behaviors.intercept(new BehaviorInterceptor[AnyRef, AnyRef] {
-          override def aroundReceive(
-              context: typed.TypedActorContext[AnyRef],
-              message: AnyRef,
-              target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
-            target(context, message)
-          }
+        Behaviors.intercept(() =>
+          new BehaviorInterceptor[AnyRef, AnyRef] {
+            override def aroundReceive(
+                context: typed.TypedActorContext[AnyRef],
+                message: AnyRef,
+                target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
+              target(context, message)
+            }
 
-          override def aroundSignal(
-              context: typed.TypedActorContext[AnyRef],
-              signal: Signal,
-              target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
-            target(context, signal)
-          }
-        })(Behaviors.stopped { () =>
+            override def aroundSignal(
+                context: typed.TypedActorContext[AnyRef],
+                signal: Signal,
+                target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
+              target(context, signal)
+            }
+          })(Behaviors.stopped { () =>
           probe.ref ! Done
         })
       })

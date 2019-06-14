@@ -346,7 +346,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             val allAddressesInState: Set[UniqueAddress] = registry.allUniqueAddressesInState(setup.selfUniqueAddress)
             val notInCluster = allAddressesInState.diff(registry.nodes)
 
-            if (notInCluster.isEmpty) Behavior.same
+            if (notInCluster.isEmpty) Behaviors.same
             else {
               if (ctx.log.isDebugEnabled)
                 ctx.log.debug(
@@ -356,7 +356,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               nodesRemoved(notInCluster)
             }
           }
-          Behavior.same
+          Behaviors.same
 
         case PruneTombstonesTick =>
           val prunedRegistry = registry.pruneTombstones()

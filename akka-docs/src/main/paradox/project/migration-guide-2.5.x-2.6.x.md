@@ -316,6 +316,7 @@ it will work properly again.
 Akka Typed APIs are still marked as [may change](../common/may-change.md) and a few changes were
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
+* `Behaviors.intercept` now takes a factory function for the interceptor.
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
@@ -324,6 +325,13 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
+* The `request` parameter in Distributed Data commands was removed, in favor of using `ask`.
+* Removed `Behavior.same`, `Behavior.unhandled`, `Behavior.stopped`, `Behavior.empty`, and `Behavior.ignore` since
+  they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
+* `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
+   to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
+* Java @apidoc[akka.cluster.sharding.typed.javadsl.EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
+
 
 #### Akka Typed Stream API changes
 

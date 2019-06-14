@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.persistence.typed
+package docs.akka.cluster.sharding.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 /**
  * Bank account example illustrating:
@@ -20,18 +20,18 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
  */
 object AccountExampleWithCommandHandlersInState {
 
-  //##account-entity
+  //#account-entity
   object AccountEntity {
     // Command
     sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
-    final case class CreateAccount()(override val replyTo: ActorRef[OperationResult])
+    final case class CreateAccount(override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
-    final case class Deposit(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
+    final case class Deposit(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
-    final case class Withdraw(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
+    final case class Withdraw(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
-    final case class GetBalance()(override val replyTo: ActorRef[CurrentBalance]) extends AccountCommand[CurrentBalance]
-    final case class CloseAccount()(override val replyTo: ActorRef[OperationResult])
+    final case class GetBalance(override val replyTo: ActorRef[CurrentBalance]) extends AccountCommand[CurrentBalance]
+    final case class CloseAccount(override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
 
     // Reply
@@ -79,16 +79,14 @@ object AccountExampleWithCommandHandlersInState {
 
       override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
         cmd match {
-          case c @ Deposit(amount) =>
-            Effect.persist(Deposited(amount)).thenReply(c)(_ => Confirmed)
+          case c: Deposit =>
+            Effect.persist(Deposited(c.amount)).thenReply(c)(_ => Confirmed)
 
-          case c @ Withdraw(amount) =>
-            if (canWithdraw(amount)) {
-              Effect.persist(Withdrawn(amount)).thenReply(c)(_ => Confirmed)
-
-            } else {
-              Effect.reply(c)(Rejected(s"Insufficient balance $balance to be able to withdraw $amount"))
-            }
+          case c: Withdraw =>
+            if (canWithdraw(c.amount))
+              Effect.persist(Withdrawn(c.amount)).thenReply(c)(_ => Confirmed)
+            else
+              Effect.reply(c)(Rejected(s"Insufficient balance $balance to be able to withdraw ${c.amount}"))
 
           case c: GetBalance =>
             Effect.reply(c)(CurrentBalance(balance))
@@ -134,15 +132,19 @@ object AccountExampleWithCommandHandlersInState {
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
-    def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
-      EventSourcedBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Account](
-        PersistenceId(s"Account|$accountNumber"),
+    val TypeKey: EntityTypeKey[AccountCommand[_]] =
+      EntityTypeKey[AccountCommand[_]]("Account")
+
+    def apply(accountNumber: String): Behavior[AccountCommand[_]] = {
+      EventSourcedEntity.withEnforcedReplies[AccountCommand[_], AccountEvent, Account](
+        TypeKey,
+        accountNumber,
         EmptyAccount,
         (state, cmd) => state.applyCommand(cmd),
         (state, event) => state.applyEvent(event))
     }
 
   }
-  //##account-entity
+  //#account-entity
 
 }

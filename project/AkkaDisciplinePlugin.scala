@@ -25,7 +25,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-bench-jmh",
     "akka-bench-jmh-typed",
     "akka-persistence-tck",
-    "akka-stream-tests",
     "akka-stream-tests-tck")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
@@ -36,7 +35,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     Seq(coverageMinimum := 70, coverageFailOnMinimum := false, coverageOutputHTML := true, coverageHighlighting := true)
 
   lazy val silencerSettings = {
-    val silencerVersion = "1.3.3"
+    val silencerVersion = "1.4.1"
     Seq(
       libraryDependencies ++= Seq(
           compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),

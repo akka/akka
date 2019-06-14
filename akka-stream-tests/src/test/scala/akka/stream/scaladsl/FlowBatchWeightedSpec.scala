@@ -33,7 +33,7 @@ class FlowBatchWeightedSpec extends StreamSpec {
       subscriber.expectNext(1)
 
       publisher.sendNext(3)
-      subscriber.expectNoMsg(1.second)
+      subscriber.expectNoMessage(1.second)
 
       sub.request(2)
       subscriber.expectNext(2)

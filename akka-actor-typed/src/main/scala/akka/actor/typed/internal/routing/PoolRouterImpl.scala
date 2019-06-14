@@ -7,6 +7,7 @@ package akka.actor.typed.internal.routing
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 
 /**
@@ -72,7 +73,7 @@ private final class PoolRouterImpl[T](
         this
       } else {
         ctx.log.info("Last pool child stopped, stopping pool [{}]", ctx.self.path)
-        Behavior.stopped
+        Behaviors.stopped
       }
   }
 

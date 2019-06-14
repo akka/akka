@@ -170,7 +170,15 @@ private final class RestartWithBackoffSource[T](
 
   override def shape = SourceShape(out)
   override def createLogic(inheritedAttributes: Attributes) =
-    new RestartWithBackoffLogic("Source", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
+    new RestartWithBackoffLogic(
+      "Source",
+      shape,
+      inheritedAttributes,
+      minBackoff,
+      maxBackoff,
+      randomFactor,
+      onlyOnFailures,
+      maxRestarts) {
 
       override protected def logSource = self.getClass
 

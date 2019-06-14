@@ -179,7 +179,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
         .receiveSignal {
           case (_, signal) =>
             probe.ref ! GotChildSignal(signal)
-            Behavior.stopped
+            Behaviors.stopped
         }
         .decorate
 
@@ -192,12 +192,12 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
           .receivePartial[Command] {
             case (context, StopRef(ref)) =>
               context.stop(ref)
-              Behavior.same
+              Behaviors.same
           }
           .receiveSignal {
             case (_, signal) =>
               probe.ref ! ReceivedSignal(signal)
-              Behavior.stopped
+              Behaviors.stopped
           }
           .decorate
       })
@@ -232,7 +232,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
             .receiveSignal {
               case (_, signal) =>
                 probe.ref ! ReceivedSignal(signal)
-                Behavior.stopped
+                Behaviors.stopped
             }
         })
         .decorate
@@ -251,7 +251,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
             case (_, Ping) =>
               counter += 1
               probe.ref ! counter
-              Behavior.same
+              Behaviors.same
             case (_, Fail) =>
               throw new TestException("Boom")
           }
@@ -277,7 +277,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
             case (_, Ping) =>
               counter += 1
               probe.ref ! counter
-              Behavior.same
+              Behaviors.same
             case (_, Fail) =>
               throw new TestException("Boom")
           }
@@ -307,7 +307,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
         .receiveSignal {
           case (_, PostStop) =>
             probe.ref ! ReceivedSignal(PostStop)
-            Behavior.same
+            Behaviors.same
         }
         .decorate
       val actorToWatch = spawn(behavior)
@@ -317,12 +317,12 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
             case (context, Ping) =>
               context.watch(actorToWatch)
               probe.ref ! Pong
-              Behavior.same
+              Behaviors.same
           }
           .receiveSignal {
             case (_, signal) =>
               probe.ref ! ReceivedSignal(signal)
-              Behavior.same
+              Behaviors.same
           }
           .decorate)
       actorToWatch ! Ping
@@ -480,7 +480,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
         .receiveSignal {
           case (_, signal) =>
             probe.ref ! GotChildSignal(signal)
-            Behavior.same
+            Behaviors.same
         }
         .decorate
       val actor = spawn(
@@ -708,5 +708,5 @@ class InterceptActorContextSpec extends ActorContextSpec {
       target(context, signal)
   }
 
-  override def decoration[T]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](tap)(b)
+  override def decoration[T]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](() => tap)(b)
 }

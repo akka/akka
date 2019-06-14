@@ -97,14 +97,14 @@ public class ReceptionistApiTest {
               .onMessage(
                   Receptionist.Listing.class,
                   listing -> listing.isForKey(key),
-                  (msgCtx, listing) -> {
+                  listing -> {
                     Set<ActorRef<String>> services = listing.getServiceInstances(key);
                     return Behaviors.same();
                   })
               .onMessage(
                   Receptionist.Registered.class,
                   registered -> registered.isForKey(key),
-                  (msgCtx, registered) -> {
+                  registered -> {
                     ActorRef<String> registree = registered.getServiceInstance(key);
                     return Behaviors.same();
                   })

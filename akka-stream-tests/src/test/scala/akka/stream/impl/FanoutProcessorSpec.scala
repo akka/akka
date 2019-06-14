@@ -93,7 +93,7 @@ class FanoutProcessorSpec extends StreamSpec {
 
     "not leak running actors on failed downstream" in assertAllStagesStopped {
       val probe = TestProbe()
-      val (promise, publisher) = Source.repeat(1).toMat(Sink.asPublisher(true))(Keep.both).run()
+      val (_, publisher) = Source.repeat(1).toMat(Sink.asPublisher(true))(Keep.both).run()
       val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
       probe.watch(publisherRef)
       Source.fromPublisher(publisher).map(_ => throw TE("boom")).runWith(Sink.ignore)

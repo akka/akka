@@ -9,10 +9,13 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 import akka.stream._
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
 
+@silent // tests deprecated APIs
 class BidiFlowSpec extends StreamSpec {
   import Attributes._
   import GraphDSL.Implicits._

@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import java.net.ConnectException
+
 import akka.util.PrettyDuration._
 import java.util.Queue
 import java.util.concurrent.CountDownLatch
@@ -16,6 +18,7 @@ import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
@@ -42,8 +45,8 @@ import akka.stream.scaladsl.Source
 import akka.util.{ OptionVal, Unsafe, WildcardIndex }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.SharedKillSwitch
-
 import scala.util.control.NoStackTrace
+
 import akka.actor.Cancellable
 import akka.stream.StreamTcpException
 import akka.util.ccompat._
@@ -939,6 +942,10 @@ private[remote] class Association(
           }
         }
 
+        def isConnectException: Boolean =
+          cause.isInstanceOf[StreamTcpException] && cause.getCause != null && cause.getCause
+            .isInstanceOf[ConnectException]
+
         if (stoppedIdle) {
           log.debug("{} to [{}] was idle and stopped. It will be restarted if used again.", streamName, remoteAddress)
           lazyRestart()
@@ -949,7 +956,11 @@ private[remote] class Association(
             remoteAddress)
           lazyRestart()
         } else if (bypassRestartCounter || restartCounter.restart()) {
-          log.error(cause, "{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
+          // ConnectException may happen repeatedly and are already logged in connectionFlowWithRestart
+          if (isConnectException)
+            log.debug("{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause)
+          else
+            log.warning("{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause)
           lazyRestart()
         } else {
           log.error(

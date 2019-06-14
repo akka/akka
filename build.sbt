@@ -42,6 +42,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
     actorTestkitTyped,
     actorTyped,
     actorTypedTests,
+    benchJmh,
+    benchJmhTyped,
     cluster,
     clusterMetrics,
     clusterSharding,
@@ -52,6 +54,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
     discovery,
     distributedData,
     docs,
+    jackson,
     multiNodeTestkit,
     osgi,
     persistence,
@@ -68,10 +71,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
     streamTests,
     streamTestsTck,
     streamTyped,
-    testkit) ++
-  (if (isScala213) List.empty[ProjectReference]
-   else
-     List[ProjectReference](jackson, benchJmh, benchJmhTyped)) // FIXME #27019 remove 2.13 condition when Jackson ScalaModule has been released for Scala 2.13
+    testkit)
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -106,6 +106,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
   .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
+  .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
@@ -247,8 +248,6 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
   .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
   .settings(OSGi.jackson)
   .settings(javacOptions += "-parameters")
-  // FIXME #27019 remove when Jackson ScalaModule has been released for Scala 2.13
-  .settings(crossScalaVersions -= Dependencies.scala213Version)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
 

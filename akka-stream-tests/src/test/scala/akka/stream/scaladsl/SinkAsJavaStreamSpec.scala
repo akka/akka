@@ -7,7 +7,6 @@ package akka.stream.scaladsl
 import java.util.stream.Collectors
 
 import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children

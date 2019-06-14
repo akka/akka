@@ -18,14 +18,14 @@ object Dependencies {
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   // check agrona version when updating this
-  val aeronVersion = "1.15.1"
+  val aeronVersion = "1.19.1"
   // needs to be inline with the aeron version
-  val agronaVersion = "0.9.31"
+  val agronaVersion = "1.0.1"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
 
   val scala212Version = "2.12.8"
-  val scala213Version = "2.13.0-RC2"
+  val scala213Version = "2.13.0"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
@@ -33,7 +33,7 @@ object Dependencies {
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
     scalaTestVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "3.0.8-RC4"
+        case Some((2, n)) if n >= 13 => "3.0.8"
         case _                       => "3.0.7"
       }
     },
@@ -96,9 +96,7 @@ object Dependencies {
     val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
-    val jacksonAfterburner = "com.fasterxml.jackson.module" % "jackson-module-afterburner" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
-    val jacksonSmile = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jacksonVersion // ApacheV2
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
@@ -244,8 +242,6 @@ object Dependencies {
         jacksonJdk8,
         jacksonJsr310,
         jacksonParameterNames,
-        jacksonAfterburner,
-        jacksonSmile,
         jacksonCbor,
         Test.junit,
         Test.scalatest.value)
