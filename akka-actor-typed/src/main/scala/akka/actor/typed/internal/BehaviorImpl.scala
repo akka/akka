@@ -5,6 +5,8 @@
 package akka.actor.typed
 package internal
 
+import scala.reflect.ClassTag
+
 import akka.util.LineNumbers
 import akka.annotation.InternalApi
 import akka.actor.typed.{ TypedActorContext => AC }
@@ -40,7 +42,7 @@ private[akka] object BehaviorTags {
     def as[U]: AC[U] = ctx.asInstanceOf[AC[U]]
   }
 
-  def widened[O, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
+  def widened[O: ClassTag, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
     intercept(() => WidenedInterceptor(matcher))(behavior)
 
   def same[T]: Behavior[T] = SameBehavior.unsafeCast[T]

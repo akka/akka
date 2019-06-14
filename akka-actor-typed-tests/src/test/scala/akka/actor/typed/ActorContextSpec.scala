@@ -73,10 +73,10 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
 
   import ActorSpecMessages._
 
-  def decoration[T]: Behavior[T] => Behavior[T]
+  def decoration[T: ClassTag]: Behavior[T] => Behavior[T]
 
   implicit class BehaviorDecorator[T](behavior: Behavior[T])(implicit ev: ClassTag[T]) {
-    def decorate: Behavior[T] = decoration[T](behavior)
+    def decorate: Behavior[T] = decoration[T](ev)(behavior)
   }
 
   "An ActorContext" must {
@@ -680,33 +680,33 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
 
 class NormalActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = x => x
+  override def decoration[T: ClassTag] = x => x
 }
 
 class WidenActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b => b.widen { case x => x }
+  override def decoration[T: ClassTag] = b => b.widen { case x => x }
 }
 
 class DeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b => Behaviors.setup(_ => b)
+  override def decoration[T: ClassTag] = b => Behaviors.setup(_ => b)
 }
 
 class NestedDeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b => Behaviors.setup(_ => Behaviors.setup(_ => b))
+  override def decoration[T: ClassTag] = b => Behaviors.setup(_ => Behaviors.setup(_ => b))
 }
 
 class InterceptActorContextSpec extends ActorContextSpec {
   import BehaviorInterceptor._
 
-  def tap[T] = new BehaviorInterceptor[T, T] {
+  def tap[T: ClassTag] = new BehaviorInterceptor[T, T] {
     override def aroundReceive(context: TypedActorContext[T], message: T, target: ReceiveTarget[T]): Behavior[T] =
       target(context, message)
     override def aroundSignal(context: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
       target(context, signal)
   }
 
-  override def decoration[T]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](() => tap)(b)
+  override def decoration[T: ClassTag]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](() => tap)(b)
 }

@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
@@ -74,9 +76,9 @@ private[akka] final class InterceptorImpl[O, I](
     new InterceptorImpl(interceptor, newNested)
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
-    val interceptMessageType = interceptor.interceptMessageType
+    // TODO performance optimization could maybe to avoid isAssignableFrom if interceptMessageClass is Class[Object]?
     val result =
-      if (interceptMessageType == null || interceptMessageType.isAssignableFrom(msg.getClass))
+      if (interceptor.interceptMessageClass.isAssignableFrom(msg.getClass))
         interceptor.aroundReceive(ctx, msg, receiveTarget)
       else
         receiveTarget.apply(ctx, msg.asInstanceOf[I])
@@ -115,7 +117,8 @@ private[akka] final class InterceptorImpl[O, I](
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) extends BehaviorInterceptor[T, T] {
+private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRef[T])
+    extends BehaviorInterceptor[T, T] {
   import BehaviorInterceptor._
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
@@ -141,7 +144,7 @@ private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) exte
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) extends BehaviorInterceptor[T, T] {
+private[akka] final case class LogMessagesInterceptor[T: ClassTag](opts: LogOptions) extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
 
@@ -178,7 +181,7 @@ private[akka] object WidenedInterceptor {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I])
+private[akka] final case class WidenedInterceptor[O: ClassTag, I](matcher: PartialFunction[O, I])
     extends BehaviorInterceptor[O, I] {
   import BehaviorInterceptor._
   import WidenedInterceptor._

@@ -157,7 +157,7 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
     BehaviorImpl.intercept(() => new MonitorInterceptor[T](monitor))(behavior)
 
   /**
@@ -165,7 +165,7 @@ object Behaviors {
    * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T](behavior: Behavior[T]): Behavior[T] =
+  def logMessages[T: ClassTag](behavior: Behavior[T]): Behavior[T] =
     BehaviorImpl.intercept(() => new LogMessagesInterceptor[T](LogOptions()))(behavior)
 
   /**
@@ -173,7 +173,7 @@ object Behaviors {
    * [[akka.actor.typed.LogOptions]] configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
+  def logMessages[T: ClassTag](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
     BehaviorImpl.intercept(() => new LogMessagesInterceptor[T](logOptions))(behavior)
 
   /**
@@ -234,7 +234,7 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T: ClassTag](mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
 
   /**
@@ -246,7 +246,7 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T: ClassTag](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](staticMdc, (_: T) => Map.empty[String, Any])(behavior)
 
   /**
@@ -266,7 +266,7 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
+  def withMdc[T: ClassTag](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
       behavior: Behavior[T]): Behavior[T] =
     WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 

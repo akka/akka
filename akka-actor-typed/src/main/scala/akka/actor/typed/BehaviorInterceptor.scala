@@ -4,7 +4,10 @@
 
 package akka.actor.typed
 
+import scala.reflect.ClassTag
+
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.util.BoxedType
 
 /**
  * A behavior interceptor allows for intercepting message and signal reception and perform arbitrary logic -
@@ -14,22 +17,21 @@ import akka.annotation.{ DoNotInherit, InternalApi }
  * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
  * so that a new instance is created per spawned actor rather than shared among actor instance.
  *
+ * @param interceptMessageClass Allows for applying the interceptor only to certain message types.
+ *                              If the message is not of this class or a subclass thereof it will
+ *                              bypass the interceptor and be continue to the inner behavior untouched.
+ *
  * @tparam O The outer message type – the type of messages the intercepting behavior will accept
  * @tparam I The inner message type - the type of message the wrapped behavior accepts
  */
-abstract class BehaviorInterceptor[O, I] {
+abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[_ <: O]) {
   import BehaviorInterceptor._
 
   /**
-   * Allows for applying the interceptor only to certain message types. Useful if the official protocol and the actual
-   * protocol of an actor causes problems, for example class cast exceptions for a message not of type `O` that
-   * the actor still knows how to deal with. Note that this is only possible to use when `O` and `I` are the same type.
-   *
-   * @return A subtype of `O` that should be intercepted or `null` to intercept all `O`s.
-   *         Subtypes of `O` matching this are passed directly to the inner behavior without interception.
+   * Scala API
    */
-  // null for all to avoid having to deal with class tag/explicit class in the default case of no filter
-  def interceptMessageType: Class[_ <: O] = null
+  def this()(implicit interceptMessageClassTag: ClassTag[O]) =
+    this(BoxedType(interceptMessageClassTag.runtimeClass).asInstanceOf[Class[O]])
 
   /**
    * Override to intercept actor startup. To trigger startup of

@@ -589,7 +589,7 @@ class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
 class WidenedJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Command]("widenedListener")
-    JBehaviors.widened(super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
+    JBehaviors.widened(classOf[Command], super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
       inbox.ref ! x
       x
     })))) -> inbox

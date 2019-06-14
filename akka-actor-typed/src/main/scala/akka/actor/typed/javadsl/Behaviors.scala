@@ -183,24 +183,24 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    scaladsl.Behaviors.monitor(monitor, behavior)
+  def monitor[T](interceptMessageClass: Class[_ <: T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.monitor(monitor, behavior)(ClassTag(interceptMessageClass))
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
    * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T](behavior: Behavior[T]): Behavior[T] =
-    scaladsl.Behaviors.logMessages(behavior)
+  def logMessages[T](interceptMessageClass: Class[_ <: T], behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.logMessages(behavior)(ClassTag(interceptMessageClass))
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
    * [[akka.actor.typed.LogOptions]] configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
-    scaladsl.Behaviors.logMessages(logOptions, behavior)
+  def logMessages[T](interceptMessageClass: Class[_ <: T], logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.logMessages(logOptions, behavior)(ClassTag(interceptMessageClass))
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its
@@ -276,8 +276,11 @@ object Behaviors {
    *          transformation
    * @return a behavior of the widened type
    */
-  def widened[T, U](behavior: Behavior[T], selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
-    BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())
+  def widened[T, U](
+      interceptMessageClass: Class[_ <: T],
+      behavior: Behavior[T],
+      selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
+    BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())(ClassTag(interceptMessageClass))
 
   /**
    * Support for scheduled `self` messages in an actor.
@@ -300,9 +303,10 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
+      interceptMessageClass: Class[_ <: T],
       mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
       behavior: Behavior[T]): Behavior[T] =
-    withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
+    withMdc(interceptMessageClass, Collections.emptyMap[String, Any], mdcForMessage, behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -313,8 +317,11 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
-    withMdc(staticMdc, null, behavior)
+  def withMdc[T](
+      interceptMessageClass: Class[_ <: T],
+      staticMdc: java.util.Map[String, Any],
+      behavior: Behavior[T]): Behavior[T] =
+    withMdc(interceptMessageClass, staticMdc, null, behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -334,6 +341,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
+      interceptMessageClass: Class[_ <: T],
       staticMdc: java.util.Map[String, Any],
       mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
       behavior: Behavior[T]): Behavior[T] = {
@@ -349,7 +357,7 @@ object Behaviors {
         asScalaMap(mdcForMessage.apply(message))
       }
 
-    WithMdcBehaviorInterceptor[T](asScalaMap(staticMdc), mdcForMessageFun, behavior)
+    WithMdcBehaviorInterceptor[T](asScalaMap(staticMdc), mdcForMessageFun, behavior)(ClassTag(interceptMessageClass))
   }
 
 }

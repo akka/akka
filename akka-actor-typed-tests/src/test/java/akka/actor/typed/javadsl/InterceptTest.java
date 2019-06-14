@@ -21,7 +21,7 @@ public class InterceptTest extends JUnitSuite {
   public void interceptMessage() {
     final TestProbe<String> interceptProbe = testKit.createTestProbe();
     BehaviorInterceptor<String, String> interceptor =
-        new BehaviorInterceptor<String, String>() {
+        new BehaviorInterceptor<String, String>(String.class) {
           @Override
           public Behavior<String> aroundReceive(
               TypedActorContext<String> ctx, String msg, ReceiveTarget<String> target) {
@@ -62,12 +62,7 @@ public class InterceptTest extends JUnitSuite {
   public void interceptMessagesSelectively() {
     final TestProbe<Message> interceptProbe = testKit.createTestProbe();
     BehaviorInterceptor<Message, Message> interceptor =
-        new BehaviorInterceptor<Message, Message>() {
-
-          @Override
-          public Class<? extends Message> interceptMessageType() {
-            return B.class;
-          }
+        new BehaviorInterceptor<Message, Message>(B.class) {
 
           @Override
           public Behavior<Message> aroundReceive(

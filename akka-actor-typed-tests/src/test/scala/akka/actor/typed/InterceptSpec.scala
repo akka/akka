@@ -71,7 +71,7 @@ object InterceptSpec {
 
     def apply(probe: ActorRef[String]): Behavior[Command] = {
       Behaviors
-        .intercept(new ProtocolTransformer)(Behaviors.receiveMessage[InternalProtocol] {
+        .intercept(() => new ProtocolTransformer)(Behaviors.receiveMessage[InternalProtocol] {
           case InternalProtocol.WrappedCommand(cmd) =>
             probe ! cmd.s
             Behaviors.same
@@ -369,24 +369,23 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
 
       val interceptProbe = TestProbe[Message]()
 
-      val partialInterceptor: BehaviorInterceptor[Message, Message] = new BehaviorInterceptor[Message, Message] {
+      val partialInterceptor: BehaviorInterceptor[Message, Message] =
+        new BehaviorInterceptor[Message, Message](classOf[B]) {
 
-        override def interceptMessageType = classOf[B]
+          override def aroundReceive(
+              ctx: TypedActorContext[Message],
+              msg: Message,
+              target: ReceiveTarget[Message]): Behavior[Message] = {
+            interceptProbe.ref ! msg
+            target(ctx, msg)
+          }
 
-        override def aroundReceive(
-            ctx: TypedActorContext[Message],
-            msg: Message,
-            target: ReceiveTarget[Message]): Behavior[Message] = {
-          interceptProbe.ref ! msg
-          target(ctx, msg)
+          override def aroundSignal(
+              ctx: TypedActorContext[Message],
+              signal: Signal,
+              target: SignalTarget[Message]): Behavior[Message] =
+            target(ctx, signal)
         }
-
-        override def aroundSignal(
-            ctx: TypedActorContext[Message],
-            signal: Signal,
-            target: SignalTarget[Message]): Behavior[Message] =
-          target(ctx, signal)
-      }
 
       val probe = TestProbe[Message]()
       val ref = spawn(Behaviors.intercept(() => partialInterceptor)(Behaviors.receiveMessage { msg =>
@@ -485,11 +484,9 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
           target(ctx, signal)
         }
 
-        // this test works because of this
-        override def interceptMessageType: Class[_ <: Command] = classOf[Command]
       }
 
-      val ref = spawn(Behaviors.intercept(toUpper)(MultiProtocol(probe.ref)))
+      val ref = spawn(Behaviors.intercept(() => toUpper)(MultiProtocol(probe.ref)))
 
       ref ! Command("a")
       probe.expectMessage("A")
@@ -498,7 +495,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
     }
 
     "be possible to combine with widen" in {
-      pending // FIXME #25887
       val probe = createTestProbe[String]()
       val ref = spawn(MultiProtocol(probe.ref).widen[String] {
         case s => Command(s.toUpperCase())
@@ -511,7 +507,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
     }
 
     "be possible to combine with MDC" in {
-      pending // FIXME #26953
       val probe = createTestProbe[String]()
       val ref = spawn(Behaviors.setup[Command] { _ =>
         Behaviors.withMdc(staticMdc = Map("x" -> "y"), mdcForMessage = (msg: Command) => {

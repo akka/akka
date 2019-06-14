@@ -6,6 +6,7 @@ package akka.actor.typed
 
 import scala.annotation.switch
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
@@ -135,7 +136,7 @@ object Behavior {
      * }}}
      *
      */
-    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
+    def widen[U: ClassTag](matcher: PartialFunction[U, T]): Behavior[U] =
       BehaviorImpl.widened(behavior, matcher)
 
   }

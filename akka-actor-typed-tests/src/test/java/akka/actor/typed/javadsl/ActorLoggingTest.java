@@ -100,7 +100,7 @@ public class ActorLoggingTest extends JUnitSuite {
 
   @Test
   public void logMessagesBehavior() {
-    Behavior<String> behavior = Behaviors.logMessages(Behaviors.empty());
+    Behavior<String> behavior = Behaviors.logMessages(String.class, Behaviors.empty());
 
     CustomEventFilter eventFilter =
         new CustomEventFilter(

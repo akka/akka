@@ -167,7 +167,7 @@ public class AsyncTestingExampleTest
             });
     TestProbe<Message> probe = testKit.createTestProbe();
     ActorRef<Message> mockedPublisher =
-        testKit.spawn(Behaviors.monitor(probe.ref(), mockedBehavior));
+        testKit.spawn(Behaviors.monitor(Message.class, probe.ref(), mockedBehavior));
 
     // test our component
     Producer producer = new Producer(testKit.scheduler(), mockedPublisher);
