@@ -37,6 +37,7 @@ class ClusterRemoteFeaturesConfig(artery: Boolean) extends MultiNodeConfig {
 
   deployOn(first, """/kattdjur.remote = "@second@" """)
   deployOn(third, """/kattdjur.remote = "@second@" """)
+  deployOn(second, """/kattdjur.remote = "@third@" """)
 
 }
 
@@ -103,13 +104,13 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
         actor.path.address shouldEqual node(second).address
         actor.path.address.hasGlobalScope shouldBe true
 
-        val secondAddress = testConductor.getAddressFor(second).await
+        val secondAddress = node(second).address
         actor ! "ping"
         expectMsgType[RemoteActorRef].path.address shouldEqual secondAddress
       }
       enterBarrier("CARP-in-cluster-remote-validated")
 
-      runOn(third) {
+      def assertIsLocalRef(): Unit = {
         val actor = system.actorOf(Props[AddressPing], "kattdjur")
         actor.isInstanceOf[RepointableActorRef] shouldBe true
         val localAddress = AddressFromURIString(s"akka://${system.name}")
@@ -119,7 +120,17 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
         actor ! "ping"
         expectMsgType[ActorRef].path.address shouldEqual localAddress
       }
+
+      runOn(third) {
+        Cluster(system).state.isMemberUp(node(third).address) shouldBe false
+        assertIsLocalRef()
+      }
       enterBarrier("CARP-outide-cluster-local-validated")
+
+      runOn(second) {
+        assertIsLocalRef()
+      }
+      enterBarrier("CARP-inside-cluster-to-non-member-local-validated")
     }
   }
 }

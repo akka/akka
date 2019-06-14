@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity
-import akka.actor.Address
 import akka.actor.Identify
 import akka.actor.InternalActorRef
 import akka.actor.Props
@@ -21,7 +20,6 @@ import akka.remote.artery.ArterySpecSupport
 import akka.remote.artery.RemoteDeploymentSpec
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
-import akka.testkit.SocketUtil
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -30,13 +28,12 @@ object RemoteFeaturesSpec {
 
   val instances = 1
   val remoteSystemName = "remote"
-  val staticRemoteAddress =
-    Address("akka", remoteSystemName, Some("localhost"), Some(SocketUtil.temporaryServerAddress().getPort))
 
   // string config to pass into `ArteryMultiNodeSpec.extraConfig: Option[String]` for `other` system
   def common(useUnsafe: Boolean): String = s"""
        akka.remote.use-unsafe-remote-features-without-cluster = $useUnsafe
        akka.remote.artery.enabled = on
+       akka.remote.artery.canonical.port = 0
        akka.remote.artery.advanced.flight-recorder.enabled = off
        akka.log-dead-letters-during-shutdown = off
        """
@@ -57,15 +54,7 @@ abstract class RemoteFeaturesSpec(c: Config) extends ArteryMultiNodeSpec(c) with
 
   protected final val useUnsafe: Boolean = provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
 
-  protected val remoteSystem = {
-    // shutdown by super.afterTermination
-    val config = s"""
-       ${common(useUnsafe)}
-       akka.remote.artery.canonical.hostname = "${staticRemoteAddress.host.get}"
-       akka.remote.artery.canonical.port = ${staticRemoteAddress.port.get}
-      """
-    newRemoteSystem(name = Some(remoteSystemName), extraConfig = Some(config))
-  }
+  protected val remoteSystem = newRemoteSystem(name = Some(remoteSystemName), extraConfig = Some(common(useUnsafe)))
 
   Seq(system, remoteSystem).foreach(
     muteDeadLetters(
@@ -161,7 +150,7 @@ class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.d
       senderProbe.expectMsg("preRestart")
       r.tell(43, senderProbe.ref)
       senderProbe.expectMsg(43)
-      system.stop(r)
+      masterSystem.stop(r)
       senderProbe.expectMsg("postStop")
     }
   }

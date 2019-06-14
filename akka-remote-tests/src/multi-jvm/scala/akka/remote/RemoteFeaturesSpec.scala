@@ -15,6 +15,7 @@ import akka.actor.Identify
 import akka.actor.Nobody
 import akka.actor.PoisonPill
 import akka.actor.Props
+import akka.remote.RemoteNodeDeathWatchSpec.UnwatchIt
 import akka.remote.RemoteWatcher.Stats
 import akka.remote.routing.RemoteRouterConfig
 import akka.remote.testconductor.RoleName
@@ -91,12 +92,12 @@ abstract class RemotingFeaturesSafeSpec
 
     "not intercept and send system messages `Watch`/`Unwatch` to `RemoteWatcher` in the provider" in {
       runOn(second) {
-        val watchee = system.actorOf(Props(new ProbeActor(probe.ref)), "watchee")
+        val watchee = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watchee")
         enterBarrier("started")
         assertWatchNotIntercepted(identify(first, "watcher"), watchee, first)
       }
       runOn(first) {
-        val watcher = system.actorOf(Props(new ProbeActor(probe.ref)), "watcher")
+        val watcher = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watcher")
         enterBarrier("started")
         assertWatchNotIntercepted(watcher, identify(second, "watchee"), second)
       }
@@ -112,10 +113,11 @@ abstract class RemotingFeaturesSafeSpec
       }
     }
 
-    "creation a remote actor from deployment config when remote features are disabled" in {
+    "not create a remote actor from deployment config when remote features are disabled" in {
       runOn(first) {
-        val sampleActor = system.actorOf(Props(new ProbeActor(probe.ref)), "sampleActor")
-        sampleActor.path.address shouldEqual node(second).address
+        val actor = system.actorOf(Props(classOf[ProbeActor], probe.ref), "sampleActor")
+        actor ! Identify(1)
+        expectMsgType[ActorIdentity].ref.get.path.address.hasGlobalScope shouldBe false
       }
     }
   }
@@ -127,7 +129,6 @@ abstract class RemotingFeaturesUnsafeSpec
   import RemoteNodeDeathWatchSpec.Ack
   import RemoteNodeDeathWatchSpec.DeathWatchIt
   import RemoteNodeDeathWatchSpec.ProbeActor
-  import RemoteNodeDeathWatchSpec.UnwatchIt
   import RemoteNodeDeathWatchSpec.WatchIt
   import multiNodeConfig._
 
@@ -142,14 +143,14 @@ abstract class RemotingFeaturesUnsafeSpec
 
     "intercept and send system messages `Watch`/`Unwatch` to `RemoteWatcher` in the provider" in {
       runOn(second) {
-        val watchee = system.actorOf(Props(new ProbeActor(probe.ref)), "watchee")
+        val watchee = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watchee")
         enterBarrier("watchee-started")
         enterBarrier("watcher-started")
         assertWatchIntercepted(identify(first, "watcher"), watchee, first)
       }
       runOn(first) {
         enterBarrier("watchee-started")
-        val watcher = system.actorOf(Props(new ProbeActor(probe.ref)), "watcher")
+        val watcher = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watcher")
         enterBarrier("watcher-started")
         assertWatchIntercepted(watcher, identify(second, "watchee"), second)
       }
@@ -171,20 +172,32 @@ abstract class RemotingFeaturesUnsafeSpec
       }
     }
 
+    "create a remote actor from deployment config when remote features are disabled" in {
+      runOn(first) {
+        val secondAddress = node(second).address
+        val actor = system.actorOf(Props(classOf[ProbeActor], probe.ref), "sampleActor")
+        actor.path.address shouldEqual secondAddress
+        actor.isInstanceOf[RemoteActorRef] shouldBe true
+        actor.path.address.hasGlobalScope shouldBe true
+      }
+      enterBarrier("remote-actorOf-validated")
+    }
+
     "`Watch` and `Unwatch` from `RemoteWatcher`" in {
       runOn(first) {
         val watcher = identify(first, "watcher")
         val watchee = identify(second, "watchee")
-        awaitCond(stats(watcher, WatchIt(watchee)).watchingRefs == Set((watchee, watcher)), 2.seconds)
+        awaitAssert(stats(watcher, WatchIt(watchee)).watchingRefs == Set((watchee, watcher)), 2.seconds)
         enterBarrier("system-message1-received-by-remoteWatcher")
 
-        awaitCond(stats(watcher, UnwatchIt(watchee)).watching == 0, 2.seconds)
+        awaitAssert(stats(watcher, UnwatchIt(watchee)).watching == 0, 2.seconds)
         enterBarrier("system-message2-received-by-remoteWatcher")
       }
       runOn(second, third, fourth) {
         enterBarrier("system-message1-received-by-remoteWatcher")
         enterBarrier("system-message2-received-by-remoteWatcher")
       }
+      enterBarrier("done")
     }
   }
 }
@@ -265,8 +278,8 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
   }
 
   "A remote round robin pool" must {
-    s"${if (useUnsafe) "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef"
-    else "be instantiated locally, not on remote node, and "} " in {
+    s"${if (useUnsafe) "be instantiated on remote node and communicate through its RemoteActorRef"
+    else "not be instantiated on remote node and communicate through its LocalActorRef "} " in {
 
       runOn(first, second, third) {
         enterBarrier("start", "broadcast-end", "end")
@@ -312,8 +325,6 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
         replies.get(node(fourth).address) should ===(None)
         system.stop(actor)
       }
-
-      enterBarrier("done")
     }
   }
 

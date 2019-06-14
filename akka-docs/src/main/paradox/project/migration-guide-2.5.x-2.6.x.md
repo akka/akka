@@ -192,10 +192,10 @@ to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery re
 
 By default, these remoting features are disabled when not using Akka Cluster:
 * Remote Deployment: falls back to creating a local actor
-* Remote Watch: ignores the watch and unwatch request, and `Terminated` will not be delivered when the remote actor is stopped or if a remote node crashes.
+* Remote Watch: ignores the watch and unwatch request, and `Terminated` will not be delivered when the remote actor is stopped or if a remote node crashes
 
 To optionally enable them without Cluster, if you understand
-the consequences, set 
+the [consequences]( ../remoting-artery.md#quarantine), set 
 ```
 akka.remote.use-unsafe-remote-features-without-cluster = on`.
 ```

@@ -98,7 +98,7 @@ class RemoteDeploymentSpec
       senderProbe.expectMsg("preRestart")
       r.tell(43, senderProbe.ref)
       senderProbe.expectMsg(43)
-      system.stop(r)
+      masterSystem.stop(r)
       senderProbe.expectMsg("postStop")
     }
 

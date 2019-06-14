@@ -35,6 +35,7 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
          acceptable-heartbeat-pause=2.5s
        }
        akka.remote.artery.enabled = $artery
+       akka.remote.use-unsafe-remote-features-without-cluster = on
        akka.loglevel = INFO
        """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
