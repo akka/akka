@@ -23,11 +23,13 @@ import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
+@silent
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

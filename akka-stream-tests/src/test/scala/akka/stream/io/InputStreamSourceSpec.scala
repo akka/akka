@@ -8,7 +8,7 @@ import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
 import akka.Done
-import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
+import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
@@ -17,14 +17,14 @@ import akka.stream.{
   AbruptStageTerminationException,
   ActorMaterializer,
   ActorMaterializerSettings,
-  IOOperationIncompleteException,
   IOResult
 }
 import akka.util.ByteString
 
 import scala.util.Success
-import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
+@silent
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

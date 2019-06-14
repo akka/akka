@@ -23,7 +23,9 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
+@silent
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

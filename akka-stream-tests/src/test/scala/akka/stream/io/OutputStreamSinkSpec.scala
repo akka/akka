@@ -16,7 +16,9 @@ import akka.util.ByteString
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
+@silent
 class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
