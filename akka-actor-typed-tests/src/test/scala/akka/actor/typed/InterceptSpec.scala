@@ -10,10 +10,12 @@ import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
-
 import scala.concurrent.duration._
+
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.internal.PoisonPillInterceptor
 
 object InterceptSpec {
   final case class Msg(hello: String, replyTo: ActorRef[String])
@@ -320,7 +322,30 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
 
     }
 
-    "be useful for implementing PoisonPill" in {
+    "be useful for implementing signal based PoisonPill" in {
+
+      def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
+        case Msg(hello, replyTo) =>
+          replyTo ! s"$hello-$count"
+          inner(count + 1)
+      }
+
+      val decorated: Behavior[Msg] =
+        Behaviors.intercept(() => new PoisonPillInterceptor[Msg])(inner(0))
+
+      val ref = spawn(decorated)
+      val probe = TestProbe[String]()
+      ref ! Msg("hello", probe.ref)
+      probe.expectMessage("hello-0")
+      ref ! Msg("hello", probe.ref)
+      probe.expectMessage("hello-1")
+
+      ref.unsafeUpcast[Any] ! PoisonPill
+
+      probe.expectTerminated(ref, probe.remainingOrDefault)
+    }
+
+    "be useful for implementing custom message based PoisonPill" in {
 
       def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
         case Msg(hello, replyTo) =>
@@ -362,15 +387,15 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }
 
-    "be able to intercept a subset of the messages" in {
+    "be able to intercept message subclasses" in {
       trait Message
       class A extends Message
       class B extends Message
 
       val interceptProbe = TestProbe[Message]()
 
-      val partialInterceptor: BehaviorInterceptor[Message, Message] =
-        new BehaviorInterceptor[Message, Message](classOf[B]) {
+      val interceptor: BehaviorInterceptor[Message, Message] =
+        new BehaviorInterceptor[Message, Message] {
 
           override def aroundReceive(
               ctx: TypedActorContext[Message],
@@ -388,7 +413,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
         }
 
       val probe = TestProbe[Message]()
-      val ref = spawn(Behaviors.intercept(() => partialInterceptor)(Behaviors.receiveMessage { msg =>
+      val ref = spawn(Behaviors.intercept(() => interceptor)(Behaviors.receiveMessage { msg =>
         probe.ref ! msg
         Behaviors.same
       }))
@@ -396,6 +421,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       ref ! new A
       ref ! new B
 
+      interceptProbe.expectMessageType[A]
       probe.expectMessageType[A]
       interceptProbe.expectMessageType[B]
       probe.expectMessageType[B]
@@ -523,6 +549,17 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       ref.unsafeUpcast ! ExternalResponse("b")
       probe.expectMessage("b") // bypass mdc interceptor
 
+    }
+
+    "be possible to combine with PoisonPillInterceptor" in {
+      val probe = createTestProbe[String]()
+      val ref =
+        spawn(Behaviors.intercept(() => new PoisonPillInterceptor[MultiProtocol.Command])(MultiProtocol(probe.ref)))
+
+      ref ! Command("a")
+      probe.expectMessage("a")
+      ref.unsafeUpcast ! PoisonPill
+      probe.expectTerminated(ref, probe.remainingOrDefault)
     }
   }
 

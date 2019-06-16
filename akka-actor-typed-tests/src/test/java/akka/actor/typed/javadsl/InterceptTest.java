@@ -59,10 +59,10 @@ public class InterceptTest extends JUnitSuite {
   static class B implements Message {}
 
   @Test
-  public void interceptMessagesSelectively() {
+  public void interceptMessageSubclasses() {
     final TestProbe<Message> interceptProbe = testKit.createTestProbe();
     BehaviorInterceptor<Message, Message> interceptor =
-        new BehaviorInterceptor<Message, Message>(B.class) {
+        new BehaviorInterceptor<Message, Message>(Message.class) {
 
           @Override
           public Behavior<Message> aroundReceive(
@@ -91,6 +91,7 @@ public class InterceptTest extends JUnitSuite {
     ref.tell(new A());
     ref.tell(new B());
 
+    interceptProbe.expectMessageClass(A.class);
     probe.expectMessageClass(A.class);
     interceptProbe.expectMessageClass(B.class);
     probe.expectMessageClass(B.class);

@@ -17,21 +17,28 @@ import akka.util.BoxedType
  * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
  * so that a new instance is created per spawned actor rather than shared among actor instance.
  *
- * @param interceptMessageClass Allows for applying the interceptor only to certain message types.
+ * @param interceptMessageClass Ensures that the interceptor will only receive `O` message types.
  *                              If the message is not of this class or a subclass thereof it will
  *                              bypass the interceptor and be continue to the inner behavior untouched.
+ *                              If `null` then all messages bypass the interceptor and only start and
+ *                              signals are intercepted, i.e. aroundReceive for `msg: O` is not invoked.
+ *                              Using `null` for interceptMessageClass is only safe if `O` and `I` are
+ *                              the same.
  *
  * @tparam O The outer message type – the type of messages the intercepting behavior will accept
  * @tparam I The inner message type - the type of message the wrapped behavior accepts
  */
-abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[_ <: O]) {
+abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[O]) {
   import BehaviorInterceptor._
 
   /**
    * Scala API
    */
   def this()(implicit interceptMessageClassTag: ClassTag[O]) =
-    this(BoxedType(interceptMessageClassTag.runtimeClass).asInstanceOf[Class[O]])
+    this({
+      val runtimeClass = interceptMessageClassTag.runtimeClass
+      (if (runtimeClass eq null) runtimeClass else BoxedType(runtimeClass)).asInstanceOf[Class[O]]
+    })
 
   /**
    * Override to intercept actor startup. To trigger startup of

@@ -77,8 +77,9 @@ private[akka] final class InterceptorImpl[O, I](
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
     // TODO performance optimization could maybe to avoid isAssignableFrom if interceptMessageClass is Class[Object]?
+    val interceptMessageClass = interceptor.interceptMessageClass
     val result =
-      if (interceptor.interceptMessageClass.isAssignableFrom(msg.getClass))
+      if ((interceptMessageClass ne null) && interceptor.interceptMessageClass.isAssignableFrom(msg.getClass))
         interceptor.aroundReceive(ctx, msg, receiveTarget)
       else
         receiveTarget.apply(ctx, msg.asInstanceOf[I])
