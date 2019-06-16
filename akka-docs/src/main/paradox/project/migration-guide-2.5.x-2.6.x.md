@@ -194,6 +194,9 @@ By default, these remoting features are disabled when not using Akka Cluster:
 * Remote Deployment: falls back to creating a local actor
 * Remote Watch: ignores the watch and unwatch request, and `Terminated` will not be delivered when the remote actor is stopped or if a remote node crashes
 
+When used with Cluster, all previous behavior is the same except:
+* A remote watch of an actor is no longer possible before a node joins cluster, only after.
+
 To optionally enable them without Cluster, if you understand
 the [consequences]( ../remoting-artery.md#quarantine), set 
 ```
