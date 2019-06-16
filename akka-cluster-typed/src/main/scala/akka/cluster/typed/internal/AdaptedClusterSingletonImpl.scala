@@ -44,7 +44,9 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
       singleton.stopMessage match {
         case Some(_) => behv
         case None =>
-          Behaviors.intercept(() => new PoisonPillInterceptor[M])(behv)
+          Behaviors
+            .intercept(() => new PoisonPillInterceptor[Any])(behv.unsafeCast[Any])
+            .narrow // FIXME this will be improved in next commit
       }
     }
 

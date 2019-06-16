@@ -1077,7 +1077,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[AnyRef]("probeMcProbeFace")
 
       // irrelevant for test case but needed to use intercept in the pyramid of doom below
-      val whateverInterceptor = new BehaviorInterceptor[String, String, String] {
+      val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
         override def aroundReceive(
             context: TypedActorContext[String],

@@ -99,8 +99,8 @@ object EventSourcedBehavior {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
       beh match {
-        case interceptor: InterceptorImpl[_, _, _] => extractConcreteBehavior(interceptor.nestedBehavior)
-        case concrete                              => concrete
+        case interceptor: InterceptorImpl[_, _] => extractConcreteBehavior(interceptor.nestedBehavior)
+        case concrete                           => concrete
       }
 
     extractConcreteBehavior(context.currentBehavior) match {

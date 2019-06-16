@@ -225,7 +225,9 @@ import akka.util.Timeout
           stopMessage match {
             case Some(_) => behv
             case None =>
-              Behaviors.intercept(() => new PoisonPillInterceptor[M])(behv)
+              Behaviors
+                .intercept(() => new PoisonPillInterceptor[Any])(behv.unsafeCast[Any])
+                .narrow // FIXME this will improve in next commit
           }
         }
 

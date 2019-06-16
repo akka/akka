@@ -56,7 +56,7 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
  * as part of that we must intercept when the guardian is stopped and call ActorSystem.terminate()
  * explicitly.
  */
-@InternalApi private[akka] final class GuardianStopInterceptor extends BehaviorInterceptor[Any, Any, Any] {
+@InternalApi private[akka] final class GuardianStopInterceptor extends BehaviorInterceptor[Any, Any] {
   override def aroundReceive(
       ctx: TypedActorContext[Any],
       msg: Any,

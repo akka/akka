@@ -492,8 +492,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public void tapPersistentActor() {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
-    BehaviorInterceptor<Command, Command, Command> tap =
-        new BehaviorInterceptor<Command, Command, Command>(Command.class) {
+    BehaviorInterceptor<Command, Command> tap =
+        new BehaviorInterceptor<Command, Command>(Command.class) {
 
           @Override
           public Behavior<Command> aroundReceive(

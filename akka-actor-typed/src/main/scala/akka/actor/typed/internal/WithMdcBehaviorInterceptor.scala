@@ -34,7 +34,7 @@ import scala.reflect.ClassTag
 @InternalApi private[akka] final class WithMdcBehaviorInterceptor[T: ClassTag] private (
     staticMdc: Map[String, Any],
     mdcForMessage: T => Map[String, Any])
-    extends BehaviorInterceptor[T, T, T] {
+    extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
 
@@ -49,12 +49,11 @@ import scala.reflect.ClassTag
     // so we need to look through the stack and eliminate any MCD already existing
     def loop(next: Behavior[T]): Behavior[T] = {
       next match {
-        case i: InterceptorImpl[T, T, T]
-            if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any, Any]]) =>
+        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case i: InterceptorImpl[T, T, T] =>
+        case i: InterceptorImpl[T, T] =>
           val nested = i.nestedBehavior
           val inner = loop(nested)
           if (inner eq nested) i
@@ -68,7 +67,7 @@ import scala.reflect.ClassTag
   }
 
   // in the normal case, a new withMDC replaces the previous one
-  override def isSame(other: BehaviorInterceptor[Any, Any, Any]): Boolean = other match {
+  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     case _: WithMdcBehaviorInterceptor[_] => true
     case _                                => false
   }

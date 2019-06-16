@@ -130,7 +130,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the protocol
-          val onStopInterceptor = new BehaviorInterceptor[Any, Any, Any] {
+          val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
 
             import BehaviorInterceptor._
             def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
