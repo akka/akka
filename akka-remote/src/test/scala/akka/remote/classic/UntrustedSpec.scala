@@ -60,13 +60,13 @@ object UntrustedSpec {
 }
 
 class UntrustedSpec extends AkkaSpec("""
-                                        akka.loglevel = DEBUG
+akka.loglevel = DEBUG
 akka.actor.provider = remote
 akka.remote.artery.enabled = off
 akka.remote.warn-about-direct-use = off
 akka.remote.classic.untrusted-mode = on
 akka.remote.classic.trusted-selection-paths = ["/user/receptionist", ]    
-akka.remote.netty.tcp.port = 0
+akka.remote.classic.netty.tcp.port = 0
 akka.loglevel = DEBUG # test verifies debug
 """) with ImplicitSender {
 
@@ -75,7 +75,7 @@ akka.loglevel = DEBUG # test verifies debug
   val client = ActorSystem(
     "UntrustedSpec-client",
     ConfigFactory.parseString("""
-                                        akka.loglevel = DEBUG
+      akka.loglevel = DEBUG
       akka.actor.provider = remote
       akka.remote.artery.enabled = off
       akka.remote.warn-about-direct-use = off
