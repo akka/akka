@@ -8,7 +8,8 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, Props }
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.ReplicatedData
@@ -21,6 +22,36 @@ object DistributedData extends ExtensionId[DistributedData] {
 
   override def createExtension(system: ActorSystem[_]): DistributedData =
     new DistributedData(system)
+
+  /**
+   * When interacting with the [[DistributedData.replicator]] from an actor the [[ReplicatorMessageAdapter]]
+   * provides convenient methods that adapts the response messages to the requesting actor's message protocol.
+   *
+   * One `ReplicatorMessageAdapter` instance can be used for a given `ReplicatedData` type,
+   * e.g. an `OrSet[String]`. Interaction with several [[akka.cluster.ddata.Key]]s can be used via the same adapter
+   * but they must all be of the same `ReplicatedData` type. For interaction with several different
+   * `ReplicatedData` types, e.g. an `OrSet[String]` and a `GCounter`, an adapter can be created
+   * for each type.
+   *
+   * *Warning*: A `ReplicatorMessageAdapter` instance is not thread-safe and must only be used from a single actor
+   * It must not be accessed from threads other than the ordinary actor message processing thread, such as
+   * [[scala.concurrent.Future]] callbacks. It must not be shared between several actor instances.
+   *
+   * @param factory Factory of the `Behavior` for the actor that is using the `ReplicatorMessageAdapter`
+   *
+   * @tparam A Message type of the requesting actor.
+   * @tparam B Type of the [[ReplicatedData]].
+   */
+  def withReplicatorMessageAdapter[A, B <: ReplicatedData](
+      factory: ReplicatorMessageAdapter[A, B] => Behavior[A]): Behavior[A] = {
+    Behaviors.setup[A] { context =>
+      val distributedData = DistributedData(context.system)
+      val replicatorAdapter =
+        new ReplicatorMessageAdapter[A, B](context, distributedData.replicator, distributedData.unexpectedAskTimeout)
+      factory(replicatorAdapter)
+    }
+  }
+
 }
 
 /**
@@ -50,7 +81,7 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
   /**
    * `ActorRef` of the [[Replicator]].
    *
-   * @see [[DistributedData.replicatorMessageAdapter]]
+   * @see [[DistributedData.withReplicatorMessageAdapter]]
    */
   val replicator: ActorRef[Replicator.Command] =
     if (isTerminated) {
@@ -73,32 +104,6 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
         ReplicatorSettings.name(system),
         Props.empty.withDispatcherFromConfig(settings.dispatcher))
     }
-
-  /**
-   * When interacting with the [[DistributedData.replicator]] from an actor the [[ReplicatorMessageAdapter]]
-   * provides convenient methods that adapts the response messages to the requesting actor's message protocol.
-   *
-   * One `ReplicatorMessageAdapter` instance can be used for a given `ReplicatedData` type,
-   * e.g. an `OrSet[String]`. Interaction with several [[akka.cluster.ddata.Key]]s can be used via the same adapter
-   * but they must all be of the same `ReplicatedData` type. For interaction with several different
-   * `ReplicatedData` types, e.g. an `OrSet[String]` and a `GCounter`, an adapter can be created
-   * for each type.
-   *
-   * *Warning*: `ReplicatorMessageAdapter` is not thread-safe and must only be used from the actor
-   * corresponding to the given `ActorContext`. It must not be accessed from threads other
-   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
-   * It must not be shared between several actor instances.
-   *
-   * `ReplicatorMessageAdapter` is not thread-safe and must only be used from the actor corresponding to the
-   * given `ActorContext`, and
-   *
-   * @param context The [[ActorContext]] of the requesting actor. The `ReplicatorMessageAdapter` can only be
-   *                used in this actor.
-   * @tparam A Message type of the requesting actor.
-   * @tparam B Type of the [[ReplicatedData]].
-   */
-  def replicatorMessageAdapter[A, B <: ReplicatedData](context: ActorContext[A]): ReplicatorMessageAdapter[A, B] =
-    new ReplicatorMessageAdapter(context, replicator, unexpectedAskTimeout)
 
   /**
    * Returns true if this member is not tagged with the role configured for the replicas.

@@ -49,50 +49,50 @@ object ReplicatorSpec {
       implicit val node: SelfUniqueAddress = DistributedData(ctx.system).selfUniqueAddress
 
       // adapter that turns the response messages from the replicator into our own protocol
-      val replicatorAdapter = DistributedData(ctx.system).replicatorMessageAdapter[ClientCommand, GCounter](ctx)
+      DistributedData.withReplicatorMessageAdapter[ClientCommand, GCounter] { replicatorAdapter =>
+        replicatorAdapter.subscribe(key, InternalChanged.apply)
 
-      replicatorAdapter.subscribe(key, InternalChanged.apply)
+        def behavior(cachedValue: Int): Behavior[ClientCommand] = {
+          Behaviors.receiveMessage[ClientCommand] {
+            case Increment =>
+              replicatorAdapter.askUpdate(
+                askReplyTo => Replicator.Update(key, GCounter.empty, Replicator.WriteLocal, askReplyTo)(_ :+ 1),
+                InternalUpdateResponse.apply)
 
-      def behavior(cachedValue: Int): Behavior[ClientCommand] = {
-        Behaviors.receiveMessage[ClientCommand] {
-          case Increment =>
-            replicatorAdapter.askUpdate(
-              askReplyTo => Replicator.Update(key, GCounter.empty, Replicator.WriteLocal, askReplyTo)(_ :+ 1),
-              InternalUpdateResponse.apply)
+              Behaviors.same
 
-            Behaviors.same
+            case GetValue(replyTo) =>
+              replicatorAdapter.askGet(
+                askReplyTo => Replicator.Get(key, Replicator.ReadLocal, askReplyTo),
+                value => InternalGetResponse(value, replyTo))
 
-          case GetValue(replyTo) =>
-            replicatorAdapter.askGet(
-              askReplyTo => Replicator.Get(key, Replicator.ReadLocal, askReplyTo),
-              value => InternalGetResponse(value, replyTo))
+              Behaviors.same
 
-            Behaviors.same
+            case GetCachedValue(replyTo) =>
+              replyTo ! cachedValue
+              Behaviors.same
 
-          case GetCachedValue(replyTo) =>
-            replyTo ! cachedValue
-            Behaviors.same
+            case internal: InternalMsg =>
+              internal match {
+                case InternalUpdateResponse(_) => Behaviors.same // ok
 
-          case internal: InternalMsg =>
-            internal match {
-              case InternalUpdateResponse(_) => Behaviors.same // ok
+                case InternalGetResponse(rsp @ Replicator.GetSuccess(`key`), replyTo) =>
+                  val value = rsp.get(key).value.toInt
+                  replyTo ! value
+                  Behaviors.same
 
-              case InternalGetResponse(rsp @ Replicator.GetSuccess(`key`), replyTo) =>
-                val value = rsp.get(key).value.toInt
-                replyTo ! value
-                Behaviors.same
+                case InternalGetResponse(_, _) =>
+                  Behaviors.unhandled // not dealing with failures
 
-              case InternalGetResponse(_, _) =>
-                Behaviors.unhandled // not dealing with failures
-
-              case InternalChanged(chg @ Replicator.Changed(`key`)) =>
-                val value = chg.get(key).value.intValue
-                behavior(value)
-            }
+                case InternalChanged(chg @ Replicator.Changed(`key`)) =>
+                  val value = chg.get(key).value.intValue
+                  behavior(value)
+              }
+          }
         }
-      }
 
-      behavior(cachedValue = 0)
+        behavior(cachedValue = 0)
+      }
     }
   // #sample
 

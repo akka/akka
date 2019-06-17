@@ -82,26 +82,33 @@ public class ReplicatorTest extends JUnitSuite {
 
   static class Counter extends AbstractBehavior<ClientCommand> {
     private final ActorContext<ClientCommand> context;
+    // adapter that turns the response messages from the replicator into our own protocol
     private final ReplicatorMessageAdapter<ClientCommand, GCounter> replicatorAdapter;
     private final SelfUniqueAddress node;
     private final Key<GCounter> key;
 
     private int cachedValue = 0;
 
-    Counter(ActorContext<ClientCommand> ctx, Key<GCounter> key) {
+    Counter(
+        ActorContext<ClientCommand> ctx,
+        ReplicatorMessageAdapter<ClientCommand, GCounter> replicatorAdapter,
+        Key<GCounter> key) {
+
       context = ctx;
+      this.replicatorAdapter = replicatorAdapter;
       this.key = key;
 
       node = DistributedData.get(ctx.getSystem()).selfUniqueAddress();
 
-      // adapter that turns the response messages from the replicator into our own protocol
-      replicatorAdapter = DistributedData.get(ctx.getSystem()).replicatorMessageAdapter(ctx);
-
-      replicatorAdapter.subscribe(this.key, InternalChanged::new);
+      this.replicatorAdapter.subscribe(this.key, InternalChanged::new);
     }
 
     public static Behavior<ClientCommand> create(Key<GCounter> key) {
-      return Behaviors.setup(ctx -> new Counter(ctx, key));
+      return Behaviors.setup(
+          ctx ->
+              DistributedData.withReplicatorMessageAdapter(
+                  (ReplicatorMessageAdapter<ClientCommand, GCounter> replicatorAdapter) ->
+                      new Counter(ctx, replicatorAdapter, key)));
     }
 
     @Override

@@ -28,7 +28,7 @@ import akka.util.Timeout
  * for each type.
  *
  * For the default replicator in the [[DistributedData]] extension a `ReplicatorMessageAdapter`
- * can be created with [[DistributedData.replicatorMessageAdapter]].
+ * can be created with [[DistributedData.withReplicatorMessageAdapter]].
  *
  * *Warning*: `ReplicatorMessageAdapter` is not thread-safe and must only be used from the actor
  * corresponding to the given `ActorContext`. It must not be accessed from threads other
