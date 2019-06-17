@@ -43,7 +43,7 @@ private[akka] object Reflect {
    * @return a new instance from the default constructor of the given class
    */
   private[akka] def instantiate[T](clazz: Class[T]): T =
-    try clazz.newInstance
+    try clazz.getDeclaredConstructor().newInstance()
     catch {
       case _: IllegalAccessException =>
         val ctor = clazz.getDeclaredConstructor()
