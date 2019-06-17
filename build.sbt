@@ -23,7 +23,6 @@ import spray.boilerplate.BoilerplatePlugin
 initialize := {
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
-  assert(CrossJava.Keys.fullJavaHomes.value.contains("8"), "JDK 8 is not installed but required to build akka")
   initialize.value
 }
 
