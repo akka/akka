@@ -1,12 +1,21 @@
 # How can I deploy Akka?
 
-Akka can be used in different ways:
+The simplest way to use Akka is as a regular library, adding the Akka jars you
+need to your classpath (in case of a web app, in `WEB-INF/lib`).
 
- * As a library: used as a regular JAR on the classpath and/or in a web app, to
-be put into `WEB-INF/lib`
- * As an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
+Sometimes it can be useful to bundle your application into a single 'fat jar'.
+If you do that, some additional configuration is needed, because each Akka jar
+contains a `reference.conf` resource with default values, and these must be
+merged.
+
+How to make sure reference.conf resources are merged depends on the tooling you
+are using to create the fat jar:
+
+ * When using sbt: as an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
+ * When using Maven: as an application packaged with a bundler such as jarjar, onejar or assembly
+ * When using Gradle: using the Jar task from the Java plugin
  
-## Native Packager
+## sbt: Native Packager
 
 [sbt-native-packager](https://github.com/sbt/sbt-native-packager) is a tool for creating
 distributions of any type of application, including Akka applications.
@@ -24,6 +33,78 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.1.5")
 ```
 
 Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager plugin documentation](http://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html).
+
+## Maven: jarjar, onejar or assembly
+
+You can use the [Apache Maven Shade Plugin](http://maven.apache.org/plugins/maven-shade-plugin)
+support for [Resource Transformers](http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
+to merge all the reference.confs on the build classpath into one.
+
+The plugin configuration might look like this:
+
+```
+<plugin>
+ <groupId>org.apache.maven.plugins</groupId>
+ <artifactId>maven-shade-plugin</artifactId>
+ <version>1.5</version>
+ <executions>
+  <execution>
+   <phase>package</phase>
+   <goals>
+    <goal>shade</goal>
+   </goals>
+   <configuration>
+    <shadedArtifactAttached>true</shadedArtifactAttached>
+    <shadedClassifierName>allinone</shadedClassifierName>
+    <artifactSet>
+     <includes>
+      <include>*:*</include>
+     </includes>
+    </artifactSet>
+    <transformers>
+      <transformer
+       implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+       <resource>reference.conf</resource>
+      </transformer>
+      <transformer
+       implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+       <manifestEntries>
+        <Main-Class>akka.Main</Main-Class>
+       </manifestEntries>
+      </transformer>
+    </transformers>
+   </configuration>
+  </execution>
+ </executions>
+</plugin>
+```
+
+
+## Gradle: the Jar task from the Java plugin
+
+When using Gradle, you would typically use the
+[Jar task from the Java plugin](https://www.baeldung.com/gradle-fat-jar)
+to create the fat jar.
+
+To make sure the `reference.conf` resources are correctly merged, you might
+use the [Shadow plugin](https://imperceptiblethoughts.com/shadow/), which might
+look something like this:
+
+```
+import com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer
+
+plugins {
+    id 'java'
+    id "com.github.johnrengelman.shadow" version "5.0.0"
+}
+
+shadowJar {
+    transform(AppendingTransformer) {
+        resource = 'reference.conf'
+    }
+    with jar
+}
+```
 
 ## In a Docker container
 
