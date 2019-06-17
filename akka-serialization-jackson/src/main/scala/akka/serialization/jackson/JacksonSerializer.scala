@@ -385,8 +385,8 @@ import net.jpountz.lz4.{LZ4FrameInputStream, LZ4FrameOutputStream}
       val buffer = new Array[Byte](BufferSize)
 
       @tailrec def readChunk(): Unit = decompressed.read(buffer) match {
-        case -1 ⇒ ()
-        case n ⇒
+        case -1 => ()
+        case n =>
           out.write(buffer, 0, n)
           readChunk()
       }
