@@ -179,3 +179,60 @@ object DispatcherSelector {
    */
   def sameAsParent(): DispatcherSelector = DispatcherSameAsParent.empty
 }
+
+/**
+ * Not for user extension.
+ */
+@DoNotInherit
+sealed abstract class MailboxSelector extends Props
+
+object MailboxSelector {
+
+  private val _default = DefaultMailboxSelector()
+
+  /**
+   * The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   */
+  def defaultMailbox(): MailboxSelector = _default
+
+  /**
+   * A mailbox with a max capacity after which new messages are dropped (passed to deadletters)
+   * @param capacity The maximum number of messages in the mailbox before new messages are dropped
+   */
+  def bounded(capacity: Int): MailboxSelector = BoundedMailboxSelector(capacity)
+
+  /**
+   * Select a mailbox from the config file using an absolute config path.
+   *
+   * This is a power user settings default or bounded should be preferred unless you know what you are doing.
+   */
+  def fromConfig(path: String): MailboxSelector = MailboxFromConfigSelector(path)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class DefaultMailboxSelector(next: Props = Props.empty) extends MailboxSelector {
+  def withNext(next: Props): Props = copy(next = next)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class BoundedMailboxSelector(capacity: Int, next: Props = Props.empty)
+    extends MailboxSelector {
+  def withNext(next: Props): Props = copy(next = next)
+}
+
+/**
+ * Select a mailbox config using an absolute config path.
+ *
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class MailboxFromConfigSelector(path: String, next: Props = Props.empty)
+    extends MailboxSelector {
+  def withNext(next: Props): Props = copy(next = next)
+}
