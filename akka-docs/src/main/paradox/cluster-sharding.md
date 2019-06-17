@@ -174,13 +174,14 @@ Where `#` is a number to distinguish between instances as there are multiple in 
  1. Incoming message `M1` to `ShardRegion` instance `SR1`.
  2. `M1` is mapped to shard `S1`. `SR1` doesn't know about `S1`, so it asks the `SC` for the location of `S1`.
  3. `SC` answers that the home of `S1` is `SR1`.
- 4. `SR1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
- 5. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. It creates entity children as needed, and forwards messages to them.
+ 4. `SR1` creates child actor shard `S1` and forwards the message to it.
+ 5. `S1` creates child actor for `E1` and forwards the message to it.
+ 6. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. 
 
 #### Scenario 2: Message to an unknown shard that belongs to a remote ShardRegion 
 
  1. Incoming message `M2` to `ShardRegion` instance `SR1`.
- 2. `M2` is mapped to `S2`. SR1 doesn't know about `S2`, so it asks `SC` for the location of `S2`.
+ 2. `M2` is mapped to `S2`. `SR1` doesn't know about `S2`, so it asks `SC` for the location of `S2`.
  3. `SC` answers that the home of `S2` is `SR2`.
  4. `SR1` sends buffered messages for `S2` to `SR2`.
  5. All incoming messages for `S2` which arrive at `SR1` can be handled by `SR1` without `SC`. It forwards messages to `SR2`.

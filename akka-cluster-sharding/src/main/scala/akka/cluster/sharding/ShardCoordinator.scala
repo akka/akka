@@ -725,11 +725,14 @@ abstract class ShardCoordinator(
       true
     } else {
       state.shards.get(shard) match {
-        case Some(ref) =>
-          if (regionTerminationInProgress(ref))
-            log.debug("GetShardHome [{}] request ignored, due to region [{}] termination in progress.", shard, ref)
+        case Some(shardRegionRef) =>
+          if (regionTerminationInProgress(shardRegionRef))
+            log.debug(
+              "GetShardHome [{}] request ignored, due to region [{}] termination in progress.",
+              shard,
+              shardRegionRef)
           else
-            sender() ! ShardHome(shard, ref)
+            sender() ! ShardHome(shard, shardRegionRef)
           true
         case None =>
           false // location not known, yet, caller will handle allocation
