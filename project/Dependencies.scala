@@ -14,8 +14,8 @@ object Dependencies {
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
-  lazy val sslConfigVersion = settingKey[String]("The version of ssl-config to use.")
   val junitVersion = "4.12"
+  val sslConfigVersion = "0.3.8"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.15.1"
@@ -44,12 +44,7 @@ object Dependencies {
         case Some((2, n)) if n == 12 => "0.8.0"
         case _                       => "0.7.0"
       }
-    },
-    sslConfigVersion := {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "0.4.0"
-        case _                       => "0.3.7"
-    }})
+    })
 
   object Compile {
     // Compile
@@ -78,7 +73,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
 
     // ssl-config
-    val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion.value } // ApacheV2
+    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.1" // ApacheV2, OpenLDAP Public License
 
@@ -253,7 +248,7 @@ object Dependencies {
 
   // akka stream
 
-  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore.value, Test.scalatest.value)
+  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, Test.scalatest.value)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)
 
