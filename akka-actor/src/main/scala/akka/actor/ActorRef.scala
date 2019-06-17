@@ -474,7 +474,10 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
-/** Subscribe to this class to be notified about all DeadLetters (also the suppressed ones). */
+/**
+ * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
+ * and [[Dropped]].
+ */
 sealed trait AllDeadLetters {
   def message: Any
   def sender: ActorRef
@@ -510,6 +513,14 @@ final case class SuppressedDeadLetter(message: DeadLetterSuppression, sender: Ac
     extends AllDeadLetters {
   require(sender ne null, "DeadLetter sender may not be null")
   require(recipient ne null, "DeadLetter recipient may not be null")
+}
+
+/**
+ * Envelope that is published on the eventStream wrapped in [[akka.actor.DeadLetter]] for every message that is
+ * dropped due to overfull queues or routers with no routees.
+ */
+final case class Dropped(message: Any, reason: String, recipient: ActorRef) extends AllDeadLetters {
+  override def sender: ActorRef = ActorRef.noSender
 }
 
 private[akka] object DeadLetterActorRef {

@@ -48,6 +48,7 @@ import akka.stream.SharedKillSwitch
 import scala.util.control.NoStackTrace
 
 import akka.actor.Cancellable
+import akka.actor.Dropped
 import akka.stream.StreamTcpException
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
@@ -339,17 +340,11 @@ private[remote] class Association(
         case OptionVal.Some(ref) => ref.cachedAssociation = null // don't use this Association instance any more
         case OptionVal.None      =>
       }
-      if (log.isDebugEnabled) {
-        val reason =
-          if (removed) "removed unused quarantined association"
-          else s"overflow of send queue, size [$qSize]"
-        log.debug(
-          "Dropping message [{}] from [{}] to [{}] due to {}",
-          Logging.messageClassName(message),
-          sender.getOrElse(deadletters),
-          recipient.getOrElse(recipient),
-          reason)
-      }
+      val reason =
+        if (removed) "Due to removed unused quarantined association"
+        else s"Due to overflow of send queue, size [$qSize]"
+      transport.system.eventStream.publish(Dropped(message, reason, recipient.getOrElse(deadletters)))
+
       flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env
     }

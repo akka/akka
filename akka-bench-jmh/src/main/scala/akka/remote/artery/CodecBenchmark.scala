@@ -63,6 +63,7 @@ class CodecBenchmark {
     override def completeHandshake(peer: UniqueAddress): Future[Done] = ???
     override lazy val settings: ArterySettings =
       ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery"))
+    override def publishDropped(inbound: InboundEnvelope, reason: String): Unit = ()
   }
 
   private var materializer: ActorMaterializer = _

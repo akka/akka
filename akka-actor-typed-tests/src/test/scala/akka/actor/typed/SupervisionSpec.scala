@@ -19,6 +19,8 @@ import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
+
+import akka.actor.Dropped
 import akka.actor.typed.SupervisorStrategy.Resume
 import akka.event.Logging
 
@@ -793,8 +795,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! Ping(4)
       probe.expectMessage(Pong(1))
       probe.expectMessage(Pong(2))
-      droppedMessagesProbe.expectMessage(Dropped(Ping(3), ref))
-      droppedMessagesProbe.expectMessage(Dropped(Ping(4), ref))
+      droppedMessagesProbe.expectMessage(Dropped(Ping(3), "Stash is full in [BackoffSupervisor]", ref.toUntyped))
+      droppedMessagesProbe.expectMessage(Dropped(Ping(4), "Stash is full in [BackoffSupervisor]", ref.toUntyped))
     }
 
     "restart after exponential backoff" in {
