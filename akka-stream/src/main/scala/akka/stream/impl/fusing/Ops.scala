@@ -1783,7 +1783,6 @@ private[stream] object Collect {
           !strategy.isBackpressure || buffer.used < size
       }
 
-
       def grabAndPull(): Unit = {
         if (buffer.used == size) throw new IllegalStateException("Trying to enqueue but buffer is full")
         buffer.enqueue((System.nanoTime(), grab(in)))

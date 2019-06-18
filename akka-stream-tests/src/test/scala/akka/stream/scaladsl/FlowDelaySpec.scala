@@ -224,11 +224,12 @@ class FlowDelaySpec extends StreamSpec {
     "not throw NPE when using EmitEarly and buffer is full" taggedAs TimingTest in {
       val result =
         Source(1 to 9)
-          .delay(1.second, DelayOverflowStrategy.emitEarly).addAttributes(Attributes.inputBuffer(5, 5))
+          .delay(1.second, DelayOverflowStrategy.emitEarly)
+          .addAttributes(Attributes.inputBuffer(5, 5))
           .runWith(Sink.seq)
           .futureValue
 
-      result should === ((1 to 9).toSeq)
+      result should ===((1 to 9).toSeq)
     }
   }
 }
