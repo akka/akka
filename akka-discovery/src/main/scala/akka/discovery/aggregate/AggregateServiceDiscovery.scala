@@ -13,7 +13,7 @@ import akka.event.Logging
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal

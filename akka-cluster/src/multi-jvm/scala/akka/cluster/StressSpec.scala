@@ -770,7 +770,7 @@ abstract class StressSpec
       .append(" MB")
     sb.append("\n")
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val args = runtime.getInputArguments.asScala.filterNot(_.contains("classpath")).mkString("\n  ")
     sb.append("Args:\n  ").append(args)
     sb.append("\n")

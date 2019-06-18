@@ -7,7 +7,7 @@ package akka.actor.typed.receptionist
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ExtensionSetup

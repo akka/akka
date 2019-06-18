@@ -89,12 +89,12 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
 
     case event @ Info(logSource, logClass, message) =>
       withMdc(logSource, event) {
-        Logger(logClass, logSource).info(markerIfPresent(event), "{}", message.asInstanceOf[AnyRef])
+        Logger(logClass, logSource).info(markerIfPresent(event), "{}", message: Any)
       }
 
     case event @ Debug(logSource, logClass, message) =>
       withMdc(logSource, event) {
-        Logger(logClass, logSource).debug(markerIfPresent(event), "{}", message.asInstanceOf[AnyRef])
+        Logger(logClass, logSource).debug(markerIfPresent(event), "{}", message: Any)
       }
 
     case InitializeLogger(_) =>

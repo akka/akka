@@ -34,7 +34,7 @@ object AtLeastOnceDelivery {
      * Java API
      */
     def getUnconfirmedDeliveries: java.util.List[UnconfirmedDelivery] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       unconfirmedDeliveries.asJava
     }
 
@@ -50,7 +50,7 @@ object AtLeastOnceDelivery {
      * Java API
      */
     def getUnconfirmedDeliveries: java.util.List[UnconfirmedDelivery] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       unconfirmedDeliveries.asJava
     }
   }

@@ -298,7 +298,7 @@ object Flow {
 
 /** Create a `Flow` which can process elements of type `T`. */
 final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
   override def traversalBuilder = delegate.traversalBuilder

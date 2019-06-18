@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
 import scala.util.Try
 import akka.dispatch.Mapper
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * An immutable representation of a Camel message.

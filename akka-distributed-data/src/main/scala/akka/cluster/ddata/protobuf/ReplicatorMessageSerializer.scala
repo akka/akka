@@ -6,7 +6,7 @@ package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import akka.actor.ExtendedActorSystem

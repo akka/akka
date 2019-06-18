@@ -19,6 +19,8 @@ import akka.util.ccompat._
 
 import scala.runtime.AbstractFunction5
 
+import com.github.ghik.silencer.silent
+
 /**
  * Domain events published to the event bus.
  * Subscribe with:
@@ -120,25 +122,28 @@ object ClusterEvent {
      * Java API: get current member list.
      */
     def getMembers: java.lang.Iterable[Member] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       members.asJava
     }
 
     /**
      * Java API: get current unreachable set.
      */
+    @silent
     def getUnreachable: java.util.Set[Member] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
 
     /**
      * Java API: All data centers in the cluster
      */
+    @silent
     def getUnreachableDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
 
     /**
      * Java API: get current “seen-by” set.
      */
+    @silent
     def getSeenBy: java.util.Set[Address] =
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
@@ -166,6 +171,7 @@ object ClusterEvent {
     /**
      * Java API: All node roles in the cluster
      */
+    @silent
     def getAllRoles: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
 
@@ -177,6 +183,7 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
+    @silent
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 

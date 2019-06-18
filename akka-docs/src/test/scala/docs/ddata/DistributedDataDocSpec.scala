@@ -400,7 +400,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
   }
 
   "test japi.TwoPhaseSetSerializer" in {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val s1 = ddata.TwoPhaseSet.create().add("a").add("b").add("c").remove("b")
     s1.getElements.asScala should be(Set("a", "c"))
     val serializer = SerializationExtension(system).findSerializerFor(s1)

@@ -330,7 +330,7 @@ private[remote] object RemoteInstruments {
   def create(system: ExtendedActorSystem, @unused log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     c.getStringList(path)
       .asScala
       .iterator

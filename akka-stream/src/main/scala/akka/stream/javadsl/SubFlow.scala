@@ -11,7 +11,7 @@ import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
