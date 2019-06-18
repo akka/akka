@@ -443,7 +443,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   def uninitialized: Actor.Receive =
     ({
-      case InitJoin =>
+      case InitJoin(_) =>
         logInfo("Received InitJoin message from [{}], but this node is not initialized yet", sender())
         sender() ! InitJoinNack(selfAddress)
       case ClusterUserAction.JoinTo(address) =>
@@ -464,7 +464,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     ({
       case Welcome(from, gossip) =>
         welcome(joinWith, from, gossip)
-      case InitJoin =>
+      case InitJoin(_) =>
         logInfo("Received InitJoin message from [{}], but this node is not a member yet", sender())
         sender() ! InitJoinNack(selfAddress)
       case ClusterUserAction.JoinTo(address) =>
