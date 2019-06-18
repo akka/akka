@@ -206,7 +206,7 @@ By default, these remoting features are disabled when not using Akka Cluster:
 When used with Cluster, all previous behavior is the same except a remote watch of an actor is no longer possible before a node joins a cluster, only after.
 
 To optionally enable them without Cluster, if you understand
-the @ref[consequences](../remoting-artery.md#quarantine), set 
+the @ref[consequences](../remoting-artery.md#quarantine), set
 ```
 akka.remote.use-unsafe-remote-features-without-cluster = on`.
 ```
@@ -214,7 +214,7 @@ akka.remote.use-unsafe-remote-features-without-cluster = on`.
 When used without Cluster
 
 * An initial warning is logged on startup of `RemoteActorRefProvider`
-* A warning will be logged on remote watch attempts, which you can suppress by setting 
+* A warning will be logged on remote watch attempts, which you can suppress by setting
 ```
 akka.remote.warn-unsafe-watch-without-cluster = off
 ```
@@ -286,6 +286,19 @@ akka.cluster.sharding.passivate-idle-entity-after = off
 
 It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
 
+### Distributed Data
+
+Configuration properties for controlling sizes of `Gossip` and `DeltaPropagation` messages in Distributed Data
+have been reduced. Previous defaults sometimes resulted in messages exceeding max payload size for remote
+actor messages.
+
+The new configuration properties are:
+
+```
+akka.cluster.distributed-data.max-delta-elements = 500
+akka.cluster.distributed-data.delta-crdt.max-delta-size = 50
+```
+
 ### CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
@@ -305,7 +318,7 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
 `StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
 to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
-the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException]. 
+the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException].
 
 ### Akka now uses Fork Join Pool from JDK
 
