@@ -142,18 +142,7 @@ If multiple instances were to persist events at the same time, the events would 
 interpreted correctly on replay. Cluster Sharding ensures that there is only one active entity for each id. The
 @ref:[Cluster Sharding example](cluster-sharding.md#persistence-example) illustrates this common combination.
 
-## Accessing the ActorContext
-
-If the persistent behavior needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by 
-wrapping construction with `Behaviors.setup`:
-
-Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #actor-context }
-
-Java
-:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #actor-context }
-
-
+@@include[actor-context.md](/akka-docs/src/main/paradox/includes/actor-context.md) { #actor-context-typed-access }
 
 ## Changing Behavior
 
