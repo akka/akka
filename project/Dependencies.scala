@@ -13,7 +13,7 @@ object Dependencies {
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
-  lazy val sslConfigVersion = settingKey[String]("The version of ssl-config to use.")
+
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
@@ -26,6 +26,8 @@ object Dependencies {
 
   val scala212Version = "2.12.8"
   val scala213Version = "2.13.0"
+
+  val sslConfigVersion = "0.3.8"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
@@ -43,12 +45,6 @@ object Dependencies {
         // it is probably possible to remove the dependency if needed.
         case Some((2, n)) if n >= 13 => "0.9.0"
         case _                       => "0.8.0"
-      }
-    },
-    sslConfigVersion := {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => "0.4.0"
-        case _                       => "0.3.7"
       }
     })
 
@@ -75,7 +71,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
 
     // ssl-config
-    val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion.value } // ApacheV2
+    val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.1" // ApacheV2, OpenLDAP Public License
 
