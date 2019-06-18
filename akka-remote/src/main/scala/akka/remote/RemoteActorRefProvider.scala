@@ -35,6 +35,7 @@ import akka.remote.serialization.ActorRefResolveThreadLocalCache
 import akka.serialization.Serialization
 import akka.util.ErrorMessages
 import akka.util.OptionVal
+import akka.util.unused
 import com.github.ghik.silencer.silent
 
 /**
@@ -351,6 +352,17 @@ private[akka] class RemoteActorRefProvider(
       log.debug(message)
   }
 
+  /** Override to add an additional check if using `RemoteActorRefProvider` as a superclass. */
+  protected def isRemoteActorRefAllowed(@unused system: ActorSystem, @unused qddress: Address): Boolean = true
+
+  /** Logs a warning if in `actorOf` it falls back to `LocalActorRef` versus creating
+    * a `RemoteActorRef`. Override if a more granular reason should be logged when
+    * using `RemoteActorRefProvider` as a superclass.
+    */
+  protected def warnIfNotRemoteActorRef(path: ActorPath): Unit =
+    log.warning(
+      "Remote deploy of [{}] is not allowed, falling back to local.", path)
+
   def actorOf(
       system: ActorSystemImpl,
       props: Props,
@@ -417,6 +429,11 @@ private[akka] class RemoteActorRefProvider(
         }
       }
 
+      def warnThenFallback() = {
+        warnIfNotRemoteActorRef(path)
+        local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+      }
+
       (Iterator(props.deploy) ++ deployment.iterator).reduce((a, b) => b.withFallback(a)) match {
         case d @ Deploy(_, _, _, RemoteScope(address), _, _) =>
           if (hasAddress(address)) {
@@ -426,7 +443,7 @@ private[akka] class RemoteActorRefProvider(
               s"${ErrorMessages.RemoteDeploymentConfigErrorPrefix} for local-only Props at [$path]")
           } else
             try {
-              if (hasClusterOrUseUnsafe) {
+              if (hasClusterOrUseUnsafe && isRemoteActorRefAllowed(system, address)) {
                 try {
                   // for consistency we check configuration of dispatcher and mailbox locally
                   val dispatcher = system.dispatchers.lookup(props.dispatcher)
@@ -443,14 +460,13 @@ private[akka] class RemoteActorRefProvider(
                     .withUid(path.uid)
                 new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
               } else {
-                log.warning("Creating local versus remote `ActorRef` for {}", path)
-                local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+                warnThenFallback()
               }
             } catch {
               case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
             }
         case _ =>
-          local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+          warnThenFallback()
       }
     }
 
