@@ -866,7 +866,13 @@ abstract class ShardCoordinator(
       }
     }
 
-  def continueRebalance(shards: Set[ShardId]): Unit =
+  def continueRebalance(shards: Set[ShardId]): Unit = {
+    if (log.isInfoEnabled && (shards.nonEmpty || rebalanceInProgress.nonEmpty)) {
+      log.info(
+        "Starting rebalance for shards [{}]. Current shards rebalancing: [{}]",
+        shards.mkString(","),
+        rebalanceInProgress.keySet.mkString(","))
+    }
     shards.foreach { shard =>
       if (!rebalanceInProgress.contains(shard)) {
         state.shards.get(shard) match {
@@ -885,6 +891,7 @@ abstract class ShardCoordinator(
 
       }
     }
+  }
 
 }
 
