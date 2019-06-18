@@ -9,13 +9,12 @@ import akka.event.LoggingAdapter;
 import akka.event.NoLogging;
 import akka.serialization.JavaSerializer;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.Callable;
 
 import static org.junit.Assert.*;
 
-public class JavaAPITestBase extends JUnitSuite {
+public class JavaAPITestBase {
 
   @Test
   public void shouldCreateSomeString() {
