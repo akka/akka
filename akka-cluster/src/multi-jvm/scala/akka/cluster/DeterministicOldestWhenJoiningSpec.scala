@@ -59,7 +59,7 @@ abstract class DeterministicOldestWhenJoiningSpec
         cluster.joinSeedNodes(seedNodes)
       }
 
-      within(10.seconds) {
+      within(15.seconds) {
         val ups = List(expectMsgType[MemberUp], expectMsgType[MemberUp], expectMsgType[MemberUp])
         ups.map(_.member).sorted(Member.ageOrdering).head.address should ===(seedNodes.head)
       }
