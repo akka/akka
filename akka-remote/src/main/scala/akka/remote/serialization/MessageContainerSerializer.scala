@@ -69,7 +69,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
       .deserialize(selectionEnvelope.getEnclosedMessage.toByteArray, selectionEnvelope.getSerializerId, manifest)
       .get
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.iterator
       .map { x =>
         x.getType match {

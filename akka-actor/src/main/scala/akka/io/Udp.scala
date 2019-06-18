@@ -243,7 +243,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
 object UdpMessage {
   import Udp._
   import java.lang.{ Iterable => JIterable }
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Each [[Udp.Send]] can optionally request a positive acknowledgment to be sent

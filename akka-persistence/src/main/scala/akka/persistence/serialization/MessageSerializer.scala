@@ -113,7 +113,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   def atLeastOnceDeliverySnapshot(
       atLeastOnceDeliverySnapshot: mf.AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnapshot = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val unconfirmedDeliveries = new VectorBuilder[UnconfirmedDelivery]()
     atLeastOnceDeliverySnapshot.getUnconfirmedDeliveriesList().iterator().asScala.foreach { next =>
       unconfirmedDeliveries += UnconfirmedDelivery(
@@ -205,7 +205,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   }
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     AtomicWrite(atomicWrite.getPayloadList.asScala.iterator.map(persistent).to(immutable.IndexedSeq))
   }
 

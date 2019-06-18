@@ -12,7 +12,7 @@ import akka.japi.{ function, Pair }
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.stream.scaladsl.GenericGraph
 import akka.util.unused
 
@@ -455,7 +455,7 @@ object ZipN {
  */
 object ZipWithN {
   def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
   }
 }

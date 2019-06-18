@@ -6,7 +6,7 @@ package akka.remote.artery
 
 import java.net.InetAddress
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration._
 
 import akka.NotUsed

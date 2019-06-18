@@ -16,6 +16,8 @@ import akka.cluster.MemberStatus
 import java.util.concurrent.ThreadLocalRandom
 import akka.actor.DeadLetterSuppression
 
+import com.github.ghik.silencer.silent
+
 /**
  *  Runtime collection management commands.
  */
@@ -92,6 +94,7 @@ trait ClusterMetricsEvent
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
+  @silent
   def getNodeMetrics: java.lang.Iterable[NodeMetrics] =
     scala.collection.JavaConverters.asJavaIterableConverter(nodeMetrics).asJava
 }

@@ -4,6 +4,8 @@
 
 package akka.japi
 
-import org.scalatestplus.junit.JUnitSuiteLike
+import org.scalatest.junit.JUnitSuiteLike
+import com.github.ghik.silencer.silent
 
+@silent
 class JavaAPITest extends JavaAPITestBase with JUnitSuiteLike

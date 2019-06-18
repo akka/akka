@@ -28,6 +28,7 @@ trait Consumer extends Actor with CamelSupport {
    * Registers the consumer endpoint. Note: when overriding this method, be sure to
    * call 'super.preRestart', otherwise the consumer endpoint will not be registered.
    */
+  @throws[Exception]
   override def preStart(): Unit = {
     super.preStart()
     // Possible FIXME. registering the endpoint here because of problems

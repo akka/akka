@@ -362,7 +362,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       result.map(println)(system.dispatcher)
       // 55
       //#reduce-operator-example
-      assert(result.futureValue == (1 to 10 sum))
+      assert(result.futureValue == (1 to 10).sum)
     }
   }
 
