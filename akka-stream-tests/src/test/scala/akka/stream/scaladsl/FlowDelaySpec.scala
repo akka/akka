@@ -219,5 +219,16 @@ class FlowDelaySpec extends StreamSpec {
 
       probe.request(10).expectNextN(1 to 2).expectComplete()
     }
+
+    // repeater for #27095
+    "not throw NPE when using EmitEarly and buffer is full" taggedAs TimingTest in {
+      val result =
+        Source(1 to 9)
+          .delay(1.second, DelayOverflowStrategy.emitEarly).addAttributes(Attributes.inputBuffer(5, 5))
+          .runWith(Sink.seq)
+          .futureValue
+
+      result should === ((1 to 9).toSeq)
+    }
   }
 }
