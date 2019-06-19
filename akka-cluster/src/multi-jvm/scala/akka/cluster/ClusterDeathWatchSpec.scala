@@ -213,7 +213,7 @@ abstract class ClusterDeathWatchSpec
         // it above
         receiveWhile(messages = 2) {
           case Terminated(ref) => ref.path.name
-        } shouldEqual Seq("subject5", "subject6")
+        }.toSet shouldEqual Set("subject5", "subject6")
 
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats

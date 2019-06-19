@@ -193,8 +193,12 @@ object ClusterEvent {
     def withUnreachableDataCenters(unreachableDataCenters: Set[DataCenter]): CurrentClusterState =
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
 
-    /** Returns true if the address is a cluster member and that member is `MemberStatus.Up`. */
-    def isMemberUp(address: Address): Boolean =
+    /**
+     * INTERNAL API
+     * Returns true if the address is a cluster member and that member is `MemberStatus.Up`.
+     */
+    @InternalApi
+    private[akka] def isMemberUp(address: Address): Boolean =
       members.exists(m => m.address == address && m.status == MemberStatus.Up)
 
     // for binary compatibility (used to be a case class)
