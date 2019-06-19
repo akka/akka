@@ -342,7 +342,7 @@ public class BasicPersistentBehaviorTest {
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
 
-      // optionally if you need `ActorContext.getSelf()`
+      // optionally if you only need `ActorContext.getSelf()`
       private final ActorRef<Command> self;
 
       public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {

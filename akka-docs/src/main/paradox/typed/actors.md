@@ -439,6 +439,7 @@ Therefore after creating the Actor system with the `main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
 
+@@include[actor-context.md](/akka-docs/src/main/paradox/includes/actor-context.md) { #actor-context-typed-access }
 
 ## Relation to Akka (untyped) Actors
 
