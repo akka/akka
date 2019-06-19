@@ -74,19 +74,17 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
       actor ! "one" // actor will block here
       actor ! "two"
       actor ! "three"
-      EventFilter.info(
-        pattern = ".*\\[1\\] dead letters encountered.*",
-        occurrences = 1).intercept {
+      EventFilter.info(pattern = ".*\\[1\\] dead letters encountered.*", occurrences = 1).intercept {
         actor ! "four" // doesn't fit in mailbox
       }
       continueProbe.ref ! Continue
     }
 
     "select an arbitrary mailbox from config" in {
-      val actor = spawn(behavior,  MailboxSelector.fromConfig("specific-mailbox"))
+      val actor = spawn(behavior, MailboxSelector.fromConfig("specific-mailbox"))
       val mailbox = actor.ask(WhatsYourMailbox).futureValue
       mailbox shouldBe a[BoundedMessageQueueSemantics]
-      mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should === (4)
+      mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should ===(4)
 
     }
   }

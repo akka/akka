@@ -1,7 +1,6 @@
 /**
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
-
 package docs.akka.typed
 
 import akka.actor.typed.Behavior
@@ -14,16 +13,9 @@ object MailboxDocSpec {
 
   val parent = Behaviors.setup[Nothing] { context =>
     // #select-mailbox
-    context.spawn(
-      childBehavior,
-      "bounded-mailbox-child",
-      MailboxSelector.bounded(100))
+    context.spawn(childBehavior, "bounded-mailbox-child", MailboxSelector.bounded(100))
 
-    context.spawn(
-      childBehavior,
-      "from-config-mailbox-child",
-      MailboxSelector.fromConfig("absolute.config.path")
-    )
+    context.spawn(childBehavior, "from-config-mailbox-child", MailboxSelector.fromConfig("absolute.config.path"))
     // #select-mailbox
 
     Behaviors.empty
