@@ -34,21 +34,20 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
 
   import GuardianStartupBehavior.Start
 
-  private val stash = StashBuffer[T](1000)
+//  private val stash = StashBuffer[T](1000)
 
   override def onMessage(msg: Any): Behavior[Any] =
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
         Behaviors.setup(
-          ctx =>
-            stash
-              .unstashAll(
-                ctx.asInstanceOf[ActorContext[T]],
-                Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
-              .unsafeCast[Any])
+          ctx => // FIXME
+//            stash
+//              .unstashAll(
+//                ctx.asInstanceOf[ActorContext[T]],
+            Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior).unsafeCast[Any])
       case other =>
-        stash.stash(other.asInstanceOf[T])
+//        stash.stash(other.asInstanceOf[T])
         this
     }
 

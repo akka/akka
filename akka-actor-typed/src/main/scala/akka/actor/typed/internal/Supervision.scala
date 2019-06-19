@@ -327,7 +327,8 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     val stashCapacity =
       if (strategy.stashCapacity >= 0) strategy.stashCapacity
       else ctx.asScala.system.settings.RestartStashCapacity
-    restartingInProgress = OptionVal.Some((StashBuffer[Any](stashCapacity), childrenToStop))
+    restartingInProgress = OptionVal.Some(
+      (StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity), childrenToStop))
 
     strategy match {
       case backoff: Backoff =>
@@ -364,7 +365,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
         case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>
           restartingInProgress = OptionVal.None
-          stashBuffer.unstashAll(ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], newBehavior.unsafeCast)
+          stashBuffer.unstashAll(newBehavior.unsafeCast)
       }
       nextBehavior.narrow
     } catch handleException(ctx, signalRestart = {

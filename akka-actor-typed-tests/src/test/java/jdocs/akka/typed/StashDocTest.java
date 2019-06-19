@@ -78,12 +78,13 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private final ActorContext<Command> context;
-    private final StashBuffer<Command> buffer = StashBuffer.create(100);
+    private final StashBuffer<Command> buffer;
     private final String id;
     private final DB db;
 
     private DataAccess(ActorContext<Command> context, String id, DB db) {
       this.context = context;
+      this.buffer = StashBuffer.create(context, 100);
       this.id = id;
       this.db = db;
     }
@@ -108,7 +109,7 @@ public class StashDocTest extends JUnitSuite {
               InitialState.class,
               message -> {
                 // now we are ready to handle stashed messages if any
-                return buffer.unstashAll(context, active(message.value));
+                return buffer.unstashAll(active(message.value));
               })
           .onMessage(
               DBError.class,
@@ -153,7 +154,7 @@ public class StashDocTest extends JUnitSuite {
               SaveSuccess.class,
               message -> {
                 replyTo.tell(Done.getInstance());
-                return buffer.unstashAll(context, active(state));
+                return buffer.unstashAll(active(state));
               })
           .onMessage(
               DBError.class,

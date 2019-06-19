@@ -34,14 +34,14 @@ object StashDocSpec {
 
     def behavior(id: String, db: DB): Behavior[Command] =
       Behaviors.setup[Command] { context =>
-        val buffer = StashBuffer[Command](capacity = 100)
+        val buffer = StashBuffer[Command](context, capacity = 100)
 
         def init(): Behavior[Command] =
           Behaviors.receive[Command] { (context, message) =>
             message match {
               case InitialState(value) =>
                 // now we are ready to handle stashed messages if any
-                buffer.unstashAll(context, active(value))
+                buffer.unstashAll(active(value))
               case DBError(cause) =>
                 throw cause
               case other =>
@@ -71,7 +71,7 @@ object StashDocSpec {
             message match {
               case SaveSuccess =>
                 replyTo ! Done
-                buffer.unstashAll(context, active(state))
+                buffer.unstashAll(active(state))
               case DBError(cause) =>
                 throw cause
               case other =>
