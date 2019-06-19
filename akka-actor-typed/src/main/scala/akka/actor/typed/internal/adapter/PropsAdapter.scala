@@ -31,7 +31,7 @@ import akka.annotation.InternalApi
       case _: DispatcherSameAsParent     => props.withDispatcher(Deploy.DispatcherSameAsParent)
     }).withDeploy(Deploy.local) // disallow remote deployment for typed actors
 
-    val p2 = deploy.firstOrElse[MailboxSelector](MailboxSelector.default()) match {
+    val p2 = deploy.firstOrElse[MailboxSelector](MailboxSelector.defaultMailbox()) match {
       case _: DefaultMailboxSelector           => p1
       case BoundedMailboxSelector(capacity, _) =>
         // specific support in untyped Mailboxes

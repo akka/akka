@@ -208,8 +208,9 @@ private[akka] class Mailboxes(
           // TODO RK remove these two for Akka 2.3
           case "unbounded"                          => UnboundedMailbox()
           case "bounded"                            => new BoundedMailbox(settings, config(id))
-          case _ if id.startsWith("bounded-typed:") =>
-            // hack to allow programmatic set of capacity through props in akka-typed
+          case _ if id.startsWith("typed-bounded:") =>
+            // hack to allow programmatic set of capacity through props in akka-typed but still share
+            // mailbox configurators for the same size
             val capacity = id.split(':')(1).toInt
             new BoundedMailbox(capacity, Duration.Zero)
 

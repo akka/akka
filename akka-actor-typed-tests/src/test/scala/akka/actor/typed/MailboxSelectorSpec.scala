@@ -1,36 +1,93 @@
 /*
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 
+import akka.actor.ActorCell
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.internal.adapter.ActorContextAdapter
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
+import akka.dispatch.BoundedMessageQueueSemantics
+import akka.dispatch.BoundedNodeMessageQueue
+import akka.dispatch.MessageQueue
+import akka.dispatch.UnboundedMessageQueueSemantics
+import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
+import scala.concurrent.duration._
 
 class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
     specific-mailbox {
       mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
       mailbox-capacity = 4 
     }
+    akka.loggers = [ akka.testkit.TestEventListener ]
   """) with WordSpecLike {
+
+  // FIXME #24348: eventfilter support in typed testkit
+  import scaladsl.adapter._
+  implicit val untypedSystem = system.toUntyped
+
+  case class WhatsYourMailbox(replyTo: ActorRef[MessageQueue])
+  private def behavior: Behavior[WhatsYourMailbox] =
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage[WhatsYourMailbox] {
+        case WhatsYourMailbox(replyTo) =>
+          val mailbox = context match {
+            case adapter: ActorContextAdapter[_] =>
+              adapter.untypedContext match {
+                case cell: ActorCell =>
+                  cell.mailbox.messageQueue
+              }
+          }
+
+          replyTo ! mailbox
+          Behaviors.stopped
+      }
+    }
 
   "The Mailbox selectors" must {
     "default to unbounded" in {
-      spawn(Behaviors.empty[String])
-      // FIXME how to verify?
-      fail()
+      val actor = spawn(behavior)
+      val mailbox = actor.ask(WhatsYourMailbox).futureValue
+      mailbox shouldBe a[UnboundedMessageQueueSemantics]
     }
 
     "select a bounded mailbox" in {
-      spawn(Behaviors.empty[String], MailboxSelector.bounded(3))
-      // FIXME how to verify?
-      fail()
+      val actor = spawn(behavior, MailboxSelector.bounded(3))
+      val mailbox = actor.ask(WhatsYourMailbox).futureValue
+      mailbox shouldBe a[BoundedMessageQueueSemantics]
+      // capacity is private so only way to test is to fill mailbox
+    }
+
+    "set capacity on a bounded mailbox" in {
+      case object Continue
+      val continueProbe = createTestProbe[Continue.type]()
+      val actor = spawn(Behaviors.receiveMessage[String] {
+        case "one" =>
+          continueProbe.receiveMessage(10.seconds)
+          Behaviors.same
+        case _ =>
+          Behaviors.same
+      }, MailboxSelector.bounded(2))
+      actor ! "one" // actor will block here
+      actor ! "two"
+      actor ! "three"
+      EventFilter.info(
+        pattern = ".*\\[1\\] dead letters encountered.*",
+        occurrences = 1).intercept {
+        actor ! "four" // doesn't fit in mailbox
+      }
+      continueProbe.ref ! Continue
     }
 
     "select an arbitrary mailbox from config" in {
-      spawn(Behaviors.empty[String], MailboxSelector.fromConfig("specific-mailbox"))
-      // FIXME how to verify?
-      fail()
+      val actor = spawn(behavior,  MailboxSelector.fromConfig("specific-mailbox"))
+      val mailbox = actor.ask(WhatsYourMailbox).futureValue
+      mailbox shouldBe a[BoundedMessageQueueSemantics]
+      mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should === (4)
+
     }
   }
 

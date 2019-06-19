@@ -6,6 +6,7 @@
 
 * [actors](actors.md)
 * [dispatchers](dispatchers.md)
+* [mailboxes](mailboxes.md)
 * [coexisting](coexisting.md)
 * [actor-lifecycle](actor-lifecycle.md)
 * [interaction patterns](interaction-patterns.md)
