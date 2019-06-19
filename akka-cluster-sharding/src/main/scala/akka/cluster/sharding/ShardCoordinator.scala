@@ -166,19 +166,30 @@ object ShardCoordinator {
    * the region with least shards must be greater than the `rebalanceThreshold` for the rebalance to occur.
    *
    * A `rebalanceThreshold` of 1 gives the best distribution and therefore typically the best choice.
-   * A higher threshold means that more shards can be rebalanced at the same time instead of one-by-one.
-   * That has the advantage that the rebalance process can be quicker but has the drawback that the
-   * the number of shards (and therefore load) between different nodes may be significantly different.
-   * Given the recommendation of using 10x shards than number of nodes and `rebalanceThreshold=10` can result
-   * in one node hosting ~2 times the number of shards of other nodes. Example: 1000 shards on 100 nodes means
-   * 10 shards per node. One node may have 19 shards and others 10 without a rebalance occurring.
    *
-   * The number of ongoing rebalancing processes can be limited by `maxSimultaneousRebalance`.
+   * The maximum number of shards that are rebalanced in a given iteration is controlled by a combination of
+   * `rebalanceNumber` and `rebalanceFactor`. If both are zero, the number maximum number of shards to
+   * rebalance will be `rebalanceThreshold`. Otherwise, the maximum number of shards to rebalance will be
+   * the minimum of the following:
+   *
+   * - If `rebalanceNumber` is non zero, then `rebalanceNumber`
+   * - If `rebalanceFactor` is non zero, then `rebalanceFactor` times the number of shards in the region that
+   *   shards are being migrated from.
+   *
+   * The number of ongoing rebalancing processes across all regions can be limited by `maxSimultaneousRebalance`.
    */
   @SerialVersionUID(1L)
-  class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
+  class LeastShardAllocationStrategy(
+      rebalanceThreshold: Int,
+      maxSimultaneousRebalance: Int,
+      rebalanceNumber: Int,
+      rebalanceFactor: Double)
       extends ShardAllocationStrategy
       with Serializable {
+
+    // included for binary compatibility
+    def this(rebalanceThreshold: Int, maxSimultaneousRebalance: Int) =
+      this(rebalanceThreshold, maxSimultaneousRebalance, 0, 0.0)
 
     override def allocateShard(
         requester: ActorRef,
@@ -200,8 +211,21 @@ object ShardCoordinator {
           .maxBy(_.size)
         val difference = mostShards.size - leastShards.size
         if (difference > rebalanceThreshold) {
+
+          val iterationRebalanceLimit = (rebalanceFactor, rebalanceNumber) match {
+            // This condition is to maintain semantic backwards compatibility, from when rebalanceThreshold was also
+            // the number of shards to move.
+            case (0.0, 0)            => rebalanceThreshold
+            case (0.0, justAbsolute) => justAbsolute
+            case (justFactor, 0)     => math.max((justFactor * mostShards.size).round.toInt, 1)
+            case (factor, absolute)  => math.min(math.max((factor * mostShards.size).round.toInt, 1), absolute)
+          }
+
+          // The ideal number to rebalance to so these nodes have an even number of shards
+          val evenRebalance = difference / 2
+
           val n = math.min(
-            math.min(difference - rebalanceThreshold, rebalanceThreshold),
+            math.min(iterationRebalanceLimit, evenRebalance),
             maxSimultaneousRebalance - rebalanceInProgress.size)
           Future.successful(mostShards.sorted.take(n).toSet)
         } else
