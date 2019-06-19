@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity
+import akka.actor.AddressFromURIString
 import akka.actor.Identify
 import akka.actor.InternalActorRef
 import akka.actor.Props
@@ -27,7 +28,6 @@ import com.typesafe.config.ConfigFactory
 object RemoteFeaturesSpec {
 
   val instances = 1
-  val remoteSystemName = "remote"
 
   // string config to pass into `ArteryMultiNodeSpec.extraConfig: Option[String]` for `other` system
   def common(useUnsafe: Boolean): String = s"""
@@ -54,9 +54,9 @@ abstract class RemoteFeaturesSpec(c: Config) extends ArteryMultiNodeSpec(c) with
 
   protected final val useUnsafe: Boolean = provider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
 
-  protected val remoteSystem = newRemoteSystem(name = Some(remoteSystemName), extraConfig = Some(common(useUnsafe)))
+  protected val remoteSystem1 = newRemoteSystem(name = Some("RS1"), extraConfig = Some(common(useUnsafe)))
 
-  Seq(system, remoteSystem).foreach(
+  Seq(system, remoteSystem1).foreach(
     muteDeadLetters(
       akka.remote.transport.AssociationHandle.Disassociated.getClass,
       akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
@@ -69,8 +69,8 @@ abstract class RemoteFeaturesSpec(c: Config) extends ArteryMultiNodeSpec(c) with
   protected val remoteWatchee = createRemoteActor(Props(new EmptyActor), "b1")
 
   protected def createRemoteActor(props: Props, name: String): InternalActorRef = {
-    remoteSystem.actorOf(props, name)
-    system.actorSelection(RootActorPath(address(remoteSystem)) / "user" / name) ! Identify(name)
+    remoteSystem1.actorOf(props, name)
+    system.actorSelection(RootActorPath(address(remoteSystem1)) / "user" / name) ! Identify(name)
     expectMsgType[ActorIdentity].ref.get.asInstanceOf[InternalActorRef]
   }
 }
@@ -95,17 +95,9 @@ class RARPRemoteFeaturesEnabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpe
 // see the multi-jvm RemoteFeaturesSpec for deployer-router tests
 class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.disabled) {
 
-  private val port = RARP(system).provider.getDefaultAddress.port.get
+  private val actorName = "kattdjur"
 
-  // super.newRemoteSystem adds the new system to shutdown hook
-  private val masterSystem = newRemoteSystem(
-    name = Some("Master" + system.name),
-    extraConfig = Some(s"""
-      akka.actor.deployment {
-        /blub.remote = "akka://${system.name}@localhost:$port"
-        "/parent*/*".remote = "akka://${system.name}@localhost:$port"
-      }
-    """))
+  private val port = RARP(system).provider.getDefaultAddress.port.get
 
   "Remote features without Cluster" must {
 
@@ -138,19 +130,37 @@ class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.d
     }
 
     "fall back to creating local deploy children and supervise children on local node" in {
-      val senderProbe = TestProbe()(masterSystem)
-      val r = masterSystem.actorOf(Props[RemoteDeploymentSpec.Echo1], "blub")
-      r.path.toString shouldEqual "akka://MasterRemoteFeaturesSpec/user/blub"
+      // super.newRemoteSystem adds the new system to shutdown hook
+      val masterSystem = newRemoteSystem(
+        name = Some("RS2"),
+        extraConfig = Some(s"""
+      akka.actor.deployment {
+        /$actorName.remote = "akka://${system.name}@localhost:$port"
+        "/parent*/*".remote = "akka://${system.name}@localhost:$port"
+      }
+    """))
 
-      r.tell(42, senderProbe.ref)
+      val masterRef = masterSystem.actorOf(Props[RemoteDeploymentSpec.Echo1], actorName)
+      masterRef.path shouldEqual RootActorPath(AddressFromURIString(s"akka://${masterSystem.name}")) / "user" / actorName
+      masterRef.path.address.hasLocalScope shouldBe true
+
+      masterSystem.actorSelection(RootActorPath(address(system)) / "user" / actorName) ! Identify(1)
+      expectMsgType[ActorIdentity].ref shouldEqual None
+
+      system.actorSelection(RootActorPath(address(system)) / "user" / actorName) ! Identify(3)
+      expectMsgType[ActorIdentity].ref
+        .forall(_.path == RootActorPath(address(masterSystem)) / "user" / actorName) shouldBe true
+
+      val senderProbe = TestProbe()(masterSystem)
+      masterRef.tell(42, senderProbe.ref)
       senderProbe.expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
-        r ! new Exception("crash")
+        masterRef ! new Exception("crash")
       }(masterSystem)
       senderProbe.expectMsg("preRestart")
-      r.tell(43, senderProbe.ref)
+      masterRef.tell(43, senderProbe.ref)
       senderProbe.expectMsg(43)
-      masterSystem.stop(r)
+      masterSystem.stop(masterRef)
       senderProbe.expectMsg("postStop")
     }
   }

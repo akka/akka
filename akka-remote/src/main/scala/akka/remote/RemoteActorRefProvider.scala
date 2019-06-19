@@ -339,29 +339,26 @@ private[akka] class RemoteActorRefProvider(
       log.warning(s"Cluster not in use - {}", msg)
     }
 
+  protected def warnOnUnsafe(message: String): Unit =
+    if (warnOnUnsafeRemote) log.warning(message)
+    else log.debug(message)
+
   /** Logs if deathwatch message is intentionally dropped. To disable
    * warnings set `akka.remote.warn-unsafe-watch-without-cluster` to `off`
    * or use Akka Cluster.
    */
-  private[akka] def warnIfUnsafeWithoutClusterAttempted(watchee: ActorRef, watcher: ActorRef, action: String): Unit = {
-    val message = s"Dropped remote $action: disabled for [$watcher -> $watchee]"
+  private[akka] def warnIfUnsafeDeathwatchWithoutCluster(watchee: ActorRef, watcher: ActorRef, action: String): Unit =
+    warnOnUnsafe(s"Dropped remote $action: disabled for [$watcher -> $watchee]")
 
-    if (warnOnUnsafeRemote)
-      log.warning(message)
-    else
-      log.debug(message)
-  }
-
-  /** Override to add an additional check if using `RemoteActorRefProvider` as a superclass. */
-  protected def isRemoteActorRefAllowed(@unused system: ActorSystem, @unused qddress: Address): Boolean = true
-
-  /** Logs a warning if in `actorOf` it falls back to `LocalActorRef` versus creating
-    * a `RemoteActorRef`. Override if a more granular reason should be logged when
-    * using `RemoteActorRefProvider` as a superclass.
-    */
+  /** If `warnOnUnsafeRemote`, this logs a warning if `actorOf` falls back to `LocalActorRef`
+   * versus creating a `RemoteActorRef`. Override to log a more granular reason if using
+   * `RemoteActorRefProvider` as a superclass.
+   */
   protected def warnIfNotRemoteActorRef(path: ActorPath): Unit =
-    log.warning(
-      "Remote deploy of [{}] is not allowed, falling back to local.", path)
+    warnOnUnsafe(s"Remote deploy of [$path] is not allowed, falling back to local.")
+
+  /** Override to add any additional checks if using `RemoteActorRefProvider` as a superclass. */
+  protected def shouldCreateRemoteActorRef(@unused system: ActorSystem, @unused address: Address): Boolean = true
 
   def actorOf(
       system: ActorSystemImpl,
@@ -443,7 +440,7 @@ private[akka] class RemoteActorRefProvider(
               s"${ErrorMessages.RemoteDeploymentConfigErrorPrefix} for local-only Props at [$path]")
           } else
             try {
-              if (hasClusterOrUseUnsafe && isRemoteActorRefAllowed(system, address)) {
+              if (hasClusterOrUseUnsafe && shouldCreateRemoteActorRef(system, address)) {
                 try {
                   // for consistency we check configuration of dispatcher and mailbox locally
                   val dispatcher = system.dispatchers.lookup(props.dispatcher)
@@ -459,9 +456,8 @@ private[akka] class RemoteActorRefProvider(
                   (RootActorPath(address) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements)
                     .withUid(path.uid)
                 new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
-              } else {
-                warnThenFallback()
-              }
+              } else warnThenFallback()
+
             } catch {
               case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
             }
@@ -696,7 +692,7 @@ private[akka] class RemoteActorRef private[akka] (
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
     val intercept = provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
-    if (intercept) provider.warnIfUnsafeWithoutClusterAttempted(watchee, watcher, "remote Watch/Unwatch")
+    if (intercept) provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch/Unwatch")
     intercept
   }
 

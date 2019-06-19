@@ -65,12 +65,11 @@ private[akka] class ClusterActorRefProvider(
    */
   override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
-  override protected def isRemoteActorRefAllowed(system: ActorSystem, address: Address): Boolean =
-    Cluster(system).state.members.exists(_.address == address)
+  override protected def shouldCreateRemoteActorRef(system: ActorSystem, address: Address): Boolean =
+    Cluster(system).state.members.exists(_.address == address) && super.shouldCreateRemoteActorRef(system, address)
 
   override protected def warnIfNotRemoteActorRef(path: ActorPath): Unit =
-    log.warning(
-      "Remote deploy of [{}] outside this cluster is not allowed, falling back to local.", path)
+    warnOnUnsafe(s"Remote deploy of [$path] outside this cluster is not allowed, falling back to local.")
 }
 
 /**

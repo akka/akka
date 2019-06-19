@@ -125,7 +125,7 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
         Cluster(system).state.isMemberUp(node(third).address) shouldBe false
         assertIsLocalRef()
       }
-      enterBarrier("CARP-outide-cluster-local-validated")
+      enterBarrier("CARP-outside-cluster-local-validated")
 
       runOn(second) {
         assertIsLocalRef()

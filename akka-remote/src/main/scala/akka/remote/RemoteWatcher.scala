@@ -220,7 +220,7 @@ private[akka] class RemoteWatcher(
 
       // add watch from self, this will actually send a Watch to the target when necessary
       context.watch(watchee)
-    } else remoteProvider.warnIfUnsafeWithoutClusterAttempted(watcher, watchee, "Watch")
+    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watcher, watchee, "Watch")
   }
 
   def watchNode(watchee: InternalActorRef): Unit = {
@@ -249,7 +249,7 @@ private[akka] class RemoteWatcher(
           }
         case None =>
       }
-    } else remoteProvider.warnIfUnsafeWithoutClusterAttempted(watcher, watchee, "Unwatch")
+    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watcher, watchee, "Unwatch")
   }
 
   def removeWatchee(watchee: InternalActorRef): Unit = {

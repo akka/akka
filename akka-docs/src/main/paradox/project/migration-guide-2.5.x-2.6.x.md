@@ -186,24 +186,25 @@ behavior can be restored via configuration.
 #### Remoting dependencies have been made optional
 
 Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
-to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
+to be explicitly added. See @ref[classic remoting](../remoting.md) or @ref[artery remoting](../remoting-artery.md) for instructions.
 
 #### Remote watch and deployment have been disabled without Cluster use
 
 By default, these remoting features are disabled when not using Akka Cluster:
+
 * Remote Deployment: falls back to creating a local actor
 * Remote Watch: ignores the watch and unwatch request, and `Terminated` will not be delivered when the remote actor is stopped or if a remote node crashes
 
-When used with Cluster, all previous behavior is the same except:
-* A remote watch of an actor is no longer possible before a node joins cluster, only after.
+When used with Cluster, all previous behavior is the same except a remote watch of an actor is no longer possible before a node joins a cluster, only after.
 
 To optionally enable them without Cluster, if you understand
-the [consequences]( ../remoting-artery.md#quarantine), set 
+the @ref[consequences](../remoting-artery.md#quarantine), set 
 ```
 akka.remote.use-unsafe-remote-features-without-cluster = on`.
 ```
 
 When used without Cluster
+
 * An initial warning is logged on startup of `RemoteActorRefProvider`
 * A warning will be logged on remote watch attempts, which you can suppress by setting 
 ```
