@@ -74,7 +74,7 @@ that if you put/merge multiple jars into the same jar, you need to merge all the
 
 @@@
 
-See the @ref[deployment documentation](../additional/deploy.md)
+See the @ref[deployment documentation](../deploying.md)
 for information on how to merge the `reference.conf` resources while bundling.
 
 ## Custom application.conf
