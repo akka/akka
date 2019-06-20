@@ -323,7 +323,7 @@ Java
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local
-local `Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
+`Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
 the sender of the `Delete` if the value was successfully deleted according to the supplied
 consistency level within the supplied timeout. Otherwise a `Replicator.ReplicationDeleteFailure`
 is sent. Note that `ReplicationDeleteFailure` does not mean that the delete completely failed or
