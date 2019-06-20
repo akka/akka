@@ -28,7 +28,7 @@ All data entries are spread to all nodes, or nodes with a certain role, in the c
 via direct replication and gossip based dissemination. You have fine grained control
 of the consistency level for reads and writes.
 
-The nature CRDTs makes it possible to perform updates from any node without coordination.
+The nature of CRDTs makes it possible to perform updates from any node without coordination.
 Concurrent updates from different nodes will automatically be resolved by the monotonic
 merge function, which all data types must provide. The state changes always converge.
 Several useful data types for counters, sets, maps and registers are provided and
