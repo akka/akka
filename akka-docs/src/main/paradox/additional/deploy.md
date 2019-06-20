@@ -19,11 +19,11 @@ contains a `reference.conf` resource with default values.
 
 The method for ensuring `reference.conf` resources are merged depends on the tooling you use to create the fat jar:
 
- * SBT: as an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
+ * sbt: as an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
  * Maven: as an application packaged with a bundler such as jarjar, onejar or assembly
  * Gradle: using the Jar task from the Java plugin
  
-### SBT: Native Packager
+### sbt: Native Packager
 
 [sbt-native-packager](https://github.com/sbt/sbt-native-packager) is a tool for creating
 distributions of any type of application, including Akka applications.
@@ -120,7 +120,7 @@ shadowJar {
 
 You can use both Akka remoting and Akka Cluster inside Docker containers. Note
 that you will need to take special care with the network configuration when using Docker,
-described here: @ref:[Akka behind NAT or in a Docker container](remoting-artery.md#remote-configuration-nat-artery)
+described here: @ref:[Akka behind NAT or in a Docker container](../remoting-artery.md#remote-configuration-nat-artery)
 
 You can look at the
 @java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
@@ -145,7 +145,7 @@ starved of CPU time, but your system appears idle.
 
 For this reason, it is best to avoid `--cpus` and `--cpu-quota` entirely, and instead specify relative container weights using `--cpu-shares` instead.
 
-### Deploying to Kubernetes
+#### Deploying to Kubernetes
 
 #### Cluster bootstrap
 
@@ -178,7 +178,7 @@ There are two parts of Akka that need careful consideration when performing an r
 
 There are many more application specific aspects. It's important to have a strategy for serialization
 format that can be evolved and you can find advice in
-@ref:[Persistence - Schema Evolution](persistence-schema-evolution.md), which also applies to
+@ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md), which also applies to
 remote messages when deploying with rolling updates.
 
 ### Akka Cluster Configuration Compatibility Check
