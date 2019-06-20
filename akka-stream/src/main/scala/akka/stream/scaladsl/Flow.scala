@@ -2417,7 +2417,7 @@ trait FlowOps[+Out, +Mat] {
     */
   def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Repr[(A, U)] = {
     case object passedEnd
-    def passedEndSrc = Source.repeat(passedEnd)
+    val passedEndSrc = Source.repeat(passedEnd)
     val left: Flow[Out, Any, NotUsed] = Flow[Out].concat(passedEndSrc)
     val right: Source[Any, Any] = Source.fromGraph(that).concat(passedEndSrc)
     val zipFlow : Flow[Out, (A, U), NotUsed] = left
