@@ -1166,8 +1166,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     *
     * '''Cancels when''' downstream cancels
     */
-  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Source[(A, U), Mat] =
-    new Source(delegate.zipAll(that, thisElem, thatElem))
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Source[Pair[A, U], Mat] =
+    new Source(delegate.zipAll(that, thisElem, thatElem).map{case (a,u) => Pair.create(a,u)})
 
   /**
     * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -1182,8 +1182,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     *
     * '''Cancels when''' downstream cancels
     */
-  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem : A, thatElem : U)(matF: (Mat, Mat2) => Mat3): Source[(A, U), Mat3] =
-    new Source(delegate.zipAllMat(that, thisElem, thatElem)(matF))
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem : A, thatElem : U)(matF: (Mat, Mat2) => Mat3): Source[Pair[A, U], Mat3] =
+    new Source(delegate.zipAllMat(that, thisElem, thatElem)(matF).map{case (a,u) => Pair.create(a,u)})
 
 
   /**

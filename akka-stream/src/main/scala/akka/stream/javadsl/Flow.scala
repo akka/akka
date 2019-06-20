@@ -2560,8 +2560,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     *
     * '''Cancels when''' downstream cancels
     */
-  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Flow[In, (A, U), Mat] =
-    new Flow(delegate.zipAll(that, thisElem, thatElem))
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Flow[In, Pair[A, U], Mat] =
+    new Flow(delegate.zipAll(that, thisElem, thatElem).map{case (a,u) => Pair.create(a,u)} )
 
   /**
     * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -2576,8 +2576,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     *
     * '''Cancels when''' downstream cancels
     */
-  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem : A, thatElem : U)(matF: (Mat, Mat2) => Mat3): Flow[In, (A, U), Mat3] =
-    new Flow(delegate.zipAllMat(that, thisElem, thatElem)(matF))
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem : A, thatElem : U)(matF: (Mat, Mat2) => Mat3): Flow[In, Pair[A, U], Mat3] =
+    new Flow(delegate.zipAllMat(that, thisElem, thatElem)(matF).map{case (a,u) => Pair.create(a,u)})
 
   /**
    * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
