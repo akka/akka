@@ -2550,6 +2550,36 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       matF)
 
   /**
+    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+    *
+    * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' all upstream completes
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Flow[In, (A, U), Mat] =
+    new Flow(delegate.zipAll(that, thisElem, thatElem))
+
+  /**
+    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+    *
+    * @see [[#zipAll]]
+    *
+    * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' all upstream completes
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem : A, thatElem : U)(matF: (Mat, Mat2) => Mat3): Flow[In, (A, U), Mat3] =
+    new Flow(delegate.zipAllMat(that, thisElem, thatElem)(matF))
+
+  /**
    * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
    *
    * A `ZipLatest` has a `left` and a `right` input port and one `out` port.
