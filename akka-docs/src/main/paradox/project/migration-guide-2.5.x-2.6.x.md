@@ -279,6 +279,17 @@ more dead letters in Akka 2.5. In Akka 2.6 the count is reset after configured `
 
 `akka.log-dead-letters-during-shutdown` default configuration changed from `on` to `off`.
 
+### Cluster failure detection
+
+Default number of nodes that each node is observing for failure detection has increased from 5 to 9.
+The reason is to have better coverage and unreachability information for downing decisions.
+
+Configuration property:
+
+```
+akka.cluster.monitored-by-nr-of-members = 9
+```
+
 ## Source incompatibilities
 
 ### StreamRefs
