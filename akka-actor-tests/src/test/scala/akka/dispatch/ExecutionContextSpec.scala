@@ -46,8 +46,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       import system.dispatcher
 
       def batchable[T](f: => T)(implicit ec: ExecutionContext): Unit =
-        ec.execute(new Batchable {
-          override def isBatchable = true
+        ec.execute(new Runnable with Batchable {
           override def run: Unit = f
         })
 
@@ -75,8 +74,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       import system.dispatcher
 
       def batchable[T](f: => T)(implicit ec: ExecutionContext): Unit =
-        ec.execute(new Batchable {
-          override def isBatchable = true
+        ec.execute(new Runnable with Batchable {
           override def run(): Unit = f
         })
 
@@ -173,9 +171,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "work with same-thread dispatcher as executor with blocking" in {
-      abstract class RunBatch extends Runnable with Batchable {
-        override def isBatchable = true
-      }
+      abstract class RunBatch extends Runnable with Batchable {}
       val ec = system.dispatchers.lookup(CallingThreadDispatcher.Id)
       var x = 0
       ec.execute(new RunBatch {
