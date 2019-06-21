@@ -17,8 +17,6 @@ import org.scalatest.WordSpecLike
 
 object StashDocSpec {
   // #stashing
-  import akka.actor.typed.scaladsl.StashBuffer
-
   trait DB {
     def save(id: String, value: String): Future[Done]
     def load(id: String): Future[String]
@@ -33,60 +31,56 @@ object StashDocSpec {
     private final case class DBError(cause: Throwable) extends Command
 
     def behavior(id: String, db: DB): Behavior[Command] =
-      Behaviors.setup[Command] { context =>
-        val buffer = StashBuffer[Command](context, capacity = 100)
+      Behaviors.withStash(100, buffer => {
+          Behaviors.setup[Command] { context =>
+            def init(): Behavior[Command] =
+              Behaviors.receiveMessage[Command] {
+                case InitialState(value) =>
+                  // now we are ready to handle stashed messages if any
+                  buffer.unstashAll(active(value))
+                case DBError(cause) =>
+                  throw cause
+                case other =>
+                  // stash all other messages for later processing
+                  buffer.stash(other)
+                  Behaviors.same
+              }
 
-        def init(): Behavior[Command] =
-          Behaviors.receive[Command] { (context, message) =>
-            message match {
-              case InitialState(value) =>
-                // now we are ready to handle stashed messages if any
-                buffer.unstashAll(active(value))
-              case DBError(cause) =>
-                throw cause
-              case other =>
-                // stash all other messages for later processing
-                buffer.stash(other)
-                Behaviors.same
-            }
-          }
-
-        def active(state: String): Behavior[Command] =
-          Behaviors.receive { (context, message) =>
-            message match {
-              case Get(replyTo) =>
-                replyTo ! state
-                Behaviors.same
-              case Save(value, replyTo) =>
-                context.pipeToSelf(db.save(id, value)) {
-                  case Success(_)     => SaveSuccess
-                  case Failure(cause) => DBError(cause)
+            def active(state: String): Behavior[Command] =
+              Behaviors.receive { (context, message) =>
+                message match {
+                  case Get(replyTo) =>
+                    replyTo ! state
+                    Behaviors.same
+                  case Save(value, replyTo) =>
+                    context.pipeToSelf(db.save(id, value)) {
+                      case Success(_)     => SaveSuccess
+                      case Failure(cause) => DBError(cause)
+                    }
+                    saving(value, replyTo)
                 }
-                saving(value, replyTo)
+              }
+
+            def saving(state: String, replyTo: ActorRef[Done]): Behavior[Command] =
+              Behaviors.receiveMessage[Command] {
+                case SaveSuccess =>
+                  replyTo ! Done
+                  buffer.unstashAll(active(state))
+                case DBError(cause) =>
+                  throw cause
+                case other =>
+                  buffer.stash(other)
+                  Behaviors.same
+              }
+
+            context.pipeToSelf(db.load(id)) {
+              case Success(value) => InitialState(value)
+              case Failure(cause) => DBError(cause)
             }
+
+            init()
           }
-
-        def saving(state: String, replyTo: ActorRef[Done]): Behavior[Command] =
-          Behaviors.receive[Command] { (context, message) =>
-            message match {
-              case SaveSuccess =>
-                replyTo ! Done
-                buffer.unstashAll(active(state))
-              case DBError(cause) =>
-                throw cause
-              case other =>
-                buffer.stash(other)
-                Behaviors.same
-            }
-          }
-
-        context.pipeToSelf(db.load(id)) {
-          case Success(value) => InitialState(value)
-          case Failure(cause) => DBError(cause)
-        }
-
-        init()
-      }
+        })
   }
   // #stashing
 }

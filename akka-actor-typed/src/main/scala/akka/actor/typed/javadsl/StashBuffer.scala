@@ -8,21 +8,8 @@ import java.util.function.Consumer
 import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.StashBufferImpl
 import akka.actor.typed.scaladsl
 import akka.annotation.DoNotInherit
-
-object StashBuffer {
-
-  /**
-   * Create an empty message buffer.
-   *
-   * @param capacity the buffer can hold at most this number of messages
-   * @return an empty message buffer
-   */
-  def create[T](ctx: ActorContext[T], capacity: Int): StashBuffer[T] =
-    StashBufferImpl[T](ctx.asScala, capacity)
-}
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors

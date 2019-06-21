@@ -8,7 +8,13 @@ import java.util.Collections
 import java.util.function.{ Supplier, Function => JFunction }
 
 import akka.actor.typed._
-import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
+import akka.actor.typed.internal.{
+  BehaviorImpl,
+  StashBufferImpl,
+  Supervisor,
+  TimerSchedulerImpl,
+  WithMdcBehaviorInterceptor
+}
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
@@ -39,6 +45,14 @@ object Behaviors {
    */
   def setup[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
     BehaviorImpl.DeferredBehavior(ctx => factory.apply(ctx.asJava))
+
+  /**
+   * Support for stashing messages to unstash at a later timej.
+   */
+  def withStash[T](capacity: Int, factory: java.util.function.Function[StashBuffer[T], Behavior[T]]): Behavior[T] =
+    setup(ctx => {
+      factory(StashBufferImpl[T](ctx.asScala, capacity))
+    })
 
   /**
    * Return this behavior from message processing in order to advise the

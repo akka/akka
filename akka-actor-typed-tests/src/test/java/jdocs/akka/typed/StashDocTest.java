@@ -37,7 +37,7 @@ public class StashDocTest extends JUnitSuite {
 
   public static class DataAccess {
 
-    static interface Command {}
+    interface Command {}
 
     public static class Save implements Command {
       public final String payload;
@@ -82,25 +82,29 @@ public class StashDocTest extends JUnitSuite {
     private final String id;
     private final DB db;
 
-    private DataAccess(ActorContext<Command> context, String id, DB db) {
+    private DataAccess(
+        ActorContext<Command> context, StashBuffer<Command> buffer, String id, DB db) {
       this.context = context;
-      this.buffer = StashBuffer.create(context, 100);
+      this.buffer = buffer;
       this.id = id;
       this.db = db;
     }
 
     public static Behavior<Command> create(String id, DB db) {
       return Behaviors.setup(
-          ctx -> {
-            ctx.pipeToSelf(
-                db.load(id),
-                (value, cause) -> {
-                  if (cause == null) return new InitialState(value);
-                  else return new DBError(asRuntimeException(cause));
-                });
+          ctx ->
+              Behaviors.withStash(
+                  100,
+                  stash -> {
+                    ctx.pipeToSelf(
+                        db.load(id),
+                        (value, cause) -> {
+                          if (cause == null) return new InitialState(value);
+                          else return new DBError(asRuntimeException(cause));
+                        });
 
-            return new DataAccess(ctx, id, db).init();
-          });
+                    return new DataAccess(ctx, stash, id, db).init();
+                  }));
     }
 
     private Behavior<Command> init() {

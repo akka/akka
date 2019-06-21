@@ -9,9 +9,7 @@ import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.StashBuffer
 import akka.annotation.InternalApi
 
 /**
@@ -34,20 +32,19 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
 
   import GuardianStartupBehavior.Start
 
-//  private val stash = StashBuffer[T](1000)
+  private var tempStash: List[T] = Nil
 
   override def onMessage(msg: Any): Behavior[Any] =
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.setup(
-          ctx => // FIXME
-//            stash
-//              .unstashAll(
-//                ctx.asInstanceOf[ActorContext[T]],
-            Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior).unsafeCast[Any])
+        Behaviors.withStash[T](1000, stash => {
+           tempStash.reverse.foreach(stash.stash)
+           tempStash = null
+           stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
+        }).unsafeCast[Any]
       case other =>
-//        stash.stash(other.asInstanceOf[T])
+        tempStash = other.asInstanceOf[T] :: tempStash
         this
     }
 

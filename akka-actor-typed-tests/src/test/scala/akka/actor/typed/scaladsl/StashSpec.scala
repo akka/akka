@@ -127,9 +127,8 @@ object AbstractStashSpec {
       active(Vector.empty)
     }
 
-  class MutableStash(context: ActorContext[Command]) extends AbstractBehavior[Command] {
+  class MutableStash(context: ActorContext[Command], buffer: StashBuffer[Command]) extends AbstractBehavior[Command] {
 
-    private val buffer = StashBuffer.apply[Command](context, capacity = 10)
     private var stashing = false
     private var processed = Vector.empty[String]
 
@@ -192,7 +191,8 @@ class ImmutableStashSpec extends AbstractStashSpec {
 class MutableStashSpec extends AbstractStashSpec {
   import AbstractStashSpec._
   def testQualifier: String = "mutable behavior"
-  def behaviorUnderTest: Behavior[Command] = Behaviors.setup(context => new MutableStash(context))
+  def behaviorUnderTest: Behavior[Command] =
+    Behaviors.withStash(10, stash => Behaviors.setup(context => new MutableStash(context, stash)))
 }
 
 abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpecLike {

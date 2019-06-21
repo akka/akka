@@ -80,8 +80,9 @@ import akka.util.{ unused, ConstantFun }
     new Node(null, message)
   }
 
-  private def dropHead(): T = {
-    val message = head
+  @InternalStableApi
+  private def dropHeadForUnstash(): Node[T] = {
+    val message = rawHead
     _first = _first.next
     _size -= 1
     if (isEmpty)
@@ -89,6 +90,10 @@ import akka.util.{ unused, ConstantFun }
 
     message
   }
+
+  private def rawHead: Node[T] =
+    if (nonEmpty) _first
+    else throw new NoSuchElementException("head of empty buffer")
 
   override def head: T =
     if (nonEmpty) _first.message
@@ -104,8 +109,11 @@ import akka.util.{ unused, ConstantFun }
 
   override def forEach(f: Consumer[T]): Unit = foreach(f.accept)
 
-  override def unstashAll(behavior: Behavior[T]): Behavior[T] =
-    unstash(behavior, size, ConstantFun.scalaIdentityFunction[T])
+  override def unstashAll(behavior: Behavior[T]): Behavior[T] = {
+    val behav = unstash(behavior, size, ConstantFun.scalaIdentityFunction[T])
+    stashCleared(ctx)
+    behav
+  }
 
   override def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: T => T): Behavior[T] = {
     if (isEmpty)
@@ -113,7 +121,11 @@ import akka.util.{ unused, ConstantFun }
     else {
       val iter = new Iterator[T] {
         override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
-        override def next(): T = wrap(StashBufferImpl.this.dropHead())
+        override def next(): T = {
+          val next = StashBufferImpl.this.dropHeadForUnstash()
+          unstashed(ctx, next)
+          wrap(next.message)
+        }
       }.take(numberOfMessages)
       interpretUnstashedMessages(behavior, ctx, iter)
     }
@@ -184,6 +196,13 @@ import akka.util.{ unused, ConstantFun }
 
   override def toString: String =
     s"StashBuffer($size/$capacity)"
+
+  @InternalStableApi
+  private[akka] def unstashed(@unused ctx: ActorContext[T], @unused node: Node[T]): Unit = ()
+
+  @InternalStableApi
+  private def stashCleared(@unused ctx: ActorContext[T]): Unit = ()
+
 }
 
 /**

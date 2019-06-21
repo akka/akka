@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystemImpl
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.Matchers

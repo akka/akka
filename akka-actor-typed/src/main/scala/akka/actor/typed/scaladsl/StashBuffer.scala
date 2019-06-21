@@ -16,7 +16,7 @@ object StashBuffer {
    * @param capacity the buffer can hold at most this number of messages
    * @return an empty message buffer
    */
-  def apply[T](ctx: ActorContext[T], capacity: Int): StashBuffer[T] =
+  private[akka] def apply[T](ctx: ActorContext[T], capacity: Int): StashBuffer[T] =
     StashBufferImpl[T](ctx, capacity)
 }
 
