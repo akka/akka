@@ -127,6 +127,7 @@ The @apidoc[BehaviorTestKit] keeps track other effects you can verify, look at t
  * SpawnedAdapter
  * Stopped
  * Watched
+ * WatchedWith
  * Unwatched
  * Scheduled
 
