@@ -9,16 +9,24 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.persistence.typed.*;
-import akka.persistence.typed.javadsl.*;
+import akka.persistence.typed.DeleteEventsFailed;
+import akka.persistence.typed.DeleteSnapshotsFailed;
+import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.SnapshotFailed;
+import akka.persistence.typed.javadsl.CommandHandler;
+import akka.persistence.typed.javadsl.EventHandler;
+// #behavior
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.PersistenceId;
+
+// #behavior
+import akka.persistence.typed.javadsl.RetentionCriteria;
+import akka.persistence.typed.javadsl.SignalHandler;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-// #behavior
-// #behavior
 
 public class BasicPersistentBehaviorTest {
 
