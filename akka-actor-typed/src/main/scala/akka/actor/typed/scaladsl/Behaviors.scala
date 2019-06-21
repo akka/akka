@@ -29,7 +29,7 @@ object Behaviors {
   def setup[T](factory: ActorContext[T] => Behavior[T]): Behavior[T] =
     BehaviorImpl.DeferredBehavior(factory)
 
- /**
+  /**
    * Support for stashing messages to unstash at a later timej.
    */
   def withStash[T](capacity: Int, factory: StashBuffer[T] => Behavior[T]): Behavior[T] =

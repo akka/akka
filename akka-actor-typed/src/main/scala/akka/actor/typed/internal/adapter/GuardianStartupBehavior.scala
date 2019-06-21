@@ -38,11 +38,15 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.withStash[T](1000, stash => {
-           tempStash.reverse.foreach(stash.stash)
-           tempStash = null
-           stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
-        }).unsafeCast[Any]
+        Behaviors
+          .withStash[T](
+            1000,
+            stash => {
+              tempStash.reverse.foreach(stash.stash)
+              tempStash = null
+              stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
+            })
+          .unsafeCast[Any]
       case other =>
         tempStash = other.asInstanceOf[T] :: tempStash
         this

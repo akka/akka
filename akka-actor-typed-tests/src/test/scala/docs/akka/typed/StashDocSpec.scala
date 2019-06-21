@@ -31,7 +31,9 @@ object StashDocSpec {
     private final case class DBError(cause: Throwable) extends Command
 
     def behavior(id: String, db: DB): Behavior[Command] =
-      Behaviors.withStash(100, buffer => {
+      Behaviors.withStash(
+        100,
+        buffer => {
           Behaviors.setup[Command] { context =>
             def init(): Behavior[Command] =
               Behaviors.receiveMessage[Command] {
