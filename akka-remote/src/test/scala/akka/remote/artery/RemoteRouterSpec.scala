@@ -22,7 +22,9 @@ object RemoteRouterSpec {
   }
 }
 
-class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
+class RemoteRouterSpec
+    extends AkkaSpec(ConfigFactory.parseString("""
+    akka.remote.use-unsafe-remote-features-without-cluster = on
     akka.actor.deployment {
       /remote-override {
         router = round-robin-pool
@@ -36,7 +38,8 @@ class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
         router = round-robin-pool
         nr-of-instances = 6
       }
-    }""").withFallback(ArterySpecSupport.defaultConfig)) with FlightRecorderSpecIntegration {
+    }""").withFallback(ArterySpecSupport.defaultConfig))
+    with FlightRecorderSpecIntegration {
 
   import RemoteRouterSpec._
 

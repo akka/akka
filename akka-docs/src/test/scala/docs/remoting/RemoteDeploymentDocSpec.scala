@@ -23,6 +23,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
+    akka.remote.use-unsafe-remote-features-without-cluster = on
 """) with ImplicitSender {
 
   import RemoteDeploymentDocSpec._

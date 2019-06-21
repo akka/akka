@@ -7,9 +7,9 @@ package akka.remote
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
-import akka.util.Timeout
-
 import scala.collection.immutable
+
+import akka.util.Timeout
 import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
 import akka.japi.Util._
 import akka.actor.Props
@@ -123,6 +123,11 @@ final class RemoteSettings(val config: Config) {
   val CommandAckTimeout: Timeout = {
     Timeout(config.getMillisDuration("akka.remote.classic.command-ack-timeout"))
   }.requiring(_.duration > Duration.Zero, "command-ack-timeout must be > 0")
+
+  val UseUnsafeRemoteFeaturesWithoutCluster: Boolean = getBoolean(
+    "akka.remote.use-unsafe-remote-features-without-cluster")
+
+  val WarnUnsafeWatchWithoutCluster: Boolean = getBoolean("akka.remote.warn-unsafe-watch-without-cluster")
 
   val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
   val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")
