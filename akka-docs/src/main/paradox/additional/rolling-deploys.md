@@ -1,4 +1,3 @@
-
 # Rolling Deploys
 
 ## Rolling Updates
