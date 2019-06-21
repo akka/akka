@@ -259,6 +259,8 @@ To disable passivation you can use configuration:
 akka.cluster.sharding.passivate-idle-entity-after = off
 ```
 
+It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
+
 ### CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
