@@ -445,6 +445,10 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
   require((bufferSize & bufferSize - 1) == 0, "Buffer size must be a power of two")
 
+  def this(bufferSize: Int) {
+    this(bufferSize, 0)
+  }
+
   private val Mask = bufferSize - 1
   private val WheelMask = (bufferSize * 2) - 1
 
