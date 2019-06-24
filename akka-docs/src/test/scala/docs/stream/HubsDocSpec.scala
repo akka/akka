@@ -53,7 +53,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // (We need to use toMat and Keep.right since by default the materialized
       // value to the left is used)
       val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
-        producer.toMat(BroadcastHub.sink(startAfterNrOfConsumers = 0 , bufferSize = 256))(Keep.right)
+        producer.toMat(BroadcastHub.sink(startAfterNrOfConsumers = 0, bufferSize = 256))(Keep.right)
 
       // By running/materializing the producer, we get back a Source, which
       // gives us access to the elements published by the producer.
@@ -71,7 +71,10 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       //#pub-sub-1
       // Obtain a Sink and Source which will publish and receive from the "bus" respectively.
       val (sink, source) =
-        MergeHub.source[String](perProducerBufferSize = 16).toMat(BroadcastHub.sink(startAfterNrOfConsumers = 0 , bufferSize = 256))(Keep.both).run()
+        MergeHub
+          .source[String](perProducerBufferSize = 16)
+          .toMat(BroadcastHub.sink(startAfterNrOfConsumers = 0, bufferSize = 256))(Keep.both)
+          .run()
       //#pub-sub-1
 
       //#pub-sub-2
