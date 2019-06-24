@@ -221,7 +221,83 @@ In an actual session child you would likely want to include some form of timeout
 
  * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
  * It increases complexity, since each such child can execute concurrently with other children and the parent
- 
+
+## General purpose response aggregator
+
+This is similar to above @ref:[Per session child Actor](#per-session-child-actor) pattern. Sometimes you might
+end up repeating the same way of aggregating replies and want to extract that to a reusable actor.
+
+There are many variations of this pattern and that is the reason this is provided as a documentation
+example rather than a built in `Behavior` in Akka. It is intended to be adjusted to your specific needs.
+
+This example is an aggregator of expected number of replies.
+Requests for quotes are sent with the given `sendRequests` function to the two hotel actors, which both speak
+different protocols. When both expected replies have been collected they are aggregated with the given `aggregateReplies`
+function and sent back to the `replyTo`. If replies don't arrive within the `timeout` the replies so far are
+aggregated and sent back to the `replyTo`.
+
+Scala
+:  @@snip [AggregatorSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/AggregatorSpec.scala) { #usage }
+
+Java
+:  @@snip [AggregatorTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/AggregatorTest.java) { #usage }
+
+
+The implementation of the `Aggregator`:
+
+Scala
+:  @@snip [Aggregator.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/Aggregator.scala) { #behavior }
+
+Java
+:  @@snip [Aggregator.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/Aggregator.java) { #behavior }
+
+**Useful when:**
+
+ * Aggregating replies are performed in the same way at multiple places and should be extracted to a more general
+   purpose actor.
+ * A single incoming request should result in multiple interactions with other actors before a result can be built,
+   for example aggregation of several results
+ * You need to handle acknowledgement and retry messages for at-least-once delivery
+
+**Problems:**
+
+ * Message protocols with generic types are difficult since the generic types are erased in runtime
+ * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
+ * It increases complexity, since each such child can execute concurrently with other children and the parent
+
+## Latency tail chopping
+
+This is a variation of above @ref:[General purpose response aggregator](#general-purpose-response-aggregator) pattern.
+
+The goal of this algorithm is to decrease tail latencies ("chop off the tail latency") in situations
+where multiple destination actors can perform the same piece of work, and where an actor may occasionally respond
+more slowly than expected. In this case, sending the same work request (also known as a "backup request")
+to another actor results in decreased response time - because it's less probable that multiple actors
+are under heavy load simultaneously. This technique is explained in depth in Jeff Dean's presentation on
+[Achieving Rapid Response Times in Large Online Services](http://static.googleusercontent.com/media/research.google.com/en//people/jeff/Berkeley-Latency-Mar2012.pdf).
+
+There are many variations of this pattern and that is the reason this is provided as a documentation
+example rather than a built in `Behavior` in Akka. It is intended to be adjusted to your specific needs.
+
+Scala
+:  @@snip [TailChopping.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/TailChopping.scala) { #behavior }
+
+Java
+:  @@snip [TailChopping.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/TailChopping.java) { #behavior }
+
+**Useful when:**
+
+ * Reducing higher latency percentiles and variations of latency are important
+ * The "work" can be done more than once with the same result, e.g. a request to retrieve information
+
+**Problems:**
+
+ * Increased load since more messages are sent and "work" is performed more than once
+ * Can't be used when the "work" is not idempotent and must only performed once
+ * Message protocols with generic types are difficult since the generic types are erased in runtime
+ * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
+
+
 <a id="typed-scheduling"></a>
 ## Scheduling messages to self
 
@@ -289,7 +365,7 @@ which may in worst case cause undesired load on the system. `scheduleWithFixedDe
 ## Responding to a sharded actor
 
 The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
-for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply 
+for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply
 will sent to dead letters.
 
 An alternative is to send the `entityId` in the message and have the reply sent via sharding:
