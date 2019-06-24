@@ -188,7 +188,8 @@ class Main extends AbstractBehavior<String> {
 
 public class ActorHierarchyExperiments {
   public static void main(String[] args) {
-    ActorSystem.create(Main.createBehavior(), "testSystem");
+    ActorRef<String> testSystem = ActorSystem.create(Main.createBehavior(), "testSystem");
+    testSystem.tell("start");
   }
 }
 // #print-refs
