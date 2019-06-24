@@ -631,7 +631,7 @@ class RestartSpec
       val flowInProbe = TestProbe("in-probe")
 
       val (flowOutProbe: TestPublisher.Probe[String], flowOutSource: Source[String, NotUsed]) =
-        TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
+        TestSource.probe[String].toMat(BroadcastHub.sink(0))(Keep.both).run()
 
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
       // simply use the probes as a message bus for feeding and capturing events.
