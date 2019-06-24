@@ -632,13 +632,17 @@ class TestKit(system: ActorSystem) {
     tp.expectMsgAnyClassOf(max.asScala, objs: _*).asInstanceOf[T]
 
   /**
-   * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
+   * Assert that no message is received. Waits for the default period configured as
+   * `akka.actor.testkit.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.10")
   def expectNoMsg(): Unit = tp.expectNoMessage()
 
   /**
-   * Same as `expectNoMessage(remainingOrDefault)`, but correctly treating the timeFactor.
+   * Assert that no message is received. Waits for the default period configured as
+   * `akka.actor.testkit.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
   def expectNoMessage(): Unit = tp.expectNoMessage()
 

@@ -152,6 +152,7 @@ object TestPublisher {
 
     /**
      * Expect no messages.
+     * Waits for the default period configured as `akka.actor.testkit.expect-no-message-default`.
      */
     def expectNoMessage(): Self = executeAfterSubscription {
       probe.expectNoMessage()

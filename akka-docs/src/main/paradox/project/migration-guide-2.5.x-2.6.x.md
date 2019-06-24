@@ -219,7 +219,7 @@ When used without Cluster
 akka.remote.warn-unsafe-watch-without-cluster = off
 ```
 
-## Schedule periodically with fixed-delay vs. fixed-rate
+### Schedule periodically with fixed-delay vs. fixed-rate
 
 The `Scheduler.schedule` method has been deprecated in favor of selecting `scheduleWithFixedDelay` or
 `scheduleAtFixedRate`.
@@ -324,6 +324,11 @@ Configuration property:
 ```
 akka.cluster.monitored-by-nr-of-members = 9
 ```
+
+### TestKit
+
+`expectNoMessage()` without timeout parameter is now using a new configuration property
+`akka.test.expect-no-message-default` (short timeout) instead of `remainingOrDefault` (long timeout).
 
 ## Source incompatibilities
 
