@@ -6,12 +6,12 @@ package akka.stream.javadsl
 
 import akka.NotUsed
 import akka.event.LoggingAdapter
-import akka.japi.{ function, Util }
+import akka.japi.{Pair, Util, function}
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
-
 import akka.util.ccompat.JavaConverters._
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import java.util.Comparator
@@ -1520,6 +1520,20 @@ class SubSource[Out, Mat](
    */
   def zip[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
     new SubSource(delegate.zip(source).map { case (o, t) => akka.japi.Pair.create(o, t) })
+
+  /**
+    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+    *
+    * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' all upstream completes
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): SubSource[akka.japi.Pair[A, U], Mat] =
+    new SubSource(delegate.zipAll(that, thisElem, thatElem).map { case (a, u) => Pair.create(a, u) })
 
   /**
    * Combine the elements of current [[Flow]] and the given [[Source]] into a stream of tuples, picking always the latest element of each.
