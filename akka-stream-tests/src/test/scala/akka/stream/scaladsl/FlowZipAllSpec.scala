@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.{BaseTwoStreamsSetup, TestSubscriber}
+import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import org.reactivestreams.Publisher
 

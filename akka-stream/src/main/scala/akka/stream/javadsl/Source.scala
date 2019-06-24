@@ -7,27 +7,27 @@ package akka.stream.javadsl
 import java.util
 import java.util.Optional
 
-import akka.actor.{ActorRef, Cancellable, Props}
+import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.annotation.ApiMayChange
 import akka.event.LoggingAdapter
-import akka.japi.{Pair, Util, function}
+import akka.japi.{ function, Pair, Util }
 import akka.stream._
 import akka.stream.impl.LinearTraversalBuilder
-import akka.util.{ConstantFun, Timeout}
+import akka.util.{ ConstantFun, Timeout }
 import akka.util.JavaDurationConverters._
-import akka.{Done, NotUsed}
-import org.reactivestreams.{Publisher, Subscriber}
+import akka.{ Done, NotUsed }
+import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import akka.util.ccompat.JavaConverters._
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-import java.util.function.{BiFunction, Supplier}
+import java.util.function.{ BiFunction, Supplier }
 
 import akka.util.unused
 import com.github.ghik.silencer.silent
@@ -1156,35 +1156,35 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
-    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
-    *
-    * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' all upstream completes
-    *
-    * '''Cancels when''' downstream cancels
-    */
-  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem : A, thatElem : U): Source[Pair[A, U], Mat] =
-    new Source(delegate.zipAll(that, thisElem, thatElem).map{case (a,u) => Pair.create(a,u)})
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Source[Pair[A, U], Mat] =
+    new Source(delegate.zipAll(that, thisElem, thatElem).map { case (a, u) => Pair.create(a, u) })
 
   /**
-    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
-    *
-    * @see [[#zipAll]]
-    *
-    * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
-    *
-    * '''Backpressures when''' downstream backpressures
-    *
-    * '''Completes when''' all upstream completes
-    *
-    * '''Cancels when''' downstream cancels
-    */
-  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem : A, thatElem : U)(matF: (Mat, Mat2) => Mat3): Source[Pair[A, U], Mat3] =
-    new Source(delegate.zipAllMat(that, thisElem, thatElem)(matF).map{case (a,u) => Pair.create(a,u)})
-
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): Source[Pair[A, U], Mat3] =
+    new Source(delegate.zipAllMat(that, thisElem, thatElem)(matF).map { case (a, u) => Pair.create(a, u) })
 
   /**
    * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
