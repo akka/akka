@@ -338,10 +338,14 @@ public class BehaviorTestKitTest extends JUnitSuite {
   @Test
   public void recordWatchWith() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
-    test.run(new SpawnWatchAndUnWatch("name"));
+    SpawnAndWatchWith spawnAndWatchWithMsg = new SpawnAndWatchWith("name");
+    test.run(spawnAndWatchWithMsg);
     ActorRef<Object> child = test.childInbox("name").getRef();
     test.expectEffectClass(Effect.Spawned.class);
-    assertEquals(child, test.expectEffectClass(Effect.Watched.class).other());
+
+    Effect.WatchedWith watchedWith = test.expectEffectClass(Effect.WatchedWith.class);
+    assertEquals(child, watchedWith.other());
+    assertEquals(spawnAndWatchWithMsg, watchedWith.message());
   }
 
   @Test
