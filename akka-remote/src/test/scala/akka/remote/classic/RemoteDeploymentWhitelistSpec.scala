@@ -56,6 +56,7 @@ object RemoteDeploymentWhitelistSpec {
       actor.provider = remote
 
       remote {
+        use-unsafe-remote-features-without-cluster = on
         classic.enabled-transports = [
           "akka.remote.test",
           "akka.remote.classic.netty.tcp"

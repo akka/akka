@@ -6,7 +6,6 @@
 
 * [../common/binary-compatibility-rules](../common/binary-compatibility-rules.md)
 * [../common/may-change](../common/may-change.md)
-* [deploy](deploy.md)
 * [faq](faq.md)
 * [ide] (ide.md)
 * [books](books.md)

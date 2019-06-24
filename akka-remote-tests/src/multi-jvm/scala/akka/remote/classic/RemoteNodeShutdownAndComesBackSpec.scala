@@ -30,6 +30,7 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
       akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 60 s
+      akka.remote.use-unsafe-remote-features-without-cluster = on
     """)))
 
   testTransport(on = true)

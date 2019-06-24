@@ -28,7 +28,7 @@ All data entries are spread to all nodes, or nodes with a certain role, in the c
 via direct replication and gossip based dissemination. You have fine grained control
 of the consistency level for reads and writes.
 
-The nature CRDTs makes it possible to perform updates from any node without coordination.
+The nature of CRDTs makes it possible to perform updates from any node without coordination.
 Concurrent updates from different nodes will automatically be resolved by the monotonic
 merge function, which all data types must provide. The state changes always converge.
 Several useful data types for counters, sets, maps and registers are provided and
@@ -323,7 +323,7 @@ Java
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local
-local `Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
+`Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
 the sender of the `Delete` if the value was successfully deleted according to the supplied
 consistency level within the supplied timeout. Otherwise a `Replicator.ReplicationDeleteFailure`
 is sent. Note that `ReplicationDeleteFailure` does not mean that the delete completely failed or

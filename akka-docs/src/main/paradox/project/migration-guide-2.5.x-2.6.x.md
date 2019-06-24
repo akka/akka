@@ -125,10 +125,18 @@ when migrating from classic remoting.
 
 The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`
 has changed from `akka.tcp` to `akka`. If you have configured or hardcoded any such addresses you have to change
-them to `"akka://actorSystemName@10.0.0.1:2552/user/actorName"`. `akka` is used also when TLS is enabled.
+them to `"akka://actorSystemName@10.0.0.1:25520/user/actorName"`. `akka` is used also when TLS is enabled.
 One typical place where such address is used is in the `seed-nodes` configuration.
 
-The configuration is different, so you might have to revisit any custom configuration. See the full
+The default port is 25520 instead of 2552 to avoid connections between Artery and classic remoting due to
+misconfiguration. You can run Artery on 2552 if you prefer that (e.g. existing firewall rules) and then you
+have to configure the port with:
+
+```
+akka.remote.artery.canonical.port = 2552
+```
+
+The configuration for Artery is different, so you might have to revisit any custom configuration. See the full
 @ref:[reference configuration for Artery](../general/configuration.md#config-akka-remote-artery) and
 @ref:[reference configuration for classic remoting](../general/configuration.md#config-akka-remote).
 
@@ -181,10 +189,35 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 The following documents configuration changes and behavior changes where no action is required. In some cases the old
 behavior can be restored via configuration.
 
-### Remoting dependencies have been made optional
+### Remoting
+
+#### Remoting dependencies have been made optional
 
 Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
-to be explicitly added. See @ref[classic remoting](../remoting.md) or [artery remoting](../remoting-artery.md) for instructions.
+to be explicitly added. See @ref[classic remoting](../remoting.md) or @ref[artery remoting](../remoting-artery.md) for instructions.
+
+#### Remote watch and deployment have been disabled without Cluster use
+
+By default, these remoting features are disabled when not using Akka Cluster:
+
+* Remote Deployment: falls back to creating a local actor
+* Remote Watch: ignores the watch and unwatch request, and `Terminated` will not be delivered when the remote actor is stopped or if a remote node crashes
+
+When used with Cluster, all previous behavior is the same except a remote watch of an actor is no longer possible before a node joins a cluster, only after.
+
+To optionally enable them without Cluster, if you understand
+the @ref[consequences](../remoting-artery.md#quarantine), set 
+```
+akka.remote.use-unsafe-remote-features-without-cluster = on`.
+```
+
+When used without Cluster
+
+* An initial warning is logged on startup of `RemoteActorRefProvider`
+* A warning will be logged on remote watch attempts, which you can suppress by setting 
+```
+akka.remote.warn-unsafe-watch-without-cluster = off
+```
 
 ## Schedule periodically with fixed-delay vs. fixed-rate
 
@@ -251,6 +284,8 @@ To disable passivation you can use configuration:
 akka.cluster.sharding.passivate-idle-entity-after = off
 ```
 
+It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
+
 ### CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
@@ -278,6 +313,17 @@ When the number of dead letters have reached configured `akka.log-dead-letters` 
 more dead letters in Akka 2.5. In Akka 2.6 the count is reset after configured `akka.log-dead-letters-suspend-duration`.
 
 `akka.log-dead-letters-during-shutdown` default configuration changed from `on` to `off`.
+
+### Cluster failure detection
+
+Default number of nodes that each node is observing for failure detection has increased from 5 to 9.
+The reason is to have better coverage and unreachability information for downing decisions.
+
+Configuration property:
+
+```
+akka.cluster.monitored-by-nr-of-members = 9
+```
 
 ## Source incompatibilities
 
@@ -335,5 +381,5 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 
 #### Akka Typed Stream API changes
 
-* `ActorSoruce.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
+* `ActorSource.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
 

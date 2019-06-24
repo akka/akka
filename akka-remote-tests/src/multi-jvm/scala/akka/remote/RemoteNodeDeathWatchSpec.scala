@@ -29,6 +29,7 @@ class RemoteNodeDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
       ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-without-cluster = on
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
@@ -63,8 +64,9 @@ abstract class RemoteNodeDeathWatchSlowSpec(artery: Boolean)
 }
 
 object RemoteNodeDeathWatchSpec {
-  final case class WatchIt(watchee: ActorRef)
-  final case class UnwatchIt(watchee: ActorRef)
+  sealed trait DeathWatchIt
+  final case class WatchIt(watchee: ActorRef) extends DeathWatchIt
+  final case class UnwatchIt(watchee: ActorRef) extends DeathWatchIt
   case object Ack
 
   /**

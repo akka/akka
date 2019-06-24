@@ -273,10 +273,11 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
     "record effects for watchWith" in {
       val testkit = BehaviorTestKit(Father.init)
-      testkit.run(SpawnAndWatchWith("hello"))
+      val spawnAndWatchWithMsg = SpawnAndWatchWith("hello")
+      testkit.run(spawnAndWatchWithMsg)
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(
-        Seq(Effects.spawned(Child.initial, "hello", Props.empty), Effects.watched(child)))
+        Seq(Effects.spawned(Child.initial, "hello", Props.empty), Effects.watchedWith(child, spawnAndWatchWithMsg)))
     }
   }
 

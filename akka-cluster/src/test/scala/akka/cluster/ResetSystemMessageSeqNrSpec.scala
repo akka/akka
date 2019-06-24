@@ -34,6 +34,8 @@ class ResetSystemMessageSeqNrSpec extends ArteryMultiNodeSpec("""
         awaitAssert {
           Cluster(system).state.members.map(_.uniqueAddress) should ===(
             Set(Cluster(system).selfUniqueAddress, Cluster(sys2).selfUniqueAddress))
+
+          Cluster(system).state.members.forall(_.status == MemberStatus.Up) shouldBe true
         }
       }
 
@@ -67,6 +69,8 @@ class ResetSystemMessageSeqNrSpec extends ArteryMultiNodeSpec("""
         awaitAssert {
           Cluster(system).state.members.map(_.uniqueAddress) should ===(
             Set(Cluster(system).selfUniqueAddress, Cluster(sys3).selfUniqueAddress))
+
+          Cluster(system).state.members.forall(_.status == MemberStatus.Up) shouldBe true
         }
       }
 

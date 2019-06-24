@@ -14,7 +14,6 @@ import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import akka.cluster.MemberStatus
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
@@ -510,8 +509,8 @@ abstract class ShardCoordinator(
 
   def isMember(region: ActorRef): Boolean = {
     val regionAddress = region.path.address
-    (region.path.address == self.path.address ||
-    cluster.state.members.exists(m => m.address == regionAddress && m.status == MemberStatus.Up))
+    regionAddress == self.path.address ||
+    cluster.state.isMemberUp(regionAddress)
   }
 
   def active: Receive =
@@ -539,17 +538,18 @@ abstract class ShardCoordinator(
         }
 
       case RegisterProxy(proxy) =>
-        log.debug("ShardRegion proxy registered: [{}]", proxy)
-        if (state.regionProxies.contains(proxy))
-          proxy ! RegisterAck(self)
-        else {
-          update(ShardRegionProxyRegistered(proxy)) { evt =>
-            state = state.updated(evt)
-            context.watch(proxy)
+        if (isMember(proxy)) {
+          log.debug("ShardRegion proxy registered: [{}]", proxy)
+          if (state.regionProxies.contains(proxy))
             proxy ! RegisterAck(self)
+          else {
+            update(ShardRegionProxyRegistered(proxy)) { evt =>
+              state = state.updated(evt)
+              context.watch(proxy)
+              proxy ! RegisterAck(self)
+            }
           }
         }
-
       case GetShardHome(shard) =>
         if (!handleGetShardHome(shard)) {
           // location not know, yet
