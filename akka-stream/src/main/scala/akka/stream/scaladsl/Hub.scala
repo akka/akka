@@ -336,6 +336,24 @@ object BroadcastHub {
    */
   def sink[T](startAfterNrOfConsumers: Int, bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
     Sink.fromGraph(new BroadcastHub[T](bufferSize, startAfterNrOfConsumers))
+
+  /**
+    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
+    * value. This [[Source]] can be materialized arbitrary many times and each materialization will receive the
+    * broadcast elements from the original [[Sink]].
+    *
+    * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
+    * [[Source]] for consuming the [[Sink]] of that materialization.
+    *
+    * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
+    * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
+    * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
+    * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
+    * cancelled are simply removed from the dynamic set of consumers.
+    *
+    */
+  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(startAfterNrOfConsumers = 0, bufferSize = 256)
 }
 
 /**
