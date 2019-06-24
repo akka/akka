@@ -338,24 +338,24 @@ object BroadcastHub {
     Sink.fromGraph(new BroadcastHub[T](bufferSize, startAfterNrOfConsumers))
 
   /**
-    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
-    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
-    * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
-    * broadcast elements from the original [[Sink]].
-    *
-    * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
-    * [[Source]] for consuming the [[Sink]] of that materialization.
-    *
-    * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
-    * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
-    * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
-    * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
-    * cancelled are simply removed from the dynamic set of consumers.
-    *
-    * @param bufferSize Buffer size used by the producer. Gives an upper bound on how "far" from each other two
-    *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
-    *                   is backpressured. Must be a power of two and less than 4096.
-    */
+   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
+   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
+   * broadcast elements from the original [[Sink]].
+   *
+   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
+   * [[Source]] for consuming the [[Sink]] of that materialization.
+   *
+   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
+   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
+   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
+   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
+   * cancelled are simply removed from the dynamic set of consumers.
+   *
+   * @param bufferSize Buffer size used by the producer. Gives an upper bound on how "far" from each other two
+   *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
+   *                   is backpressured. Must be a power of two and less than 4096.
+   */
   def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](0, bufferSize))
 
   /**
