@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import java.util
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import akka.NotUsed
 import akka.dispatch.AbstractNodeQueue
@@ -13,8 +13,8 @@ import akka.stream._
 import akka.stream.stage._
 
 import scala.annotation.tailrec
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
@@ -309,8 +309,8 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
 object BroadcastHub {
 
   /**
-    * INTERNAL API
-    */
+   * INTERNAL API
+   */
   @InternalApi private[akka] val defaultBufferSize = 256
 
   /**
@@ -334,15 +334,14 @@ object BroadcastHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  def sink[T](startAfterNrOfConsumers: Int,
-              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize, startAfterNrOfConsumers))
+  def sink[T](startAfterNrOfConsumers: Int, bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
+    Sink.fromGraph(new BroadcastHub[T](bufferSize, startAfterNrOfConsumers))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class BroadcastHub[T](bufferSize: Int,
-                                    startAfterNrOfConsumers: Int)
+private[akka] class BroadcastHub[T](bufferSize: Int, startAfterNrOfConsumers: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   require(bufferSize > 0, "Buffer size must be positive")
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
@@ -461,7 +460,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int,
               head = finalOffset
               if (!hasBeenPulled(in)) pull(in)
             }
-          } else{
+          } else {
             tryPull()
             checkUnblock(previousOffset)
           }
@@ -479,8 +478,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int,
           addConsumer(consumer, currentOffset)
 
           // Also check if the consumer is now unblocked since we published an element since it went asleep.
-          if (currentOffset != tail){  consumer.callback.invoke(Wakeup)}
-          else {
+          if (currentOffset != tail) {
+            consumer.callback.invoke(Wakeup)
+          } else {
             tryPull()
           }
           checkUnblock(previousOffset)
