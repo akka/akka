@@ -512,7 +512,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         TestSource.probe[String].buffer(4, OverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
 
       val (flowOutProbe: TestPublisher.Probe[String], flowOutSource: Source[String, NotUsed]) =
-        TestSource.probe[String].toMat(BroadcastHub.sink(0))(Keep.both).run()
+        TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
 
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
       // simply use the probes as a message bus for feeding and capturing events.
