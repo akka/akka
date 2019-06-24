@@ -357,7 +357,7 @@ class HubSpec extends StreamSpec {
 
     "remember completion for materialisations after completion" in {
 
-      val (sourceProbe, source) = TestSource.probe[Unit].toMat(BroadcastHub.sink(2))(Keep.both).run()
+      val (sourceProbe, source) = TestSource.probe[Unit].toMat(BroadcastHub.sink(2, 256))(Keep.both).run()
       val sinkProbe = source.runWith(TestSink.probe[Unit])
 
       sourceProbe.sendComplete()
