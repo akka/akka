@@ -86,13 +86,13 @@ object BroadcastHub {
    *                   concurrent consumers can be in terms of element. If the buffer is full, the producer
    *                   is backpressured. Must be a power of two and less than 4096.
    */
-  def of[T](@unused clazz: Class[T], startAfterNrOfConsumers: Int,  bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
+  def of[T](@unused clazz: Class[T], startAfterNrOfConsumers: Int, bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
     akka.stream.scaladsl.BroadcastHub.sink[T](startAfterNrOfConsumers, bufferSize).mapMaterializedValue(_.asJava).asJava
   }
 
   def of[T](clazz: Class[T], bufferSize: Int): Sink[T, Source[T, NotUsed]] = of(clazz, 0, bufferSize)
 
-  def of[T](clazz: Class[T]): Sink[T, Source[T, NotUsed]] = of(clazz, 0,  256)
+  def of[T](clazz: Class[T]): Sink[T, Source[T, NotUsed]] = of(clazz, 0, 256)
 
 }
 
