@@ -46,7 +46,8 @@ object ClusterShardingSettings {
       leastShardAllocationRebalanceThreshold = config.getInt("least-shard-allocation-strategy.rebalance-threshold"),
       leastShardAllocationMaxSimultaneousRebalance =
         config.getInt("least-shard-allocation-strategy.max-simultaneous-rebalance"),
-      leastShardAllocationRebalanceNumber = config.getInt("least-shard-allocation-strategy.rebalance-number"),
+      leastShardAllocationMaxRebalancePerInterval =
+        config.getInt("least-shard-allocation-strategy.max-rebalance-per-interval"),
       leastShardAllocationRebalanceFactor = config.getDouble("least-shard-allocation-strategy.rebalance-factor"),
       waitingForStateTimeout = config.getDuration("waiting-for-state-timeout", MILLISECONDS).millis,
       updatingStateTimeout = config.getDuration("updating-state-timeout", MILLISECONDS).millis,
@@ -110,7 +111,7 @@ object ClusterShardingSettings {
       val keepNrOfBatches: Int,
       val leastShardAllocationRebalanceThreshold: Int,
       val leastShardAllocationMaxSimultaneousRebalance: Int,
-      val leastShardAllocationRebalanceNumber: Int,
+      val leastShardAllocationMaxRebalancePerInterval: Int,
       val leastShardAllocationRebalanceFactor: Double,
       val waitingForStateTimeout: FiniteDuration,
       val updatingStateTimeout: FiniteDuration,

@@ -129,11 +129,11 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
         Set("003", "004"))
     }
 
-    "rebalance from region with most number of shards [3, 0, 0], rebalanceThreshold=1, rebalanceNumber=2" in {
+    "rebalance from region with most number of shards [3, 0, 0], rebalanceThreshold=1, maxRebalancePerInterval=2" in {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 2,
+        maxRebalancePerInterval = 2,
         rebalanceFactor = 0.0)
       val allocations = createAllocations(aCount = 3)
 
@@ -141,11 +141,11 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.rebalance(allocations, Set("001")).futureValue should ===(Set("002"))
     }
 
-    "rebalance from region with most number of shards [5, 0, 0], rebalanceThreshold=1, rebalanceNumber=2" in {
+    "rebalance from region with most number of shards [5, 0, 0], rebalanceThreshold=1, maxRebalancePerInterval=2" in {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 2,
+        maxRebalancePerInterval = 2,
         rebalanceFactor = 0.0)
       val allocations = createAllocations(aCount = 5)
 
@@ -153,11 +153,11 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.rebalance(allocations, Set("001")).futureValue should ===(Set("002", "003"))
     }
 
-    "rebalance from region with most number of shards [6, 0, 0], rebalanceThreshold=1, rebalanceNumber=2" in {
+    "rebalance from region with most number of shards [6, 0, 0], rebalanceThreshold=1, maxRebalancePerInterval=2" in {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 2,
+        maxRebalancePerInterval = 2,
         rebalanceFactor = 0.0)
       val allocations = createAllocations(aCount = 6)
 
@@ -169,7 +169,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 0,
+        maxRebalancePerInterval = 0,
         rebalanceFactor = 0.5)
       val allocations = createAllocations(aCount = 3)
 
@@ -180,7 +180,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 0,
+        maxRebalancePerInterval = 0,
         rebalanceFactor = 0.5)
       val allocations = createAllocations(aCount = 5)
 
@@ -191,7 +191,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 0,
+        maxRebalancePerInterval = 0,
         rebalanceFactor = 0.5)
       val allocations = createAllocations(aCount = 6)
 
@@ -202,7 +202,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 0,
+        maxRebalancePerInterval = 0,
         rebalanceFactor = 0.2)
       val allocations = createAllocations(aCount = 6)
 
@@ -213,29 +213,29 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 0,
+        maxRebalancePerInterval = 0,
         rebalanceFactor = 0.4)
       val allocations = createAllocations(aCount = 6)
 
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001", "002"))
     }
 
-    "rebalance from region with most number of shards [6, 0, 0], rebalanceThreshold=1, rebalanceNumber=2, rebalanceFactor=0.5" in {
+    "rebalance from region with most number of shards [6, 0, 0], rebalanceThreshold=1, maxRebalancePerInterval=2, rebalanceFactor=0.5" in {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 2,
+        maxRebalancePerInterval = 2,
         rebalanceFactor = 0.5)
       val allocations = createAllocations(aCount = 6)
 
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001", "002"))
     }
 
-    "rebalance from region with most number of shards [6, 0, 0], rebalanceThreshold=1, rebalanceNumber=2, rebalanceFactor=0.2" in {
+    "rebalance from region with most number of shards [6, 0, 0], rebalanceThreshold=1, maxRebalancePerInterval=2, rebalanceFactor=0.2" in {
       val allocationStrategy = new LeastShardAllocationStrategy(
         rebalanceThreshold = 1,
         maxSimultaneousRebalance = 10,
-        rebalanceNumber = 2,
+        maxRebalancePerInterval = 2,
         rebalanceFactor = 0.2)
       val allocations = createAllocations(aCount = 6)
 

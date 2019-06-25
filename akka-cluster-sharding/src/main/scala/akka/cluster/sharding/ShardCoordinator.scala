@@ -182,7 +182,7 @@ object ShardCoordinator {
   class LeastShardAllocationStrategy(
       rebalanceThreshold: Int,
       maxSimultaneousRebalance: Int,
-      rebalanceNumber: Int,
+      maxRebalancePerInterval: Int,
       rebalanceFactor: Double)
       extends ShardAllocationStrategy
       with Serializable {
@@ -212,7 +212,7 @@ object ShardCoordinator {
         val difference = mostShards.size - leastShards.size
         if (difference > rebalanceThreshold) {
 
-          val iterationRebalanceLimit = (rebalanceFactor, rebalanceNumber) match {
+          val iterationRebalanceLimit = (rebalanceFactor, maxRebalancePerInterval) match {
             // This condition is to maintain semantic backwards compatibility, from when rebalanceThreshold was also
             // the number of shards to move.
             case (0.0, 0)            => rebalanceThreshold

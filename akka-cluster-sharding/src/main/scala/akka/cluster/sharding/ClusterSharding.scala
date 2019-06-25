@@ -651,7 +651,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
     val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    val maxRebalancePerInterval = settings.tuningParameters.leastShardAllocationMaxRebalancePerInterval
+    val rebalanceFactor = settings.tuningParameters.leastShardAllocationRebalanceFactor
+    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance, maxRebalancePerInterval, rebalanceFactor)
   }
 }
 
