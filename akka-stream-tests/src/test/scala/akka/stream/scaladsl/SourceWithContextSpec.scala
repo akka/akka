@@ -107,5 +107,15 @@ class SourceWithContextSpec extends StreamSpec {
         .expectNext((Seq("a-1", "a-2"), Seq(1L, 1L)), (Seq("a-3", "a-4"), Seq(1L, 1L)))
         .expectComplete()
     }
+
+    "be able to change meterialized value via mapMaterializedValue" in {
+      val materializedValue = "MatedValue"
+      Source
+        .empty[Message]
+        .asSourceWithContext(_.offset)
+        .mapMaterializedValue(_ => materializedValue)
+        .to(Sink.ignore)
+        .run() shouldBe materializedValue
+    }
   }
 }
