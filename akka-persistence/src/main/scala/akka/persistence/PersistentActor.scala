@@ -8,9 +8,8 @@ import java.lang.{ Iterable => JIterable }
 
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.japi.Procedure
 import akka.japi.Util
 import com.typesafe.config.Config
@@ -189,6 +188,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param event event to be persisted
    * @param handler handler for each persisted `event`
    */
+  @InternalStableApi
   def persist[A](event: A)(handler: A => Unit): Unit = {
     internalPersist(event)(handler)
   }
@@ -201,6 +201,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
+  @InternalStableApi
   def persistAll[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
     internalPersistAll(events)(handler)
   }
