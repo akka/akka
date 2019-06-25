@@ -455,7 +455,8 @@ class CoordinatedShutdownSpec
       try {
         block(co)
       } finally {
-        co.terminationWatcher ! PoisonPill
+        watch(co.terminationWatcher) ! PoisonPill
+        expectTerminated(co.terminationWatcher)
       }
     }
 
@@ -466,7 +467,7 @@ class CoordinatedShutdownSpec
         co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stop"))
         val result = co.run(UnknownReason)
         actorToWatch.expectMsg("stop")
-        result.isReadyWithin(1.second) should be(false)
+        result.isReadyWithin(100.millis) should be(false)
         actorToWatch.ref ! PoisonPill
         result.futureValue should ===(Done)
       }
@@ -478,8 +479,8 @@ class CoordinatedShutdownSpec
         val actorToWatch = TestProbe()
         co.addActorTerminationTask("a", "a1", actorToWatch.ref, None)
         val result = co.run(UnknownReason)
-        actorToWatch.expectNoMessage()
-        result.isReadyWithin(1.second) should be(false)
+        actorToWatch.expectNoMessage(100.millis)
+        result.isReadyWithin(100.millis) should be(false)
         actorToWatch.ref ! PoisonPill
         result.futureValue should ===(Done)
       }
@@ -520,7 +521,7 @@ class CoordinatedShutdownSpec
         co.addActorTerminationTask("b", "b1", actorToWatch.ref, None)
         val result = co.run(UnknownReason)
         actorToWatch.expectMsg("stopa")
-        actorToWatch.expectNoMessage()
+        actorToWatch.expectNoMessage(100.millis)
         actorToWatch.ref ! PoisonPill
         result.futureValue should ===(Done)
       }

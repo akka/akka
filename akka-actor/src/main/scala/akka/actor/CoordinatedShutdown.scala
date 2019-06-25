@@ -374,7 +374,7 @@ final class CoordinatedShutdown private[akka] (
    * INTERNAL API
    */
   private[akka] lazy val terminationWatcher =
-    system.systemActorOf(CoordinatedShutdownTerminationWatcher.props, "coordinated-shutdown-termination-watcher")
+    system.systemActorOf(CoordinatedShutdownTerminationWatcher.props, "coordinatedShutdownTerminationWatcher")
 
   /**
    * INTERNAL API
@@ -443,7 +443,7 @@ final class CoordinatedShutdown private[akka] (
    * It is possible to add a task to a later phase by a task in an earlier phase
    * and it will be performed.
    */
-  def addActorTerminationTask(phase: String, taskName: String, actor: ActorRef, stopMsg: Option[Any] = None): Unit =
+  def addActorTerminationTask(phase: String, taskName: String, actor: ActorRef, stopMsg: Option[Any]): Unit =
     addTask(phase, taskName) { () =>
       stopMsg.foreach(msg => actor ! msg)
       import akka.pattern.ask
@@ -738,13 +738,15 @@ final class CoordinatedShutdown private[akka] (
 }
 
 /** INTERNAL API */
+@InternalApi
 private[akka] object CoordinatedShutdownTerminationWatcher {
-  case class Watch(actor: ActorRef)
+  final case class Watch(actor: ActorRef)
 
-  def props: Props = Props[CoordinatedShutdownTerminationWatcher]()
+  def props: Props = Props(new CoordinatedShutdownTerminationWatcher)
 }
 
 /** INTERNAL API */
+@InternalApi
 private[akka] class CoordinatedShutdownTerminationWatcher extends Actor {
 
   import CoordinatedShutdownTerminationWatcher._
