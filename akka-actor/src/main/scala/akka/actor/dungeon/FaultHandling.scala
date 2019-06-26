@@ -241,7 +241,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
 
       val freshActor = newActor()
       actor = freshActor // this must happen before postRestart has a chance to fail
-      if (freshActor eq failedActor) setActorFields(freshActor, Some(this), self) // If the creator returns the same instance, we need to restore our nulled out fields.
+      if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
       freshActor.aroundPostRestart(cause)
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))

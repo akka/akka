@@ -688,25 +688,33 @@ private[akka] class ActorCell(
   final protected def clearActorFields(
       actorInstance: Actor,
       recreate: Boolean,
-      context: Option[ActorContext] = Some(null)): Unit = {
+      context: ActorContext = null): Unit = {
     setActorFields(actorInstance, context = context, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
 
-  final protected def clearActorFieldsOnTerminate(actorInstance: Actor): Unit =
-    clearActorFields(actorInstance, recreate = false, context = None)
+  final private def throwIllegalActorState(actorInstance: Actor): Unit =
+    throw IllegalActorStateException(
+      s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
 
-  final protected def setActorFields(actorInstance: Actor, context: Option[ActorContext], self: ActorRef): Unit =
+  final protected def clearActorFieldsOnTerminate(actorInstance: Actor): Unit = {
+    if ((actorInstance ne null) && (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", system.deadLetters)))
+      throwIllegalActorState(actorInstance)
+
+    currentMessage = null
+    behaviorStack = emptyBehaviorStack
+  }
+
+  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
     if (actorInstance ne null) {
-      if ((context.isDefined && !Reflect.lookupAndSetField(
+      if (!Reflect.lookupAndSetField(
             actorInstance.getClass,
             actorInstance,
             "context",
-            context.get))
+            context)
           || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
-        throw IllegalActorStateException(
-          s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
+        throwIllegalActorState(actorInstance)
     }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
