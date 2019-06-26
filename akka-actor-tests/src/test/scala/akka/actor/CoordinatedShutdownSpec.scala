@@ -249,7 +249,7 @@ class CoordinatedShutdownSpec
       intercept[TimeoutException] {
         Await.result(result, remainingOrDefault)
       }
-      expectNoMessage(200.millis) // C not run
+      expectNoMessage() // C not run
     }
 
     "skip tasks in disabled phase" in {
