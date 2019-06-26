@@ -685,10 +685,7 @@ private[akka] class ActorCell(
       throw new IllegalArgumentException("ActorCell has no props field")
   }
 
-  final protected def clearActorFields(
-      actorInstance: Actor,
-      recreate: Boolean,
-      context: ActorContext = null): Unit = {
+  final protected def clearActorFields(actorInstance: Actor, recreate: Boolean, context: ActorContext = null): Unit = {
     setActorFields(actorInstance, context = context, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
@@ -699,7 +696,11 @@ private[akka] class ActorCell(
       s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
 
   final protected def clearActorFieldsOnTerminate(actorInstance: Actor): Unit = {
-    if ((actorInstance ne null) && (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", system.deadLetters)))
+    if ((actorInstance ne null) && (!Reflect.lookupAndSetField(
+          actorInstance.getClass,
+          actorInstance,
+          "self",
+          system.deadLetters)))
       throwIllegalActorState(actorInstance)
 
     currentMessage = null
@@ -708,11 +709,7 @@ private[akka] class ActorCell(
 
   final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
     if (actorInstance ne null) {
-      if (!Reflect.lookupAndSetField(
-            actorInstance.getClass,
-            actorInstance,
-            "context",
-            context)
+      if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
           || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
         throwIllegalActorState(actorInstance)
     }
