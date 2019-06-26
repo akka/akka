@@ -20,6 +20,7 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
+<a id="async-integration-testing"></a>
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic

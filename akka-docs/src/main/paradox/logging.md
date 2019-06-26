@@ -204,6 +204,7 @@ akka {
 }
 ```
 
+<a id="logging-remote"></a>
 ### Auxiliary remote logging options
 
 If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
