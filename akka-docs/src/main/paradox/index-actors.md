@@ -1,8 +1,11 @@
-# Actors
+# Classic Actors
+
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[Actors](typed/actors.md).
 
 ## Dependency
 
-To use Akka Actors, you must add the following dependency in your project:
+To use Classic Akka Actors, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

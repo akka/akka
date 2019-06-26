@@ -1,4 +1,4 @@
-# Networking
+# Classic Networking
 
 @@toc { depth=2 }
 

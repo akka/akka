@@ -1,5 +1,7 @@
 # Akka Classic
 
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+
 @@toc { depth=2 }
 
 @@@ index

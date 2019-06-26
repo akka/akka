@@ -1,4 +1,7 @@
-# Dispatchers
+# Classic Dispatchers
+
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[dispatchers](typed/dispatchers.md).
 
 ## Dependency
 

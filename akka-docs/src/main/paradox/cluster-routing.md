@@ -1,5 +1,8 @@
 # Classic Cluster Aware Routers
 
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[routers](typed/routers.md).
+
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
 When a node becomes unreachable or leaves the cluster the routees of that node are

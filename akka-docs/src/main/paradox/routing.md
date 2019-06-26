@@ -1,4 +1,7 @@
-# Routing
+# Classic Routing
+
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[routers](typed/routers.md).
 
 ## Dependency
 

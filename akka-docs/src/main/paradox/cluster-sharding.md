@@ -1,5 +1,8 @@
 # Classic Cluster Sharding
 
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[cluster-sharding](typed/cluster-sharding.md).
+
 ## Dependency
 
 To use Cluster Sharding, you must add the following dependency in your project:

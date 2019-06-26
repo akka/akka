@@ -1,4 +1,7 @@
-# Fault Tolerance
+# Classic Fault Tolerance
+
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[fault tolerance](typed/fault-tolerance.md).
 
 ## Dependency
 

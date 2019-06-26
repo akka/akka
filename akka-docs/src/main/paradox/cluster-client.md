@@ -1,5 +1,8 @@
 # Classic Cluster Client
 
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+Instead of the cluster client we recommend Akka gRPC (FIXME https://github.com/akka/akka/issues/26175)
+
 ## Dependency
 
 To use Cluster Client, you must add the following dependency in your project:

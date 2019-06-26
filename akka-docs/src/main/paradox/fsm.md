@@ -1,4 +1,7 @@
-# FSM
+# Classic FSM
+
+Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+For the new API see @ref[fsm](typed/fsm.md).
 
 ## Dependency
 
