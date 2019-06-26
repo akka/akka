@@ -1,4 +1,4 @@
-# Cluster Client
+# Classic Cluster Client
 
 ## Dependency
 

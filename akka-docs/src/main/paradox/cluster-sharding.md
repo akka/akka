@@ -1,4 +1,4 @@
-# Cluster Sharding
+# Classic Cluster Sharding
 
 ## Dependency
 

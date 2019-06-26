@@ -1,4 +1,4 @@
-# Cluster Aware Routers
+# Classic Cluster Aware Routers
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.

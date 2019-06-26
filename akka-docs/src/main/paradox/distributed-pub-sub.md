@@ -1,4 +1,4 @@
-# Distributed Publish Subscribe in Cluster
+# Classic Distributed Publish Subscribe in Cluster
 
 ## Dependency
 

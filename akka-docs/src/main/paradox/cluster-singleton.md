@@ -1,4 +1,4 @@
-# Cluster Singleton
+# Classic Cluster Singleton
 
 ## Dependency
 
