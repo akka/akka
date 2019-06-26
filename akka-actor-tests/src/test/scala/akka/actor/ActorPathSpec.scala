@@ -89,5 +89,10 @@ class ActorPathSpec extends WordSpec with Matchers {
       ActorPath.fromString("akka://mysys/user/boom/*")
     }
 
+    "fail fast if invalid chars in host names when not using AddressFromURIString, e.g. docker host given name" in {
+      Address("akka", "sys", Some("valid"), Some(0)).hasInvalidHostCharacters shouldBe false
+      Address("akka", "sys", Some("in_valid"), Some(0)).hasInvalidHostCharacters shouldBe true
+      intercept[MalformedURLException](AddressFromURIString("akka://sys@in_valid:5001"))
+    }
   }
 }

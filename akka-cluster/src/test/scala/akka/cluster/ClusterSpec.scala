@@ -4,26 +4,28 @@
 
 package akka.cluster
 
-import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.actor.ExtendedActorSystem
-import akka.actor.Address
-import akka.cluster.InternalClusterAction._
 import java.lang.management.ManagementFactory
-import javax.management.ObjectName
-
-import akka.testkit.TestProbe
-import akka.actor.ActorSystem
-import akka.actor.Props
-import com.typesafe.config.ConfigFactory
-import akka.actor.CoordinatedShutdown
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent._
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source, StreamRefs }
 
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.CoordinatedShutdown
+import akka.actor.ExtendedActorSystem
+import akka.actor.Props
+import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.ClusterEvent._
+import akka.cluster.InternalClusterAction._
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.StreamRefs
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
+import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
+import javax.management.ObjectName
 
 object ClusterSpec {
   val config = """
@@ -68,6 +70,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     "reply with InitJoinNack for InitJoin before joining" in {
       system.actorSelection("/system/cluster/core/daemon") ! InitJoin(system.settings.config)
       expectMsgType[InitJoinNack]
+    }
+
+    "fail fast in a join if invalid chars in host names, e.g. docker host given name" in {
+      val address = Address("akka", "sys", Some("in_valid"), Some(0))
+      intercept[IllegalArgumentException](cluster.join(address))
+      intercept[IllegalArgumentException](cluster.joinSeedNodes(scala.collection.immutable.Seq(address)))
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {

@@ -300,8 +300,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * The name of the [[akka.actor.ActorSystem]] must be the same for all members of a
    * cluster.
    */
-  def join(address: Address): Unit =
+  def join(address: Address): Unit = {
+    checkHostCharacters(address)
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))
+  }
 
   private def fillLocal(address: Address): Address = {
     // local address might be used if grabbed from actorRef.path.address
@@ -317,8 +319,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * When it has successfully joined it must be restarted to be able to join another
    * cluster or to join the same cluster again.
    */
-  def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit =
+  def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit = {
+    seedNodes.foreach(checkHostCharacters)
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes.toVector.map(fillLocal))
+  }
 
   /**
    * Java API
@@ -332,6 +336,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def joinSeedNodes(seedNodes: java.util.List[Address]): Unit =
     joinSeedNodes(Util.immutableSeq(seedNodes))
+
+  private def checkHostCharacters(address: Address): Unit =
+    require(
+      !address.hasInvalidHostCharacters,
+      s"Joining the cluster using invalid host characters '${address.host}' in the Address is not allowed.")
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
