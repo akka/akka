@@ -376,7 +376,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
-* The `request` parameter in Distributed Data commands was removed, in favor of using `ask`.
+* The `request` parameter in Distributed Data commands was removed, in favor of using `ask` with the new `ReplicatorMessageAdapter`.
 * Removed `Behavior.same`, `Behavior.unhandled`, `Behavior.stopped`, `Behavior.empty`, and `Behavior.ignore` since
   they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
