@@ -12,7 +12,6 @@ To use Akka Streams, add the module to your project:
 
 ## Introduction
 
-<a id="core-concepts"></a>
 ## Core concepts
 
 Akka Streams is a library to process and transfer a sequence of elements using bounded buffer space. This
@@ -57,7 +56,6 @@ This way they can slow down a fast producer without blocking its thread. This is
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
 can hand it back for further use to an underlying thread-pool.
 
-<a id="defining-and-running-streams"></a>
 ## Defining and running streams
 
 Linear processing pipelines can be expressed in Akka Streams using the following core abstractions:
@@ -256,7 +254,6 @@ it will have to abide to this back-pressure by applying one of the below strateg
 As we can see, this scenario effectively means that the `Subscriber` will *pull* the elements from the Publisher –
 this mode of operation is referred to as pull-based back-pressure.
 
-<a id="stream-materialization"></a>
 ## Stream Materialization
 
 When constructing flows and graphs in Akka Streams think of them as preparing a blueprint, an execution plan.
@@ -281,7 +278,6 @@ yet will materialize that operator multiple times.
 
 @@@
 
-<a id="operator-fusion"></a>
 ### Operator Fusion
 
 By default, Akka Streams will fuse the stream operators. This means that the processing steps of a flow or

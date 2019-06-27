@@ -325,7 +325,6 @@ Instead log messages are printed to stdout (System.out). The default log level f
 stdout logger is `WARNING` and it can be silenced completely by setting
 `akka.stdout-loglevel=OFF`.
 
-<a id="slf4j"></a>
 ## SLF4J
 
 Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.

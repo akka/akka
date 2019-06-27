@@ -714,9 +714,9 @@ unreachable cluster node has been downed and removed.
 If you encounter suspicious false positives when the system is under load you should
 define a separate dispatcher for the cluster actors as described in [Cluster Dispatcher](#cluster-dispatcher).
 
-@@@ div { .group-scala }
-
 ## How to Test
+
+@@@ div { .group-scala }
 
 @ref:[Multi Node Testing](multi-node-testing.md) is useful for testing cluster applications.
 
@@ -771,8 +771,6 @@ the actor system for a specific role. This can also be used to grab the `akka.ac
 @@@
 
 @@@ div { .group-java }
-
-## How to Test
 
 Currently testing with the `sbt-multi-jvm` plugin is only documented for Scala.
 Go to the corresponding Scala version of this page for details.
@@ -867,7 +865,6 @@ You can enable verbose logging of cluster events at info level, e.g. for tempora
 akka.cluster.log-info-verbose = on
 ```
 
-<a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
 Under the hood the cluster extension is implemented with actors. To protect them against

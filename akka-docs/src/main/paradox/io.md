@@ -87,7 +87,6 @@ not error handling. In other words, data may still be lost, even if every write 
 
 @@@
 
-<a id="bytestring"></a>
 ### ByteString
 
 To maintain isolation, actors should communicate with immutable objects only. `ByteString` is an

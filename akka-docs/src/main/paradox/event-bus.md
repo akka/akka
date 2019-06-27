@@ -122,7 +122,6 @@ Java
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
 
-<a id="actor-classification"></a>
 ### Actor Classification
 
 This classification was originally developed specifically for implementing
@@ -153,7 +152,6 @@ Java
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
 
-<a id="event-stream"></a>
 ## Event Stream
 
 The event stream is the main event bus of each actor system: it is used for

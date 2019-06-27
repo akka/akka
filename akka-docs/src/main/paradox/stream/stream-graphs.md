@@ -245,7 +245,6 @@ Scala
 
 
 
-<a id="predefined-shapes"></a>
 ## Predefined shapes
 
 In general a custom `Shape` needs to be able to provide all its input and output ports, be able to copy itself, and also be
