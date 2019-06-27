@@ -160,7 +160,7 @@ class ActorLifeCycleSpec
       import akka.pattern._
 
       override def receive: Receive = {
-        case "ping" ⇒
+        case "ping" =>
           val replyTo = sender()
 
           context.stop(self)
@@ -168,7 +168,7 @@ class ActorLifeCycleSpec
           Future {
             latch.await()
             "po"
-          }.flatMap(x ⇒ Future { x + "ng" }).recover { case _: NullPointerException ⇒ "npe" }.pipeTo(replyTo)
+          }.flatMap(x => Future { x + "ng" }).recover { case _: NullPointerException => "npe" }.pipeTo(replyTo)
       }
     }
 
