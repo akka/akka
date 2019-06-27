@@ -204,6 +204,7 @@ akka {
 }
 ```
 
+<a id="logging-remote"></a>
 ### Auxiliary remote logging options
 
 If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
@@ -324,7 +325,6 @@ Instead log messages are printed to stdout (System.out). The default log level f
 stdout logger is `WARNING` and it can be silenced completely by setting
 `akka.stdout-loglevel=OFF`.
 
-<a id="slf4j"></a>
 ## SLF4J
 
 Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.

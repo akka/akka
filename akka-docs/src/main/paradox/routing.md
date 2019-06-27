@@ -683,7 +683,6 @@ Note that these special messages, except for the `Broadcast` message, are only h
 self contained router actors and not by the `akka.routing.Router` component described 
 in [A Simple Router](#simple-router).
 
-<a id="broadcast-messages"></a>
 ### Broadcast Messages
 
 A `Broadcast` message can be used to send a message to *all* of a router's routees. When a router
@@ -909,7 +908,6 @@ routers were implemented with normal actors. Fortunately all of this complexity 
 consumers of the routing API. However, it is something to be aware of when implementing your own
 routers.
 
-<a id="custom-router"></a>
 ## Custom Router
 
 You can create your own router should you not find any of the ones provided by Akka sufficient for your needs.

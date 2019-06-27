@@ -120,7 +120,7 @@ Artery has the same functionality as classic remoting and you should normally on
 configuration to switch.
 To switch a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
 
-Artery defaults to TCP (see @ref:[selected transport](#selecting-a-transport)) which is a good start
+Artery defaults to TCP (see @ref:[selected transport](../remoting-artery.md#selecting-a-transport)) which is a good start
 when migrating from classic remoting.
 
 The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`

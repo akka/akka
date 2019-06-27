@@ -20,6 +20,7 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
+<a id="async-integration-testing"></a>
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
@@ -566,7 +567,6 @@ Which of these methods is the best depends on what is most important to test. Th
 most generic option is to create the parent actor by passing it a function that is
 responsible for the Actor creation, but @scala[the]@java[using `TestProbe` or having a] fabricated parent is often sufficient.
 
-<a id="callingthreaddispatcher"></a>
 ## CallingThreadDispatcher
 
 The `CallingThreadDispatcher` serves good purposes in unit testing, as
