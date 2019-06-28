@@ -14,7 +14,7 @@ The following capabilities are included with Akka OSS and are introduced later o
 * [Streams](#streams)
 * [HTTP](#http)
 
-With a Lightbend subscription, you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
+With a [Lightbend Platform Subscription](https://www.lightbend.com/platform/subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
 
 Resilience Enhancements:
 
