@@ -2416,12 +2416,16 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Repr[(A, U)] = {
+    via(zipAllFlow(that, thisElem, thatElem))
+  }
+
+  protected def zipAllFlow[U, A >: Out, Mat2](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U): Flow[Out @uncheckedVariance, (A, U), Mat2] = {
     case object passedEnd
     val passedEndSrc = Source.repeat(passedEnd)
-    val left: Flow[Out, Any, NotUsed] = Flow[Out].concat(passedEndSrc)
-    val right: Source[Any, Any] = Source.fromGraph(that).concat(passedEndSrc)
-    val zipFlow: Flow[Out, (A, U), NotUsed] = left
-      .zip(right)
+    val left: Flow[Out, Any, NotUsed] = Flow[A].concat(passedEndSrc)
+    val right: Source[Any, Mat2] = Source.fromGraph(that).concat(passedEndSrc)
+    val zipFlow: Flow[Out, (A, U), Mat2] = left
+      .zipMat(right)(Keep.right)
       .takeWhile {
         case (`passedEnd`, `passedEnd`) => false
         case _                          => true
@@ -2431,7 +2435,7 @@ trait FlowOps[+Out, +Mat] {
         case (l: A @unchecked, `passedEnd`) => (l, thatElem)
         case t: (A, U) @unchecked           => t
       }
-    via(zipFlow)
+    zipFlow
   }
 
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
@@ -2955,22 +2959,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
       matF: (Mat, Mat2) => Mat3): ReprMat[(A, U), Mat3] = {
-    case object passedEnd
-    val passedEndSrc = Source.repeat(passedEnd)
-    val left: Flow[Out, Any, NotUsed] = Flow[Out].concat(passedEndSrc)
-    val right: Source[Any, Mat2] = Source.fromGraph(that).concatMat(passedEndSrc)(Keep.left)
-    val zipFlow: Flow[Out, (A, U), Mat2] = left
-      .zipMat(right)(Keep.right)
-      .takeWhile {
-        case (`passedEnd`, `passedEnd`) => false
-        case _                          => true
-      }
-      .map {
-        case (`passedEnd`, r: U @unchecked) => (thisElem, r)
-        case (l: A @unchecked, `passedEnd`) => (l, thatElem)
-        case t: (A, U) @unchecked           => t
-      }
-    viaMat(zipFlow)(matF)
+    viaMat(zipAllFlow(that, thisElem, thatElem))(matF)
   }
 
   /**
