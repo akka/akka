@@ -2419,7 +2419,10 @@ trait FlowOps[+Out, +Mat] {
     via(zipAllFlow(that, thisElem, thatElem))
   }
 
-  protected def zipAllFlow[U, A >: Out, Mat2](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U): Flow[Out @uncheckedVariance, (A, U), Mat2] = {
+  protected def zipAllFlow[U, A >: Out, Mat2](
+      that: Graph[SourceShape[U], Mat2],
+      thisElem: A,
+      thatElem: U): Flow[Out @uncheckedVariance, (A, U), Mat2] = {
     case object passedEnd
     val passedEndSrc = Source.repeat(passedEnd)
     val left: Flow[Out, Any, NotUsed] = Flow[A].concat(passedEndSrc)
