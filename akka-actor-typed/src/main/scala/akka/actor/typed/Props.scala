@@ -196,7 +196,7 @@ object MailboxSelector {
   def defaultMailbox(): MailboxSelector = _default
 
   /**
-   * A mailbox with a max capacity after which new messages are dropped (passed to deadletters)
+   * A mailbox with a max capacity after which new messages are dropped (passed to deadletters).
    * @param capacity The maximum number of messages in the mailbox before new messages are dropped
    */
   def bounded(capacity: Int): MailboxSelector = BoundedMailboxSelector(capacity)
