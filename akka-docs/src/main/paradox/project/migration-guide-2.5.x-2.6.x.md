@@ -377,6 +377,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
    to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
 * Java @apidoc[akka.cluster.sharding.typed.javadsl.EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
+* `StashBuffer`s are not created with `Behaviors.withStash` rather than instantiating directly
 
 
 #### Akka Typed Stream API changes
