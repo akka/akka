@@ -20,6 +20,7 @@ import akka.util.{ unused, OptionVal }
  * such as inability to start, wrong configuration etc.
  */
 @SerialVersionUID(1L)
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
 }
@@ -28,6 +29,7 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
  * [[RemoteTransportException]] without stack trace.
  */
 @SerialVersionUID(1L)
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
     extends RemoteTransportException(message, cause)
     with NoStackTrace

@@ -237,7 +237,7 @@ private[akka] class RemoteActorRefProvider(
           rootGuardian,
           remotingTerminator,
           _log,
-          untrustedMode = remoteSettings.UntrustedMode)
+          untrustedMode = remoteSettings.untrustedMode)
         local.registerExtraNames(Map(("remote", d)))
         d
       },

@@ -4,24 +4,24 @@
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Address
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.actor.Terminated
+import akka.remote.artery.QuarantinedEvent
+import akka.remote.RARP
+import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-
-import scala.concurrent.duration._
 import akka.testkit._
-
-import akka.remote.testconductor.RoleName
-import akka.actor.Props
-import akka.actor.Actor
-
-import scala.util.control.NoStackTrace
-import akka.remote.{ QuarantinedEvent, RemoteActorRefProvider }
-import akka.actor.ExtendedActorSystem
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
-import akka.actor.Terminated
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
 
 object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -89,6 +89,31 @@ abstract class SurviveNetworkInstabilitySpec
   //  muteMarkingAsReachable()
 
   override def expectedTestDuration = 3.minutes
+
+  private val remoteSettings = RARP(system).provider.remoteSettings
+
+  @silent
+  def quarantinedEventClass: Class[_] =
+    if (remoteSettings.Artery.Enabled)
+      classOf[QuarantinedEvent]
+    else
+      classOf[akka.remote.QuarantinedEvent]
+
+  @silent
+  def quarantinedEventFrom(event: Any): Address = {
+    event match {
+      case QuarantinedEvent(uniqueAddress)          => uniqueAddress.address
+      case akka.remote.QuarantinedEvent(address, _) => address
+    }
+
+  }
+
+  @silent
+  def sysMsgBufferSize: Int =
+    if (RARP(system).provider.remoteSettings.Artery.Enabled)
+      remoteSettings.Artery.Advanced.SysMsgBufferSize
+    else
+      remoteSettings.SysMsgBufferSize
 
   def assertUnreachable(subjects: RoleName*): Unit = {
     val expected = subjects.toSet.map(address)
@@ -266,12 +291,6 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("watcher-created")
 
       runOn(second) {
-        val sysMsgBufferSize = system
-          .asInstanceOf[ExtendedActorSystem]
-          .provider
-          .asInstanceOf[RemoteActorRefProvider]
-          .remoteSettings
-          .SysMsgBufferSize
         val refs = Vector.fill(sysMsgBufferSize + 1)(system.actorOf(Props[Echo])).toSet
         system.actorSelection(node(third) / "user" / "watcher") ! Targets(refs)
         expectMsg(TargetsRegistered)
@@ -290,7 +309,7 @@ abstract class SurviveNetworkInstabilitySpec
         // system messages and quarantine
         system.actorSelection("/user/watcher") ! "boom"
         within(10.seconds) {
-          expectMsgType[QuarantinedEvent].address should ===(address(second))
+          quarantinedEventFrom(expectMsgClass(quarantinedEventClass)) should ===(address(second))
         }
         system.eventStream.unsubscribe(testActor, classOf[QuarantinedEvent])
       }

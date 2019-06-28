@@ -13,6 +13,7 @@ import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
+@silent // classic deprecated
 class RemoteDeathWatchSpec
     extends AkkaSpec(ConfigFactory.parseString("""
 akka {

@@ -34,6 +34,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.RARP
 import com.github.ghik.silencer.silent
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ThrottlerProvider extends TransportAdapterProvider {
 
   override def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
@@ -41,6 +42,7 @@ class ThrottlerProvider extends TransportAdapterProvider {
 
 }
 
+// not deprecating this because Direction is widely used, we can change testkit anyway when removing classic
 object ThrottlerTransportAdapter {
   val SchemeIdentifier = "trttl"
   val UniqueId = new java.util.concurrent.atomic.AtomicInteger(0)
@@ -203,6 +205,7 @@ object ThrottlerTransportAdapter {
   def unthrottledThrottleMode(): ThrottleMode = Unthrottled
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedActorSystem)
     extends ActorTransportAdapter(_wrappedTransport, _system) {
 
@@ -229,6 +232,7 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
 /**
  * INTERNAL API
  */
+@silent
 private[transport] object ThrottlerManager {
   final case class Checkin(origin: Address, handle: ThrottlerHandle) extends NoSerializationVerificationNeeded
 
@@ -246,6 +250,7 @@ private[transport] object ThrottlerManager {
 /**
  * INTERNAL API
  */
+@silent
 private[transport] class ThrottlerManager(wrappedTransport: Transport)
     extends ActorTransportAdapterManager
     with ActorLogging {
@@ -415,6 +420,7 @@ private[transport] object ThrottledAssociation {
 /**
  * INTERNAL API
  */
+@silent
 private[transport] class ThrottledAssociation(
     val manager: ActorRef,
     val associationHandler: AssociationEventListener,
@@ -578,6 +584,7 @@ private[transport] class ThrottledAssociation(
 /**
  * INTERNAL API
  */
+@silent
 private[transport] final case class ThrottlerHandle(_wrappedHandle: AssociationHandle, throttlerActor: ActorRef)
     extends AbstractTransportAdapterHandle(_wrappedHandle, SchemeIdentifier) {
 

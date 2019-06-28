@@ -5,13 +5,17 @@
 package akka.remote
 
 import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
+
 import akka.remote.transport.AkkaProtocolSettings
-import akka.util.{ Helpers }
+import akka.util.Helpers
 import akka.util.Helpers.ConfigOps
 import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
+import com.github.ghik.silencer.silent
 
+@silent // classic deprecated
 class RemoteConfigSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.classic.netty.tcp.port = 0

@@ -27,6 +27,7 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait SSLEngineProvider {
 
   def createServerSSLEngine(): SSLEngine
@@ -40,6 +41,7 @@ trait SSLEngineProvider {
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ConfigSSLEngineProvider(protected val log: MarkerLoggingAdapter, private val settings: SSLSettings)
     extends SSLEngineProvider {
 

@@ -5,7 +5,6 @@
 package akka.remote
 
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import scala.collection.immutable
 
@@ -16,7 +15,9 @@ import akka.actor.Props
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.remote.artery.ArterySettings
+import com.github.ghik.silencer.silent
 
 final class RemoteSettings(val config: Config) {
   import config._
@@ -26,20 +27,32 @@ final class RemoteSettings(val config: Config) {
 
   val WarnAboutDirectUse: Boolean = getBoolean("akka.remote.warn-about-direct-use")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val LogReceive: Boolean = getBoolean("akka.remote.classic.log-received-messages")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val LogSend: Boolean = getBoolean("akka.remote.classic.log-sent-messages")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val LogFrameSizeExceeding: Option[Int] = {
     if (config.getString("akka.remote.classic.log-frame-size-exceeding").toLowerCase == "off") None
     else Some(getBytes("akka.remote.classic.log-frame-size-exceeding").toInt)
   }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val UntrustedMode: Boolean = getBoolean("akka.remote.classic.untrusted-mode")
 
+  /**
+   * INTERNAL API
+   */
+  @silent
+  @InternalApi private[akka] def untrustedMode: Boolean =
+    if (Artery.Enabled) Artery.UntrustedMode else UntrustedMode
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val TrustedSelectionPaths: Set[String] =
     immutableSeq(getStringList("akka.remote.classic.trusted-selection-paths")).toSet
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val RemoteLifecycleEventsLogLevel: LogLevel = toRootLowerCase(
     getString("akka.remote.classic.log-remote-lifecycle-events")) match {
     case "on" => Logging.DebugLevel
@@ -51,32 +64,46 @@ final class RemoteSettings(val config: Config) {
       }
   }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val Dispatcher: String = getString("akka.remote.classic.use-dispatcher")
 
-  def configureDispatcher(props: Props): Props = if (Dispatcher.isEmpty) props else props.withDispatcher(Dispatcher)
+  @silent
+  def configureDispatcher(props: Props): Props =
+    if (Artery.Enabled) {
+      if (Artery.Advanced.Dispatcher.isEmpty) props else props.withDispatcher(Artery.Advanced.Dispatcher)
+    } else {
+      if (Dispatcher.isEmpty) props else props.withDispatcher(Dispatcher)
+    }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val ShutdownTimeout: Timeout = {
     Timeout(config.getMillisDuration("akka.remote.classic.shutdown-timeout"))
   }.requiring(_.duration > Duration.Zero, "shutdown-timeout must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val FlushWait: FiniteDuration = {
     config.getMillisDuration("akka.remote.classic.flush-wait-on-shutdown")
   }.requiring(_ > Duration.Zero, "flush-wait-on-shutdown must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val StartupTimeout: Timeout = {
     Timeout(config.getMillisDuration("akka.remote.classic.startup-timeout"))
   }.requiring(_.duration > Duration.Zero, "startup-timeout must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val RetryGateClosedFor: FiniteDuration = {
     config.getMillisDuration("akka.remote.classic.retry-gate-closed-for")
   }.requiring(_ >= Duration.Zero, "retry-gate-closed-for must be >= 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val UsePassiveConnections: Boolean = getBoolean("akka.remote.classic.use-passive-connections")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val BackoffPeriod: FiniteDuration = {
     config.getMillisDuration("akka.remote.classic.backoff-interval")
   }.requiring(_ > Duration.Zero, "backoff-interval must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val LogBufferSizeExceeding: Int = {
     val key = "akka.remote.classic.log-buffer-size-exceeding"
     config.getString(key).toLowerCase match {
@@ -85,26 +112,32 @@ final class RemoteSettings(val config: Config) {
     }
   }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val SysMsgAckTimeout: FiniteDuration = {
     config.getMillisDuration("akka.remote.classic.system-message-ack-piggyback-timeout")
   }.requiring(_ > Duration.Zero, "system-message-ack-piggyback-timeout must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val SysResendTimeout: FiniteDuration = {
     config.getMillisDuration("akka.remote.classic.resend-interval")
   }.requiring(_ > Duration.Zero, "resend-interval must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val SysResendLimit: Int = {
     config.getInt("akka.remote.classic.resend-limit")
   }.requiring(_ > 0, "resend-limit must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val SysMsgBufferSize: Int = {
     getInt("akka.remote.classic.system-message-buffer-size")
   }.requiring(_ > 0, "system-message-buffer-size must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val InitialSysMsgDeliveryTimeout: FiniteDuration = {
     config.getMillisDuration("akka.remote.classic.initial-system-message-delivery-timeout")
   }.requiring(_ > Duration.Zero, "initial-system-message-delivery-timeout must be > 0")
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val QuarantineSilentSystemTimeout: FiniteDuration = {
     val key = "akka.remote.classic.quarantine-after-silence"
     config.getString(key).toLowerCase match {
@@ -114,12 +147,14 @@ final class RemoteSettings(val config: Config) {
     }
   }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val QuarantineDuration: FiniteDuration = {
     config
       .getMillisDuration("akka.remote.classic.prune-quarantine-marker-after")
       .requiring(_ > Duration.Zero, "prune-quarantine-marker-after must be > 0 ms")
   }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val CommandAckTimeout: Timeout = {
     Timeout(config.getMillisDuration("akka.remote.classic.command-ack-timeout"))
   }.requiring(_.duration > Duration.Zero, "command-ack-timeout must be > 0")
@@ -149,6 +184,7 @@ final class RemoteSettings(val config: Config) {
       transportConfig)
   }
 
+  @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val Adapters: Map[String, String] = configToMap(getConfig("akka.remote.classic.adapters"))
 
   private def transportNames: immutable.Seq[String] =

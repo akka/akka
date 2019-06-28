@@ -20,8 +20,10 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
 @SerialVersionUID(1L)
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class FailureInjectorProvider extends TransportAdapterProvider {
 
   override def create(wrappedTransport: Transport, system: ExtendedActorSystem): Transport =
@@ -58,6 +60,7 @@ private[remote] object FailureInjectorTransportAdapter {
 /**
  * INTERNAL API
  */
+@silent
 private[remote] class FailureInjectorTransportAdapter(
     wrappedTransport: Transport,
     val extendedSystem: ExtendedActorSystem)
@@ -158,6 +161,7 @@ private[remote] class FailureInjectorTransportAdapter(
 /**
  * INTERNAL API
  */
+@silent
 private[remote] final case class FailureInjectorHandle(
     _wrappedHandle: AssociationHandle,
     private val gremlinAdapter: FailureInjectorTransportAdapter)
