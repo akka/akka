@@ -63,6 +63,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
     "zipWithGraph",
     "zipLatestGraph",
     "zipLatestWithGraph",
+    "zipAllFlow",
     "mergeGraph",
     "mergeSortedGraph",
     "interleaveGraph",
