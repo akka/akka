@@ -13,7 +13,7 @@ to see what this looks like in practice.
 
 For the JVM to run well in a Docker container, there are some general (not Akka specific) parameters that might need tuning:
 
-### Resource limits
+### Resource constraints
 
 Docker allows [constraining each containers' resource usage](https://docs.docker.com/config/containers/resource_constraints/).
 

@@ -79,7 +79,7 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
 
         ref.tell("ping", probe.ref)
 
-        ecProbe.expectNoMessage(200.millis)
+        ecProbe.expectNoMessage()
         probe.expectMsg(1.second, "ping")
       } finally {
         shutdown(system2)

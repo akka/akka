@@ -400,7 +400,7 @@ e.g. with @ref:[Persistence](persistence.md).
 
 The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
 shards are rebalanced. This cost increases with number of entities per shard and we currently don't
-recommend using it with more than 10000 entities per shard.
+recommend using it with more than 10000 active (non passivated) entities per shard.
 
 ## Supervision
 
@@ -424,7 +424,7 @@ Java
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
-If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#Sharding)
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#sharding)
 
 ## Graceful Shutdown
 

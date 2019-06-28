@@ -261,7 +261,6 @@ Scala
 Java
 :   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
-<a id="remote-deployment-whitelist"></a>
 ### Remote deployment whitelist
 
 As remote deployment can potentially be abused by both users and even attackers a whitelist feature
@@ -445,7 +444,6 @@ To be notified  when the remoting subsystem has been shut down, listen to `Remot
 
 To intercept generic remoting related errors, listen to `RemotingErrorEvent` which holds the `Throwable` cause.
 
-<a id="remote-security"></a>
 ## Remote Security
 
 An `ActorSystem` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. Internet).
@@ -607,7 +605,6 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 @@@
 
-<a id="remote-configuration"></a>
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the

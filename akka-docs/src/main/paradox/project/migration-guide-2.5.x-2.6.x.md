@@ -120,7 +120,7 @@ Artery has the same functionality as classic remoting and you should normally on
 configuration to switch.
 To switch a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
 
-Artery defaults to TCP (see @ref:[selected transport](#selecting-a-transport)) which is a good start
+Artery defaults to TCP (see @ref:[selected transport](../remoting-artery.md#selecting-a-transport)) which is a good start
 when migrating from classic remoting.
 
 The protocol part in the Akka `Address`, for example `"akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName"`
@@ -219,7 +219,7 @@ When used without Cluster
 akka.remote.warn-unsafe-watch-without-cluster = off
 ```
 
-## Schedule periodically with fixed-delay vs. fixed-rate
+### Schedule periodically with fixed-delay vs. fixed-rate
 
 The `Scheduler.schedule` method has been deprecated in favor of selecting `scheduleWithFixedDelay` or
 `scheduleAtFixedRate`.
@@ -325,6 +325,11 @@ Configuration property:
 akka.cluster.monitored-by-nr-of-members = 9
 ```
 
+### TestKit
+
+`expectNoMessage()` without timeout parameter is now using a new configuration property
+`akka.test.expect-no-message-default` (short timeout) instead of `remainingOrDefault` (long timeout).
+
 ## Source incompatibilities
 
 ### StreamRefs
@@ -371,7 +376,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
 * `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
-* The `request` parameter in Distributed Data commands was removed, in favor of using `ask`.
+* The `request` parameter in Distributed Data commands was removed, in favor of using `ask` with the new `ReplicatorMessageAdapter`.
 * Removed `Behavior.same`, `Behavior.unhandled`, `Behavior.stopped`, `Behavior.empty`, and `Behavior.ignore` since
   they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`

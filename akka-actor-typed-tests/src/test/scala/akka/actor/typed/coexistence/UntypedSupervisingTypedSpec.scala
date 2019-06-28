@@ -17,8 +17,6 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.actor.typed.scaladsl.adapter._
 import akka.{ actor => u }
 
-import scala.concurrent.duration._
-
 object ProbedBehavior {
   def behavior(probe: u.ActorRef): Behavior[String] = {
     Behaviors
@@ -50,10 +48,11 @@ object UntypedSupervisingTypedSpec {
   }
 }
 
-class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
+class UntypedSupervisingTypedSpec
+    extends AkkaSpec("akka.actor.testkit.typed.expect-no-message-default = 50 ms")
+    with ImplicitSender {
 
   implicit val typedActorSystem: ActorSystem[Nothing] = system.toTyped
-  val smallDuration = 50.millis
 
   "An untyped actor system that spawns typed actors" should {
     "default to stop for supervision" in {
@@ -62,7 +61,7 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       watch(underTest.toUntyped)
       underTest ! "throw"
       probe.expectMsg(PostStop)
-      probe.expectNoMessage(smallDuration)
+      probe.expectNoMessage()
       expectTerminated(underTest.toUntyped)
     }
 
@@ -72,7 +71,7 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       watch(underTest.toUntyped)
       underTest ! "throw"
       probe.expectMsg(PostStop)
-      probe.expectNoMessage(smallDuration)
+      probe.expectNoMessage()
       expectTerminated(underTest.toUntyped)
     }
 
@@ -83,8 +82,8 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       watch(underTest.toUntyped)
       underTest ! "throw"
       probe.expectMsg(PreRestart)
-      probe.expectNoMessage(smallDuration)
-      expectNoMessage(smallDuration)
+      probe.expectNoMessage()
+      expectNoMessage()
     }
 
     "default to stop supervision (from context)" in {
@@ -95,7 +94,7 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       watch(underTest.toUntyped)
       underTest ! "throw"
       probe.expectMsg(PostStop)
-      probe.expectNoMessage(smallDuration)
+      probe.expectNoMessage()
       expectTerminated(underTest.toUntyped)
     }
 
@@ -108,8 +107,8 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       watch(underTest.toUntyped)
       underTest ! "throw"
       probe.expectMsg(PreRestart)
-      probe.expectNoMessage(smallDuration)
-      expectNoMessage(smallDuration)
+      probe.expectNoMessage()
+      expectNoMessage()
     }
 
     "default to stop supervision for spawn anonymous (from context)" in {
@@ -120,7 +119,7 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       watch(underTest.toUntyped)
       underTest ! "throw"
       probe.expectMsg(PostStop)
-      probe.expectNoMessage(smallDuration)
+      probe.expectNoMessage()
       expectTerminated(underTest.toUntyped)
     }
 
