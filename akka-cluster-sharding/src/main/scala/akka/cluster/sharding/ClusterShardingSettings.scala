@@ -209,7 +209,7 @@ object ClusterShardingSettings {
  * @param passivateIdleEntityAfter Passivate entities that have not received any message in this interval.
  *   Note that only messages sent through sharding are counted, so direct messages
  *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
- *   Use 0 to disable automatic passivation.
+ *   Use 0 to disable automatic passivation. It is always disabled if `rememberEntities` is enabled.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(

@@ -15,6 +15,7 @@ import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.dispatch.Dispatchers
 import akka.remote.FailureDetectorRegistry
+import akka.remote.RemoteSettings
 import akka.remote.RemoteWatcher
 import akka.remote.RARP
 
@@ -26,17 +27,15 @@ private[cluster] object ClusterRemoteWatcher {
   /**
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
-  def props(
-      failureDetector: FailureDetectorRegistry[Address],
-      heartbeatInterval: FiniteDuration,
-      unreachableReaperInterval: FiniteDuration,
-      heartbeatExpectedResponseAfter: FiniteDuration): Props =
+  def props(failureDetector: FailureDetectorRegistry[Address], settings: RemoteSettings): Props =
     Props(
-      classOf[ClusterRemoteWatcher],
-      failureDetector,
-      heartbeatInterval,
-      unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDispatcher(Dispatchers.InternalDispatcherId).withDeploy(Deploy.local)
+      new ClusterRemoteWatcher(
+        failureDetector,
+        heartbeatInterval = settings.WatchHeartBeatInterval,
+        unreachableReaperInterval = settings.WatchUnreachableReaperInterval,
+        heartbeatExpectedResponseAfter = settings.WatchHeartbeatExpectedResponseAfter))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
       extends NoSerializationVerificationNeeded
@@ -81,7 +80,7 @@ private[cluster] class ClusterRemoteWatcher(
     cluster.unsubscribe(self)
   }
 
-  override def receive = receiveClusterEvent.orElse(super.receive)
+  override def receive: Receive = receiveClusterEvent.orElse(super.receive)
 
   def receiveClusterEvent: Actor.Receive = {
     case state: CurrentClusterState =>
@@ -159,6 +158,9 @@ private[cluster] class ClusterRemoteWatcher(
 
   override def watchNode(watchee: InternalActorRef): Unit =
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
+
+  override protected def shouldWatch(watchee: InternalActorRef): Boolean =
+    clusterNodes(watchee.path.address)
 
   /**
    * When a cluster node is added this class takes over the

@@ -4,19 +4,20 @@
 
 package akka.cluster
 
-import language.postfixOps
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import akka.testkit.TestEvent._
-import akka.actor._
-import akka.remote.RemoteActorRef
 import java.util.concurrent.TimeoutException
 
-import akka.remote.RemoteWatcher
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import akka.actor._
 import akka.cluster.MultiNodeClusterSpec.EndActor
+import akka.remote.RemoteActorRef
+import akka.remote.RemoteWatcher
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.testkit.TestEvent._
+import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
@@ -141,7 +142,7 @@ abstract class ClusterDeathWatchSpec
 
     }
 
-    "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(
+    "not be able to watch an actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(
       20 seconds) {
       runOn(fifth) {
         system.actorOf(
@@ -155,30 +156,45 @@ abstract class ClusterDeathWatchSpec
         val subject5 = expectMsgType[ActorIdentity].ref.get
         watch(subject5)
 
-        // fifth is not cluster member, so the watch is handled by the RemoteWatcher
+        // fifth is not cluster member, watch is dropped
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
-          val stats = expectMsgType[RemoteWatcher.Stats]
-          stats.watchingRefs should contain(subject5 -> testActor)
-          stats.watchingAddresses should contain(address(fifth))
+          expectMsg(RemoteWatcher.Stats.empty)
         }
       }
-      enterBarrier("remote-watch")
 
       // second and third are already removed
       awaitClusterUp(first, fourth, fifth)
 
+      runOn(fifth) {
+        // fifth is a member, the watch for subject5 previously deployed would not be in
+        // RemoteWatcher. Therefore we create a new one to test that now, being a member,
+        // will be in RemoteWatcher.
+        system.actorOf(
+          Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
+          name = "subject6")
+      }
+      enterBarrier("subject6-started")
+
       runOn(first) {
-        // fifth is member, so the node is handled by the ClusterRemoteWatcher,
-        // but the watch is still in RemoteWatcher
+        // fifth is member, so the node is handled by the ClusterRemoteWatcher.
+        system.actorSelection(RootActorPath(fifth) / "user" / "subject6") ! Identify("subject6")
+        val subject6 = expectMsgType[ActorIdentity].ref.get
+        watch(subject6)
+
+        system.actorSelection(RootActorPath(fifth) / "user" / "subject5") ! Identify("subject5")
+        val subject5 = expectMsgType[ActorIdentity].ref.get
+
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
           val stats = expectMsgType[RemoteWatcher.Stats]
-          stats.watchingRefs.map(_._1.path.name) should contain("subject5")
+          stats.watchingRefs should contain(subject6 -> testActor)
+          stats.watchingRefs should not contain (subject5 -> testActor)
+          stats.watching shouldEqual 1
           stats.watchingAddresses should not contain address(fifth)
         }
       }
-
+      enterBarrier("remote-watch")
       enterBarrier("cluster-watch")
 
       runOn(fourth) {
@@ -192,9 +208,19 @@ abstract class ClusterDeathWatchSpec
 
       enterBarrier("fifth-terminated")
       runOn(first) {
-        expectMsgType[Terminated].actor.path.name should ===("subject5")
-      }
+        // subject5 is not in RemoteWatcher.watching, the terminated for subject5 is from testActor.watch.
+        // You can not verify that it is the testActor receiving it, though the remoteWatcher stats proves
+        // it above
+        receiveWhile(messages = 2) {
+          case Terminated(ref) => ref.path.name
+        }.toSet shouldEqual Set("subject5", "subject6")
 
+        awaitAssert {
+          remoteWatcher ! RemoteWatcher.Stats
+          expectMsg(RemoteWatcher.Stats.empty)
+        }
+      }
+      enterBarrier("terminated-subject6")
       enterBarrier("after-3")
     }
 
