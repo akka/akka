@@ -25,7 +25,7 @@ With a [Lightbend Platform Subscription](https://www.lightbend.com/platform/subs
 * [Kubernetes Lease](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html) &#8212; Monitors an Akka system dispatcher and logs warnings if it becomes unresponsive.
 * [Fast Failover](https://doc.akka.io/docs/akka-enhancements/current/fast-failover.html) &#8212; Fast failover for Cluster Sharding.
 
-Persistence enhancements:
+[Akka Persistence Enhancements](https://doc.akka.io/docs/akka-enhancements/current/akka-persistence-enhancements.html):
 
 * [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html) &#8212; For active-active persistent entities across multiple data centers.
 * [GDPR for Akka Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html) &#8212; Data shredding can be used to forget information in events.
