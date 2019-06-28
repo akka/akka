@@ -71,7 +71,7 @@ When using the sharding extension you are first, typically at system startup on 
 in the cluster, supposed to register the supported entity types with the `ClusterSharding.start`
 method. `ClusterSharding.start` gives you the reference which you can pass along.
 Please note that `ClusterSharding.start` will start a `ShardRegion` in [proxy only mode](#proxy-only-mode) 
-in case if there is no match between the roles of the current cluster node and the role specified in 
+when there is no match between the roles of the current cluster node and the role specified in 
 `ClusterShardingSettings`.
 
 Scala
@@ -327,7 +327,7 @@ See @ref:[How To Startup when Cluster Size Reached](cluster-usage.md#min-members
 The `ShardRegion` actor can also be started in proxy only mode, i.e. it will not
 host any entities itself, but knows how to delegate messages to the right location.
 A `ShardRegion` is started in proxy only mode with the `ClusterSharding.startProxy` method.
-Also a `ShardRegion` is started in proxy only mode in case if there is no match between the
+Also a `ShardRegion` is started in proxy only mode when there is no match between the
 roles of the current cluster node and the role specified in `ClusterShardingSettings` 
 passed to the `ClusterSharding.start` method.
 
