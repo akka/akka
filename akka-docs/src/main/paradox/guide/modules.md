@@ -17,7 +17,7 @@ The following capabilities are included with Akka OSS and are introduced later o
 
 With a [Lightbend Platform Subscription](https://www.lightbend.com/platform/subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
 
-Resilience Enhancements:
+[Akka Resilience Enhancements](https://doc.akka.io/docs/akka-enhancements/current/akka-resilience-enhancements.html):
 
 * [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) &#8212; Detects and recovers from network partitions, eliminating data inconsistencies and possible downtime.
 * [Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) &#8212; Checks for potential configuration issues and logs suggestions.
