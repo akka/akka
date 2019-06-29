@@ -167,6 +167,7 @@ class ActorLifeCycleSpec
 
           Future {
             latch.await()
+            Thread.sleep(50)
             "po"
           }.flatMap(x => Future { x + "ng" }).recover { case _: NullPointerException => "npe" }.pipeTo(replyTo)
       }
