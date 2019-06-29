@@ -551,4 +551,4 @@ The cluster is made out of real bare-metal boxes, and maintained by the Akka tea
 
 * [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
 * [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
-* [Scalariform](https://github.com/daniel-trinh/scalariform)
+* [Scalafmt](https://scalameta.org/scalafmt/)
