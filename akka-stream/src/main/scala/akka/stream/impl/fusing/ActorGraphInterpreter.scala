@@ -41,9 +41,10 @@ import scala.util.control.NonFatal
 
   trait SimpleBoundaryEvent extends BoundaryEvent {
     final override def execute(eventLimit: Int): Int = {
-      val wasNotShutdown = !shell.interpreter.isStageCompleted(logic)
+      val interp = shell.interpreter
+      val wasNotShutdown = !interp.isStageCompleted(logic)
       execute()
-      if (wasNotShutdown) shell.interpreter.afterStageHasRun(logic)
+      if (wasNotShutdown) interp.afterStageHasRun(logic)
       shell.runBatch(eventLimit)
     }
 
@@ -482,8 +483,9 @@ import scala.util.control.NonFatal
       extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
-        interpreter.runAsyncInput(logic, evt, promise, handler)
-        if (eventLimit == 1 && interpreter.isSuspended) {
+        val interp = interpreter
+        interp.runAsyncInput(logic, evt, promise, handler)
+        if (eventLimit == 1 && interp.isSuspended) {
           sendResume(true)
           0
         } else runBatch(eventLimit - 1)
@@ -606,9 +608,10 @@ import scala.util.control.NonFatal
 
   def runBatch(actorEventLimit: Int): Int = {
     try {
+      val interp = this.interpreter
       val usingShellLimit = shellEventLimit < actorEventLimit
-      val remainingQuota = interpreter.execute(Math.min(actorEventLimit, shellEventLimit))
-      if (interpreter.isCompleted) {
+      val remainingQuota = interp.execute(Math.min(actorEventLimit, shellEventLimit))
+      if (interp.isCompleted) {
         // Cannot stop right away if not completely subscribed
         if (canShutDown) interpreterCompleted = true
         else {
@@ -617,7 +620,7 @@ import scala.util.control.NonFatal
             override def run(): Unit = self ! Abort(GraphInterpreterShell.this)
           })
         }
-      } else if (interpreter.isSuspended && !resumeScheduled) sendResume(!usingShellLimit)
+      } else if (interp.isSuspended && !resumeScheduled) sendResume(!usingShellLimit)
 
       if (usingShellLimit) actorEventLimit - shellEventLimit + remainingQuota else remainingQuota
     } catch {
@@ -644,8 +647,9 @@ import scala.util.control.NonFatal
     // call has no effect and therefore does the right thing: nothing.
     try {
       inputs.foreach(_.onInternalError(reason))
-      interpreter.execute(abortLimit)
-      interpreter.finish()
+      val interp = this.interpreter
+      interp.execute(abortLimit)
+      interp.finish()
     } catch {
       case NonFatal(_) =>
       // We are already handling an abort caused by an error, there is nothing we can do with new errors caused
