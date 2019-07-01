@@ -136,22 +136,31 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object LogMessagesInterceptor {
+  def apply[T](opts: LogOptions): BehaviorInterceptor[T, T] = {
+    new LogMessagesInterceptor(opts).asInstanceOf[BehaviorInterceptor[T, T]]
+  }
+}
+
+/**
  * Log all messages for this decorated ReceiveTarget[T] to logger before receiving it ourselves.
  *
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class LogMessagesInterceptor[T: ClassTag](opts: LogOptions) extends BehaviorInterceptor[T, T] {
+private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends BehaviorInterceptor[Any, Any] {
 
   import BehaviorInterceptor._
 
-  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
     if (opts.enabled)
       opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received message {}", msg)
     target(ctx, msg)
   }
 
-  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
     if (opts.enabled)
       opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received signal {}", signal)
     target(ctx, signal)
@@ -159,8 +168,8 @@ private[akka] final case class LogMessagesInterceptor[T: ClassTag](opts: LogOpti
 
   // only once in the same behavior stack
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case LogMessagesInterceptor(`opts`) => true
-    case _                              => false
+    case a: LogMessagesInterceptor => a.opts == opts
+    case _                         => false
   }
 }
 

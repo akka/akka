@@ -191,16 +191,16 @@ object Behaviors {
    * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T](interceptMessageClass: Class[_ <: T], behavior: Behavior[T]): Behavior[T] =
-    scaladsl.Behaviors.logMessages(behavior)(ClassTag(interceptMessageClass))
+  def logMessages[T](behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.logMessages(behavior)
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
    * [[akka.actor.typed.LogOptions]] configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T](interceptMessageClass: Class[_ <: T], logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
-    scaladsl.Behaviors.logMessages(logOptions, behavior)(ClassTag(interceptMessageClass))
+  def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.logMessages(logOptions, behavior)
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its

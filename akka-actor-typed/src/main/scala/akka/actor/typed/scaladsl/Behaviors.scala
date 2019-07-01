@@ -165,16 +165,16 @@ object Behaviors {
    * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T: ClassTag](behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(() => new LogMessagesInterceptor[T](LogOptions()))(behavior)
+  def logMessages[T](behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.intercept(() => LogMessagesInterceptor[T](LogOptions()))(behavior)
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
    * [[akka.actor.typed.LogOptions]] configuration before invoking the wrapped behavior.
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
-  def logMessages[T: ClassTag](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(() => new LogMessagesInterceptor[T](logOptions))(behavior)
+  def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.intercept(() => LogMessagesInterceptor[T](logOptions))(behavior)
 
   /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for
