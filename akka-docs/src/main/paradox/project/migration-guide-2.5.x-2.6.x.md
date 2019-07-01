@@ -266,10 +266,7 @@ blocking and protect a bit against starving the internal actors. Since the inter
 the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
 `8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
 
-### Cluster sharding
-
-
-## Cluster Sharding
+### Cluster Sharding
 
 #### waiting-for-state-timeout reduced to 2s
 
@@ -277,7 +274,7 @@ This has been reduced to speed up ShardCoordinator initialization in smaller clu
 The read from ddata is a ReadMajority, for small clusters (< majority-min-cap) every node needs to respond
 so is more likely to timeout if there are nodes restarting e.g. when there is a rolling re-deploy happening.
 
-### Passivate idle entity
+#### Passivate idle entity
 
 The configuration `akka.cluster.sharding.passivate-idle-entity-after` is now enabled by default.
 Sharding will passivate entities when they have not received any messages after this duration.
@@ -306,7 +303,7 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
 ### IOSources
 
-`[StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
+`StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
 to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
 the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException]. 
 
