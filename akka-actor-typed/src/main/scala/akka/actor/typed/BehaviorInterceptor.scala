@@ -25,19 +25,19 @@ import akka.util.BoxedType
  *                              Using `null` for interceptMessageClass is only safe if `O` and `I` are
  *                              the same.
  *
- * @tparam O The outer message type – the type of messages the intercepting behavior will accept
- * @tparam I The inner message type - the type of message the wrapped behavior accepts
+ * @tparam Outer The outer message type – the type of messages the intercepting behavior will accept
+ * @tparam Inner The inner message type - the type of message the wrapped behavior accepts
  */
-abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[O]) {
+abstract class BehaviorInterceptor[Outer, Inner](val interceptMessageClass: Class[Outer]) {
   import BehaviorInterceptor._
 
   /**
    * Scala API
    */
-  def this()(implicit interceptMessageClassTag: ClassTag[O]) =
+  def this()(implicit interceptMessageClassTag: ClassTag[Outer]) =
     this({
       val runtimeClass = interceptMessageClassTag.runtimeClass
-      (if (runtimeClass eq null) runtimeClass else BoxedType(runtimeClass)).asInstanceOf[Class[O]]
+      (if (runtimeClass eq null) runtimeClass else BoxedType(runtimeClass)).asInstanceOf[Class[Outer]]
     })
 
   /**
@@ -46,7 +46,7 @@ abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[O]) {
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] =
+  def aroundStart(ctx: TypedActorContext[Outer], target: PreStartTarget[Inner]): Behavior[Inner] =
     target.start(ctx)
 
   /**
@@ -56,7 +56,7 @@ abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[O]) {
    *
    * @return The behavior for next message or signal
    */
-  def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
+  def aroundReceive(ctx: TypedActorContext[Outer], msg: Outer, target: ReceiveTarget[Inner]): Behavior[Inner]
 
   /**
    * Intercept a signal sent to the running actor. Pass the signal on to the next behavior
@@ -64,7 +64,7 @@ abstract class BehaviorInterceptor[O, I](val interceptMessageClass: Class[O]) {
    *
    * @return The behavior for next message or signal
    */
-  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
+  def aroundSignal(ctx: TypedActorContext[Outer], signal: Signal, target: SignalTarget[Inner]): Behavior[Inner]
 
   /**
    * @return `true` if this behavior logically the same as another behavior interceptor and can therefore be eliminated
