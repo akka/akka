@@ -1773,7 +1773,7 @@ private[stream] object Collect {
             if (buffer.isEmpty)
               scheduleOnce(timerName, d)
             else
-              scheduleOnce(timerName, nextElementWaitTime().millis)
+              scheduleOnce(timerName, Math.max(DelayPrecisionMS, nextElementWaitTime()).millis)
           }
         }
       }
