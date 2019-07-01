@@ -55,8 +55,6 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
     implicit ev: ClassTag[Thr])
     extends BehaviorInterceptor[Any, I] {
 
-  // FIXME test that supervision works also when exception from a non-O message type, like InternalProtocol in EventSourcedBehavior
-
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
 
   protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =

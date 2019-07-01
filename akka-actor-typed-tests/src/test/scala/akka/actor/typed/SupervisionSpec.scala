@@ -1229,6 +1229,36 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
+    "handle exceptions from different message type" in {
+      val probe = TestProbe[Event]("evt")
+
+      val inner: Behavior[Command] = Behaviors
+        .receiveMessage[Any] {
+          case Ping(n) =>
+            probe.ref ! Pong(n)
+            Behaviors.same
+          case _ => throw new Exc1
+        }
+        .receiveSignal {
+          case (_, PreRestart) =>
+            probe.ref ! ReceivedSignal(PreRestart)
+            Behaviors.same
+        }
+        .narrow
+
+      val behv = Behaviors.supervise(inner).onFailure[Exc1](SupervisorStrategy.restart)
+      val ref = spawn(behv)
+      ref ! Ping(1)
+      probe.expectMessage(Pong(1))
+
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref.unsafeUpcast ! "boom"
+        probe.expectMessage(ReceivedSignal(PreRestart))
+      }
+      ref ! Ping(2)
+      probe.expectMessage(Pong(2))
+    }
+
   }
 
   val allStrategies = Seq(
