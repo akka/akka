@@ -9,15 +9,11 @@ import java.net.URLEncoder
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
-import akka.persistence.query.journal.leveldb.{
-  AllPersistenceIdsPublisher,
-  EventsByPersistenceIdPublisher,
-  EventsByTagPublisher
-}
-import akka.persistence.query.scaladsl.{ ReadJournal, _ }
-import akka.persistence.query.{ EventEnvelope, NoOffset, Offset, Sequence }
+import akka.persistence.query.journal.leveldb.{AllPersistenceIdsPublisher, EventsByPersistenceIdPublisher, EventsByTagGraphStage }
+import akka.persistence.query.scaladsl.{ReadJournal, _}
+import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import akka.util.{ unused, ByteString }
+import akka.util.{ByteString, unused}
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
@@ -184,11 +180,10 @@ class LeveldbReadJournal(@unused system: ExtendedActorSystem, config: Config)
   override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
     offset match {
       case seq: Sequence =>
-        Source
-          .actorPublisher[EventEnvelope](EventsByTagPublisher
-            .props(tag, seq.value, Long.MaxValue, refreshInterval, maxBufSize, writeJournalPluginId))
-          .mapMaterializedValue(_ => NotUsed)
-          .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+        Source.setup { (mat, _) =>
+          Source.fromGraph(new EventsByTagGraphStage(tag, seq.value, maxBufSize, Long.MaxValue, writeJournalPluginId, mat, refreshInterval)).named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+        }
+        .mapMaterializedValue(_ => NotUsed)
       case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
       case _ =>
         throw new IllegalArgumentException(
@@ -200,19 +195,19 @@ class LeveldbReadJournal(@unused system: ExtendedActorSystem, config: Config)
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
-    offset match {
-      case seq: Sequence =>
-        Source
-          .actorPublisher[EventEnvelope](
-            EventsByTagPublisher.props(tag, seq.value, Long.MaxValue, None, maxBufSize, writeJournalPluginId))
-          .mapMaterializedValue(_ => NotUsed)
-          .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-      case NoOffset => currentEventsByTag(tag, Sequence(0L)) //recursive
-      case _ =>
-        throw new IllegalArgumentException(
-          "LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
-    }
+  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = {
+    Source.setup { (mat, _) =>
+      offset match {
+        case seq: Sequence =>
+          Source.fromGraph(new EventsByTagGraphStage(tag, seq.value, maxBufSize, Long.MaxValue, writeJournalPluginId, mat, None))
+            .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+        case NoOffset => currentEventsByTag(tag, Sequence(0L))
+        case _ =>
+          throw new IllegalArgumentException(
+            "LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
+      }
+    }.mapMaterializedValue(_ => NotUsed)
+  }
 
 }
 

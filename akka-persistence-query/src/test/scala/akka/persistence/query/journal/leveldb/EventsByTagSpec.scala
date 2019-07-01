@@ -20,6 +20,7 @@ object EventsByTagSpec {
   val config = """
     akka.loglevel = INFO
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+
     akka.persistence.journal.leveldb {
       dir = "target/journal-EventsByTagSpec"
       event-adapters {
@@ -29,14 +30,17 @@ object EventsByTagSpec {
         "java.lang.String" = color-tagger
       }
     }
-    akka.persistence.query.journal.leveldb.refresh-interval = 1s
+    akka.persistence.query.journal.leveldb {
+      refresh-interval = 1s
+      max-buffer-size = 2
+    }
     akka.test.single-expect-default = 10s
     """
 
 }
 
 class ColorTagger extends WriteEventAdapter {
-  val colors = Set("green", "black", "blue")
+  val colors = Set("green", "black", "blue", "pink")
   override def toJournal(event: Any): Any = event match {
     case s: String =>
       val tags = colors.foldLeft(Set.empty[String])((acc, c) => if (s.contains(c)) acc + c else acc)
@@ -122,6 +126,40 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
         .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
         .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber"))
         .expectComplete()
+    }
+
+    "buffer elements until demand" in {
+      val a = system.actorOf(TestActor.props("z"))
+      a ! "a pink apple"
+      expectMsg(s"a pink apple-done")
+      a ! "a pink banana"
+      expectMsg(s"a pink banana-done")
+      a ! "a pink orange"
+      expectMsg(s"a pink orange-done")
+
+      val pinkSrc = queries.currentEventsByTag(tag = "pink")
+      val probe = pinkSrc
+        .runWith(TestSink.probe[Any])
+
+      // blah why does this pass
+
+      probe
+        .request(1)
+        .expectNext(EventEnvelope(Sequence(1L), "z", 1L, "a pink apple"))
+        .expectNoMessage(200.millis)
+        .request(3)
+        .expectNext(EventEnvelope(Sequence(2L), "z", 2L, "a pink banana"))
+        .expectNext(EventEnvelope(Sequence(3L), "z", 3L, "a pink orange"))
+        .expectComplete()
+
+    }
+
+    "delay query if buffer is full" in {
+      pending
+    }
+
+    "drain buffer before completing" in {
+      pending
     }
   }
 
