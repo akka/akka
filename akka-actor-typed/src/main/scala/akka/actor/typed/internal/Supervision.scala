@@ -75,7 +75,7 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
     } catch handleExceptionOnStart(ctx, target)
   }
 
-  def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[I]): Behavior[I] = {
+  override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[I]): Behavior[I] = {
     try {
       target(ctx, signal)
     } catch handleSignalException(ctx, target)

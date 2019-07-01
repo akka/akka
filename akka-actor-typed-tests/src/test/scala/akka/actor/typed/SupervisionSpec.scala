@@ -1084,12 +1084,6 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
             message: String,
             target: ReceiveTarget[String]): Behavior[String] =
           target(context, message)
-
-        override def aroundSignal(
-            context: TypedActorContext[String],
-            signal: Signal,
-            target: SignalTarget[String]): Behavior[String] =
-          target(context, signal)
       }
 
       val behv = supervise[String](Behaviors.receiveMessage {

@@ -30,13 +30,6 @@ object InterceptSpec {
       target(context, message)
     }
 
-    override def aroundSignal(
-        context: TypedActorContext[String],
-        signal: Signal,
-        target: SignalTarget[String]): Behavior[String] = {
-      target(context, signal)
-    }
-
     override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
       other.isInstanceOf[SameTypeInterceptor]
   }
@@ -64,11 +57,6 @@ object InterceptSpec {
         target(ctx, wrapped)
       }
 
-      override def aroundSignal(
-          ctx: TypedActorContext[Any],
-          signal: Signal,
-          target: BehaviorInterceptor.SignalTarget[InternalProtocol]): Behavior[InternalProtocol] =
-        target(ctx, signal)
     }
 
     def apply(probe: ActorRef[String]): Behavior[Command] = {
@@ -106,14 +94,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       probe ! ("after " + message)
       b
     }
-
-    override def aroundSignal(
-        context: TypedActorContext[String],
-        signal: Signal,
-        target: SignalTarget[String]): Behavior[String] = {
-      target(context, signal)
-    }
-
     // keeping the instance equality as "isSame" for these
   }
 
@@ -233,12 +213,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
             message: String,
             target: ReceiveTarget[String]): Behavior[String] =
           target(context, message)
-
-        def aroundSignal(
-            context: TypedActorContext[String],
-            signal: Signal,
-            target: SignalTarget[String]): Behavior[String] =
-          target(context, signal)
       }
 
       val innerBehaviorStarted = new AtomicBoolean(false)
@@ -364,12 +338,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
             case _            => Behaviors.unhandled
           }
 
-        override def aroundSignal(
-            context: TypedActorContext[Any],
-            signal: Signal,
-            target: SignalTarget[Msg]): Behavior[Msg] =
-          target.apply(context, signal)
-
       }
 
       val decorated: Behavior[Msg] =
@@ -405,11 +373,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
             target(ctx, msg)
           }
 
-          override def aroundSignal(
-              ctx: TypedActorContext[Message],
-              signal: Signal,
-              target: SignalTarget[Message]): Behavior[Message] =
-            target(ctx, signal)
         }
 
       val probe = TestProbe[Message]()
@@ -429,14 +392,8 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
 
     "intercept PostStop" in {
       val probe = TestProbe[String]()
-      val postStopInterceptor = new BehaviorInterceptor[String, String] {
-        def aroundReceive(
-            ctx: TypedActorContext[String],
-            msg: String,
-            target: ReceiveTarget[String]): Behavior[String] = {
-          target(ctx, msg)
-        }
-        def aroundSignal(
+      val postStopInterceptor = new BehaviorSignalInterceptor[String] {
+        override def aroundSignal(
             ctx: TypedActorContext[String],
             signal: Signal,
             target: SignalTarget[String]): Behavior[String] = {
@@ -501,13 +458,6 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
             msg: Command,
             target: BehaviorInterceptor.ReceiveTarget[Command]): Behavior[Command] = {
           target(ctx, Command(msg.s.toUpperCase()))
-        }
-
-        override def aroundSignal(
-            ctx: TypedActorContext[Command],
-            signal: Signal,
-            target: BehaviorInterceptor.SignalTarget[Command]): Behavior[Command] = {
-          target(ctx, signal)
         }
 
       }

@@ -127,10 +127,6 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
     target(ctx, msg)
   }
 
-  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    target(ctx, signal)
-  }
-
   // only once to the same actor in the same behavior stack
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     case MonitorInterceptor(`actorRef`) => true
@@ -205,9 +201,6 @@ private[akka] final case class WidenedInterceptor[O: ClassTag, I](matcher: Parti
       case transformed => target(ctx, transformed)
     }
   }
-
-  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] =
-    target(ctx, signal)
 
   override def toString: String = s"Widen(${LineNumbers(matcher)})"
 }
