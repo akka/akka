@@ -1764,14 +1764,17 @@ private[stream] object Collect {
       def onPush(): Unit = {
         if (buffer.isFull)
           onPushWhenBufferFull()
-        else if (buffer.isEmpty && !isTimerActive(timerName)) {
-          // ONLY schedule the timer if the buffer is empty, as an initial condition for the timing mechanism.
-          // Otherwise, scheduling the timer will starve subsequent `onPull` callbacks,
-          // even though elements are already overdue. The starvation exacerbates when the delay duration increases.
+        else {
           grabAndPull()
-          scheduleOnce(timerName, d)
-        } else {
-          grabAndPull()
+          if (!isTimerActive(timerName)) {
+            // schedule a timer for the full-delay `d` only if the buffer is empty, because otherwise a
+            // full-length timer will starve subsequent `onPull` callbacks, preventing overdue elements
+            // to be discharged.
+            if (buffer.isEmpty)
+              scheduleOnce(timerName, d)
+            else
+              scheduleOnce(timerName, nextElementWaitTime().millis)
+          }
         }
       }
 
