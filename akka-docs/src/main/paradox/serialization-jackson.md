@@ -315,7 +315,7 @@ different settings for remote messages and persisted events.
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #several-config }
 
-## Additional configuration
+## Additional features
 
 Additional Jackson serialization features can be enabled/disabled in configuration. The default values from
 Jackson are used aside from the the following that are changed in Akka's default configuration.

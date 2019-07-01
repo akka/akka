@@ -490,7 +490,7 @@ private[akka] class ShardRegion(
     cluster.subscribe(self, classOf[MemberEvent])
     timers.startTimerWithFixedDelay(Retry, Retry, retryInterval)
     startRegistration()
-    if (settings.passivateIdleEntityAfter > Duration.Zero)
+    if (settings.passivateIdleEntityAfter > Duration.Zero && !settings.rememberEntities)
       log.info(
         "{}: Idle entities will be passivated after [{}]",
         typeName,
@@ -597,24 +597,25 @@ private[akka] class ShardRegion(
 
       sender() ! ShardStarted(shard)
 
-    case ShardHome(shard, ref) =>
-      log.debug("{}: Shard [{}] located at [{}]", typeName, shard, ref)
+    case ShardHome(shard, shardRegionRef) =>
+      log.debug("{}: Shard [{}] located at [{}]", typeName, shard, shardRegionRef)
       regionByShard.get(shard) match {
-        case Some(r) if r == self && ref != self =>
+        case Some(r) if r == self && shardRegionRef != self =>
           // should not happen, inconsistency between ShardRegion and ShardCoordinator
-          throw new IllegalStateException(s"$typeName: Unexpected change of shard [$shard] from self to [$ref]")
+          throw new IllegalStateException(
+            s"$typeName: Unexpected change of shard [$shard] from self to [$shardRegionRef]")
         case _ =>
       }
-      regionByShard = regionByShard.updated(shard, ref)
-      regions = regions.updated(ref, regions.getOrElse(ref, Set.empty) + shard)
+      regionByShard = regionByShard.updated(shard, shardRegionRef)
+      regions = regions.updated(shardRegionRef, regions.getOrElse(shardRegionRef, Set.empty) + shard)
 
-      if (ref != self)
-        context.watch(ref)
+      if (shardRegionRef != self)
+        context.watch(shardRegionRef)
 
-      if (ref == self)
+      if (shardRegionRef == self)
         getShard(shard).foreach(deliverBufferedMessages(shard, _))
       else
-        deliverBufferedMessages(shard, ref)
+        deliverBufferedMessages(shard, shardRegionRef)
 
     case RegisterAck(coord) =>
       context.watch(coord)
@@ -908,7 +909,7 @@ private[akka] class ShardRegion(
       case _ =>
         val shardId = extractShardId(msg)
         regionByShard.get(shardId) match {
-          case Some(ref) if ref == self =>
+          case Some(shardRegionRef) if shardRegionRef == self =>
             getShard(shardId) match {
               case Some(shard) =>
                 if (shardBuffers.contains(shardId)) {
@@ -918,9 +919,9 @@ private[akka] class ShardRegion(
                 } else shard.tell(msg, snd)
               case None => bufferMessage(shardId, msg, snd)
             }
-          case Some(ref) =>
-            log.debug("{}: Forwarding request for shard [{}] to [{}]", typeName, shardId, ref)
-            ref.tell(msg, snd)
+          case Some(shardRegionRef) =>
+            log.debug("{}: Forwarding message for shard [{}] to [{}]", typeName, shardId, shardRegionRef)
+            shardRegionRef.tell(msg, snd)
           case None if shardId == null || shardId == "" =>
             log.warning("{}: Shard must not be empty, dropping message [{}]", typeName, msg.getClass.getName)
             context.system.deadLetters ! msg

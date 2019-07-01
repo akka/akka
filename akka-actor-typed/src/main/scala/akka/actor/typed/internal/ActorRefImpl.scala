@@ -17,7 +17,7 @@ private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipie
   def sendSystem(signal: SystemMessage): Unit
   def isLocal: Boolean
 
-  final override def narrow[U <: T]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+  final override def narrow[U <: T]: ActorRef[U] = this
 
   final override def unsafeUpcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
 

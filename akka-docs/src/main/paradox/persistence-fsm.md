@@ -10,16 +10,12 @@ Persistent FSMs are part of Akka persistence, you must add the following depende
   version="$akka.version$"
 }
 
-<a id="persistent-fsm"></a>
-## Persistent FSM
-
 @@@ warning
 
 Persistent FSM is no longer actively developed and will be replaced by @ref[Akka Typed Persistence](typed/persistence.md). It is not advised
 to build new applications with Persistent FSM.
 
 @@@
-
 
 @scala[`PersistentFSM`]@java[`AbstractPersistentFSM`] handles the incoming messages in an FSM like fashion.
 Its internal state is persisted as a sequence of changes, later referred to as domain events.

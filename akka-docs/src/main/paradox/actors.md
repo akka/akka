@@ -350,7 +350,6 @@ Java
 
 The implementations shown above are the defaults provided by the @scala[`Actor` trait.] @java[`AbstractActor` class.]
 
-<a id="actor-lifecycle"></a>
 ### Actor Lifecycle
 
 ![actor_lifecycle.png](./images/actor_lifecycle.png)
@@ -442,7 +441,6 @@ using `context.unwatch(target)`. This works even if the `Terminated`
 message has already been enqueued in the mailbox; after calling `unwatch`
 no `Terminated` message for that actor will be processed anymore.
 
-<a id="start-hook"></a>
 ### Start Hook
 
 Right after starting the actor, its `preStart` method is invoked.
@@ -501,7 +499,6 @@ See @ref:[Discussion: Message Ordering](general/message-delivery-reliability.md#
 
 @@@
 
-<a id="stop-hook"></a>
 ### Stop Hook
 
 After stopping an actor, its `postStop` hook is called, which may be used
@@ -915,7 +912,6 @@ The timers are bound to the lifecycle of the actor that owns it, and thus are ca
 automatically when it is restarted or stopped. Note that the `TimerScheduler` is not thread-safe, 
 i.e. it must only be used within the actor that owns it.
 
-<a id="stopping-actors"></a>
 ## Stopping actors
 
 Actors are stopped by invoking the `stop` method of a `ActorRefFactory`,
@@ -1038,7 +1034,6 @@ message, i.e. not for top-level actors.
 
 @@@
 
-<a id="coordinated-shutdown"></a>
 ### Coordinated Shutdown
 
 There is an extension named `CoordinatedShutdown` that will stop certain actors and
@@ -1183,7 +1178,6 @@ Java
 
 See this @extref[Unnested receive example](github:akka-docs/src/test/scala/docs/actor/UnnestedReceives.scala).
 
-<a id="stash"></a>
 ## Stash
 
 The @scala[`Stash` trait] @java[`AbstractActorWithStash` class] enables an actor to temporarily stash away messages

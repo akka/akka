@@ -77,7 +77,13 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
-      ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+      strategy.logLevel match {
+        case Logging.ErrorLevel =>
+          ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case Logging.WarningLevel =>
+          ctx.asScala.log.warning(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case level => ctx.asScala.log.log(level, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+      }
     }
   }
 

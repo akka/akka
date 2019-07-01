@@ -131,6 +131,24 @@ object ActorMaterializer {
    *
    * The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
+   * will be used to create these actors, therefore it is *forbidden* to pass this object
+   * to another actor if the factory is an ActorContext.
+   *
+   * The `namePrefix` is used as the first part of the names of the actors running
+   * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
+   * `namePrefix-flowNumber-flowStepNumber-stepName`.
+   */
+  def create(context: ActorRefFactory, namePrefix: String): ActorMaterializer = {
+    val system = actorSystemOf(context)
+    val settings = ActorMaterializerSettings(system)
+    apply(settings, namePrefix)(context)
+  }
+
+  /**
+   * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
+   *
+   * The required [[akka.actor.ActorRefFactory]]
+   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
   def create(settings: ActorMaterializerSettings, context: ActorRefFactory): ActorMaterializer =

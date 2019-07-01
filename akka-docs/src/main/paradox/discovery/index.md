@@ -92,7 +92,7 @@ Java
     Future<SimpleServiceDiscovery.Resolved> result = discovery.lookup("service-name", Duration.create("500 millis"));
     ```
 
-### How it works
+### DNS records used
 
 DNS discovery will use either A/AAAA records or SRV records depending on whether a `Simple` or `Full` lookup is issued.
 The advantage of SRV records is that they can include a port.

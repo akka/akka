@@ -429,7 +429,7 @@ There are a number of ways timeouts can be defined in Akka tests. The following 
 * `3.seconds` is third choice if not using testkit
 * lower timeouts must come with a very good reason (e.g. Awaiting on a known to be "already completed" `Future`)
 
-Special care should be given to `expectNoMsg` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
+Special care should be given to `expectNoMessage` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`. Prefer the method without timeout parameter, which will use the configured `expect-no-message-default` timeout.
 
 You can read up on `remaining` and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala).
 

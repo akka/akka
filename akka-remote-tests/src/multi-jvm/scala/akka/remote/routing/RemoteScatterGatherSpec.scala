@@ -28,6 +28,7 @@ class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-without-cluster = on
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOnAll("""

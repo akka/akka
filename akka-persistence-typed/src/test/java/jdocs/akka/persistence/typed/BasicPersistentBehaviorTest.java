@@ -4,6 +4,7 @@
 
 package jdocs.akka.persistence.typed;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
@@ -341,9 +342,13 @@ public class BasicPersistentBehaviorTest {
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
 
+      // optionally if you only need `ActorContext.getSelf()`
+      private final ActorRef<Command> self;
+
       public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
         this.ctx = ctx;
+        this.self = ctx.getSelf();
       }
 
       // #actor-context

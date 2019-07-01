@@ -696,7 +696,7 @@ private[akka] class ActorCell(
       if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
           || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
         throw IllegalActorStateException(
-          actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
+          s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
     }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
