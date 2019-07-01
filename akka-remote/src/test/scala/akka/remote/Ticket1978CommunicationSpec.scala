@@ -21,7 +21,9 @@ import scala.concurrent.duration._
 import scala.reflect.classTag
 
 import akka.remote.transport.netty.ConfigSSLEngineProvider
+import com.github.ghik.silencer.silent
 
+@silent // deprecated
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
   // The certificate will expire in 2109
@@ -116,6 +118,7 @@ class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
 class Ticket1978NonExistingRNGSecureSpec
     extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346, None))
 
+@silent // deprecated
 abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
     extends AkkaSpec(cipherConfig.config)
     with ImplicitSender {
