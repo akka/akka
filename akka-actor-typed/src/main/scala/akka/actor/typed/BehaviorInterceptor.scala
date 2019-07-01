@@ -11,8 +11,11 @@ import akka.util.BoxedType
 
 /**
  * A behavior interceptor allows for intercepting message and signal reception and perform arbitrary logic -
- * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors. Many built-in
- * intercepting behaviors are provided through factories in the respective `Behaviors`.
+ * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors.
+ *
+ * The `BehaviorInterceptor` API is considered a low level tool for building other features and
+ * shouldn't be used for "normal" application logic. Several built-in intercepting behaviors
+ * are provided through factories in the respective `Behaviors`.
  *
  * If the interceptor does keep mutable state care must be taken to create a new instance from
  * the factory function of `Behaviors.intercept` so that a new instance is created per spawned
@@ -125,6 +128,10 @@ object BehaviorInterceptor {
 /**
  * A behavior interceptor allows for intercepting signals reception and perform arbitrary logic -
  * transform, filter, send to a side channel etc.
+ *
+ * The `BehaviorSignalInterceptor` API is considered a low level tool for building other features and
+ * shouldn't be used for "normal" application logic. Several built-in intercepting behaviors
+ * are provided through factories in the respective `Behaviors`.
  *
  * If the interceptor does keep mutable state care must be taken to create a new instance from
  * the factory function of `Behaviors.intercept` so that a new instance is created per spawned
