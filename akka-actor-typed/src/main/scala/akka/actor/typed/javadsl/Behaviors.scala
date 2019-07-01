@@ -183,7 +183,7 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](interceptMessageClass: Class[_ <: T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+  def monitor[T](interceptMessageClass: Class[T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
     scaladsl.Behaviors.monitor(monitor, behavior)(ClassTag(interceptMessageClass))
 
   /**
@@ -277,7 +277,7 @@ object Behaviors {
    * @return a behavior of the widened type
    */
   def widened[T, U](
-      interceptMessageClass: Class[_ <: T],
+      interceptMessageClass: Class[T],
       behavior: Behavior[T],
       selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
     BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())(ClassTag(interceptMessageClass))
@@ -303,7 +303,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-      interceptMessageClass: Class[_ <: T],
+      interceptMessageClass: Class[T],
       mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
       behavior: Behavior[T]): Behavior[T] =
     withMdc(interceptMessageClass, Collections.emptyMap[String, Any], mdcForMessage, behavior)
@@ -318,7 +318,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-      interceptMessageClass: Class[_ <: T],
+      interceptMessageClass: Class[T],
       staticMdc: java.util.Map[String, Any],
       behavior: Behavior[T]): Behavior[T] =
     withMdc(interceptMessageClass, staticMdc, null, behavior)
@@ -341,7 +341,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-      interceptMessageClass: Class[_ <: T],
+      interceptMessageClass: Class[T],
       staticMdc: java.util.Map[String, Any],
       mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
       behavior: Behavior[T]): Behavior[T] = {
