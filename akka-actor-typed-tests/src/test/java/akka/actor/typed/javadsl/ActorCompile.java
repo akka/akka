@@ -41,7 +41,7 @@ public class ActorCompile {
   Behavior<MyMsg> actor6 =
       intercept(
           () ->
-              new BehaviorInterceptor<MyMsg, MyMsg>() {
+              new BehaviorInterceptor<MyMsg, MyMsg>(MyMsg.class) {
                 @Override
                 public Behavior<MyMsg> aroundReceive(
                     TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
@@ -60,9 +60,9 @@ public class ActorCompile {
       setup(
           context -> {
             final ActorRef<MyMsg> self = context.getSelf();
-            return monitor(self, ignore());
+            return monitor(MyMsg.class, self, ignore());
           });
-  Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
+  Behavior<MyMsg> actor9 = widened(MyMsgA.class, actor7, pf -> pf.match(MyMsgA.class, x -> x));
   Behavior<MyMsg> actor10 =
       Behaviors.receive((context, message) -> stopped(() -> {}), (context, signal) -> same());
 

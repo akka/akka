@@ -387,7 +387,9 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
    to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
 * Java @apidoc[akka.cluster.sharding.typed.javadsl.EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
-
+* `BehaviorInterceptor`, `Behaviors.monitor`, `Behaviors.withMdc` and @scala[`widen`]@java[`Behaviors.widen`] takes
+  a @scala[`ClassTag` parameter (probably source compatible)]@java[`interceptMessageClass` parameter].
+  `interceptMessageType` method in `BehaviorInterceptor` is replaced with this @scala[`ClassTag`]@java[`Class`] parameter.
 
 #### Akka Typed Stream API changes
 

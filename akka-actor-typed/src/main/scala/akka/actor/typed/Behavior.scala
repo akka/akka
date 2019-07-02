@@ -6,6 +6,7 @@ package akka.actor.typed
 
 import scala.annotation.switch
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
@@ -117,7 +118,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T](BehaviorTags.Extensible
 
 object Behavior {
 
-  final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
+  final implicit class BehaviorDecorators[Inner](val behavior: Behavior[Inner]) extends AnyVal {
 
     /**
      * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
@@ -134,8 +135,12 @@ object Behavior {
      * }
      * }}}
      *
+     * The `ClassTag` for `Outer` ensures that only messages of this class or a subclass thereof will be
+     * intercepted. Other message types (e.g. a private protocol) will bypass
+     * the interceptor and be continue to the inner behavior untouched.
+     *
      */
-    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
+    def widen[Outer: ClassTag](matcher: PartialFunction[Outer, Inner]): Behavior[Outer] =
       BehaviorImpl.widened(behavior, matcher)
 
   }
