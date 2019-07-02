@@ -76,7 +76,6 @@ private[leveldb] class EventsByTagStage(
             replayInProgress = true
             outstandingReplay = false
             val request = ReplayTaggedMessages(currOffset, toOffset, limit, tag, stageActorRef)
-            log.debug("Requesting: {}", request)
             journal ! request
           }
         } else {

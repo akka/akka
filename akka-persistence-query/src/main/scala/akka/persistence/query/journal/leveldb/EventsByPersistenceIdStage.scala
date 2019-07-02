@@ -67,7 +67,6 @@ private[akka] class EventsByPersistenceIdStage(
             replayInProgress = true
             outstandingReplay = false
             val request = ReplayMessages(nextSequenceNr, toSequenceNr, limit, persistenceId, stageActorRef)
-            log.debug("Requesting: {}", request)
             journal ! request
           }
         } else {

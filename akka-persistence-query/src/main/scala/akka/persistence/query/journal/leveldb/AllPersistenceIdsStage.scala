@@ -26,12 +26,10 @@ private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPlugi
     new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
       setHandler(out, this)
       val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
-      var stageActorRef: ActorRef = null
       var initialResponseReceived = false
 
       override def preStart(): Unit = {
-        stageActorRef = getStageActor(journalInteraction).ref
-        journal.tell(LeveldbJournal.SubscribeAllPersistenceIds, stageActorRef)
+        journal.tell(LeveldbJournal.SubscribeAllPersistenceIds, getStageActor(journalInteraction).ref)
       }
 
       private def journalInteraction(in: (ActorRef, Any)): Unit = {

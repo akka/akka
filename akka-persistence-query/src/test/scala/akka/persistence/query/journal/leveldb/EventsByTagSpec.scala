@@ -59,7 +59,6 @@ class ColorTagger extends WriteEventAdapter {
   override def manifest(event: Any): String = ""
 }
 
-// FIXME , cancel probes if test fails
 class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
