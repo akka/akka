@@ -415,7 +415,10 @@ private[akka] class LocalActorRefProvider private[akka] (
       terminationPromise.completeWith(causeOfTermination.future) // Signal termination downstream, idempotent
     }
 
-    @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+    /**
+     * INTERNAL API
+     */
+    @InternalApi
     override private[akka] def isTerminated: Boolean = !isWalking
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =

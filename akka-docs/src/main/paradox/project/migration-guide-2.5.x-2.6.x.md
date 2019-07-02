@@ -68,6 +68,11 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 * `Logging.getLogger(UntypedActor)` Untyped actor has been removed, use AbstractActor instead.
 * `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
 * `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
+* `AbstractActor.getChild` use `findChild` instead.
+* `Actor.getRef` use `Actor.getActorRef` instead.
+* `CircuitBreaker.onOpen` use `CircuitBreaker.addOnOpenListener`
+* `CircuitBreaker.onHalfOpen` use `CircuitBreaker.addOnHalfOpenListener`
+* `CircuitBreaker.onClose` use `CircuitBreaker.addOnCloseListener`
 
 ### JavaTestKit removed
 
