@@ -22,8 +22,9 @@ import akka.util.BoxedType
  * actor rather than shared among actor instance.
  *
  * @param interceptMessageClass Ensures that the interceptor will only receive `O` message types.
- *                              If the message is not of this class or a subclass thereof it will
- *                              bypass the interceptor and be continue to the inner behavior untouched.
+ *                              If the message is not of this class or a subclass thereof
+ *                              (e.g. a private protocol) will bypass the interceptor and be
+ *                              continue to the inner behavior untouched.
  *
  * @tparam Outer The outer message type – the type of messages the intercepting behavior will accept
  * @tparam Inner The inner message type - the type of message the wrapped behavior accepts
@@ -34,7 +35,9 @@ abstract class BehaviorInterceptor[Outer, Inner](val interceptMessageClass: Clas
   import BehaviorInterceptor._
 
   /**
-   * Scala API
+   * Scala API: The `ClassTag` for `Outer` ensures that only messages of this class or a subclass
+   * thereof will be intercepted. Other message types (e.g. a private protocol) will bypass the
+   * interceptor and be continue to the inner behavior untouched.
    */
   def this()(implicit interceptMessageClassTag: ClassTag[Outer]) =
     this({
@@ -143,15 +146,6 @@ object BehaviorInterceptor {
  */
 abstract class BehaviorSignalInterceptor[Inner] extends BehaviorInterceptor[Inner, Inner](null) {
   import BehaviorInterceptor._
-
-  /**
-   * Override to intercept actor startup. To trigger startup of
-   * the next behavior in the stack, call `target.start()`.
-   * @return The returned behavior will be the "started" behavior of the actor used to accept
-   *         the next message or signal.
-   */
-  override def aroundStart(ctx: TypedActorContext[Inner], target: PreStartTarget[Inner]): Behavior[Inner] =
-    target.start(ctx)
 
   /**
    * Only signals and not messages are intercepted by `BehaviorSignalInterceptor`.

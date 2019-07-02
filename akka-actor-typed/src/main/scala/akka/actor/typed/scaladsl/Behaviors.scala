@@ -156,6 +156,13 @@ object Behaviors {
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
+   *
+   * The `ClassTag` for `T` ensures that the messages of this class or a subclass thereof will be
+   * sent to the `monitor`. Other message types (e.g. a private protocol) will bypass the interceptor
+   * and be continue to the inner behavior.
+   *
+   * @param monitor The messages will also be sent to this `ActorRef`
+   * @param behavior The inner behavior that is decorated
    */
   def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
     BehaviorImpl.intercept(() => new MonitorInterceptor[T](monitor))(behavior)
@@ -227,6 +234,10 @@ object Behaviors {
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
    *
+   * The `ClassTag` for `T` ensures that only messages of this class or a subclass thereof will be
+   * intercepted. Other message types (e.g. a private protocol) will bypass the interceptor and be
+   * continue to the inner behavior untouched.
+   *
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
@@ -239,6 +250,10 @@ object Behaviors {
 
   /**
    * Static MDC (Mapped Diagnostic Context)
+   *
+   * The `ClassTag` for `T` ensures that only messages of this class or a subclass thereof will be
+   * intercepted. Other message types (e.g. a private protocol) will bypass the interceptor and be
+   * continue to the inner behavior untouched.
    *
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
@@ -257,6 +272,10 @@ object Behaviors {
    * in the resulting log entries.
    *
    * The `staticMdc` or `mdcForMessage` may be empty.
+   *
+   * The `ClassTag` for `T` ensures that only messages of this class or a subclass thereof will be
+   * intercepted. Other message types (e.g. a private protocol) will bypass the interceptor and be
+   * continue to the inner behavior untouched.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after

@@ -182,6 +182,12 @@ object Behaviors {
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
+   *
+   * @param interceptMessageClass Ensures that the messages of this class or a subclass thereof will be
+   *                              sent to the `monitor`. Other message types (e.g. a private protocol)
+   *                              will bypass the interceptor and be continue to the inner behavior.
+   * @param monitor The messages will also be sent to this `ActorRef`
+   * @param behavior The inner behavior that is decorated
    */
   def monitor[T](interceptMessageClass: Class[T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
     scaladsl.Behaviors.monitor(monitor, behavior)(ClassTag(interceptMessageClass))
@@ -269,6 +275,9 @@ object Behaviors {
    * }}}
    *
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param behavior
    *          the behavior that will receive the selected messages
    * @param selector
@@ -276,10 +285,10 @@ object Behaviors {
    *          transformation
    * @return a behavior of the widened type
    */
-  def widened[T, U](
-      interceptMessageClass: Class[T],
-      behavior: Behavior[T],
-      selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
+  def widened[Outer, Inner](
+      interceptMessageClass: Class[Outer],
+      behavior: Behavior[Outer],
+      selector: JFunction[PFBuilder[Inner, Outer], PFBuilder[Inner, Outer]]): Behavior[Inner] =
     BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())(ClassTag(interceptMessageClass))
 
   /**
@@ -295,6 +304,9 @@ object Behaviors {
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
@@ -311,6 +323,9 @@ object Behaviors {
   /**
    * Static MDC (Mapped Diagnostic Context)
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
@@ -332,6 +347,9 @@ object Behaviors {
    *
    * * The `staticMdc` or `mdcForMessage` may be empty.
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
