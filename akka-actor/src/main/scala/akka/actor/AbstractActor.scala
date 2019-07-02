@@ -11,7 +11,6 @@ import scala.runtime.BoxedUnit
 import java.util.Optional
 
 import akka.util.JavaDurationConverters
-import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
@@ -84,13 +83,6 @@ object AbstractActor {
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def getChildren(): java.lang.Iterable[ActorRef]
-
-    /**
-     * Returns a reference to the named child or null if no child with
-     * that name exists.
-     */
-    @deprecated("Use findChild instead", "2.5.0")
-    def getChild(name: String): ActorRef
 
     /**
      * Returns a reference to the named child if it exists.
@@ -276,15 +268,6 @@ abstract class AbstractActor extends Actor {
    */
   @throws(classOf[Exception])
   override def postStop(): Unit = super.postStop()
-
-  // TODO In 2.6.0 we can remove deprecation and make the method final
-  @deprecated("Override preRestart with message parameter with Optional type instead", "2.5.0")
-  @throws(classOf[Exception])
-  @silent
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    import scala.compat.java8.OptionConverters._
-    preRestart(reason, message.asJava)
-  }
 
   /**
    * User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
