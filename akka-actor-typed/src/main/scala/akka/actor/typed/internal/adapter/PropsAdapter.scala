@@ -21,7 +21,7 @@ import akka.annotation.InternalApi
       rethrowTypedFailure: Boolean = true): akka.actor.Props = {
     val props = akka.actor.Props(new ActorAdapter(behavior(), rethrowTypedFailure))
 
-    (deploy.firstOrElse[DispatcherSelector](DispatcherDefault()) match {
+    (deploy.firstOrElse[DispatcherSelector](DispatcherDefault.empty) match {
       case _: DispatcherDefault          => props
       case DispatcherFromConfig(name, _) => props.withDispatcher(name)
       case _: DispatcherSameAsParent     => props.withDispatcher(Deploy.DispatcherSameAsParent)

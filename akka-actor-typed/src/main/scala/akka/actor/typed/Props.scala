@@ -152,7 +152,7 @@ object DispatcherSelector {
    * Scala API:
    * Run the actor on the default [[ActorSystem]] executor.
    */
-  def default(): DispatcherSelector = DispatcherDefault()
+  def default(): DispatcherSelector = DispatcherDefault.empty
 
   /**
    * Java API:
@@ -177,5 +177,5 @@ object DispatcherSelector {
    * Run the actor on the same executor as the parent actor.
    * @return
    */
-  def sameAsParent(): DispatcherSelector = DispatcherSameAsParent()
+  def sameAsParent(): DispatcherSelector = DispatcherSameAsParent.empty
 }

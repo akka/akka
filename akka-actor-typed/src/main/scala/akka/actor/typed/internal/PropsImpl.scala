@@ -26,13 +26,7 @@ import akka.annotation.InternalApi
     override def withNext(next: Props): Props = copy(next = next)
   }
   object DispatcherDefault {
-    // this is hidden in order to avoid match on this object
-    private val empty = DispatcherDefault(EmptyProps)
-
-    /**
-     * Retrieve an instance for this configuration node with empty `next` reference.
-     */
-    def apply(): DispatcherDefault = empty
+    val empty = DispatcherDefault(EmptyProps)
   }
 
   final case class DispatcherFromConfig(path: String, next: Props = Props.empty) extends DispatcherSelector {
@@ -43,13 +37,7 @@ import akka.annotation.InternalApi
     override def withNext(next: Props): Props = copy(next = next)
   }
   object DispatcherSameAsParent {
-    // this is hidden in order to avoid match on this object
-    private val empty = DispatcherSameAsParent(EmptyProps)
-
-    /**
-     * Retrieve an instance for this configuration node with empty `next` reference.
-     */
-    def apply(): DispatcherSameAsParent = empty
+    val empty = DispatcherSameAsParent(EmptyProps)
   }
 
 }
