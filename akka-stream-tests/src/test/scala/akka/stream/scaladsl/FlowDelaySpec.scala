@@ -231,15 +231,15 @@ class FlowDelaySpec extends StreamSpec {
 
       val future = Source
         .tick(0.millis, 10.millis, 1)
-        .mapConcat(_ ⇒ (1 to batchSize).map(_ ⇒ elements.next()))
+        .mapConcat(_ => (1 to batchSize).map(_ => elements.next()))
         .take(N)
-        .map { elem ⇒
+        .map { elem =>
           System.nanoTime() -> elem
         }
         .delay(delayMillis.millis, DelayOverflowStrategy.backpressure)
         .withAttributes(Attributes.inputBuffer(4, 4))
         .map {
-          case (startTimestamp, elem) ⇒
+          case (startTimestamp, elem) =>
             (System.nanoTime() - startTimestamp) / 1e6 -> elem
         }
         .runWith(Sink.seq)
@@ -249,7 +249,7 @@ class FlowDelaySpec extends StreamSpec {
 
       // check if every elements are delayed by roughly the same amount of time
       val delayHistogram =
-        results.map(x ⇒ Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).mapValues(_.length)
+        results.map(x => Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).mapValues(_.length)
 
       delayHistogram shouldEqual Map(delayMillis.toDouble -> N)
     }
