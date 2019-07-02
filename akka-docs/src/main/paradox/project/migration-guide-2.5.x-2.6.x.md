@@ -303,7 +303,7 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
 ### IOSources
 
-`StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
+`StreamConverters.fromInputStream` and `StreamConverters.fromOutputStream` now always fails the materialized value in all failure cases. It is no longer required
 to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
 the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException]. 
 

@@ -24,9 +24,6 @@ import akka.NotUsed
  */
 object StreamConverters {
 
-  import Source.{ shape => sourceShape }
-  import Sink.{ shape => sinkShape }
-
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
    * Emitted elements are up to `chunkSize` sized [[akka.util.ByteString]] elements.

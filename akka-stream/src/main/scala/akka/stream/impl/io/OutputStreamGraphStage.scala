@@ -8,15 +8,15 @@ import java.io.OutputStream
 
 import akka.Done
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ AbruptIOTerminationException, Attributes, IOResult, Inlet, SinkShape }
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success }
+import scala.util.Success
 import scala.util.control.NonFatal
 
-class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
+final class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[IOResult]] {
 
   val in = Inlet[ByteString]("OutputStreamSink")
@@ -36,7 +36,7 @@ class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
           pull(in)
         } catch {
           case NonFatal(t) =>
-            mat.success(IOResult(bytesWritten, Failure(t)))
+            mat.tryFailure(new IOOperationIncompleteException(bytesWritten, t))
             failStage(t)
         }
       }
@@ -51,13 +51,13 @@ class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
           pull(in)
         } catch {
           case NonFatal(t) =>
-            mat.success(IOResult(bytesWritten, Failure(t)))
+            mat.tryFailure(new IOOperationIncompleteException(bytesWritten, t))
             failStage(t)
         }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        mat.failure(AbruptIOTerminationException(IOResult(bytesWritten, Success(Done)), ex))
+        mat.tryFailure(new IOOperationIncompleteException(bytesWritten, ex))
       }
 
       override def onUpstreamFinish(): Unit = {
@@ -70,7 +70,7 @@ class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
           mat.trySuccess(IOResult(bytesWritten, Success(Done)))
         } catch {
           case NonFatal(t) =>
-            mat.success(IOResult(bytesWritten, Failure(t)))
+            mat.tryFailure(new IOOperationIncompleteException(bytesWritten, t))
         }
       }
 

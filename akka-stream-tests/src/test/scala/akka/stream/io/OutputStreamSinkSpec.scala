@@ -11,12 +11,12 @@ import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ AbruptIOTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException }
 import akka.testkit.TestProbe
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-
 import com.github.ghik.silencer.silent
+
 import scala.util.Success
 
 @silent
@@ -74,7 +74,7 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
       p.expectMsg("closed")
     }
 
-    "complete materialized value with the error" in assertAllStagesStopped {
+    "complete materialized value with the error for upstream" in assertAllStagesStopped {
       val completion = Source
         .failed(TE("Boom!"))
         .runWith(StreamConverters.fromOutputStream(() =>
@@ -83,7 +83,50 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
             override def close() = ()
           }))
 
-      completion.failed.futureValue shouldBe an[AbruptIOTerminationException]
+      completion.failed.futureValue shouldBe an[IOOperationIncompleteException]
+    }
+
+    "complete materialized value with the error if creation fails" in {
+      val completion = Source
+        .single(ByteString(1))
+        .runWith(StreamConverters.fromOutputStream(() => {
+          throw TE("Boom!")
+          new OutputStream {
+            override def write(i: Int): Unit = ()
+            override def close() = ()
+          }
+        }))
+
+      completion.failed.futureValue shouldBe an[IOOperationIncompleteException]
+    }
+
+    "complete materialized value with the error if write fails" in {
+      val completion = Source
+        .single(ByteString(1))
+        .runWith(StreamConverters.fromOutputStream(() => {
+          new OutputStream {
+            override def write(i: Int): Unit = {
+              throw TE("Boom!")
+            }
+            override def close() = ()
+          }
+        }))
+
+      completion.failed.futureValue shouldBe an[IOOperationIncompleteException]
+    }
+
+    "complete materialized value with the error if close fails" in {
+      val completion = Source
+        .single(ByteString(1))
+        .runWith(StreamConverters.fromOutputStream(() =>
+          new OutputStream {
+            override def write(i: Int): Unit = ()
+            override def close(): Unit = {
+              throw TE("Boom!")
+            }
+          }))
+
+      completion.failed.futureValue shouldBe an[IOOperationIncompleteException]
     }
 
     "close underlying stream when completion received" in assertAllStagesStopped {
