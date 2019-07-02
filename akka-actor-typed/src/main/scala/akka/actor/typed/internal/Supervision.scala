@@ -51,8 +51,7 @@ import akka.util.unused
  * INTERNAL API
  */
 @InternalApi
-private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: SupervisorStrategy)(
-    implicit ev: ClassTag[Thr])
+private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: SupervisorStrategy)(implicit ev: ClassTag[Thr])
     extends BehaviorInterceptor[Any, I] {
 
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
@@ -62,8 +61,8 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
     other match {
-      case as: AbstractSupervisor[_, _, Thr] if throwableClass == as.throwableClass => true
-      case _                                                                        => false
+      case as: AbstractSupervisor[_, Thr] if throwableClass == as.throwableClass => true
+      case _                                                                     => false
     }
   }
 
@@ -108,7 +107,7 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
  * For cases where O == I for BehaviorInterceptor.
  */
 private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: SupervisorStrategy)
-    extends AbstractSupervisor[T, T, Thr](ss) {
+    extends AbstractSupervisor[T, Thr](ss) {
 
   override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[T]): Behavior[T] = {
     try {
@@ -171,13 +170,13 @@ private object RestartSupervisor {
       }
   }
 
-  final case class ScheduledRestart(owner: RestartSupervisor[_, _, _ <: Throwable]) extends DeadLetterSuppression
-  final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _, _ <: Throwable])
+  final case class ScheduledRestart(owner: RestartSupervisor[_, _ <: Throwable]) extends DeadLetterSuppression
+  final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _ <: Throwable])
       extends DeadLetterSuppression
 }
 
-private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: RestartOrBackoff)
-    extends AbstractSupervisor[O, T, Thr](strategy) {
+private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: RestartOrBackoff)
+    extends AbstractSupervisor[T, Thr](strategy) {
   import RestartSupervisor._
 
   private var restartingInProgress: OptionVal[(StashBuffer[Any], Set[ActorRef[Nothing]])] = OptionVal.None
