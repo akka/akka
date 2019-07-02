@@ -17,8 +17,10 @@ import akka.testkit.ImplicitSender
 import akka.persistence.query.NoOffset
 
 object EventsByTagSpec {
-  val config = """
+  val config = s"""
     akka.loglevel = INFO
+    akka.stream.materializer.max-input-buffer-size = 1
+    akka.stream.materializer.initial-input-buffer-size = 1
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
 
     akka.persistence.journal.leveldb {
@@ -35,12 +37,17 @@ object EventsByTagSpec {
       max-buffer-size = 2
     }
     akka.test.single-expect-default = 10s
+    
+    leveldb-no-refresh = $${akka.persistence.query.journal.leveldb}
+    leveldb-no-refresh {
+      refresh-interval = 10m
+    }
     """
 
 }
 
 class ColorTagger extends WriteEventAdapter {
-  val colors = Set("green", "black", "blue", "pink")
+  val colors = Set("green", "black", "blue", "pink", "yellow")
   override def toJournal(event: Any): Any = event match {
     case s: String =>
       val tags = colors.foldLeft(Set.empty[String])((acc, c) => if (s.contains(c)) acc + c else acc)
@@ -52,6 +59,7 @@ class ColorTagger extends WriteEventAdapter {
   override def manifest(event: Any): String = ""
 }
 
+// FIXME , cancel probes if test fails
 class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
@@ -138,28 +146,19 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       expectMsg(s"a pink orange-done")
 
       val pinkSrc = queries.currentEventsByTag(tag = "pink")
-      val probe = pinkSrc
-        .runWith(TestSink.probe[Any])
+      val probe = pinkSrc.runWith(TestSink.probe[Any])
 
-      // blah why does this pass
+      probe.request(1).expectNext(EventEnvelope(Sequence(1L), "z", 1L, "a pink apple"))
+
+      system.log.info("delay before demand")
 
       probe
-        .request(1)
-        .expectNext(EventEnvelope(Sequence(1L), "z", 1L, "a pink apple"))
         .expectNoMessage(200.millis)
         .request(3)
         .expectNext(EventEnvelope(Sequence(2L), "z", 2L, "a pink banana"))
         .expectNext(EventEnvelope(Sequence(3L), "z", 3L, "a pink orange"))
         .expectComplete()
 
-    }
-
-    "delay query if buffer is full" in {
-      pending
-    }
-
-    "drain buffer before completing" in {
-      pending
     }
   }
 
@@ -168,33 +167,68 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       val d = system.actorOf(TestActor.props("d"))
 
       val blackSrc = queries.eventsByTag(tag = "black", offset = NoOffset)
-      val probe = blackSrc
-        .runWith(TestSink.probe[Any])
-        .request(2)
-        .expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car"))
-        .expectNoMessage(100.millis)
+      val probe = blackSrc.runWith(TestSink.probe[Any])
 
-      d ! "a black dog"
-      expectMsg(s"a black dog-done")
-      d ! "a black night"
-      expectMsg(s"a black night-done")
+      try {
 
-      probe
-        .expectNext(EventEnvelope(Sequence(2L), "d", 1L, "a black dog"))
-        .expectNoMessage(100.millis)
-        .request(10)
-        .expectNext(EventEnvelope(Sequence(3L), "d", 2L, "a black night"))
+        probe.request(2).expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car")).expectNoMessage(100.millis)
+
+        d ! "a black dog"
+        expectMsg(s"a black dog-done")
+        d ! "a black night"
+        expectMsg(s"a black night-done")
+
+        probe
+          .expectNext(EventEnvelope(Sequence(2L), "d", 1L, "a black dog"))
+          .expectNoMessage(100.millis)
+          .request(10)
+          .expectNext(EventEnvelope(Sequence(3L), "d", 2L, "a black night"))
+      } finally {
+        probe.cancel()
+      }
     }
 
     "find events from offset (exclusive)" in {
       val greenSrc = queries.eventsByTag(tag = "green", offset = Sequence(2L))
-      greenSrc
+      val probe = greenSrc.runWith(TestSink.probe[Any])
+      try {
+        probe
+          .request(10)
+          // note that banana is not included, since exclusive offset
+          .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
+          .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber"))
+          .expectNoMessage(100.millis)
+      } finally {
+        probe.cancel()
+      }
+    }
+
+    "finds events without refresh" in {
+      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal]("leveldb-no-refresh")
+      val d = system.actorOf(TestActor.props("y"))
+
+      d ! "a yellow car"
+      expectMsg("a yellow car-done")
+
+      val yellowSrc = queries.eventsByTag(tag = "yellow", offset = NoOffset)
+      val probe = yellowSrc
         .runWith(TestSink.probe[Any])
-        .request(10)
-        // note that banana is not included, since exclusive offset
-        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
-        .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber"))
+        .request(2)
+        .expectNext(EventEnvelope(Sequence(1L), "y", 1L, "a yellow car"))
         .expectNoMessage(100.millis)
+
+      d ! "a yellow dog"
+      expectMsg(s"a yellow dog-done")
+      d ! "a yellow night"
+      expectMsg(s"a yellow night-done")
+
+      probe
+        .expectNext(EventEnvelope(Sequence(2L), "y", 2L, "a yellow dog"))
+        .expectNoMessage(100.millis)
+        .request(10)
+        .expectNext(EventEnvelope(Sequence(3L), "y", 3L, "a yellow night"))
+
+      probe.cancel()
     }
 
   }
