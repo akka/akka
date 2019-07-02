@@ -344,14 +344,14 @@ class TimeoutsSpec extends StreamSpec {
 
     "be effective for dangling downstream (no fanout)" in assertAllStagesStopped {
       val upstream = TestPublisher.probe()
-      val (sub, pub) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
+      val (sub, _) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
       upstream.subscribe(sub)
       upstream.expectCancellation()
     }
 
     "be effective for dangling downstream (with fanout)" in assertAllStagesStopped {
       val upstream = TestPublisher.probe()
-      val (sub, pub) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(true))
+      val (sub, _) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(true))
       upstream.subscribe(sub)
       upstream.expectCancellation()
     }
@@ -359,7 +359,7 @@ class TimeoutsSpec extends StreamSpec {
     // this one seems close to impossible to actually implement
     "be effective for dangling upstream" in pendingUntilFixed(assertAllStagesStopped {
       val downstream = TestSubscriber.probe[String]()
-      val (sub, pub) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
+      val (_, pub) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
       pub.subscribe(downstream)
       downstream.ensureSubscription()
       downstream.expectError() shouldBe a[SubscriptionTimeoutException]

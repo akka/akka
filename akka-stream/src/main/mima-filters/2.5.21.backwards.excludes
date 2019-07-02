@@ -43,7 +43,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSou
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.ActorRefSource.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSourceActor$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSourceActor")
-
-# #19980 subscription timeouts for streams
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.subTimeoutHandling")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutOutputs.this")

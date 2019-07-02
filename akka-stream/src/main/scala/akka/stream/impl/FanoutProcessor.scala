@@ -4,26 +4,33 @@
 
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef, Deploy, Props }
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream.{ ActorMaterializerSettings, Attributes, StreamSubscriptionTimeoutTerminationMode }
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.annotation.InternalApi
+import akka.stream.ActorMaterializerSettings
+import akka.stream.Attributes
+import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
 
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class FanoutOutputs(
+@InternalApi private[akka] abstract class FanoutOutputs(
     val maxBufferSize: Int,
     val initialBufferSize: Int,
     self: ActorRef,
-    val pump: Pump,
-    var subscribed: Boolean = false)
+    val pump: Pump)
     extends DefaultOutputTransferStates
     with SubscriberManagement[Any] {
 
+  private var _subscribed = false
+  def subscribed: Boolean = _subscribed
+
   override type S = ActorSubscriptionWithCursor[_ >: Any]
   override def createSubscription(subscriber: Subscriber[_ >: Any]): S = {
-    subscribed = true
+    _subscribed = true
     new ActorSubscriptionWithCursor(self, subscriber)
   }
 
@@ -141,16 +148,16 @@ import org.reactivestreams.Subscriber
   initialPhase(1, running)
 
   def subTimeoutHandling: Receive = {
-    case ActorProcessorImpl.SubscriptionTimeout ⇒
+    case ActorProcessorImpl.SubscriptionTimeout =>
       import StreamSubscriptionTimeoutTerminationMode._
       if (!primaryOutputs.subscribed) {
         settings.subscriptionTimeoutSettings.mode match {
-          case CancelTermination ⇒
+          case CancelTermination =>
             primaryInputs.cancel()
             context.stop(self)
-          case WarnTermination ⇒
+          case WarnTermination =>
             context.system.log.warning("Subscription timeout for {}", this)
-          case NoopTermination ⇒ // won't happen
+          case NoopTermination => // won't happen
         }
       }
   }
