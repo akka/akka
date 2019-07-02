@@ -7,6 +7,7 @@ package akka.stream.impl.io
 import java.io.OutputStream
 
 import akka.Done
+import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
 import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
@@ -16,7 +17,11 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.Success
 import scala.util.control.NonFatal
 
-final class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boolean)
     extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[IOResult]] {
 
   val in = Inlet[ByteString]("OutputStreamSink")
@@ -61,12 +66,20 @@ final class OutputStreamGraphStage(factory: () => OutputStream, autoFlush: Boole
       }
 
       override def onUpstreamFinish(): Unit = {
-        outputStream.flush()
+        try {
+          outputStream.flush()
+        } catch {
+          case NonFatal(t) =>
+            mat.tryFailure(new IOOperationIncompleteException(bytesWritten, t))
+        }
       }
 
       override def postStop(): Unit = {
         try {
-          if (outputStream != null) outputStream.close()
+          if (outputStream != null) {
+            outputStream.flush()
+            outputStream.close()
+          }
           mat.trySuccess(IOResult(bytesWritten, Success(Done)))
         } catch {
           case NonFatal(t) =>
