@@ -301,7 +301,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * cluster.
    */
   def join(address: Address): Unit = {
-    checkHostCharacters(address)
+    address.checkHostCharacters()
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))
   }
 
@@ -320,7 +320,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * cluster or to join the same cluster again.
    */
   def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit = {
-    seedNodes.foreach(checkHostCharacters)
+    seedNodes.foreach(_.checkHostCharacters())
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes.toVector.map(fillLocal))
   }
 
@@ -336,11 +336,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def joinSeedNodes(seedNodes: java.util.List[Address]): Unit =
     joinSeedNodes(Util.immutableSeq(seedNodes))
-
-  private def checkHostCharacters(address: Address): Unit =
-    require(
-      !address.hasInvalidHostCharacters,
-      s"Joining the cluster using invalid host characters '${address.host}' in the Address is not allowed.")
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.

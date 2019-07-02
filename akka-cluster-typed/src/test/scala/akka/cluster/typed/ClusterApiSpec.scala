@@ -4,6 +4,7 @@
 
 package akka.cluster.typed
 
+import akka.actor.Address
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
@@ -42,6 +43,12 @@ class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) wi
   val untypedSystem1 = system.toUntyped
 
   "A typed Cluster" must {
+
+    "fail fast in a join attempt if invalid chars are in host names, e.g. docker host given name" in {
+      val address = Address("akka", "sys", Some("in_valid"), Some(0))
+      intercept[IllegalArgumentException](Join(address))
+      intercept[IllegalArgumentException](JoinSeedNodes(scala.collection.immutable.Seq(address)))
+    }
 
     "join a cluster and observe events from both sides" in {
 

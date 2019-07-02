@@ -75,6 +75,12 @@ final case class Address private (protocol: String, system: String, host: Option
    */
   @InternalApi
   private[akka] def hasInvalidHostCharacters: Boolean = host.exists(_.contains("_"))
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def checkHostCharacters(): Unit =
+    require(!hasInvalidHostCharacters, s"Using invalid host characters '$host' in the Address is not allowed.")
+
 }
 
 object Address {
