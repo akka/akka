@@ -59,6 +59,9 @@ public class PersistentActorCompileOnlyTest {
     }
     // #event-wrapper
 
+    // try varargs
+    private EventSeq<SimpleEvent> many = EventSeq.many(new SimpleEvent("a"), new SimpleEvent("b"));
+
     public static class SimpleCommand {
       public final String data;
 

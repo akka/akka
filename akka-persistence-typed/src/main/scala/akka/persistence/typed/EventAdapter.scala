@@ -76,17 +76,13 @@ object EventSeq {
 
   final def single[A](event: A): EventSeq[A] = SingleEventSeq(event)
 
-  /** Java API */
-  @varargs final def create[A](events: A*): EventSeq[A] = EventsSeq(events.toList)
+  @varargs final def many[A](events: A*): EventSeq[A] = EventsSeq(events.toList)
 
   /** Java API */
   final def create[A](events: java.util.List[A]): EventSeq[A] = {
     import akka.util.ccompat.JavaConverters._
     EventsSeq(events.asScala.toList)
   }
-
-  /** Scala API */
-  final def apply[A](events: A*): EventSeq[A] = EventsSeq(events.toList)
 
   /** Scala API */
   final def apply[A](events: immutable.Seq[A]): EventSeq[A] = EventsSeq(events)
