@@ -45,7 +45,7 @@ class RecipeMissedTicks extends RecipeSpec {
       sub.expectNext(3)
 
       subscription.request(1)
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage()
 
       pub.sendNext(())
       sub.expectNext(0)
