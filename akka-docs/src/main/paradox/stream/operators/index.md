@@ -16,7 +16,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="cycle"></a>@ref[cycle](Source/cycle.md)|Stream iterator in cycled manner.|
 |Source|<a name="empty"></a>@ref[empty](Source/empty.md)|Complete right away without ever emitting any elements.|
 |Source|<a name="failed"></a>@ref[failed](Source/failed.md)|Fail directly with a user specified exception.|
-|Source|<a name="from"></a>@ref[from](Source/from.md)|Stream the values of an `Iterable`.|
+|Source|<a name="from"></a>@ref[@scala[apply]@java[from]](Source/from.md)|Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].|
 |Source|<a name="fromcompletionstage"></a>@ref[fromCompletionStage](Source/fromCompletionStage.md)|Send the single value of the `CompletionStage` when it completes and there is demand.|
 |Source|<a name="fromfuture"></a>@ref[fromFuture](Source/fromFuture.md)|Send the single value of the `Future` when it completes and there is demand.|
 |Source|<a name="fromfuturesource"></a>@ref[fromFutureSource](Source/fromFutureSource.md)|Streams the elements of the given future source once it successfully completes.|
@@ -334,7 +334,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [queue](Source/queue.md)
 * [unfoldResource](Source/unfoldResource.md)
 * [unfoldResourceAsync](Source/unfoldResourceAsync.md)
-* [from](Source/from.md)
+* [@scala[apply]@java[from]](Source/from.md)
 * [range](Source/range.md)
 * [concat](Source-or-Flow/concat.md)
 * [prepend](Source-or-Flow/prepend.md)
