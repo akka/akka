@@ -71,7 +71,7 @@ When using the sharding extension you are first, typically at system startup on 
 in the cluster, supposed to register the supported entity types with the `ClusterSharding.start`
 method. `ClusterSharding.start` gives you the reference which you can pass along.
 Please note that `ClusterSharding.start` will start a `ShardRegion` in [proxy only mode](#proxy-only-mode) 
-in case if there is no match between the roles of the current cluster node and the role specified in 
+when there is no match between the roles of the current cluster node and the role specified in 
 `ClusterShardingSettings`.
 
 Scala
@@ -130,7 +130,8 @@ Java
 @@@ div { .group-scala }
 
 A more comprehensive sample is available in the
-tutorial named [Akka Cluster Sharding with Scala!](https://github.com/typesafehub/activator-akka-cluster-sharding-scala).
+@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
+@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)].
 
 @@@
 
@@ -173,13 +174,14 @@ Where `#` is a number to distinguish between instances as there are multiple in 
  1. Incoming message `M1` to `ShardRegion` instance `SR1`.
  2. `M1` is mapped to shard `S1`. `SR1` doesn't know about `S1`, so it asks the `SC` for the location of `S1`.
  3. `SC` answers that the home of `S1` is `SR1`.
- 4. `SR1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
- 5. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. It creates entity children as needed, and forwards messages to them.
+ 4. `SR1` creates child actor shard `S1` and forwards the message to it.
+ 5. `S1` creates child actor for `E1` and forwards the message to it.
+ 6. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. 
 
 #### Scenario 2: Message to an unknown shard that belongs to a remote ShardRegion 
 
  1. Incoming message `M2` to `ShardRegion` instance `SR1`.
- 2. `M2` is mapped to `S2`. SR1 doesn't know about `S2`, so it asks `SC` for the location of `S2`.
+ 2. `M2` is mapped to `S2`. `SR1` doesn't know about `S2`, so it asks `SC` for the location of `S2`.
  3. `SC` answers that the home of `S2` is `SR2`.
  4. `SR1` sends buffered messages for `S2` to `SR2`.
  5. All incoming messages for `S2` which arrive at `SR1` can be handled by `SR1` without `SC`. It forwards messages to `SR2`.
@@ -325,7 +327,7 @@ See @ref:[How To Startup when Cluster Size Reached](cluster-usage.md#min-members
 The `ShardRegion` actor can also be started in proxy only mode, i.e. it will not
 host any entities itself, but knows how to delegate messages to the right location.
 A `ShardRegion` is started in proxy only mode with the `ClusterSharding.startProxy` method.
-Also a `ShardRegion` is started in proxy only mode in case if there is no match between the
+Also a `ShardRegion` is started in proxy only mode when there is no match between the
 roles of the current cluster node and the role specified in `ClusterShardingSettings` 
 passed to the `ClusterSharding.start` method.
 
@@ -344,12 +346,13 @@ are thereafter delivered to a new incarnation of the entity.
 
 ### Automatic Passivation
 
-The entities can be configured to be automatically passivated if they haven't received
-a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
+The entities are automatically passivated if they haven't received a message within the duration configured in
+`akka.cluster.sharding.passivate-idle-entity-after` 
 or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
 time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity. 
-By default automatic passivation is disabled. 
+to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
+Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
+It is always disabled if @ref:[Remembering Entities](#remembering-entities) is enabled.
 
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
@@ -379,6 +382,14 @@ the default directory contains the remote port of the actor system. If using a d
 assigned port (0) it will be different each time and the previously stored data will not
 be loaded.
 
+The reason for storing the identifiers of the active entities in durable storage, i.e. stored to
+disk, is that the same entities should be started also after a complete cluster restart. If this is not needed
+you can disable durable storage and benefit from better performance by using the following configuration:
+
+```
+akka.cluster.sharding.distributed-data.durable.keys = []
+```
+
 When `rememberEntities` is set to false, a `Shard` will not automatically restart any entities
 after a rebalance or recovering from a crash. Entities will only be started once the first message
 for that entity has been received in the `Shard`. Entities will not be restarted if they stop without
@@ -389,7 +400,7 @@ e.g. with @ref:[Persistence](persistence.md).
 
 The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
 shards are rebalanced. This cost increases with number of entities per shard and we currently don't
-recommend using it with more than 10000 entities per shard.
+recommend using it with more than 10000 active (non passivated) entities per shard.
 
 ## Supervision
 
@@ -413,7 +424,7 @@ Java
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
-If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#Sharding)
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#sharding)
 
 ## Graceful Shutdown
 

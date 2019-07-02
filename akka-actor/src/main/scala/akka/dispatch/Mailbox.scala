@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.{ Comparator, Deque, PriorityQueue, Queue }
 
 import akka.actor.{ ActorCell, ActorRef, ActorSystem, DeadLetter, InternalActorRef }
+import akka.annotation.InternalStableApi
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Helpers.ConfigOps
@@ -18,7 +19,6 @@ import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import akka.dispatch.forkjoin.ForkJoinTask
 import scala.util.control.NonFatal
 
 /**
@@ -210,6 +210,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage])
 
   protected final def systemQueuePut(_old: LatestFirstSystemMessageList, _new: LatestFirstSystemMessageList): Boolean =
+    (_old.head eq _new.head) ||
     // Note: calling .head is not actually existing on the bytecode level as the parameters _old and _new
     // are SystemMessage instances hidden during compile time behind the SystemMessageList value class.
     // Without calling .head the parameters would be boxed in SystemMessageList wrapper.
@@ -241,10 +242,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       run(); false
     } catch {
       case _: InterruptedException =>
-        Thread.currentThread.interrupt()
+        Thread.currentThread().interrupt()
         false
       case anything: Throwable =>
-        val t = Thread.currentThread
+        val t = Thread.currentThread()
         t.getUncaughtExceptionHandler match {
           case null =>
           case some => some.uncaughtException(t, anything)
@@ -258,7 +259,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   @tailrec private final def processMailbox(
       left: Int = java.lang.Math.max(dispatcher.throughput, 1),
       deadlineNs: Long =
-        if (dispatcher.isThroughputDeadlineTimeDefined == true)
+        if (dispatcher.isThroughputDeadlineTimeDefined)
           System.nanoTime + dispatcher.throughputDeadlineTime.toNanos
         else 0L): Unit =
     if (shouldProcessMessage) {
@@ -269,7 +270,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
         processAllSystemMessages()
-        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+        if ((left > 1) && (!dispatcher.isThroughputDeadlineTimeDefined || (System.nanoTime - deadlineNs) < 0))
           processMailbox(left - 1, deadlineNs)
       }
     }
@@ -284,7 +285,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def processAllSystemMessages(): Unit = {
     var interruption: Throwable = null
     var messageList = systemDrain(SystemMessageList.LNil)
-    while ((messageList.nonEmpty) && !isClosed) {
+    while (messageList.nonEmpty && !isClosed) {
       val msg = messageList.head
       messageList = messageList.tail
       msg.unlink()
@@ -294,7 +295,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       if (Thread.interrupted())
         interruption = new InterruptedException("Interrupted while processing system messages")
       // don’t ever execute normal message when system message present!
-      if ((messageList.isEmpty) && !isClosed) messageList = systemDrain(SystemMessageList.LNil)
+      if (messageList.isEmpty && !isClosed) messageList = systemDrain(SystemMessageList.LNil)
     }
     /*
      * if we closed the mailbox, we must dump the remaining system messages
@@ -448,6 +449,7 @@ private[akka] trait SystemMessageQueue {
   /**
    * Enqueue a new system message, e.g. by prepending atomically as new head of a single-linked list.
    */
+  @InternalStableApi
   def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit
 
   /**
@@ -645,7 +647,7 @@ final case class UnboundedMailbox() extends MailboxType with ProducesMessageQueu
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
-  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new UnboundedMailbox.MessageQueue
 }
 
@@ -678,7 +680,7 @@ final case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with P
  *
  * NOTE: NonBlockingBoundedMailbox does not use `mailbox-push-timeout-time` as it is non-blocking.
  */
-case class NonBlockingBoundedMailbox(val capacity: Int)
+case class NonBlockingBoundedMailbox(capacity: Int)
     extends MailboxType
     with ProducesMessageQueue[BoundedNodeMessageQueue] {
 
@@ -693,7 +695,7 @@ case class NonBlockingBoundedMailbox(val capacity: Int)
 /**
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
-final case class BoundedMailbox(val capacity: Int, override val pushTimeOut: FiniteDuration)
+final case class BoundedMailbox(capacity: Int, override val pushTimeOut: FiniteDuration)
     extends MailboxType
     with ProducesMessageQueue[BoundedMailbox.MessageQueue]
     with ProducesPushTimeoutSemanticsMailbox {
@@ -704,7 +706,7 @@ final case class BoundedMailbox(val capacity: Int, override val pushTimeOut: Fin
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
-  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new BoundedMailbox.MessageQueue(capacity, pushTimeOut)
 }
 
@@ -821,7 +823,7 @@ final case class UnboundedDequeBasedMailbox()
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
-  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
     new UnboundedDequeBasedMailbox.MessageQueue
 }
 

@@ -162,14 +162,14 @@ private[akka] object EventAdapters {
       .to(immutable.Seq)
 
   private final def configToMap(config: Config, path: String): Map[String, String] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     if (config.hasPath(path)) {
       config.getConfig(path).root.unwrapped.asScala.toMap.map { case (k, v) => k -> v.toString }
     } else Map.empty
   }
 
   private final def configToListMap(config: Config, path: String): Map[String, immutable.Seq[String]] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     if (config.hasPath(path)) {
       config.getConfig(path).root.unwrapped.asScala.toMap.map {
         case (k, v: util.ArrayList[_]) if v.isInstanceOf[util.ArrayList[_]] => k -> v.asScala.map(_.toString).toList

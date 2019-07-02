@@ -6,10 +6,12 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.TwoStreamsSetup
 import akka.stream._
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+@silent // stream usage
 class GraphMergePreferredSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
 
@@ -76,7 +78,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val s = Source(0 to 3)
 
       (the[IllegalArgumentException] thrownBy {
-        val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
           val merge = b.add(MergePreferred[Int](1))
 
           s ~> merge.preferred
@@ -93,7 +95,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       val s = Source(0 to 3)
 
       (the[IllegalArgumentException] thrownBy {
-        val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
           val merge = b.add(MergePreferred[Int](1))
 
           s ~> merge.preferred

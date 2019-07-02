@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException
 
 object ReceiveTimeoutSpec {
   case object Tick
-  case object TransperentTick extends NotInfluenceReceiveTimeout
+  case object TransparentTick extends NotInfluenceReceiveTimeout
 }
 
 class ReceiveTimeoutSpec extends AkkaSpec {
@@ -98,16 +98,14 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
         def receive = {
           case ReceiveTimeout  => timeoutLatch.open
-          case TransperentTick =>
+          case TransparentTick =>
         }
       }))
 
-      val ticks = system.scheduler.schedule(100.millis, 100.millis, new Runnable {
-        override def run() = {
-          timeoutActor ! TransperentTick
-          timeoutActor ! Identify(None)
-        }
-      })(system.dispatcher)
+      val ticks = system.scheduler.scheduleWithFixedDelay(100.millis, 100.millis) { () =>
+        timeoutActor ! TransparentTick
+        timeoutActor ! Identify(None)
+      }(system.dispatcher)
 
       Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
       ticks.cancel()
@@ -122,9 +120,9 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
         def receive = {
           case ReceiveTimeout =>
-            self ! TransperentTick
+            self ! TransparentTick
             timeoutLatch.countDown()
-          case TransperentTick =>
+          case TransparentTick =>
         }
       }))
 
@@ -137,14 +135,14 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       val count = new AtomicInteger(0)
 
       class ActorWithTimer() extends Actor with Timers {
-        timers.startPeriodicTimer("transparentTick", TransperentTick, 100.millis)
-        timers.startPeriodicTimer("identifyTick", Identify(None), 100.millis)
+        timers.startTimerWithFixedDelay("transparentTick", TransparentTick, 100.millis)
+        timers.startTimerWithFixedDelay("identifyTick", Identify(None), 100.millis)
 
         context.setReceiveTimeout(1 second)
         def receive: Receive = {
           case ReceiveTimeout =>
             timeoutLatch.open
-          case TransperentTick =>
+          case TransparentTick =>
             count.incrementAndGet()
         }
       }
@@ -161,12 +159,12 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       val timeoutActor = system.actorOf(Props(new Actor {
         def receive = {
-          case TransperentTick => context.setReceiveTimeout(500 milliseconds)
+          case TransparentTick => context.setReceiveTimeout(500 milliseconds)
           case ReceiveTimeout  => timeoutLatch.open
         }
       }))
 
-      timeoutActor ! TransperentTick
+      timeoutActor ! TransparentTick
 
       Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
       system.stop(timeoutActor)
@@ -179,14 +177,64 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(500 milliseconds)
 
         def receive = {
-          case TransperentTick => context.setReceiveTimeout(Duration.Inf)
+          case TransparentTick => context.setReceiveTimeout(Duration.Inf)
           case ReceiveTimeout  => timeoutLatch.open
         }
       }))
 
-      timeoutActor ! TransperentTick
+      timeoutActor ! TransparentTick
 
       intercept[TimeoutException] { Await.ready(timeoutLatch, 1 second) }
+      system.stop(timeoutActor)
+    }
+
+    "remove / change existing timeout while handling a NotInfluenceReceiveTimeout message" taggedAs TimingTest in {
+      val timeoutLatch = TestLatch()
+      val initialTimeout = 500.millis
+
+      val timeoutActor = system.actorOf(Props(new Actor {
+        context.setReceiveTimeout(initialTimeout)
+
+        def receive: Receive = {
+          case TransparentTick => context.setReceiveTimeout(Duration.Undefined)
+          case ReceiveTimeout  => timeoutLatch.open
+        }
+      }))
+
+      timeoutActor ! TransparentTick
+
+      intercept[TimeoutException] { Await.ready(timeoutLatch, initialTimeout * 2) }
+      system.stop(timeoutActor)
+    }
+
+    "work correctly if the timeout is changed multiple times while handling a NotInfluenceReceiveTimeout message" taggedAs TimingTest in {
+      val probe = TestProbe()
+      val initialTimeout = 500.millis
+
+      val timeoutActor = system.actorOf(Props(new Actor {
+        var count = 0
+        context.setReceiveTimeout(initialTimeout)
+
+        def receive: Receive = {
+          case TransparentTick =>
+            context.setReceiveTimeout(initialTimeout * 2)
+            count += 1 // do some work then
+            context.setReceiveTimeout(initialTimeout)
+
+          case ReceiveTimeout => probe.ref ! ReceiveTimeout
+        }
+      }))
+
+      probe.expectNoMessage(initialTimeout / 2)
+
+      timeoutActor ! TransparentTick
+      timeoutActor ! TransparentTick
+
+      // not triggered by initialTimeout because it was changed by the ticks
+      // wait shorter than last set value, but longer than initialTimeout
+      probe.expectNoMessage(initialTimeout / 2 + 50.millis)
+      // now should happen
+      probe.expectMsgType[ReceiveTimeout]
       system.stop(timeoutActor)
     }
   }

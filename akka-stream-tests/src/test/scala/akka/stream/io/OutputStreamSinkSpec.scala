@@ -16,8 +16,10 @@ import akka.testkit.TestProbe
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
+import com.github.ghik.silencer.silent
 import scala.util.Success
 
+@silent
 class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

@@ -6,6 +6,8 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, StreamLimitReachedException }
+import akka.util.unused
+
 import scala.concurrent.Await
 
 class FlowLimitWeightedSpec extends StreamSpec {
@@ -18,7 +20,7 @@ class FlowLimitWeightedSpec extends StreamSpec {
     "produce empty sequence regardless of cost when source is empty and n = 0" in {
       val input = Range(0, 0, 1)
       val n = input.length
-      def costFn(e: Int): Long = 999999L // set to an arbitrarily big value
+      def costFn(@unused e: Int): Long = 999999L // set to an arbitrarily big value
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.headOption)
       val result = Await.result(future, remainingOrDefault)
       result should be(None)
@@ -26,7 +28,7 @@ class FlowLimitWeightedSpec extends StreamSpec {
 
     "always exhaust a source regardless of n (as long as n > 0) if cost is 0" in {
       val input = (1 to 15)
-      def costFn(e: Int): Long = 0L
+      def costFn(@unused e: Int): Long = 0L
       val n = 1 // must not matter since costFn always evaluates to 0
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.head)
       val result = Await.result(future, remainingOrDefault)
@@ -35,7 +37,7 @@ class FlowLimitWeightedSpec extends StreamSpec {
 
     "exhaust source if n equals to input length and cost is 1" in {
       val input = (1 to 16)
-      def costFn(e: Int): Long = 1L
+      def costFn(@unused e: Int): Long = 1L
       val n = input.length
       val future = Source(input).limitWeighted(n)(costFn).grouped(Integer.MAX_VALUE).runWith(Sink.head)
       val result = Await.result(future, remainingOrDefault)

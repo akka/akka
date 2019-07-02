@@ -39,7 +39,7 @@ class DowningProviderSpec extends WordSpec with Matchers {
         loglevel = WARNING
         actor.provider = "cluster"
         remote {
-          netty.tcp {
+          classic.netty.tcp {
             hostname = "127.0.0.1"
             port = 0
           }

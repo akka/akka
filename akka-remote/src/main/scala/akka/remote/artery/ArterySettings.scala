@@ -6,7 +6,7 @@ package akka.remote.artery
 
 import java.net.InetAddress
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration._
 
 import akka.NotUsed
@@ -70,7 +70,6 @@ private[akka] final class ArterySettings private (config: Config) {
 
   val LogReceive: Boolean = getBoolean("log-received-messages")
   val LogSend: Boolean = getBoolean("log-sent-messages")
-  val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
 
   val Transport: Transport = toRootLowerCase(getString("transport")) match {
     case AeronUpd.configName => AeronUpd
@@ -94,27 +93,13 @@ private[akka] final class ArterySettings private (config: Config) {
     import config._
 
     val TestMode: Boolean = getBoolean("test-mode")
-
     val Dispatcher: String = getString("use-dispatcher")
     val ControlStreamDispatcher: String = getString("use-control-stream-dispatcher")
-    val MaterializerSettings: ActorMaterializerSettings = {
-      val settings = ActorMaterializerSettings(config.getConfig("materializer"))
-      if (Dispatcher.isEmpty) settings
-      else settings.withDispatcher(Dispatcher)
-    }
-    val ControlStreamMaterializerSettings: ActorMaterializerSettings = {
-      val settings = ActorMaterializerSettings(config.getConfig("materializer"))
-      if (ControlStreamDispatcher.isEmpty) settings
-      else settings.withDispatcher(ControlStreamDispatcher)
-    }
+    val MaterializerSettings: ActorMaterializerSettings =
+      ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(Dispatcher)
+    val ControlStreamMaterializerSettings: ActorMaterializerSettings =
+      ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(ControlStreamDispatcher)
 
-    val EmbeddedMediaDriver: Boolean = getBoolean("embedded-media-driver")
-    val AeronDirectoryName: String = getString("aeron-dir").requiring(
-      dir => EmbeddedMediaDriver || dir.nonEmpty,
-      "aeron-dir must be defined when using external media driver")
-    val DeleteAeronDirectory: Boolean = getBoolean("delete-aeron-dir")
-    val IdleCpuLevel: Int =
-      getInt("idle-cpu-level").requiring(level => 1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
     val OutboundLanes: Int = getInt("outbound-lanes").requiring(n => n > 0, "outbound-lanes must be greater than zero")
     val InboundLanes: Int = getInt("inbound-lanes").requiring(n => n > 0, "inbound-lanes must be greater than zero")
     val SysMsgBufferSize: Int =
@@ -140,12 +125,6 @@ private[akka] final class ArterySettings private (config: Config) {
       config
         .getMillisDuration("inject-handshake-interval")
         .requiring(interval => interval > Duration.Zero, "inject-handshake-interval must be more than zero")
-    val ConnectionTimeout: FiniteDuration = config
-      .getMillisDuration("connection-timeout")
-      .requiring(interval => interval > Duration.Zero, "connection-timeout must be more than zero")
-    val GiveUpMessageAfter: FiniteDuration = config
-      .getMillisDuration("give-up-message-after")
-      .requiring(interval => interval > Duration.Zero, "give-up-message-after must be more than zero")
     val GiveUpSystemMessageAfter: FiniteDuration =
       config
         .getMillisDuration("give-up-system-message-after")
@@ -184,17 +163,6 @@ private[akka] final class ArterySettings private (config: Config) {
         .getMillisDuration("outbound-restart-timeout")
         .requiring(interval => interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts: Int = getInt("outbound-max-restarts")
-    val ClientLivenessTimeout: FiniteDuration =
-      config
-        .getMillisDuration("client-liveness-timeout")
-        .requiring(interval => interval > Duration.Zero, "client-liveness-timeout must be more than zero")
-    val ImageLivenessTimeout: FiniteDuration = config
-      .getMillisDuration("image-liveness-timeout")
-      .requiring(interval => interval > Duration.Zero, "image-liveness-timeout must be more than zero")
-    require(ImageLivenessTimeout < HandshakeTimeout, "image-liveness-timeout must be less than handshake-timeout")
-    val DriverTimeout: FiniteDuration = config
-      .getMillisDuration("driver-timeout")
-      .requiring(interval => interval > Duration.Zero, "driver-timeout must be more than zero")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
     val FlightRecorderDestination: String = getString("flight-recorder.destination")
     val Compression = new Compression(getConfig("compression"))
@@ -212,6 +180,49 @@ private[akka] final class ArterySettings private (config: Config) {
       .requiring(_ >= 32 * 1024, "maximum-large-frame-size must be greater than or equal to 32 KiB")
     final val LargeBufferPoolSize: Int =
       getInt("large-buffer-pool-size").requiring(_ > 0, "large-buffer-pool-size must be greater than 0")
+
+    object Aeron {
+      val config: Config = getConfig("aeron")
+
+      val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
+      val EmbeddedMediaDriver: Boolean = config.getBoolean("embedded-media-driver")
+      val AeronDirectoryName: String = config
+        .getString("aeron-dir")
+        .requiring(
+          dir => EmbeddedMediaDriver || dir.nonEmpty,
+          "aeron-dir must be defined when using external media driver")
+      val DeleteAeronDirectory: Boolean = config.getBoolean("delete-aeron-dir")
+      val IdleCpuLevel: Int =
+        config
+          .getInt("idle-cpu-level")
+          .requiring(level => 1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
+      val GiveUpMessageAfter: FiniteDuration = config
+        .getMillisDuration("give-up-message-after")
+        .requiring(interval => interval > Duration.Zero, "give-up-message-after must be more than zero")
+      val ClientLivenessTimeout: FiniteDuration =
+        config
+          .getMillisDuration("client-liveness-timeout")
+          .requiring(interval => interval > Duration.Zero, "client-liveness-timeout must be more than zero")
+      val PublicationUnblockTimeout: FiniteDuration =
+        config
+          .getMillisDuration("publication-unblock-timeout")
+          .requiring(interval => interval > Duration.Zero, "publication-unblock-timeout must be greater than zero")
+      val ImageLivenessTimeout: FiniteDuration = config
+        .getMillisDuration("image-liveness-timeout")
+        .requiring(interval => interval > Duration.Zero, "image-liveness-timeout must be more than zero")
+      require(ImageLivenessTimeout < HandshakeTimeout, "image-liveness-timeout must be less than handshake-timeout")
+      val DriverTimeout: FiniteDuration = config
+        .getMillisDuration("driver-timeout")
+        .requiring(interval => interval > Duration.Zero, "driver-timeout must be more than zero")
+    }
+
+    object Tcp {
+      val config: Config = getConfig("tcp")
+      val ConnectionTimeout: FiniteDuration = config
+        .getMillisDuration("connection-timeout")
+        .requiring(interval => interval > Duration.Zero, "connection-timeout must be more than zero")
+    }
+
   }
 }
 

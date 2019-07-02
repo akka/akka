@@ -4,7 +4,7 @@
 
 package akka.persistence.journal
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * The journal may support tagging of events that are used by the

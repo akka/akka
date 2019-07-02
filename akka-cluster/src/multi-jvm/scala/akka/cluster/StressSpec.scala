@@ -128,7 +128,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 
-    akka.remote.artery.advanced {
+    akka.remote.artery.advanced.aeron {
       idle-cpu-level = 1
       embedded-media-driver = off
       aeron-dir = "target/aeron-StressSpec"
@@ -362,7 +362,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
 
     import context.dispatcher
-    val checkPhiTask = context.system.scheduler.schedule(1.second, 1.second, self, PhiTick)
+    val checkPhiTask = context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, PhiTick)
 
     // subscribe to MemberEvent, re-subscribe when restart
     override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
@@ -466,7 +466,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     var startTime = 0L
 
     import context.dispatcher
-    val resendTask = context.system.scheduler.schedule(3.seconds, 3.seconds, self, RetryTick)
+    val resendTask = context.system.scheduler.scheduleWithFixedDelay(3.seconds, 3.seconds, self, RetryTick)
 
     override def postStop(): Unit = {
       resendTask.cancel()
@@ -770,7 +770,7 @@ abstract class StressSpec
       .append(" MB")
     sb.append("\n")
 
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val args = runtime.getInputArguments.asScala.filterNot(_.contains("classpath")).mkString("\n  ")
     sb.append("Args:\n  ").append(args)
     sb.append("\n")

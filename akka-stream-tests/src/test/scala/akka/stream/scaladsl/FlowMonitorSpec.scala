@@ -27,7 +27,7 @@ class FlowMonitorSpec extends StreamSpec {
     }
 
     "return Finished when stream is cancelled from downstream" in {
-      val ((source, monitor), sink) =
+      val ((_, monitor), sink) =
         TestSource.probe[Any].monitorMat(Keep.both).toMat(TestSink.probe[Any])(Keep.both).run()
       sink.cancel()
       awaitAssert(monitor.state == Finished, 3.seconds)
@@ -72,7 +72,7 @@ class FlowMonitorSpec extends StreamSpec {
 
     "return Failed when stream is abruptly terminated" in {
       val mat = ActorMaterializer()
-      val (source, monitor) = // notice that `monitor` is like a Keep.both
+      val (_, monitor) = // notice that `monitor` is like a Keep.both
         TestSource.probe[Any].monitor.to(Sink.ignore).run()(mat)
       mat.shutdown()
 

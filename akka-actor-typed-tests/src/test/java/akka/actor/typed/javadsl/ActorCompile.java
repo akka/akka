@@ -8,6 +8,7 @@ import akka.actor.typed.*;
 import akka.actor.typed.TypedActorContext;
 
 import java.time.Duration;
+import java.util.concurrent.CompletionStage;
 
 import static akka.actor.typed.javadsl.Behaviors.*;
 
@@ -39,19 +40,20 @@ public class ActorCompile {
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 =
       intercept(
-          new BehaviorInterceptor<MyMsg, MyMsg>() {
-            @Override
-            public Behavior<MyMsg> aroundReceive(
-                TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
-              return target.apply(context, message);
-            }
+          () ->
+              new BehaviorInterceptor<MyMsg, MyMsg>() {
+                @Override
+                public Behavior<MyMsg> aroundReceive(
+                    TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
+                  return target.apply(context, message);
+                }
 
-            @Override
-            public Behavior<MyMsg> aroundSignal(
-                TypedActorContext<MyMsg> context, Signal signal, SignalTarget<MyMsg> target) {
-              return target.apply(context, signal);
-            }
-          },
+                @Override
+                public Behavior<MyMsg> aroundSignal(
+                    TypedActorContext<MyMsg> context, Signal signal, SignalTarget<MyMsg> target) {
+                  return target.apply(context, signal);
+                }
+              },
           actor5);
   Behavior<MyMsgA> actor7 = actor6.narrow();
   Behavior<MyMsg> actor8 =
@@ -65,6 +67,21 @@ public class ActorCompile {
       Behaviors.receive((context, message) -> stopped(() -> {}), (context, signal) -> same());
 
   ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
+
+  {
+    ActorRef<MyMsg> recipient = null;
+
+    CompletionStage<String> reply =
+        AskPattern.ask(
+            recipient, replyTo -> new MyMsgA(replyTo), Duration.ofSeconds(3), system.scheduler());
+
+    AskPattern.ask(
+            recipient,
+            (ActorRef<String> replyTo) -> new MyMsgA(replyTo),
+            Duration.ofSeconds(3),
+            system.scheduler())
+        .thenApply(rsp -> rsp.toUpperCase());
+  }
 
   {
     Behaviors.<MyMsg>receive(
@@ -88,7 +105,7 @@ public class ActorCompile {
     Behavior<MyMsg> b =
         Behaviors.withTimers(
             timers -> {
-              timers.startPeriodicTimer("key", new MyMsgB("tick"), Duration.ofSeconds(1));
+              timers.startTimerWithFixedDelay("key", new MyMsgB("tick"), Duration.ofSeconds(1));
               return Behaviors.ignore();
             });
   }

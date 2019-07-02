@@ -87,7 +87,6 @@ not error handling. In other words, data may still be lost, even if every write 
 
 @@@
 
-<a id="bytestring"></a>
 ### ByteString
 
 To maintain isolation, actors should communicate with immutable objects only. `ByteString` is an
@@ -116,3 +115,11 @@ A `ByteStringBuilder` can be wrapped in a `java.io.OutputStream` via the `asOutp
 ## Architecture in-depth
 
 For further details on the design and internal architecture see @ref:[I/O Layer Design](common/io-layer.md).
+
+@@toc
+
+@@@ index
+
+* [I/O Layer Design](common/io-layer.md)
+
+@@@

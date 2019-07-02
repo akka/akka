@@ -17,7 +17,7 @@ import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.util.control.Exception

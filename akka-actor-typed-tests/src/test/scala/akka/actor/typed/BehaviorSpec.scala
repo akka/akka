@@ -240,7 +240,8 @@ object BehaviorSpec {
     "Unhandled" must {
       "must return Unhandled" in {
         val Setup(testKit, inbox, aux) = mkCtx()
-        Behavior.interpretMessage(testKit.currentBehavior, testKit.context, Miss) should be(Behavior.UnhandledBehavior)
+        val next = Behavior.interpretMessage(testKit.currentBehavior, testKit.context, Miss)
+        Behavior.isUnhandled(next) should ===(true)
         inbox.receiveAll() should ===(Missed :: Nil)
         checkAux(Miss, aux)
       }
@@ -513,7 +514,7 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
         target(context, signal)
       }
     }
-    (SBehaviors.intercept(tap)(super.behavior(monitor)._1), inbox)
+    (SBehaviors.intercept(() => tap)(super.behavior(monitor)._1), inbox)
   }
 }
 
@@ -632,7 +633,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
         target(context, signal)
       }
     }
-    (JBehaviors.intercept(tap, super.behavior(monitor)._1), inbox)
+    (JBehaviors.intercept(() => tap, super.behavior(monitor)._1), inbox)
   }
 }
 

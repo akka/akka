@@ -74,7 +74,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
       return Behaviors.receive(Typed.Command.class)
           .onMessage(
               Typed.Ping.class,
-              (context, message) -> {
+              message -> {
                 message.replyTo.tell(new Pong());
                 return same();
               })

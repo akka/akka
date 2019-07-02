@@ -25,6 +25,7 @@ import akka.stream.javadsl.*;
 import akka.stream.stage.*;
 import akka.util.ByteIterator;
 import akka.util.ByteString;
+import static akka.util.ByteString.emptyByteString;
 import akka.util.ByteStringBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -156,7 +157,7 @@ public class BidiFlowDocTest extends AbstractJavaTest {
       return new GraphStageLogic(shape) {
 
         // this holds the received but not yet parsed bytes
-        private ByteString stash = ByteString.empty();
+        private ByteString stash = emptyByteString();
         // this holds the current message length or -1 if at a boundary
         private int needed = -1;
 

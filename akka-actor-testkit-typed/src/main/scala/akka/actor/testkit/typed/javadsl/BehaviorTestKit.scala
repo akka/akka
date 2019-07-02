@@ -105,7 +105,7 @@ abstract class BehaviorTestKit[T] {
 
   /**
    * Returns the current behavior as it was returned from processing the previous message.
-   * For example if [[Behavior.unhandled]] is returned it will be kept here, but not in
+   * For example if [[Behaviors.unhandled]] is returned it will be kept here, but not in
    * [[currentBehavior]].
    */
   def returnedBehavior: Behavior[T]

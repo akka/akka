@@ -97,7 +97,7 @@ class Worker extends Actor with ActorLogging {
   def receive = LoggingReceive {
     case Start if progressListener.isEmpty =>
       progressListener = Some(sender())
-      context.system.scheduler.schedule(Duration.Zero, 1 second, self, Do)
+      context.system.scheduler.scheduleWithFixedDelay(Duration.Zero, 1 second, self, Do)
 
     case Do =>
       counterService ! Increment(1)

@@ -19,13 +19,6 @@ akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 
 ## Introduction
 
-To enable usage of the extension you need to add the following dependency to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-metrics_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
 and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
@@ -185,11 +178,9 @@ Scala
 Java
 :  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
 
-The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
-The source code of this sample can be found in the 
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
+The easiest way to run the **Adaptive Load Balancing** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Adaptive Load Balancing** sample.
 
 ## Subscribe to Metrics Events
 

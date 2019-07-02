@@ -12,7 +12,7 @@ import java.util.function.Supplier
 import java.util.{ List => JList }
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._

@@ -4,18 +4,22 @@
 
 package jdocs.akka.persistence.typed;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.DeleteEventsFailed;
 import akka.persistence.typed.DeleteSnapshotsFailed;
-import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.SnapshotFailed;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
+// #behavior
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.PersistenceId;
+
+// #behavior
 import akka.persistence.typed.javadsl.RetentionCriteria;
 import akka.persistence.typed.javadsl.SignalHandler;
 
@@ -338,9 +342,13 @@ public class BasicPersistentBehaviorTest {
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
 
+      // optionally if you only need `ActorContext.getSelf()`
+      private final ActorRef<Command> self;
+
       public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
         this.ctx = ctx;
+        this.self = ctx.getSelf();
       }
 
       // #actor-context

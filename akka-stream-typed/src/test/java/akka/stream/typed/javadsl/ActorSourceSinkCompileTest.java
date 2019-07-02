@@ -12,6 +12,8 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
+import java.util.Optional;
+
 public class ActorSourceSinkCompileTest {
 
   interface Protocol {}
@@ -55,32 +57,16 @@ public class ActorSourceSinkCompileTest {
 
   {
     ActorSource.actorRef(
-            (m) -> m == "complete",
-            new JavaPartialFunction<String, Throwable>() {
-              @Override
-              public Throwable apply(String x, boolean isCheck) throws Exception {
-                throw noMatch();
-              }
-            },
-            10,
-            OverflowStrategy.dropBuffer())
+            (m) -> m == "complete", (m) -> Optional.empty(), 10, OverflowStrategy.dropBuffer())
         .to(Sink.seq());
   }
 
   {
-    final JavaPartialFunction<Protocol, Throwable> failureMatcher =
-        new JavaPartialFunction<Protocol, Throwable>() {
-          @Override
-          public Throwable apply(Protocol p, boolean isCheck) throws Exception {
-            if (p instanceof Failure) {
-              return ((Failure) p).ex;
-            } else {
-              throw noMatch();
-            }
-          }
-        };
-
-    ActorSource.actorRef((m) -> false, failureMatcher, 10, OverflowStrategy.dropBuffer())
+    ActorSource.actorRef(
+            (m) -> false,
+            (m) -> (m instanceof Failure) ? Optional.of(((Failure) m).ex) : Optional.empty(),
+            10,
+            OverflowStrategy.dropBuffer())
         .to(Sink.seq());
   }
 }

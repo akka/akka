@@ -4,12 +4,12 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.Scheduler
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.Scheduler
 import akka.actor.typed.Props
 import akka.util.Timeout
 import com.typesafe.config.Config

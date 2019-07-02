@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream._
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Subscriber
 
 object GraphFlowSpec {
@@ -36,6 +37,7 @@ object GraphFlowSpec {
   val stdResult = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 }
 
+@silent
 class GraphFlowSpec extends StreamSpec {
 
   import GraphFlowSpec._
@@ -290,7 +292,7 @@ class GraphFlowSpec extends StreamSpec {
             SinkShape(flow.in)
         })
 
-        val (m1, m2, m3) = RunnableGraph
+        val (m1, _, m3) = RunnableGraph
           .fromGraph(GraphDSL.create(source, flow, sink)(Tuple3.apply) { implicit b => (src, f, snk) =>
             import GraphDSL.Implicits._
             src.out.map(_.toInt) ~> f.in

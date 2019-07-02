@@ -16,10 +16,17 @@ import akka.actor.typed.ActorSystem;
 
 public class ReceptionistExample {
 
+  public
   // #ping-service
-  public static class PingService {
+  static class PingService {
+
+    private final ActorContext<Ping> context;
 
     static final ServiceKey<Ping> pingServiceKey = ServiceKey.create(Ping.class, "pingService");
+
+    private PingService(ActorContext<Ping> context) {
+      this.context = context;
+    }
 
     public static class Pong {}
 
@@ -31,7 +38,7 @@ public class ReceptionistExample {
       }
     }
 
-    static Behavior<Ping> createBehavior() {
+    public static Behavior<Ping> createBehavior() {
       return Behaviors.setup(
           context -> {
             context
@@ -39,11 +46,15 @@ public class ReceptionistExample {
                 .receptionist()
                 .tell(Receptionist.register(pingServiceKey, context.getSelf()));
 
-            return Behaviors.receive(Ping.class).onMessage(Ping.class, PingService::onPing).build();
+            return new PingService(context).behavior();
           });
     }
 
-    private static Behavior<Ping> onPing(ActorContext<Ping> context, Ping msg) {
+    private Behavior<Ping> behavior() {
+      return Behaviors.receive(Ping.class).onMessage(Ping.class, this::onPing).build();
+    }
+
+    private Behavior<Ping> onPing(Ping msg) {
       context.getLog().info("Pinged by {}", msg.replyTo);
       msg.replyTo.tell(new Pong());
       return Behaviors.same();
@@ -51,20 +62,33 @@ public class ReceptionistExample {
   }
   // #ping-service
 
+  public
   // #pinger
-  public static class Pinger {
-    static Behavior<PingService.Pong> createBehavior(ActorRef<PingService.Ping> pingService) {
+  static class Pinger {
+    private final ActorContext<PingService.Pong> context;
+    private final ActorRef<PingService.Ping> pingService;
+
+    private Pinger(ActorContext<PingService.Pong> context, ActorRef<PingService.Ping> pingService) {
+      this.context = context;
+      this.pingService = pingService;
+    }
+
+    public static Behavior<PingService.Pong> createBehavior(
+        ActorRef<PingService.Ping> pingService) {
       return Behaviors.setup(
-          (ctx) -> {
+          ctx -> {
             pingService.tell(new PingService.Ping(ctx.getSelf()));
-            return Behaviors.receive(PingService.Pong.class)
-                .onMessage(PingService.Pong.class, Pinger::onPong)
-                .build();
+            return new Pinger(ctx, pingService).behavior();
           });
     }
 
-    private static Behavior<PingService.Pong> onPong(
-        ActorContext<PingService.Pong> context, PingService.Pong msg) {
+    private Behavior<PingService.Pong> behavior() {
+      return Behaviors.receive(PingService.Pong.class)
+          .onMessage(PingService.Pong.class, this::onPong)
+          .build();
+    }
+
+    private Behavior<PingService.Pong> onPong(PingService.Pong msg) {
       context.getLog().info("{} was ponged!!", context.getSelf());
       return Behaviors.stopped();
     }
@@ -85,7 +109,7 @@ public class ReceptionistExample {
               return Behaviors.receive(Object.class)
                   .onMessage(
                       Receptionist.Listing.class,
-                      (c, msg) -> {
+                      msg -> {
                         msg.getServiceInstances(PingService.pingServiceKey)
                             .forEach(
                                 pingService ->

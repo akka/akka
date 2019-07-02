@@ -23,14 +23,6 @@ Akka Persistence is a library for building event sourced actors. For background 
 see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 ## Example
 
 Let's start with a simple example. The minimum required for a `EventSourcedBehavior` is:
@@ -293,19 +285,19 @@ created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noRe
 @scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
 
 Scala
-:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
 
 Java
-:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #withEnforcedReplies }
+:  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #withEnforcedReplies }
 
 The commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
 in a standardized way.
 
 Scala
-:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }
 
 Java
-:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #reply-command }
+:  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #reply-command }
 
 The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
 @scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
@@ -314,10 +306,10 @@ The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`]
 `EventSourcedBehaviorWithEnforcedReplies`], as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
 
 Scala
-:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
 
 Java
-:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #reply }
+:  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #reply }
 
 These effects will send the reply message even when @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
 is not used, but then there will be no compilation errors if the reply decision is left out.
@@ -345,7 +337,7 @@ Java
 
 The `RecoveryCompleted` contains the current `State`.
 
-@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
+@ref[Snapshots](persistence-snapshot.md) can be used for optimizing recovery times.
 
 ## Tagging
 

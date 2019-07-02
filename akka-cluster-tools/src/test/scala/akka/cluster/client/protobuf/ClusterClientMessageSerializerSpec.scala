@@ -22,9 +22,9 @@ class ClusterClientMessageSerializerSpec extends AkkaSpec {
 
     "be serializable" in {
       val contactPoints = Vector(
-        "akka.tcp://system@node-1:2552/system/receptionist",
-        "akka.tcp://system@node-2:2552/system/receptionist",
-        "akka.tcp://system@node-3:2552/system/receptionist")
+        "akka://system@node-1:2552/system/receptionist",
+        "akka://system@node-2:2552/system/receptionist",
+        "akka://system@node-3:2552/system/receptionist")
       checkSerialization(Contacts(contactPoints))
       checkSerialization(GetContacts)
       checkSerialization(Heartbeat)

@@ -222,7 +222,9 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"))
 
   val manager: ActorRef = {
-    system.systemActorOf(props = Props(classOf[UdpManager], this).withDeploy(Deploy.local), name = "IO-UDP-FF")
+    system.systemActorOf(
+      props = Props(classOf[UdpManager], this).withDispatcher(settings.ManagementDispatcher).withDeploy(Deploy.local),
+      name = "IO-UDP-FF")
   }
 
   /**
@@ -243,7 +245,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
 object UdpMessage {
   import Udp._
   import java.lang.{ Iterable => JIterable }
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Each [[Udp.Send]] can optionally request a positive acknowledgment to be sent

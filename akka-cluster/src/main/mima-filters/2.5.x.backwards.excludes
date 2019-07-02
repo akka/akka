@@ -1,0 +1,5 @@
+# #24710 remove internal ClusterReadView.refreshCurrentState
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView.refreshCurrentState")
+
+# Disable remote watch and remote deployment outside Cluster #26176
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterRemoteWatcher.props")

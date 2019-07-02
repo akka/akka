@@ -81,7 +81,7 @@ private[io] final class AsyncDnsManager(
     cacheCleanup.foreach { _ =>
       val interval =
         Duration(resolverConfig.getDuration("cache-cleanup-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
-      timers.startPeriodicTimer(CacheCleanup, CacheCleanup, interval)
+      timers.startTimerWithFixedDelay(CacheCleanup, CacheCleanup, interval)
     }
   }
 

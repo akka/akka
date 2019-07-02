@@ -12,8 +12,6 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ddata.typed.scaladsl.DistributedData
-import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
@@ -26,6 +24,7 @@ import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
+import akka.cluster.ddata.SelfUniqueAddress
 
 // just to provide a log class
 /** INTERNAL API */
@@ -41,6 +40,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   type DDataKey = ORMultiMapKey[ServiceKey[_], Entry]
 
   final val EmptyORMultiMap = ORMultiMap.empty[ServiceKey[_], Entry]
+
+  override val name = "clusterReceptionist"
 
   // values contain system uid to make it possible to discern actors at the same
   // path in different incarnations of a cluster node
@@ -68,14 +69,18 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   final class Setup(ctx: ActorContext[Command]) {
     val untypedSystem = ctx.system.toUntyped
     val settings = ClusterReceptionistSettings(ctx.system)
-    val replicator = dd.DistributedData(untypedSystem).replicator
     val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
     lazy val keepTombstonesFor = cluster.settings.PruneGossipTombstonesAfter match {
       case f: FiniteDuration => f
       case _                 => throw new IllegalStateException("Cannot actually happen")
     }
     val cluster = Cluster(untypedSystem)
-    implicit val selfNodeAddress = DistributedData(ctx.system).selfUniqueAddress
+    // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
+    // isn't used otherwise by the ClusterReceptionist
+    implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
+
+    val replicator = ctx.actorOf(Replicator.props(settings.replicatorSettings), "replicator")
+
     def newTombstoneDeadline() = Deadline(keepTombstonesFor)
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }
@@ -123,11 +128,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
         // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
-        timers.startPeriodicTimer("remove-nodes", RemoveTick, setup.settings.pruningInterval)
+        timers.startTimerWithFixedDelay("remove-nodes", RemoveTick, setup.settings.pruningInterval)
 
         // default tomstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
         // around isn't very costly so don't prune often
-        timers.startPeriodicTimer("prune-tombstones", PruneTombstonesTick, setup.keepTombstonesFor / 24)
+        timers.startTimerWithFixedDelay("prune-tombstones", PruneTombstonesTick, setup.keepTombstonesFor / 24)
 
         behavior(setup, registry, TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
       }
@@ -341,7 +346,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             val allAddressesInState: Set[UniqueAddress] = registry.allUniqueAddressesInState(setup.selfUniqueAddress)
             val notInCluster = allAddressesInState.diff(registry.nodes)
 
-            if (notInCluster.isEmpty) Behavior.same
+            if (notInCluster.isEmpty) Behaviors.same
             else {
               if (ctx.log.isDebugEnabled)
                 ctx.log.debug(
@@ -351,7 +356,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               nodesRemoved(notInCluster)
             }
           }
-          Behavior.same
+          Behaviors.same
 
         case PruneTombstonesTick =>
           val prunedRegistry = registry.pruneTombstones()

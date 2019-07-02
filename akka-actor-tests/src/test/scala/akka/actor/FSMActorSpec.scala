@@ -225,7 +225,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         }
         onTransition {
           case "not-started" -> "started" =>
-            for (timerName <- timerNames) setTimer(timerName, (), 10 seconds, false)
+            for (timerName <- timerNames) startSingleTimer(timerName, (), 10 seconds)
         }
         onTermination {
           case _ => {
@@ -251,7 +251,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     }
 
     "log events and transitions if asked to do so" in {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val config = ConfigFactory
         .parseMap(Map(
           "akka.loglevel" -> "DEBUG",
@@ -266,7 +266,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
               startWith(1, null)
               when(1) {
                 case Event("go", _) =>
-                  setTimer("t", FSM.Shutdown, 1.5 seconds, false)
+                  startSingleTimer("t", FSM.Shutdown, 1.5 seconds)
                   goto(2)
               }
               when(2) {

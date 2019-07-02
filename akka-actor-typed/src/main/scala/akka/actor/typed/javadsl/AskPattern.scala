@@ -8,7 +8,7 @@ package javadsl
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.japi.function.{ Function => JFunction }
 import akka.util.JavaDurationConverters._
@@ -30,10 +30,15 @@ import scala.compat.java8.FutureConverters._
  *
  */
 object AskPattern {
-  def ask[T, U](
-      actor: RecipientRef[T],
-      message: JFunction[ActorRef[U], T],
+
+  /**
+   * @tparam Req The request protocol, what the other actor accepts
+   * @tparam Res The response protocol, what the other actor sends back
+   */
+  def ask[Req, Res](
+      actor: RecipientRef[Req],
+      message: JFunction[ActorRef[Res], Req],
       timeout: Duration,
-      scheduler: Scheduler): CompletionStage[U] =
+      scheduler: Scheduler): CompletionStage[Res] =
     (actor.ask(message.apply)(timeout.asScala, scheduler)).toJava
 }

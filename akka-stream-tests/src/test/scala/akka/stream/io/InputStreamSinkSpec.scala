@@ -223,7 +223,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
           .supervisor
           .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
-        assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+        assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
       } finally shutdown(sys)
     }
 

@@ -29,7 +29,7 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
-      onCompleteProbe.expectNoMsg(100.millis)
+      onCompleteProbe.expectNoMessage(100.millis)
       proc.sendComplete()
       onCompleteProbe.expectMsg(Success(Done))
     }
@@ -43,7 +43,7 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
       val ex = new RuntimeException("ex") with NoStackTrace
       proc.sendError(ex)
       onCompleteProbe.expectMsg(Failure(ex))
-      onCompleteProbe.expectNoMsg(100.millis)
+      onCompleteProbe.expectNoMessage(100.millis)
     }
 
     "invoke callback for an empty stream" in assertAllStagesStopped {
@@ -54,7 +54,7 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
       proc.expectRequest()
       proc.sendComplete()
       onCompleteProbe.expectMsg(Success(Done))
-      onCompleteProbe.expectNoMsg(100.millis)
+      onCompleteProbe.expectNoMessage(100.millis)
     }
 
     "invoke callback after transform and foreach steps " in assertAllStagesStopped {

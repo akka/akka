@@ -133,7 +133,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up2 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2) = RunnableGraph
+      val (in1, _) = RunnableGraph
         .fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b => (s1, s2) =>
           val m = b.add(MergeLatest[Int](2, true))
 
@@ -144,7 +144,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
         })
         .run()
 
-      val subscription = probe.expectSubscription()
+      probe.expectSubscription()
 
       in1.sendComplete()
       probe.expectComplete()

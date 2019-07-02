@@ -6,13 +6,8 @@ package akka.stream.scaladsl
 
 import scala.annotation.unchecked.uncheckedVariance
 
-import akka.annotation.ApiMayChange
 import akka.stream._
 
-/**
- * API MAY CHANGE
- */
-@ApiMayChange
 object SourceWithContext {
 
   /**
@@ -29,10 +24,7 @@ object SourceWithContext {
  * operations.
  *
  * Can be created by calling [[Source.asSourceWithContext()]]
- *
- * API MAY CHANGE
  */
-@ApiMayChange
 final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Source[(Out, Ctx), Mat])
     extends GraphDelegate(delegate)
     with FlowWithContextOps[Out, Ctx, Mat] {
@@ -52,6 +44,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
    */
   override def withAttributes(attr: Attributes): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(delegate.withAttributes(attr))
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Source.mapMaterializedValue]].
+   *
+   * @see [[akka.stream.scaladsl.Source.mapMaterializedValue]]
+   */
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): SourceWithContext[Out, Ctx, Mat2] =
+    new SourceWithContext(delegate.mapMaterializedValue(f))
 
   /**
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],

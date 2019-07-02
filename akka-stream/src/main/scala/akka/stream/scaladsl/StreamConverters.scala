@@ -25,6 +25,7 @@ import akka.NotUsed
 object StreamConverters {
 
   import Source.{ shape => sourceShape }
+  import Sink.{ shape => sinkShape }
 
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
@@ -44,9 +45,9 @@ object StreamConverters {
    * @param in a function which creates the InputStream to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
-  def fromInputStream(in: () => InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
-    Source.fromGraph(
-      new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, sourceShape("InputStreamSource")))
+  def fromInputStream(in: () => InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] = {
+    Source.fromGraph(new InputStreamSource(in, chunkSize))
+  }
 
   /**
    * Creates a Source which when materialized will return an [[OutputStream]] which it is possible

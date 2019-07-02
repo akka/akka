@@ -5,6 +5,8 @@
 package akka.actor.typed
 package internal
 
+import java.time.Duration
+
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Cancellable
@@ -36,6 +38,18 @@ import akka.util.OptionVal
       case _ => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
 
+  private sealed trait TimerMode {
+    def repeat: Boolean
+  }
+  private case object FixedRateMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object FixedDelayMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object SingleMode extends TimerMode {
+    override def repeat: Boolean = false
+  }
 }
 
 /**
@@ -49,19 +63,31 @@ import akka.util.OptionVal
   private var timers: Map[Any, Timer[T]] = Map.empty
   private val timerGen = Iterator.from(1)
 
+  override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode)
+
+  override def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
+    startTimerAtFixedRate(key, msg, interval.asScala)
+
+  override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode)
+
+  override def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
+    startTimerWithFixedDelay(key, msg, delay.asScala)
+
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, repeat = true)
+    startTimer(key, msg, interval, FixedRateMode)
 
   override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
     startPeriodicTimer(key, msg, interval.asScala)
 
   override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
-    startTimer(key, msg, delay, repeat = false)
+    startTimer(key, msg, delay, SingleMode)
 
   def startSingleTimer(key: Any, msg: T, delay: java.time.Duration): Unit =
     startSingleTimer(key, msg, delay.asScala)
 
-  private def startTimer(key: Any, msg: T, delay: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: Any, msg: T, delay: FiniteDuration, mode: TimerMode): Unit = {
     timers.get(key) match {
       case Some(t) => cancelTimer(t)
       case None    =>
@@ -74,18 +100,19 @@ import akka.util.OptionVal
       else
         new TimerMsg(key, nextGen, this)
 
-    val task =
-      if (repeat)
-        ctx.system.scheduler.schedule(delay, delay) {
-          ctx.self.unsafeUpcast ! timerMsg
-        }(ExecutionContexts.sameThreadExecutionContext)
-      else
-        ctx.system.scheduler.scheduleOnce(delay) {
-          ctx.self.unsafeUpcast ! timerMsg
-        }(ExecutionContexts.sameThreadExecutionContext)
+    val task = mode match {
+      case SingleMode =>
+        ctx.system.scheduler
+          .scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.sameThreadExecutionContext)
+      case FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.sameThreadExecutionContext)
+      case FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.sameThreadExecutionContext)
+    }
 
-    val nextTimer = Timer(key, msg, repeat, nextGen, task)
-    ctx.log.debug("Start timer [{}] with generation [{}]", key, nextGen)
+    val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)
     timers = timers.updated(key, nextTimer)
   }
 

@@ -37,7 +37,7 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
 
-      val result = Source
+      Source
         .lazilyAsync { () =>
           constructed.set(true); Future(42)
         }
@@ -83,7 +83,7 @@ class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "propagate failed future from factory" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val failure = new RuntimeException("too bad")
-      val materialization = Source
+      Source
         .lazilyAsync { () =>
           Future.failed(failure)
         }

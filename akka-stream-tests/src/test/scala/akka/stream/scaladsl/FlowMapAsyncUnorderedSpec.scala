@@ -16,7 +16,6 @@ import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
-import akka.stream.impl.ReactiveStreamsCompliance
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Promise
@@ -35,7 +34,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
-      val p = Source(1 to 4)
+      Source(1 to 4)
         .mapAsyncUnordered(4)(n =>
           Future {
             Await.ready(latch(n), 5.seconds)
@@ -60,7 +59,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val probe = TestProbe()
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 20)
+      Source(1 to 20)
         .mapAsyncUnordered(4)(n =>
           if (n % 3 == 0) {
             probe.ref ! n
@@ -73,12 +72,12 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .to(Sink.fromSubscriber(c))
         .run()
       val sub = c.expectSubscription()
-      c.expectNoMsg(200.millis)
-      probe.expectNoMsg(Duration.Zero)
+      c.expectNoMessage(200.millis)
+      probe.expectNoMessage(Duration.Zero)
       sub.request(1)
       var got = Set(c.expectNext())
       probe.expectMsgAllOf(1, 2, 3, 4, 5)
-      probe.expectNoMsg(500.millis)
+      probe.expectNoMessage(500.millis)
       sub.request(25)
       probe.expectMsgAllOf(6 to 20: _*)
       c.within(3.seconds) {
@@ -93,7 +92,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5)
+      Source(1 to 5)
         .mapAsyncUnordered(4)(n =>
           Future {
             if (n == 3) throw new RuntimeException("err1") with NoStackTrace
@@ -136,7 +135,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5)
+      Source(1 to 5)
         .mapAsyncUnordered(4)(n =>
           if (n == 3) throw new RuntimeException("err2") with NoStackTrace
           else {
@@ -317,7 +316,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       try {
         val N = 10000
         Source(1 to N)
-          .mapAsyncUnordered(parallelism)(i => deferred())
+          .mapAsyncUnordered(parallelism)(_ => deferred())
           .runFold(0)((c, _) => c + 1)
           .futureValue(Timeout(3.seconds)) should ===(N)
       } finally {

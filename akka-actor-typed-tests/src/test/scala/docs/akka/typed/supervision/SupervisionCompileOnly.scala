@@ -9,8 +9,6 @@ import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import scala.concurrent.duration._
 
-import akka.actor.TypedActor.PreRestart
-
 object SupervisionCompileOnly {
 
   val behavior = Behaviors.empty[String]

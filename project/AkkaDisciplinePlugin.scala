@@ -20,16 +20,11 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   val nonFatalWarningsFor = Set(
     // We allow warnings in docs to get the 'snippets' right
     "akka-docs",
-    // To be removed from Akka
-    "akka-agent",
-    "akka-camel",
-    "akka-contrib",
     // To be reviewed
     "akka-actor-typed-tests",
     "akka-bench-jmh",
     "akka-bench-jmh-typed",
     "akka-persistence-tck",
-    "akka-stream-tests",
     "akka-stream-tests-tck")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
@@ -40,7 +35,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     Seq(coverageMinimum := 70, coverageFailOnMinimum := false, coverageOutputHTML := true, coverageHighlighting := true)
 
   lazy val silencerSettings = {
-    val silencerVersion = "1.3.1"
+    val silencerVersion = "1.4.1"
     Seq(
       libraryDependencies ++= Seq(
           compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),

@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
@@ -209,7 +209,7 @@ object ClusterShardingSettings {
  * @param passivateIdleEntityAfter Passivate entities that have not received any message in this interval.
  *   Note that only messages sent through sharding are counted, so direct messages
  *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
- *   Use 0 to disable automatic passivation.
+ *   Use 0 to disable automatic passivation. It is always disabled if `rememberEntities` is enabled.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
@@ -302,7 +302,6 @@ final class ClusterShardingSettings(
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration.asScala)
 
-  @ApiMayChange
   def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 

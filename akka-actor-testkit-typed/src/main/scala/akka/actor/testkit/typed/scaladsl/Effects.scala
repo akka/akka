@@ -71,6 +71,11 @@ object Effects {
   def watched[T](other: ActorRef[T]): Watched[T] = Watched(other)
 
   /**
+   * The behavior started watching `other`, through `context.watchWith(other, message)`
+   */
+  def watchedWith[U, T](other: ActorRef[U], message: T): WatchedWith[U, T] = WatchedWith(other, message)
+
+  /**
    * The behavior started watching `other`, through `context.unwatch(other)`
    */
   def unwatched[T](other: ActorRef[T]): Unwatched[T] = Unwatched(other)

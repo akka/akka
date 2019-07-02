@@ -21,6 +21,7 @@ class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-without-cluster = on
       """).withFallback(RemotingMultiNodeSpec.commonConfig)))
 
   val master = role("master")

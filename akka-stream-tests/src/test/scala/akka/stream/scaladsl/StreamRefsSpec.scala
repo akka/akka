@@ -28,7 +28,6 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
-    import context.dispatcher
     implicit val mat = ActorMaterializer()
 
     def receive = {
@@ -39,25 +38,23 @@ object StreamRefsSpec {
          * For them it's a Source; for us it is a Sink we run data "into"
          */
         val source: Source[String, NotUsed] = Source(List("hello", "world"))
-        val ref: Future[SourceRef[String]] = source.runWith(StreamRefs.sourceRef())
+        val ref: SourceRef[String] = source.runWith(StreamRefs.sourceRef())
 
-        ref.pipeTo(sender())
+        sender() ! ref
 
       case "give-infinite" =>
         val source: Source[String, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map("ping-" + _)
-        val (r: NotUsed, ref: Future[SourceRef[String]]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
+        val (_: NotUsed, ref: SourceRef[String]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
 
-        ref.pipeTo(sender())
+        sender() ! ref
 
       case "give-fail" =>
         val ref = Source.failed[String](new Exception("Booooom!") with NoStackTrace).runWith(StreamRefs.sourceRef())
-
-        ref.pipeTo(sender())
+        sender() ! ref
 
       case "give-complete-asap" =>
         val ref = Source.empty.runWith(StreamRefs.sourceRef())
-
-        ref.pipeTo(sender())
+        sender() ! ref
 
       case "give-subscribe-timeout" =>
         val ref = Source
@@ -65,8 +62,8 @@ object StreamRefsSpec {
           .toMat(StreamRefs.sourceRef())(Keep.right) // attributes like this so they apply to the Sink.sourceRef
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .run()
+        sender() ! ref
 
-        ref.pipeTo(sender())
       //      case "send-bulk" =>
       //        /*
       //         * Here we're able to send a source to a remote recipient
@@ -86,14 +83,12 @@ object StreamRefsSpec {
          */
         val sink =
           StreamRefs.sinkRef[String]().to(Sink.actorRef(probe, "<COMPLETE>")).run()
-
-        sink.pipeTo(sender())
+        sender() ! sink
 
       case "receive-ignore" =>
         val sink =
           StreamRefs.sinkRef[String]().to(Sink.ignore).run()
-
-        sink.pipeTo(sender())
+        sender() ! sink
 
       case "receive-subscribe-timeout" =>
         val sink = StreamRefs
@@ -101,8 +96,7 @@ object StreamRefsSpec {
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .to(Sink.actorRef(probe, "<COMPLETE>"))
           .run()
-
-        sink.pipeTo(sender())
+        sender() ! sink
 
       case "receive-32" =>
         val (sink, driver) = StreamRefs.sinkRef[String]().toMat(TestSink.probe(context.system))(Keep.both).run()
@@ -120,7 +114,7 @@ object StreamRefsSpec {
           "<COMPLETED>"
         }.pipeTo(probe)
 
-        sink.pipeTo(sender())
+        sender() ! sink
 
       //      case "receive-bulk" =>
       //        /*
@@ -160,7 +154,7 @@ object StreamRefsSpec {
       }
       remote {
         artery.canonical.port = 0
-        netty.tcp.port = 0
+        classic.netty.tcp.port = 0
       }
     }
   """).withFallback(ConfigFactory.load())
@@ -404,7 +398,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val p2: TestPublisher.Probe[String] = TestSource.probe[String].to(sinkRef).run()
 
       p1.ensureSubscription()
-      val req = p1.expectRequest()
+      p1.expectRequest()
 
       // will be cancelled immediately, since it's 2nd:
       p2.ensureSubscription()

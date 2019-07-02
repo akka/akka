@@ -4,39 +4,40 @@
 
 package akka.cluster.singleton
 
-import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import akka.AkkaException
+import akka.Done
 import akka.actor.Actor
-import akka.actor.Deploy
-import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
+import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.CoordinatedShutdown
 import akka.actor.DeadLetterSuppression
+import akka.actor.Deploy
 import akka.actor.FSM
+import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster._
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalStableApi
 import akka.cluster.ClusterEvent._
-import akka.AkkaException
-import akka.actor.NoSerializationVerificationNeeded
+import akka.cluster._
+import akka.coordination.lease.LeaseUsageSettings
+import akka.coordination.lease.scaladsl.Lease
+import akka.coordination.lease.scaladsl.LeaseProvider
+import akka.dispatch.Dispatchers
+import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.Promise
-import akka.Done
-import akka.actor.CoordinatedShutdown
-import akka.annotation.DoNotInherit
-import akka.coordination.lease.LeaseUsageSettings
-import akka.pattern.ask
 import akka.util.Timeout
-import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 import com.github.ghik.silencer.silent
-
-import scala.util.control.NonFatal
+import com.typesafe.config.Config
 
 object ClusterSingletonManagerSettings {
 
@@ -163,7 +164,9 @@ object ClusterSingletonManager {
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
    */
   def props(singletonProps: Props, terminationMessage: Any, settings: ClusterSingletonManagerSettings): Props =
-    Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings)).withDeploy(Deploy.local)
+    Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -475,8 +478,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     extends Actor
     with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
-  import ClusterSingletonManager.Internal._
   import ClusterSingletonManager.Internal.OldestChangedBuffer._
+  import ClusterSingletonManager.Internal._
   import settings._
 
   val cluster = Cluster(context.system)
@@ -566,7 +569,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     // subscribe to cluster changes, re-subscribe when restart
     cluster.subscribe(self, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved], classOf[MemberDowned])
 
-    setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
+    startTimerWithFixedDelay(CleanupTimer, Cleanup, 1.minute)
 
     // defer subscription to avoid some jitter when
     // starting/joining several nodes at the same time
@@ -720,7 +723,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (count <= maxHandOverRetries) {
         logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousOldestOption.map(_.address))
         previousOldestOption.foreach(node => peer(node.address) ! HandOverToMe)
-        setTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval, repeat = false)
+        startSingleTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval)
         stay()
       } else if (previousOldestOption.forall(removed.contains)) {
         // can't send HandOverToMe, previousOldest unknown for new node (or restart)
@@ -768,7 +771,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (result) {
         gotoOldest()
       } else {
-        setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
+        startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
         stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
       }
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton =>
@@ -777,7 +780,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       tryAcquireLease()
     case Event(AcquireLeaseFailure(t), _) =>
       log.error(t, "failed to get lease (will be retried)")
-      setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
+      startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
       stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
     case Event(LeaseRetry, _) =>
       // If lease was lost (so previous state was oldest) then we don't try and get the lease
@@ -802,6 +805,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stop()
   }
 
+  @InternalStableApi
   def gotoOldest(): State = {
     val singleton = context.watch(context.actorOf(singletonProps, singletonName))
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
@@ -823,11 +827,11 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       case Some(a) =>
         // send TakeOver request in case the new oldest doesn't know previous oldest
         peer(a.address) ! TakeOverFromMe
-        setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
+        startSingleTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval)
         goto(WasOldest).using(WasOldestData(singleton, newOldestOption = Some(a)))
       case None =>
         // new oldest will initiate the hand-over
-        setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
+        startSingleTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval)
         goto(WasOldest).using(WasOldestData(singleton, newOldestOption = None))
     }
   }
@@ -886,7 +890,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         else
           log.debug("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
         newOldestOption.foreach(node => peer(node.address) ! TakeOverFromMe)
-        setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
+        startSingleTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval)
         stay
       } else
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [$newOldestOption] never occurred")
@@ -1039,7 +1043,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   }
 
   onTransition {
-    case _ -> BecomingOldest => setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
+    case _ -> BecomingOldest => startSingleTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval)
   }
 
   onTransition {

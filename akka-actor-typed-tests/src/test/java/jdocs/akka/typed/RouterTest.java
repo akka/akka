@@ -43,7 +43,7 @@ public class RouterTest {
               return Behaviors.receive(Command.class)
                   .onMessage(
                       DoLog.class,
-                      (notUsed, doLog) -> {
+                      doLog -> {
                         context.getLog().info("Got message {}", doLog.text);
                         return Behaviors.same();
                       })
@@ -57,10 +57,12 @@ public class RouterTest {
     return Behaviors.setup(
         context -> {
           // #pool
-          // make sure the workers are restarted if they fail
-          Behavior<Worker.Command> supervisedWorker =
-              Behaviors.supervise(Worker.behavior).onFailure(SupervisorStrategy.restart());
-          PoolRouter<Worker.Command> pool = Routers.pool(4, supervisedWorker);
+          PoolRouter<Worker.Command> pool =
+              Routers.pool(
+                  4,
+                  () ->
+                      // make sure the workers are restarted if they fail
+                      Behaviors.supervise(Worker.behavior).onFailure(SupervisorStrategy.restart()));
           ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
           for (int i = 0; i < 10; i++) {

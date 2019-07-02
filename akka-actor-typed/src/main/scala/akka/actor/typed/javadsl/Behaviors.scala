@@ -5,22 +5,20 @@
 package akka.actor.typed.javadsl
 
 import java.util.Collections
-import java.util.function.{ Function => JFunction }
+import java.util.function.{ Supplier, Function => JFunction }
 
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
-import akka.annotation.ApiMayChange
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
+import akka.util.ccompat.JavaConverters._
 
-import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
-@ApiMayChange
 object Behaviors {
 
   private[this] val _two2same = new JapiFunction2[ActorContext[Any], Any, Behavior[Any]] {
@@ -40,7 +38,7 @@ object Behaviors {
    * processed by the started behavior.
    */
   def setup[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
-    Behavior.DeferredBehavior(ctx => factory.apply(ctx.asJava))
+    BehaviorImpl.DeferredBehavior(ctx => factory.apply(ctx.asJava))
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -48,7 +46,7 @@ object Behaviors {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def same[T]: Behavior[T] = Behavior.same
+  def same[T]: Behavior[T] = BehaviorImpl.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -56,7 +54,7 @@ object Behaviors {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def unhandled[T]: Behavior[T] = Behavior.unhandled
+  def unhandled[T]: Behavior[T] = BehaviorImpl.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -67,7 +65,7 @@ object Behaviors {
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T]: Behavior[T] = Behavior.stopped
+  def stopped[T]: Behavior[T] = BehaviorImpl.stopped
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -78,17 +76,17 @@ object Behaviors {
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: Effect): Behavior[T] = Behavior.stopped(postStop.apply _)
+  def stopped[T](postStop: Effect): Behavior[T] = BehaviorImpl.stopped(postStop.apply _)
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def empty[T]: Behavior[T] = Behavior.empty
+  def empty[T]: Behavior[T] = BehaviorImpl.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def ignore[T]: Behavior[T] = Behavior.ignore
+  def ignore[T]: Behavior[T] = BehaviorImpl.ignore
 
   /**
    * Construct an actor behavior that can react to incoming messages but not to
@@ -172,11 +170,12 @@ object Behaviors {
    * the same interceptor (defined by the [[akka.actor.typed.BehaviorInterceptor#isSame]] method) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    *
-   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
-   * so that a new instance is created per spawned actor rather than shared among actor instance.
+   * The interceptor is created with a factory function in case it has state and should not be shared.
+   * If the interceptor has no state the same instance can be returned from the factory to avoid unnecessary object
+   * creation.
    */
-  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I], behavior: Behavior[I]): Behavior[O] =
-    BehaviorImpl.intercept(behaviorInterceptor)(behavior)
+  def intercept[O, I](behaviorInterceptor: Supplier[BehaviorInterceptor[O, I]], behavior: Behavior[I]): Behavior[O] =
+    BehaviorImpl.intercept(() => behaviorInterceptor.get())(behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -269,8 +268,6 @@ object Behaviors {
    *     );
    * }}}
    *
-   * Scheduled messages via [[TimerScheduler]] can currently not be used
-   * together with `widen`, see issue #25318.
    *
    * @param behavior
    *          the behavior that will receive the selected messages

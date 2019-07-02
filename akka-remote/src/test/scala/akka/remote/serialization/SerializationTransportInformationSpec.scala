@@ -131,8 +131,9 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config)
 
 class SerializationTransportInformationSpec
     extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
-  akka.remote.netty.tcp {
+  akka.remote.artery.enabled = off
+  akka.remote.classic.netty.tcp {
     hostname = localhost
     port = 0
- }
+  }
 """))

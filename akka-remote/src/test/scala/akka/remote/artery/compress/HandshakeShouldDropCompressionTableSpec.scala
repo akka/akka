@@ -21,7 +21,7 @@ object HandshakeShouldDropCompressionTableSpec {
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
        remote.artery.advanced.handshake-timeout = 10s
-       remote.artery.advanced.image-liveness-timeout = 7s
+       remote.artery.advanced.aeron.image-liveness-timeout = 7s
 
        remote.artery.advanced.compression {
          actor-refs {

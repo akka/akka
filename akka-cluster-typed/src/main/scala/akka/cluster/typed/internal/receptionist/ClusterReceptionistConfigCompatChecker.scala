@@ -5,7 +5,7 @@
 package akka.cluster.typed.internal.receptionist
 
 import akka.annotation.InternalApi
-import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker }
+import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker, Valid }
 import com.typesafe.config.Config
 
 /**
@@ -19,5 +19,8 @@ final class ClusterReceptionistConfigCompatChecker extends JoinConfigCompatCheck
   override def requiredKeys = "akka.cluster.typed.receptionist.distributed-key-count" :: Nil
 
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation =
-    JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
+    if (toCheck.hasPath(requiredKeys.head))
+      JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
+    else
+      Valid // support for rolling update, property doesn't exist in previous versions
 }

@@ -12,8 +12,10 @@ import akka.dispatch.Dispatchers
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
+
 import com.github.ghik.silencer.silent
 
+@silent
 class ClusterConfigSpec extends AkkaSpec {
 
   "Clustering" must {
@@ -35,20 +37,19 @@ class ClusterConfigSpec extends AkkaSpec {
       GossipInterval should ===(1 second)
       GossipTimeToLive should ===(2 seconds)
       HeartbeatInterval should ===(1 second)
-      MonitoredByNrOfMembers should ===(5)
+      MonitoredByNrOfMembers should ===(9)
       HeartbeatExpectedResponseAfter should ===(1 seconds)
       LeaderActionsInterval should ===(1 second)
       UnreachableNodesReaperInterval should ===(1 second)
       PublishStatsInterval should ===(Duration.Undefined)
       AutoDownUnreachableAfter should ===(Duration.Undefined)
-      @silent
-      val _ = DownRemovalMargin should ===(Duration.Zero)
+      DownRemovalMargin should ===(Duration.Zero)
       MinNrOfMembers should ===(1)
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
       SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
-      UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      UseDispatcher should ===(Dispatchers.InternalDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)

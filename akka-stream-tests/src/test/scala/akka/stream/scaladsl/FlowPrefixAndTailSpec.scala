@@ -148,7 +148,7 @@ class FlowPrefixAndTailSpec extends StreamSpec {
     "shut down main stage if substream is empty, even when not subscribed" in assertAllStagesStopped {
       val futureSink = newHeadSink
       val fut = Source.single(1).prefixAndTail(1).runWith(futureSink)
-      val (takes, tail) = Await.result(fut, 3.seconds)
+      val (takes, _) = Await.result(fut, 3.seconds)
       takes should be(Seq(1))
     }
 

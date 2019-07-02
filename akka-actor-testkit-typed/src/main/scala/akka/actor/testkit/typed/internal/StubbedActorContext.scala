@@ -233,7 +233,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val p = (path / n).withUid(rnd().nextInt())
-    val i = new BehaviorTestKitImpl[U](p, Behavior.ignore)
+    val i = new BehaviorTestKitImpl[U](p, BehaviorImpl.ignore)
     _children += p.name -> i
 
     new FunctionRef[U](p, (message, _) => {

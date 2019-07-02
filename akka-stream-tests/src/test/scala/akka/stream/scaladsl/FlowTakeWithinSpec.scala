@@ -42,20 +42,20 @@ class FlowTakeWithinSpec extends StreamSpec {
       (1 to demand3).foreach { _ =>
         pSub.sendNext(input.next())
       }
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "deliver buffered elements onComplete before the timeout" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
       Source(1 to 3).takeWithin(1.second).to(Sink.fromSubscriber(c)).run()
       val cSub = c.expectSubscription()
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       cSub.request(100)
       (1 to 3).foreach { n =>
         c.expectNext(n)
       }
       c.expectComplete()
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
   }

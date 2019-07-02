@@ -47,7 +47,7 @@ import akka.annotation.InternalApi
     signal match {
       case p: PoisonPill =>
         val next = target(ctx, p)
-        if (Behavior.isUnhandled(next)) Behavior.stopped
+        if (Behavior.isUnhandled(next)) BehaviorImpl.stopped
         else next
       case _ => target(ctx, signal)
     }

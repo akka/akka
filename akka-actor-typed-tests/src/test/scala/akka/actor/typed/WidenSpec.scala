@@ -123,13 +123,57 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
         }
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        val ref = spawn(widen(widen(Behaviors.receiveMessage[String] { message =>
+        val ref = spawn(widen(widen(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))
 
         probe.expectTerminated(ref, 3.seconds)
       }
 
+    }
+
+    "be possible to combine with inner timers" in {
+      val probe = TestProbe[String]()
+      val behv = Behaviors
+        .withTimers[String] { timers =>
+          timers.startSingleTimer("timer", "a", 10.millis)
+          Behaviors.receiveMessage { msg =>
+            probe.ref ! msg
+            Behaviors.same
+          }
+        }
+        .widen[String] {
+          case msg => msg.toUpperCase()
+        }
+
+      val ref = spawn(behv)
+
+      probe.expectMessage("A")
+
+      ref ! "b"
+      probe.expectMessage("B")
+    }
+
+    "be possible to combine with outer timers" in {
+      val probe = TestProbe[String]()
+      val behv = Behaviors.withTimers[String] { timers =>
+        timers.startSingleTimer("timer", "a", 10.millis)
+        Behaviors
+          .receiveMessage[String] { msg =>
+            probe.ref ! msg
+            Behaviors.same
+          }
+          .widen[String] {
+            case msg => msg.toUpperCase()
+          }
+      }
+
+      val ref = spawn(behv)
+
+      probe.expectMessage("A")
+
+      ref ! "b"
+      probe.expectMessage("B")
     }
   }
 
