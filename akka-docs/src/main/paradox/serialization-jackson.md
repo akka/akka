@@ -159,7 +159,7 @@ This can be solved by implementing a custom serialization for the enums. Annotat
 `StdDeserializer`.
 
 Scala
-:  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #adt-trait-object }
+:  @@snip [CustomAdtSerializer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/CustomAdtSerializer.scala) { #adt-trait-object }
 
 
 @@@
