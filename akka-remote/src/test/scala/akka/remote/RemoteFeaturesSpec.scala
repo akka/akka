@@ -160,7 +160,7 @@ class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.d
       masterRef.tell(42, senderProbe.ref)
       senderProbe.expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
-        masterRef ! new Exception("crash")
+        masterRef ! "throwException"
       }(masterSystem)
       senderProbe.expectMsg("preRestart")
       masterRef.tell(43, senderProbe.ref)

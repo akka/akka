@@ -9,15 +9,17 @@ import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
-
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
 import java.util.Optional
 import java.io.NotSerializableException
+import java.util.concurrent.TimeoutException
 
+import akka.pattern.AskTimeoutException
 import akka.{ Done, NotUsed }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
+import akka.testkit.JavaSerializable
 
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
@@ -58,12 +60,13 @@ object MiscMessageSerializerSpec {
     }
   }
 
-  class OtherException(msg: String) extends IllegalArgumentException(msg) {
+  class OtherException(msg: String) extends IllegalArgumentException(msg) with JavaSerializable {
     override def equals(other: Any): Boolean = other match {
       case e: OtherException => e.getMessage == getMessage
       case _                 => false
     }
   }
+
 }
 
 class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testConfig) {
@@ -81,6 +84,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "TestException" -> new TestException("err"),
       "TestExceptionNoStack" -> new TestExceptionNoStack("err2"),
       "TestException with cause" -> new TestException("err3", new TestException("cause")),
+      "TimeoutException" -> new TimeoutException("err"),
+      "AskTimeoutException" -> new AskTimeoutException("err"),
+      "ThrowableNotSerializableException" -> new ThrowableNotSerializableException(
+        "orgErr",
+        classOf[IllegalStateException].getName,
+        new IllegalStateException("orgErr")),
       "Status.Success" -> Status.Success("value"),
       "Status.Failure" -> Status.Failure(new TestException("err")),
       "Status.Failure JavaSer" -> Status.Failure(new OtherException("exc")), // exc with JavaSerializer
@@ -147,7 +156,15 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
 
     def verifySerialization(msg: AnyRef): Unit = {
       val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg)) should ===(msg)
+      val result = serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg))
+      msg match {
+        case t: Throwable =>
+          // typically no equals in exceptions
+          result.getClass should ===(t.getClass)
+          result.asInstanceOf[Throwable].getMessage should ===(t.getMessage)
+        case _ =>
+          result should ===(msg)
+      }
     }
 
     // Separate tests due to missing equality on ActorInitializationException
@@ -200,5 +217,45 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       // deserialized.getCause should ===(aiex.getCause)
       deserialized.getCause should be(null)
     }
+
+    "serialize and deserialze ActorInitializationException when cause is not serializable" in {
+      val aiex = ActorInitializationException(ref, "test", new IllegalStateException("err"))
+      val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val deserialized = serializer
+        .fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
+        .asInstanceOf[ActorInitializationException]
+
+      deserialized.getCause.getClass should ===(classOf[ThrowableNotSerializableException])
+      val cause = deserialized.getCause.asInstanceOf[ThrowableNotSerializableException]
+      cause.originalMessage should ===("err")
+      cause.originalClassName should ===(aiex.getCause.getClass.getName)
+    }
+  }
+
+  "serialize and deserialze ThrowableNotSerializableException" in {
+    val notExc = new ThrowableNotSerializableException(
+      "test",
+      classOf[IllegalStateException].getName,
+      new IllegalStateException("test"))
+    val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+    val deserialized = serializer
+      .fromBinary(serializer.toBinary(notExc), serializer.manifest(notExc))
+      .asInstanceOf[ThrowableNotSerializableException]
+
+    deserialized.originalMessage should ===(notExc.originalMessage)
+    deserialized.originalClassName should ===(notExc.originalClassName)
+    deserialized.getCause should ===(null)
+  }
+
+  "serialize and deserialze Status.Failure with unknown exception" in {
+    val statusFailure = Status.Failure(new IllegalStateException("test"))
+    val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+    val deserialized = serializer
+      .fromBinary(serializer.toBinary(statusFailure), serializer.manifest(statusFailure))
+      .asInstanceOf[Status.Failure]
+
+    val Status.Failure(e: ThrowableNotSerializableException) = deserialized
+    e.originalClassName should ===(statusFailure.cause.getClass.getName)
+    e.getCause should ===(null)
   }
 }

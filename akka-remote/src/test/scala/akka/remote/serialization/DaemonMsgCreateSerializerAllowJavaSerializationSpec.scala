@@ -12,15 +12,18 @@ import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.remote.DaemonMsgCreate
 import akka.remote.RemoteScope
+import akka.remote.serialization.DaemonMsgCreateSerializerAllowJavaSerializationSpec.ActorWithDummyParameter
+import akka.remote.serialization.DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActorWithParam
 import akka.routing.FromConfig
 import akka.routing.RoundRobinPool
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
+import akka.testkit.JavaSerializable
 import akka.util.unused
 import com.typesafe.config.ConfigFactory
 
-object DaemonMsgCreateSerializerSpec {
+object DaemonMsgCreateSerializerAllowJavaSerializationSpec {
 
   trait EmptyActor extends Actor {
     def receive = Actor.emptyBehavior
@@ -32,7 +35,7 @@ object DaemonMsgCreateSerializerSpec {
       extends EmptyActor
 }
 
-case class DummyParameter(val inner: String) extends Serializable
+case class DummyParameter(val inner: String) extends JavaSerializable
 
 private[akka] trait SerializationVerification { self: AkkaSpec =>
 
@@ -61,9 +64,15 @@ private[akka] trait SerializationVerification { self: AkkaSpec =>
   }
 }
 
-class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerification {
+class DaemonMsgCreateSerializerAllowJavaSerializationSpec
+    extends AkkaSpec("""
+  # test is verifying Java serialization  
+  akka.actor.allow-java-serialization = on
+  akka.actor.warn-about-java-serializer-usage = off
+  """)
+    with SerializationVerification {
 
-  import DaemonMsgCreateSerializerSpec._
+  import DaemonMsgCreateSerializerAllowJavaSerializationSpec._
   val ser = SerializationExtension(system)
   val supervisor = system.actorOf(Props[MyActor], "supervisor")
 
@@ -71,22 +80,6 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
 
     "resolve DaemonMsgCreateSerializer" in {
       ser.serializerFor(classOf[DaemonMsgCreate]).getClass should ===(classOf[DaemonMsgCreateSerializer])
-    }
-
-    "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
-      verifySerialization {
-        DaemonMsgCreate(props = Props[MyActor], deploy = Deploy(), path = "foo", supervisor = supervisor)
-      }
-    }
-
-    "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with null parameters for Props" in {
-      verifySerialization {
-        DaemonMsgCreate(
-          props = Props(classOf[MyActorWithParam], null),
-          deploy = Deploy(),
-          path = "foo",
-          supervisor = supervisor)
-      }
     }
 
     "serialize and de-serialize DaemonMsgCreate with function creator" in {
@@ -130,17 +123,6 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
       }
     }
 
-    "allows for mixing serializers with and without manifests for props parameters" in {
-      verifySerialization {
-        DaemonMsgCreate(
-          // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
-          props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
-          deploy = Deploy(),
-          path = "foo",
-          supervisor = supervisor)
-      }
-    }
-
   }
 }
 
@@ -150,10 +132,26 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
    akka.actor.serialize-creators=off
   """) with SerializationVerification {
 
-  import DaemonMsgCreateSerializerSpec.MyActor
+  import DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActor
 
   val supervisor = system.actorOf(Props[MyActor], "supervisor")
   val ser = SerializationExtension(system)
+
+  "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
+    verifySerialization {
+      DaemonMsgCreate(props = Props[MyActor], deploy = Deploy(), path = "foo", supervisor = supervisor)
+    }
+  }
+
+  "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with null parameters for Props" in {
+    verifySerialization {
+      DaemonMsgCreate(
+        props = Props(classOf[MyActorWithParam], null),
+        deploy = Deploy(),
+        path = "foo",
+        supervisor = supervisor)
+    }
+  }
 
   "serialize and de-serialize DaemonMsgCreate with Deploy and RouterConfig" in {
     verifySerialization {
@@ -172,6 +170,17 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
       DaemonMsgCreate(
         props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
         deploy = deploy2,
+        path = "foo",
+        supervisor = supervisor)
+    }
+  }
+
+  "allows for mixing serializers with and without manifests for props parameters" in {
+    verifySerialization {
+      DaemonMsgCreate(
+        // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
+        props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
+        deploy = Deploy(),
         path = "foo",
         supervisor = supervisor)
     }

@@ -10,13 +10,14 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ TestDuration, TestProbe }
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
 
+import akka.serialization.jackson.CborSerializable
+
 object ClusterShardingGetStatsSpec {
-  case object Stop
-  case class Ping(id: Long)
-  case object Pong
+  case object Stop extends CborSerializable
+  case class Ping(id: Long) extends CborSerializable
+  case object Pong extends CborSerializable
 
   class ShardedActor extends Actor with ActorLogging {
     log.info(s"entity started {}", self.path)
@@ -60,7 +61,6 @@ object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
       dir = target/ClusterShardingGetStatsSpec/sharding-ddata
       map-size = 10 MiB
     }
-    akka.actor.warn-about-java-serializer-usage=false
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second, third)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))

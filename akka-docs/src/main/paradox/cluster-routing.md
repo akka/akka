@@ -195,6 +195,9 @@ Java
 
 See @ref:[reference configuration](general/configuration.md#config-akka-cluster) for further descriptions of the settings.
 
+When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
+
 ### Router Example with Pool of Remote Deployed Routees
 
 Let's take a look at how to use a cluster aware router on single master node that creates

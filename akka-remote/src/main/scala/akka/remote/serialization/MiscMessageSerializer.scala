@@ -18,7 +18,6 @@ import akka.remote._
 import akka.routing._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
-
 import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration.{ FiniteDuration, TimeUnit }
 
@@ -33,37 +32,38 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val EmptyConfig = ConfigFactory.empty()
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case identify: Identify                   => serializeIdentify(identify)
-    case identity: ActorIdentity              => serializeActorIdentity(identity)
-    case Some(value)                          => serializeSome(value)
-    case None                                 => ParameterlessSerializedMessage
-    case o: Optional[_]                       => serializeOptional(o)
-    case r: ActorRef                          => serializeActorRef(r)
-    case s: Status.Success                    => serializeStatusSuccess(s)
-    case f: Status.Failure                    => serializeStatusFailure(f)
-    case ex: ActorInitializationException     => serializeActorInitializationException(ex)
-    case t: Throwable                         => throwableSupport.serializeThrowable(t)
-    case PoisonPill                           => ParameterlessSerializedMessage
-    case Kill                                 => ParameterlessSerializedMessage
-    case RemoteWatcher.Heartbeat              => ParameterlessSerializedMessage
-    case Done                                 => ParameterlessSerializedMessage
-    case NotUsed                              => ParameterlessSerializedMessage
-    case hbrsp: RemoteWatcher.HeartbeatRsp    => serializeHeartbeatRsp(hbrsp)
-    case rs: RemoteScope                      => serializeRemoteScope(rs)
-    case LocalScope                           => ParameterlessSerializedMessage
-    case a: Address                           => serializeAddressData(a)
-    case u: UniqueAddress                     => serializeClassicUniqueAddress(u)
-    case c: Config                            => serializeConfig(c)
-    case dr: DefaultResizer                   => serializeDefaultResizer(dr)
-    case fc: FromConfig                       => serializeFromConfig(fc)
-    case bp: BalancingPool                    => serializeBalancingPool(bp)
-    case bp: BroadcastPool                    => serializeBroadcastPool(bp)
-    case rp: RandomPool                       => serializeRandomPool(rp)
-    case rrp: RoundRobinPool                  => serializeRoundRobinPool(rrp)
-    case sgp: ScatterGatherFirstCompletedPool => serializeScatterGatherFirstCompletedPool(sgp)
-    case tp: TailChoppingPool                 => serializeTailChoppingPool(tp)
-    case rrc: RemoteRouterConfig              => serializeRemoteRouterConfig(rrc)
-    case _                                    => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case identify: Identify                    => serializeIdentify(identify)
+    case identity: ActorIdentity               => serializeActorIdentity(identity)
+    case Some(value)                           => serializeSome(value)
+    case None                                  => ParameterlessSerializedMessage
+    case o: Optional[_]                        => serializeOptional(o)
+    case r: ActorRef                           => serializeActorRef(r)
+    case s: Status.Success                     => serializeStatusSuccess(s)
+    case f: Status.Failure                     => serializeStatusFailure(f)
+    case ex: ActorInitializationException      => serializeActorInitializationException(ex)
+    case ex: ThrowableNotSerializableException => serializeThrowableNotSerializableException(ex)
+    case t: Throwable                          => throwableSupport.serializeThrowable(t)
+    case PoisonPill                            => ParameterlessSerializedMessage
+    case Kill                                  => ParameterlessSerializedMessage
+    case RemoteWatcher.Heartbeat               => ParameterlessSerializedMessage
+    case Done                                  => ParameterlessSerializedMessage
+    case NotUsed                               => ParameterlessSerializedMessage
+    case hbrsp: RemoteWatcher.HeartbeatRsp     => serializeHeartbeatRsp(hbrsp)
+    case rs: RemoteScope                       => serializeRemoteScope(rs)
+    case LocalScope                            => ParameterlessSerializedMessage
+    case a: Address                            => serializeAddressData(a)
+    case u: UniqueAddress                      => serializeClassicUniqueAddress(u)
+    case c: Config                             => serializeConfig(c)
+    case dr: DefaultResizer                    => serializeDefaultResizer(dr)
+    case fc: FromConfig                        => serializeFromConfig(fc)
+    case bp: BalancingPool                     => serializeBalancingPool(bp)
+    case bp: BroadcastPool                     => serializeBroadcastPool(bp)
+    case rp: RandomPool                        => serializeRandomPool(rp)
+    case rrp: RoundRobinPool                   => serializeRoundRobinPool(rrp)
+    case sgp: ScatterGatherFirstCompletedPool  => serializeScatterGatherFirstCompletedPool(sgp)
+    case tp: TailChoppingPool                  => serializeTailChoppingPool(tp)
+    case rrc: RemoteRouterConfig               => serializeRemoteRouterConfig(rrc)
+    case _                                     => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   private def serializeIdentify(identify: Identify): Array[Byte] =
@@ -122,8 +122,18 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     val builder = ContainerFormats.ActorInitializationException.newBuilder()
     if (ex.getActor ne null)
       builder.setActor(actorRefBuilder(ex.getActor))
-
     builder.setMessage(ex.getMessage).setCause(payloadSupport.payloadBuilder(ex.getCause)).build().toByteArray
+  }
+
+  private def serializeThrowableNotSerializableException(ex: ThrowableNotSerializableException): Array[Byte] = {
+    val builder = ContainerFormats.ThrowableNotSerializable.newBuilder()
+    builder.setMessage(ex.getMessage)
+    if (ex.originalMessage eq null)
+      builder.setOriginalMessage("")
+    else
+      builder.setOriginalMessage(ex.originalMessage)
+    builder.setOriginalClassName(ex.originalClassName)
+    builder.build().toByteArray
   }
 
   private def serializeConfig(c: Config): Array[Byte] = {
@@ -287,6 +297,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val UniqueAddressManifest = "UD"
   private val RemoteWatcherHBRespManifest = "RWHR"
   private val ActorInitializationExceptionManifest = "AIEX"
+  private val ThrowableNotSerializableExceptionManifest = "TNSEX"
   private val LocalScopeManifest = "LS"
   private val RemoteScopeManifest = "RS"
   private val ConfigManifest = "CF"
@@ -318,6 +329,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     UniqueAddressManifest -> deserializeUniqueAddress,
     RemoteWatcherHBRespManifest -> deserializeHeartbeatRsp,
     ActorInitializationExceptionManifest -> deserializeActorInitializationException,
+    ThrowableNotSerializableExceptionManifest -> deserializeThrowableNotSerializableException,
     LocalScopeManifest -> ((_) => LocalScope),
     RemoteScopeManifest -> deserializeRemoteScope,
     ConfigManifest -> deserializeConfig,
@@ -333,35 +345,36 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify                        => IdentifyManifest
-      case _: ActorIdentity                   => ActorIdentityManifest
-      case _: Option[Any]                     => OptionManifest
-      case _: Optional[_]                     => OptionalManifest
-      case _: ActorRef                        => ActorRefManifest
-      case _: Status.Success                  => StatusSuccessManifest
-      case _: Status.Failure                  => StatusFailureManifest
-      case _: ActorInitializationException    => ActorInitializationExceptionManifest
-      case _: Throwable                       => ThrowableManifest
-      case PoisonPill                         => PoisonPillManifest
-      case Kill                               => KillManifest
-      case RemoteWatcher.Heartbeat            => RemoteWatcherHBManifest
-      case Done                               => DoneManifest
-      case NotUsed                            => NotUsedManifest
-      case _: Address                         => AddressManifest
-      case _: UniqueAddress                   => UniqueAddressManifest
-      case _: RemoteWatcher.HeartbeatRsp      => RemoteWatcherHBRespManifest
-      case LocalScope                         => LocalScopeManifest
-      case _: RemoteScope                     => RemoteScopeManifest
-      case _: Config                          => ConfigManifest
-      case _: FromConfig                      => FromConfigManifest
-      case _: DefaultResizer                  => DefaultResizerManifest
-      case _: BalancingPool                   => BalancingPoolManifest
-      case _: BroadcastPool                   => BroadcastPoolManifest
-      case _: RandomPool                      => RandomPoolManifest
-      case _: RoundRobinPool                  => RoundRobinPoolManifest
-      case _: ScatterGatherFirstCompletedPool => ScatterGatherPoolManifest
-      case _: TailChoppingPool                => TailChoppingPoolManifest
-      case _: RemoteRouterConfig              => RemoteRouterConfigManifest
+      case _: Identify                          => IdentifyManifest
+      case _: ActorIdentity                     => ActorIdentityManifest
+      case _: Option[Any]                       => OptionManifest
+      case _: Optional[_]                       => OptionalManifest
+      case _: ActorRef                          => ActorRefManifest
+      case _: Status.Success                    => StatusSuccessManifest
+      case _: Status.Failure                    => StatusFailureManifest
+      case _: ActorInitializationException      => ActorInitializationExceptionManifest
+      case _: ThrowableNotSerializableException => ThrowableNotSerializableExceptionManifest
+      case _: Throwable                         => ThrowableManifest
+      case PoisonPill                           => PoisonPillManifest
+      case Kill                                 => KillManifest
+      case RemoteWatcher.Heartbeat              => RemoteWatcherHBManifest
+      case Done                                 => DoneManifest
+      case NotUsed                              => NotUsedManifest
+      case _: Address                           => AddressManifest
+      case _: UniqueAddress                     => UniqueAddressManifest
+      case _: RemoteWatcher.HeartbeatRsp        => RemoteWatcherHBRespManifest
+      case LocalScope                           => LocalScopeManifest
+      case _: RemoteScope                       => RemoteScopeManifest
+      case _: Config                            => ConfigManifest
+      case _: FromConfig                        => FromConfigManifest
+      case _: DefaultResizer                    => DefaultResizerManifest
+      case _: BalancingPool                     => BalancingPoolManifest
+      case _: BroadcastPool                     => BroadcastPoolManifest
+      case _: RandomPool                        => RandomPoolManifest
+      case _: RoundRobinPool                    => RoundRobinPoolManifest
+      case _: ScatterGatherFirstCompletedPool   => ScatterGatherPoolManifest
+      case _: TailChoppingPool                  => TailChoppingPoolManifest
+      case _: RemoteRouterConfig                => RemoteRouterConfigManifest
       case _ =>
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -464,6 +477,11 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       if (serializedEx.hasActor) ref else null,
       reconstructedMessage,
       payloadSupport.deserializePayload(serializedEx.getCause).asInstanceOf[Throwable])
+  }
+
+  private def deserializeThrowableNotSerializableException(bytes: Array[Byte]): ThrowableNotSerializableException = {
+    val serializedEx = ContainerFormats.ThrowableNotSerializable.parseFrom(bytes)
+    new ThrowableNotSerializableException(serializedEx.getOriginalMessage, serializedEx.getOriginalClassName)
   }
 
   private def deserializeRemoteScope(bytes: Array[Byte]): RemoteScope = {

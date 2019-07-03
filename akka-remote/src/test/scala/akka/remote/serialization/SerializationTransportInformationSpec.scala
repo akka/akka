@@ -17,6 +17,7 @@ import akka.remote.RARP
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -24,7 +25,7 @@ import com.typesafe.config.ConfigFactory
 object SerializationTransportInformationSpec {
 
   final case class TestMessage(from: ActorRef, to: ActorRef)
-  final case class JavaSerTestMessage(from: ActorRef, to: ActorRef)
+  final case class JavaSerTestMessage(from: ActorRef, to: ActorRef) extends JavaSerializable
 
   class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 666
@@ -67,10 +68,8 @@ object SerializationTransportInformationSpec {
 }
 
 abstract class AbstractSerializationTransportInformationSpec(config: Config)
-    extends AkkaSpec(
-      config.withFallback(
-        ConfigFactory.parseString(
-          """
+    extends AkkaSpec(config.withFallback(
+      ConfigFactory.parseString("""
     akka {
       loglevel = info
       actor {
@@ -82,7 +81,6 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config)
         }
         serialization-bindings {
           "akka.remote.serialization.SerializationTransportInformationSpec$TestMessage" = test
-          "akka.remote.serialization.SerializationTransportInformationSpec$JavaSerTestMessage" = java
         }
       }
     }

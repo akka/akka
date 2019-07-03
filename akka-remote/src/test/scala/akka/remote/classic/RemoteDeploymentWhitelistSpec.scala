@@ -55,7 +55,7 @@ object RemoteDeploymentWhitelistSpec {
   val cfg: Config = ConfigFactory.parseString(s"""
     akka {
       actor.provider = remote
-
+      
       remote {
         use-unsafe-remote-features-without-cluster = on
         classic.enabled-transports = [
@@ -89,6 +89,9 @@ object RemoteDeploymentWhitelistSpec {
         /danger-mouse.remote = "akka.test://remote-sys@localhost:12346"
       }
     }
+    # test is using Java serialization and not priority to rewrite
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
   """)
 
   def muteSystem(system: ActorSystem): Unit = {

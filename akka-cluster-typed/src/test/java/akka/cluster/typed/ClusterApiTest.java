@@ -29,7 +29,6 @@ public class ClusterApiTest extends JUnitSuite {
                 + "akka.coordinated-shutdown.run-by-actor-system-terminate = off \n"
                 + "akka.actor { \n"
                 + "  serialize-messages = off \n"
-                + "  allow-java-serialization = off \n"
                 + "}");
 
     ActorSystem<?> system1 =

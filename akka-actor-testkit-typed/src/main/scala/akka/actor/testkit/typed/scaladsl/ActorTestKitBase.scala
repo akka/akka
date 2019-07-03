@@ -101,6 +101,11 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
   def createTestProbe[M](name: String): TestProbe[M] = testKit.createTestProbe(name)
 
   /**
+   * Additional testing utilities for serialization.
+   */
+  def serializationTestKit: SerializationTestKit = testKit.serializationTestKit
+
+  /**
    * To be implemented by "more" concrete class that can mixin `BeforeAndAfterAll` or similar,
    * for example `FlatSpecLike with BeforeAndAfterAll`. Implement by calling
    * `testKit.shutdownTestKit()`.

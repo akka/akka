@@ -51,8 +51,6 @@ object ClusterShardingSpec {
 
       akka.actor {
         serialize-messages = off
-        # issue #24465 missing serializer for GetShardRegionStats
-        #allow-java-serialization = off
 
        serializers {
           test = "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$Serializer"

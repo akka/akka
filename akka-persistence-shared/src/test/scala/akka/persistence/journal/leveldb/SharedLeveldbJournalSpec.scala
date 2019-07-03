@@ -7,10 +7,10 @@ package akka.persistence.journal.leveldb
 import akka.actor._
 import akka.persistence._
 import akka.testkit.{ AkkaSpec, TestProbe }
+import com.typesafe.config.ConfigFactory
 
 object SharedLeveldbJournalSpec {
-  val config =
-    """
+  val config = ConfigFactory.parseString(s"""
       akka {
         actor {
           provider = remote
@@ -41,7 +41,7 @@ object SharedLeveldbJournalSpec {
         log-dead-letters-during-shutdown = off
         test.single-expect-default = 10s
       }
-    """
+    """).withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
 
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
     override def receiveRecover = {

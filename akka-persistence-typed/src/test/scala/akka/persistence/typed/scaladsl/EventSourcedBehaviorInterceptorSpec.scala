@@ -27,6 +27,7 @@ object EventSourcedBehaviorInterceptorSpec {
         akka.loglevel = INFO
         akka.loggers = [akka.testkit.TestEventListener]
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+        akka.persistence.journal.inmem.test-serialization = on
         """)
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =

@@ -20,7 +20,10 @@ import com.github.ghik.silencer.silent
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
     extends AkkaSpec("""
          akka.remote.artery.enabled = false
-         akka.actor.provider = remote 
+         akka.actor.provider = remote
+         # test is using Java serialization and not priority to rewrite
+         akka.actor.allow-java-serialization = on
+         akka.actor.warn-about-java-serializer-usage = off
       """)
     with DefaultTimeout
     with ImplicitSender {

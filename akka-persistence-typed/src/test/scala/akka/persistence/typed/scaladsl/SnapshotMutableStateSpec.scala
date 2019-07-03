@@ -19,6 +19,7 @@ import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
 import akka.persistence.{ SnapshotMetadata => UntypedSnapshotMetadata }
+import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -76,14 +77,14 @@ object SnapshotMutableStateSpec {
     slow-snapshot-store.class = "${classOf[SlowInMemorySnapshotStore].getName}"
     """)
 
-  sealed trait Command
+  sealed trait Command extends CborSerializable
   case object Increment extends Command
   final case class GetValue(replyTo: ActorRef[Int]) extends Command
 
-  sealed trait Event
+  sealed trait Event extends CborSerializable
   case object Incremented extends Event
 
-  final class MutableState(var value: Int)
+  final class MutableState(var value: Int) extends CborSerializable
 
   def counter(
       persistenceId: PersistenceId,

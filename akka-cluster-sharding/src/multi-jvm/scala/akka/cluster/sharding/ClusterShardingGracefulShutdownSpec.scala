@@ -46,7 +46,9 @@ abstract class ClusterShardingGracefulShutdownSpecConfig(val mode: String) exten
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
@@ -65,7 +67,9 @@ abstract class ClusterShardingGracefulShutdownSpecConfig(val mode: String) exten
       dir = target/ClusterShardingGracefulShutdownSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 object PersistentClusterShardingGracefulShutdownSpecConfig

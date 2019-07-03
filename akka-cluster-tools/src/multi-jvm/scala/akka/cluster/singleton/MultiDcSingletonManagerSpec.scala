@@ -7,13 +7,12 @@ package akka.cluster.singleton
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.{ Actor, ActorLogging, Address, PoisonPill, Props }
 import akka.cluster.Cluster
-
 import akka.testkit.ImplicitSender
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.cluster.ClusterSettings
+import akka.serialization.jackson.CborSerializable
 
 object MultiDcSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -60,8 +59,8 @@ class MultiDcSingleton extends Actor with ActorLogging {
   }
 }
 object MultiDcSingleton {
-  case object Ping
-  case class Pong(fromDc: String, fromAddress: Address, roles: Set[String])
+  case object Ping extends CborSerializable
+  case class Pong(fromDc: String, fromAddress: Address, roles: Set[String]) extends CborSerializable
 }
 
 abstract class MultiDcSingletonManagerSpec

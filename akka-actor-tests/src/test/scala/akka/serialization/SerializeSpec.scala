@@ -5,14 +5,16 @@
 package akka.serialization
 
 import language.postfixOps
+
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._
 
 import scala.concurrent.Await
-import akka.util.{ unused, Timeout }
 
+import akka.util.{ unused, Timeout }
 import scala.concurrent.duration._
+
 import com.typesafe.config._
 import akka.pattern.ask
 import java.nio.ByteOrder
@@ -22,6 +24,7 @@ import akka.actor.dungeon.SerializationCheckFailedException
 import com.github.ghik.silencer.silent
 import test.akka.serialization.NoVerification
 import SerializationTests._
+import akka.util.ByteString
 
 object SerializationTests {
 
@@ -38,12 +41,12 @@ object SerializationTests {
         serialization-bindings {
           "akka.serialization.SerializationTests$$Person" = java
           "akka.serialization.SerializationTests$$Address" = java
-          "akka.serialization.TestSerializable" = test
+          "akka.serialization.SerializationTests$$Marker" = test
           "akka.serialization.SerializationTests$$PlainMessage" = test
           "akka.serialization.SerializationTests$$A" = java
           "akka.serialization.SerializationTests$$B" = test
           "akka.serialization.SerializationTests$$D" = test
-          "akka.serialization.TestSerializable2" = test2
+          "akka.serialization.SerializationTests$$Marker2" = test2
           "akka.serialization.SerializationTests$$AbstractOther" = other
         }
       }
@@ -56,13 +59,15 @@ object SerializationTests {
 
   final case class Record(id: Int, person: Person)
 
+  protected[akka] trait Marker
+  protected[akka] trait Marker2
   @silent // can't use unused otherwise case class below gets a deprecated
-  class SimpleMessage(s: String) extends TestSerializable
+  class SimpleMessage(s: String) extends Marker
 
   @silent
   class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
 
-  trait AnotherInterface extends TestSerializable
+  trait AnotherInterface extends Marker
 
   class AnotherMessage extends AnotherInterface
 
@@ -74,7 +79,7 @@ object SerializationTests {
 
   class BothTestSerializableAndJavaSerializable(s: String) extends SimpleMessage(s) with Serializable
 
-  class BothTestSerializableAndTestSerializable2(@unused s: String) extends TestSerializable with TestSerializable2
+  class BothTestSerializableAndTestSerializable2(@unused s: String) extends Marker with Marker2
 
   trait A
   trait B
@@ -93,6 +98,7 @@ object SerializationTests {
       actor {
         serialize-messages = on
         serialize-creators = on
+        allow-java-serialization = on
       }
     }
   """
@@ -120,6 +126,18 @@ object SerializationTests {
     ActorSystem("SerializationSystem", mostlyReferenceConf)
   }
 
+  def allowJavaSerializationSystem: ActorSystem = {
+    val referenceConf = ConfigFactory.defaultReference()
+    val conf = ConfigFactory
+      .parseString("""
+      akka.actor.warn-about-java-serializer-usage = on
+      akka.actor.allow-java-serialization = on
+      """)
+      .withFallback(ConfigFactory.parseString(serializeConf))
+      .withFallback(AkkaSpec.testConf.withFallback(referenceConf))
+    ActorSystem("SerializationSystem", conf)
+  }
+
   val systemMessageMultiSerializerConf = """
     akka {
       actor {
@@ -139,34 +157,16 @@ object SerializationTests {
 class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
   val ser = SerializationExtension(system)
-  import ser._
 
   val address = SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050")
-  val person = SerializationTests.Person(
-    "debasish ghosh",
-    25,
-    SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050"))
 
   "Serialization" must {
 
     "have correct bindings" in {
       ser.bindings.collectFirst { case (c, s) if c == address.getClass => s.getClass } should ===(
-        Some(classOf[JavaSerializer]))
+        Some(classOf[DisabledJavaSerializer]))
       ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] => s.getClass } should ===(
         Some(classOf[NoopSerializer]))
-    }
-
-    "serialize Address" in {
-      assert(deserialize(serialize(address).get, classOf[SerializationTests.Address]).get === address)
-    }
-
-    "serialize Person" in {
-      assert(deserialize(serialize(person).get, classOf[Person]).get === person)
-    }
-
-    "serialize record with default serializer" in {
-      val r = Record(100, person)
-      assert(deserialize(serialize(r).get, classOf[Record]).get === r)
     }
 
     "not serialize ActorCell" in {
@@ -180,25 +180,6 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
       a ! new ObjectOutputStream(new ByteArrayOutputStream())
       expectMsg("pass")
       system.stop(a)
-    }
-
-    "serialize DeadLetterActorRef" in {
-      val outbuf = new ByteArrayOutputStream()
-      val out = new ObjectOutputStream(outbuf)
-      val a = ActorSystem("SerializeDeadLeterActorRef", AkkaSpec.testConf)
-      try {
-        out.writeObject(a.deadLetters)
-        out.flush()
-        out.close()
-
-        val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
-        JavaSerializer.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
-          val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
-          (deadLetters eq a.deadLetters) should ===(true)
-        }
-      } finally {
-        shutdown(a)
-      }
     }
 
     "resolve serializer by direct interface" in {
@@ -237,14 +218,14 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "resolve serializer in the order of the bindings" in {
-      ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
+      ser.serializerFor(classOf[A]).getClass should ===(classOf[DisabledJavaSerializer])
       ser.serializerFor(classOf[B]).getClass should ===(classOf[NoopSerializer])
       // JavaSerializer lower prio when multiple found
       ser.serializerFor(classOf[C]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer in the order of most specific binding first" in {
-      ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
+      ser.serializerFor(classOf[A]).getClass should ===(classOf[DisabledJavaSerializer])
       ser.serializerFor(classOf[D]).getClass should ===(classOf[NoopSerializer])
       ser.serializerFor(classOf[E]).getClass should ===(classOf[NoopSerializer])
     }
@@ -337,13 +318,65 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
 
   "Serialization settings from reference.conf" must {
 
-    "declare Serializable classes to be use JavaSerializer" in {
-      serializerMustBe(classOf[Serializable], classOf[JavaSerializer])
-      serializerMustBe(classOf[String], classOf[JavaSerializer])
+    "declare Serializable classes to be use DisabledJavaSerializer" in {
+      serializerMustBe(classOf[Serializable], classOf[DisabledJavaSerializer])
     }
 
     "declare Array[Byte] to use ByteArraySerializer" in {
       serializerMustBe(classOf[Array[Byte]], classOf[ByteArraySerializer])
+    }
+
+    "declare Long, Int, String, ByteString to use primitive serializers" in {
+      serializerMustBe(classOf[java.lang.Long], classOf[LongSerializer])
+      serializerMustBe(classOf[java.lang.Integer], classOf[IntSerializer])
+      serializerMustBe(classOf[String], classOf[StringSerializer])
+      serializerMustBe(classOf[ByteString.ByteString1], classOf[ByteStringSerializer])
+      serializerMustBe(classOf[ByteString.ByteString1C], classOf[ByteStringSerializer])
+      serializerMustBe(classOf[ByteString.ByteStrings], classOf[ByteStringSerializer])
+
+    }
+
+    "not support serialization for other classes" in {
+      intercept[NotSerializableException] { ser.serializerFor(classOf[Object]) }
+    }
+
+    "not allow serialize function" in {
+      val f = (i: Int) => i + 1
+      serializerMustBe(f.getClass, classOf[DisabledJavaSerializer])
+    }
+
+  }
+}
+
+class AllowJavaSerializationSpec extends AkkaSpec(SerializationTests.allowJavaSerializationSystem) {
+
+  val ser = SerializationExtension(system)
+  def serializerMustBe(toSerialize: Class[_], expectedSerializer: Class[_]) =
+    ser.serializerFor(toSerialize).getClass should ===(expectedSerializer)
+
+  val address = SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050")
+  val person = SerializationTests.Person(
+    "debasish ghosh",
+    25,
+    SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050"))
+
+  val messagePrefix = "Using the Java serializer for class"
+
+  "Serialization settings with allow-java-serialization = on" must {
+
+    "declare Serializable classes to be use JavaSerializer" in {
+      serializerMustBe(classOf[Serializable], classOf[JavaSerializer])
+    }
+
+    "declare Array[Byte] to use ByteArraySerializer" in {
+      serializerMustBe(classOf[Array[Byte]], classOf[ByteArraySerializer])
+    }
+
+    "declare Long, Int, String, ByteString to use primitive serializers" in {
+      serializerMustBe(classOf[java.lang.Long], classOf[LongSerializer])
+      serializerMustBe(classOf[java.lang.Integer], classOf[IntSerializer])
+      serializerMustBe(classOf[String], classOf[StringSerializer])
+      serializerMustBe(classOf[ByteString.ByteString1], classOf[ByteStringSerializer])
     }
 
     "not support serialization for other classes" in {
@@ -359,17 +392,6 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
       f2(3) should ===(4)
     }
 
-  }
-}
-
-class DefaultSerializationWarningSpec
-    extends AkkaSpec(ConfigFactory.parseString("akka.actor.warn-about-java-serializer-usage = on")) {
-
-  val ser = SerializationExtension(system)
-  val messagePrefix = "Using the default Java serializer for class"
-
-  "Using the default Java serializer" must {
-
     "log a warning when serializing classes outside of java.lang package" in {
       EventFilter.warning(start = messagePrefix, occurrences = 1).intercept {
         ser.serializerFor(classOf[java.math.BigDecimal])
@@ -382,20 +404,72 @@ class DefaultSerializationWarningSpec
       }
     }
 
-  }
+    "have correct bindings" in {
+      ser.bindings.collectFirst { case (c, s) if c == address.getClass => s.getClass } should ===(
+        Some(classOf[JavaSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] => s.getClass } should ===(
+        Some(classOf[NoopSerializer]))
+    }
 
+    "serialize Address" in {
+      assert(ser.deserialize(ser.serialize(address).get, classOf[SerializationTests.Address]).get === address)
+    }
+
+    "serialize Person" in {
+      assert(ser.deserialize(ser.serialize(person).get, classOf[Person]).get === person)
+    }
+
+    "serialize record with Java serializer" in {
+      val r = Record(100, person)
+      assert(ser.deserialize(ser.serialize(r).get, classOf[Record]).get === r)
+    }
+
+    "not serialize ActorCell" in {
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case o: ObjectOutputStream =>
+            try o.writeObject(this)
+            catch { case _: NotSerializableException => testActor ! "pass" }
+        }
+      }))
+      a ! new ObjectOutputStream(new ByteArrayOutputStream())
+      expectMsg("pass")
+      system.stop(a)
+    }
+
+    "serialize DeadLetterActorRef" in {
+      val outbuf = new ByteArrayOutputStream()
+      val out = new ObjectOutputStream(outbuf)
+      val a = ActorSystem("SerializeDeadLeterActorRef", AkkaSpec.testConf)
+      try {
+        out.writeObject(a.deadLetters)
+        out.flush()
+        out.close()
+
+        val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
+        JavaSerializer.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
+          val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
+          (deadLetters eq a.deadLetters) should ===(true)
+        }
+      } finally {
+        shutdown(a)
+      }
+    }
+
+  }
 }
 
 class NoVerificationWarningSpec
-    extends AkkaSpec(
-      ConfigFactory.parseString(
-        "akka.actor.warn-about-java-serializer-usage = on\n" +
-        "akka.actor.warn-on-no-serialization-verification = on")) {
+    extends AkkaSpec(ConfigFactory.parseString("""
+        akka.actor.allow-java-serialization = on
+        akka.actor.warn-about-java-serializer-usage = on
+        akka.actor.warn-on-no-serialization-verification = on
+        """)) {
 
   val ser = SerializationExtension(system)
-  val messagePrefix = "Using the default Java serializer for class"
+  val messagePrefix = "Using the Java serializer for class"
 
-  "When warn-on-no-serialization-verification = on, using the default Java serializer" must {
+  "When warn-on-no-serialization-verification = on, using the Java serializer" must {
 
     "log a warning on classes without extending NoSerializationVerificationNeeded" in {
       EventFilter.warning(start = messagePrefix, occurrences = 1).intercept {
@@ -412,15 +486,16 @@ class NoVerificationWarningSpec
 }
 
 class NoVerificationWarningOffSpec
-    extends AkkaSpec(
-      ConfigFactory.parseString(
-        "akka.actor.warn-about-java-serializer-usage = on\n" +
-        "akka.actor.warn-on-no-serialization-verification = off")) {
+    extends AkkaSpec(ConfigFactory.parseString("""
+        akka.actor.allow-java-serialization = on
+        akka.actor.warn-about-java-serializer-usage = on
+        akka.actor.warn-on-no-serialization-verification = off
+        """)) {
 
   val ser = SerializationExtension(system)
-  val messagePrefix = "Using the default Java serializer for class"
+  val messagePrefix = "Using the Java serializer for class"
 
-  "When warn-on-no-serialization-verification = off, using the default Java serializer" must {
+  "When warn-on-no-serialization-verification = off, using the Java serializer" must {
 
     "log a warning on classes without extending NoSerializationVerificationNeeded" in {
       EventFilter.warning(start = messagePrefix, occurrences = 1).intercept {
@@ -435,9 +510,6 @@ class NoVerificationWarningOffSpec
     }
   }
 }
-
-protected[akka] trait TestSerializable
-protected[akka] trait TestSerializable2
 
 protected[akka] class NoopSerializer extends Serializer {
   def includeManifest: Boolean = false

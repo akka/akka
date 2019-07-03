@@ -324,6 +324,10 @@ actors is also used in Akka Typed, also for persistent actors. When picking seri
 you should also consider that it must be possible read old events when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
+You need to enable @ref:[serialization](../serialization.md) for your commands (messages), events, and state (snapshot).
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
 ## Recovery
 
 It is strongly discouraged to perform side effects in `applyEvent`,

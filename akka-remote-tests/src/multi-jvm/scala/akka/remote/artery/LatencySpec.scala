@@ -15,6 +15,7 @@ import akka.dispatch.Dispatchers
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
+import akka.serialization.jackson.CborSerializable
 import akka.stream.ActorMaterializer
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
@@ -65,7 +66,7 @@ object LatencySpec extends MultiNodeConfig {
        }
        """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
-  final case object Reset
+  final case object Reset extends CborSerializable
 
   def echoProps(): Props =
     Props(new Echo).withDispatcher(Dispatchers.InternalDispatcherId)

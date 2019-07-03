@@ -4,9 +4,6 @@
 
 package akka.testkit
 
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 
 import akka.actor.ExtendedActorSystem
@@ -19,11 +16,11 @@ import akka.util.ClassLoaderObjectInputStream
  *
  * ```
  * akka.actor.serialization-bindings {
- *   "my.test.AdHocMessage" = test-message-serializer
+ *   "my.test.AdHocMessage" = java-test
  * }
  * ```
  */
-class TestMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+class TestJavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   def includeManifest: Boolean = false
 

@@ -28,6 +28,7 @@ import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.EventFilter
 import akka.testkit.TestEvent.Mute
 import akka.util.unused
@@ -47,16 +48,16 @@ object EventSourcedBehaviorRetentionSpec {
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     """)
 
-  sealed trait Command
+  sealed trait Command extends CborSerializable
   final case object Increment extends Command
   final case class IncrementWithPersistAll(nr: Int) extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
   final case object StopIt extends Command
 
-  sealed trait Event
+  sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event
 
-  final case class State(value: Int, history: Vector[Int])
+  final case class State(value: Int, history: Vector[Int]) extends CborSerializable
 
   def counter(persistenceId: PersistenceId)(implicit system: ActorSystem[_]): Behavior[Command] =
     Behaviors.setup(ctx => counter(ctx, persistenceId))

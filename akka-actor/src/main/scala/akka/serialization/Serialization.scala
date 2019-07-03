@@ -350,7 +350,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             if (shouldWarnAboutJavaSerializer(clazz, ser)) {
               _log.warning(
                 LogMarker.Security,
-                "Using the default Java serializer for class [{}] which is not recommended because of " +
+                "Using the Java serializer for class [{}] which is not recommended because of " +
                 "performance implications. Use another serializer or disable this warning using the setting " +
                 "'akka.actor.warn-about-java-serializer-usage'",
                 clazz.getName)
@@ -550,4 +550,5 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     !serializedClass.getName.startsWith("java.lang.") &&
     !suppressWarningOnNonSerializationVerification(serializedClass)
   }
+
 }

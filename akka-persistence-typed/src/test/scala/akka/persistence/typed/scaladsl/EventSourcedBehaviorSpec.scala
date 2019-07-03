@@ -40,6 +40,7 @@ import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.{ SnapshotMetadata => UntypedSnapshotMetadata }
 import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
+import akka.serialization.jackson.CborSerializable
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.testkit.EventFilter
@@ -94,7 +95,7 @@ object EventSourcedBehaviorSpec {
     }
     """)
 
-  sealed trait Command
+  sealed trait Command extends CborSerializable
   final case object Increment extends Command
   final case object IncrementThenLogThenStop extends Command
   final case object IncrementTwiceThenLogThenStop extends Command
@@ -114,10 +115,10 @@ object EventSourcedBehaviorSpec {
   final case object Fail extends Command
   final case object StopIt extends Command
 
-  sealed trait Event
+  sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event
 
-  final case class State(value: Int, history: Vector[Int])
+  final case class State(value: Int, history: Vector[Int]) extends CborSerializable
 
   case object Tick
 
