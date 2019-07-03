@@ -258,7 +258,8 @@ Scala
 Java
 :  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingReplyCompileOnlyTest.java) { #sharded-response }
 
-A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to.
+A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
+could be included in the message if it is not known statically.
 
 
 ### Schedule periodically
