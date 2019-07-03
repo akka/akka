@@ -538,9 +538,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * It is recommended to provide a cause.
    */
-  @deprecated(
+  /*@deprecated(
     "Use other overload to provide a cause for cancellation or use SubscriptionWithCancelException.NoCause",
-    since = "2.6.0")
+    since = "2.6.0")*/
   final protected def cancel[T](in: Inlet[T]): Unit = cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
 
   /**
@@ -1803,7 +1803,7 @@ trait OutHandler {
    * be called for this port.
    */
   @throws(classOf[Exception])
-  @deprecated("Override method that provides cause.", since = "2.6.0")
+  //@deprecated("Override method that provides cause.", since = "2.6.0")
   def onDownstreamFinish(): Unit =
     GraphInterpreter.currentInterpreter.activeStage.cancelStage(lastCancellationCause)
 
