@@ -4,54 +4,108 @@
 
 package akka.stream.io
 
-import java.io.InputStream
+import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
-import akka.stream.scaladsl.{ Sink, StreamConverters }
+import akka.Done
+import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.util.ByteString
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
+import scala.util.Success
+import com.github.ghik.silencer.silent
+
+@silent
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  "InputStreamSource" must {
+  private def inputStreamFor(bytes: Array[Byte]): InputStream =
+    new ByteArrayInputStream(bytes)
 
-    "not signal when no demand" in {
-      val f = StreamConverters.fromInputStream(() =>
-        new InputStream {
-          override def read(): Int = 42
-        })
-
-      Await.result(f.takeWithin(5.seconds).runForeach(_ => ()), 10.seconds)
-    }
+  "InputStream Source" must {
 
     "read bytes from InputStream" in assertAllStagesStopped {
-      val f = StreamConverters
-        .fromInputStream(() =>
-          new InputStream {
-            @volatile var buf = List("a", "b", "c").map(_.charAt(0).toInt)
-            override def read(): Int = {
-              buf match {
-                case head :: tail =>
-                  buf = tail
-                  head
-                case Nil =>
-                  -1
-              }
-
-            }
-          })
-        .runWith(Sink.head)
+      val f =
+        StreamConverters.fromInputStream(() => inputStreamFor(Array('a', 'b', 'c').map(_.toByte))).runWith(Sink.head)
 
       f.futureValue should ===(ByteString("abc"))
+    }
+
+    "record number of bytes read" in assertAllStagesStopped {
+      StreamConverters
+        .fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .futureValue shouldEqual IOResult(3, Success(Done))
+    }
+
+    "return fail if close fails" in assertAllStagesStopped {
+      val fail = new RuntimeException("oh dear")
+      StreamConverters
+        .fromInputStream(() =>
+          new InputStream {
+            override def read(): Int = -1
+            override def close(): Unit = throw fail
+          })
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .failed
+        .futureValue
+        .getCause shouldEqual fail
+    }
+
+    "return failure if creation fails" in {
+      val fail = new RuntimeException("oh dear indeed")
+      StreamConverters
+        .fromInputStream(() => {
+          throw fail
+        })
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .failed
+        .futureValue
+        .getCause shouldEqual fail
+    }
+
+    "handle failure on read" in assertAllStagesStopped {
+      val fail = new RuntimeException("oh dear indeed")
+      StreamConverters
+        .fromInputStream(() => () => throw fail)
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .failed
+        .futureValue
+        .getCause shouldEqual fail
+    }
+
+    "include number of bytes when downstream doesn't read all of it" in {
+      val f = StreamConverters
+        .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
+        .take(1) // stream is not completely read
+        .toMat(Sink.ignore)(Keep.left)
+        .run
+        .futureValue
+
+      f.status shouldEqual Success(Done)
+      f.count shouldBe >=(1L)
+    }
+
+    "handle actor materializer shutdown" in {
+      val mat = ActorMaterializer()
+      val source = StreamConverters.fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
+      val pubSink = Sink.asPublisher[ByteString](false)
+      val (f, neverPub) = source.toMat(pubSink)(Keep.both).run()(mat)
+      val c = TestSubscriber.manualProbe[ByteString]()
+      neverPub.subscribe(c)
+      c.expectSubscription()
+      mat.shutdown()
+      f.failed.futureValue shouldBe an[AbruptStageTerminationException]
     }
 
     "emit as soon as read" in assertAllStagesStopped {

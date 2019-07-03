@@ -78,7 +78,7 @@ import akka.event.LoggingFilterWithMarker
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
   override val log: Logger = new LoggerAdapterImpl(
     untypedSystem.eventStream,
-    getClass,
+    classOf[ActorSystem[_]],
     name,
     LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()

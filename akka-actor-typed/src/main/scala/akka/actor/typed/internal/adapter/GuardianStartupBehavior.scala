@@ -32,23 +32,19 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
 
   import GuardianStartupBehavior.Start
 
-  private var tempStash: List[T] = Nil
+  private var tempStash: List[Any] = Nil
 
   override def onMessage(msg: Any): Behavior[Any] =
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors
-          .withStash[T](
-            1000,
-            stash => {
-              tempStash.reverse.foreach(stash.stash)
-              tempStash = null
-              stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
-            })
-          .unsafeCast[Any]
+        Behaviors.withStash[Any](1000, stash => {
+          tempStash.reverse.foreach(stash.stash)
+          tempStash = null
+          stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor)(guardianBehavior.unsafeCast[Any]))
+        })
       case other =>
-        tempStash = other.asInstanceOf[T] :: tempStash
+        tempStash = other :: tempStash
         this
     }
 
@@ -61,24 +57,24 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
  * as part of that we must intercept when the guardian is stopped and call ActorSystem.terminate()
  * explicitly.
  */
-@InternalApi private[akka] final class GuardianStopInterceptor[T] extends BehaviorInterceptor[T, T] {
+@InternalApi private[akka] final class GuardianStopInterceptor extends BehaviorInterceptor[Any, Any] {
   override def aroundReceive(
-      ctx: TypedActorContext[T],
-      msg: T,
-      target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
+      ctx: TypedActorContext[Any],
+      msg: Any,
+      target: BehaviorInterceptor.ReceiveTarget[Any]): Behavior[Any] = {
     val next = target(ctx, msg)
     interceptStopped(ctx, next)
   }
 
   override def aroundSignal(
-      ctx: TypedActorContext[T],
+      ctx: TypedActorContext[Any],
       signal: Signal,
-      target: BehaviorInterceptor.SignalTarget[T]): Behavior[T] = {
+      target: BehaviorInterceptor.SignalTarget[Any]): Behavior[Any] = {
     val next = target(ctx, signal)
     interceptStopped(ctx, next)
   }
 
-  private def interceptStopped(ctx: TypedActorContext[T], next: Behavior[T]): Behavior[T] = {
+  private def interceptStopped(ctx: TypedActorContext[Any], next: Behavior[Any]): Behavior[Any] = {
     if (Behavior.isAlive(next))
       next
     else {
