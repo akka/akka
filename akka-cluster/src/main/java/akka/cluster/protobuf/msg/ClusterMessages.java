@@ -4752,34 +4752,34 @@ public final class ClusterMessages {
      */
     akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder getFromOrBuilder();
 
-    // optional int64 sequenceNr = 2 [default = -1];
+    // optional int64 sequenceNr = 2;
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     boolean hasSequenceNr();
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     long getSequenceNr();
 
-    // optional int64 sendTime = 3 [default = -1];
+    // optional sint64 creationTime = 3;
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional sint64 creationTime = 3;</code>
      */
-    boolean hasSendTime();
+    boolean hasCreationTime();
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional sint64 creationTime = 3;</code>
      */
-    long getSendTime();
+    long getCreationTime();
   }
   /**
    * Protobuf type {@code Heartbeat}
    *
    * <pre>
    **
-   * Prior to version 2.5.23
-   * Heartbeat
-   * Sends an Address
+   * Prior to version 2.5.24
+   * Heartbeat sends an Address
+   * Version 2.5.24 can deserialize this message but does not send it.
    * </pre>
    */
   public static final class Heartbeat extends
@@ -4850,7 +4850,7 @@ public final class ClusterMessages {
             }
             case 24: {
               bitField0_ |= 0x00000004;
-              sendTime_ = input.readInt64();
+              creationTime_ = input.readSInt64();
               break;
             }
           }
@@ -4915,42 +4915,42 @@ public final class ClusterMessages {
       return from_;
     }
 
-    // optional int64 sequenceNr = 2 [default = -1];
+    // optional int64 sequenceNr = 2;
     public static final int SEQUENCENR_FIELD_NUMBER = 2;
     private long sequenceNr_;
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     public long getSequenceNr() {
       return sequenceNr_;
     }
 
-    // optional int64 sendTime = 3 [default = -1];
-    public static final int SENDTIME_FIELD_NUMBER = 3;
-    private long sendTime_;
+    // optional sint64 creationTime = 3;
+    public static final int CREATIONTIME_FIELD_NUMBER = 3;
+    private long creationTime_;
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional sint64 creationTime = 3;</code>
      */
-    public boolean hasSendTime() {
+    public boolean hasCreationTime() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional sint64 creationTime = 3;</code>
      */
-    public long getSendTime() {
-      return sendTime_;
+    public long getCreationTime() {
+      return creationTime_;
     }
 
     private void initFields() {
       from_ = akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance();
-      sequenceNr_ = -1L;
-      sendTime_ = -1L;
+      sequenceNr_ = 0L;
+      creationTime_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -4979,7 +4979,7 @@ public final class ClusterMessages {
         output.writeInt64(2, sequenceNr_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt64(3, sendTime_);
+        output.writeSInt64(3, creationTime_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -5000,7 +5000,7 @@ public final class ClusterMessages {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += akka.protobuf.CodedOutputStream
-          .computeInt64Size(3, sendTime_);
+          .computeSInt64Size(3, creationTime_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -5085,9 +5085,9 @@ public final class ClusterMessages {
      *
      * <pre>
      **
-     * Prior to version 2.5.23
-     * Heartbeat
-     * Sends an Address
+     * Prior to version 2.5.24
+     * Heartbeat sends an Address
+     * Version 2.5.24 can deserialize this message but does not send it.
      * </pre>
      */
     public static final class Builder extends
@@ -5132,9 +5132,9 @@ public final class ClusterMessages {
           fromBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        sequenceNr_ = -1L;
+        sequenceNr_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
-        sendTime_ = -1L;
+        creationTime_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
@@ -5179,7 +5179,7 @@ public final class ClusterMessages {
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.sendTime_ = sendTime_;
+        result.creationTime_ = creationTime_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5202,8 +5202,8 @@ public final class ClusterMessages {
         if (other.hasSequenceNr()) {
           setSequenceNr(other.getSequenceNr());
         }
-        if (other.hasSendTime()) {
-          setSendTime(other.getSendTime());
+        if (other.hasCreationTime()) {
+          setCreationTime(other.getCreationTime());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -5357,22 +5357,22 @@ public final class ClusterMessages {
         return fromBuilder_;
       }
 
-      // optional int64 sequenceNr = 2 [default = -1];
-      private long sequenceNr_ = -1L;
+      // optional int64 sequenceNr = 2;
+      private long sequenceNr_ ;
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public long getSequenceNr() {
         return sequenceNr_;
       }
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public Builder setSequenceNr(long value) {
         bitField0_ |= 0x00000002;
@@ -5381,44 +5381,44 @@ public final class ClusterMessages {
         return this;
       }
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public Builder clearSequenceNr() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        sequenceNr_ = -1L;
+        sequenceNr_ = 0L;
         onChanged();
         return this;
       }
 
-      // optional int64 sendTime = 3 [default = -1];
-      private long sendTime_ = -1L;
+      // optional sint64 creationTime = 3;
+      private long creationTime_ ;
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional sint64 creationTime = 3;</code>
        */
-      public boolean hasSendTime() {
+      public boolean hasCreationTime() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional sint64 creationTime = 3;</code>
        */
-      public long getSendTime() {
-        return sendTime_;
+      public long getCreationTime() {
+        return creationTime_;
       }
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional sint64 creationTime = 3;</code>
        */
-      public Builder setSendTime(long value) {
+      public Builder setCreationTime(long value) {
         bitField0_ |= 0x00000004;
-        sendTime_ = value;
+        creationTime_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional sint64 creationTime = 3;</code>
        */
-      public Builder clearSendTime() {
+      public Builder clearCreationTime() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        sendTime_ = -1L;
+        creationTime_ = 0L;
         onChanged();
         return this;
       }
@@ -5451,34 +5451,34 @@ public final class ClusterMessages {
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder getFromOrBuilder();
 
-    // optional int64 sequenceNr = 2 [default = -1];
+    // optional int64 sequenceNr = 2;
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     boolean hasSequenceNr();
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     long getSequenceNr();
 
-    // optional int64 sendTime = 3 [default = -1];
+    // optional int64 creationTime = 3;
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional int64 creationTime = 3;</code>
      */
-    boolean hasSendTime();
+    boolean hasCreationTime();
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional int64 creationTime = 3;</code>
      */
-    long getSendTime();
+    long getCreationTime();
   }
   /**
    * Protobuf type {@code HeartBeatResponse}
    *
    * <pre>
    **
-   * Prior to version 2.5.23
-   * HeartbeatRsp
-   * Sends an UniqueAddress
+   * Prior to version 2.5.24
+   * HeartbeatRsp Sends an UniqueAddress
+   * Version 2.5.24 can deserialize this message but does not send it.
    * </pre>
    */
   public static final class HeartBeatResponse extends
@@ -5549,7 +5549,7 @@ public final class ClusterMessages {
             }
             case 24: {
               bitField0_ |= 0x00000004;
-              sendTime_ = input.readInt64();
+              creationTime_ = input.readInt64();
               break;
             }
           }
@@ -5614,42 +5614,42 @@ public final class ClusterMessages {
       return from_;
     }
 
-    // optional int64 sequenceNr = 2 [default = -1];
+    // optional int64 sequenceNr = 2;
     public static final int SEQUENCENR_FIELD_NUMBER = 2;
     private long sequenceNr_;
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+     * <code>optional int64 sequenceNr = 2;</code>
      */
     public long getSequenceNr() {
       return sequenceNr_;
     }
 
-    // optional int64 sendTime = 3 [default = -1];
-    public static final int SENDTIME_FIELD_NUMBER = 3;
-    private long sendTime_;
+    // optional int64 creationTime = 3;
+    public static final int CREATIONTIME_FIELD_NUMBER = 3;
+    private long creationTime_;
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional int64 creationTime = 3;</code>
      */
-    public boolean hasSendTime() {
+    public boolean hasCreationTime() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional int64 sendTime = 3 [default = -1];</code>
+     * <code>optional int64 creationTime = 3;</code>
      */
-    public long getSendTime() {
-      return sendTime_;
+    public long getCreationTime() {
+      return creationTime_;
     }
 
     private void initFields() {
       from_ = akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance();
-      sequenceNr_ = -1L;
-      sendTime_ = -1L;
+      sequenceNr_ = 0L;
+      creationTime_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -5678,7 +5678,7 @@ public final class ClusterMessages {
         output.writeInt64(2, sequenceNr_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt64(3, sendTime_);
+        output.writeInt64(3, creationTime_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -5699,7 +5699,7 @@ public final class ClusterMessages {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += akka.protobuf.CodedOutputStream
-          .computeInt64Size(3, sendTime_);
+          .computeInt64Size(3, creationTime_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -5784,9 +5784,9 @@ public final class ClusterMessages {
      *
      * <pre>
      **
-     * Prior to version 2.5.23
-     * HeartbeatRsp
-     * Sends an UniqueAddress
+     * Prior to version 2.5.24
+     * HeartbeatRsp Sends an UniqueAddress
+     * Version 2.5.24 can deserialize this message but does not send it.
      * </pre>
      */
     public static final class Builder extends
@@ -5831,9 +5831,9 @@ public final class ClusterMessages {
           fromBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        sequenceNr_ = -1L;
+        sequenceNr_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
-        sendTime_ = -1L;
+        creationTime_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
@@ -5878,7 +5878,7 @@ public final class ClusterMessages {
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.sendTime_ = sendTime_;
+        result.creationTime_ = creationTime_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5901,8 +5901,8 @@ public final class ClusterMessages {
         if (other.hasSequenceNr()) {
           setSequenceNr(other.getSequenceNr());
         }
-        if (other.hasSendTime()) {
-          setSendTime(other.getSendTime());
+        if (other.hasCreationTime()) {
+          setCreationTime(other.getCreationTime());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -6056,22 +6056,22 @@ public final class ClusterMessages {
         return fromBuilder_;
       }
 
-      // optional int64 sequenceNr = 2 [default = -1];
-      private long sequenceNr_ = -1L;
+      // optional int64 sequenceNr = 2;
+      private long sequenceNr_ ;
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public long getSequenceNr() {
         return sequenceNr_;
       }
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public Builder setSequenceNr(long value) {
         bitField0_ |= 0x00000002;
@@ -6080,44 +6080,44 @@ public final class ClusterMessages {
         return this;
       }
       /**
-       * <code>optional int64 sequenceNr = 2 [default = -1];</code>
+       * <code>optional int64 sequenceNr = 2;</code>
        */
       public Builder clearSequenceNr() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        sequenceNr_ = -1L;
+        sequenceNr_ = 0L;
         onChanged();
         return this;
       }
 
-      // optional int64 sendTime = 3 [default = -1];
-      private long sendTime_ = -1L;
+      // optional int64 creationTime = 3;
+      private long creationTime_ ;
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional int64 creationTime = 3;</code>
        */
-      public boolean hasSendTime() {
+      public boolean hasCreationTime() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional int64 creationTime = 3;</code>
        */
-      public long getSendTime() {
-        return sendTime_;
+      public long getCreationTime() {
+        return creationTime_;
       }
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional int64 creationTime = 3;</code>
        */
-      public Builder setSendTime(long value) {
+      public Builder setCreationTime(long value) {
         bitField0_ |= 0x00000004;
-        sendTime_ = value;
+        creationTime_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int64 sendTime = 3 [default = -1];</code>
+       * <code>optional int64 creationTime = 3;</code>
        */
-      public Builder clearSendTime() {
+      public Builder clearCreationTime() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        sendTime_ = -1L;
+        creationTime_ = 0L;
         onChanged();
         return this;
       }
@@ -19485,52 +19485,52 @@ public final class ClusterMessages {
       "onfigCheck\030e \002(\0132\023.IncompatibleConfig\"_\n" +
       "\020CompatibleConfig\022\025\n\rclusterConfig\030\002 \002(\t" +
       "24\n\013checkConfig\022\014.ConfigCheck\030f \002(\0132\021.Co" +
-      "mpatibleConfig\"Q\n\tHeartbeat\022\026\n\004from\030\001 \002(" +
-      "\0132\010.Address\022\026\n\nsequenceNr\030\002 \001(\003:\002-1\022\024\n\010s" +
-      "endTime\030\003 \001(\003:\002-1\"_\n\021HeartBeatResponse\022\034" +
-      "\n\004from\030\001 \002(\0132\016.UniqueAddress\022\026\n\nsequence",
-      "Nr\030\002 \001(\003:\002-1\022\024\n\010sendTime\030\003 \001(\003:\002-1\"d\n\016Go" +
-      "ssipEnvelope\022\034\n\004from\030\001 \002(\0132\016.UniqueAddre" +
-      "ss\022\032\n\002to\030\002 \002(\0132\016.UniqueAddress\022\030\n\020serial" +
-      "izedGossip\030\003 \002(\014\"^\n\014GossipStatus\022\034\n\004from" +
-      "\030\001 \002(\0132\016.UniqueAddress\022\021\n\tallHashes\030\002 \003(" +
-      "\t\022\035\n\007version\030\003 \002(\0132\014.VectorClock\"\317\001\n\006Gos" +
-      "sip\022$\n\014allAddresses\030\001 \003(\0132\016.UniqueAddres" +
-      "s\022\020\n\010allRoles\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030" +
-      "\n\007members\030\004 \003(\0132\007.Member\022!\n\010overview\030\005 \002" +
-      "(\0132\017.GossipOverview\022\035\n\007version\030\006 \002(\0132\014.V",
-      "ectorClock\022\036\n\ntombstones\030\007 \003(\0132\n.Tombsto" +
-      "ne\"S\n\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024ob" +
-      "serverReachability\030\002 \003(\0132\025.ObserverReach" +
-      "ability\"p\n\024ObserverReachability\022\024\n\014addre" +
-      "ssIndex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjec" +
-      "tReachability\030\002 \003(\0132\024.SubjectReachabilit" +
-      "y\"a\n\023SubjectReachability\022\024\n\014addressIndex" +
-      "\030\001 \002(\005\022#\n\006status\030\003 \002(\0162\023.ReachabilitySta" +
-      "tus\022\017\n\007version\030\004 \002(\003\"4\n\tTombstone\022\024\n\014add" +
-      "ressIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Me",
-      "mber\022\024\n\014addressIndex\030\001 \002(\005\022\020\n\010upNumber\030\002" +
-      " \002(\005\022\035\n\006status\030\003 \002(\0162\r.MemberStatus\022\030\n\014r" +
-      "olesIndexes\030\004 \003(\005B\002\020\001\"y\n\013VectorClock\022\021\n\t" +
-      "timestamp\030\001 \001(\003\022&\n\010versions\030\002 \003(\0132\024.Vect" +
-      "orClock.Version\032/\n\007Version\022\021\n\thashIndex\030" +
-      "\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Add" +
-      "ress\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014" +
-      "\n\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUnique" +
-      "Address\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003ui" +
-      "d\030\002 \002(\r\022\014\n\004uid2\030\003 \001(\r\"V\n\021ClusterRouterPo",
-      "ol\022\023\n\004pool\030\001 \002(\0132\005.Pool\022,\n\010settings\030\002 \002(" +
-      "\0132\032.ClusterRouterPoolSettings\"<\n\004Pool\022\024\n" +
-      "\014serializerId\030\001 \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n" +
-      "\004data\030\003 \002(\014\"\216\001\n\031ClusterRouterPoolSetting" +
-      "s\022\026\n\016totalInstances\030\001 \002(\r\022\033\n\023maxInstance" +
-      "sPerNode\030\002 \002(\r\022\031\n\021allowLocalRoutees\030\003 \002(" +
-      "\010\022\017\n\007useRole\030\004 \001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022" +
-      "ReachabilityStatus\022\r\n\tReachable\020\000\022\017\n\013Unr" +
-      "eachable\020\001\022\016\n\nTerminated\020\002*b\n\014MemberStat" +
-      "us\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007",
-      "Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010Weak" +
-      "lyUp\020\006B\035\n\031akka.cluster.protobuf.msgH\001"
+      "mpatibleConfig\"M\n\tHeartbeat\022\026\n\004from\030\001 \002(" +
+      "\0132\010.Address\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creat" +
+      "ionTime\030\003 \001(\022\"[\n\021HeartBeatResponse\022\034\n\004fr" +
+      "om\030\001 \002(\0132\016.UniqueAddress\022\022\n\nsequenceNr\030\002",
+      " \001(\003\022\024\n\014creationTime\030\003 \001(\003\"d\n\016GossipEnve" +
+      "lope\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to" +
+      "\030\002 \002(\0132\016.UniqueAddress\022\030\n\020serializedGoss" +
+      "ip\030\003 \002(\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016" +
+      ".UniqueAddress\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007ver" +
+      "sion\030\003 \002(\0132\014.VectorClock\"\317\001\n\006Gossip\022$\n\014a" +
+      "llAddresses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010all" +
+      "Roles\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007member" +
+      "s\030\004 \003(\0132\007.Member\022!\n\010overview\030\005 \002(\0132\017.Gos" +
+      "sipOverview\022\035\n\007version\030\006 \002(\0132\014.VectorClo",
+      "ck\022\036\n\ntombstones\030\007 \003(\0132\n.Tombstone\"S\n\016Go" +
+      "ssipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024observerRe" +
+      "achability\030\002 \003(\0132\025.ObserverReachability\"" +
+      "p\n\024ObserverReachability\022\024\n\014addressIndex\030" +
+      "\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectReachab" +
+      "ility\030\002 \003(\0132\024.SubjectReachability\"a\n\023Sub" +
+      "jectReachability\022\024\n\014addressIndex\030\001 \002(\005\022#" +
+      "\n\006status\030\003 \002(\0162\023.ReachabilityStatus\022\017\n\007v" +
+      "ersion\030\004 \002(\003\"4\n\tTombstone\022\024\n\014addressInde" +
+      "x\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014",
+      "addressIndex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006" +
+      "status\030\003 \002(\0162\r.MemberStatus\022\030\n\014rolesInde" +
+      "xes\030\004 \003(\005B\002\020\001\"y\n\013VectorClock\022\021\n\ttimestam" +
+      "p\030\001 \001(\003\022&\n\010versions\030\002 \003(\0132\024.VectorClock." +
+      "Version\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n" +
+      "\ttimestamp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006" +
+      "system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003" +
+      " \002(\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueAddress\022" +
+      "\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022" +
+      "\014\n\004uid2\030\003 \001(\r\"V\n\021ClusterRouterPool\022\023\n\004po",
+      "ol\030\001 \002(\0132\005.Pool\022,\n\010settings\030\002 \002(\0132\032.Clus" +
+      "terRouterPoolSettings\"<\n\004Pool\022\024\n\014seriali" +
+      "zerId\030\001 \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 " +
+      "\002(\014\"\216\001\n\031ClusterRouterPoolSettings\022\026\n\016tot" +
+      "alInstances\030\001 \002(\r\022\033\n\023maxInstancesPerNode" +
+      "\030\002 \002(\r\022\031\n\021allowLocalRoutees\030\003 \002(\010\022\017\n\007use" +
+      "Role\030\004 \001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022Reachabi" +
+      "lityStatus\022\r\n\tReachable\020\000\022\017\n\013Unreachable" +
+      "\020\001\022\016\n\nTerminated\020\002*b\n\014MemberStatus\022\013\n\007Jo" +
+      "ining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020",
+      "\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035" +
+      "\n\031akka.cluster.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -19590,13 +19590,13 @@ public final class ClusterMessages {
           internal_static_Heartbeat_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Heartbeat_descriptor,
-              new java.lang.String[] { "From", "SequenceNr", "SendTime", });
+              new java.lang.String[] { "From", "SequenceNr", "CreationTime", });
           internal_static_HeartBeatResponse_descriptor =
             getDescriptor().getMessageTypes().get(9);
           internal_static_HeartBeatResponse_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_HeartBeatResponse_descriptor,
-              new java.lang.String[] { "From", "SequenceNr", "SendTime", });
+              new java.lang.String[] { "From", "SequenceNr", "CreationTime", });
           internal_static_GossipEnvelope_descriptor =
             getDescriptor().getMessageTypes().get(10);
           internal_static_GossipEnvelope_fieldAccessorTable = new

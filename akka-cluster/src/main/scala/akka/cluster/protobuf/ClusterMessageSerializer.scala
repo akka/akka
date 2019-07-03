@@ -42,7 +42,7 @@ private[akka] object ClusterMessageSerializer {
   val InitJoinManifest = s"akka.cluster.InternalClusterAction$$InitJoin$$"
   val InitJoinAckManifest = s"akka.cluster.InternalClusterAction$$InitJoinAck"
   val InitJoinNackManifest = s"akka.cluster.InternalClusterAction$$InitJoinNack"
-  // FIXME, remove in a later version (2.6?) and make 2.5.23+ a mandatory step for rolling upgrade
+  // FIXME, remove in a later version (2.6?) and make 2.5.24+ a mandatory step for rolling upgrade
   val HeartBeatManifestPre2523 = s"akka.cluster.ClusterHeartbeatSender$$Heartbeat"
   val HeartBeatRspManifest2523 = s"akka.cluster.ClusterHeartbeatSender$$HeartbeatRsp"
 
@@ -293,12 +293,12 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
   def deserializeHeartBeat(bytes: Array[Byte]): ClusterHeartbeatSender.Heartbeat = {
     val hb = cm.Heartbeat.parseFrom(bytes)
-    ClusterHeartbeatSender.Heartbeat(addressFromProto(hb.getFrom), hb.getSequenceNr, hb.getSendTime)
+    ClusterHeartbeatSender.Heartbeat(addressFromProto(hb.getFrom), hb.getSequenceNr, hb.getCreationTime)
   }
 
   def deserializeHeartBeatResponse(bytes: Array[Byte]): ClusterHeartbeatSender.HeartbeatRsp = {
     val hbr = cm.HeartBeatResponse.parseFrom(bytes)
-    ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromProto(hbr.getFrom), hbr.getSequenceNr, hbr.getSendTime)
+    ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromProto(hbr.getFrom), hbr.getSequenceNr, hbr.getCreationTime)
   }
 
   private def deserializeInitJoinNack(bytes: Array[Byte]): InternalClusterAction.InitJoinNack = {

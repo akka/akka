@@ -108,7 +108,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor with ActorLogging {
 
   var sequenceNr = 0
 
-  def selfHeartbeat() = {
+  def selfHeartbeat(): Heartbeat = {
     sequenceNr += 1
     Heartbeat(selfAddress, sequenceNr, System.nanoTime())
   }

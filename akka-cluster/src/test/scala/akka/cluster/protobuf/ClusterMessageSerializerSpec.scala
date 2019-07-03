@@ -15,6 +15,7 @@ import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
+
 @silent
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
@@ -188,7 +189,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         .newBuilder()
         .setFrom(serializer.addressToProto(a1.address))
         .setSequenceNr(1)
-        .setSendTime(2)
+        .setCreationTime(2)
         .build()
         .toByteArray
 
@@ -201,7 +202,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         .newBuilder()
         .setFrom(serializer.uniqueAddressToProto(a1.uniqueAddress))
         .setSequenceNr(1)
-        .setSendTime(2)
+        .setCreationTime(2)
         .build()
         .toByteArray
 
