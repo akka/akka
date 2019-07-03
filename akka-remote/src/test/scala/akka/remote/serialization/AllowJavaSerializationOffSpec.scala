@@ -76,13 +76,10 @@ class AllowJavaSerializationOffSpec
   }
   val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(
     None,
-    Some(
-      ConfigFactory.parseString(
-        """
+    Some(ConfigFactory.parseString("""
     akka {
       loglevel = debug
       actor {
-        enable-additional-serialization-bindings = off # this should be overridden by the setting below, which should force it to be on
         allow-java-serialization = off
         # this is by default on, but tests are running with off, use defaults here
         warn-about-java-serializer-usage = on
@@ -108,15 +105,6 @@ class AllowJavaSerializationOffSpec
           .findSerializerFor(new ProgrammaticJavaDummy)
           .toBinary(new ProgrammaticJavaDummy)
       }
-    }
-
-    "enable additional-serialization-bindings" in {
-      val some = Some("foo")
-      val ser = SerializationExtension(dontAllowJavaSystem).findSerializerFor(some).asInstanceOf[MiscMessageSerializer]
-      val bytes = ser.toBinary(some)
-      ser.fromBinary(bytes, ser.manifest(some)) should ===(Some("foo"))
-      SerializationExtension(dontAllowJavaSystem).deserialize(bytes, ser.identifier, ser.manifest(some)).get should ===(
-        Some("foo"))
     }
 
     "have replaced java serializer" in {
