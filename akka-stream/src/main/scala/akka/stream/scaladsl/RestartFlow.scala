@@ -303,9 +303,11 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * Can either be a failure or a cancel in the wrapped state.
        * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
        */
+      //override def onDownstreamFinish(cause: Throwable) = {
+
       override def onDownstreamFinish() = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
-          cancel(in)
+          cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
         } else {
           scheduleRestartTimer()
         }
