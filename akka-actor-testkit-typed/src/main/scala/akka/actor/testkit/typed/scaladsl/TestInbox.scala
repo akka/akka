@@ -6,13 +6,13 @@ package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.actor.testkit.typed.internal.TestInboxImpl
-
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 
+@ApiMayChange
 object TestInbox {
   def apply[T](name: String = "inbox"): TestInbox[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
@@ -34,6 +34,7 @@ object TestInbox {
  * Not for user extension
  */
 @DoNotInherit
+@ApiMayChange
 trait TestInbox[T] {
 
   /**
