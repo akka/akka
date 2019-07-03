@@ -23,7 +23,7 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       expectMsg("start-a")
       expectMsg("start-b")
       expectMsg("start-c")
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
       upstream.onComplete()
     }
 
@@ -44,7 +44,7 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       expectMsg("stop-b")
       expectMsg("complete-c")
       expectMsg("stop-c")
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
     }
 
     "call postStop in order on stages - when upstream onErrors" in new OneBoundedSetup[String](
@@ -55,7 +55,7 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       upstream.onError(TE(msg))
       expectMsg(msg)
       expectMsg("stop-c")
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
     }
 
     "call postStop in order on stages - when downstream cancels" in new OneBoundedSetup[String](
@@ -66,16 +66,16 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       expectMsg("stop-c")
       expectMsg("stop-b")
       expectMsg("stop-a")
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
     }
 
     "call preStart before postStop" in new OneBoundedSetup[String](
       PreStartAndPostStopIdentity(onStart = () => testActor ! "start-a", onStop = () => testActor ! "stop-a")) {
       expectMsg("start-a")
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
       upstream.onComplete()
       expectMsg("stop-a")
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
     }
 
     "onError when preStart fails" in new OneBoundedSetup[String](PreStartFailer(() => throw TE("Boom!"))) {
@@ -147,7 +147,7 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       onStart: () => Unit = () => (),
       onStop: () => Unit = () => (),
       onUpstreamCompleted: () => Unit = () => (),
-      onUpstreamFailed: Throwable => Unit = ex => ())
+      onUpstreamFailed: Throwable => Unit = _ => ())
       extends SimpleLinearGraphStage[T] {
 
     override def createLogic(attributes: Attributes): GraphStageLogic =

@@ -74,6 +74,14 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
     viaScala(_.withAttributes(attr))
 
   /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.mapMaterializedValue]].
+   *
+   * @see [[akka.stream.scaladsl.Flow.mapMaterializedValue]]
+   */
+  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat2] =
+    new FlowWithContext(delegate.mapMaterializedValue[Mat2](f))
+
+  /**
    * Creates a regular flow of pairs (data, context).
    */
   def asFlow(): Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat] @uncheckedVariance =

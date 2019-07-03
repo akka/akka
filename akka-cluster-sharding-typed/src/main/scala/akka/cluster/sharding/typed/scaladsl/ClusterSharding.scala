@@ -406,8 +406,10 @@ object EntityTypeKey {
    * }}}
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
+   *
+   * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[U](f: ActorRef[U] => M)(implicit timeout: Timeout): Future[U]
+  def ask[Res](f: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res]
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
@@ -423,12 +425,17 @@ object EntityTypeKey {
    *
    * implicit val timeout = Timeout(3.seconds)
    * val target: EntityRef[Request] = ...
-   * val f: Future[Reply] = target ? (Request("hello", _))
+   * val f: Future[Reply] = target ? (replyTo => Request("hello", replyTo))
    * }}}
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
+   *
+   * Note: it is preferrable to use the non-symbolic ask method as it easier allows for wildcards for
+   * the `replyTo: ActorRef`.
+   *
+   * @tparam Res The response protocol, what the other actor sends back
    */
-  def ?[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] =
+  def ?[Res](message: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res] =
     this.ask(message)(timeout)
 
 }

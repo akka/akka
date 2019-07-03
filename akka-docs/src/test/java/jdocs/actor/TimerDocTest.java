@@ -33,7 +33,7 @@ public class TimerDocTest {
               FirstTick.class,
               message -> {
                 // do something useful here
-                getTimers().startPeriodicTimer(TICK_KEY, new Tick(), Duration.ofSeconds(1));
+                getTimers().startTimerWithFixedDelay(TICK_KEY, new Tick(), Duration.ofSeconds(1));
               })
           .match(
               Tick.class,

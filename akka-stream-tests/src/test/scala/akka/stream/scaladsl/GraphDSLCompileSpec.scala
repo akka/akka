@@ -8,12 +8,14 @@ import akka.stream.impl.fusing.GraphStages
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.stage._
+import com.github.ghik.silencer.silent
 
 object GraphDSLCompileSpec {
   class Fruit
   class Apple extends Fruit
 }
 
+@silent // tests deprecated APIs
 class GraphDSLCompileSpec extends StreamSpec {
   import GraphDSLCompileSpec._
 
@@ -236,7 +238,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     "throw an error if some ports are not connected" in {
       intercept[IllegalStateException] {
         GraphDSL.create() { implicit b =>
-          val s = b.add(Source.empty[Int])
+          b.add(Source.empty[Int])
           val op = b.add(Flow[Int].map(_ + 1))
           val sink = b.add(Sink.foreach[Int](println))
 

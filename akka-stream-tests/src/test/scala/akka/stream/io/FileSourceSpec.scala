@@ -9,7 +9,6 @@ import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
 import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
 import akka.stream.IOResult._
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
@@ -24,11 +23,13 @@ import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
+@silent
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
@@ -186,7 +187,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
 
       sub.request(demandAllButOneChunks)
-      for (i <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
+      for (_ <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
       c.expectNoMessage(300.millis)
 
       sub.request(1)

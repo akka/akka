@@ -59,6 +59,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
     viaScala(_.withAttributes(attr))
 
   /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.mapMaterializedValue]].
+   *
+   * @see [[akka.stream.javadsl.Flow.mapMaterializedValue]]
+   */
+  def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): SourceWithContext[Out, Ctx, Mat2] =
+    viaScala(_.mapMaterializedValue(f.apply _))
+
+  /**
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */

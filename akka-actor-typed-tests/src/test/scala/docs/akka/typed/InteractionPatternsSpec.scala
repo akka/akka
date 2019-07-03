@@ -296,7 +296,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       message match {
         case LeaveHome(who, respondTo) =>
           context.spawn(prepareToLeaveHome(who, respondTo, keyCabinet, drawer), s"leaving-$who")
-          Behavior.same
+          Behaviors.same
       }
     }
 
@@ -323,10 +323,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
               case (Some(w), Some(k)) =>
                 // we got both, "session" is completed!
                 respondTo ! ReadyToLeaveHome(whoIsLeaving, w, k)
-                Behavior.stopped
+                Behaviors.stopped
 
               case _ =>
-                Behavior.same
+                Behaviors.same
             }
 
           Behaviors.receiveMessage {

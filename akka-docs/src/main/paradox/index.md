@@ -16,6 +16,7 @@
 * [coordination](coordination.md)
 * [index-utilities](index-utilities.md)
 * [common/other-modules](common/other-modules.md)
+* [additional/deploy](additional/deploy.md)
 * [howto](howto.md)
 * [project/index](project/index.md)
 * [additional/index](additional/index.md)

@@ -408,11 +408,10 @@ private[remote] class ProtocolStateActor(
 
       } else {
         // Underlying transport was busy -- Associate could not be sent
-        setTimer(
+        startSingleTimer(
           "associate-retry",
           Handle(wrappedHandle),
-          RARP(context.system).provider.remoteSettings.BackoffPeriod,
-          repeat = false)
+          RARP(context.system).provider.remoteSettings.BackoffPeriod)
         stay()
       }
 
@@ -594,11 +593,11 @@ private[remote] class ProtocolStateActor(
   }
 
   private def initHeartbeatTimer(): Unit = {
-    setTimer("heartbeat-timer", HeartbeatTimer, settings.TransportHeartBeatInterval, repeat = true)
+    startTimerWithFixedDelay("heartbeat-timer", HeartbeatTimer, settings.TransportHeartBeatInterval)
   }
 
   private def initHandshakeTimer(): Unit = {
-    setTimer(handshakeTimerKey, HandshakeTimer, settings.HandshakeTimeout, repeat = false)
+    startSingleTimer(handshakeTimerKey, HandshakeTimer, settings.HandshakeTimeout)
   }
 
   private def handleTimers(wrappedHandle: AssociationHandle): State = {

@@ -128,7 +128,7 @@ The reason for only using a limited number of nodes is to keep the number of con
 centers low. The same nodes are also used for the gossip protocol when disseminating the membership
 information across data centers. Within a data center all nodes are involved in gossip and failure detection.
 
-This influence how rolling upgrades should be performed. Don't stop all of the oldest that are used for gossip
+This influences how rolling upgrades should be performed. Don't stop all of the oldest that are used for gossip
 at the same time. Stop one or a few at a time so that new nodes can take over the responsibility.
 It's best to leave the oldest nodes until last.
 

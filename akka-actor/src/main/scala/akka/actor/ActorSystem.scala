@@ -5,28 +5,28 @@
 package akka.actor
 
 import java.io.Closeable
+import java.util.Optional
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.ConfigurationException
-import akka.event._
-import akka.dispatch._
-import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
-import akka.util._
-import akka.util.Helpers.toRootLowerCase
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.{ ControlThrowable, NonFatal }
-import java.util.Optional
-
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
+import akka.ConfigurationException
+import akka.dispatch._
+import akka.event._
+import akka.japi.Util.immutableSeq
+import akka.util.Helpers.toRootLowerCase
+import akka.util._
+import com.typesafe.config.{ Config, ConfigFactory }
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
+import scala.util.control.{ ControlThrowable, NonFatal }
+import scala.util.{ Failure, Success, Try }
 
 object BootstrapSetup {
 
@@ -363,6 +363,8 @@ object ActorSystem {
 
     final val ProviderClass: String = ProviderSelectionType.fqcn
 
+    final val HasCluster: Boolean = ProviderSelectionType.hasCluster
+
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
     final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))
@@ -386,6 +388,13 @@ object ActorSystem {
       case _               => config.getInt("akka.log-dead-letters")
     }
     final val LogDeadLettersDuringShutdown: Boolean = config.getBoolean("akka.log-dead-letters-during-shutdown")
+    final val LogDeadLettersSuspendDuration: Duration = {
+      val key = "akka.log-dead-letters-suspend-duration"
+      toRootLowerCase(config.getString(key)) match {
+        case "infinite" => Duration.Inf
+        case _          => config.getMillisDuration(key)
+      }
+    }
 
     final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
@@ -531,13 +540,12 @@ abstract class ActorSystem extends ActorRefFactory {
    * effort basis and hence not strictly guaranteed.
    */
   def deadLetters: ActorRef
-  //#scheduler
+
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
    * in the future. Not terribly precise but cheap.
    */
   def scheduler: Scheduler
-  //#scheduler
 
   /**
    * Java API: Light-weight scheduler for running asynchronous tasks after some deadline

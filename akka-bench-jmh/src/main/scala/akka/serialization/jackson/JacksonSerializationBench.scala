@@ -4,6 +4,10 @@
 
 package akka.serialization.jackson
 
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.{ Duration => JDuration }
+import java.util
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.Await
@@ -28,6 +32,11 @@ object JacksonSerializationBench {
       num1: Int,
       num2: Int,
       num3: Int,
+      flag1: Boolean,
+      flag2: Boolean,
+      duration: FiniteDuration,
+      date: LocalDateTime,
+      instant: Instant,
       nested1: Small,
       nested2: Small,
       nested3: Small)
@@ -41,11 +50,13 @@ object JacksonSerializationBench {
       map: Map[String, Medium])
       extends TestMessage
 
-  // FIXME try with plain java classes (not case class)
+  final class TimeMessage(val duration: FiniteDuration, val date: LocalDateTime, val instant: Instant)
+      extends TestMessage
+
 }
 
 @State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 @Fork(2)
 @Warmup(iterations = 4)
@@ -56,9 +67,51 @@ class JacksonSerializationBench {
   val smallMsg1 = Small("abc", 17)
   val smallMsg2 = Small("def", 18)
   val smallMsg3 = Small("ghi", 19)
-  val mediumMsg1 = Medium("abc", "def", "ghi", 1, 2, 3, smallMsg1, smallMsg2, smallMsg3)
-  val mediumMsg2 = Medium("ABC", "DEF", "GHI", 10, 20, 30, smallMsg1, smallMsg2, smallMsg3)
-  val mediumMsg3 = Medium("abcABC", "defDEF", "ghiGHI", 100, 200, 300, smallMsg1, smallMsg2, smallMsg3)
+  val mediumMsg1 = Medium(
+    "abc",
+    "def",
+    "ghi",
+    1,
+    2,
+    3,
+    false,
+    true,
+    5.seconds,
+    LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345),
+    Instant.now(),
+    smallMsg1,
+    smallMsg2,
+    smallMsg3)
+  val mediumMsg2 = Medium(
+    "ABC",
+    "DEF",
+    "GHI",
+    10,
+    20,
+    30,
+    true,
+    false,
+    5.millis,
+    LocalDateTime.of(2019, 4, 29, 23, 15, 4, 12345),
+    Instant.now(),
+    smallMsg1,
+    smallMsg2,
+    smallMsg3)
+  val mediumMsg3 = Medium(
+    "abcABC",
+    "defDEF",
+    "ghiGHI",
+    100,
+    200,
+    300,
+    true,
+    true,
+    200.millis,
+    LocalDateTime.of(2019, 4, 29, 23, 15, 5, 12345),
+    Instant.now(),
+    smallMsg1,
+    smallMsg2,
+    smallMsg3)
   val largeMsg = Large(
     mediumMsg1,
     mediumMsg2,
@@ -66,10 +119,72 @@ class JacksonSerializationBench {
     Vector(mediumMsg1, mediumMsg2, mediumMsg3),
     Map("a" -> mediumMsg1, "b" -> mediumMsg2, "c" -> mediumMsg3))
 
+  val timeMsg = new TimeMessage(5.seconds, LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Instant.now())
+
+  import JavaMessages._
+  val jSmallMsg1 = new JSmall("abc", 17)
+  val jSmallMsg2 = new JSmall("def", 18)
+  val jSmallMsg3 = new JSmall("ghi", 19)
+  val jMediumMsg1 = new JMedium(
+    "abc",
+    "def",
+    "ghi",
+    1,
+    2,
+    3,
+    false,
+    true,
+    JDuration.ofSeconds(5),
+    LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345),
+    Instant.now(),
+    jSmallMsg1,
+    jSmallMsg2,
+    jSmallMsg3)
+  val jMediumMsg2 = new JMedium(
+    "ABC",
+    "DEF",
+    "GHI",
+    10,
+    20,
+    30,
+    true,
+    false,
+    JDuration.ofMillis(5),
+    LocalDateTime.of(2019, 4, 29, 23, 15, 4, 12345),
+    Instant.now(),
+    jSmallMsg1,
+    jSmallMsg2,
+    jSmallMsg3)
+  val jMediumMsg3 = new JMedium(
+    "abcABC",
+    "defDEF",
+    "ghiGHI",
+    100,
+    200,
+    300,
+    true,
+    true,
+    JDuration.ofMillis(200),
+    LocalDateTime.of(2019, 4, 29, 23, 15, 5, 12345),
+    Instant.now(),
+    jSmallMsg1,
+    jSmallMsg2,
+    jSmallMsg3)
+  val jMap = new util.HashMap[String, JMedium]()
+  jMap.put("a", jMediumMsg1)
+  jMap.put("b", jMediumMsg2)
+  jMap.put("c", jMediumMsg3)
+  val jLargeMsg = new JLarge(
+    jMediumMsg1,
+    jMediumMsg2,
+    jMediumMsg3,
+    java.util.Arrays.asList(jMediumMsg1, jMediumMsg2, jMediumMsg3),
+    jMap)
+
   var system: ActorSystem = _
   var serialization: Serialization = _
 
-  @Param(Array("jackson-json", "jackson-smile", "jackson-cbor", "java"))
+  @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 
   @Setup(Level.Trial)
@@ -79,11 +194,16 @@ class JacksonSerializationBench {
           loglevel = WARNING
           actor {
             serialization-bindings {
-              "akka.serialization.jackson.JacksonSerializationBench$$TestMessage" = $serializerName
+              "${classOf[TestMessage].getName}" = $serializerName
+              "${classOf[JTestMessage].getName}" = $serializerName
             }
           }
           serialization.jackson {
-            #compress-larger-than = 100 b
+            compress-larger-than = 100000 b
+            
+            serialization-features {
+              #WRITE_DATES_AS_TIMESTAMPS = off
+            }
           }
         }
       """)
@@ -99,10 +219,10 @@ class JacksonSerializationBench {
 
   private def serializeDeserialize[T <: AnyRef](msg: T): T = {
     serialization.findSerializerFor(msg) match {
-      case serializer: SerializerWithStringManifest ⇒
+      case serializer: SerializerWithStringManifest =>
         val blob = serializer.toBinary(msg)
         serializer.fromBinary(blob, serializer.manifest(msg)).asInstanceOf[T]
-      case serializer ⇒
+      case serializer =>
         val blob = serializer.toBinary(msg)
         if (serializer.includeManifest)
           serializer.fromBinary(blob, Some(msg.getClass)).asInstanceOf[T]
@@ -125,6 +245,26 @@ class JacksonSerializationBench {
   @Benchmark
   def large(): Large = {
     serializeDeserialize(largeMsg)
+  }
+
+  @Benchmark
+  def jSmall(): JSmall = {
+    serializeDeserialize(jSmallMsg1)
+  }
+
+  @Benchmark
+  def jMedium(): JMedium = {
+    serializeDeserialize(jMediumMsg1)
+  }
+
+  @Benchmark
+  def jLarge(): JLarge = {
+    serializeDeserialize(jLargeMsg)
+  }
+
+  @Benchmark
+  def timeMessage(): TimeMessage = {
+    serializeDeserialize(timeMsg)
   }
 
 }

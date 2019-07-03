@@ -31,5 +31,20 @@ class FlowWithContextSpec extends StreamSpec {
         .expectNext(((Message("az", 1L), 1L)))
         .expectComplete()
     }
+
+    "be able to map materialized value via FlowWithContext.mapMaterializedValue" in {
+      val materializedValue = "MatedValue"
+      val mapMaterializedValueFlow = FlowWithContext[Message, Long].mapMaterializedValue(_ => materializedValue)
+
+      val msg = Message("a", 1L)
+      val (matValue, probe) = Source(Vector(msg))
+        .mapMaterializedValue(_ => 42)
+        .asSourceWithContext(_.offset)
+        .viaMat(mapMaterializedValueFlow)(Keep.both)
+        .toMat(TestSink.probe[(Message, Long)])(Keep.both)
+        .run
+      matValue shouldBe (42 -> materializedValue)
+      probe.request(1).expectNext(((Message("a", 1L), 1L))).expectComplete()
+    }
   }
 }

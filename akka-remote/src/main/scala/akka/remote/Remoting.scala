@@ -499,7 +499,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
   val pruneInterval: FiniteDuration = (settings.RetryGateClosedFor * 2).max(1.second).min(10.seconds)
 
   val pruneTimerCancellable: Cancellable =
-    context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+    context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
 
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()

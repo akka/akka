@@ -82,9 +82,9 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
     "bubble up substream exceptions" in assertAllStagesStopped {
       val ex = new Exception("buh")
-      val result = intercept[TestFailedException] {
-          Source(List(blocked, blocked, Source.failed(ex))).flatMapMerge(10, identity).runWith(Sink.head).futureValue
-        }.cause.get should ===(ex)
+      intercept[TestFailedException] {
+        Source(List(blocked, blocked, Source.failed(ex))).flatMapMerge(10, identity).runWith(Sink.head).futureValue
+      }.cause.get should ===(ex)
     }
 
     "bubble up substream materialization exception" in assertAllStagesStopped {
@@ -152,7 +152,6 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
     "cancel substreams when being cancelled" in assertAllStagesStopped {
       val p1, p2 = TestPublisher.probe[Int]()
-      val ex = new Exception("buh")
       val sink = Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2)))
         .flatMapMerge(5, identity)
         .runWith(TestSink.probe)
@@ -168,9 +167,9 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val p = Source((0 until 100).map(i => src10(10 * i))).flatMapMerge(Int.MaxValue, identity).runWith(TestSink.probe)
       p.within(1.second) {
         p.ensureSubscription()
-        p.expectNoMsg()
+        p.expectNoMessage(remainingOrDefault)
       }
-      val elems = p.within(1.second)((1 to 1000).map(i => p.requestNext()).toSet)
+      val elems = p.within(1.second)((1 to 1000).map(_ => p.requestNext()).toSet)
       p.expectComplete()
       elems should ===((0 until 1000).toSet)
     }

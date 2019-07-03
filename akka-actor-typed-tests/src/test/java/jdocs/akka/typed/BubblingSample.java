@@ -25,7 +25,7 @@ public class BubblingSample {
       Behaviors.receive(Message.class)
           .onMessage(
               Fail.class,
-              (context, message) -> {
+              message -> {
                 throw new RuntimeException(message.text);
               })
           .build();
@@ -45,7 +45,7 @@ public class BubblingSample {
             return Behaviors.receive(Message.class)
                 .onMessage(
                     Message.class,
-                    (innerCtx, message) -> {
+                    message -> {
                       // just pass messages on to the child
                       child.tell(message);
                       return Behaviors.same();
@@ -67,7 +67,7 @@ public class BubblingSample {
             return Behaviors.receive(Message.class)
                 .onMessage(
                     Message.class,
-                    (innerCtx, message) -> {
+                    message -> {
                       // just pass messages on to the child
                       middleManagement.tell(message);
                       return Behaviors.same();

@@ -23,7 +23,9 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
+@silent
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
@@ -145,7 +147,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .runWith(FileIO.toPath(f, options = Set(WRITE, CREATE), startPosition = startPosition))
 
         val completion1 = write()
-        val result1 = Await.result(completion1, 3.seconds)
+        Await.result(completion1, 3.seconds)
 
         val completion2 = write(testLinesPart2, startPosition)
         val result2 = Await.result(completion2, 3.seconds)

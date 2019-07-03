@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Serialization, you must add the following dependency in your project:
+To use Jackson Serialization, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -14,7 +14,7 @@ To use Serialization, you must add the following dependency in your project:
 
 You find general concepts for for Akka serialization in the @ref:[Serialization](serialization.md) section.
 This section describes how to use the Jackson serializer for application specific messages and persistent
-event and snapshots.
+events and snapshots.
 
 [Jackson](https://github.com/FasterXML/jackson) has support for both text based JSON and
 binary formats.
@@ -34,8 +34,8 @@ Scala
 Java
 :  @@snip [MySerializable.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/MySerializable.java) { #marker-interface }
 
-Then you configure the class name of marker @scala[trait]@java[interface] in `serialization-bindings` to
-one of the supported Jackson formats: `jackson-json`, `jackson-cbor` or `jackson-smile`
+Then you configure the class name of the marker @scala[trait]@java[interface] in `serialization-bindings` to
+one of the supported Jackson formats: `jackson-json` or `jackson-cbor`
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #serialization-bindings }
 
@@ -55,7 +55,7 @@ It reduces the need for some annotations.
 ## Security
 
 For security reasons it is disallowed to bind the Jackson serializers to
-open ended types that might be target for [serialization gadgets](https://medium.com/@cowtowncoder/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
+open ended types that might be a target for [serialization gadgets](https://medium.com/@cowtowncoder/on-jackson-cves-dont-panic-here-is-what-you-need-to-know-54cd0d6e8062),
 such as:
 
 * `java.lang.Object`
@@ -65,6 +65,13 @@ such as:
 The blacklist of possible serialization gadget classes defined by Jackson databind are checked
 and disallowed for deserialization.
 
+@@@ warning
+
+Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+when using @ref:[polymorphic types](#polymorphic-types).
+
+@@@
+
 ### Formats
 
 The following formats are supported, and you select which one to use in the `serialization-bindings`
@@ -72,15 +79,73 @@ configuration as described above.
 
 * `jackson-json` - ordinary text based JSON
 * `jackson-cbor` - binary [CBOR data format](https://github.com/FasterXML/jackson-dataformats-binary/tree/master/cbor)
-* `jackson-smile` - binary [Smile data format](https://github.com/FasterXML/jackson-dataformats-binary/tree/master/smile)
 
-The binary formats are more compact and have slightly better better performance than the JSON format.
-
-TODO: It's undecided if we will support both CBOR or and Smile since the difference is small
+The binary format is more compact, with slightly better performance than the JSON format.
 
 ## Annotations
 
-TODO examples when annotations are needed
+@@@ div {.group-java}
+
+### Constructor with single parameter
+
+You might run into an exception like this:
+
+```
+MismatchedInputException: Cannot construct instance of `...` (although at least one Creator exists): cannot deserialize from Object value (no delegate- or property-based Creator)
+```
+
+That is probably because the class has a constructor with a single parameter, like:
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-1 }
+
+That can be solved by adding `@JsonCreator` or `@JsonProperty` annotations:
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-2 }
+
+or
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #one-constructor-param-3 }
+
+
+The `ParameterNamesModule` is configured with `JsonCreator.Mode.PROPERTIES` as described in the
+[Jackson documentation](https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names#delegating-creator)
+
+@@@
+
+## Polymorphic types
+
+A polymorphic type is when a certain base type has multiple alternative implementations. When nested fields or
+collections are of polymorphic type the concrete implementations of the type must be listed with `@JsonTypeInfo`
+and `@JsonSubTypes` annotations.
+
+Example:
+
+Scala
+:  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #polymorphism }
+
+Java
+:  @@snip [SerializationDocTest.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/SerializationDocTest.java) { #polymorphism }
+
+If you haven't defined the annotations you will see an exception like this:
+
+```
+InvalidDefinitionException: Cannot construct instance of `...` (no Creators, like default construct, exist): abstract types either need to be mapped to concrete types, have custom deserializer, or contain additional type information
+```
+
+When specifying allowed subclasses with those annotations the class names will not be included in the serialized
+representation and that is important for @ref:[preventing loading of malicious serialization gadgets](#security)
+when deserializing.
+
+@@@ warning
+
+Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
+when using polymorphic types.
+
+@@@
+
 
 ## Schema Evolution
 
@@ -202,6 +267,18 @@ That type of migration must be configured with the old class name as key. The ac
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #migrations-conf-rename }
 
+### Remove from serialization-bindings
+
+When a class is not used for serialization any more it can be removed from `serialization-bindings` but to still
+allow deserialization it must then be listed in the `whitelist-class-prefix` configuration. This is useful for example
+during rolling update with serialization changes, or when reading old stored data. It can also be used
+when changing from Jackson serializer to another serializer (e.g. Protobuf) and thereby changing the serialization
+binding, but it should still be possible to deserialize old data with Jackson.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #whitelist-class-prefix }
+
+It's a list of class names or prefixes of class names.
+
 ## Jackson Modules
 
 The following Jackson modules are enabled by default:
@@ -220,4 +297,38 @@ than the following configuration are compressed with GZIP.
 
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
-TODO: The binary formats are currently also compressed. That may change since it might not be needed for those.
+Compression can be disabled by setting this configuration property to `off`. It will still be able to decompress
+payloads that were compressed when serialized, e.g. if this configuration is changed.
+
+## Additional configuration
+
+### Configuration per binding
+
+By default the configuration for the Jackson serializers and their `ObjectMapper`s is defined in
+the `akka.serialization.jackson` section. It is possible to override that configuration in a more
+specific `akka.serialization.jackson.<binding name>` section.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #specific-config }
+
+It's also possible to define several bindings and use different configuration for them. For example,
+different settings for remote messages and persisted events.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #several-config }
+
+## Additional features
+
+Additional Jackson serialization features can be enabled/disabled in configuration. The default values from
+Jackson are used aside from the the following that are changed in Akka's default configuration.
+
+@@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #features }
+
+### Date/time format
+
+`WRITE_DATES_AS_TIMESTAMPS` is by default disabled, which means that date/time fields are serialized in
+ISO-8601 (rfc3339) `yyyy-MM-dd'T'HH:mm:ss.SSSZ` format instead of numeric arrays. This is better for
+interoperability but it is slower. If you don't need the ISO format for interoperability with external systems
+you can change the following configuration for better performance of date/time fields.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #date-time }
+
+Jackson is still be able to deserialize the other format independent of this setting.

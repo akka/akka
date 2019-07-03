@@ -65,6 +65,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       info.getOperations.length should be > (0)
     }
 
+    "reply with InitJoinNack for InitJoin before joining" in {
+      system.actorSelection("/system/cluster/core/daemon") ! InitJoin(system.settings.config)
+      expectMsgType[InitJoinNack]
+    }
+
     "initially become singleton cluster when joining itself and reach convergence" in {
       clusterView.members.size should ===(0)
       cluster.join(selfAddress)
@@ -73,6 +78,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       clusterView.self.address should ===(selfAddress)
       clusterView.members.map(_.address) should ===(Set(selfAddress))
       awaitAssert(clusterView.status should ===(MemberStatus.Up))
+    }
+
+    "reply with InitJoinAck for InitJoin after joining" in {
+      system.actorSelection("/system/cluster/core/daemon") ! InitJoin(system.settings.config)
+      expectMsgType[InitJoinAck]
     }
 
     "publish initial state as snapshot to subscribers" in {

@@ -6,11 +6,13 @@ package akka.serialization.jackson;
 
 import akka.actor.ActorRef;
 import akka.actor.Address;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -22,10 +24,11 @@ public interface JavaTestMessages {
   public class SimpleCommand implements TestMessage {
     private final String name;
 
-    // FIXME document gotchas like this (or is there a better way?)
-    // @JsonProperty needed due to single argument constructor, see
-    // https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names
-    public SimpleCommand(@JsonProperty("name") String name) {
+    // @JsonCreator or @JsonProperty needed due to single argument constructor, see
+    // rejected change request in Jackson https://github.com/FasterXML/jackson-databind/issues/1631
+    // See also https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names
+    @JsonCreator
+    public SimpleCommand(String name) {
       this.name = name;
     }
 
@@ -202,6 +205,39 @@ public interface JavaTestMessages {
     }
   }
 
+  public class InstantCommand implements TestMessage {
+    public final Instant instant;
+
+    @JsonCreator
+    public InstantCommand(Instant instant) {
+      this.instant = instant;
+    }
+
+    public Instant getInstant() {
+      return instant;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      InstantCommand that = (InstantCommand) o;
+
+      return instant.equals(that.instant);
+    }
+
+    @Override
+    public int hashCode() {
+      return instant.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return "InstantCommand{" + "instant=" + instant + '}';
+    }
+  }
+
   public class CommandWithActorRef implements TestMessage {
     public final String name;
     public final ActorRef replyTo;
@@ -218,14 +254,42 @@ public interface JavaTestMessages {
 
       CommandWithActorRef that = (CommandWithActorRef) o;
 
-      if (name != null ? !name.equals(that.name) : that.name != null) return false;
-      return replyTo != null ? replyTo.equals(that.replyTo) : that.replyTo == null;
+      if (!name.equals(that.name)) return false;
+      return replyTo.equals(that.replyTo);
     }
 
     @Override
     public int hashCode() {
-      int result = name != null ? name.hashCode() : 0;
-      result = 31 * result + (replyTo != null ? replyTo.hashCode() : 0);
+      int result = name.hashCode();
+      result = 31 * result + replyTo.hashCode();
+      return result;
+    }
+  }
+
+  public class CommandWithTypedActorRef implements TestMessage {
+    public final String name;
+    public final akka.actor.typed.ActorRef<String> replyTo;
+
+    public CommandWithTypedActorRef(String name, akka.actor.typed.ActorRef<String> replyTo) {
+      this.name = name;
+      this.replyTo = replyTo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      CommandWithTypedActorRef that = (CommandWithTypedActorRef) o;
+
+      if (!name.equals(that.name)) return false;
+      return replyTo.equals(that.replyTo);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name.hashCode();
+      result = 31 * result + replyTo.hashCode();
       return result;
     }
   }
@@ -325,7 +389,8 @@ public interface JavaTestMessages {
   public class Zoo implements TestMessage {
     public final Animal first;
 
-    public Zoo(@JsonProperty("first") Animal first) {
+    @JsonCreator
+    public Zoo(Animal first) {
       this.first = first;
     }
 
@@ -355,7 +420,8 @@ public interface JavaTestMessages {
   public final class Lion implements Animal {
     public final String name;
 
-    public Lion(@JsonProperty("name") String name) {
+    @JsonCreator
+    public Lion(String name) {
       this.name = name;
     }
 
@@ -406,7 +472,8 @@ public interface JavaTestMessages {
   final class Cockroach implements Animal {
     public final String name;
 
-    public Cockroach(@JsonProperty("name") String name) {
+    @JsonCreator
+    public Cockroach(String name) {
       this.name = name;
     }
 

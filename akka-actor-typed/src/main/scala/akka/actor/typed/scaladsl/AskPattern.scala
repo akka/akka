@@ -27,8 +27,10 @@ object AskPattern {
 
   /**
    * See [[ask]]
+   *
+   * @tparam Req The request protocol, what the other actor accepts
    */
-  implicit final class Askable[T](val ref: RecipientRef[T]) extends AnyVal {
+  implicit final class Askable[Req](val ref: RecipientRef[Req]) extends AnyVal {
 
     /**
      * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -54,13 +56,15 @@ object AskPattern {
      * implicit val scheduler = system.scheduler
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
-     * val f: Future[Reply] = target ? (replyTo => (Request("hello", replyTo)))
+     * val f: Future[Reply] = target ? (replyTo => Request("hello", replyTo))
      * }}}
      *
      * Note: it is preferrable to use the non-symbolic ask method as it easier allows for wildcards for
-     * the `ActorRef`.
+     * the `replyTo: ActorRef`.
+     *
+     * @tparam Res The response protocol, what the other actor sends back
      */
-    def ?[U](replyTo: ActorRef[U] => T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
+    def ?[Res](replyTo: ActorRef[Res] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] = {
       ask(replyTo)(timeout, scheduler)
     }
 
@@ -85,15 +89,15 @@ object AskPattern {
      * implicit val scheduler = system.scheduler
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
-     * val f: Future[Reply] = target.ask(replyTo => (Request("hello", replyTo)))
+     * val f: Future[Reply] = target.ask(replyTo => Request("hello", replyTo))
      * // alternatively
      * val f2: Future[Reply] = target.ask(Request("hello", _))
-     * // note that the explicit type on f2 is important for the compiler
-     * // to understand the type of the wildcard
      * }}}
+     *
+     * @tparam Res The response protocol, what the other actor sends back
      */
     @silent
-    def ask[U](replyTo: ActorRef[U] => T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
+    def ask[Res](replyTo: ActorRef[Res] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] = {
       // We do not currently use the implicit sched, but want to require it
       // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {

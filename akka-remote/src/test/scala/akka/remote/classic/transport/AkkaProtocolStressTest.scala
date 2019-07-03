@@ -72,7 +72,7 @@ object AkkaProtocolStressTest {
           // the proper ordering.
           if (seq > limit * 0.5) {
             controller ! ((maxSeq, losses))
-            context.system.scheduler.schedule(1.second, 1.second, self, ResendFinal)
+            context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, ResendFinal)
             context.become(done)
           }
         } else {

@@ -35,7 +35,7 @@ public class HelloWorldPersistentEntityExample {
   public static class HelloWorldService {
     private final ActorSystem<?> system;
     private final ClusterSharding sharding;
-    private final Timeout askTimeout = Timeout.create(Duration.ofSeconds(5));
+    private final Duration askTimeout = Duration.ofSeconds(5);
 
     // registration at startup
     public HelloWorldService(ActorSystem<?> system) {

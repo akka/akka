@@ -377,17 +377,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval, self, GossipTick)
+  val gossipTask =
+    scheduler.scheduleWithFixedDelay(PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval, self, GossipTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask = scheduler.schedule(
+  val failureDetectorReaperTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
     UnreachableNodesReaperInterval,
     self,
     ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  val leaderActionsTask = scheduler.schedule(
+  val leaderActionsTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay.max(LeaderActionsInterval),
     LeaderActionsInterval,
     self,
@@ -397,7 +398,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   val publishStatsTask: Option[Cancellable] = PublishStatsInterval match {
     case Duration.Zero | _: Duration.Infinite => None
     case d: FiniteDuration =>
-      Some(scheduler.schedule(PeriodicTasksInitialDelay.max(d), d, self, PublishStatsTick))
+      Some(scheduler.scheduleWithFixedDelay(PeriodicTasksInitialDelay.max(d), d, self, PublishStatsTick))
   }
 
   override def preStart(): Unit = {
@@ -443,7 +444,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   def uninitialized: Actor.Receive =
     ({
-      case InitJoin =>
+      case InitJoin(_) =>
         logInfo("Received InitJoin message from [{}], but this node is not initialized yet", sender())
         sender() ! InitJoinNack(selfAddress)
       case ClusterUserAction.JoinTo(address) =>
@@ -464,7 +465,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     ({
       case Welcome(from, gossip) =>
         welcome(joinWith, from, gossip)
-      case InitJoin =>
+      case InitJoin(_) =>
         logInfo("Received InitJoin message from [{}], but this node is not a member yet", sender())
         sender() ! InitJoinNack(selfAddress)
       case ClusterUserAction.JoinTo(address) =>
@@ -1514,7 +1515,7 @@ private[cluster] final class FirstSeedNodeProcess(
 
   // retry until one ack, or all nack, or timeout
   import context.dispatcher
-  val retryTask = cluster.scheduler.schedule(1.second, 1.second, self, JoinSeedNode)
+  val retryTask = cluster.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, JoinSeedNode)
   self ! JoinSeedNode
 
   override def postStop(): Unit = retryTask.cancel()

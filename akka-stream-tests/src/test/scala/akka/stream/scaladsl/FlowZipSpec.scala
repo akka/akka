@@ -4,17 +4,19 @@
 
 package akka.stream.scaladsl
 
-//#zip
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Sink
-
-//#zip
-
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
+@silent // keep unused imports
 class FlowZipSpec extends BaseTwoStreamsSetup {
+
+//#zip
+  import akka.stream.scaladsl.Source
+  import akka.stream.scaladsl.Sink
+
+//#zip
 
   override type Outputs = (Int, Int)
 

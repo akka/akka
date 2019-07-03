@@ -63,6 +63,7 @@ class RemoteDeploymentSpec
     extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
     akka.remote.artery.advanced.inbound-lanes = 10
     akka.remote.artery.advanced.outbound-lanes = 3
+    akka.remote.use-unsafe-remote-features-without-cluster = on
     """).withFallback(ArterySpecSupport.defaultConfig)) {
 
   import RemoteDeploymentSpec._
@@ -97,7 +98,7 @@ class RemoteDeploymentSpec
       senderProbe.expectMsg("preRestart")
       r.tell(43, senderProbe.ref)
       senderProbe.expectMsg(43)
-      system.stop(r)
+      masterSystem.stop(r)
       senderProbe.expectMsg("postStop")
     }
 

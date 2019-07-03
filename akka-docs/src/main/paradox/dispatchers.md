@@ -42,6 +42,7 @@ Scala
 
 Java
 :  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
+
 ## Setting the dispatcher for an Actor
 
 So in case you want to give your `Actor` a different dispatcher than the default, you need to do two things, of which the first

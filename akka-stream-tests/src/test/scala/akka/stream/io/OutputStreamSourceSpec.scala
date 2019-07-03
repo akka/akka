@@ -8,18 +8,14 @@ import java.io.IOException
 import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeoutException
 
-import akka.actor.ActorSystem
 import akka.stream.Attributes.inputBuffer
 import akka.stream._
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.TestProbe
 import akka.util.ByteString
 
 import scala.concurrent.Await
@@ -120,7 +116,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val f = Future(outputStream.write(bytesArray))
 
       expectTimeout(f, timeout)
-      probe.expectNoMsg(Zero)
+      probe.expectNoMessage(Zero)
 
       s.request(17)
       expectSuccess(f, ())
@@ -171,7 +167,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       // make sure previous tests didn't leak
       assertNoBlockedThreads()
 
-      val (outputStream, probe) =
+      val (_, probe) =
         StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer)
 
       val sub = probe.expectSubscription()
@@ -186,7 +182,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "not leave blocked threads when materializer shutdown" in {
       val materializer2 = ActorMaterializer(settings)
-      val (outputStream, probe) =
+      val (_, probe) =
         StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer2)
 
       val sub = probe.expectSubscription()
@@ -203,7 +199,6 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       // actually this was a race, so it only happened in at least one of 20 runs
 
       val bufSize = 4
-      val sourceProbe = TestProbe()
       val (outputStream, probe) = StreamConverters
         .asOutputStream(timeout)
         .addAttributes(Attributes.inputBuffer(bufSize, bufSize))

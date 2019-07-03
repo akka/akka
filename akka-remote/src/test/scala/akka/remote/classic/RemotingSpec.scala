@@ -86,6 +86,7 @@ object RemotingSpec {
       actor.serialize-messages = off
 
       remote {
+        use-unsafe-remote-features-without-cluster = on
         artery.enabled = off
         classic {
           retry-gate-closed-for = 1 s

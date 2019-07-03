@@ -25,7 +25,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
   "A foreachAsync" must {
     "handle empty source" in assertAllStagesStopped {
       import system.dispatcher
-      val p = Source(List.empty[Int]).runWith(Sink.foreachAsync(3)(a => Future {}))
+      val p = Source(List.empty[Int]).runWith(Sink.foreachAsync(3)(_ => Future {}))
       Await.result(p, remainingOrDefault)
     }
 

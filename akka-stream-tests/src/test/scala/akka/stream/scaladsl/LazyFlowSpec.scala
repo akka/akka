@@ -46,7 +46,7 @@ class LazyFlowSpec extends StreamSpec {
       sourceSub.expectRequest(1)
       sourceSub.sendNext(0)
       sourceSub.expectRequest(1)
-      sourceProbe.expectNoMsg(200.millis)
+      sourceProbe.expectNoMessage(200.millis)
 
       p.success(Flow[Int])
       flowProbe.request(99)

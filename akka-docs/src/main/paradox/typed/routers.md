@@ -40,7 +40,7 @@ Java
 
 ## Group Router
 
-The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#Receptionist)) to discover
+The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
 Since the receptionist is used this means the group router is cluster aware out of the box and will pick up routees

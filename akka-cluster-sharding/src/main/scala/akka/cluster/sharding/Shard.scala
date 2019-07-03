@@ -198,9 +198,9 @@ private[akka] class Shard(
   private var handOffStopper: Option[ActorRef] = None
 
   import context.dispatcher
-  val passivateIdleTask = if (settings.passivateIdleEntityAfter > Duration.Zero) {
+  val passivateIdleTask = if (settings.passivateIdleEntityAfter > Duration.Zero && !settings.rememberEntities) {
     val idleInterval = settings.passivateIdleEntityAfter / 2
-    Some(context.system.scheduler.schedule(idleInterval, idleInterval, self, PassivateIdleTick))
+    Some(context.system.scheduler.scheduleWithFixedDelay(idleInterval, idleInterval, self, PassivateIdleTick))
   } else {
     None
   }
@@ -546,7 +546,7 @@ private[akka] class RememberEntityStarter(
 
   val tickTask = {
     val resendInterval = settings.tuningParameters.retryInterval
-    context.system.scheduler.schedule(resendInterval, resendInterval, self, Tick)
+    context.system.scheduler.scheduleWithFixedDelay(resendInterval, resendInterval, self, Tick)
   }
 
   def sendStart(ids: Set[ShardRegion.EntityId]): Unit = {

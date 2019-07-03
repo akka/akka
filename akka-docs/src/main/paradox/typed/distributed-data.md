@@ -55,11 +55,14 @@ Scala
 Java
 :  @@snip [ReplicatorTest.java](/akka-cluster-typed/src/test/java/akka/cluster/ddata/typed/javadsl/ReplicatorTest.java) { #sample }
 
+Although you can interact with the `Replicator` using the @scala[`ActorRef[Replicator.Command]`]@java[`ActorRef<Replicator.Command>`]
+from @scala[`DistributedData(ctx.system).replicator`]@java[`DistributedData(ctx.getSystem()).replicator()`] it's
+often more convenient to use the `ReplicatorMessageAdapter` as in the above example.
 
-When we start up the actor we subscribe it to changes for our key, this means that whenever the replicator see a change
-for the counter our actor will get a @scala[`Replicator.Changed[GCounter]`]@java[`Replicator.Changed<GCounter>`], since
-this is not a message in our protocol, we use an adapter to wrap it in the internal `InternalChanged` message, which
-is then handled in the regular message handling of the behavior. 
+When we start up the actor we subscribe it to changes for our key, meaning whenever the replicator observes a change
+for the counter our actor will receive a @scala[`Replicator.Changed[GCounter]`]@java[`Replicator.Changed<GCounter>`]. Since
+this is not a message in our protocol, we use a message transformation function to wrap it in the internal `InternalChanged`
+message, which is then handled in the regular message handling of the behavior.
 
 For an incoming `Increment` command, we send the `replicator` a `Replicator.Update` request, it contains five values:
 
@@ -73,18 +76,29 @@ For an incoming `Increment` command, we send the `replicator` a `Replicator.Upda
 Whenever the distributed counter is updated, we cache the value so that we can answer requests about the value without
 the extra interaction with the replicator using the `GetCachedValue` command.
 
-We also support asking the replicator, using the `GetValue`, demonstrating how many of the replicator commands take
-a pass-along value that will be put in the response message so that we do not need to keep a local state tracking
-what actors are waiting for responses, but can extract the `replyTo` actor from the replicator when it responds 
-with a `GetSuccess`. See the @ref[the untyped Distributed Data documentation](../distributed-data.md#using-the-replicator)
-for more details about what interactions with the replicator there are.
+The example also supports asking the replicator using the `GetValue` command. Note how the `replyTo` from the
+incoming message can be used when the `GetSuccess` response from the replicator is received.
 
+See the @ref[the untyped Distributed Data documentation](../distributed-data.md#using-the-replicator)
+for more details about `Get`, `Update` and `Delete` interactions with the replicator.
+
+@@@ div { .group-scala }
+There is alternative way of constructing the function for the `Update` message:
+
+Scala
+:  @@snip [ReplicatorSpec.scala](/akka-cluster-typed/src/test/scala/akka/cluster/ddata/typed/scaladsl/ReplicatorSpec.scala) { #curried-update }
+
+Similar is supported for `Get` and `Delete`:
+
+Scala
+:  @@snip [ReplicatorSpec.scala](/akka-cluster-typed/src/test/scala/akka/cluster/ddata/typed/scaladsl/ReplicatorSpec.scala) { #curried-get }
+
+@@@
 
 ### Replicated data types
 
 Akka contains a set of useful replicated data types and it is fully possible to implement custom replicated data types. 
-For more details, read @ref[the untyped Distributed Data documentation](../distributed-data.md#data-types) 
-
+For more details, read @ref[the untyped Distributed Data documentation](../distributed-data.md#data-types)
 
 ### Running separate instances of the replicator
 
@@ -93,4 +107,7 @@ it makes sense to start separate replicators, this needs to be done on all nodes
 the group of nodes tagged with a specific role. To do this with the Typed Distributed Data you will first
 have to start an untyped `Replicator` and pass it to the `Replicator.behavior` method that takes an untyped
 actor ref. All such `Replicator`s must run on the same path in the untyped actor hierarchy.
- 
+
+A standalone `ReplicatorMessageAdapter` can also be created for a given `Replicator` instead of creating
+one via the `DistributedData` extension.
+

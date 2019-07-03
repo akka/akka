@@ -493,12 +493,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
-        new BehaviorInterceptor<Command, Command>() {
-
-          @Override
-          public Class<? extends Command> interceptMessageType() {
-            return Command.class;
-          }
+        new BehaviorInterceptor<Command, Command>(Command.class) {
 
           @Override
           public Behavior<Command> aroundReceive(
@@ -515,7 +510,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
           }
         };
     ActorRef<Command> c =
-        testKit.spawn(Behaviors.intercept(tap, counter(new PersistenceId("tap1"))));
+        testKit.spawn(Behaviors.intercept(() -> tap, counter(new PersistenceId("tap1"))));
     c.tell(Increment.INSTANCE);
     interceptProbe.expectMessage(Increment.INSTANCE);
     signalProbe.expectNoMessage();

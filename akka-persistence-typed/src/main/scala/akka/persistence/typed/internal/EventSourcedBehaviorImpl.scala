@@ -133,10 +133,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
           val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
 
             import BehaviorInterceptor._
-            def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
+            override def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
                 : Behavior[Any] = { target(ctx, msg) }
 
-            def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
+            override def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
                 : Behavior[Any] = {
               if (signal == PostStop) {
                 eventSourcedSetup.cancelRecoveryTimer()
@@ -154,7 +154,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             case internal: InternalProtocol              => internal // such as RecoveryTickEvent
             case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
           }
-          Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
+          Behaviors.intercept(() => onStopInterceptor)(widened).narrow[Command]
         }
 
       }

@@ -46,6 +46,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
     new SourceWithContext(delegate.withAttributes(attr))
 
   /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Source.mapMaterializedValue]].
+   *
+   * @see [[akka.stream.scaladsl.Source.mapMaterializedValue]]
+   */
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): SourceWithContext[Out, Ctx, Mat2] =
+    new SourceWithContext(delegate.mapMaterializedValue(f))
+
+  /**
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */

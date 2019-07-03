@@ -2,37 +2,37 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package jdocs.akka.persistence.typed;
+package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
+import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
+import akka.cluster.sharding.typed.javadsl.EventSourcedEntityWithEnforcedReplies;
 import akka.persistence.typed.ExpectingReply;
-import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
-import akka.persistence.typed.javadsl.ReplyEffect;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventHandlerBuilder;
-import akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies;
+import akka.persistence.typed.javadsl.ReplyEffect;
 
 import java.math.BigDecimal;
 
 /**
  * Bank account example illustrating: - different state classes representing the lifecycle of the
  * account - event handlers that delegate to methods in the state classes - command handlers that
- * delegate to methods in the EventSourcedBehavior class - replies of various types, using
- * ExpectingReply and EventSourcedBehaviorWithEnforcedReplies
+ * delegate to methods in the class - replies of various types, using ExpectingReply and
+ * EventSourcedEntityWithEnforcedReplies
  */
 public interface AccountExampleWithEventHandlersInState {
 
   // #account-entity
   // #withEnforcedReplies
   public class AccountEntity
-      extends EventSourcedBehaviorWithEnforcedReplies<
+      extends EventSourcedEntityWithEnforcedReplies<
           AccountEntity.AccountCommand, AccountEntity.AccountEvent, AccountEntity.Account> {
     // #withEnforcedReplies
+
+    public static final EntityTypeKey<AccountCommand> ENTITY_TYPE_KEY =
+        EntityTypeKey.create(AccountCommand.class, "Account");
 
     // Command
     // #reply-command
@@ -195,12 +195,12 @@ public interface AccountExampleWithEventHandlersInState {
 
     public static class ClosedAccount implements Account {}
 
-    public static Behavior<AccountCommand> behavior(String accountNumber) {
-      return Behaviors.setup(context -> new AccountEntity(context, accountNumber));
+    public static AccountEntity create(String accountNumber) {
+      return new AccountEntity(accountNumber);
     }
 
-    public AccountEntity(ActorContext<AccountCommand> context, String accountNumber) {
-      super(new PersistenceId(accountNumber));
+    public AccountEntity(String accountNumber) {
+      super(ENTITY_TYPE_KEY, accountNumber);
     }
 
     @Override

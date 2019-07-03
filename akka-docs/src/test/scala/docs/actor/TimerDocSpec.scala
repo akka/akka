@@ -24,7 +24,7 @@ object TimerDocSpec {
     def receive = {
       case FirstTick =>
         // do something useful here
-        timers.startPeriodicTimer(TickKey, Tick, 1.second)
+        timers.startTimerWithFixedDelay(TickKey, Tick, 1.second)
       case Tick =>
       // do something useful here
     }

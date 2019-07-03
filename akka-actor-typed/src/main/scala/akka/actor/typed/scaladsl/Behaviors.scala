@@ -27,7 +27,7 @@ object Behaviors {
    * processed by the started behavior.
    */
   def setup[T](factory: ActorContext[T] => Behavior[T]): Behavior[T] =
-    Behavior.DeferredBehavior(factory)
+    BehaviorImpl.DeferredBehavior(factory)
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -35,7 +35,7 @@ object Behaviors {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def same[T]: Behavior[T] = Behavior.same
+  def same[T]: Behavior[T] = BehaviorImpl.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -43,7 +43,7 @@ object Behaviors {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def unhandled[T]: Behavior[T] = Behavior.unhandled
+  def unhandled[T]: Behavior[T] = BehaviorImpl.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -54,7 +54,7 @@ object Behaviors {
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T]: Behavior[T] = Behavior.stopped
+  def stopped[T]: Behavior[T] = BehaviorImpl.stopped
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -65,17 +65,17 @@ object Behaviors {
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: () => Unit): Behavior[T] = Behavior.stopped(postStop)
+  def stopped[T](postStop: () => Unit): Behavior[T] = BehaviorImpl.stopped(postStop)
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def empty[T]: Behavior[T] = Behavior.empty
+  def empty[T]: Behavior[T] = BehaviorImpl.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def ignore[T]: Behavior[T] = Behavior.ignore
+  def ignore[T]: Behavior[T] = BehaviorImpl.ignore
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -144,10 +144,11 @@ object Behaviors {
    * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    *
-   * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
-   * so that a new instance is created per spawned actor rather than shared among actor instance.
+   * The interceptor is created with a factory function in case it has state and should not be shared.
+   * If the interceptor has no state the same instance can be returned from the factory to avoid unnecessary object
+   * creation.
    */
-  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+  def intercept[O, I](behaviorInterceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**
@@ -155,9 +156,16 @@ object Behaviors {
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
+   *
+   * The `ClassTag` for `T` ensures that the messages of this class or a subclass thereof will be
+   * sent to the `monitor`. Other message types (e.g. a private protocol) will bypass the interceptor
+   * and be continue to the inner behavior.
+   *
+   * @param monitor The messages will also be sent to this `ActorRef`
+   * @param behavior The inner behavior that is decorated
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(new MonitorInterceptor[T](monitor))(behavior)
+  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.intercept(() => new MonitorInterceptor[T](monitor))(behavior)
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
@@ -165,7 +173,7 @@ object Behaviors {
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
   def logMessages[T](behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(new LogMessagesInterceptor[T](LogOptions()))(behavior)
+    BehaviorImpl.intercept(() => LogMessagesInterceptor[T](LogOptions()))(behavior)
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
@@ -173,7 +181,7 @@ object Behaviors {
    * To include an MDC context then first wrap `logMessages` with `withMDC`.
    */
   def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
-    BehaviorImpl.intercept(new LogMessagesInterceptor[T](logOptions))(behavior)
+    BehaviorImpl.intercept(() => LogMessagesInterceptor[T](logOptions))(behavior)
 
   /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for
@@ -226,6 +234,10 @@ object Behaviors {
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
    *
+   * The `ClassTag` for `T` ensures that only messages of this class or a subclass thereof will be
+   * intercepted. Other message types (e.g. a private protocol) will bypass the interceptor and be
+   * continue to the inner behavior untouched.
+   *
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
@@ -233,11 +245,15 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T: ClassTag](mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
+   *
+   * The `ClassTag` for `T` ensures that only messages of this class or a subclass thereof will be
+   * intercepted. Other message types (e.g. a private protocol) will bypass the interceptor and be
+   * continue to the inner behavior untouched.
    *
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
@@ -245,7 +261,7 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T: ClassTag](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
     withMdc[T](staticMdc, (_: T) => Map.empty[String, Any])(behavior)
 
   /**
@@ -257,6 +273,10 @@ object Behaviors {
    *
    * The `staticMdc` or `mdcForMessage` may be empty.
    *
+   * The `ClassTag` for `T` ensures that only messages of this class or a subclass thereof will be
+   * intercepted. Other message types (e.g. a private protocol) will bypass the interceptor and be
+   * continue to the inner behavior untouched.
+   *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
@@ -265,7 +285,7 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
+  def withMdc[T: ClassTag](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
       behavior: Behavior[T]): Behavior[T] =
     WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 

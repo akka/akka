@@ -36,7 +36,7 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
       private val serialization = SerializationExtension(system)
 
       override def preStart(): Unit = {
-        schedulePeriodically(Continue, refreshInterval)
+        scheduleWithFixedDelay(Continue, refreshInterval, refreshInterval)
       }
 
       override def onPull(): Unit = {

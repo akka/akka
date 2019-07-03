@@ -4,16 +4,19 @@
 
 package akka
 
+import java.io.FileReader
 import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
 
-import sbt.Keys._
+// Overriding CrossJava imports #26935
+import sbt.Keys.{fullJavaHomes=>_,_}
 import sbt._
-import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 
+import CrossJava.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -39,10 +42,23 @@ object AkkaBuild {
   }
 
   def akkaVersion: String = {
-    sys.props.getOrElse("akka.build.version", "2.6-SNAPSHOT") match {
+    val default = "2.6-SNAPSHOT"
+    sys.props.getOrElse("akka.build.version", default) match {
       case "timestamp" => s"2.6-$currentDateTime" // used when publishing timestamped snapshots
+      case "file" => akkaVersionFromFile(default)  
       case v => v
     }
+  }
+
+  def akkaVersionFromFile(default: String): String = {
+    val versionFile = "akka-actor/target/classes/version.conf"
+    if (new File(versionFile).exists()) {
+      val versionProps = new Properties()
+      val reader = new FileReader(versionFile)
+      try versionProps.load(reader) finally reader.close()
+      versionProps.getProperty("akka.version", default).replaceAll("\"", "")
+    } else
+      default
   }
 
   lazy val rootSettings = Def.settings(
@@ -115,21 +131,15 @@ object AkkaBuild {
 
     // compile options
     scalacOptions in Compile ++= DefaultScalacOptions,
-    // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
-    // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
-    // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
-    // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
-    scalacOptions in Compile ++= (
-      if (JavaVersion.isJdk8)
-        Seq("-target:jvm-1.8")
-      else
-        // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-        Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+    scalacOptions in Compile ++=
+      CrossJava.targetJdkScalacOptions(targetSystemJdk.value, fullJavaHomes.value),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
       opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-    javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
-    javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+    javacOptions in compile ++= DefaultJavacOptions ++
+      CrossJava.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
+    javacOptions in test ++= DefaultJavacOptions ++
+      CrossJava.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq(),
 

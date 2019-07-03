@@ -84,4 +84,11 @@ package object ccompat {
   }
 
   object JavaConverters extends scala.collection.convert.DecorateAsJava with scala.collection.convert.DecorateAsScala
+
+  implicit def toTraversableOnceExtensionMethods[A](self: TraversableOnce[A]): TraversableOnceExtensionMethods[A] =
+    new TraversableOnceExtensionMethods[A](self)
+}
+
+class TraversableOnceExtensionMethods[A](private val self: c.TraversableOnce[A]) extends AnyVal {
+  def iterator: Iterator[A] = self.toIterator
 }

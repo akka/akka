@@ -137,7 +137,7 @@ import akka.util.ConstantFun
         }
 
         val actualNext =
-          if (interpretResult == Behavior.same) b2
+          if (interpretResult == BehaviorImpl.same) b2
           else if (Behavior.isUnhandled(interpretResult)) {
             ctx.asScala.onUnhandled(message)
             b2
@@ -158,7 +158,7 @@ import akka.util.ConstantFun
     val actualInitialBehavior =
       if (Behavior.isUnhandled(started))
         throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
-      else if (started == Behavior.same) {
+      else if (started == BehaviorImpl.same) {
         ctx.asScala.currentBehavior
       } else started
 

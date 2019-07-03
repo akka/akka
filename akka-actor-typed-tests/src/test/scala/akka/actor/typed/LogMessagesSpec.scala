@@ -106,5 +106,15 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
+    "log messages of different type" in {
+      val behavior: Behavior[String] = Behaviors.logMessages(Behaviors.ignore[String])
+
+      val ref = spawn(behavior)
+
+      EventFilter.debug("received message 13", source = ref.path.toString, occurrences = 1).intercept {
+        ref.unsafeUpcast[Any] ! 13
+      }
+    }
+
   }
 }

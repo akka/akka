@@ -97,6 +97,14 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPubl
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnrestrictedStash")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamSource.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$Continue$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$")
 
 # #25045 adding Java/Scala interop to SourceQueue and SinkQueue
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")
@@ -105,3 +113,19 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SourceQueueAdapter
 # Remove deprecated features since 2.5.0 https://github.com/akka/akka/issues/26492
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializerSettings.withAutoFusing")
 
+# Add attributes to constructor of internal class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartWithBackoffLogic.this")
+
+# #26910 scheduleWithFixedDelay vs scheduleAtFixedRate
+# Adding methods to Materializer is not compatible but we don't support other Materializer implementations
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.scheduleAtFixedRate")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.scheduleWithFixedDelay")
+
+#26187 - Re-write ActorPublisher/Subscribers as GraphStages
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamSource.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$Continue$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$")

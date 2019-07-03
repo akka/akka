@@ -65,6 +65,14 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In
   override def withAttributes(attr: Attributes): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     new FlowWithContext(delegate.withAttributes(attr))
 
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Flow.mapMaterializedValue]].
+   *
+   * @see [[akka.stream.scaladsl.Flow.mapMaterializedValue]]
+   */
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): FlowWithContext[In, CtxIn, Out, CtxOut, Mat2] =
+    new FlowWithContext(delegate.mapMaterializedValue(f))
+
   def asFlow: Flow[(In, CtxIn), (Out, CtxOut), Mat] = delegate
 
   def asJava[JIn <: In, JCtxIn <: CtxIn, JOut >: Out, JCtxOut >: CtxOut, JMat >: Mat]

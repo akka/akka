@@ -21,10 +21,10 @@ class TickSourceSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
       sub.cancel()
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "drop ticks when not requested" taggedAs TimingTest in {
@@ -33,15 +33,15 @@ class TickSourceSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
-      c.expectNoMsg(1400.millis)
+      c.expectNoMessage(1400.millis)
       sub.request(2)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
       sub.cancel()
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "reject multiple subscribers, but keep the first" taggedAs TimingTest in {
@@ -54,7 +54,7 @@ class TickSourceSpec extends StreamSpec {
       c2.expectSubscriptionAndError()
       sub1.request(1)
       c1.expectNext("tick")
-      c1.expectNoMsg(200.millis)
+      c1.expectNoMessage(200.millis)
       sub1.request(2)
       c1.expectNext("tick")
       sub1.cancel()
@@ -77,9 +77,9 @@ class TickSourceSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(1000)
       c.expectNext(1)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext(2)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       sub.cancel()
     }
 
@@ -89,9 +89,9 @@ class TickSourceSpec extends StreamSpec {
       val cancellable = tickSource.to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(2)
-      c.expectNoMsg(600.millis)
+      c.expectNoMessage(600.millis)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
       cancellable.cancel()
       awaitCond(cancellable.isCancelled)
