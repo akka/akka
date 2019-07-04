@@ -46,10 +46,10 @@ public class ShardingReplyCompileOnlyTest {
 
   public Behavior<CounterCommand> counter(int value) {
     return Behaviors.receive(CounterCommand.class)
-        .onMessage(Increment.class, (ctx, msg) -> counter(value + 1))
+        .onMessage(Increment.class, msg -> counter(value + 1))
         .onMessage(
             GetValue.class,
-            (ctx, msg) -> {
+            msg -> {
               sharding.entityRefFor(typeKey, msg.replyToEntityId).tell(new NewCount(value));
               return Behaviors.same();
             })
