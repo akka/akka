@@ -1,5 +1,13 @@
 # Scheduler
 
+@@@ note
+
+@@include[_includes/akka-classic-header.md](_includes/akka-classic-header.md)
+
+For the new API see @ref[typed scheduling](typed/interaction-patterns.md#typed-scheduling).
+
+@@@
+
 ## Dependency
 
 To use Scheduler, you must add the following dependency in your project:

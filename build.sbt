@@ -226,6 +226,7 @@ lazy val docs = akkaModule("akka-docs")
         "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
         "aeron_version" -> Dependencies.aeronVersion,
         "netty_version" -> Dependencies.nettyVersion),
+    paradoxExpectedNumberOfRoots := 8, // postponing fix for pages without top level toc
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",

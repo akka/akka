@@ -1,6 +1,10 @@
 # Akka Classic
 
-Akka Classic is the original Actor APIs now superseeded by the new more type safe actor APIs.
+@@@ note
+
+@@include[_includes/akka-classic-header.md](_includes/akka-classic-header.md)
+
+@@@
 
 @@toc { depth=2 }
 
