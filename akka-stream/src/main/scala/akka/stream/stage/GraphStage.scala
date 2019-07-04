@@ -560,7 +560,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     val elem = connection.slot
 
     // Fast path
-    if ((connection.portState & (InReady | InFailed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
+    if ((connection.portState & (InReady | InFailed | InClosed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
       connection.slot = Empty
       elem.asInstanceOf[T]
     } else {
