@@ -343,7 +343,8 @@ private[remote] class Association(
       val reason =
         if (removed) "Due to removed unused quarantined association"
         else s"Due to overflow of send queue, size [$qSize]"
-      transport.system.eventStream.publish(Dropped(message, reason, recipient.getOrElse(deadletters)))
+      transport.system.eventStream
+        .publish(Dropped(message, reason, env.sender.getOrElse(ActorRef.noSender), recipient.getOrElse(deadletters)))
 
       flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env

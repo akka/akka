@@ -570,10 +570,11 @@ class TestEventListener extends Logging.DefaultLogger {
         }
       }
     case UnhandledMessage(msg, sender, rcp) =>
-      val event = Warning(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg)
+      val event = Warning(rcp.path.toString, rcp.getClass, s"unhandled message from $sender: $msg")
       if (!filter(event)) print(event)
-    case Dropped(msg, reason, rcp) =>
-      val event = Warning(rcp.path.toString, rcp.getClass, "dropped message. " + reason + ": " + msg)
+    case Dropped(msg, reason, sender, rcp) =>
+      val event =
+        Warning(rcp.path.toString, rcp.getClass, s"dropped message from $sender. $reason: $msg")
       if (!filter(event)) print(event)
 
     case m => print(Debug(context.system.name, this.getClass, m))

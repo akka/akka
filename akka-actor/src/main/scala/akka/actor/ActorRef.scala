@@ -518,9 +518,18 @@ final case class SuppressedDeadLetter(message: DeadLetterSuppression, sender: Ac
 /**
  * Envelope that is published on the eventStream wrapped in [[akka.actor.DeadLetter]] for every message that is
  * dropped due to overfull queues or routers with no routees.
+ *
+ * When this message was sent without a sender [[ActorRef]], `sender` will be `ActorRef.noSender`, i.e. `null`.
  */
-final case class Dropped(message: Any, reason: String, recipient: ActorRef) extends AllDeadLetters {
-  override def sender: ActorRef = ActorRef.noSender
+final case class Dropped(message: Any, reason: String, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters
+
+object Dropped {
+
+  /**
+   * Convenience for creating `Cropped` without `sender`.
+   */
+  def apply(message: Any, reason: String, recipient: ActorRef): Dropped =
+    Dropped(message, reason, ActorRef.noSender, recipient)
 }
 
 private[akka] object DeadLetterActorRef {

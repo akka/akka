@@ -95,13 +95,13 @@ class DeadLetterListener extends Actor {
   }
 
   private def logDeadLetter(d: AllDeadLetters, doneMsg: String): Unit = {
+    val origin = if (isReal(d.sender)) s" from ${d.sender}" else ""
     val logMessage = d match {
       case dropped: Dropped =>
         val destination = if (isReal(d.recipient)) s" to ${d.recipient}" else ""
-        s"Message [${d.message.getClass.getName}]$destination was dropped. ${dropped.reason}. " +
+        s"Message [${d.message.getClass.getName}]$origin$destination was dropped. ${dropped.reason}. " +
         s"[$count] dead letters encountered$doneMsg. "
       case _ =>
-        val origin = if (isReal(d.sender)) s" from ${d.sender}" else ""
         s"Message [${d.message.getClass.getName}]$origin to ${d.recipient} was not delivered. " +
         s"[$count] dead letters encountered$doneMsg. " +
         s"If this is not an expected behavior then ${d.recipient} may have terminated unexpectedly. "
@@ -116,7 +116,7 @@ class DeadLetterListener extends Actor {
   }
 
   private def isReal(snd: ActorRef): Boolean = {
-    (snd ne context.system.deadLetters) && !snd.isInstanceOf[DeadLetterActorRef]
+    (snd ne ActorRef.noSender) && (snd ne context.system.deadLetters) && !snd.isInstanceOf[DeadLetterActorRef]
   }
 
 }
