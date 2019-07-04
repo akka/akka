@@ -19,7 +19,7 @@ Combines all elements from each of multiple sources into @scala[tuples] @java[*P
 
 @@@div { .callout }
 
-**emits** when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+**emits** at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
 
 **backpressures** when downstream backpressures
 

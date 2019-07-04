@@ -1544,7 +1544,7 @@ class SubFlow[In, Out, Mat](
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
    *
-   * '''Emits when''' when all of the inputs have an element available, once part (but not all) of the inputs complete their values are substituted by the provided defaults.
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
    *
    * '''Backpressures when''' downstream backpressures
    *
