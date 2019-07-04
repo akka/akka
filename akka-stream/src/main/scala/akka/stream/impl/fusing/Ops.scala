@@ -1775,10 +1775,16 @@ private[stream] object Collect {
         }
       }
 
-      def pullCondition: Boolean =
-        !strategy.isBackpressure || buffer.used < size
+      def pullCondition: Boolean = strategy match {
+        case EmitEarly =>
+          // when buffer is full we can only emit early if out is available
+          buffer.used < size || isAvailable(out)
+        case _ =>
+          !strategy.isBackpressure || buffer.used < size
+      }
 
       def grabAndPull(): Unit = {
+        if (buffer.used == size) throw new IllegalStateException("Trying to enqueue but buffer is full")
         buffer.enqueue((System.nanoTime(), grab(in)))
         if (pullCondition) pull(in)
       }
