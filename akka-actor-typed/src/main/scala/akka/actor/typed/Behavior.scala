@@ -11,7 +11,6 @@ import scala.reflect.ClassTag
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.BehaviorTags
 import akka.actor.typed.internal.InterceptorImpl
@@ -60,16 +59,6 @@ abstract class Behavior[T](private[akka] val _tag: Int) { behavior =>
    */
   @InternalApi private[akka] final def unsafeCast[U]: Behavior[U] = this.asInstanceOf[Behavior[U]]
 
-  /**
-   * Composes this `Behavior` with a fallback `Behavior` which
-   * is used when this `Behavior` doesn't handle the message or signal, i.e.
-   * when `unhandled` is returned.
-   *
-   *  @param that the fallback `Behavior`
-   **/
-  final def orElse(that: Behavior[T]): Behavior[T] = BehaviorImpl.DeferredBehavior[T] { ctx =>
-    new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
-  }
 }
 
 /**

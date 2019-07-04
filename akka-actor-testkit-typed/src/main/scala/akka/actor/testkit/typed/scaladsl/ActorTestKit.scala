@@ -12,7 +12,6 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.ActorTestKitGuardian
@@ -108,7 +107,6 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-@ApiMayChange
 final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
 
   implicit def testKitSettings: TestKitSettings =

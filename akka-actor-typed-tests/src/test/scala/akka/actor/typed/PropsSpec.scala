@@ -9,7 +9,7 @@ import org.scalatest.WordSpec
 
 class PropsSpec extends WordSpec with Matchers {
 
-  val dispatcherFirst = DispatcherDefault(DispatcherFromConfig("pool"))
+  val dispatcherFirst = Props.empty.withDispatcherFromConfig("pool").withDispatcherDefault
 
   "A Props" must {
 

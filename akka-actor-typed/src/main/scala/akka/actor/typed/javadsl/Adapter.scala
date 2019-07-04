@@ -7,7 +7,6 @@ package akka.actor.typed.javadsl
 import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
-import akka.actor.typed.EmptyProps
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorSystem
@@ -36,7 +35,7 @@ object Adapter {
    *  `Behaviors.supervise`.
    */
   def spawnAnonymous[T](sys: akka.actor.ActorSystem, behavior: Behavior[T]): ActorRef[T] =
-    spawnAnonymous(sys, behavior, EmptyProps)
+    spawnAnonymous(sys, behavior, Props.empty)
 
   /**
    *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
@@ -52,7 +51,7 @@ object Adapter {
    *  `Behaviors.supervise`.
    */
   def spawn[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], name: String): ActorRef[T] =
-    spawn(sys, behavior, name, EmptyProps)
+    spawn(sys, behavior, name, Props.empty)
 
   /**
    *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
@@ -68,7 +67,7 @@ object Adapter {
    *  `Behaviors.supervise`.
    */
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T]): ActorRef[T] =
-    spawnAnonymous(ctx, behavior, EmptyProps)
+    spawnAnonymous(ctx, behavior, Props.empty)
 
   /**
    *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
@@ -84,7 +83,7 @@ object Adapter {
    *  `Behaviors.supervise`.
    */
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String): ActorRef[T] =
-    spawn(ctx, behavior, name, EmptyProps)
+    spawn(ctx, behavior, name, Props.empty)
 
   /**
    *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
@@ -155,5 +154,5 @@ object Adapter {
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]]): akka.actor.Props =
-    props(behavior, EmptyProps)
+    props(behavior, Props.empty)
 }
