@@ -227,7 +227,7 @@ class FlowDelaySpec extends StreamSpec {
       val batchSize = 16
       val delayMillis = 500
 
-      val elements = (1 to N).toIterator
+      val elements = (1 to N).iterator
 
       val future = Source
         .tick(0.millis, 10.millis, 1)
@@ -248,8 +248,9 @@ class FlowDelaySpec extends StreamSpec {
       results.length shouldBe N
 
       // check if every elements are delayed by roughly the same amount of time
-      val delayHistogram =
-        results.map(x ⇒ Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).mapValues(_.length)
+      val delayHistogram = results.map(x ⇒ Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).map {
+        case (bucket, delays) => (bucket, delays.length)
+      }
 
       delayHistogram shouldEqual Map(delayMillis.toDouble -> N)
     }
