@@ -14,8 +14,9 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
   val first = role("first") //   alpha
   val second = role("second") // alpha
@@ -43,7 +44,7 @@ object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
 
-      remote.log-remote-lifecycle-events = off
+      remote.classic.log-remote-lifecycle-events = off
 
       cluster {
         debug.verbose-heartbeat-logging = off
@@ -91,8 +92,7 @@ abstract class MultiDcHeartbeatTakingOverSpec
       expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
-      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles.union(
-          expectedBetaHeartbeaterRoles))
+      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles ++ expectedBetaHeartbeaterRoles)
     }
 
     "collect information on oldest nodes" taggedAs LongRunningTest in {

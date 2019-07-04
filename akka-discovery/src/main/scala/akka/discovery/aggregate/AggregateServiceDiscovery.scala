@@ -13,7 +13,7 @@ import akka.event.Logging
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -55,7 +55,7 @@ private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem)
     val serviceDiscovery = Discovery(system)
     settings.discoveryMethods.map(mech => (mech, serviceDiscovery.loadServiceDiscovery(mech)))
   }
-  private implicit val ec = system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   /**
    * Each discovery method is given the resolveTimeout rather than reducing it each time between methods.

@@ -8,7 +8,7 @@ import akka.actor.typed.PreRestart;
 import akka.actor.typed.SupervisorStrategy;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.PostStop;
@@ -188,7 +188,8 @@ class Main extends AbstractBehavior<String> {
 
 public class ActorHierarchyExperiments {
   public static void main(String[] args) {
-    ActorSystem.create(Main.createBehavior(), "testSystem");
+    ActorRef<String> testSystem = ActorSystem.create(Main.createBehavior(), "testSystem");
+    testSystem.tell("start");
   }
 }
 // #print-refs

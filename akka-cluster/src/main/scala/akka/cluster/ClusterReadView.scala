@@ -7,12 +7,16 @@ package akka.cluster
 import java.io.Closeable
 
 import scala.collection.immutable
-import akka.actor.{ Actor, ActorRef, Address, Props }
-import akka.cluster.ClusterEvent._
-import akka.actor.PoisonPill
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Address
 import akka.actor.Deploy
-import akka.util.OptionVal
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.cluster.ClusterEvent._
+import akka.dispatch.RequiresMessageQueue
+import akka.dispatch.UnboundedMessageQueueSemantics
 
 /**
  * INTERNAL API
@@ -32,10 +36,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   @volatile
   private var _reachability: Reachability = Reachability.empty
 
-  // lazy init below, updated when state is updated
   @volatile
-  private var _cachedSelf: OptionVal[Member] = OptionVal.None
-
+  private var _cachedSelf: Member =
+    Member(cluster.selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed)
   @volatile
   private var _closed: Boolean = false
 
@@ -45,17 +48,16 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   @volatile
   private var _latestStats = CurrentInternalStats(GossipStats(), VectorClockStats())
 
-  val selfAddress = cluster.selfAddress
+  val selfAddress: Address = cluster.selfAddress
 
   // create actor that subscribes to the cluster eventBus to update current read view state
   private val eventBusListener: ActorRef = {
     cluster.system
       .systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
         override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
-        override def postStop(): Unit = cluster.unsubscribe(self)
 
-        def receive = {
-          case e: ClusterDomainEvent =>
+        def receive: Receive = {
+          case e: ClusterDomainEvent if !_closed =>
             e match {
               case SeenChanged(_, seenBy) =>
                 _state = _state.copy(seenBy = seenBy)
@@ -90,12 +92,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
             e match {
               case e: MemberEvent if e.member.address == selfAddress =>
-                _cachedSelf match {
-                  case OptionVal.Some(s) if s.status == MemberStatus.Removed && _closed =>
-                  // ignore as Cluster.close has been called
-                  case _ =>
-                    _cachedSelf = OptionVal.Some(e.member)
-                }
+                _cachedSelf = e.member
               case _ =>
             }
 
@@ -107,29 +104,16 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
                   logInfo("event {}", event)
             }
 
-          case s: CurrentClusterState => _state = s
+          case s: CurrentClusterState if !_closed =>
+            _state = s
+            _cachedSelf = s.members.find(_.uniqueAddress == cluster.selfUniqueAddress).getOrElse(_cachedSelf)
         }
       }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
   }
 
   def state: CurrentClusterState = _state
 
-  def self: Member = {
-    _cachedSelf match {
-      case OptionVal.None =>
-        // lazy initialization here, later updated from elsewhere
-        _cachedSelf = OptionVal.Some(selfFromStateOrPlaceholder)
-        _cachedSelf.get
-      case OptionVal.Some(member) => member
-    }
-  }
-
-  private def selfFromStateOrPlaceholder = {
-    import cluster.selfUniqueAddress
-    state.members
-      .find(_.uniqueAddress == selfUniqueAddress)
-      .getOrElse(Member(selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed))
-  }
+  def self: Member = _cachedSelf
 
   /**
    * Returns true if this cluster instance has be shutdown.
@@ -185,12 +169,6 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   /**
    * INTERNAL API
-   */
-  private[cluster] def refreshCurrentState(): Unit =
-    cluster.sendCurrentClusterState(eventBusListener)
-
-  /**
-   * INTERNAL API
    * The nodes that has seen current version of the Gossip.
    */
   private[cluster] def seenBy: Set[Address] = state.seenBy
@@ -205,7 +183,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    */
   def close(): Unit = {
     _closed = true
-    _cachedSelf = OptionVal.Some(self.copy(MemberStatus.Removed))
+    _cachedSelf = self.copy(MemberStatus.Removed)
     if (!eventBusListener.isTerminated)
       eventBusListener ! PoisonPill
   }

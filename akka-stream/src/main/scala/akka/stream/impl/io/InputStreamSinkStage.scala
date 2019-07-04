@@ -171,7 +171,7 @@ private[stream] object InputStreamSinkStage {
             } catch {
               case ex: InterruptedException => throw new IOException(ex)
             }
-          case Some(data) =>
+          case Some(_) =>
             readBytes(a, begin, length)
         }
       } else -1)

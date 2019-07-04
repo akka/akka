@@ -4,25 +4,23 @@
 
 package akka.testkit
 
-import language.postfixOps
+import java.util.concurrent._
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.TimeUnit
+
+import scala.language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
-
+import scala.util.control.NonFatal
 import akka.actor._
 import akka.util.{ BoxedType, Timeout }
-
-import scala.util.control.NonFatal
-import scala.Some
-import java.util.concurrent.TimeUnit
-
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
 import akka.actor.Terminated
+import com.github.ghik.silencer.silent
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -133,7 +131,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
   }
 
   override def postStop() = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     queue.asScala.foreach { m =>
       context.system.deadLetters.tell(DeadLetter(m.msg, m.sender, self), m.sender)
     }
@@ -668,10 +666,12 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
+   * Assert that no message is received. Waits for the default period configured as
+   * `akka.test.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.test.timefactor".
    */
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-  def expectNoMsg(): Unit = { expectNoMsg_internal(remainingOrDefault) }
+  def expectNoMsg(): Unit = expectNoMessage()
 
   /**
    * Assert that no message is received for the specified time.
@@ -691,9 +691,12 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectNoMessage(remainingOrDefault)`, but correctly treating the timeFactor.
+   * Assert that no message is received. Waits for the default period configured as
+   * `akka.test.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.test.timefactor".
    */
-  def expectNoMessage(): Unit = { expectNoMsg_internal(remainingOrDefault) }
+  def expectNoMessage(): Unit =
+    expectNoMsg_internal(testKitSettings.ExpectNoMessageDefaultTimeout.dilated)
 
   private def expectNoMsg_internal(max: FiniteDuration): Unit = {
     val finish = System.nanoTime() + max.toNanos
@@ -921,6 +924,7 @@ trait TestKitBase {
  *
  * @since 1.1
  */
+@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
 object TestKit {
@@ -1028,34 +1032,4 @@ trait ImplicitSender { this: TestKitBase =>
 
 trait DefaultTimeout { this: TestKitBase =>
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
-}
-
-/**
- * INTERNAL API
- *
- * This is a specialized variant of PartialFunction which is <b><i>only
- * applicable if you know that `isDefinedAt(x)` is always called before
- * `apply(x)`—with the same `x` of course.</i></b>
- *
- * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
- * are the same as for [[akka.japi.JavaPartialFunction]] (apart from the
- * missing because unneeded boolean argument).
- *
- * This class is used internal to JavaTestKit and should not be extended
- * by client code directly.
- */
-@deprecated(message = "The only usage is in JavaTestKit which is deprecated.", since = "2.5.0")
-private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef]
-    extends scala.runtime.AbstractPartialFunction[A, B] {
-  import akka.japi.JavaPartialFunction._
-
-  @throws(classOf[Exception])
-  def `match`(x: A): B
-
-  var cache: B = _
-  final def isDefinedAt(x: A): Boolean =
-    try {
-      cache = `match`(x); true
-    } catch { case NoMatch => cache = null.asInstanceOf[B]; false }
-  final override def apply(x: A): B = cache
 }

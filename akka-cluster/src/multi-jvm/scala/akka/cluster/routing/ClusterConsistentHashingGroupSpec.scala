@@ -4,7 +4,7 @@
 
 package akka.cluster.routing
 
-import akka.actor.{ Actor, ActorRef, Address, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
@@ -45,14 +45,6 @@ abstract class ClusterConsistentHashingGroupSpec
     with ImplicitSender
     with DefaultTimeout {
   import ClusterConsistentHashingGroupMultiJvmSpec._
-
-  /**
-   * Fills in self address for local ActorRef
-   */
-  private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) => cluster.selfAddress
-    case a                         => a
-  }
 
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees

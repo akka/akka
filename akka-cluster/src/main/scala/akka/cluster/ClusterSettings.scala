@@ -12,7 +12,6 @@ import scala.concurrent.duration.Duration
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
-import akka.dispatch.Dispatchers
 import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
 
 import scala.concurrent.duration.FiniteDuration
@@ -167,7 +166,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getInt("min-nr-of-members")
   }.requiring(_ > 0, "min-nr-of-members must be > 0")
   val MinNrOfMembersOfRole: Map[String, Int] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     cc.getConfig("role")
       .root
       .asScala
@@ -179,10 +178,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val RunCoordinatedShutdownWhenDown: Boolean = cc.getBoolean("run-coordinated-shutdown-when-down")
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
   val JmxMultiMbeansInSameEnabled: Boolean = cc.getBoolean("jmx.multi-mbeans-in-same-jvm")
-  val UseDispatcher: String = cc.getString("use-dispatcher") match {
-    case "" => Dispatchers.DefaultDispatcherId
-    case id => id
-  }
+  val UseDispatcher: String = cc.getString("use-dispatcher")
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
   val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = cc.getMillisDuration("scheduler.tick-duration")
@@ -190,12 +186,21 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val ByPassConfigCompatCheck: Boolean = !cc.getBoolean("configuration-compatibility-check.enforce-on-join")
   val ConfigCompatCheckers: Set[String] = {
-    import scala.collection.JavaConverters._
-    cc.getConfig("configuration-compatibility-check.checkers").root.unwrapped.values().asScala.map(_.toString).toSet
+    import akka.util.ccompat.JavaConverters._
+    cc.getConfig("configuration-compatibility-check.checkers")
+      .root
+      .unwrapped
+      .values()
+      .asScala
+      .iterator
+      .collect {
+        case s if s.toString.trim.nonEmpty => s.toString
+      }
+      .toSet
   }
 
   val SensitiveConfigPaths = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
 
     val sensitiveKeys =
       cc.getConfig("configuration-compatibility-check.sensitive-config-paths")

@@ -4,15 +4,19 @@
 
 package akka.remote
 
+import scala.collection.mutable
+import scala.concurrent.duration._
+
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-import scala.collection.mutable
-import scala.concurrent.duration._
-
+import akka.dispatch.Dispatchers
 import akka.remote.artery.ArteryTransport
+import akka.util.unused
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -22,17 +26,15 @@ private[akka] object RemoteWatcher {
   /**
    * Factory method for `RemoteWatcher` [[akka.actor.Props]].
    */
-  def props(
-      failureDetector: FailureDetectorRegistry[Address],
-      heartbeatInterval: FiniteDuration,
-      unreachableReaperInterval: FiniteDuration,
-      heartbeatExpectedResponseAfter: FiniteDuration): Props =
+  def props(settings: RemoteSettings, failureDetector: FailureDetectorRegistry[Address]): Props =
     Props(
-      classOf[RemoteWatcher],
-      failureDetector,
-      heartbeatInterval,
-      unreachableReaperInterval,
-      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+      new RemoteWatcher(
+        failureDetector,
+        heartbeatInterval = settings.WatchHeartBeatInterval,
+        unreachableReaperInterval = settings.WatchUnreachableReaperInterval,
+        heartbeatExpectedResponseAfter = settings.WatchHeartbeatExpectedResponseAfter))
+      .withDispatcher(Dispatchers.InternalDispatcherId)
+      .withDeploy(Deploy.local)
 
   final case class WatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
@@ -106,13 +108,20 @@ private[akka] class RemoteWatcher(
 
   val (heartBeatMsg, selfHeartbeatRspMsg) =
     if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
-    else (Heartbeat, HeartbeatRsp(AddressUidExtension(context.system).addressUid))
+    else {
+      // For classic remoting the 'int' part is sufficient
+      @silent
+      val addressUid = AddressUidExtension(context.system).addressUid
+      (Heartbeat, HeartbeatRsp(addressUid))
+    }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
+  @silent
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
+  @silent
   val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet
@@ -120,9 +129,9 @@ private[akka] class RemoteWatcher(
   var unreachable: Set[Address] = Set.empty
   var addressUids: Map[Address, Long] = Map.empty
 
-  val heartbeatTask = scheduler.schedule(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
+  val heartbeatTask = scheduler.scheduleWithFixedDelay(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
   val failureDetectorReaperTask =
-    scheduler.schedule(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
+    scheduler.scheduleWithFixedDelay(unreachableReaperInterval, unreachableReaperInterval, self, ReapUnreachableTick)
 
   override def postStop(): Unit = {
     super.postStop()
@@ -130,7 +139,7 @@ private[akka] class RemoteWatcher(
     failureDetectorReaperTask.cancel()
   }
 
-  def receive = {
+  def receive: Receive = {
     case HeartbeatTick                             => sendHeartbeat()
     case Heartbeat | ArteryHeartbeat               => receiveHeartbeat()
     case HeartbeatRsp(uid)                         => receiveHeartbeatRsp(uid.toLong)
@@ -193,14 +202,25 @@ private[akka] class RemoteWatcher(
     }
   }
 
+  /** Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-without-cluster`
+   * is enabled. Can be overridden when using RemoteWatcher as a superclass.
+   */
+  @InternalApi protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
+    // In this it is unnecessary if only created by RARP, but cluster needs it.
+    // Cleaner than overriding Cluster watcher addWatch/removeWatch just for one boolean test
+    remoteProvider.hasClusterOrUseUnsafe
+  }
+
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
     log.debug("Watching: [{} -> {}]", watcher, watchee)
-    watching.addBinding(watchee, watcher)
-    watchNode(watchee)
+    if (shouldWatch(watchee)) {
+      watching.addBinding(watchee, watcher)
+      watchNode(watchee)
 
-    // add watch from self, this will actually send a Watch to the target when necessary
-    context.watch(watchee)
+      // add watch from self, this will actually send a Watch to the target when necessary
+      context.watch(watchee)
+    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watcher, watchee, "Watch")
   }
 
   def watchNode(watchee: InternalActorRef): Unit = {
@@ -215,20 +235,21 @@ private[akka] class RemoteWatcher(
 
   def removeWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
-    log.debug("Unwatching: [{} -> {}]", watcher, watchee)
-
-    // Could have used removeBinding, but it does not tell if this was the last entry. This saves a contains call.
-    watching.get(watchee) match {
-      case Some(watchers) =>
-        watchers -= watcher
-        if (watchers.isEmpty) {
-          // clean up self watch when no more watchers of this watchee
-          log.debug("Cleanup self watch of [{}]", watchee.path)
-          context.unwatch(watchee)
-          removeWatchee(watchee)
-        }
-      case None =>
-    }
+    if (shouldWatch(watchee)) {
+      // Could have used removeBinding, but it does not tell if this was the last entry. This saves a contains call.
+      watching.get(watchee) match {
+        case Some(watchers) =>
+          watchers -= watcher
+          if (watchers.isEmpty) {
+            log.debug("Unwatching: [{} -> {}]", watcher, watchee)
+            // clean up self watch when no more watchers of this watchee
+            log.debug("Cleanup self watch of [{}]", watchee.path)
+            context.unwatch(watchee)
+            removeWatchee(watchee)
+          }
+        case None =>
+      }
+    } else remoteProvider.warnIfUnsafeDeathwatchWithoutCluster(watcher, watchee, "Unwatch")
   }
 
   def removeWatchee(watchee: InternalActorRef): Unit = {

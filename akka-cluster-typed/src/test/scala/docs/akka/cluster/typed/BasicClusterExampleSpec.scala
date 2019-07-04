@@ -27,8 +27,8 @@ akka {
   actor {
     provider = "cluster"
   }
-  remote {
-    netty.tcp {
+  remote.artery {
+    canonical {
       hostname = "127.0.0.1"
       port = 2551
     }
@@ -36,15 +36,15 @@ akka {
 
   cluster {
     seed-nodes = [
-      "akka.tcp://ClusterSystem@127.0.0.1:2551",
-      "akka.tcp://ClusterSystem@127.0.0.1:2552"]
+      "akka://ClusterSystem@127.0.0.1:2551",
+      "akka://ClusterSystem@127.0.0.1:2552"]
   }
 }
 #config-seeds
      """)
 
   val configSystem2 = ConfigFactory.parseString(s"""
-        akka.remote.netty.tcp.port = 0
+        akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
      """).withFallback(configSystem1)
 }
@@ -61,18 +61,20 @@ class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually 
       val sys1Port = SocketUtil.temporaryLocalPort()
       val sys2Port = SocketUtil.temporaryLocalPort()
       def config(port: Int) = ConfigFactory.parseString(s"""
-          akka.remote.netty.tcp.port = $port
-          akka.cluster.seed-nodes = [ "akka.tcp://ClusterSystem@127.0.0.1:$sys1Port", "akka.tcp://ClusterSystem@127.0.0.1:$sys2Port" ]
+          akka.remote.classic.netty.tcp.port = $port
+          akka.cluster.seed-nodes = [ "akka://ClusterSystem@127.0.0.1:$sys1Port", "akka://ClusterSystem@127.0.0.1:$sys2Port" ]
         """)
 
       val system1 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys1Port).withFallback(configSystem1))
       val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys2Port).withFallback(configSystem2))
       try {
-        val cluster1 = Cluster(system1)
-        val cluster2 = Cluster(system2)
+        Cluster(system1)
+        Cluster(system2)
       } finally {
-        system1.terminate().futureValue
-        system2.terminate().futureValue
+        system1.terminate()
+        system1.whenTerminated.futureValue
+        system2.terminate()
+        system2.whenTerminated.futureValue
       }
 
     }
@@ -84,8 +86,8 @@ object BasicClusterManualSpec {
 #config
 akka {
   actor.provider = "cluster"
-  remote {
-    netty.tcp {
+  remote.artery {
+    canonical {
       hostname = "127.0.0.1"
       port = 2551
     }
@@ -95,7 +97,7 @@ akka {
      """)
 
   val noPort = ConfigFactory.parseString("""
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
     """)
 
@@ -139,8 +141,10 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
           cluster2.isTerminated shouldEqual true
         }
       } finally {
-        system.terminate().futureValue
-        system2.terminate().futureValue
+        system.terminate()
+        system.whenTerminated.futureValue
+        system2.terminate()
+        system2.whenTerminated.futureValue
       }
     }
 
@@ -220,9 +224,12 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         system3.whenTerminated.futureValue
 
       } finally {
-        system1.terminate().futureValue
-        system2.terminate().futureValue
-        system3.terminate().futureValue
+        system1.terminate()
+        system1.whenTerminated.futureValue
+        system2.terminate()
+        system2.whenTerminated.futureValue
+        system3.terminate()
+        system3.whenTerminated.futureValue
       }
     }
   }

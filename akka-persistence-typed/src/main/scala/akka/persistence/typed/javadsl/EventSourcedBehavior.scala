@@ -10,16 +10,15 @@ import java.util.Optional
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
+import akka.util.unused
 
-@ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (
+abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val persistenceId: PersistenceId,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
@@ -79,12 +78,13 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    *
    * Use [[EventSourcedBehavior#newSignalHandlerBuilder]] to define the signal handler.
    */
-  protected def signalHandler(): SignalHandler = SignalHandler.Empty
+  protected def signalHandler(): SignalHandler[State] = SignalHandler.empty[State]
 
   /**
    * @return A new, mutable signal handler builder
    */
-  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder = new SignalHandlerBuilder
+  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder[State] =
+    SignalHandlerBuilder.builder[State]
 
   /**
    * @return A new, mutable, command handler builder
@@ -100,31 +100,54 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
     EventHandlerBuilder.builder[State, Event]()
 
   /**
-   * Override and define that snapshot should be saved every N events.
-   *
-   * If this is overridden `shouldSnapshot` is not used.
-   *
-   * @return number of events between snapshots, should be greater than 0
-   * @see [[EventSourcedBehavior#shouldSnapshot]]
+   * Override and define the journal plugin id that this actor should use instead of the default.
    */
-  def snapshotEvery(): Long = 0L
+  def journalPluginId: String = ""
 
   /**
-   * Initiates a snapshot if the given function returns true.
+   * Override and define the snapshot store plugin id that this actor should use instead of the default.
+   */
+  def snapshotPluginId: String = ""
+
+  /**
+   * Override and define the snapshot selection criteria used by this actor instead of the default.
+   * By default the most recent snapshot is used, and the remaining state updates are recovered by replaying events
+   * from the sequence number up until which the snapshot reached.
+   *
+   * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
+   * performed by replaying all events -- which may take a long time.
+   */
+  def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.latest
+
+  /**
+   * Initiates a snapshot if the given predicate evaluates to true.
+   *
+   * Decide to store a snapshot based on the State, Event and sequenceNr when the event has
+   * been successfully persisted.
+   *
    * When persisting multiple events at once the snapshot is triggered after all the events have
    * been persisted.
    *
-   * receives the State, Event and the sequenceNr used for the Event
+   * Snapshots triggered by `snapshotWhen` will not trigger deletes of old snapshots and events if
+   * [[EventSourcedBehavior.retentionCriteria]] with [[RetentionCriteria.snapshotEvery]] is used together with
+   * `shouldSnapshot`. Such deletes are only triggered by snapshots matching the `numberOfEvents` in the
+   * [[RetentionCriteria]].
    *
-   * @return `true` if snapshot should be saved for the given event
-   * @see [[EventSourcedBehavior#snapshotEvery]]
+   * @return `true` if snapshot should be saved at the given `state`, `event` and `sequenceNr` when the event has
+   *         been successfully persisted
    */
-  def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
+  def shouldSnapshot(@unused state: State, @unused event: Event, @unused sequenceNr: Long): Boolean = false
+
+  /**
+   * Criteria for retention/deletion of snapshots and events.
+   * By default, retention is disabled and snapshots are not saved and deleted automatically.
+   */
+  def retentionCriteria: RetentionCriteria = RetentionCriteria.disabled
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
+  def tagsFor(@unused event: Event): java.util.Set[String] = Collections.emptySet()
 
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
@@ -132,16 +155,10 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
-    val snapshotWhen: (State, Event, Long) => Boolean = { (state, event, seqNr) =>
-      val n = snapshotEvery()
-      if (n > 0)
-        seqNr % n == 0
-      else
-        shouldSnapshot(state, event, seqNr)
-    }
+    val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: Event => Set[String] = { event =>
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val tags = tagsFor(event)
       if (tags.isEmpty) Set.empty
       else tags.asScala.toSet
@@ -152,7 +169,14 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       emptyState,
       (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _),
-      getClass).snapshotWhen(snapshotWhen).withTagger(tagger).eventAdapter(eventAdapter())
+      getClass)
+      .snapshotWhen(snapshotWhen)
+      .withRetention(retentionCriteria.asScala)
+      .withTagger(tagger)
+      .eventAdapter(eventAdapter())
+      .withJournalPluginId(journalPluginId)
+      .withSnapshotPluginId(snapshotPluginId)
+      .withSnapshotSelectionCriteria(snapshotSelectionCriteria)
 
     val handler = signalHandler()
     val behaviorWithSignalHandler =
@@ -179,8 +203,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
  * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
-@ApiMayChange
-abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](
+abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
     persistenceId: PersistenceId,
     backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
     extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {

@@ -4,20 +4,18 @@
 
 package akka.util
 
-import akka.compat._
-
 import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
+import java.nio.charset.{ Charset, StandardCharsets }
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
-import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
-import java.nio.charset.{ Charset, StandardCharsets }
-import akka.util.ccompat._
+
+import com.github.ghik.silencer.silent
 
 object ByteString {
 
@@ -145,6 +143,9 @@ object ByteString {
 
   val empty: ByteString = CompactByteString(Array.empty[Byte])
 
+  /** Java API */
+  val emptyByteString: ByteString = empty
+
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
   /** Java API */
@@ -214,7 +215,6 @@ object ByteString {
       if (n <= 0) this
       else toByteString1.drop(n)
 
-    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
       else {
@@ -373,7 +373,6 @@ object ByteString {
         }
     }
 
-    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
       else {
@@ -387,12 +386,12 @@ object ByteString {
       }
     }
 
-    override protected def writeReplace(): AnyRef = new SerializationProxy(this)
+    protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
   private[akka] object ByteStrings extends Companion {
     def apply(bytestrings: Vector[ByteString1]): ByteString =
-      new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length))
+      new ByteStrings(bytestrings, bytestrings.foldLeft(0)(_ + _.length))
 
     def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length)
 
@@ -474,7 +473,7 @@ object ByteString {
 
     /** Avoid `iterator` in performance sensitive code, call ops directly on ByteString instead */
     override def iterator: ByteIterator.MultiByteArrayIterator =
-      ByteIterator.MultiByteArrayIterator(bytestrings.toStream.map { _.iterator })
+      ByteIterator.MultiByteArrayIterator(bytestrings.to(LazyList).map { _.iterator })
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
@@ -602,7 +601,6 @@ object ByteString {
         new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
-    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
       else {
@@ -630,17 +628,17 @@ object ByteString {
       }
     }
 
-    override protected def writeReplace(): AnyRef = new SerializationProxy(this)
+    protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
   @SerialVersionUID(1L)
   private class SerializationProxy(@transient private var orig: ByteString) extends Serializable {
-    private def writeObject(out: ObjectOutputStream) {
+    private def writeObject(out: ObjectOutputStream): Unit = {
       out.writeByte(orig.byteStringCompanion.SerializationIdentity)
       orig.writeToOutputStream(out)
     }
 
-    private def readObject(in: ObjectInputStream) {
+    private def readObject(in: ObjectInputStream): Unit = {
       val serializationId = in.readByte()
 
       orig = Companion(from = serializationId).readFromInputStream(in)
@@ -679,10 +677,7 @@ sealed abstract class ByteString
 
   override protected def fromSpecific(coll: IterableOnce[Byte]): ByteString = ByteString(coll)
   override protected def newSpecificBuilder: mutable.Builder[Byte, ByteString] = ByteString.newBuilder
-
-  // FIXME this is a workaround for
-  //  https://github.com/scala/bug/issues/11192#issuecomment-436926231
-  protected[this] override def writeReplace(): AnyRef = this
+  override val empty: ByteString = ByteString.empty
 
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
@@ -731,10 +726,10 @@ sealed abstract class ByteString
 
   override def splitAt(n: Int): (ByteString, ByteString) = (take(n), drop(n))
 
-  override def indexWhere(p: Byte => Boolean): Int = iterator.indexWhere(p)
+  override def indexWhere(p: Byte => Boolean, from: Int): Int = iterator.indexWhere(p, from)
 
   // optimized in subclasses
-  override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
+  override def indexOf[B >: Byte](elem: B, from: Int): Int = indexOf(elem, from)
 
   override def grouped(size: Int): Iterator[ByteString] = {
     if (size <= 0) {
@@ -784,9 +779,7 @@ sealed abstract class ByteString
    * @param buffer a ByteBuffer to copy bytes to
    * @return the number of bytes actually copied
    */
-  // *must* be overridden by derived classes.
-  def copyToBuffer(buffer: ByteBuffer): Int =
-    throw new UnsupportedOperationException("Method copyToBuffer is not implemented in ByteString")
+  def copyToBuffer(@unused buffer: ByteBuffer): Int
 
   /**
    * Create a new ByteString with all contents compacted into a single,
@@ -820,6 +813,7 @@ sealed abstract class ByteString
    * Java API: Returns an Iterable of read-only ByteBuffers that directly wraps this ByteStrings
    * all fragments. Will always have at least one entry.
    */
+  @silent
   def getByteBuffers(): JIterable[ByteBuffer] = {
     import scala.collection.JavaConverters.asJavaIterableConverter
     asByteBuffers.asJava
@@ -879,8 +873,11 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by traversing bytes.
    */
-  def apply(bytes: IterableOnce[Byte]): CompactByteString =
-    if (bytes.isEmpty) empty else ByteString.ByteString1C(bytes.toArray)
+  def apply(bytes: IterableOnce[Byte]): CompactByteString = {
+    val it = bytes.iterator
+    if (it.isEmpty) empty
+    else ByteString.ByteString1C(it.toArray)
+  }
 
   /**
    * Creates a new CompactByteString by converting from integral numbers to bytes.
@@ -1022,7 +1019,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
 
   override def addAll(xs: IterableOnce[Byte]): this.type = {
     xs match {
-      case _ if xs.isEmpty =>
+      case _ if xs.iterator.isEmpty =>
       // do nothing
       case b: ByteString1C =>
         clearTemp()

@@ -5,13 +5,16 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit.{ filterEvents, EventFilter }
+
 import scala.concurrent.Await
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
@@ -27,6 +30,7 @@ object SupervisorMiscSpec {
     """
 }
 
+@silent
 class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with DefaultTimeout {
 
   "A Supervisor" must {
@@ -121,7 +125,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
               context.actorOf(Props.empty, "foo")
               testActor ! "red"
             } catch {
-              case e: InvalidActorNameException => testActor ! "green"
+              case _: InvalidActorNameException => testActor ! "green"
             }
         }
       }))

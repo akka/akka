@@ -6,15 +6,17 @@ package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
+import com.github.ghik.silencer.silent
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalacheck.Shrink
 
+@silent // tests deprecated apis
 class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks {
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val merge = b.add(new MergeSorted[Outputs])
 
     override def left: Inlet[Outputs] = merge.in0

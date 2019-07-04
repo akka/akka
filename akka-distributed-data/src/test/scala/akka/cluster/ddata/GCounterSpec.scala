@@ -11,7 +11,7 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
 class GCounterSpec extends WordSpec with Matchers {
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
 
@@ -172,11 +172,15 @@ class GCounterSpec extends WordSpec with Matchers {
       val c1 = GCounter.empty.increment(node1).increment(node2)
       val GCounter(value1) = c1
       val value2: BigInt = value1
+      value2 should be(2L)
+
       Changed(GCounterKey("key"))(c1) match {
         case c @ Changed(GCounterKey("key")) =>
           val GCounter(value3) = c.dataValue
           val value4: BigInt = value3
           value4 should be(2L)
+        case _ =>
+          fail("Failed to update")
       }
     }
 

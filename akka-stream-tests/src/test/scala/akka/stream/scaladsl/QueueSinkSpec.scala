@@ -176,5 +176,15 @@ class QueueSinkSpec extends StreamSpec {
         Source.single(()).runWith(Sink.queue().withAttributes(inputBuffer(0, 0)))
       }
     }
+
+    "materialize to a queue which is seamlessly translatable between scala and java DSL" in assertAllStagesStopped {
+      val expected = List(Some(1), Some(2), Some(3), None)
+      val javadslQueue = Source(expected.flatten).runWith(Sink.queue()).asJava
+      val scaladslQueue = akka.stream.javadsl.SinkQueueWithCancel.asScala(javadslQueue)
+      expected.foreach { v =>
+        scaladslQueue.pull().pipeTo(testActor)
+        expectMsg(v)
+      }
+    }
   }
 }

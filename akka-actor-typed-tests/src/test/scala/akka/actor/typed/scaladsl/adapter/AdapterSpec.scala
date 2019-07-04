@@ -55,7 +55,8 @@ object AdapterSpec {
           case "watch" =>
             context.watch(ref)
             Behaviors.same
-          case "supervise-stop" =>
+          case "supervise-restart" =>
+            // restart is the default
             val child = context.actorOf(untyped1)
             context.watch(child)
             child ! ThrowIt3
@@ -179,7 +180,7 @@ class AdapterSpec extends AkkaSpec("""
         var system: akka.actor.typed.ActorSystem[NotUsed] = null
         try {
           system = ActorSystem.create(
-            Behaviors.setup[NotUsed](_ => Behavior.stopped[NotUsed]),
+            Behaviors.setup[NotUsed](_ => Behaviors.stopped[NotUsed]),
             "AdapterSpec-stopping-guardian")
         } finally if (system != null) shutdown(system.toUntyped)
       }
@@ -271,31 +272,6 @@ class AdapterSpec extends AkkaSpec("""
       probe.expectMsg("terminated")
     }
 
-    "supervise typed child from untyped parent" in {
-      val probe = TestProbe()
-      val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ign, probe.ref))
-
-      EventFilter[AdapterSpec.ThrowIt1.type](occurrences = 1).intercept {
-        EventFilter.warning(pattern = """.*received dead letter.*""", occurrences = 1).intercept {
-          untypedRef ! "supervise-stop"
-          probe.expectMsg("thrown-stop")
-          // ping => ok should not get through here
-          probe.expectMsg("terminated")
-        }
-      }
-
-      untypedRef ! "supervise-resume"
-      probe.expectMsg("thrown-resume")
-      probe.expectMsg("ok")
-
-      EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
-        untypedRef ! "supervise-restart"
-        probe.expectMsg("thrown-restart")
-        probe.expectMsg("ok")
-      }
-    }
-
     "supervise untyped child from typed parent" in {
       // FIXME there's a warning with null logged from the untyped empty child here, where does that come from?
       val probe = TestProbe()
@@ -304,11 +280,8 @@ class AdapterSpec extends AkkaSpec("""
 
       // only stop supervisorStrategy
       EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
-        EventFilter.warning(pattern = """.*received dead letter.*""", occurrences = 1).intercept {
-          typedRef ! "supervise-stop"
-          probe.expectMsg("terminated")
-          probe.expectNoMessage(100.millis) // no pong
-        }
+        typedRef ! "supervise-restart"
+        probe.expectMsg("ok")
       }
     }
 

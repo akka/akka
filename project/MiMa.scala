@@ -4,6 +4,7 @@
 
 package akka
 
+import scala.collection.immutable
 import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -11,8 +12,9 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 21
-  private val latestPatchOf24 = 20
+  private val latestPatchOf25 = 23
+  // No 2.6 has been released yet. Update to '0' after releasing 2.6.0
+  private val latestPatchOf26 = -1
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -20,53 +22,33 @@ object MiMa extends AutoPlugin {
   override val projectSettings = Seq(
     mimaPreviousArtifacts := akkaPreviousArtifacts(name.value, organization.value, scalaBinaryVersion.value))
 
-  def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
+  def akkaPreviousArtifacts(
+      projectName: String,
+      organization: String,
+      scalaBinaryVersion: String): Set[sbt.ModuleID] = {
+
     val versions: Seq[String] = {
-      val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka25Versions = (0 to latestPatchOf25).map(patch => s"2.5.$patch")
-      val akka24StreamVersions = (2 to 12).map("2.4." + _)
-      val akka25DiscoveryVersions = (19 to latestPatchOf25).map(patch => s"2.5.$patch")
-      val akka24WithScala212 =
-        (13 to latestPatchOf24)
-          .map("2.4." + _)
-          .filterNot(_ == "2.4.15") // 2.4.15 was released from the wrong branch and never announced
-
-      val akka242NewArtifacts = Seq(
-        "akka-stream",
-        "akka-stream-testkit")
-      val akka250NewArtifacts = Seq(
-        "akka-persistence-query")
-      val akka2519NewArtifacts = Seq(
-        "akka-discovery"
-      )
-
       scalaBinaryVersion match {
-        case "2.11" =>
-          if (akka2519NewArtifacts.contains(projectName))
-            akka25DiscoveryVersions
-          else if (akka250NewArtifacts.contains(projectName)) akka25Versions
-          else {
-            if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
-            else Seq.empty
-          } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
-
         case "2.12" =>
-          if (akka2519NewArtifacts.contains(projectName))
-            akka25DiscoveryVersions
-          else if (akka250NewArtifacts.contains(projectName))
-            akka25Versions
-          else
-            akka24WithScala212 ++ akka25Versions
+          val firstPatchOf25 =
+            if (projectName.contains("discovery")) 19
+            else if (projectName.contains("coordination")) 22
+            else 0
 
-
+          if (!projectName.contains("typed")) {
+            expandVersions(2, 5, firstPatchOf25 to latestPatchOf25)
+          } else {
+            Nil
+          } ++ expandVersions(2, 6, 0 to latestPatchOf26)
         case v if v.startsWith("2.13") =>
-          // no Akka released for 2.13 yet, no jars to check BC against
-          Seq.empty
+          // When 2.13.0 is actually out, release 2.5.latestPatchOf25 for that
+          // and add it here. https://github.com/akka/akka/issues/26764
+          expandVersions(2, 6, 0 to latestPatchOf26)
       }
     }
 
-    val akka25PromotedArtifacts = Set(
-      "akka-distributed-data")
+    val akka25PromotedArtifacts = Set("akka-distributed-data")
+    val akkaTypedModules = Set("akka-actor-typed")
 
     // check against all binary compatible artifacts
     versions.map { v =>
@@ -78,4 +60,7 @@ object MiMa extends AutoPlugin {
       organization %% adjustedProjectName % v
     }.toSet
   }
+
+  private def expandVersions(major: Int, minor: Int, patches: immutable.Seq[Int]): immutable.Seq[String] =
+    patches.map(patch => s"$major.$minor.$patch")
 }

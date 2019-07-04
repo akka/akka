@@ -17,8 +17,9 @@ import org.scalatest.WordSpecLike
 
 object OOIntroSpec {
 
-  //#chatroom-actor
+  //#chatroom-behavior
   object ChatRoom {
+    //#chatroom-behavior
     //#chatroom-protocol
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
@@ -39,8 +40,8 @@ object OOIntroSpec {
     //#chatroom-protocol
     //#chatroom-behavior
 
-    def behavior(): Behavior[RoomCommand] =
-      Behaviors.setup[RoomCommand](context => new ChatRoomBehavior(context))
+    def apply(): Behavior[RoomCommand] =
+      Behaviors.setup(context => new ChatRoomBehavior(context))
 
     class ChatRoomBehavior(context: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
@@ -50,7 +51,7 @@ object OOIntroSpec {
           case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
             val ses = context.spawn(
-              session(context.self, screenName, client),
+              new SessionBehavior(context.self, screenName, client),
               name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             sessions = ses :: sessions
@@ -63,23 +64,48 @@ object OOIntroSpec {
       }
     }
 
-    private def session(
+    private class SessionBehavior(
         room: ActorRef[PublishSessionMessage],
         screenName: String,
-        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receiveMessage {
-        case PostMessage(message) =>
-          // from client, publish to others via the room
-          room ! PublishSessionMessage(screenName, message)
-          Behaviors.same
-        case NotifyClient(message) =>
-          // published from the room
-          client ! message
-          Behaviors.same
+        client: ActorRef[SessionEvent])
+        extends AbstractBehavior[SessionCommand] {
+
+      override def onMessage(msg: SessionCommand): Behavior[SessionCommand] = {
+        msg match {
+          case PostMessage(message) =>
+            // from client, publish to others via the room
+            room ! PublishSessionMessage(screenName, message)
+            Behaviors.same
+          case NotifyClient(message) =>
+            // published from the room
+            client ! message
+            Behaviors.same
+        }
       }
-    //#chatroom-behavior
+    }
   }
-  //#chatroom-actor
+  //#chatroom-behavior
+
+  //#chatroom-gabbler
+  object Gabbler {
+    import ChatRoom._
+
+    def apply(): Behavior[SessionEvent] =
+      Behaviors.setup { context =>
+        Behaviors.receiveMessage {
+          case SessionDenied(reason) =>
+            context.log.info("cannot start chat room session: {}", reason)
+            Behaviors.stopped
+          case SessionGranted(handle) =>
+            handle ! PostMessage("Hello World!")
+            Behaviors.same
+          case MessagePosted(screenName, message) =>
+            context.log.info("message has been posted by '{}': {}", screenName, message)
+            Behaviors.stopped
+        }
+      }
+    //#chatroom-gabbler
+  }
 
 }
 
@@ -89,39 +115,22 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "A chat room" must {
     "chat" in {
-      //#chatroom-gabbler
-      import ChatRoom._
-
-      val gabbler =
-        Behaviors.receiveMessage[SessionEvent] {
-          case SessionDenied(reason) =>
-            println(s"cannot start chat room session: $reason")
-            Behaviors.stopped
-          case SessionGranted(handle) =>
-            handle ! PostMessage("Hello World!")
-            Behaviors.same
-          case MessagePosted(screenName, message) =>
-            println(s"message has been posted by '$screenName': $message")
-            Behaviors.stopped
-        }
-      //#chatroom-gabbler
-
       //#chatroom-main
       val main: Behavior[String] =
         Behaviors.setup { context =>
-          val chatRoom = context.spawn(ChatRoom.behavior(), "chatroom")
-          val gabblerRef = context.spawn(gabbler, "gabbler")
+          val chatRoom = context.spawn(ChatRoom(), "chatroom")
+          val gabblerRef = context.spawn(Gabbler(), "gabbler")
           context.watch(gabblerRef)
 
           Behaviors
             .receiveMessagePartial[String] {
               case "go" =>
-                chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+                chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
                 Behaviors.same
             }
             .receiveSignal {
               case (_, Terminated(_)) =>
-                println("Stopping guardian")
+                context.log.info("Stopping guardian")
                 Behaviors.stopped
             }
         }

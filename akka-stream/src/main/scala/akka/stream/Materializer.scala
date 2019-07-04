@@ -6,6 +6,7 @@ package akka.stream
 
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
@@ -22,6 +23,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * Once the SPI is final this notice will be removed.
  */
+@silent // deprecatedName(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 abstract class Materializer {
 
   /**
@@ -48,7 +50,7 @@ abstract class Materializer {
    */
   def materialize[Mat](
       runnable: Graph[ClosedShape, Mat],
-      @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
+      @deprecatedName(Symbol("initialAttributes")) defaultAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
@@ -70,12 +72,75 @@ abstract class Materializer {
   def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable
 
   /**
+   * Interface for operators that need timer services for their functionality.
+   *
+   * Schedules a `Runnable` to be run repeatedly with an initial delay and
+   * a fixed `delay` between subsequent executions.
+   *
+   * It will not compensate the delay between tasks if the execution takes a long time or if
+   * scheduling is delayed longer than specified for some reason. The delay between subsequent
+   * execution will always be (at least) the given `delay`. In the long run, the
+   * frequency of execution will generally be slightly lower than the reciprocal of the specified
+   * `delay`.
+   *
+   * If the `Runnable` throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
+   *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   *   supported by the `Scheduler`.
+   *
+   * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event
+   *         has been already enqueued it will not have an effect.
+   */
+  def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration, task: Runnable): Cancellable
+
+  /**
+   * Interface for operators that need timer services for their functionality.
+   *
+   * Schedules a `Runnable` to be run repeatedly with an initial delay and
+   * a frequency. E.g. if you would like the function to be run after 2
+   * seconds and thereafter every 100ms you would set `delay=Duration(2, TimeUnit.SECONDS)`
+   * and `interval=Duration(100, TimeUnit.MILLISECONDS)`.
+   *
+   * It will compensate the delay for a subsequent task if the previous tasks took
+   * too long to execute. In such cases, the actual execution interval will differ from
+   * the interval passed to the method.
+   *
+   * If the execution of the tasks takes longer than the `interval`, the subsequent
+   * execution will start immediately after the prior one completes (there will be
+   * no overlap of executions). This also has the consequence that after long garbage
+   * collection pauses or other reasons when the JVM was suspended all "missed" tasks
+   * will execute when the process wakes up again.
+   *
+   * In the long run, the frequency of execution will be exactly the reciprocal of the
+   * specified `interval`.
+   *
+   * Warning: `scheduleAtFixedRate` can result in bursts of scheduled tasks after long
+   * garbage collection pauses, which may in worst case cause undesired load on the system.
+   * Therefore `scheduleWithFixedDelay` is often preferred.
+   *
+   * If the `Runnable` throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
+   *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   *   supported by the `Scheduler`.
+   *
+   * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event
+   *         has been already enqueued it will not have an effect.
+   */
+  def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
+
+  /**
    * Interface for operators that need timer services for their functionality. Schedules a
    * repeated task with the given interval between invocations.
    *
    * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event
    *         has been already enqueued it will not have an effect.
    */
+  @deprecated(
+    "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
+    "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
+    since = "2.6.0")
   def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
 
 }
@@ -100,6 +165,18 @@ private[akka] object NoMaterializer extends Materializer {
 
   def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
     throw new UnsupportedOperationException("NoMaterializer cannot schedule a repeated event")
+
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot scheduleWithFixedDelay")
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot scheduleAtFixedRate")
 }
 
 /**

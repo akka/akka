@@ -5,15 +5,17 @@
 package akka.actor.typed
 package internal
 
-import akka.actor.typed.ActorRef.ActorRefOps
+import java.time.Duration
+
+import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Cancellable
+import akka.actor.NotInfluenceReceiveTimeout
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ typed, Cancellable, NotInfluenceReceiveTimeout }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -32,11 +34,22 @@ import scala.concurrent.duration.FiniteDuration
     ctx match {
       case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer
-        val behavior = factory(timerScheduler)
-        timerScheduler.intercept(behavior)
+        factory(timerScheduler)
       case _ => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
 
+  private sealed trait TimerMode {
+    def repeat: Boolean
+  }
+  private case object FixedRateMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object FixedDelayMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object SingleMode extends TimerMode {
+    override def repeat: Boolean = false
+  }
 }
 
 /**
@@ -50,19 +63,31 @@ import scala.concurrent.duration.FiniteDuration
   private var timers: Map[Any, Timer[T]] = Map.empty
   private val timerGen = Iterator.from(1)
 
+  override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode)
+
+  override def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
+    startTimerAtFixedRate(key, msg, interval.asScala)
+
+  override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode)
+
+  override def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
+    startTimerWithFixedDelay(key, msg, delay.asScala)
+
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, repeat = true)
+    startTimer(key, msg, interval, FixedRateMode)
 
   override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
     startPeriodicTimer(key, msg, interval.asScala)
 
   override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
-    startTimer(key, msg, delay, repeat = false)
+    startTimer(key, msg, delay, SingleMode)
 
   def startSingleTimer(key: Any, msg: T, delay: java.time.Duration): Unit =
     startSingleTimer(key, msg, delay.asScala)
 
-  private def startTimer(key: Any, msg: T, delay: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: Any, msg: T, delay: FiniteDuration, mode: TimerMode): Unit = {
     timers.get(key) match {
       case Some(t) => cancelTimer(t)
       case None    =>
@@ -75,18 +100,19 @@ import scala.concurrent.duration.FiniteDuration
       else
         new TimerMsg(key, nextGen, this)
 
-    val task =
-      if (repeat)
-        ctx.system.scheduler.schedule(delay, delay) {
-          ctx.self.unsafeUpcast ! timerMsg
-        }(ExecutionContexts.sameThreadExecutionContext)
-      else
-        ctx.system.scheduler.scheduleOnce(delay) {
-          ctx.self.unsafeUpcast ! timerMsg
-        }(ExecutionContexts.sameThreadExecutionContext)
+    val task = mode match {
+      case SingleMode =>
+        ctx.system.scheduler
+          .scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.sameThreadExecutionContext)
+      case FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.sameThreadExecutionContext)
+      case FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+          ExecutionContexts.sameThreadExecutionContext)
+    }
 
-    val nextTimer = Timer(key, msg, repeat, nextGen, task)
-    ctx.log.debug("Start timer [{}] with generation [{}]", key, nextGen)
+    val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)
     timers = timers.updated(key, nextTimer)
   }
 
@@ -142,44 +168,4 @@ import scala.concurrent.duration.FiniteDuration
     }
   }
 
-  def intercept(behavior: Behavior[T]): Behavior[T] = {
-    // The scheduled TimerMsg is intercepted to guard against old messages enqueued
-    // in mailbox before timer was canceled.
-    // Intercept some signals to cancel timers when restarting and stopping.
-    BehaviorImpl.intercept(new TimerInterceptor(this))(behavior)
-  }
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[T, T] {
-  import TimerSchedulerImpl._
-  import BehaviorInterceptor._
-
-  override def aroundReceive(ctx: typed.TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
-    val maybeIntercepted = msg match {
-      case msg: TimerMsg => timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
-      case msg           => OptionVal.Some(msg)
-    }
-
-    maybeIntercepted match {
-      case OptionVal.None              => Behavior.same // None means not applicable
-      case OptionVal.Some(intercepted) => target(ctx, intercepted)
-    }
-  }
-
-  override def aroundSignal(ctx: typed.TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    signal match {
-      case PreRestart | PostStop => timerSchedulerImpl.cancelAll()
-      case _                     => // unhandled
-    }
-    target(ctx, signal)
-  }
-
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
-    // only one timer interceptor per behavior stack is needed
-    other.isInstanceOf[TimerInterceptor[_]]
 }

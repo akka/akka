@@ -326,7 +326,7 @@ public class SourceTest extends StreamTest {
 
     List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
-    probe.expectNoMsg(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
   }
 
   @Test
@@ -583,6 +583,15 @@ public class SourceTest extends StreamTest {
         Source.fromCompletionStage(future1).runWith(Sink.<String>head(), materializer);
     String result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("A", result);
+  }
+
+  @Test
+  public void mustWorkFromFutureVoid() throws Exception {
+    CompletionStage<Void> future = CompletableFuture.completedFuture(null);
+    CompletionStage<List<Void>> future2 =
+        Source.fromCompletionStage(future).runWith(Sink.seq(), materializer);
+    List<Void> result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(0, result.size());
   }
 
   @Test

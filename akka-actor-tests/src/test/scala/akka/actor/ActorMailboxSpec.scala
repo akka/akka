@@ -7,10 +7,12 @@ package akka.actor
 import com.typesafe.config.ConfigFactory
 import akka.testkit._
 import akka.dispatch._
+
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.ConfigurationException
 import com.typesafe.config.Config
 import akka.util.Helpers.ConfigOps
+import akka.util.unused
 
 object ActorMailboxSpec {
   val mailboxConf = ConfigFactory.parseString(s"""
@@ -184,7 +186,7 @@ object ActorMailboxSpec {
 
   class StashQueueReportingActor extends QueueReportingActor with Stash
 
-  class StashQueueReportingActorWithParams(i: Int, s: String) extends StashQueueReportingActor
+  class StashQueueReportingActorWithParams(@unused i: Int, @unused s: String) extends StashQueueReportingActor
 
   val UnboundedMailboxTypes = Seq(classOf[UnboundedMessageQueueSemantics])
   val BoundedMailboxTypes = Seq(classOf[BoundedMessageQueueSemantics])
@@ -209,14 +211,14 @@ object ActorMailboxSpec {
     classOf[UnboundedControlAwareMessageQueueSemantics])
 
   trait MCBoundedMessageQueueSemantics extends MessageQueue with MultipleConsumerSemantics
-  final case class MCBoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
+  final case class MCBoundedMailbox(capacity: Int, pushTimeOut: FiniteDuration)
       extends MailboxType
       with ProducesMessageQueue[MCBoundedMessageQueueSemantics] {
 
     def this(settings: ActorSystem.Settings, config: Config) =
       this(config.getInt("mailbox-capacity"), config.getNanosDuration("mailbox-push-timeout-time"))
 
-    final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+    override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
       new BoundedMailbox.MessageQueue(capacity, pushTimeOut)
   }
 

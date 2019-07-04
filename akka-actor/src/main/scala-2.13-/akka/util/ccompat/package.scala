@@ -6,12 +6,9 @@ package akka.util
 
 import scala.language.implicitConversions
 import scala.language.higherKinds
-
-import scala.collection.GenTraversable
+import scala.collection.{ GenTraversable, immutable => i, mutable => m }
 import scala.{ collection => c }
 import scala.collection.generic.{ CanBuildFrom, GenericCompanion, Sorted, SortedSetFactory }
-import scala.collection.{ immutable => i }
-import scala.collection.{ mutable => m }
 
 /**
  * INTERNAL API
@@ -81,4 +78,17 @@ package object ccompat {
   // in scala-library so we can't add to it
   type IterableOnce[+X] = c.TraversableOnce[X]
   val IterableOnce = c.TraversableOnce
+
+  implicit class ImmutableSortedSetOps[A](val real: i.SortedSet[A]) extends AnyVal {
+    def unsorted: i.Set[A] = real
+  }
+
+  object JavaConverters extends scala.collection.convert.DecorateAsJava with scala.collection.convert.DecorateAsScala
+
+  implicit def toTraversableOnceExtensionMethods[A](self: TraversableOnce[A]): TraversableOnceExtensionMethods[A] =
+    new TraversableOnceExtensionMethods[A](self)
+}
+
+class TraversableOnceExtensionMethods[A](private val self: c.TraversableOnce[A]) extends AnyVal {
+  def iterator: Iterator[A] = self.toIterator
 }

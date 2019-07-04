@@ -10,7 +10,7 @@ import org.openjdk.jmh.runner.options.CommandLineOptions
 
 object BenchRunner {
   def main(args: Array[String]) = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
 
     val args2 = args.toList.flatMap {
       case "quick"    => "-i 1 -wi 1 -f1 -t1".split(" ").toList

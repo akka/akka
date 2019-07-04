@@ -32,8 +32,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "Nesting and flattening operators",
     "Time aware operators",
     "Fan-in operators",
-    // TODO these don't show up as def's yet so don't show up in the index..
-//    "Fan-out operators",
+    "Fan-out operators",
     "Watching status operators",
     "Actor interop operators",
     "Error handling"
@@ -125,6 +124,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
   def isPending(element: String, opName: String) =
     pendingTestCases.get(element).exists(_.contains(opName))
 
+  val noElement = " "
+
   def generateAlphabeticalIndex(dir: SettingKey[File], locate: File => File) = Def.task[Seq[File]] {
     val file = locate(dir.value)
 
@@ -170,7 +171,13 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
           .filter(op => !ignore.contains(op))
           .map(_.replaceAll("Mat$", ""))
           .map(method => (element, method))
-      }
+      } ++ List(
+        (noElement, "Partition"),
+        (noElement, "Broadcast"),
+        (noElement, "Balance"),
+        (noElement, "Unzip"),
+        (noElement, "UnzipWith")
+      )
 
     val sourceAndFlow = defs.collect { case ("Source", method) => method } intersect defs.collect { case ("Flow", method) => method }
 
@@ -178,6 +185,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       defs.map {
         case (element @ ("Source" | "Flow"), method) if sourceAndFlow.contains(method) =>
           ("Source/Flow", method, s"Source-or-Flow/$method.md")
+        case (`noElement`, method) =>
+          (noElement, method, s"$method.md")
         case (element, method) =>
           (element, method, s"$element/$method.md")
       }.distinct
@@ -193,7 +202,9 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
           lines
             .map(_._2)
             .sortBy(_._2)
-            .map { case (element, method, md, description) => s"""|$element|<a name="${method.toLowerCase}"></a>@ref[$method]($md)|$description|""" }
+            .map { case (element, method, md, description) =>
+              s"""|$element|<a name="${method.toLowerCase}"></a>@ref[${methodToShow(method)}]($md)|$description|"""
+            }
             .mkString("\n")
       )
 
@@ -208,10 +219,15 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "# Operators\n\n" +
         tables +
         "\n\n@@@ index\n\n" +
-        groupedDefs.map { case (_, method, md) => s"* [$method]($md)" }.mkString("\n") + "\n\n@@@\n"
+        groupedDefs.map { case (_, method, md) => s"* [${methodToShow(method)}]($md)" }.mkString("\n") + "\n\n@@@\n"
 
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
     Seq(file)
+  }
+
+  def methodToShow(method: String): String = method match {
+    case "from" => "@scala[apply]@java[from]"
+    case other => other
   }
 
   def getDetails(file: File): (String, String) = try {

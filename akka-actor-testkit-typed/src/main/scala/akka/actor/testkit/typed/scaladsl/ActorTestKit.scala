@@ -7,15 +7,20 @@ package akka.actor.testkit.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
+import akka.annotation.InternalApi
 import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.testkit.typed.internal.ActorTestKitGuardian
+import akka.actor.testkit.typed.internal.TestKitUtils
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.Scheduler
 import akka.util.Timeout
 
 object ActorTestKit {
@@ -102,7 +107,6 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-@ApiMayChange
 final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
 
   implicit def testKitSettings: TestKitSettings =

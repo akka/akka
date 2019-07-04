@@ -16,7 +16,7 @@ object JoinConfigCompatCheckerSpec {
     ConfigFactory.parseString("""
      akka.actor.provider = "cluster"
      akka.coordinated-shutdown.terminate-actor-system = on
-     akka.remote.netty.tcp.port = 0
+     akka.remote.classic.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
      akka.cluster.jmx.multi-mbeans-in-same-jvm = on
      """)
@@ -285,6 +285,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
       }
 
     }
+
   }
 
   "A First Node" must {
@@ -591,6 +592,33 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
         within(5.seconds) {
           awaitCond(clusterTestUtil.isTerminated(joiningNode))
         }
+      } finally {
+        clusterTestUtil.shutdownAll()
+      }
+    }
+
+    "be allowed to disable a check" taggedAs LongRunningTest in {
+
+      // this config has sensitive properties that are not compatible with the cluster
+      // the cluster will ignore them, because they are on the sensitive-config-path
+      // the cluster won't let it be leaked back to the joining node neither which will fail the join attempt.
+      val joinNodeConfig =
+        ConfigFactory.parseString("""
+            akka.cluster {
+              configuration-compatibility-check {
+                checkers {
+                  # disable what is defined in reference.conf
+                  akka-cluster = ""
+                  akka-cluster-test = ""
+                }
+              }
+            }
+          """)
+
+      val clusterTestUtil = new ClusterTestUtil(system.name)
+      try {
+        val sys = clusterTestUtil.newActorSystem(joinNodeConfig.withFallback(configWithChecker))
+        Cluster(sys).settings.ConfigCompatCheckers should ===(Set.empty)
       } finally {
         clusterTestUtil.shutdownAll()
       }

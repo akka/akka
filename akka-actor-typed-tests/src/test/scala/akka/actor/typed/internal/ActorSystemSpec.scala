@@ -5,16 +5,20 @@
 package akka.actor.typed
 package internal
 
-import akka.Done
-import akka.actor.InvalidMessageException
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import org.scalatest._
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+
+import akka.Done
+import akka.actor.CoordinatedShutdown
+import akka.actor.InvalidMessageException
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
+import org.scalatest._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures
 
 class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
 
@@ -25,11 +29,14 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
   case class Probe(message: String, replyTo: ActorRef[String])
 
   def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
-      block: ActorSystem[T] => Unit): Terminated = {
+      block: ActorSystem[T] => Unit): Unit = {
     val sys = system(behavior, s"$suite-$name")
     try {
       block(sys)
-      if (doTerminate) sys.terminate().futureValue else sys.whenTerminated.futureValue
+      if (doTerminate) {
+        sys.terminate()
+        sys.whenTerminated.futureValue
+      }
     } catch {
       case NonFatal(ex) =>
         sys.terminate()
@@ -39,27 +46,27 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
 
   "An ActorSystem" must {
     "start the guardian actor and terminate when it terminates" in {
-      val t = withSystem(
-        "a",
-        Behaviors.receive[Probe] { case (_, p) => p.replyTo ! p.message; Behaviors.stopped },
-        doTerminate = false) { sys =>
+      withSystem("a", Behaviors.receiveMessage[Probe] { p =>
+        p.replyTo ! p.message
+        Behaviors.stopped
+      }, doTerminate = false) { sys =>
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {
           inbox.hasMessages should ===(true)
         }
         inbox.receiveAll() should ===("hello" :: Nil)
+        sys.whenTerminated.futureValue
+        CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+          Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
-      val p = t.ref.path
-      p.name should ===("/")
-      p.address.system should ===(suite + "-a")
     }
 
     // see issue #24172
     "shutdown if guardian shuts down immediately" in {
       val stoppable =
-        Behaviors.receive[Done] {
-          case (context, Done) => Behaviors.stopped
+        Behaviors.receiveMessage[Done] { _ =>
+          Behaviors.stopped
         }
       withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] =>
         sys ! Done
@@ -69,19 +76,37 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
 
     "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
-      val sys = system(
-        Behaviors
-          .receive[Probe] {
-            case (_, _) => Behaviors.unhandled
-          }
-          .receiveSignal {
-            case (_, PostStop) =>
-              inbox.ref ! "done"
-              Behaviors.same
-          },
-        "terminate")
-      sys.terminate().futureValue
+      val sys = system(Behaviors.setup[Any] { _ =>
+        inbox.ref ! "started"
+        Behaviors.receiveSignal {
+          case (_, PostStop) =>
+            inbox.ref ! "done"
+            Behaviors.same
+        }
+      }, "terminate")
+
+      eventually {
+        inbox.hasMessages should ===(true)
+      }
+      inbox.receiveAll() should ===("started" :: Nil)
+
+      // now we know that the guardian has started, and should receive PostStop
+      sys.terminate()
+      sys.whenTerminated.futureValue
+      CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+        Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
+    }
+
+    "be able to terminate immediately" in {
+      val sys = system(Behaviors.receiveMessage[Probe] { _ =>
+        Behaviors.unhandled
+      }, "terminate")
+      // for this case the guardian might not have been started before
+      // the system terminates and then it will not receive PostStop, which
+      // is OK since it wasn't really started yet
+      sys.terminate()
+      sys.whenTerminated.futureValue
     }
 
     "log to the event stream" in {

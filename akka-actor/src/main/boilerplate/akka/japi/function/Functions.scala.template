@@ -4,10 +4,13 @@
 
 package akka.japi.function
 
+import com.github.ghik.silencer.silent
+
 [3..22#/**
  * A Function interface. Used to create 1-arg first-class-functions is Java.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
  */
+@silent
 @SerialVersionUID(##1L)
 trait Function1[[#-T1#], +R] extends java.io.Serializable {
   @throws(classOf[Exception])
@@ -21,6 +24,7 @@ trait Function1[[#-T1#], +R] extends java.io.Serializable {
  * A Procedure is like a Function, but it doesn't produce a return value.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
  */
+@silent
 @SerialVersionUID(##1L)
 trait Procedure1[[#-T1#]] extends java.io.Serializable {
   @throws(classOf[Exception])

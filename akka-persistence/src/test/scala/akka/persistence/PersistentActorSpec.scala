@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
 import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable.Seq
@@ -32,8 +33,8 @@ object PersistentActorSpec {
     var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data)               => events = data :: events
-      case d @ Some(ref: ActorRef) => askedForDelete = d.asInstanceOf[Some[ActorRef]]
+      case Evt(data)             => events = data :: events
+      case d @ Some(_: ActorRef) => askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
@@ -351,7 +352,7 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        (1 to 3).foreach { i =>
+        (1 to 3).foreach { _ =>
           persistAsync(Evt(s"$data-${incCounter()}")) { evt =>
             sender() ! ("a" + evt.data.toString.drop(1)) // c-1 => a-1, as in "ack"
           }
@@ -399,6 +400,7 @@ object PersistentActorSpec {
       extends AsyncPersistSameEventTwicePersistentActor(name)
       with InmemRuntimePluginConfig
 
+  @silent // compiler knows persistAll(Nil)(lambda) will never invoke lambda
   class PersistAllNilPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     val receiveCommand: Receive = commonBehavior.orElse {
@@ -430,16 +432,16 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        persist(Evt(data + "-e1")) { evt =>
+        persist(Evt(s"$data-e1")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
 
         // this should be happily executed
-        persistAsync(Evt(data + "-ea2")) { evt =>
+        persistAsync(Evt(s"$data-ea2")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
 
-        persist(Evt(data + "-e3")) { evt =>
+        persist(Evt(s"$data-e3")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
     }
@@ -468,11 +470,11 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        persist(Evt(data + "-e1")) { evt =>
+        persist(Evt(s"$data-e1")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
 
-        persistAsync(Evt(data + "-ea2")) { evt =>
+        persistAsync(Evt(s"$data-ea2")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
     }
@@ -494,8 +496,6 @@ object PersistentActorSpec {
       with InmemRuntimePluginConfig
 
   class AsyncPersistHandlerCorrelationCheck(name: String) extends ExamplePersistentActor(name) {
-    var counter = 0
-
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAsync(Evt(data)) { evt =>
@@ -505,11 +505,6 @@ object PersistentActorSpec {
             sender() ! "done"
         }
     }
-
-    private def incCounter(): Int = {
-      counter += 1
-      counter
-    }
   }
   class AsyncPersistHandlerCorrelationCheckWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
       extends AsyncPersistHandlerCorrelationCheck(name)
@@ -518,16 +513,16 @@ object PersistentActorSpec {
       extends AsyncPersistHandlerCorrelationCheck(name)
       with InmemRuntimePluginConfig
 
-  class AnyValEventPersistentActor(name: String) extends ExamplePersistentActor(name) {
+  class PrimitiveEventPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
       case Cmd("a") => persist(5)(evt => sender() ! evt)
     }
   }
-  class AnyValEventPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-      extends AnyValEventPersistentActor(name)
+  class PrimitiveEventPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
+      extends PrimitiveEventPersistentActor(name)
       with LevelDbRuntimePluginConfig
-  class AnyValEventPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-      extends AnyValEventPersistentActor(name)
+  class PrimitiveEventPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
+      extends PrimitiveEventPersistentActor(name)
       with InmemRuntimePluginConfig
 
   class HandleRecoveryFinishedEventPersistentActor(name: String, probe: ActorRef)
@@ -1173,7 +1168,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   protected def replyInEventHandlerPersistentActor: ActorRef = namedPersistentActor[ReplyInEventHandlerPersistentActor]
 
-  protected def anyValEventPersistentActor: ActorRef = namedPersistentActor[AnyValEventPersistentActor]
+  protected def primitiveEventPersistentActor: ActorRef = namedPersistentActor[PrimitiveEventPersistentActor]
 
   protected def asyncPersistPersistentActor: ActorRef = namedPersistentActor[AsyncPersistPersistentActor]
 
@@ -1394,8 +1389,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! Cmd("a")
       expectMsg("a")
     }
-    "be able to persist events that extend AnyVal" in {
-      val persistentActor = anyValEventPersistentActor
+    "be able to persist primitive events" in {
+      val persistentActor = primitiveEventPersistentActor
       persistentActor ! Cmd("a")
       expectMsg(5)
     }
@@ -1440,7 +1435,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       }
       val probes = Vector.fill(10)(TestProbe())
 
-      (probes.zip(commands)).foreach {
+      probes.zip(commands).foreach {
         case (p, c) =>
           persistentActor.tell(c, p.ref)
       }
@@ -1530,7 +1525,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         expectMsg("a-2")
         expectMsg("d-3")
         expectMsg("d-4")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithPersistActor)
@@ -1543,7 +1538,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         expectMsg("pa-a-2")
         expectMsg("d-a-3")
         expectMsg("d-a-4")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithAsyncPersistActor)
@@ -1569,7 +1564,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         p2.expectMsg("pa-b-5")
         p2.expectMsg("d-b-6")
 
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncMixedCallsPPADDPADPersistActor)
@@ -1581,7 +1576,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         expectMsg("d-1")
         expectMsg("d-2")
         expectMsg("d-3")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithNoPersistCallsPersistActor)
@@ -1602,7 +1597,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         p2.expectMsg("pa-b-2")
         p2.expectMsg("d-b-3")
         p2.expectMsg("d-b-4")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithAsyncPersistActor)
@@ -1896,8 +1891,8 @@ class LeveldbPersistentActorWithRuntimePluginConfigSpec
     namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](
       providedActorConfig)
 
-  override protected def anyValEventPersistentActor: ActorRef =
-    namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithLevelDbRuntimePluginConfig](
+  override protected def primitiveEventPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[PrimitiveEventPersistentActorWithLevelDbRuntimePluginConfig](
       providedActorConfig)
 
   override protected def asyncPersistPersistentActor: ActorRef =
@@ -2096,8 +2091,9 @@ class InmemPersistentActorWithRuntimePluginConfigSpec
     namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithInmemRuntimePluginConfig](
       providedActorConfig)
 
-  override protected def anyValEventPersistentActor: ActorRef =
-    namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def primitiveEventPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[PrimitiveEventPersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
   override protected def asyncPersistPersistentActor: ActorRef =
     namedPersistentActorWithProvidedConfig[AsyncPersistPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)

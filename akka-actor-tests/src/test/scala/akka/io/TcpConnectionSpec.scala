@@ -638,7 +638,7 @@ class TcpConnectionSpec extends AkkaSpec("""
           sel.select(3000)
 
           key.isConnectable should ===(true)
-          val forceThisLazyVal = connectionActor.toString
+          connectionActor.toString // force the lazy val
           Thread.sleep(300)
           selector.send(connectionActor, ChannelConnectable)
           userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
@@ -720,7 +720,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) => written -= 1
+          case CommandFailed(_) => written -= 1
         }
         writer.msgAvailable should ===(false)
 
@@ -758,7 +758,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) => written -= 1
+          case CommandFailed(_) => written -= 1
         }
 
         // drain the queue until it works again
@@ -794,7 +794,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) => written -= 1
+          case CommandFailed(_) => written -= 1
         }
         writer.msgAvailable should ===(false)
 
@@ -827,7 +827,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) => written -= 1
+          case CommandFailed(_) => written -= 1
         }
 
         // drain the queue until it works again
@@ -1108,7 +1108,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     def assertThisConnectionActorTerminated(): Unit = {
       watch(connectionActor)
       expectTerminated(connectionActor)
-      clientSideChannel should not be ('open)
+      clientSideChannel.isOpen should be(false)
     }
 
     def selectedAs(interest: Int, duration: Duration): BeMatcher[SelectionKey] =

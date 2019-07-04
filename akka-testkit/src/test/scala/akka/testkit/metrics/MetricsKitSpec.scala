@@ -53,7 +53,7 @@ class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with Bef
       val hist = hdrHistogram(KitKey / "hist", highestTrackableValue = maxMillis, 4, "ns")
 
       for {
-        n <- 1 to 11
+        _ <- 1 to 11
         i <- 0L to 1579331
       } hist.update(i)
 

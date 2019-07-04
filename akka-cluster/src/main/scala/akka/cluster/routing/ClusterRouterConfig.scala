@@ -24,12 +24,13 @@ import akka.routing.RouterActor
 import akka.routing.RouterConfig
 import akka.routing.RouterPoolActor
 import akka.routing.RoutingLogic
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 object ClusterRouterGroupSettings {
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")
@@ -100,6 +101,7 @@ final case class ClusterRouterGroupSettings(
 
   // For binary compatibility
   @deprecated("Use constructor with useRoles instead", since = "2.5.4")
+  @silent
   def copy(
       totalInstances: Int = totalInstances,
       routeesPaths: immutable.Seq[String] = routeesPaths,
@@ -194,6 +196,7 @@ final case class ClusterRouterPoolSettings(
 
   // For binary compatibility
   @deprecated("Use copy with useRoles instead", since = "2.5.4")
+  @silent
   def copy(
       totalInstances: Int = totalInstances,
       maxInstancesPerNode: Int = maxInstancesPerNode,
@@ -449,7 +452,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
     def doAddRoutees(): Unit = selectDeploymentTarget match {
       case None => // done
       case Some((address, path)) =>
-        val routee = group.routeeFor(address + path, context)
+        val routee = group.routeeFor(address.toString + path, context)
         usedRouteePaths = usedRouteePaths.updated(address, usedRouteePaths.getOrElse(address, Set.empty) + path)
         // must register each one, since registered routees are used in selectDeploymentTarget
         cell.addRoutee(routee)

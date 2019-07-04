@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.stream.{ AbruptIOTerminationException, IOResult }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
@@ -26,6 +27,7 @@ import scala.util.{ Failure, Success }
 }
 
 /** INTERNAL API */
+@silent
 @InternalApi private[akka] class OutputStreamSubscriber(
     os: OutputStream,
     completionPromise: Promise[IOResult],

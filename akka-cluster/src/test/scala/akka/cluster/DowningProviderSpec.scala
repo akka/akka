@@ -9,19 +9,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, Props }
 import akka.testkit.TestKit.{ awaitCond, shutdownActorSystem }
+import akka.util.unused
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
 
-class FailingDowningProvider(system: ActorSystem) extends DowningProvider {
+class FailingDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds
   override def downingActorProps: Option[Props] = {
     throw new ConfigurationException("this provider never works")
   }
 }
 
-class DummyDowningProvider(system: ActorSystem) extends DowningProvider {
+class DummyDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds
 
   val actorPropsAccessed = new AtomicBoolean(false)
@@ -38,7 +39,7 @@ class DowningProviderSpec extends WordSpec with Matchers {
         loglevel = WARNING
         actor.provider = "cluster"
         remote {
-          netty.tcp {
+          classic.netty.tcp {
             hostname = "127.0.0.1"
             port = 0
           }

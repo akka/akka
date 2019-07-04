@@ -36,11 +36,11 @@ import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
 import com.typesafe.config.Config
 import akka.remote.DeadlineFailureDetector
-import akka.dispatch.Dispatchers
 import akka.util.MessageBuffer
 import akka.util.ccompat._
 import scala.collection.immutable.{ HashMap, HashSet }
 
+@ccompatUsedUntil213
 object ClusterClientSettings {
 
   /**
@@ -88,7 +88,7 @@ object ClusterClientSettings {
  *   the servers (cluster nodes) that the client will try to contact initially.
  *   It is mandatory to specify at least one initial contact. The path of the
  *   default receptionist is
- *   "akka.tcp://system@hostname:port/system/receptionist"
+ *   "akka://system@hostname:port/system/receptionist"
  * @param establishingGetContactsInterval Interval at which the client retries
  *   to establish contact with one of ClusterReceptionist on the servers (cluster nodes)
  * @param refreshContactsInterval Interval at which the client will ask the
@@ -152,7 +152,7 @@ final class ClusterClientSettings(
    * Java API
    */
   def withInitialContacts(initialContacts: java.util.Set[ActorPath]): ClusterClientSettings = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     withInitialContacts(initialContacts.asScala.toSet)
   }
 
@@ -262,7 +262,7 @@ case object GetContactPoints extends GetContactPoints {
  * @param contactPoints The presently known list of contact points.
  */
 final case class ContactPoints(contactPoints: Set[ActorPath]) {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Java API
@@ -367,7 +367,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   var subscribers = Vector.empty[ActorRef]
 
   import context.dispatcher
-  val heartbeatTask = context.system.scheduler.schedule(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
+  val heartbeatTask =
+    context.system.scheduler.scheduleWithFixedDelay(heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
   var refreshContactsTask: Option[Cancellable] = None
   scheduleRefreshContactsTick(establishingGetContactsInterval)
   self ! RefreshContactsTick
@@ -376,7 +377,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
 
   def scheduleRefreshContactsTick(interval: FiniteDuration): Unit = {
     refreshContactsTask.foreach { _.cancel() }
-    refreshContactsTask = Some(context.system.scheduler.schedule(interval, interval, self, RefreshContactsTick))
+    refreshContactsTask = Some(
+      context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, RefreshContactsTick))
   }
 
   override def postStop(): Unit = {
@@ -595,10 +597,7 @@ final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Exten
       system.deadLetters
     else {
       val name = config.getString("name")
-      val dispatcher = config.getString("use-dispatcher") match {
-        case "" => Dispatchers.DefaultDispatcherId
-        case id => id
-      }
+      val dispatcher = config.getString("use-dispatcher")
       // important to use val mediator here to activate it outside of ClusterReceptionist constructor
       val mediator = pubSubMediator
       system.systemActorOf(
@@ -814,7 +813,7 @@ case object GetClusterClients extends GetClusterClients {
  * @param clusterClients The presently known list of cluster clients.
  */
 final case class ClusterClients(clusterClients: Set[ActorRef]) {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   /**
    * Java API
@@ -936,8 +935,11 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
   var subscribers = Vector.empty[ActorRef]
 
   val checkDeadlinesTask =
-    context.system.scheduler.schedule(failureDetectionInterval, failureDetectionInterval, self, CheckDeadlines)(
-      context.dispatcher)
+    context.system.scheduler.scheduleWithFixedDelay(
+      failureDetectionInterval,
+      failureDetectionInterval,
+      self,
+      CheckDeadlines)(context.dispatcher)
 
   override def preStart(): Unit = {
     super.preStart()

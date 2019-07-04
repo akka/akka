@@ -6,6 +6,8 @@ package akka.osgi
 
 import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
+
+import com.github.ghik.silencer.silent
 import org.osgi.framework._
 import org.osgi.service.log.LogService
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -112,6 +114,7 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the bundle context
    * @return the actor system name
    */
+  @silent
   def getActorSystemName(context: BundleContext): String = null
 
   /**
@@ -124,6 +127,7 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the bundle context
    * @return the actor system specific configuration, ConfigFactory.empty by default
    */
+  @silent
   def getActorSystemConfiguration(context: BundleContext): Config = ConfigFactory.empty
 
 }

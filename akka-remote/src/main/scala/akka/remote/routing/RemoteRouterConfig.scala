@@ -22,6 +22,7 @@ import akka.routing.Routee
 import akka.routing.Router
 import akka.routing.RouterActor
 import akka.routing.RouterConfig
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -39,7 +40,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
   def this(local: Pool, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
+  @silent @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
   // need this counter as instance variable since Resizer may call createRoutees several times
   @transient private val childNameCounter = new AtomicInteger
 

@@ -17,6 +17,7 @@ import akka.dispatch.Dispatchers
 import akka.actor.ActorSystem
 import akka.japi.Util.immutableSeq
 import akka.util.unused
+import com.github.ghik.silencer.silent
 
 /**
  * This trait represents a router factory: it produces the actual router actor
@@ -36,6 +37,7 @@ import akka.util.unused
  * someone tries sending a message to that reference before the constructor of
  * RoutedActorRef has returned, there will be a `NullPointerException`!
  */
+@silent
 @SerialVersionUID(1L)
 trait RouterConfig extends Serializable {
 
@@ -372,14 +374,18 @@ case object NoRouter extends NoRouter {
 /**
  * INTERNAL API
  */
-@SerialVersionUID(1L) private[akka] trait RouterManagementMesssage
+@silent
+@SerialVersionUID(1L)
+private[akka] trait RouterManagementMesssage
 
 /**
  * Sending this message to a router will make it send back its currently used routees.
  * A [[Routees]] message is sent asynchronously to the "requester" containing information
  * about what routees the router is routing over.
  */
-@SerialVersionUID(1L) abstract class GetRoutees extends RouterManagementMesssage
+@silent
+@SerialVersionUID(1L)
+abstract class GetRoutees extends RouterManagementMesssage
 
 @SerialVersionUID(1L) case object GetRoutees extends GetRoutees {
 
@@ -399,7 +405,7 @@ final case class Routees(routees: immutable.IndexedSeq[Routee]) {
    * Java API
    */
   def getRoutees: java.util.List[Routee] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     routees.asJava
   }
 }

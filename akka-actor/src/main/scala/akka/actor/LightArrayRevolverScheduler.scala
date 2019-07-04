@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
-import scala.util.control.{ NonFatal }
+import scala.util.control.NonFatal
 import com.typesafe.config.Config
 import akka.event.LoggingAdapter
 import akka.util.Helpers
@@ -86,8 +86,14 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     val sleepMs = if (Helpers.isWindows) (nanos + 4999999) / 10000000 * 10 else (nanos + 999999) / 1000000
     try Thread.sleep(sleepMs)
     catch {
-      case _: InterruptedException => Thread.currentThread.interrupt() // we got woken up
+      case _: InterruptedException => Thread.currentThread().interrupt() // we got woken up
     }
+  }
+
+  override def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable = {
+    checkMaxDelay(roundUp(delay).toNanos)
+    super.scheduleWithFixedDelay(initialDelay, delay)(runnable)
   }
 
   override def schedule(initialDelay: FiniteDuration, delay: FiniteDuration, runnable: Runnable)(
@@ -130,7 +136,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
 
       override def isCancelled: Boolean = get == null
     } catch {
-      case SchedulerException(msg) => throw new IllegalStateException(msg)
+      case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
     }
   }
 
@@ -138,7 +144,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       implicit executor: ExecutionContext): Cancellable =
     try schedule(executor, runnable, roundUp(delay))
     catch {
-      case SchedulerException(msg) => throw new IllegalStateException(msg)
+      case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
     }
 
   override def close(): Unit = Await.result(stop(), getShutdownTimeout).foreach { task =>
@@ -163,11 +169,11 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
 
   private def schedule(ec: ExecutionContext, r: Runnable, delay: FiniteDuration): TimerTask =
     if (delay <= Duration.Zero) {
-      if (stopped.get != null) throw new SchedulerException("cannot enqueue after timer shutdown")
+      if (stopped.get != null) throw SchedulerException("cannot enqueue after timer shutdown")
       ec.execute(r)
       NotCancellable
     } else if (stopped.get != null) {
-      throw new SchedulerException("cannot enqueue after timer shutdown")
+      throw SchedulerException("cannot enqueue after timer shutdown")
     } else {
       val delayNanos = delay.toNanos
       checkMaxDelay(delayNanos)
@@ -176,7 +182,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       val task = new TaskHolder(r, ticks, ec)
       queue.add(task)
       if (stopped.get != null && task.cancel())
-        throw new SchedulerException("cannot enqueue after timer shutdown")
+        throw SchedulerException("cannot enqueue after timer shutdown")
       task
     }
 
@@ -212,7 +218,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
           case x    => collect(q, acc :+ x)
         }
       }
-      ((0 until WheelSize).flatMap(i => collect(wheel(i), Vector.empty))) ++ collect(queue, Vector.empty)
+      (0 until WheelSize).flatMap(i => collect(wheel(i), Vector.empty)) ++ collect(queue, Vector.empty)
     }
 
     @tailrec
@@ -237,7 +243,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         checkQueue(time)
     }
 
-    override final def run =
+    override final def run(): Unit =
       try nextTick()
       catch {
         case t: Throwable =>
@@ -334,8 +340,8 @@ object LightArrayRevolverScheduler {
           executionContext.execute(other)
           true
         } catch {
-          case _: InterruptedException => { Thread.currentThread.interrupt(); false }
-          case NonFatal(e)             => { executionContext.reportFailure(e); false }
+          case _: InterruptedException => Thread.currentThread().interrupt(); false
+          case NonFatal(e)             => executionContext.reportFailure(e); false
         }
     }
 

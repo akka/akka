@@ -15,13 +15,18 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
 
-import scala.concurrent.{ Future, Promise }
-
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
 private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) extends SourceRef[T] {
   def source: Source[T, NotUsed] =
     Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ => NotUsed)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[stream] object SourceRefStageImpl {
+  private sealed trait ActorRefStage { def ref: ActorRef }
 }
 
 /**
@@ -32,7 +37,8 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
  */
 @InternalApi
 private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: OptionVal[ActorRef])
-    extends GraphStageWithMaterializedValue[SourceShape[Out], Future[SinkRef[Out]]] { stage =>
+    extends GraphStageWithMaterializedValue[SourceShape[Out], SinkRef[Out]] { stage =>
+  import SourceRefStageImpl.ActorRefStage
 
   val out: Outlet[Out] = Outlet[Out](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
@@ -43,24 +49,29 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       case _                   => "<no-initial-ref>"
     }
 
-  override def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes): (GraphStageLogic, Future[SinkRef[Out]]) = {
-    val promise = Promise[SinkRefImpl[Out]]()
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SinkRef[Out]) =
+    throw new IllegalStateException("Not supported")
 
-    val logic = new TimerGraphStageLogic(shape) with StageLogging with OutHandler {
-      private[this] lazy val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(materializer).system)
+  private[akka] override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      eagerMaterializer: Materializer): (GraphStageLogic, SinkRef[Out]) = {
+
+    val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with OutHandler {
+      private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
 
       // settings ---
       import StreamRefAttributes._
-      private[this] lazy val settings = ActorMaterializerHelper.downcast(materializer).settings.streamRefSettings
+      private[this] val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
 
-      private[this] lazy val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
+      private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
         SubscriptionTimeout(settings.subscriptionTimeout))
       // end of settings ---
 
-      override protected lazy val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
-      private[this] var self: GraphStageLogic.StageActor = _
-      private[this] implicit def selfSender: ActorRef = self.ref
+      override protected val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
+      private[this] val self: GraphStageLogic.StageActor =
+        getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false)(initialReceive)
+      override val ref: ActorRef = self.ref
+      private[this] implicit def selfSender: ActorRef = ref
 
       val SubscriptionTimeoutTimerKey = "SubscriptionTimeoutKey"
       val DemandRedeliveryTimerKey = "DemandRedeliveryTimerKey"
@@ -88,14 +99,11 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
         receiveBuffer = FixedSizeBuffer[Out](settings.bufferCapacity)
         requestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
 
-        self = getStageActor(initialReceive)
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
           observeAndValidateSender(
             initialPartnerRef.get,
             "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
-
-        promise.success(SinkRefImpl(self.ref))
 
         //this timer will be cancelled if we receive the handshake from the remote SinkRef
         // either created in this method and provided as self.ref as initialPartnerRef
@@ -133,7 +141,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
         case SubscriptionTimeoutTimerKey =>
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
-            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Sink reference [${promise.future.value}]," +
+            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Sink reference [$ref]," +
             s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex // this will also log the exception, unlike failStage; this should fail rarely, but would be good to have it "loud"
@@ -149,7 +157,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
             "(possible reasons: network partition or subscription timeout triggered termination of partner). Tearing down."))
       }
 
-      lazy val initialReceive: ((ActorRef, Any)) => Unit = {
+      def initialReceive: ((ActorRef, Any)) => Unit = {
         case (sender, msg @ StreamRefsProtocol.OnSubscribeHandshake(remoteRef)) =>
           cancelTimer(SubscriptionTimeoutTimerKey)
           observeAndValidateSender(remoteRef, "Illegal sender in SequencedOnNext")
@@ -181,9 +189,9 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           self.unwatch(sender)
           failStage(RemoteStreamRefActorTerminatedException(s"Remote stream (${sender.path}) failed, reason: $reason"))
 
-        case (_, Terminated(ref)) =>
+        case (_, Terminated(p)) =>
           partnerRef match {
-            case OptionVal.Some(`ref`) =>
+            case OptionVal.Some(`p`) =>
               // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
               // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
               // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
@@ -193,9 +201,11 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
               // this should not have happened! It should be impossible that we watched some other actor
               failStage(
                 RemoteStreamRefActorTerminatedException(
-                  s"Received UNEXPECTED Terminated($ref) message! " +
+                  s"Received UNEXPECTED Terminated($p) message! " +
                   s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
           }
+
+        case (_, _) => // keep the compiler happy (stage actor receive is total)
       }
 
       def tryPush(): Unit =
@@ -226,8 +236,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
             partnerRef = OptionVal(partner)
             self.watch(partner)
 
-          case OptionVal.Some(ref) =>
-            if (partner != ref) {
+          case OptionVal.Some(p) =>
+            if (partner != p) {
               val ex = InvalidPartnerActorException(partner, getPartnerRef, msg)
               partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
               throw ex
@@ -246,7 +256,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       setHandler(out, this)
     }
-    (logic, promise.future)
+    (logic, SinkRefImpl(logic.ref))
   }
 
   override def toString: String =

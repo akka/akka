@@ -6,16 +6,16 @@ package akka.cluster
 
 import language.postfixOps
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
-
 import akka.remote.PhiAccrualFailureDetector
 import akka.util.Helpers.ConfigOps
 import akka.actor.Address
 
+import com.github.ghik.silencer.silent
+
+@silent
 class ClusterConfigSpec extends AkkaSpec {
 
   "Clustering" must {
@@ -37,7 +37,7 @@ class ClusterConfigSpec extends AkkaSpec {
       GossipInterval should ===(1 second)
       GossipTimeToLive should ===(2 seconds)
       HeartbeatInterval should ===(1 second)
-      MonitoredByNrOfMembers should ===(5)
+      MonitoredByNrOfMembers should ===(9)
       HeartbeatExpectedResponseAfter should ===(1 seconds)
       LeaderActionsInterval should ===(1 second)
       UnreachableNodesReaperInterval should ===(1 second)
@@ -49,7 +49,7 @@ class ClusterConfigSpec extends AkkaSpec {
       SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
       JmxEnabled should ===(true)
-      UseDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      UseDispatcher should ===(Dispatchers.InternalDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)

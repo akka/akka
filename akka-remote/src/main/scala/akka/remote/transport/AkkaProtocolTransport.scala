@@ -27,6 +27,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.{ LogMarker, Logging }
+import com.github.ghik.silencer.silent
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -38,26 +39,26 @@ private[remote] class AkkaProtocolSettings(config: Config) {
   import akka.util.Helpers.ConfigOps
   import config._
 
-  val TransportFailureDetectorConfig: Config = getConfig("akka.remote.transport-failure-detector")
+  val TransportFailureDetectorConfig: Config = getConfig("akka.remote.classic.transport-failure-detector")
   val TransportFailureDetectorImplementationClass: String =
     TransportFailureDetectorConfig.getString("implementation-class")
   val TransportHeartBeatInterval: FiniteDuration = {
     TransportFailureDetectorConfig.getMillisDuration("heartbeat-interval")
   }.requiring(_ > Duration.Zero, "transport-failure-detector.heartbeat-interval must be > 0")
 
-  val RequireCookie: Boolean = getBoolean("akka.remote.require-cookie")
+  val RequireCookie: Boolean = getBoolean("akka.remote.classic.require-cookie")
 
-  val SecureCookie: Option[String] = if (RequireCookie) Some(getString("akka.remote.secure-cookie")) else None
+  val SecureCookie: Option[String] = if (RequireCookie) Some(getString("akka.remote.classic.secure-cookie")) else None
 
   val HandshakeTimeout: FiniteDuration = {
-    val enabledTransports = config.getStringList("akka.remote.enabled-transports")
-    if (enabledTransports.contains("akka.remote.netty.tcp"))
-      config.getMillisDuration("akka.remote.netty.tcp.connection-timeout")
-    else if (enabledTransports.contains("akka.remote.netty.ssl"))
-      config.getMillisDuration("akka.remote.netty.ssl.connection-timeout")
+    val enabledTransports = config.getStringList("akka.remote.classic.enabled-transports")
+    if (enabledTransports.contains("akka.remote.classic.netty.tcp"))
+      config.getMillisDuration("akka.remote.classic.netty.tcp.connection-timeout")
+    else if (enabledTransports.contains("akka.remote.classic.netty.ssl"))
+      config.getMillisDuration("akka.remote.classic.netty.ssl.connection-timeout")
     else
       config
-        .getMillisDuration("akka.remote.handshake-timeout")
+        .getMillisDuration("akka.remote.classic.handshake-timeout")
         .requiring(_ > Duration.Zero, "handshake-timeout must be > 0")
   }
 }
@@ -148,13 +149,15 @@ private[transport] class AkkaProtocolManager(
       val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
       val failureDetector = createTransportFailureDetector()
+
+      // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
+      @silent
+      val addressUid = AddressUidExtension(context.system).addressUid
+
       context.actorOf(
         RARP(context.system).configureDispatcher(
           ProtocolStateActor.inboundProps(
-            HandshakeInfo(
-              stateActorLocalAddress,
-              AddressUidExtension(context.system).addressUid,
-              stateActorSettings.SecureCookie),
+            HandshakeInfo(stateActorLocalAddress, addressUid, stateActorSettings.SecureCookie),
             handle,
             stateActorAssociationHandler,
             stateActorSettings,
@@ -178,13 +181,15 @@ private[transport] class AkkaProtocolManager(
     val stateActorSettings = settings
     val stateActorWrappedTransport = wrappedTransport
     val failureDetector = createTransportFailureDetector()
+
+    // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
+    @silent
+    val addressUid = AddressUidExtension(context.system).addressUid
+
     context.actorOf(
       RARP(context.system).configureDispatcher(
         ProtocolStateActor.outboundProps(
-          HandshakeInfo(
-            stateActorLocalAddress,
-            AddressUidExtension(context.system).addressUid,
-            stateActorSettings.SecureCookie),
+          HandshakeInfo(stateActorLocalAddress, addressUid, stateActorSettings.SecureCookie),
           remoteAddress,
           statusPromise,
           stateActorWrappedTransport,
@@ -217,7 +222,7 @@ private[remote] class AkkaProtocolHandle(
   def disassociate(info: DisassociateInfo): Unit = stateActor ! DisassociateUnderlying(info)
 }
 
-private[transport] object ProtocolStateActor {
+private[remote] object ProtocolStateActor {
   sealed trait AssociationState
 
   /*
@@ -319,7 +324,7 @@ private[transport] object ProtocolStateActor {
       failureDetector).withDeploy(Deploy.local)
 }
 
-private[transport] class ProtocolStateActor(
+private[remote] class ProtocolStateActor(
     initialData: InitialProtocolStateData,
     private val localHandshakeInfo: HandshakeInfo,
     private val refuseUid: Option[Int],
@@ -403,11 +408,10 @@ private[transport] class ProtocolStateActor(
 
       } else {
         // Underlying transport was busy -- Associate could not be sent
-        setTimer(
+        startSingleTimer(
           "associate-retry",
           Handle(wrappedHandle),
-          RARP(context.system).provider.remoteSettings.BackoffPeriod,
-          repeat = false)
+          RARP(context.system).provider.remoteSettings.BackoffPeriod)
         stay()
       }
 
@@ -589,11 +593,11 @@ private[transport] class ProtocolStateActor(
   }
 
   private def initHeartbeatTimer(): Unit = {
-    setTimer("heartbeat-timer", HeartbeatTimer, settings.TransportHeartBeatInterval, repeat = true)
+    startTimerWithFixedDelay("heartbeat-timer", HeartbeatTimer, settings.TransportHeartBeatInterval)
   }
 
   private def initHandshakeTimer(): Unit = {
-    setTimer(handshakeTimerKey, HandshakeTimer, settings.HandshakeTimeout, repeat = false)
+    startSingleTimer(handshakeTimerKey, HandshakeTimer, settings.HandshakeTimeout)
   }
 
   private def handleTimers(wrappedHandle: AssociationHandle): State = {

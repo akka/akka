@@ -6,10 +6,11 @@ package akka.actor
 
 import java.util.concurrent.ConcurrentHashMap
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -138,7 +139,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * The contract is that if this method returns true, then it will never be false again.
    * But you cannot rely on that it is alive if it returns false, since this by nature is a racy method.
    */
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+  @InternalApi
   private[akka] def isTerminated: Boolean
 
   final override def hashCode: Int = {
@@ -155,8 +156,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   }
 
   override def toString: String =
-    if (path.uid == ActorCell.undefinedUid) s"Actor[${path}]"
-    else s"Actor[${path}#${path.uid}]"
+    if (path.uid == ActorCell.undefinedUid) s"Actor[$path]"
+    else s"Actor[$path#${path.uid}]"
 }
 
 /**
@@ -337,6 +338,7 @@ private[akka] class LocalActorRef private[akka] (
    * If this method returns true, it will never return false again, but if it
    * returns false, you cannot be sure if it's alive still (race condition)
    */
+  @InternalApi
   override private[akka] def isTerminated: Boolean = actorCell.isTerminated
 
   /**
@@ -472,7 +474,10 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
-/** Subscribe to this class to be notified about all DeadLetters (also the suppressed ones). */
+/**
+ * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
+ * and [[Dropped]].
+ */
 sealed trait AllDeadLetters {
   def message: Any
   def sender: ActorRef
@@ -508,6 +513,23 @@ final case class SuppressedDeadLetter(message: DeadLetterSuppression, sender: Ac
     extends AllDeadLetters {
   require(sender ne null, "DeadLetter sender may not be null")
   require(recipient ne null, "DeadLetter recipient may not be null")
+}
+
+/**
+ * Envelope that is published on the eventStream wrapped in [[akka.actor.DeadLetter]] for every message that is
+ * dropped due to overfull queues or routers with no routees.
+ *
+ * When this message was sent without a sender [[ActorRef]], `sender` will be `ActorRef.noSender`, i.e. `null`.
+ */
+final case class Dropped(message: Any, reason: String, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters
+
+object Dropped {
+
+  /**
+   * Convenience for creating `Cropped` without `sender`.
+   */
+  def apply(message: Any, reason: String, recipient: ActorRef): Dropped =
+    Dropped(message, reason, ActorRef.noSender, recipient)
 }
 
 private[akka] object DeadLetterActorRef {
@@ -746,7 +768,7 @@ private[akka] final class FunctionRef(
     }
   }
 
-  // watching, _watchedBy and maintainAddressTerminatedSubscription requires sychronized access because
+  // watching, _watchedBy and maintainAddressTerminatedSubscription requires synchronized access because
   // AddressTerminatedTopic must be updated together with the variables here.
   // Important: don't include calls to sendSystemMessage inside the synchronized since that can
   // result in deadlock, see issue #26326
@@ -946,7 +968,7 @@ private[akka] final class FunctionRef(
         // AddressTerminatedTopic update not needed
         block
       case _ =>
-        def hasNonLocalAddress: Boolean = (watching.exists(isNonLocal)) || (watchedByOrEmpty.exists(isNonLocal))
+        def hasNonLocalAddress: Boolean = watching.exists(isNonLocal) || watchedByOrEmpty.exists(isNonLocal)
 
         val had = hasNonLocalAddress
         val result = block

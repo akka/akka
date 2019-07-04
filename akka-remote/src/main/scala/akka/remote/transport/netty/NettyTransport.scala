@@ -20,7 +20,6 @@ import scala.concurrent.blocking
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -29,9 +28,6 @@ import akka.event.Logging
 import akka.remote.RARP
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.remote.transport.Transport._
-import akka.remote.transport.netty.NettyTransportSettings.Mode
-import akka.remote.transport.netty.NettyTransportSettings.Tcp
-import akka.remote.transport.netty.NettyTransportSettings.Udp
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.Transport
 import akka.util.Helpers
@@ -39,6 +35,7 @@ import akka.util.Helpers.Requiring
 import akka.util.OptionVal
 import akka.ConfigurationException
 import akka.OnlyCauseStackTrace
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import org.jboss.netty.bootstrap.Bootstrap
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -52,19 +49,12 @@ import org.jboss.netty.channel.group.ChannelGroupFuture
 import org.jboss.netty.channel.group.ChannelGroupFutureListener
 import org.jboss.netty.channel.group.DefaultChannelGroup
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.channel.socket.nio.NioWorkerPool
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.util.HashedWheelTimer
-
-object NettyTransportSettings {
-  sealed trait Mode
-  case object Tcp extends Mode { override def toString = "tcp" }
-  case object Udp extends Mode { override def toString = "udp" }
-}
 
 object NettyFutureBridge {
   def apply(nettyFuture: ChannelFuture): Future[Channel] = {
@@ -81,7 +71,7 @@ object NettyFutureBridge {
   }
 
   def apply(nettyFuture: ChannelGroupFuture): Future[ChannelGroup] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val p = Promise[ChannelGroup]
     nettyFuture.addListener(new ChannelGroupFutureListener {
       def operationComplete(future: ChannelGroupFuture): Unit =
@@ -120,14 +110,7 @@ class NettyTransportSettings(config: Config) {
   import akka.util.Helpers.ConfigOps
   import config._
 
-  val TransportMode: Mode = getString("transport-protocol") match {
-    case "tcp"   => Tcp
-    case "udp"   => Udp
-    case unknown => throw new ConfigurationException(s"Unknown transport: [$unknown]")
-  }
-
-  val EnableSsl: Boolean =
-    getBoolean("enable-ssl").requiring(!_ || TransportMode == Tcp, s"$TransportMode does not support SSL")
+  val EnableSsl: Boolean = getBoolean("enable-ssl")
 
   val SSLEngineProviderClassName: String = if (EnableSsl) getString("ssl-engine-provider") else ""
 
@@ -151,7 +134,6 @@ class NettyTransportSettings(config: Config) {
   val SendBufferSize: Option[Int] = optionSize("send-buffer-size")
 
   val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
-    .requiring(s => s.isDefined || TransportMode != Udp, "receive-buffer-size must be specified for UDP")
 
   val MaxFrameSize: Int = getBytes("maximum-frame-size").toInt
     .requiring(_ >= 32000, s"Setting 'maximum-frame-size' must be at least 32000 bytes")
@@ -181,6 +163,7 @@ class NettyTransportSettings(config: Config) {
   val PortSelector: Int = getInt("port")
 
   @deprecated("WARNING: This should only be used by professionals.", "2.4")
+  @silent
   val BindPortSelector: Int = getString("bind-port") match {
     case ""    => PortSelector
     case value => value.toInt
@@ -241,7 +224,7 @@ private[netty] trait CommonHandlers extends NettyHelpers {
       channel: Channel,
       remoteSocketAddress: SocketAddress,
       remoteAddress: Address,
-      msg: ChannelBuffer)(op: (AssociationHandle => Any)): Unit = {
+      msg: ChannelBuffer)(op: AssociationHandle => Any): Unit = {
     import transport._
     NettyTransport.addressFromSocketAddress(
       channel.getLocalAddress,
@@ -344,7 +327,6 @@ private[transport] object NettyTransport {
     addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
 }
 
-// FIXME: Split into separate UDP and TCP classes
 class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedActorSystem) extends Transport {
 
   def this(system: ExtendedActorSystem, conf: Config) = this(new NettyTransportSettings(conf), system)
@@ -361,12 +343,9 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       .map(system.dispatchers.lookup)
       .getOrElse(system.dispatcher)
 
-  override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + TransportMode
+  override val schemeIdentifier: String = (if (EnableSsl) "ssl." else "") + "tcp"
   override def maximumPayloadBytes: Int = settings.MaxFrameSize
 
-  private final val isDatagram = TransportMode == Udp
-
-  @volatile private var localAddress: Address = _
   @volatile private var boundTo: Address = _
   @volatile private var serverChannel: Channel = _
 
@@ -390,46 +369,33 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     "akka-netty-transport-driver-channelgroup-" +
     uniqueIdCounter.getAndIncrement)
 
-  private val clientChannelFactory: ChannelFactory = TransportMode match {
-    case Tcp =>
-      val boss, worker = createExecutorService()
-      // We need to create a HashedWheelTimer here since Netty creates one with a thread that
-      // doesn't respect the akka.daemonic setting
-      new NioClientSocketChannelFactory(
-        boss,
-        1,
-        new NioWorkerPool(worker, ClientSocketWorkerPoolSize),
-        new HashedWheelTimer(system.threadFactory))
-    case Udp =>
-      // This does not create a HashedWheelTimer internally
-      new NioDatagramChannelFactory(createExecutorService(), ClientSocketWorkerPoolSize)
+  private val clientChannelFactory: ChannelFactory = {
+    val boss, worker = createExecutorService()
+    new NioClientSocketChannelFactory(
+      boss,
+      1,
+      new NioWorkerPool(worker, ClientSocketWorkerPoolSize),
+      new HashedWheelTimer(system.threadFactory))
   }
 
-  private val serverChannelFactory: ChannelFactory = TransportMode match {
-    case Tcp =>
-      val boss, worker = createExecutorService()
-      // This does not create a HashedWheelTimer internally
-      new NioServerSocketChannelFactory(boss, worker, ServerSocketWorkerPoolSize)
-    case Udp =>
-      // This does not create a HashedWheelTimer internally
-      new NioDatagramChannelFactory(createExecutorService(), ServerSocketWorkerPoolSize)
+  private val serverChannelFactory: ChannelFactory = {
+    val boss, worker = createExecutorService()
+    // This does not create a HashedWheelTimer internally
+    new NioServerSocketChannelFactory(boss, worker, ServerSocketWorkerPoolSize)
   }
 
   private def newPipeline: DefaultChannelPipeline = {
     val pipeline = new DefaultChannelPipeline
-
-    if (!isDatagram) {
-      pipeline.addLast(
-        "FrameDecoder",
-        new LengthFieldBasedFrameDecoder(
-          maximumPayloadBytes,
-          0,
-          FrameLengthFieldLength,
-          0,
-          FrameLengthFieldLength, // Strip the header
-          true))
-      pipeline.addLast("FrameEncoder", new LengthFieldPrepender(FrameLengthFieldLength))
-    }
+    pipeline.addLast(
+      "FrameDecoder",
+      new LengthFieldBasedFrameDecoder(
+        maximumPayloadBytes,
+        0,
+        FrameLengthFieldLength,
+        0,
+        FrameLengthFieldLength, // Strip the header
+        true))
+    pipeline.addLast("FrameEncoder", new LengthFieldPrepender(FrameLengthFieldLength))
 
     pipeline
   }
@@ -465,9 +431,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
       if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = false))
-      val handler =
-        if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
-        else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future, log)
+      val handler = new TcpServerHandler(NettyTransport.this, associationListenerPromise.future, log)
       pipeline.addLast("ServerHandler", handler)
       pipeline
     }
@@ -478,9 +442,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       override def getPipeline: ChannelPipeline = {
         val pipeline = newPipeline
         if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
-        val handler =
-          if (isDatagram) new UdpClientHandler(NettyTransport.this, remoteAddress)
-          else new TcpClientHandler(NettyTransport.this, remoteAddress, log)
+        val handler = new TcpClientHandler(NettyTransport.this, remoteAddress, log)
         pipeline.addLast("clienthandler", handler)
         pipeline
       }
@@ -492,10 +454,6 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     bootstrap.setOption("child.tcpNoDelay", settings.TcpNodelay)
     bootstrap.setOption("child.keepAlive", settings.TcpKeepalive)
     bootstrap.setOption("reuseAddress", settings.TcpReuseAddr)
-    if (isDatagram)
-      bootstrap.setOption(
-        "receiveBufferSizePredictorFactory",
-        new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
     settings.ReceiveBufferSize.foreach(sz => bootstrap.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz => bootstrap.setOption("sendBufferSize", sz))
     settings.WriteBufferHighWaterMark.foreach(sz => bootstrap.setOption("writeBufferHighWaterMark", sz))
@@ -503,9 +461,8 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     bootstrap
   }
 
-  private val inboundBootstrap: Bootstrap = settings.TransportMode match {
-    case Tcp => setupBootstrap(new ServerBootstrap(serverChannelFactory), serverPipelineFactory)
-    case Udp => setupBootstrap(new ConnectionlessBootstrap(serverChannelFactory), serverPipelineFactory)
+  private val inboundBootstrap: Bootstrap = {
+    setupBootstrap(new ServerBootstrap(serverChannelFactory), serverPipelineFactory)
   }
 
   private def outboundBootstrap(remoteAddress: Address): ClientBootstrap = {
@@ -530,8 +487,11 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
+    @silent
+    val bindPort = settings.BindPortSelector
+
     for {
-      address <- addressToSocketAddress(Address("", "", settings.BindHostname, settings.BindPortSelector))
+      address <- addressToSocketAddress(Address("", "", settings.BindHostname, bindPort))
     } yield {
       try {
         val newServerChannel = inboundBootstrap match {
@@ -545,12 +505,15 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
+        @silent
+        val port = if (settings.PortSelector == 0) None else Some(settings.PortSelector)
+
         addressFromSocketAddress(
           newServerChannel.getLocalAddress,
           schemeIdentifier,
           system.name,
           Some(settings.Hostname),
-          if (settings.PortSelector == 0) None else Some(settings.PortSelector)) match {
+          port) match {
           case Some(address) =>
             addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, None, None) match {
               case Some(address) => boundTo = address
@@ -558,7 +521,6 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
                 throw new NettyTransportException(
                   s"Unknown local address type [${newServerChannel.getLocalAddress.getClass.getName}]")
             }
-            localAddress = address
             associationListenerPromise.future.foreach { _ =>
               newServerChannel.setReadable(true)
             }
@@ -594,23 +556,10 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
             blocking {
               channel.getPipeline.get(classOf[SslHandler]).handshake().awaitUninterruptibly()
             }
-          if (!isDatagram) channel.setReadable(false)
+          channel.setReadable(false)
           channel
         }
-        handle <- if (isDatagram)
-          Future {
-            readyChannel.getRemoteAddress match {
-              case address: InetSocketAddress =>
-                val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
-                handle.readHandlerPromise.future.foreach { listener =>
-                  udpConnectionTable.put(address, listener)
-                }
-                handle
-              case unknown =>
-                throw new NettyTransportException(s"Unknown outbound remote address type [${unknown.getClass.getName}]")
-            }
-          } else
-          readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
+        handle <- readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
       } yield handle).recover {
         case _: CancellationException => throw new NettyTransportExceptionNoStack("Connection was cancelled")
         case NonFatal(t) =>

@@ -4,16 +4,26 @@
 
 package docs.akka.persistence.typed
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.{ Behavior, SupervisorStrategy }
-import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
-
 import scala.concurrent.duration._
+import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.typed.DeleteEventsFailed
+import akka.persistence.typed.DeleteSnapshotsFailed
+//#behavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.RecoveryCompleted
 
+//#behavior
+import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.SnapshotFailed
+import com.github.ghik.silencer.silent
+
+// unused variables in pattern match are useful in the docs
+@silent
 object BasicPersistentBehaviorCompileOnly {
+
+  import akka.persistence.typed.scaladsl.RetentionCriteria
 
   object FirstExample {
     //#command
@@ -82,7 +92,7 @@ object BasicPersistentBehaviorCompileOnly {
       commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
       .receiveSignal {
-        case RecoveryCompleted(state) ⇒
+        case (state, RecoveryCompleted) =>
           throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
@@ -104,7 +114,7 @@ object BasicPersistentBehaviorCompileOnly {
     commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .receiveSignal {
-      case RecoveryCompleted(state) ⇒
+      case (state, RecoveryCompleted) =>
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 
@@ -142,16 +152,18 @@ object BasicPersistentBehaviorCompileOnly {
     }
   // #actor-context
 
+  final case class BookingCompleted(orderNr: String) extends Event
+
   //#snapshottingEveryN
+
   val snapshottingEveryN = EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
-    .snapshotEvery(100)
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2))
   //#snapshottingEveryN
 
-  final case class BookingCompleted(orderNr: String) extends Event
   //#snapshottingPredicate
   val snapshottingPredicate = EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId("abc"),
@@ -165,14 +177,57 @@ object BasicPersistentBehaviorCompileOnly {
   //#snapshottingPredicate
 
   //#snapshotSelection
-  import akka.persistence.SnapshotSelectionCriteria
+  import akka.persistence.typed.SnapshotSelectionCriteria
 
   val snapshotSelection = EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
-    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.None)
+    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
   //#snapshotSelection
+
+  //#retentionCriteria
+
+  val snapshotRetention = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command
+    eventHandler = (state, evt) => state) // do something based on a particular state
+    .snapshotWhen {
+      case (state, BookingCompleted(_), sequenceNumber) => true
+      case (state, event, sequenceNumber)               => false
+    }
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2))
+  //#retentionCriteria
+
+  //#snapshotAndEventDeletes
+
+  val snapshotAndEventsRetention = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command and state
+    eventHandler = (state, evt) => state) // do something based on a particular event and state
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2).withDeleteEventsOnSnapshot)
+    .receiveSignal { // optionally respond to signals
+      case (state, _: SnapshotFailed)        => // react to failure
+      case (state, _: DeleteSnapshotsFailed) => // react to failure
+      case (state, _: DeleteEventsFailed)    => // react to failure
+    }
+  //#snapshotAndEventDeletes
+
+  //#retentionCriteriaWithSignals
+
+  val fullDeletesSampleWithSignals = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command and state
+    eventHandler = (state, evt) => state) // do something based on a particular event and state
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2))
+    .receiveSignal { // optionally respond to signals
+      case (state, _: SnapshotFailed)        => // react to failure
+      case (state, _: DeleteSnapshotsFailed) => // react to failure
+    }
+  //#retentionCriteriaWithSignals
 
 }

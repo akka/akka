@@ -51,22 +51,17 @@ object Replicator {
      * Convenience for `ask`.
      */
     def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] => Get[A] =
-      replyTo => Get(key, consistency, replyTo, None)
+      replyTo => Get(key, consistency, replyTo)
   }
 
   /**
    * Send this message to the local `Replicator` to retrieve a data value for the
    * given `key`. The `Replicator` will reply with one of the [[GetResponse]] messages.
-   *
-   * The optional `request` context is included in the reply messages. This is a convenient
-   * way to pass contextual information (e.g. original sender) without having to use `ask`
-   * or maintain local correlation data structures.
    */
   final case class Get[A <: ReplicatedData](
       key: Key[A],
       consistency: ReadConsistency,
-      replyTo: ActorRef[GetResponse[A]],
-      request: Option[Any] = None)
+      replyTo: ActorRef[GetResponse[A]])
       extends Command
 
   /**
@@ -74,16 +69,22 @@ object Replicator {
    */
   type GetResponse[A <: ReplicatedData] = dd.Replicator.GetResponse[A]
   object GetSuccess {
-    def unapply[A <: ReplicatedData](rsp: GetSuccess[A]): Option[(Key[A], Option[Any])] = Some((rsp.key, rsp.request))
+    def unapply[A <: ReplicatedData](rsp: GetSuccess[A]): Option[Key[A]] = Some(rsp.key)
   }
   type GetSuccess[A <: ReplicatedData] = dd.Replicator.GetSuccess[A]
   type NotFound[A <: ReplicatedData] = dd.Replicator.NotFound[A]
+  object NotFound {
+    def unapply[A <: ReplicatedData](rsp: NotFound[A]): Option[Key[A]] = Some(rsp.key)
+  }
 
   /**
    * The [[Get]] request could not be fulfill according to the given
    * [[ReadConsistency consistency level]] and [[ReadConsistency#timeout timeout]].
    */
   type GetFailure[A <: ReplicatedData] = dd.Replicator.GetFailure[A]
+  object GetFailure {
+    def unapply[A <: ReplicatedData](rsp: GetFailure[A]): Option[Key[A]] = Some(rsp.key)
+  }
 
   object Update {
 
@@ -93,25 +94,20 @@ object Replicator {
      * The current value for the `key` is passed to the `modify` function.
      * If there is no current data value for the `key` the `initial` value will be
      * passed to the `modify` function.
-     *
-     * The optional `request` context is included in the reply messages. This is a convenient
-     * way to pass contextual information (e.g. original sender) without having to use `ask`
-     * or local correlation data structures.
      */
     def apply[A <: ReplicatedData](
         key: Key[A],
         initial: A,
         writeConsistency: WriteConsistency,
-        replyTo: ActorRef[UpdateResponse[A]],
-        request: Option[Any] = None)(modify: A => A): Update[A] =
-      Update(key, writeConsistency, replyTo, request)(modifyWithInitial(initial, modify))
+        replyTo: ActorRef[UpdateResponse[A]])(modify: A => A): Update[A] =
+      Update(key, writeConsistency, replyTo)(modifyWithInitial(initial, modify))
 
     /**
      * Convenience for `ask`.
      */
     def apply[A <: ReplicatedData](key: Key[A], initial: A, writeConsistency: WriteConsistency)(
         modify: A => A): ActorRef[UpdateResponse[A]] => Update[A] =
-      (replyTo => Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
+      (replyTo => Update(key, writeConsistency, replyTo)(modifyWithInitial(initial, modify)))
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
       case Some(data) => modify(data)
@@ -138,14 +134,21 @@ object Replicator {
   final case class Update[A <: ReplicatedData](
       key: Key[A],
       writeConsistency: WriteConsistency,
-      replyTo: ActorRef[UpdateResponse[A]],
-      request: Option[Any])(val modify: Option[A] => A)
+      replyTo: ActorRef[UpdateResponse[A]])(val modify: Option[A] => A)
       extends Command
       with NoSerializationVerificationNeeded {}
 
   type UpdateResponse[A <: ReplicatedData] = dd.Replicator.UpdateResponse[A]
   type UpdateSuccess[A <: ReplicatedData] = dd.Replicator.UpdateSuccess[A]
+  object UpdateSuccess {
+    def unapply[A <: ReplicatedData](rsp: UpdateSuccess[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
   type UpdateFailure[A <: ReplicatedData] = dd.Replicator.UpdateFailure[A]
+  object UpdateFailure {
+    def unapply[A <: ReplicatedData](rsp: UpdateFailure[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
 
   /**
    * The direct replication of the [[Update]] could not be fulfill according to
@@ -157,12 +160,20 @@ object Replicator {
    * crashes before it has been able to communicate with other replicas.
    */
   type UpdateTimeout[A <: ReplicatedData] = dd.Replicator.UpdateTimeout[A]
+  object UpdateTimeout {
+    def unapply[A <: ReplicatedData](rsp: UpdateTimeout[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
 
   /**
    * If the `modify` function of the [[Update]] throws an exception the reply message
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
   type ModifyFailure[A <: ReplicatedData] = dd.Replicator.ModifyFailure[A]
+  object ModifyFailure {
+    def unapply[A <: ReplicatedData](rsp: ModifyFailure[A]): Option[(Key[A], String, Throwable)] =
+      Some((rsp.key, rsp.errorMessage, rsp.cause))
+  }
 
   /**
    * The local store or direct replication of the [[Update]] could not be fulfill according to
@@ -175,6 +186,10 @@ object Replicator {
    * crashes before it has been able to communicate with other replicas.
    */
   type StoreFailure[A <: ReplicatedData] = dd.Replicator.StoreFailure[A]
+  object StoreFailure {
+    def unapply[A <: ReplicatedData](rsp: StoreFailure[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
 
   /**
    * Register a subscriber that will be notified with a [[Changed]] message
@@ -218,29 +233,36 @@ object Replicator {
     def apply[A <: ReplicatedData](
         key: Key[A],
         consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
-      (replyTo => Delete(key, consistency, replyTo, None))
+      (replyTo => Delete(key, consistency, replyTo))
   }
 
   /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
-   *
-   * The optional `request` context is included in the reply messages. This is a convenient
-   * way to pass contextual information (e.g. original sender) without having to use `ask`
-   * or maintain local correlation data structures.
    */
   final case class Delete[A <: ReplicatedData](
       key: Key[A],
       consistency: WriteConsistency,
-      replyTo: ActorRef[DeleteResponse[A]],
-      request: Option[Any])
+      replyTo: ActorRef[DeleteResponse[A]])
       extends Command
       with NoSerializationVerificationNeeded
 
   type DeleteResponse[A <: ReplicatedData] = dd.Replicator.DeleteResponse[A]
   type DeleteSuccess[A <: ReplicatedData] = dd.Replicator.DeleteSuccess[A]
+  object DeleteSuccess {
+    def unapply[A <: ReplicatedData](rsp: DeleteSuccess[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
   type ReplicationDeleteFailure[A <: ReplicatedData] = dd.Replicator.ReplicationDeleteFailure[A]
+  object ReplicationDeleteFailure {
+    def unapply[A <: ReplicatedData](rsp: ReplicationDeleteFailure[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
   type DataDeleted[A <: ReplicatedData] = dd.Replicator.DataDeleted[A]
+  object DataDeleted {
+    def unapply[A <: ReplicatedData](rsp: DataDeleted[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
 
   object GetReplicaCount {
 
@@ -248,7 +270,7 @@ object Replicator {
      * Convenience for `ask`.
      */
     def apply(): ActorRef[ReplicaCount] => GetReplicaCount =
-      (replyTo => GetReplicaCount(replyTo))
+      replyTo => GetReplicaCount(replyTo)
   }
 
   /**
@@ -261,6 +283,10 @@ object Replicator {
    * Current number of replicas. Reply to `GetReplicaCount`.
    */
   type ReplicaCount = dd.Replicator.ReplicaCount
+  object ReplicaCount {
+    def unapply[A <: ReplicatedData](rsp: ReplicaCount): Option[Int] =
+      Some(rsp.n)
+  }
 
   /**
    * Notify subscribers of changes now, otherwise they will be notified periodically

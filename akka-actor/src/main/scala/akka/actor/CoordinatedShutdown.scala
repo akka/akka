@@ -121,9 +121,19 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   def unknownReason: Reason = UnknownReason
 
   /**
+   * Scala API: The shutdown was initiated by ActorSystem.terminate.
+   */
+  case object ActorSystemTerminateReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by ActorSystem.terminate.
+   */
+  def actorSystemTerminateReason: Reason = ActorSystemTerminateReason
+
+  /**
    * Scala API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
    */
-  object JvmExitReason extends Reason
+  case object JvmExitReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by a JVM shutdown hook, e.g. triggered by SIGTERM.
@@ -133,7 +143,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * Scala API: The shutdown was initiated by Cluster downing.
    */
-  object ClusterDowningReason extends Reason
+  case object ClusterDowningReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by Cluster downing.
@@ -141,9 +151,29 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   def clusterDowningReason: Reason = ClusterDowningReason
 
   /**
+   * Scala API: The shutdown was initiated by a failure to join a seed node.
+   */
+  case object ClusterJoinUnsuccessfulReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by a failure to join a seed node.
+   */
+  def clusterJoinUnsuccessfulReason: Reason = ClusterJoinUnsuccessfulReason
+
+  /**
+   * Scala API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node
+   */
+  case object IncompatibleConfigurationDetectedReason extends Reason
+
+  /**
+   * Java API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node
+   */
+  def incompatibleConfigurationDetectedReason: Reason = IncompatibleConfigurationDetectedReason
+
+  /**
    * Scala API: The shutdown was initiated by Cluster leaving.
    */
-  object ClusterLeavingReason extends Reason
+  case object ClusterLeavingReason extends Reason
 
   /**
    * Java API: The shutdown was initiated by Cluster leaving.
@@ -191,7 +221,10 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       .getOrElse(conf)
   }
 
-  private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
+  private def initPhaseActorSystemTerminate(
+      system: ExtendedActorSystem,
+      conf: Config,
+      coord: CoordinatedShutdown): Unit = {
     coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () =>
       val confForReason = confWithOverrides(conf, coord.shutdownReason())
       val terminateActorSystem = confForReason.getBoolean("terminate-actor-system")
@@ -215,12 +248,11 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       }
 
       if (terminateActorSystem) {
-        system
-          .terminate()
-          .map { _ =>
-            if (exitJvm && !runningJvmHook) System.exit(exitCode)
-            Done
-          }(ExecutionContexts.sameThreadExecutionContext)
+        system.finalTerminate()
+        system.whenTerminated.map { _ =>
+          if (exitJvm && !runningJvmHook) System.exit(exitCode)
+          Done
+        }(ExecutionContexts.sameThreadExecutionContext)
       } else if (exitJvm) {
         System.exit(exitCode)
         Future.successful(Done)
@@ -262,7 +294,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
    * INTERNAL API
    */
   private[akka] def phasesFromConfig(conf: Config): Map[String, Phase] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val defaultPhaseTimeout = conf.getString("default-phase-timeout")
     val phasesConf = conf.getConfig("phases")
     val defaultPhaseConfig = ConfigFactory.parseString(s"""
@@ -434,8 +466,9 @@ final class CoordinatedShutdown private[akka] (
    */
   def run(reason: Reason, fromPhase: Option[String]): Future[Done] = {
     if (runStarted.compareAndSet(None, Some(reason))) {
-      import system.dispatcher
+      implicit val ec = system.dispatchers.internalDispatcher
       val debugEnabled = log.isDebugEnabled
+      log.debug("Running CoordinatedShutdown with reason [{}]", reason)
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
           case Nil => Future.successful(Done)
@@ -555,7 +588,7 @@ final class CoordinatedShutdown private[akka] (
    * Sum of timeouts of all phases that have some task.
    */
   def totalTimeout(): FiniteDuration = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     tasks.keySet.asScala.foldLeft(Duration.Zero) {
       case (acc, phase) => acc + timeout(phase)
     }
@@ -582,7 +615,7 @@ final class CoordinatedShutdown private[akka] (
    * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
    */
   @tailrec def addCancellableJvmShutdownHook[T](hook: => T): Cancellable = {
-    if (runStarted.get == None) {
+    if (runStarted.get.isEmpty) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {

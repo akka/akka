@@ -6,6 +6,7 @@ package akka.cluster.metrics
 
 import language.postfixOps
 import java.lang.management.ManagementFactory
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.Config
@@ -22,6 +23,7 @@ import akka.routing.ActorRefRoutee
 import akka.routing.Routees
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
+import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
@@ -105,7 +107,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
 }
 
-class TestCustomMetricsSelector(config: Config) extends MetricsSelector {
+class TestCustomMetricsSelector(@unused config: Config) extends MetricsSelector {
   override def weights(nodeMetrics: Set[NodeMetrics]): Map[Address, Int] = Map.empty
 }
 

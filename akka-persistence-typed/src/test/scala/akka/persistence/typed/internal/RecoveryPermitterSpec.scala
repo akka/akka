@@ -14,12 +14,13 @@ import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecove
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.testkit.EventFilter
-
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import akka.testkit.TestEvent.Mute
 import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
@@ -55,7 +56,7 @@ object RecoveryPermitterSpec {
       eventHandler = { (state, event) =>
         eventProbe.ref ! event; state
       }).receiveSignal {
-      case RecoveryCompleted(state) =>
+      case (_, RecoveryCompleted) =>
         eventProbe.ref ! Recovered
         if (throwOnRecovery) throw new TE
     }
@@ -67,6 +68,7 @@ object RecoveryPermitterSpec {
 }
 
 class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.actor.warn-about-java-serializer-usage = off
@@ -76,6 +78,8 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
   import RecoveryPermitterSpec._
 
   implicit val untypedSystem = system.toUntyped
+
+  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   private val permitter = Persistence(untypedSystem).recoveryPermitter
 
@@ -196,7 +200,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
               case (_, StopActor) =>
                 stopProbe.ref ! persistentActor
                 ctx.stop(persistentActor)
-                Behavior.same
+                Behaviors.same
               case (_, message) =>
                 persistentActor ! message
                 Behaviors.same

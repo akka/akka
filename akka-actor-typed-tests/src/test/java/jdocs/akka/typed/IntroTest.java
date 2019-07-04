@@ -12,10 +12,12 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
 import akka.actor.typed.Props;
 import akka.actor.typed.DispatcherSelector;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 
 // #imports
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -153,8 +155,10 @@ public class IntroTest {
     system.terminate();
   }
 
-  // #chatroom-actor
+  // #chatroom-behavior
   public static class ChatRoom {
+    // #chatroom-behavior
+
     // #chatroom-protocol
     static interface RoomCommand {}
 
@@ -229,87 +233,108 @@ public class IntroTest {
     // #chatroom-protocol
     // #chatroom-behavior
 
-    public static Behavior<RoomCommand> behavior() {
-      return chatRoom(new ArrayList<ActorRef<SessionCommand>>());
+    public static Behavior<RoomCommand> create() {
+      return Behaviors.setup(
+          ctx -> new ChatRoom(ctx).chatRoom(new ArrayList<ActorRef<SessionCommand>>()));
     }
 
-    private static Behavior<RoomCommand> chatRoom(List<ActorRef<SessionCommand>> sessions) {
+    private final ActorContext<RoomCommand> context;
+
+    private ChatRoom(ActorContext<RoomCommand> context) {
+      this.context = context;
+    }
+
+    private Behavior<RoomCommand> chatRoom(List<ActorRef<SessionCommand>> sessions) {
       return Behaviors.receive(RoomCommand.class)
-          .onMessage(
-              GetSession.class,
-              (context, getSession) -> {
-                ActorRef<SessionEvent> client = getSession.replyTo;
-                ActorRef<SessionCommand> ses =
-                    context.spawn(
-                        session(context.getSelf(), getSession.screenName, client),
-                        URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
-                // narrow to only expose PostMessage
-                client.tell(new SessionGranted(ses.narrow()));
-                List<ActorRef<SessionCommand>> newSessions = new ArrayList<>(sessions);
-                newSessions.add(ses);
-                return chatRoom(newSessions);
-              })
-          .onMessage(
-              PublishSessionMessage.class,
-              (context, pub) -> {
-                NotifyClient notification =
-                    new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
-                sessions.forEach(s -> s.tell(notification));
-                return Behaviors.same();
-              })
+          .onMessage(GetSession.class, getSession -> onGetSession(sessions, getSession))
+          .onMessage(PublishSessionMessage.class, pub -> onPublishSessionMessage(sessions, pub))
           .build();
     }
 
-    public static Behavior<ChatRoom.SessionCommand> session(
-        ActorRef<RoomCommand> room, String screenName, ActorRef<SessionEvent> client) {
-      return Behaviors.receive(ChatRoom.SessionCommand.class)
-          .onMessage(
-              PostMessage.class,
-              (context, post) -> {
-                // from client, publish to others via the room
-                room.tell(new PublishSessionMessage(screenName, post.message));
-                return Behaviors.same();
-              })
-          .onMessage(
-              NotifyClient.class,
-              (context, notification) -> {
-                // published from the room
-                client.tell(notification.message);
-                return Behaviors.same();
-              })
-          .build();
+    private Behavior<RoomCommand> onGetSession(
+        List<ActorRef<SessionCommand>> sessions, GetSession getSession)
+        throws UnsupportedEncodingException {
+      ActorRef<SessionEvent> client = getSession.replyTo;
+      ActorRef<SessionCommand> ses =
+          context.spawn(
+              Session.create(context.getSelf(), getSession.screenName, client),
+              URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
+      // narrow to only expose PostMessage
+      client.tell(new SessionGranted(ses.narrow()));
+      List<ActorRef<SessionCommand>> newSessions = new ArrayList<>(sessions);
+      newSessions.add(ses);
+      return chatRoom(newSessions);
     }
-    // #chatroom-behavior
 
+    private Behavior<RoomCommand> onPublishSessionMessage(
+        List<ActorRef<SessionCommand>> sessions, PublishSessionMessage pub) {
+      NotifyClient notification =
+          new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
+      sessions.forEach(s -> s.tell(notification));
+      return Behaviors.same();
+    }
+
+    static class Session {
+      static Behavior<ChatRoom.SessionCommand> create(
+          ActorRef<RoomCommand> room, String screenName, ActorRef<SessionEvent> client) {
+        return Behaviors.receive(ChatRoom.SessionCommand.class)
+            .onMessage(PostMessage.class, post -> onPostMessage(room, screenName, post))
+            .onMessage(NotifyClient.class, notification -> onNotifyClient(client, notification))
+            .build();
+      }
+
+      private static Behavior<SessionCommand> onPostMessage(
+          ActorRef<RoomCommand> room, String screenName, PostMessage post) {
+        // from client, publish to others via the room
+        room.tell(new PublishSessionMessage(screenName, post.message));
+        return Behaviors.same();
+      }
+
+      private static Behavior<SessionCommand> onNotifyClient(
+          ActorRef<SessionEvent> client, NotifyClient notification) {
+        // published from the room
+        client.tell(notification.message);
+        return Behaviors.same();
+      }
+    }
   }
-  // #chatroom-actor
+  // #chatroom-behavior
 
   // #chatroom-gabbler
-  public abstract static class Gabbler {
-    private Gabbler() {}
+  public static class Gabbler {
+    public static Behavior<ChatRoom.SessionEvent> create() {
+      return Behaviors.setup(ctx -> new Gabbler(ctx).behavior());
+    }
 
-    public static Behavior<ChatRoom.SessionEvent> behavior() {
+    private final ActorContext<ChatRoom.SessionEvent> context;
+
+    private Gabbler(ActorContext<ChatRoom.SessionEvent> context) {
+      this.context = context;
+    }
+
+    private Behavior<ChatRoom.SessionEvent> behavior() {
       return Behaviors.receive(ChatRoom.SessionEvent.class)
-          .onMessage(
-              ChatRoom.SessionDenied.class,
-              (context, message) -> {
-                System.out.println("cannot start chat room session: " + message.reason);
-                return Behaviors.stopped();
-              })
-          .onMessage(
-              ChatRoom.SessionGranted.class,
-              (context, message) -> {
-                message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
-                return Behaviors.same();
-              })
-          .onMessage(
-              ChatRoom.MessagePosted.class,
-              (context, message) -> {
-                System.out.println(
-                    "message has been posted by '" + message.screenName + "': " + message.message);
-                return Behaviors.stopped();
-              })
+          .onMessage(ChatRoom.SessionDenied.class, this::onSessionDenied)
+          .onMessage(ChatRoom.SessionGranted.class, this::onSessionGranted)
+          .onMessage(ChatRoom.MessagePosted.class, this::onMessagePosted)
           .build();
+    }
+
+    private Behavior<ChatRoom.SessionEvent> onSessionDenied(ChatRoom.SessionDenied message) {
+      context.getLog().info("cannot start chat room session: {}", message.reason);
+      return Behaviors.stopped();
+    }
+
+    private Behavior<ChatRoom.SessionEvent> onSessionGranted(ChatRoom.SessionGranted message) {
+      message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+      return Behaviors.same();
+    }
+
+    private Behavior<ChatRoom.SessionEvent> onMessagePosted(ChatRoom.MessagePosted message) {
+      context
+          .getLog()
+          .info("message has been posted by '{}': {}", message.screenName, message.message);
+      return Behaviors.stopped();
     }
   }
   // #chatroom-gabbler
@@ -321,9 +346,8 @@ public class IntroTest {
         Behaviors.setup(
             context -> {
               ActorRef<ChatRoom.RoomCommand> chatRoom =
-                  context.spawn(ChatRoom.behavior(), "chatRoom");
-              ActorRef<ChatRoom.SessionEvent> gabbler =
-                  context.spawn(Gabbler.behavior(), "gabbler");
+                  context.spawn(ChatRoom.create(), "chatRoom");
+              ActorRef<ChatRoom.SessionEvent> gabbler = context.spawn(Gabbler.create(), "gabbler");
               context.watch(gabbler);
               chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 

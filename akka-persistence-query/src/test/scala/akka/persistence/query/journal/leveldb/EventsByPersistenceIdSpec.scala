@@ -53,7 +53,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     }
 
     "find existing events" in {
-      val ref = setup("a")
+      setup("a")
 
       val src = queries.currentEventsByPersistenceId("a", 0L, Long.MaxValue)
       src
@@ -68,7 +68,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     }
 
     "find existing events up to a sequence number" in {
-      val ref = setup("b")
+      setup("b")
       val src = queries.currentEventsByPersistenceId("b", 0L, 2L)
       src.map(_.event).runWith(TestSink.probe[Any]).request(5).expectNext("b-1", "b-2").expectComplete()
     }
@@ -116,28 +116,28 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     }
 
     "return empty stream for empty journal" in {
-      val ref = setupEmpty("i")
+      setupEmpty("i")
 
       val src = queries.currentEventsByPersistenceId("i", 0L, Long.MaxValue)
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
     }
 
     "return empty stream for journal from 0 to 0" in {
-      val ref = setup("k1")
+      setup("k1")
 
       val src = queries.currentEventsByPersistenceId("k1", 0L, 0L)
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
     }
 
     "return empty stream for empty journal from 0 to 0" in {
-      val ref = setupEmpty("k2")
+      setupEmpty("k2")
 
       val src = queries.currentEventsByPersistenceId("k2", 0L, 0L)
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
     }
 
     "return empty stream for journal from seqNo greater than highestSeqNo" in {
-      val ref = setup("l")
+      setup("l")
 
       val src = queries.currentEventsByPersistenceId("l", 4L, 3L)
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()

@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import akka.actor.RootActorPath
 import akka.remote.RARP
 import akka.testkit.ImplicitSender
-import akka.testkit.SocketUtil
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
@@ -18,7 +17,7 @@ object LateConnectSpec {
 
   val config = ConfigFactory.parseString(s"""
      akka.remote.artery.advanced.handshake-timeout = 3s
-     akka.remote.artery.advanced.image-liveness-timeout = 2.9s
+     akka.remote.artery.advanced.aeron.image-liveness-timeout = 2.9s
   """).withFallback(ArterySpecSupport.defaultConfig)
 
 }

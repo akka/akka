@@ -9,10 +9,10 @@ import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-
 import akka.routing.{ Deafen, Listen, Listeners }
 import akka.annotation.InternalApi
 import akka.util.{ unused, JavaDurationConverters }
+import com.github.ghik.silencer.silent
 
 object FSM {
 
@@ -88,11 +88,35 @@ object FSM {
    */
   private final case class TimeoutMarker(generation: Long)
 
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] sealed trait TimerMode {
+    def repeat: Boolean
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] case object FixedRateMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] case object FixedDelayMode extends TimerMode {
+    override def repeat: Boolean = true
+  }
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] case object SingleMode extends TimerMode {
+    override def repeat: Boolean = false
+  }
+
   /**
    * INTERNAL API
    */
   @InternalApi
-  private[akka] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int, owner: AnyRef)(
+  private[akka] final case class Timer(name: String, msg: Any, mode: TimerMode, generation: Int, owner: AnyRef)(
       context: ActorContext)
       extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
@@ -104,9 +128,11 @@ object FSM {
         case m: AutoReceivedMessage => m
         case _                      => this
       }
-      ref = Some(
-        if (repeat) scheduler.schedule(timeout, timeout, actor, timerMsg)
-        else scheduler.scheduleOnce(timeout, actor, timerMsg))
+      ref = Some(mode match {
+        case SingleMode     => scheduler.scheduleOnce(timeout, actor, timerMsg)
+        case FixedDelayMode => scheduler.scheduleWithFixedDelay(timeout, timeout, actor, timerMsg)
+        case FixedRateMode  => scheduler.scheduleAtFixedRate(timeout, timeout, actor, timerMsg)
+      })
     }
     def cancel(): Unit =
       if (ref.isDefined) {
@@ -183,7 +209,7 @@ object FSM {
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
         replies: List[Any] = replies): State[S, D] = {
-      new State(stateName, stateData, timeout, stopReason, replies)
+      State(stateName, stateData, timeout, stopReason, replies)
     }
 
     /**
@@ -225,7 +251,8 @@ object FSM {
      * Modify state transition descriptor with new state data. The data will be
      * set when transitioning to the new state.
      */
-    def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D] = {
+    @silent
+    def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D] = {
       copy(stateData = nextStateData)
     }
 
@@ -448,6 +475,65 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   final def transform(func: StateFunction): TransformHelper = new TransformHelper(func)
 
   /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
+   * fixed `delay` between messages.
+   *
+   * It will not compensate the delay between messages if scheduling is delayed
+   * longer than specified for some reason. The delay between sending of subsequent
+   * messages will always be (at least) the given `delay`.
+   *
+   * In the long run, the frequency of messages will generally be slightly lower than
+   * the reciprocal of the specified `delay`.
+   *
+   * Each timer has a `name` and if a new timer with same `name` is started
+   * the previous is cancelled and it's guaranteed that a message from the
+   * previous timer is not received, even though it might already be enqueued
+   * in the mailbox when the new timer is started.
+   */
+  def startTimerWithFixedDelay(name: String, msg: Any, delay: FiniteDuration): Unit =
+    startTimer(name, msg, delay, FixedDelayMode)
+
+  /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
+   * given frequency.
+   *
+   * It will compensate the delay for a subsequent message if the sending of previous
+   * message was delayed more than specified. In such cases, the actual message interval
+   * will differ from the interval passed to the method.
+   *
+   * If the execution is delayed longer than the `interval`, the subsequent message will
+   * be sent immediately after the prior one. This also has the consequence that after
+   * long garbage collection pauses or other reasons when the JVM was suspended all
+   * "missed" messages will be sent when the process wakes up again.
+   *
+   * In the long run, the frequency of messages will be exactly the reciprocal of the
+   * specified `interval`.
+   *
+   * Warning: `startTimerAtFixedRate` can result in bursts of scheduled messages after long
+   * garbage collection pauses, which may in worst case cause undesired load on the system.
+   * Therefore `startTimerWithFixedDelay` is often preferred.
+   *
+   * Each timer has a `name` and if a new timer with same `name` is started
+   * the previous is cancelled and it's guaranteed that a message from the
+   * previous timer is not received, even though it might already be enqueued
+   * in the mailbox when the new timer is started.
+   */
+  def startTimerAtFixedRate(name: String, msg: Any, interval: FiniteDuration): Unit =
+    startTimer(name, msg, interval, FixedRateMode)
+
+  /**
+   * Start a timer that will send `msg` once to the `self` actor after
+   * the given `delay`.
+   *
+   * Each timer has a `name` and if a new timer with same `name` is started
+   * the previous is cancelled and it's guaranteed that a message from the
+   * previous timer is not received, even though it might already be enqueued
+   * in the mailbox when the new timer is started.
+   */
+  def startSingleTimer(name: String, msg: Any, delay: FiniteDuration): Unit =
+    startTimer(name, msg, delay, SingleMode)
+
+  /**
    * Schedule named timer to deliver message after given delay, possibly repeating.
    * Any existing timer with the same name will automatically be canceled before
    * adding the new timer.
@@ -456,13 +542,23 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param timeout delay of first message delivery and between subsequent messages
    * @param repeat send once if false, scheduleAtFixedRate if true
    */
+  @deprecated(
+    "Use startSingleTimer, startTimerWithFixedDelay or startTimerAtFixedRate instead. This has the same semantics as " +
+    "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
+    since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false): Unit = {
+    // repeat => FixedRateMode for compatibility
+    val mode = if (repeat) FixedRateMode else SingleMode
+    startTimer(name, msg, timeout, mode)
+  }
+
+  private def startTimer(name: String, msg: Any, timeout: FiniteDuration, mode: TimerMode): Unit = {
     if (debugEvent)
-      log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
+      log.debug("setting " + (if (mode.repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {
-      timers(name).cancel
+      timers(name).cancel()
     }
-    val timer = Timer(name, msg, repeat, timerGen.next, this)(context)
+    val timer = Timer(name, msg, mode, timerGen.next, this)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
   }
@@ -475,7 +571,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (debugEvent)
       log.debug("canceling timer '" + name + "'")
     if (timers contains name) {
-      timers(name).cancel
+      timers(name).cancel()
       timers -= name
     }
   }
@@ -659,14 +755,14 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")
       }
-    case t @ Timer(name, msg, repeat, gen, owner) =>
+    case t @ Timer(name, msg, mode, gen, owner) =>
       if ((owner eq this) && (timers contains name) && (timers(name).generation == gen)) {
         if (timeoutFuture.isDefined) {
           timeoutFuture.get.cancel()
           timeoutFuture = None
         }
         generation += 1
-        if (!repeat) {
+        if (!mode.repeat) {
           timers -= name
         }
         processMsg(msg, t)
@@ -685,14 +781,13 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       listeners.remove(actorRef)
     case Deafen(actorRef) =>
       listeners.remove(actorRef)
-    case value => {
+    case value =>
       if (timeoutFuture.isDefined) {
         timeoutFuture.get.cancel()
         timeoutFuture = None
       }
       generation += 1
       processMsg(value, sender())
-    }
   }
 
   private def processMsg(value: Any, source: AnyRef): Unit = {

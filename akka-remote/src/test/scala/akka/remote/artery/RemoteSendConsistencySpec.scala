@@ -62,7 +62,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
   "Artery" must {
 
     "be able to identify a remote actor and ping it" in {
-      val actorOnSystemB = systemB.actorOf(Props(new Actor {
+      systemB.actorOf(Props(new Actor {
         def receive = {
           case "ping" => sender() ! "pong"
         }
@@ -100,7 +100,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
       val probe = TestProbe()(systemB)
       probe.watch(echo)
       probe.expectTerminated(echo)
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       val echo2 = systemB.actorOf(TestActors.echoActorProps, "otherEcho1")
       echo2 ! 73
@@ -108,7 +108,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
       // msg to old ActorRef (different uid) should not get through
       echo2.path.uid should not be (echo.path.uid)
       echo ! 74
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
     "be able to send messages concurrently preserving order" in {

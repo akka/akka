@@ -38,8 +38,9 @@ import scala.concurrent.{ Future, Promise }
 
     val ioResultPromise = Promise[IOResult]()
     val props = FileSubscriber.props(f, ioResultPromise, maxInputBufferSize, startPosition, options)
-
-    val ref = materializer.actorOf(context, props.withDispatcher(Dispatcher.resolve(context)))
+    val ref = materializer.actorOf(
+      context,
+      props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[Dispatcher].dispatcher))
 
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
   }
@@ -72,7 +73,7 @@ import scala.concurrent.{ Future, Promise }
 
     val props = OutputStreamSubscriber
       .props(os, ioResultPromise, maxInputBufferSize, autoFlush)
-      .withDispatcher(Dispatcher.resolve(context))
+      .withDispatcher(context.effectiveAttributes.mandatoryAttribute[Dispatcher].dispatcher)
 
     val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)

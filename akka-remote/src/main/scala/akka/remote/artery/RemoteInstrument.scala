@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.annotation.InternalStableApi
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.{ unused, OptionVal }
 import akka.util.ccompat._
@@ -26,6 +27,7 @@ import akka.util.ccompat._
  * will be created for each encoder and decoder. It's only called from the operator, so if it doesn't
  * delegate to any shared instance it doesn't have to be thread-safe.
  */
+@ccompatUsedUntil213
 abstract class RemoteInstrument {
 
   /**
@@ -326,10 +328,11 @@ private[remote] object RemoteInstruments {
   def getKey(kl: Int): Byte = (kl >>> 26).toByte
   def getLength(kl: Int): Int = kl & lengthMask
 
+  @InternalStableApi
   def create(system: ExtendedActorSystem, @unused log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     c.getStringList(path)
       .asScala
       .iterator

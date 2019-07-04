@@ -4,7 +4,6 @@ Storage backends for journals and snapshot stores are pluggable in the Akka pers
 A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
 This documentation described how to build a new storage backend.
 
-<a id="journal-plugin-api"></a>
 ### Journal plugin API
 
 A journal plugin extends `AsyncWriteJournal`.

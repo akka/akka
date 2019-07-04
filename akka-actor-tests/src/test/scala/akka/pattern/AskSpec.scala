@@ -7,13 +7,14 @@ package akka.pattern
 import akka.actor._
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
-
 import language.postfixOps
 
+@silent
 class AskSpec extends AkkaSpec {
 
   "The “ask” pattern" must {
@@ -25,9 +26,7 @@ class AskSpec extends AkkaSpec {
     }
 
     "return broken promises on DeadLetters" in {
-      implicit val timeout = Timeout(5 seconds)
-      val dead = system.actorFor("/system/deadLetters")
-      val f = dead.ask(42)(1 second)
+      val f = system.deadLetters.ask(42)(1 second)
       f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) =>
@@ -37,7 +36,7 @@ class AskSpec extends AkkaSpec {
 
     "return broken promises on EmptyLocalActorRefs" in {
       implicit val timeout = Timeout(5 seconds)
-      val empty = system.actorFor("unknown")
+      val empty = system.asInstanceOf[ExtendedActorSystem].provider.resolveActorRef("/user/unknown")
       val f = empty ? 3.14
       f.isCompleted should ===(true)
       f.value.get match {
@@ -135,7 +134,7 @@ class AskSpec extends AkkaSpec {
 
       Await.result(f, 1 seconds) should ===("hi")
 
-      deadListener.expectNoMsg(200 milliseconds)
+      deadListener.expectNoMessage(200 milliseconds)
     }
 
     "throw AskTimeoutException on using *" in {
@@ -183,7 +182,6 @@ class AskSpec extends AkkaSpec {
       val echo = system.actorOf(Props(new Actor {
         def receive = {
           case x =>
-            val name = sender.path.name
             val parent = sender.path.parent
             context.actorSelection(parent / "missing") ! x
         }

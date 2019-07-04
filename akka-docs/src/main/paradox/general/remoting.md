@@ -66,7 +66,7 @@ containers violates assumption 1, unless additional steps are taken in the
 network configuration to allow symmetric communication between involved systems.
 In such situations Akka can be configured to bind to a different network
 address than the one used for establishing connections between Akka nodes.
-See @ref:[Akka behind NAT or in a Docker container](../remoting.md#remote-configuration-nat).
+See @ref:[Akka behind NAT or in a Docker container](../remoting-artery.md#remote-configuration-nat-artery).
 
 ## Marking Points for Scaling Up with Routers
 

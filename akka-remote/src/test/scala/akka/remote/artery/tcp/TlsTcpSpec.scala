@@ -128,10 +128,12 @@ abstract class TlsTcpSpec(config: Config)
         // https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
         // awaitAssert just in case we are very unlucky to get same sequence more than once
         awaitAssert {
-          val randomBytes = (1 to 10).map { n =>
-            rng.nextBytes(bytes)
-            bytes.toVector
-          }.toSet
+          val randomBytes = List
+            .fill(10) {
+              rng.nextBytes(bytes)
+              bytes.toVector
+            }
+            .toSet
           randomBytes.size should ===(10)
         }
       }

@@ -6,8 +6,8 @@ package akka.cluster.ddata
 
 import scala.collection.immutable.TreeMap
 
-import akka.actor.Address
 import akka.annotation.InternalApi
+import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
@@ -17,18 +17,20 @@ import akka.util.ccompat._
  * INTERNAL API: Used by the Replicator actor.
  * Extracted to separate trait to make it easy to test.
  */
-@InternalApi private[akka] trait DeltaPropagationSelector {
+@ccompatUsedUntil213
+@InternalApi
+private[akka] trait DeltaPropagationSelector {
 
   private var _propagationCount = 0L
   def propagationCount: Long = _propagationCount
   private var deltaCounter = Map.empty[KeyId, Long]
   private var deltaEntries = Map.empty[KeyId, TreeMap[Long, ReplicatedData]]
-  private var deltaSentToNode = Map.empty[KeyId, Map[Address, Long]]
+  private var deltaSentToNode = Map.empty[KeyId, Map[UniqueAddress, Long]]
   private var deltaNodeRoundRobinCounter = 0L
 
   def gossipIntervalDivisor: Int
 
-  def allNodes: Vector[Address]
+  def allNodes: Vector[UniqueAddress]
 
   def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation
 
@@ -66,7 +68,7 @@ import akka.util.ccompat._
     math.min(math.max((allNodesSize / gossipIntervalDivisor) + 1, 2), math.min(allNodesSize, 10))
   }
 
-  def collectPropagations(): Map[Address, DeltaPropagation] = {
+  def collectPropagations(): Map[UniqueAddress, DeltaPropagation] = {
     _propagationCount += 1
     val all = allNodes
     if (all.isEmpty)
@@ -88,7 +90,7 @@ import akka.util.ccompat._
       }
       deltaNodeRoundRobinCounter += sliceSize
 
-      var result = Map.empty[Address, DeltaPropagation]
+      var result = Map.empty[UniqueAddress, DeltaPropagation]
 
       var cache = Map.empty[(KeyId, Long, Long), ReplicatedData]
       slice.foreach { node =>
@@ -97,7 +99,7 @@ import akka.util.ccompat._
         var deltas = Map.empty[KeyId, (ReplicatedData, Long, Long)]
         deltaEntries.foreach {
           case (key, entries) =>
-            val deltaSentToNodeForKey = deltaSentToNode.getOrElse(key, TreeMap.empty[Address, Long])
+            val deltaSentToNodeForKey = deltaSentToNode.getOrElse(key, TreeMap.empty[UniqueAddress, Long])
             val j = deltaSentToNodeForKey.getOrElse(node, 0L)
             val deltaEntriesAfterJ = deltaEntriesAfter(entries, j)
             if (deltaEntriesAfterJ.nonEmpty) {
@@ -158,7 +160,7 @@ import akka.util.ccompat._
     }
   }
 
-  private def findSmallestVersionPropagatedToAllNodes(key: KeyId, all: Vector[Address]): Long = {
+  private def findSmallestVersionPropagatedToAllNodes(key: KeyId, all: Vector[UniqueAddress]): Long = {
     deltaSentToNode.get(key) match {
       case None => 0L
       case Some(deltaSentToNodeForKey) =>
@@ -186,7 +188,7 @@ import akka.util.ccompat._
     }
   }
 
-  def cleanupRemovedNode(address: Address): Unit = {
+  def cleanupRemovedNode(address: UniqueAddress): Unit = {
     deltaSentToNode = deltaSentToNode.map {
       case (key, deltaSentToNodeForKey) =>
         key -> (deltaSentToNodeForKey - address)

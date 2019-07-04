@@ -5,16 +5,18 @@
 package akka.testkit
 
 import language.postfixOps
-
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor._
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.DeadLetter
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
 
+@silent
 class AkkaSpecSpec extends WordSpec with Matchers {
 
   "An AkkaSpec" must {
@@ -33,7 +35,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
 
     "terminate all actors" in {
       // verbose config just for demonstration purposes, please leave in in case of debugging
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val conf = Map(
         "akka.actor.debug.lifecycle" -> true,
         "akka.actor.debug.event-stream" -> true,

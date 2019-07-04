@@ -35,7 +35,10 @@ object AutoDownSpec {
 
 }
 
-class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
+class AutoDownSpec extends AkkaSpec("""
+    |akka.actor.provider=remote
+    |akka.remote.warn-about-direct-use=off
+    |""".stripMargin) {
   import AutoDownSpec._
 
   val protocol =
@@ -62,7 +65,7 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
       val a = autoDownActor(Duration.Zero)
       a ! LeaderChanged(Some(memberB.address))
       a ! UnreachableMember(memberC)
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
     "down unreachable when becoming leader" in {
@@ -77,7 +80,7 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
       val a = autoDownActor(2.seconds)
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberB)
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       expectMsg(DownCalled(memberB.address))
     }
 
@@ -86,7 +89,7 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
       a ! LeaderChanged(Some(memberB.address))
       a ! UnreachableMember(memberC)
       a ! LeaderChanged(Some(memberA.address))
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       expectMsg(DownCalled(memberC.address))
     }
 
@@ -95,7 +98,7 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberC)
       a ! LeaderChanged(Some(memberB.address))
-      expectNoMsg(3.second)
+      expectNoMessage(3.second)
     }
 
     "not down when unreachable become reachable in-between detection and specified duration" taggedAs TimingTest in {
@@ -103,7 +106,7 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberB)
       a ! ReachableMember(memberB)
-      expectNoMsg(3.second)
+      expectNoMessage(3.second)
     }
 
     "not down when unreachable is removed in-between detection and specified duration" taggedAs TimingTest in {
@@ -111,14 +114,14 @@ class AutoDownSpec extends AkkaSpec("akka.actor.provider=remote") {
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberB)
       a ! MemberRemoved(memberB.copy(Removed), previousStatus = Exiting)
-      expectNoMsg(3.second)
+      expectNoMessage(3.second)
     }
 
     "not down when unreachable is already Down" in {
       val a = autoDownActor(Duration.Zero)
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberB.copy(Down))
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
   }

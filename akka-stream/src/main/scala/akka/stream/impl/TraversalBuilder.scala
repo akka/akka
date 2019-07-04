@@ -15,6 +15,7 @@ import scala.language.existentials
 import scala.collection.immutable.Map.Map1
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -46,7 +47,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     Concat.normalizeConcat(this, that)
   }
 
-  def rewireFirstTo(relativeOffset: Int): Traversal = null
+  def rewireFirstTo(@unused relativeOffset: Int): Traversal = null
 }
 
 /**

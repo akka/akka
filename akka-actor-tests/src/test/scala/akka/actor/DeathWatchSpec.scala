@@ -5,10 +5,13 @@
 package akka.actor
 
 import akka.actor.Props.EmptyActor
+
 import language.postfixOps
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Failed }
 import akka.pattern.ask
 import akka.testkit._
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
@@ -71,6 +74,7 @@ object DeathWatchSpec {
   final case class Latches(t1: TestLatch, t2: TestLatch) extends NoSerializationVerificationNeeded
 }
 
+@silent
 trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
 
   import DeathWatchSpec._
@@ -152,7 +156,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
         val terminalProps = TestActors.echoActorProps
         val terminal = Await.result((supervisor ? terminalProps).mapTo[ActorRef], timeout.duration)
 
-        val monitor = startWatching(terminal)
+        startWatching(terminal)
 
         terminal ! Kill
         terminal ! Kill
@@ -215,7 +219,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
         .sendSystemMessage(DeathWatchNotification(subject, existenceConfirmed = true, addressTerminated = false))
 
       // the testActor is not watching subject and will not receive a Terminated msg
-      expectNoMsg
+      expectNoMessage
     }
 
     "discard Terminated when unwatched between sysmsg and processing" in {

@@ -38,7 +38,7 @@ object TimerSpec {
     private var bumpCount = initial()
 
     if (repeat)
-      timers.startPeriodicTimer("T", Tick(bumpCount), interval)
+      timers.startTimerWithFixedDelay("T", Tick(bumpCount), interval)
     else
       timers.startSingleTimer("T", Tick(bumpCount), interval)
 
@@ -53,7 +53,7 @@ object TimerSpec {
 
     def bump(): Unit = {
       bumpCount += 1
-      timers.startPeriodicTimer("T", Tick(bumpCount), interval)
+      timers.startTimerWithFixedDelay("T", Tick(bumpCount), interval)
     }
 
     def autoReceive(): Unit = {
@@ -104,19 +104,28 @@ object TimerSpec {
     }
 
     def bump(bumpCount: Int): State = {
-      setTimer("T", Tick(bumpCount + 1), interval, repeat)
+      if (repeat)
+        startTimerWithFixedDelay("T", Tick(bumpCount + 1), interval)
+      else
+        startSingleTimer("T", Tick(bumpCount + 1), interval)
       stay.using(bumpCount + 1)
     }
 
     def autoReceive(): State = {
-      setTimer("A", PoisonPill, interval, repeat)
+      if (repeat)
+        startTimerWithFixedDelay("A", PoisonPill, interval)
+      else
+        startSingleTimer("A", PoisonPill, interval)
       stay
     }
 
     {
       val i = initial()
       startWith(TheState, i)
-      setTimer("T", Tick(i), interval, repeat)
+      if (repeat)
+        startTimerWithFixedDelay("T", Tick(i), interval)
+      else
+        startSingleTimer("T", Tick(i), interval)
     }
 
     when(TheState) {
@@ -183,7 +192,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       val ref = system.actorOf(target(probe.ref, 10.millis, repeat = false))
 
       probe.expectMsg(Tock(1))
-      probe.expectNoMsg(100.millis)
+      probe.expectNoMessage(100.millis)
 
       ref ! End
       probe.expectMsg(GotPostStop(false))
@@ -209,7 +218,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       val latch = new TestLatch(1)
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
       ref ! SlowThenBump(latch)
-      probe.expectNoMsg(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis)
       latch.countDown()
       probe.expectMsg(Tock(2))
 
@@ -222,7 +231,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       val ref = system.actorOf(target(probe.ref, dilatedInterval, repeat = true))
       probe.expectMsg(Tock(1))
       ref ! Cancel
-      probe.expectNoMsg(dilatedInterval + 100.millis)
+      probe.expectNoMessage(dilatedInterval + 100.millis)
 
       ref ! End
       probe.expectMsg(GotPostStop(false))
@@ -248,10 +257,10 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       val latch = new TestLatch(1)
       // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
-      probe.expectNoMsg(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis)
       latch.countDown()
       probe.expectMsg(GotPreRestart(false))
-      probe.expectNoMsg(interval / 2)
+      probe.expectNoMessage(interval / 2)
       probe.expectMsg(Tock(2)) // this is from the startCounter increment
 
       ref ! End
@@ -270,7 +279,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       val latch = new TestLatch(1)
       // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
       ref ! SlowThenThrow(latch, new Exc)
-      probe.expectNoMsg(interval + 100.millis)
+      probe.expectNoMessage(interval + 100.millis)
       latch.countDown()
       probe.expectMsg(GotPreRestart(false))
       probe.expectMsg(Tock(1))

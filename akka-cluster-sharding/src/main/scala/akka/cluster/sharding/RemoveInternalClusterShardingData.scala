@@ -70,7 +70,7 @@ object RemoveInternalClusterShardingData {
       else {
         val journalPluginId = system.settings.config.getString("akka.cluster.sharding.journal-plugin-id")
         import system.dispatcher
-        remove(system, journalPluginId, typeNames, terminateSystem = true, remove2dot3Data).onComplete { _ =>
+        remove(system, journalPluginId, typeNames, remove2dot3Data).onComplete { _ =>
           system.terminate()
         }
       }
@@ -85,7 +85,6 @@ object RemoveInternalClusterShardingData {
       system: ActorSystem,
       journalPluginId: String,
       typeNames: Set[String],
-      terminateSystem: Boolean,
       remove2dot3Data: Boolean): Future[Unit] = {
 
     val resolvedJournalPluginId =
@@ -141,7 +140,7 @@ object RemoveInternalClusterShardingData {
     var hasSnapshots = false
 
     override def receiveRecover: Receive = {
-      case event: ShardCoordinator.Internal.DomainEvent =>
+      case _: ShardCoordinator.Internal.DomainEvent =>
       case SnapshotOffer(_, _) =>
         hasSnapshots = true
 

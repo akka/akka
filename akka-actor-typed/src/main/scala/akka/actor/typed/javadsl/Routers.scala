@@ -5,12 +5,12 @@
 package akka.actor.typed.javadsl
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.GroupRouterBuilder
 import akka.actor.typed.internal.routing.PoolRouterBuilder
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.PoolRouter
 import akka.annotation.DoNotInherit
+import akka.japi.function.Creator
 
 object Routers {
 
@@ -37,8 +37,8 @@ object Routers {
    * Note that if a child stops there is a slight chance that messages still get delivered to it, and get lost,
    * before the pool sees that the child stopped. Therefore it is best to _not_ stop children arbitrarily.
    */
-  def pool[T](poolSize: Int)(behavior: Behavior[T]): PoolRouter[T] =
-    new PoolRouterBuilder[T](poolSize, behavior)
+  def pool[T](poolSize: Int)(behaviorFactory: Creator[Behavior[T]]): PoolRouter[T] =
+    new PoolRouterBuilder[T](poolSize, behaviorFactory.create _)
 
 }
 

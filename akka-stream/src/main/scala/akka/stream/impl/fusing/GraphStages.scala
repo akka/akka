@@ -234,7 +234,7 @@ import scala.concurrent.{ Future, Promise }
           if (cancelled.get)
             completeStage()
           else
-            schedulePeriodicallyWithInitialDelay("TickTimer", initialDelay, interval)
+            scheduleWithFixedDelay("TickTimer", initialDelay, interval)
         }
 
         setHandler(out, eagerTerminateOutput)
@@ -379,8 +379,9 @@ import scala.concurrent.{ Future, Promise }
 
           def onFutureCompleted(result: Try[T]): Unit = {
             result match {
-              case scala.util.Success(v) => emit(out, v, () => completeStage())
-              case scala.util.Failure(t) => failStage(t)
+              case scala.util.Success(null) => completeStage()
+              case scala.util.Success(v)    => emit(out, v, () => completeStage())
+              case scala.util.Failure(t)    => failStage(t)
             }
           }
 

@@ -1,5 +1,0 @@
-ProblemFilters.exclude[Problem]("akka.remote.transport.ProtocolStateActor")
-
-# #18353 Changes to methods and fields private to remoting actors
-ProblemFilters.exclude[MissingMethodProblem]("akka.remote.EndpointManager.retryGateEnabled")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.EndpointManager.pruneTimerCancellable")

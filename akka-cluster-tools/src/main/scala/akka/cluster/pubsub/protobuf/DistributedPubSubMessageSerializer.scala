@@ -12,7 +12,7 @@ import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
 import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages => dm }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
 import akka.actor.ActorRef
@@ -23,6 +23,7 @@ import java.io.NotSerializableException
 /**
  * INTERNAL API: Protobuf serializer of DistributedPubSubMediator messages.
  */
+@ccompatUsedUntil213
 private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {

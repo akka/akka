@@ -8,7 +8,9 @@ import akka.actor.SupervisorStrategy.Resume
 import akka.actor.{ Actor, ActorRef, OneForOneStrategy, Props }
 import akka.persistence.journal.SteppingInmemJournal
 import akka.testkit.ImplicitSender
+import akka.util.unused
 import com.typesafe.config.Config
+
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -21,8 +23,8 @@ object PersistentActorStashingSpec {
     var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data)               => events = data :: events
-      case d @ Some(ref: ActorRef) => askedForDelete = d.asInstanceOf[Some[ActorRef]]
+      case Evt(data)             => events = data :: events
+      case d @ Some(_: ActorRef) => askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
@@ -71,7 +73,7 @@ object PersistentActorStashingSpec {
     }
 
     val processC: Receive = unstashBehavior.orElse {
-      case other => stash()
+      case _ => stash()
     }
 
     def unstashBehavior: Receive = {
@@ -103,7 +105,7 @@ object PersistentActorStashingSpec {
     }
 
     val otherCommandHandler: Receive = unstashBehavior.orElse {
-      case other => stash()
+      case _ => stash()
     }
 
     def unstashBehavior: Receive = {
@@ -172,7 +174,7 @@ object PersistentActorStashingSpec {
       case _ => // ignore
     }
 
-    def stashWithinHandler(evt: Evt) = {
+    def stashWithinHandler(@unused evt: Evt) = {
       stash()
     }
 

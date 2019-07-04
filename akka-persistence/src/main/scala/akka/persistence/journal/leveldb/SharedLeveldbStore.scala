@@ -42,7 +42,7 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
           catch { case NonFatal(e) => Future.failed(e) }
         case f @ Failure(_) =>
           // exception from preparePersistentBatch => rejected
-          Future.successful(messages.collect { case a: AtomicWrite => f })
+          Future.successful(messages.collect { case _: AtomicWrite => f })
       }).map { results =>
         if (results.nonEmpty && results.size != atomicWriteCount)
           throw new IllegalStateException(

@@ -10,8 +10,9 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.cluster.MemberStatus._
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -117,7 +118,6 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
     runOn(first) {
       cluster.join(myself)
       awaitAssert {
-        clusterView.refreshCurrentState()
         clusterView.status should ===(Joining)
       }
     }
@@ -131,7 +131,6 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
     runOn(first, second) {
       val expectedAddresses = Set(first, second).map(address)
       awaitAssert {
-        clusterView.refreshCurrentState()
         clusterView.members.map(_.address) should ===(expectedAddresses)
       }
       clusterView.members.unsorted.map(_.status) should ===(Set(Joining))

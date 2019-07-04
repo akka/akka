@@ -16,8 +16,9 @@ import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import scala.concurrent.Await
 import akka.cluster.MemberStatus
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object DurablePruningSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -75,6 +76,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
 
       val sys2 = ActorSystem(system.name, system.settings.config)
       val cluster2 = Cluster(sys2)
+      val distributedData2 = DistributedData(sys2)
       val replicator2 = startReplicator(sys2)
       val probe2 = TestProbe()(sys2)
       Cluster(sys2).join(node(first).address)
@@ -98,7 +100,9 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 3)
       expectMsg(UpdateSuccess(KeyA, None))
 
-      replicator2.tell(Update(KeyA, GCounter(), WriteLocal)(_.increment(cluster2, 2)), probe2.ref)
+      replicator2.tell(
+        Update(KeyA, GCounter(), WriteLocal)(_.increment(distributedData2.selfUniqueAddress, 2)),
+        probe2.ref)
       probe2.expectMsg(UpdateSuccess(KeyA, None))
 
       enterBarrier("updates-done")
@@ -157,7 +161,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
           system.name,
           ConfigFactory.parseString(s"""
                   akka.remote.artery.canonical.port = ${address.port.get}
-                  akka.remote.netty.tcp.port = ${address.port.get}
+                  akka.remote.classic.netty.tcp.port = ${address.port.get}
                   """).withFallback(system.settings.config))
         val cluster3 = Cluster(sys3)
         val replicator3 = startReplicator(sys3)
@@ -176,6 +180,12 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
           }
           values should ===(Set(10))
         }
+
+        // all must at least have seen it as joining
+        awaitAssert({
+          cluster3.state.members.size should ===(4)
+          cluster3.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
+        }, 10.seconds)
 
         // after merging with others
         replicator3 ! Get(KeyA, ReadAll(remainingOrDefault))

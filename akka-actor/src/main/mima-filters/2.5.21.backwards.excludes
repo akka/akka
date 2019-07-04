@@ -13,3 +13,16 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.Backof
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.handleMessageToChild")
+
+# Internal helpers for 2.13 compatibility
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps$")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package")
+
+# Fix memory leak in watchWith - PR #26625
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.terminatedQueuedFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.DeathWatch.terminatedQueuedFor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$terminatedQueued")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$terminatedQueued_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.terminatedQueuedFor")

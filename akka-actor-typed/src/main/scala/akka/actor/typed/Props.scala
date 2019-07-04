@@ -4,12 +4,13 @@
 
 package akka.actor.typed
 
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+
+import akka.actor.typed.internal.PropsImpl._
 
 object Props {
 
@@ -33,7 +34,6 @@ object Props {
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 abstract class Props private[akka] () extends Product with Serializable {
 
   /**
@@ -69,6 +69,11 @@ abstract class Props private[akka] () extends Product with Serializable {
    * executor.
    */
   def withDispatcherFromConfig(path: String): Props = DispatcherFromConfig(path, this)
+
+  /**
+   * Prepend a selection of the same executor as the parent actor to this Props.
+   */
+  def withDispatcherSameAsParent: Props = DispatcherSameAsParent(this)
 
   /**
    * Find the first occurrence of a configuration node of the given type, falling
@@ -128,24 +133,14 @@ abstract class Props private[akka] () extends Product with Serializable {
 }
 
 /**
- * The empty configuration node, used as a terminator for the internally linked
- * list of each Props.
- */
-@InternalApi
-private[akka] case object EmptyProps extends Props {
-  override def next = throw new NoSuchElementException("EmptyProps has no next")
-  override def withNext(next: Props): Props = next
-}
-
-/**
  * Not for user extension.
  */
 @DoNotInherit
-sealed abstract class DispatcherSelector extends Props
+abstract class DispatcherSelector extends Props
 
 /**
  * Factories for [[DispatcherSelector]]s which describe which thread pool shall be used to run
- * the actor to which this configuration is applied. Se the individual factory methods for details
+ * the actor to which this configuration is applied. See the individual factory methods for details
  * on the options.
  *
  * The default configuration if none of these options are present is to run
@@ -157,7 +152,7 @@ object DispatcherSelector {
    * Scala API:
    * Run the actor on the default [[ActorSystem]] executor.
    */
-  def default(): DispatcherSelector = DispatcherDefault()
+  def default(): DispatcherSelector = DispatcherDefault.empty
 
   /**
    * Java API:
@@ -177,38 +172,10 @@ object DispatcherSelector {
    * ActorSystem terminates.
    */
   def fromConfig(path: String): DispatcherSelector = DispatcherFromConfig(path)
-}
-
-/**
- * INTERNAL API
- *
- * Use the [[ActorSystem]] default executor to run the actor.
- */
-@DoNotInherit
-@InternalApi
-private[akka] sealed case class DispatcherDefault(next: Props) extends DispatcherSelector {
-  @InternalApi
-  override def withNext(next: Props): Props = copy(next = next)
-}
-object DispatcherDefault {
-  // this is hidden in order to avoid having people match on this object
-  private val empty = DispatcherDefault(EmptyProps)
 
   /**
-   * Retrieve an instance for this configuration node with empty `next` reference.
+   * Run the actor on the same executor as the parent actor.
+   * @return
    */
-  def apply(): DispatcherDefault = empty
-}
-
-/**
- * Look up an executor definition in the [[ActorSystem]] configuration.
- * ExecutorServices created in this fashion will be shut down when the
- * ActorSystem terminates.
- *
- * INTERNAL API
- */
-@InternalApi
-private[akka] final case class DispatcherFromConfig(path: String, next: Props = Props.empty)
-    extends DispatcherSelector {
-  override def withNext(next: Props): Props = copy(next = next)
+  def sameAsParent(): DispatcherSelector = DispatcherSameAsParent.empty
 }

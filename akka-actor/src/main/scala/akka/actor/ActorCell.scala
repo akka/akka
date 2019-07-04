@@ -18,7 +18,8 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
 import akka.util.{ unused, Reflect }
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
+import com.github.ghik.silencer.silent
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -233,46 +234,6 @@ trait ActorContext extends ActorRefFactory {
 }
 
 /**
- * UntypedActorContext is the UntypedActor equivalent of ActorContext,
- * containing the Java API
- */
-@deprecated("Use AbstractActor.ActorContext instead of UntypedActorContext.", since = "2.5.0")
-trait UntypedActorContext extends ActorContext {
-
-  /**
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
-   */
-  def getChildren(): java.lang.Iterable[ActorRef]
-
-  /**
-   * Returns a reference to the named child or null if no child with
-   * that name exists.
-   */
-  def getChild(name: String): ActorRef
-
-  /**
-   * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Replaces the current behavior on the top of the behavior stack.
-   */
-  def become(behavior: Procedure[Any]): Unit
-
-  /**
-   * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * This method acts upon the behavior stack as follows:
-   *
-   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
-   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
-   *
-   * The default of replacing the current behavior on the stack has been chosen to avoid memory
-   * leaks in case client code is written without consulting this documentation first (i.e.
-   * always pushing new behaviors and never issuing an `unbecome()`)
-   */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit
-
-}
-
-/**
  * INTERNAL API
  */
 @InternalApi
@@ -351,6 +312,7 @@ private[akka] trait Cell {
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
    */
+  @InternalStableApi
   def sendMessage(msg: Envelope): Unit
 
   /**
@@ -419,7 +381,7 @@ private[akka] object ActorCell {
     // Note that this uid is also used as hashCode in ActorRef, so be careful
     // to not break hashing if you change the way uid is generated
     val uid = ThreadLocalRandom.current.nextInt()
-    if (uid == undefinedUid) newUid
+    if (uid == undefinedUid) newUid()
     else uid
   }
 
@@ -442,14 +404,14 @@ private[akka] object ActorCell {
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
+@silent
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,
     final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
     val dispatcher: MessageDispatcher,
     val parent: InternalActorRef)
-    extends UntypedActorContext
-    with AbstractActor.ActorContext
+    extends AbstractActor.ActorContext
     with Cell
     with dungeon.ReceiveTimeout
     with dungeon.Children
@@ -569,22 +531,20 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = {
-    val influenceReceiveTimeout = !messageHandle.message.isInstanceOf[NotInfluenceReceiveTimeout]
+    val msg = messageHandle.message
+    val timeoutBeforeReceive = cancelReceiveTimeoutIfNeeded(msg)
     try {
       currentMessage = messageHandle
-      if (influenceReceiveTimeout)
-        cancelReceiveTimeout()
-      messageHandle.message match {
+      msg match {
         case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
         case msg                    => receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e =>
       handleInvokeFailure(Nil, e)
-    } finally {
-      // Schedule or reschedule receive timeout
-      checkReceiveTimeout(reschedule = influenceReceiveTimeout)
-    }
+    } finally
+    // Schedule or reschedule receive timeout
+    checkReceiveTimeoutIfNeeded(msg, timeoutBeforeReceive)
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
@@ -736,7 +696,7 @@ private[akka] class ActorCell(
       if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
           || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
         throw IllegalActorStateException(
-          actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
+          s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
     }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do

@@ -9,10 +9,10 @@ import java.util.Optional
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.immutable
-
 import akka.actor._
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
+import com.github.ghik.silencer.silent
 
 private[akka] object Children {
   val GetNobody = () => Nobody
@@ -22,6 +22,7 @@ private[akka] trait Children { this: ActorCell =>
 
   import ChildrenContainer._
 
+  @silent
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
@@ -29,6 +30,7 @@ private[akka] trait Children { this: ActorCell =>
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
+  @silent
   final def getChildren(): java.lang.Iterable[ActorRef] =
     scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
@@ -48,7 +50,7 @@ private[akka] trait Children { this: ActorCell =>
   private[akka] def attachChild(props: Props, name: String, systemService: Boolean): ActorRef =
     makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
-  @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
+  @silent @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
   private def functionRefs: Map[String, FunctionRef] =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.functionRefsOffset).asInstanceOf[Map[String, FunctionRef]]
 
@@ -101,7 +103,7 @@ private[akka] trait Children { this: ActorCell =>
     refs.valuesIterator.foreach(_.stop())
   }
 
-  @volatile private var _nextNameDoNotCallMeDirectly = 0L
+  @silent @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(sb: java.lang.StringBuilder): String = {
     val num = Unsafe.instance.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
     Helpers.base64(num, sb)

@@ -27,7 +27,7 @@ private[netty] trait NettyHelpers {
 
   protected def onException(@unused ctx: ChannelHandlerContext, @unused e: ExceptionEvent): Unit = ()
 
-  final protected def transformException(@unused ctx: ChannelHandlerContext, ev: ExceptionEvent): Unit = {
+  final protected def transformException(ctx: ChannelHandlerContext, ev: ExceptionEvent): Unit = {
     val cause = if (ev.getCause ne null) ev.getCause else new AkkaException("Unknown cause")
     cause match {
       case _: ClosedChannelException => // Ignore

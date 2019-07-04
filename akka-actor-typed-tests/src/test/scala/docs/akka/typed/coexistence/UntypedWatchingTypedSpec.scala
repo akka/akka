@@ -89,6 +89,7 @@ class UntypedWatchingTypedSpec extends WordSpec {
 
     "support converting an untyped actor system to a typed actor system" in {
       //#convert-untyped
+
       val system = akka.actor.ActorSystem("UntypedToTypedSystem")
       val typedSystem: ActorSystem[Nothing] = system.toTyped
       //#convert-untyped

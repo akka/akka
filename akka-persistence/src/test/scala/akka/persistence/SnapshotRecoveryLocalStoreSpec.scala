@@ -59,9 +59,9 @@ class SnapshotRecoveryLocalStoreSpec
   "A persistent actor which is persisted at the same time as another actor whose persistenceId is an extension of the first " must {
     "recover state only from its own correct snapshot file" in {
 
-      val recoveringActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, testActor))
 
-      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, seqNo, timestamp), state) => }
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, _, _), _) => }
       expectMsg(RecoveryCompleted)
     }
 

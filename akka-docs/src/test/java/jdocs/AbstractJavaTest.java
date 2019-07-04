@@ -4,7 +4,7 @@
 
 package jdocs;
 
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 /** Base class for all runnable example tests written in Java */
 public abstract class AbstractJavaTest extends JUnitSuite {}

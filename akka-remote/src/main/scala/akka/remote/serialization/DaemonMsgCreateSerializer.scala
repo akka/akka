@@ -27,12 +27,11 @@ import util.{ Failure, Success }
  *
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
   import Deploy.NoDispatcherGiven
-
-  private val scala212OrLater = !scala.util.Properties.versionNumberString.startsWith("2.11")
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -154,7 +153,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
     }
 
     def props = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       val protoProps = proto.getProps
       val actorClass = system.dynamicAccess.getClassFor[AnyRef](protoProps.getClazz).get
       val args: Vector[AnyRef] =
@@ -206,8 +205,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           "null"
         } else {
           val className = m.getClass.getName
-          if (scala212OrLater && m.isInstanceOf[java.io.Serializable] && m.getClass.isSynthetic && className.contains(
-                "$Lambda$")) {
+          if (m.isInstanceOf[java.io.Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
             // When the additional-protobuf serializers are not enabled
             // the serialization of the parameters is based on passing class name instead of
             // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as

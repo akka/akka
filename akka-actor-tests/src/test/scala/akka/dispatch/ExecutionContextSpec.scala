@@ -55,7 +55,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       batchable {
         val lock, callingThreadLock, count = new AtomicInteger(0)
         callingThreadLock.compareAndSet(0, 1) // Enable the lock
-        (1 to 100).foreach { i =>
+        (1 to 100).foreach { _ =>
           batchable {
             if (callingThreadLock.get != 0) p.tryFailure(new IllegalStateException("Batch was executed inline!"))
             else if (count.incrementAndGet == 100) p.trySuccess(()) //Done
@@ -77,12 +77,12 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       def batchable[T](f: => T)(implicit ec: ExecutionContext): Unit =
         ec.execute(new Batchable {
           override def isBatchable = true
-          override def run: Unit = f
+          override def run(): Unit = f
         })
 
       val latch = TestLatch(101)
       batchable {
-        (1 to 100).foreach { i =>
+        (1 to 100).foreach { _ =>
           batchable {
             val deadlock = TestLatch(1)
             batchable { deadlock.open() }

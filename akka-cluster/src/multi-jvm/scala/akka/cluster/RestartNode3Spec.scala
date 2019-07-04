@@ -18,8 +18,9 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object RestartNode3MultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -56,7 +57,7 @@ abstract class RestartNode3Spec
     system.name,
     ConfigFactory.parseString(s"""
         akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
-        akka.remote.netty.tcp.port = ${secondUniqueAddress.address.port.get}
+        akka.remote.classic.netty.tcp.port = ${secondUniqueAddress.address.port.get}
         """).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {

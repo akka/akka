@@ -6,7 +6,7 @@ package akka.stream
 
 import akka.util.Collections.EmptyImmutableSeq
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import akka.annotation.InternalApi
 
@@ -99,7 +99,7 @@ final class Inlet[T] private (val s: String) extends InPort {
   def as[U]: Inlet[U] = this.asInstanceOf[Inlet[U]]
 
   override def toString: String =
-    s + "(" + this.hashCode + s")" +
+    s + "(" + this.hashCode + ")" +
     (if (mappedTo eq this) ""
      else s" mapped to $mappedTo")
 }
@@ -141,7 +141,7 @@ final class Outlet[T] private (val s: String) extends OutPort {
   def as[U]: Outlet[U] = this.asInstanceOf[Outlet[U]]
 
   override def toString: String =
-    s + "(" + this.hashCode + s")" +
+    s + "(" + this.hashCode + ")" +
     (if (mappedTo eq this) ""
      else s" mapped to $mappedTo")
 }

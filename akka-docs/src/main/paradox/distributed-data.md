@@ -28,7 +28,7 @@ All data entries are spread to all nodes, or nodes with a certain role, in the c
 via direct replication and gossip based dissemination. You have fine grained control
 of the consistency level for reads and writes.
 
-The nature CRDTs makes it possible to perform updates from any node without coordination.
+The nature of CRDTs makes it possible to perform updates from any node without coordination.
 Concurrent updates from different nodes will automatically be resolved by the monotonic
 merge function, which all data types must provide. The state changes always converge.
 Several useful data types for counters, sets, maps and registers are provided and
@@ -212,6 +212,10 @@ from other nodes might not be visible yet.
 When using @scala[`WriteLocal`]@java[`writeLocal`] the update is only written to the local replica and then disseminated
 in the background with the gossip protocol, which can take few seconds to spread to all nodes.
 
+When using `ReadLocal`, you will never receive a `GetFailure` response, since the local replica is always available to
+local readers. `WriteLocal` however may still reply with `UpdateFailure` messages, in the event that the `modify` function
+threw an exception, or, if using durable storage, if storing failed.
+
 `WriteAll` and `ReadAll` is the strongest consistency level, but also the slowest and with
 lowest availability. For example, it is enough that one node is unavailable for a `Get` request
 and you will not receive the value.
@@ -319,7 +323,7 @@ Java
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local
-local `Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
+`Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
 the sender of the `Delete` if the value was successfully deleted according to the supplied
 consistency level within the supplied timeout. Otherwise a `Replicator.ReplicationDeleteFailure`
 is sent. Note that `ReplicationDeleteFailure` does not mean that the delete completely failed or
@@ -351,7 +355,6 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-<a id="delta-crdt"></a>
 ### delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
@@ -735,7 +738,6 @@ This would be possible if a node with durable data didn't participate in the pru
 be stopped for longer time than this duration and if it is joining again after this
 duration its data should first be manually removed (from the lmdb directory).
 
-<a id="crdt-garbage"></a>
 ### CRDT Garbage
 
 One thing that can be problematic with CRDTs is that some data types accumulate history (garbage).

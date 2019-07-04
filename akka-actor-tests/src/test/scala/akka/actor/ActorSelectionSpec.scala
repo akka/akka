@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import language.postfixOps
-
 import akka.testkit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -95,7 +93,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       identify(system.child("c2").child("c21")) should ===(Some(c21)) // test Java API
       identify(system / Seq("c2", "c21")) should ===(Some(c21))
 
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       identify(system.descendant(Seq("c2", "c21").asJava)) // test Java API
     }
 
@@ -244,14 +242,13 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "return deadLetters or ActorIdentity(None), respectively, for non-existing paths" in {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
 
       def checkOne(looker: ActorRef, query: Query, result: Option[ActorRef]): Unit = {
         val lookup = askNode(looker, query)
         lookup should ===(result)
       }
       def check(looker: ActorRef): Unit = {
-        val lookname = looker.path.elements.mkString("", "/", "/")
         for ((l, r) <- Seq(
                SelectString("a/b/c") -> None,
                SelectString("akka://all-systems/Nobody") -> None,
@@ -292,7 +289,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
           case `c1` => lastSender
         }
       actors should ===(Set(c1, c2))
-      expectNoMsg(1 second)
+      expectNoMessage()
     }
 
     "drop messages which cannot be delivered" in {
@@ -302,7 +299,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
         case `c2` => lastSender
       }
       actors should ===(Seq(c21))
-      expectNoMsg(200.millis)
+      expectNoMessage()
     }
 
     "resolve one actor with explicit timeout" in {
@@ -369,33 +366,33 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       system.actorSelection("/user/a/*").tell(Identify(1), probe.ref)
       probe.receiveN(2).map { case ActorIdentity(1, r) => r }.toSet should ===(
         Set[Option[ActorRef]](Some(b1), Some(b2)))
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage()
 
       system.actorSelection("/user/a/b1/*").tell(Identify(2), probe.ref)
       probe.expectMsg(ActorIdentity(2, None))
 
       system.actorSelection("/user/a/*/c").tell(Identify(3), probe.ref)
       probe.expectMsg(ActorIdentity(3, Some(c)))
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage()
 
       system.actorSelection("/user/a/b2/*/d").tell(Identify(4), probe.ref)
       probe.expectMsg(ActorIdentity(4, Some(d)))
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage()
 
       system.actorSelection("/user/a/*/*/d").tell(Identify(5), probe.ref)
       probe.expectMsg(ActorIdentity(5, Some(d)))
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage()
 
       system.actorSelection("/user/a/*/c/*").tell(Identify(6), probe.ref)
       probe.expectMsg(ActorIdentity(6, Some(d)))
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage()
 
       system.actorSelection("/user/a/b2/*/d/e").tell(Identify(7), probe.ref)
       probe.expectMsg(ActorIdentity(7, None))
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage()
 
       system.actorSelection("/user/a/*/c/d/e").tell(Identify(8), probe.ref)
-      probe.expectNoMsg(500.millis)
+      probe.expectNoMessage()
     }
 
     "forward to selection" in {

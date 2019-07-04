@@ -12,7 +12,7 @@ import java.io.IOException
 import java.net.{ InetSocketAddress, ServerSocket }
 
 import akka.testkit.WithLogCapturing
-import org.scalatest.concurrent.Timeouts
+import org.scalatest.concurrent.TimeLimits
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -22,7 +22,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = on
     akka.actor.serialize-creators = on
-    """) with TcpIntegrationSpecSupport with Timeouts with WithLogCapturing {
+    """) with TcpIntegrationSpecSupport with TimeLimits with WithLogCapturing {
 
   def verifyActorTermination(actor: ActorRef): Unit = {
     watch(actor)
@@ -188,7 +188,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
         try {
           accept.getInputStream.read() should ===(-1)
         } catch {
-          case e: IOException => // this is also fine
+          case _: IOException => // this is also fine
         }
       }
       verifyActorTermination(connectionActor)

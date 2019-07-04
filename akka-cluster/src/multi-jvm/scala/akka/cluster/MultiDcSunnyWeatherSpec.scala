@@ -96,15 +96,15 @@ abstract class MultiDcSunnyWeatherSpec
       implicit val sender = observer.ref
       runOn(expectedAlphaHeartbeaterRoles.toList: _*) {
         selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
-        val status = observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
+        observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
       }
       runOn(expectedBetaHeartbeaterRoles.toList: _*) {
         selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
-        val status = observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
+        observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
       }
       runOn(expectedNoActiveHeartbeatSenderRoles.toList: _*) {
         selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
-        val status = observer.expectMsgType[CrossDcHeartbeatSender.MonitoringDormant](5.seconds)
+        observer.expectMsgType[CrossDcHeartbeatSender.MonitoringDormant](5.seconds)
       }
 
       enterBarrier("done")

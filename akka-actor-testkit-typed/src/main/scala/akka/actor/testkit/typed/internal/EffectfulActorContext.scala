@@ -20,7 +20,10 @@ import scala.compat.java8.FunctionConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class EffectfulActorContext[T](path: ActorPath) extends StubbedActorContext[T](path) {
+@InternalApi private[akka] final class EffectfulActorContext[T](
+    path: ActorPath,
+    currentBehaviorProvider: () => Behavior[T])
+    extends StubbedActorContext[T](path, currentBehaviorProvider) {
 
   private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
 
@@ -63,7 +66,7 @@ import scala.compat.java8.FunctionConverters._
     super.watch(other)
   }
   override def watchWith[U](other: ActorRef[U], message: T): Unit = {
-    effectQueue.offer(Watched(other))
+    effectQueue.offer(WatchedWith(other, message))
     super.watchWith(other, message)
   }
   override def unwatch[U](other: ActorRef[U]): Unit = {

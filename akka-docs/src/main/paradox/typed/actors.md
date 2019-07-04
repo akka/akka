@@ -12,15 +12,6 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## Introduction
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
-
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
 look like?
@@ -375,7 +366,7 @@ screen name.
 To implement the logic where we spawn a child for the session we need access 
 to the `ActorContext`. This is injected as a constructor parameter upon creation 
 of the behavior, note how we combine the `AbstractBehavior` with  `Behaviors.setup`
-to do this in the `behavior` method. 
+to do this in the @scala[`apply`]@java[`create`] factory method.
 
 The behavior that we declare here can handle both subtypes of `RoomCommand`.
 `GetSession` has been explained already and the
@@ -400,7 +391,7 @@ former simply speaks more languages than the latter. The opposite would be
 problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] where
 @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] is required will lead to a type error.
 
-#### Trying it out
+#### Try it out
 
 In order to see this chat room in action we need to write a client Actor that can use it
 @scala[, for this stateless actor it doesn't make much sense to use the `AbstractBehavior` so let's just reuse the functional style gabbler from the sample above]:

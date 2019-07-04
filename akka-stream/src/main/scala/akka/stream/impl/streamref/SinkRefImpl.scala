@@ -14,7 +14,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
 
-import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
@@ -25,6 +24,13 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[stream] object SinkRefStageImpl {
+  private sealed trait ActorRefStage { def ref: ActorRef }
+}
+
+/**
  * INTERNAL API: Actual operator implementation backing [[SinkRef]]s.
  *
  * If initialPartnerRef is set, then the remote side is already set up. If it is none, then we are the side creating
@@ -32,7 +38,8 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
  */
 @InternalApi
 private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartnerRef: OptionVal[ActorRef])
-    extends GraphStageWithMaterializedValue[SinkShape[In], Future[SourceRef[In]]] {
+    extends GraphStageWithMaterializedValue[SinkShape[In], SourceRef[In]] {
+  import SinkRefStageImpl.ActorRefStage
 
   val in: Inlet[In] = Inlet[In](s"${Logging.simpleName(getClass)}($initialRefName).in")
   override def shape: SinkShape[In] = SinkShape.of(in)
@@ -43,24 +50,30 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       case OptionVal.None      => "<no-initial-ref>"
     }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val promise = Promise[SourceRefImpl[In]]
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SourceRef[In]) =
+    throw new IllegalStateException("Not supported")
 
-    val logic = new TimerGraphStageLogic(shape) with StageLogging with InHandler {
+  private[akka] override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      eagerMaterializer: Materializer): (GraphStageLogic, SourceRef[In]) = {
 
-      private[this] lazy val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(materializer).system)
+    val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with InHandler {
+
+      private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
 
       // settings ---
       import StreamRefAttributes._
-      private[this] lazy val settings = ActorMaterializerHelper.downcast(materializer).settings.streamRefSettings
+      private[this] val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
 
-      private[this] lazy val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
+      private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
         SubscriptionTimeout(settings.subscriptionTimeout))
       // end of settings ---
 
-      override protected lazy val stageActorName: String = streamRefsMaster.nextSinkRefStageName()
-      private[this] var self: GraphStageLogic.StageActor = _
-      implicit def selfSender: ActorRef = self.ref
+      override protected val stageActorName: String = streamRefsMaster.nextSinkRefStageName()
+      private[this] val self: GraphStageLogic.StageActor =
+        getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false)(initialReceive)
+      override val ref: ActorRef = self.ref
+      implicit def selfSender: ActorRef = ref
 
       private var partnerRef: OptionVal[ActorRef] = OptionVal.None
       private def getPartnerRef: ActorRef =
@@ -84,8 +97,6 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       private[this] var finishedWithAwaitingPartnerTermination: OptionVal[Try[Done]] = OptionVal.None
 
       override def preStart(): Unit = {
-        self = getStageActor(initialReceive)
-
         initialPartnerRef match {
           case OptionVal.Some(ref) =>
             // this will set the `partnerRef`
@@ -104,11 +115,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           "Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
           initialPartnerRef,
           self.ref)
-
-        promise.success(SourceRefImpl(self.ref))
       }
 
-      lazy val initialReceive: ((ActorRef, Any)) => Unit = {
+      def initialReceive: ((ActorRef, Any)) => Unit = {
         case (_, Terminated(ref)) =>
           if (ref == getPartnerRef)
             finishedWithAwaitingPartnerTermination match {
@@ -136,6 +145,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           }
 
           tryPull()
+
+        case (_, _) => // keep the compiler happy (stage actor receive is total)
       }
 
       override def onPush(): Unit = {
@@ -154,7 +165,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
         case SubscriptionTimeoutTimerKey =>
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
-            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [${promise.future.value}], " +
+            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [$ref], " +
             s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex
@@ -229,7 +240,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       setHandler(in, this)
     }
 
-    (logic, promise.future)
+    (logic, SourceRefImpl(logic.ref))
   }
 
   override def toString = s"${Logging.simpleName(getClass)}($initialRefName)"

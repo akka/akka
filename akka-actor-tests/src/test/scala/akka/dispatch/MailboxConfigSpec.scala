@@ -5,12 +5,14 @@
 package akka.dispatch
 
 import language.postfixOps
-
 import java.util.concurrent.{ BlockingQueue, ConcurrentLinkedQueue }
+
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.unused
+
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
@@ -47,7 +49,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
-      for (i <- 1 to config.capacity) q.enqueue(testActor, exampleMessage)
+      for (_ <- 1 to config.capacity) q.enqueue(testActor, exampleMessage)
 
       q.numberOfMessages should ===(config.capacity)
       q.hasMessages should ===(true)
@@ -134,50 +136,48 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 
-    EventFilter
-      .warning(pattern = "received dead letter without sender", occurrences = (enqueueN - dequeueN))
-      .intercept {
+    EventFilter.warning(pattern = "received dead letter", occurrences = (enqueueN - dequeueN)).intercept {
 
-        def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
-          val messages = Vector() ++ (for (i <- fromNum to toNum) yield createMessageInvocation(i))
-          for (i <- messages) q.enqueue(testActor, i)
-          messages
-        }
-
-        val producers = {
-          val step = 500
-          val ps = for (i <- (1 to enqueueN by step).toList) yield createProducer(i, Math.min(enqueueN, i + step - 1))
-
-          if (parallel == false)
-            ps.foreach { Await.ready(_, remainingOrDefault) }
-
-          ps
-        }
-
-        def createConsumer: Future[Vector[Envelope]] = spawn {
-          var r = Vector[Envelope]()
-
-          while (producers.exists(_.isCompleted == false) || q.hasMessages) Option(q.dequeue).foreach { message =>
-            r = r :+ message
-          }
-
-          r
-        }
-
-        val consumers = List.fill(maxConsumers)(createConsumer)
-
-        val ps = producers.map(Await.result(_, remainingOrDefault))
-        val cs = consumers.map(Await.result(_, remainingOrDefault))
-
-        ps.map(_.size).sum should ===(enqueueN) //Must have produced 1000 messages
-        cs.map(_.size).sum should ===(dequeueN) //Must have consumed all produced messages
-        //No message is allowed to be consumed by more than one consumer
-        cs.flatten.distinct.size should ===(dequeueN)
-        //All consumed messages should have been produced
-        cs.flatten.diff(ps.flatten).size should ===(0)
-        //The ones that were produced and not consumed
-        ps.flatten.diff(cs.flatten).size should ===(enqueueN - dequeueN)
+      def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
+        val messages = Vector() ++ (for (i <- fromNum to toNum) yield createMessageInvocation(i))
+        for (i <- messages) q.enqueue(testActor, i)
+        messages
       }
+
+      val producers = {
+        val step = 500
+        val ps = for (i <- (1 to enqueueN by step).toList) yield createProducer(i, Math.min(enqueueN, i + step - 1))
+
+        if (parallel == false)
+          ps.foreach { Await.ready(_, remainingOrDefault) }
+
+        ps
+      }
+
+      def createConsumer: Future[Vector[Envelope]] = spawn {
+        var r = Vector[Envelope]()
+
+        while (producers.exists(_.isCompleted == false) || q.hasMessages) Option(q.dequeue).foreach { message =>
+          r = r :+ message
+        }
+
+        r
+      }
+
+      val consumers = List.fill(maxConsumers)(createConsumer)
+
+      val ps = producers.map(Await.result(_, remainingOrDefault))
+      val cs = consumers.map(Await.result(_, remainingOrDefault))
+
+      ps.map(_.size).sum should ===(enqueueN) //Must have produced 1000 messages
+      cs.map(_.size).sum should ===(dequeueN) //Must have consumed all produced messages
+      //No message is allowed to be consumed by more than one consumer
+      cs.flatten.distinct.size should ===(dequeueN)
+      //All consumed messages should have been produced
+      cs.flatten.diff(ps.flatten).size should ===(0)
+      //The ones that were produced and not consumed
+      ps.flatten.diff(cs.flatten).size should ===(enqueueN - dequeueN)
+    }
   }
 }
 
@@ -225,14 +225,14 @@ object CustomMailboxSpec {
     }
     """
 
-  class MyMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
+  class MyMailboxType(@unused settings: ActorSystem.Settings, @unused config: Config) extends MailboxType {
     override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = owner match {
       case Some(o) => new MyMailbox(o)
       case None    => throw new Exception("no mailbox owner given")
     }
   }
 
-  class MyMailbox(owner: ActorRef) extends UnboundedQueueBasedMessageQueue {
+  class MyMailbox(@unused owner: ActorRef) extends UnboundedQueueBasedMessageQueue {
     final val queue = new ConcurrentLinkedQueue[Envelope]()
   }
 }
@@ -255,8 +255,8 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   lazy val name = "The single-consumer-only mailbox implementation"
   override def maxConsumers = 1
   def factory = {
-    case u: UnboundedMailbox             => SingleConsumerOnlyUnboundedMailbox().create(None, None)
-    case b @ BoundedMailbox(capacity, _) => NonBlockingBoundedMailbox(capacity).create(None, None)
+    case _: UnboundedMailbox            => SingleConsumerOnlyUnboundedMailbox().create(None, None)
+    case _ @BoundedMailbox(capacity, _) => NonBlockingBoundedMailbox(capacity).create(None, None)
   }
 }
 

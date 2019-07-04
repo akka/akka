@@ -13,7 +13,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class ClusterClientTest extends JUnitSuite {
 
@@ -23,7 +23,7 @@ public class ClusterClientTest extends JUnitSuite {
           "DistributedPubSubMediatorTest",
           ConfigFactory.parseString(
               "akka.actor.provider = \"cluster\"\n"
-                  + "akka.remote.netty.tcp.port=0\n"
+                  + "akka.remote.classic.netty.tcp.port=0\n"
                   + "akka.remote.artery.canonical.port=0"));
 
   private final ActorSystem system = actorSystemResource.getSystem();
@@ -32,8 +32,8 @@ public class ClusterClientTest extends JUnitSuite {
   Set<ActorPath> initialContacts() {
     return new HashSet<ActorPath>(
         Arrays.asList(
-            ActorPaths.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
-            ActorPaths.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist")));
+            ActorPaths.fromString("akka://OtherSys@host1:2552/system/receptionist"),
+            ActorPaths.fromString("akka://OtherSys@host2:2552/system/receptionist")));
   }
   // #initialContacts
 

@@ -24,7 +24,6 @@ import scala.collection.immutable.Queue
 
 import akka.annotation.InternalApi
 import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
 import akka.stream.Attributes.LogLevels
 
 /**
@@ -86,9 +85,10 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
     def id: Long
   }
 
-  private final case class Element(id: Long, elem: T) extends Event
-  private final case class Register(id: Long, demandCallback: AsyncCallback[Long]) extends Event
-  private final case class Deregister(id: Long) extends Event
+  // these 3 can't be final because of SI-4440
+  private case class Element(id: Long, elem: T) extends Event
+  private case class Register(id: Long, demandCallback: AsyncCallback[Long]) extends Event
+  private case class Deregister(id: Long) extends Event
 
   final class InputState(signalDemand: AsyncCallback[Long]) {
     private var untilNextDemandSignal = DemandThreshold
@@ -105,9 +105,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
 
   }
 
-  final class MergedSourceLogic(_shape: Shape, producerCount: AtomicLong)
-      extends GraphStageLogic(_shape)
-      with OutHandler {
+  final class MergedSourceLogic(_shape: Shape) extends GraphStageLogic(_shape) with OutHandler {
     /*
      * Basically all merged messages are shared in this queue. Individual buffer sizes are enforced by tracking
      * demand per producer in the 'demands' Map. One twist here is that the same queue contains control messages,
@@ -226,7 +224,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Sink[T, NotUsed]) = {
     val idCounter = new AtomicLong()
 
-    val logic: MergedSourceLogic = new MergedSourceLogic(shape, idCounter)
+    val logic: MergedSourceLogic = new MergedSourceLogic(shape)
 
     val sink = new GraphStage[SinkShape[T]] {
       val in: Inlet[T] = Inlet("MergeHub.in")
@@ -372,11 +370,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
   private sealed trait HubEvent
 
   private object RegistrationPending extends HubEvent
-  private final case class UnRegister(id: Long, previousOffset: Int, finalOffset: Int) extends HubEvent
-  private final case class Advance(id: Long, previousOffset: Int) extends HubEvent
-  private final case class NeedWakeup(id: Long, previousOffset: Int, currentOffset: Int) extends HubEvent
-
-  private final case class Consumer(id: Long, callback: AsyncCallback[ConsumerEvent])
+  // these 4 next classes can't be final because of SI-4440
+  private case class UnRegister(id: Long, previousOffset: Int, finalOffset: Int) extends HubEvent
+  private case class Advance(id: Long, previousOffset: Int) extends HubEvent
+  private case class NeedWakeup(id: Long, previousOffset: Int, currentOffset: Int) extends HubEvent
+  private case class Consumer(id: Long, callback: AsyncCallback[ConsumerEvent])
 
   private object Completed
 
@@ -614,8 +612,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
 
   private sealed trait ConsumerEvent
   private object Wakeup extends ConsumerEvent
-  private final case class HubCompleted(failure: Option[Throwable]) extends ConsumerEvent
-  private final case class Initialize(offset: Int) extends ConsumerEvent
+  // these two can't be final because of SI-4440
+  private case class HubCompleted(failure: Option[Throwable]) extends ConsumerEvent
+  private case class Initialize(offset: Int) extends ConsumerEvent
 
   override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
@@ -774,7 +773,7 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange def statefulSink[T](
+  def statefulSink[T](
       partitioner: () => (ConsumerInfo, T) => Long,
       startAfterNrOfConsumers: Int,
       bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
@@ -809,7 +808,6 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange
   def sink[T](
       partitioner: (Int, T) => Int,
       startAfterNrOfConsumers: Int,
@@ -822,7 +820,7 @@ object PartitionHub {
     statefulSink(() => fun, startAfterNrOfConsumers, bufferSize)
   }
 
-  @DoNotInherit @ApiMayChange trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
+  @DoNotInherit trait ConsumerInfo extends akka.stream.javadsl.PartitionHub.ConsumerInfo {
 
     /**
      * Sequence of all identifiers of current consumers.

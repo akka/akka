@@ -17,7 +17,7 @@ import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.util.control.Exception
@@ -351,11 +351,11 @@ class BoundedBlockingQueueSpec
 
       val f = Future(queue.poll(100, TimeUnit.MILLISECONDS))
 
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
-        notEmpty.advanceTime(99 milliseconds)
+        notEmpty.advanceTime(99.milliseconds)
       }
-      mustBlockFor(100 milliseconds, f)
+      mustBlockFor(100.milliseconds, f)
       events should contain(awaitNotEmpty)
     }
 
@@ -367,7 +367,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return null if the timeout is exceeded" in {
-      val TestContext(queue, _, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, _, _, _, _, _) = newBoundedBlockingQueue(1)
 
       queue.poll(100, TimeUnit.MILLISECONDS) should equal(null)
     }
@@ -379,12 +379,12 @@ class BoundedBlockingQueueSpec
 
       val f = Future(queue.poll(100, TimeUnit.MILLISECONDS))
 
-      notEmpty.advanceTime(99 milliseconds)
-      after(50 milliseconds) {
+      notEmpty.advanceTime(99.milliseconds)
+      after(50.milliseconds) {
         f.isCompleted should be(false)
         queue.put("Hello")
       }
-      Await.result(f, 3 seconds) should equal("Hello")
+      Await.result(f, 3.seconds) should equal("Hello")
       (events should contain).inOrder(awaitNotEmpty, signalNotEmpty, poll)
     }
   }
@@ -620,7 +620,7 @@ trait CustomContainsMatcher {
           case (_, Nil)                          => matchResult(true)
           case (Nil, _)                          => matchResult(false)
           case (x :: xs, y :: ys) if x.equals(y) => attemptMatch(xs, ys)
-          case (x :: xs, ys)                     => attemptMatch(xs, ys)
+          case (_ :: xs, ys)                     => attemptMatch(xs, ys)
         }
 
       def matchResult(success: Boolean): MatchResult =

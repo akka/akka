@@ -6,16 +6,16 @@ package akka.cluster.sharding.typed
 package internal
 
 import java.net.URLEncoder
+import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
+import akka.util.JavaDurationConverters._
 import scala.concurrent.Future
-
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
-import akka.actor.Scheduler
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -224,7 +224,7 @@ import akka.util.Timeout
         def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
           stopMessage match {
             case Some(_) => behv
-            case None    => Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+            case None    => Behaviors.intercept(() => new PoisonPillInterceptor[M])(behv)
           }
         }
 
@@ -273,16 +273,14 @@ import akka.util.Timeout
     new EntityRefImpl[M](
       untypedSharding.shardRegion(typeKey.name),
       entityId,
-      typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
-      system.scheduler)
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
     new EntityRefImpl[M](
       untypedSharding.shardRegion(typeKey.name),
       entityId,
-      typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
-      system.scheduler)
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -305,8 +303,7 @@ import akka.util.Timeout
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
     entityId: String,
-    typeKey: EntityTypeKeyImpl[M],
-    scheduler: Scheduler)
+    typeKey: EntityTypeKeyImpl[M])
     extends javadsl.EntityRef[M]
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
@@ -322,8 +319,8 @@ import akka.util.Timeout
     replyTo.future
   }
 
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Timeout): CompletionStage[U] =
-    ask[U](replyTo => message.apply(replyTo))(timeout).toJava
+  def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
+    ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi

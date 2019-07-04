@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
 import com.typesafe.config.ConfigFactory
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.actor._
 import scala.annotation.tailrec
 
@@ -97,11 +97,10 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           def switch: Actor.Receive = { case "becomenull" => context.become(r, false) }
           def receive =
             switch.orElse(LoggingReceive {
-              case x => sender() ! "x"
+              case _ => sender() ! "x"
             })
         })
 
-        val name = actor.path.toString
         actor ! "buh"
         expectMsg(
           Logging
@@ -112,7 +111,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
         actor ! "bah"
         expectMsgPF() {
-          case UnhandledMessage("bah", testActor, `actor`) => true
+          case UnhandledMessage("bah", _, `actor`) => true
         }
       }
     }
@@ -227,7 +226,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           supervisor.watch(actor)
           fishForMessage(hint = "now watched by") {
             case Logging.Debug(`aname`, `sclass`, msg: String) if msg.startsWith("now watched by") => true
-            case m                                                                                 => false
+            case _                                                                                 => false
           }
 
           supervisor.unwatch(actor)

@@ -73,12 +73,12 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"
 
       permitter.tell(RequestRecoveryPermit, p4.ref)
       permitter.tell(RequestRecoveryPermit, p5.ref)
-      p4.expectNoMsg(100.millis)
-      p5.expectNoMsg(10.millis)
+      p4.expectNoMessage(100.millis)
+      p5.expectNoMessage(10.millis)
 
       permitter.tell(ReturnRecoveryPermit, p2.ref)
       p4.expectMsg(RecoveryPermitGranted)
-      p5.expectNoMsg(100.millis)
+      p5.expectNoMessage(100.millis)
 
       permitter.tell(ReturnRecoveryPermit, p1.ref)
       p5.expectMsg(RecoveryPermitGranted)
@@ -104,7 +104,7 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"
       val persistentActor = system.actorOf(testProps("p4", p4.ref))
       p4.watch(persistentActor)
       persistentActor ! "stop"
-      p4.expectNoMsg(200.millis)
+      p4.expectNoMessage(200.millis)
 
       permitter.tell(ReturnRecoveryPermit, p3.ref)
       p4.expectMsg(RecoveryCompleted)
@@ -121,17 +121,17 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"
       requestPermit(p3)
 
       val persistentActor = system.actorOf(testProps("p4", p4.ref))
-      p4.expectNoMsg(100.millis)
+      p4.expectNoMessage(100.millis)
 
       permitter.tell(RequestRecoveryPermit, p5.ref)
-      p5.expectNoMsg(100.millis)
+      p5.expectNoMessage(100.millis)
 
       // PoisonPill is not stashed
       persistentActor ! PoisonPill
       p4.expectMsg("postStop")
 
       // persistentActor didn't hold a permit so still
-      p5.expectNoMsg(100.millis)
+      p5.expectNoMessage(100.millis)
 
       permitter.tell(ReturnRecoveryPermit, p1.ref)
       p5.expectMsg(RecoveryPermitGranted)
@@ -150,7 +150,7 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"
       requestPermit(p3)
 
       permitter.tell(RequestRecoveryPermit, p4.ref)
-      p4.expectNoMsg(100.millis)
+      p4.expectNoMessage(100.millis)
 
       actor ! PoisonPill
       p4.expectMsg(RecoveryPermitGranted)

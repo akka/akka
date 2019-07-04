@@ -125,7 +125,7 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec("""
       proxyA ! Ping()
       expectMsgType[Ping]
 
-      val writeA = instrumentProbeA.expectMsgType[RemoteWriteMetadata]
+      instrumentProbeA.expectMsgType[RemoteWriteMetadata]
       val sentA = instrumentProbeA.expectMsgType[RemoteMessageSent]
       val readB = instrumentProbeB.expectMsgType[RemoteReadMetadata]
       val recvdB = instrumentProbeB.expectMsgType[RemoteMessageReceived]
@@ -136,7 +136,7 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec("""
       recvdB.time should be > 0L
 
       // for the reply
-      val writeB = instrumentProbeB.expectMsgType[RemoteWriteMetadata]
+      instrumentProbeB.expectMsgType[RemoteWriteMetadata]
       val sentB = instrumentProbeB.expectMsgType[RemoteMessageSent]
       val readA = instrumentProbeA.expectMsgType[RemoteReadMetadata]
       val recvdA = instrumentProbeA.expectMsgType[RemoteMessageReceived]

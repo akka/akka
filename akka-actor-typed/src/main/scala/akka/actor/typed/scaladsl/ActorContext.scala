@@ -5,7 +5,7 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed._
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.util.Timeout
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -35,7 +35,6 @@ import akka.annotation.InternalApi
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 trait ActorContext[T] extends TypedActorContext[T] {
 
   /**
@@ -298,5 +297,29 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def onUnhandled(msg: T): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def currentBehavior: Behavior[T]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def hasTimer: Boolean
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def cancelAllTimers(): Unit
 
 }

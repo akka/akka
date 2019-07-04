@@ -9,6 +9,7 @@ import java.io.NotSerializableException
 import akka.actor.{ ActorSystem, ExtendedActorSystem, RootActorPath }
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.{ AkkaSpec, TestActors, TestKit }
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 
 object TransientSerializationErrorSpec {
@@ -19,7 +20,7 @@ object TransientSerializationErrorSpec {
   object NotDeserializable
   object IllegalOnDeserialize
 
-  class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+  class TestSerializer(@unused system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
       case ManifestNotSerializable => throw new NotSerializableException()
@@ -112,7 +113,8 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config)
 
 class TransientSerializationErrorSpec
     extends AbstractTransientSerializationErrorSpec(ConfigFactory.parseString("""
-  akka.remote.netty.tcp {
+  akka.remote.artery.enabled = false 
+  akka.remote.classic.netty.tcp {
     hostname = localhost
     port = 0
  }

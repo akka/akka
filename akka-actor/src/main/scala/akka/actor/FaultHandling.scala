@@ -33,6 +33,7 @@ private[akka] case object ChildNameReserved extends ChildStats
  * ChildRestartStats is the statistics kept by every parent Actor for every child Actor
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
+@ccompatUsedUntil213
 final case class ChildRestartStats(
     child: ActorRef,
     var maxNrOfRetriesCount: Int = 0,
@@ -511,8 +512,8 @@ case class AllForOneStrategy(
  * to the child actor that failed, as opposed to [[akka.actor.AllForOneStrategy]] that applies
  * it to all children.
  *
- * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
- *   if the limit is exceeded the child actor is stopped
+ * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit
+ *  if the duration is infinite. If the limit is exceeded the child actor is stopped
  * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
  * @param decider mapping from Throwable to [[akka.actor.SupervisorStrategy.Directive]], you can also use a
  *   [[scala.collection.immutable.Seq]] of Throwables which maps the given Throwables to restarts, otherwise escalates.
@@ -584,7 +585,7 @@ case class OneForOneStrategy(
     this(loggingEnabled = loggingEnabled)(decider)
 
   /**
-   * Java API: compatible with lambda expressions
+   * Java API: Restart an infinite number of times. Compatible with lambda expressions.
    */
   def this(decider: SupervisorStrategy.Decider) =
     this()(decider)

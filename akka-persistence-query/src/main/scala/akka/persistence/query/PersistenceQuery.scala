@@ -8,6 +8,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.persistence.query.scaladsl.ReadJournal
 import akka.persistence.{ PersistencePlugin, PluginProvider }
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.reflect.ClassTag
@@ -63,7 +64,7 @@ class PersistenceQuery(system: ExtendedActorSystem)
    * read journal configuration entry.
    */
   final def getReadJournalFor[T <: javadsl.ReadJournal](
-      clazz: Class[T],
+      @unused clazz: Class[T],
       readJournalPluginId: String,
       readJournalPluginConfig: Config): T =
     pluginFor(readJournalPluginId, readJournalPluginConfig).javadslPlugin.asInstanceOf[T]

@@ -72,14 +72,14 @@ private[affinity] object AffinityPool {
     private[this] var parkPeriodNs = 0L
     @volatile private[this] var idling = false
 
-    @inline private[this] final def transitionTo(newState: IdleState): Unit = {
+    @inline private[this] def transitionTo(newState: IdleState): Unit = {
       state = newState
       turns = 0
     }
 
-    final def isIdling: Boolean = idling
+    def isIdling: Boolean = idling
 
-    final def idle(): Unit = {
+    def idle(): Unit = {
       (state: @switch) match {
         case Initial =>
           idling = true
@@ -104,7 +104,7 @@ private[affinity] object AffinityPool {
       }
     }
 
-    final def reset(): Unit = {
+    def reset(): Unit = {
       idling = false
       transitionTo(Initial)
     }
@@ -248,18 +248,16 @@ private[akka] class AffinityPool(
   override def toString: String =
     s"${Logging.simpleName(this)}(id = $id, parallelism = $parallelism, affinityGroupSize = $affinityGroupSize, threadFactory = $threadFactory, idleCpuLevel = $idleCpuLevel, queueSelector = $queueSelector, rejectionHandler = $rejectionHandler)"
 
-  private[this] final class AffinityPoolWorker(
-      final val q: BoundedAffinityTaskQueue,
-      final val idleStrategy: IdleStrategy)
+  private[this] final class AffinityPoolWorker(val q: BoundedAffinityTaskQueue, val idleStrategy: IdleStrategy)
       extends Runnable {
-    final val thread: Thread = threadFactory.newThread(this)
+    val thread: Thread = threadFactory.newThread(this)
 
-    final def start(): Unit =
+    def start(): Unit =
       if (thread eq null)
         throw new IllegalStateException(s"Was not able to allocate worker thread for ${AffinityPool.this}")
       else thread.start()
 
-    override final def run(): Unit = {
+    override def run(): Unit = {
       // Returns true if it executed something, false otherwise
       def executeNext(): Boolean = {
         val c = q.poll()
@@ -273,7 +271,7 @@ private[akka] class AffinityPool(
         next
       }
 
-      /**
+      /*
        * We keep running as long as we are Running
        * or we're ShuttingDown but we still have tasks to execute,
        * and we're not interrupted.
@@ -329,22 +327,22 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
   private val queueSelectorFactory: QueueSelectorFactory =
     prerequisites.dynamicAccess
       .createInstanceFor[QueueSelectorFactory](queueSelectorFactoryFQCN, immutable.Seq(classOf[Config] -> config))
-      .recover({
+      .recover {
         case _ =>
           throw new IllegalArgumentException(
             s"Cannot instantiate QueueSelectorFactory(queueSelector = $queueSelectorFactoryFQCN), make sure it has an accessible constructor which accepts a Config parameter")
-      })
+      }
       .get
 
   private val rejectionHandlerFactoryFCQN = config.getString("rejection-handler")
   private val rejectionHandlerFactory = prerequisites.dynamicAccess
     .createInstanceFor[RejectionHandlerFactory](rejectionHandlerFactoryFCQN, Nil)
-    .recover({
+    .recover {
       case exception =>
         throw new IllegalArgumentException(
           s"Cannot instantiate RejectionHandlerFactory(rejection-handler = $rejectionHandlerFactoryFCQN), make sure it has an accessible empty constructor",
           exception)
-    })
+    }
     .get
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
@@ -389,7 +387,7 @@ trait QueueSelector {
 
   /**
    * Must be deterministic—return the same value for the same input.
-   * @returns given a `Runnable` a number between 0 .. `queues` (exclusive)
+   * @return given a `Runnable` a number between 0 .. `queues` (exclusive)
    * @throws NullPointerException when `command` is `null`
    */
   def getQueue(command: Runnable, queues: Int): Int
@@ -401,9 +399,9 @@ trait QueueSelector {
 @InternalApi
 @ApiMayChange
 private[akka] final class ThrowOnOverflowRejectionHandler extends RejectionHandlerFactory with RejectionHandler {
-  override final def reject(command: Runnable, service: ExecutorService): Unit =
+  override def reject(command: Runnable, service: ExecutorService): Unit =
     throw new RejectedExecutionException(s"Task $command rejected from $service")
-  override final def create(): RejectionHandler = this
+  override def create(): RejectionHandler = this
 }
 
 /**
@@ -411,7 +409,7 @@ private[akka] final class ThrowOnOverflowRejectionHandler extends RejectionHandl
  */
 @InternalApi
 @ApiMayChange
-private[akka] final class FairDistributionHashCache(final val config: Config) extends QueueSelectorFactory {
+private[akka] final class FairDistributionHashCache(val config: Config) extends QueueSelectorFactory {
   private final val MaxFairDistributionThreshold = 2048
 
   private[this] final val fairDistributionThreshold = config
@@ -420,7 +418,7 @@ private[akka] final class FairDistributionHashCache(final val config: Config) ex
       thr => 0 <= thr && thr <= MaxFairDistributionThreshold,
       s"fair-work-distribution.threshold must be between 0 and $MaxFairDistributionThreshold")
 
-  override final def create(): QueueSelector =
+  override def create(): QueueSelector =
     new AtomicReference[ImmutableIntMap](ImmutableIntMap.empty) with QueueSelector {
       override def toString: String =
         s"FairDistributionHashCache(fairDistributionThreshold = $fairDistributionThreshold)"

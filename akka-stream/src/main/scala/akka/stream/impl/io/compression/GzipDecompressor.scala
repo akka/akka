@@ -18,6 +18,8 @@ import akka.util.ByteString
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
     override val inflater: Inflater = new Inflater(true)
+    private val crc32: CRC32 = new CRC32
+
     override def afterInflate: ParseStep[ByteString] = ReadTrailer
     override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit =
       crc32.update(buffer, offset, length)
@@ -46,7 +48,7 @@ import akka.util.ByteString
         ParseResult(None, inflating, acceptUpstreamFinish = false)
       }
     }
-    var crc32: CRC32 = new CRC32
+
     private def fail(msg: String) = throw new ZipException(msg)
 
     /** Reading the trailer */

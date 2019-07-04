@@ -20,6 +20,7 @@ import scala.util.Try
 /**
  * `EventAdapters` serves as a per-journal collection of bound event adapters.
  */
+@ccompatUsedUntil213
 class EventAdapters(
     map: ConcurrentHashMap[Class[_], EventAdapter],
     bindings: immutable.Seq[(Class[_], EventAdapter)],
@@ -92,13 +93,14 @@ private[akka] object EventAdapters {
     // bindings is a Seq of tuple representing the mapping from Class to handler.
     // It is primarily ordered by the most specific classes first, and secondly in the configured order.
     val bindings: immutable.Seq[ClassHandler] = {
-      val bs = for ((k: FQN, as: BoundAdapters) <- adapterBindings)
-        yield
-          if (as.size == 1) (system.dynamicAccess.getClassFor[Any](k).get, handlers(as.head))
-          else
-            (
-              system.dynamicAccess.getClassFor[Any](k).get,
-              NoopWriteEventAdapter(CombinedReadEventAdapter(as.map(handlers))))
+      val bs =
+        for ((k: FQN, as: BoundAdapters) <- adapterBindings)
+          yield
+            if (as.size == 1) (system.dynamicAccess.getClassFor[Any](k).get, handlers(as.head))
+            else
+              (
+                system.dynamicAccess.getClassFor[Any](k).get,
+                NoopWriteEventAdapter(CombinedReadEventAdapter(as.map(handlers))))
 
       sort(bs)
     }
@@ -160,14 +162,14 @@ private[akka] object EventAdapters {
       .to(immutable.Seq)
 
   private final def configToMap(config: Config, path: String): Map[String, String] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     if (config.hasPath(path)) {
       config.getConfig(path).root.unwrapped.asScala.toMap.map { case (k, v) => k -> v.toString }
     } else Map.empty
   }
 
   private final def configToListMap(config: Config, path: String): Map[String, immutable.Seq[String]] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     if (config.hasPath(path)) {
       config.getConfig(path).root.unwrapped.asScala.toMap.map {
         case (k, v: util.ArrayList[_]) if v.isInstanceOf[util.ArrayList[_]] => k -> v.asScala.map(_.toString).toList

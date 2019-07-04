@@ -1,7 +1,0 @@
-# #18722 internal changes to actor
-ProblemFilters.exclude[Problem]("akka.cluster.sharding.DDataShardCoordinator*")
-
-ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.ShardRegion$GetCurrentRegions$")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.apply")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.copy")
-

@@ -5,6 +5,7 @@
 package akka.cluster.sharding.typed
 package javadsl
 
+import java.time.Duration
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
@@ -21,7 +22,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
 import akka.persistence.typed.PersistenceId
-import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 @FunctionalInterface
 trait EntityFactory[M] {
@@ -207,7 +208,7 @@ object Entity {
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
-   * is very common and therefore the [[Entity.ofPersistentEntity]] is provided as convenience.
+   * is very common and therefore the [[Entity.ofEventSourcedEntity]] is provided as convenience.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
@@ -237,10 +238,45 @@ object Entity {
    * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
    * @tparam Command The type of message the entity accepts
    */
-  def ofPersistentEntity[Command, Event, State >: Null](
+  def ofEventSourcedEntity[Command, Event, State](
       typeKey: EntityTypeKey[Command],
       createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]])
       : Entity[Command, ShardingEnvelope[Command]] = {
+
+    of(
+      typeKey,
+      new JFunction[EntityContext[Command], Behavior[Command]] {
+        override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
+          val persistentEntity = createPersistentEntity(ctx)
+          if (persistentEntity.entityTypeKey != typeKey)
+            throw new IllegalArgumentException(
+              s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
+              s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
+          persistentEntity
+        }
+      })
+  }
+
+  /**
+   * Defines how the [[EventSourcedEntityWithEnforcedReplies]] should be created. Used in [[ClusterSharding#init]]. Any [[Behavior]] can
+   * be used as a sharded entity actor, but the combination of sharding and persistent actors is very common
+   * and therefore this factory is provided as convenience.
+   *
+   * A [[EventSourcedEntityWithEnforcedReplies]] enforces that replies to commands are not forgotten.
+   * There will be compilation errors if the returned effect isn't a [[akka.persistence.typed.javadsl.ReplyEffect]], which can be
+   * created with `Effects().reply`, `Effects().noReply`, [[akka.persistence.typed.javadsl.Effect.thenReply]], or [[akka.persistence.typed.javadsl.Effect.thenNoReply]].
+   *
+   * More optional settings can be defined using the `with` methods of the returned [[Entity]].
+   *
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
+   * @tparam Command The type of message the entity accepts
+   */
+  def ofEventSourcedEntityWithEnforcedReplies[Command, Event, State](
+      typeKey: EntityTypeKey[Command],
+      createPersistentEntity: JFunction[
+        EntityContext[Command],
+        EventSourcedEntityWithEnforcedReplies[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
 
     of(
       typeKey,
@@ -343,6 +379,7 @@ final class EntityContext[M](
   def getActorContext: ActorContext[M] = actorContext
 }
 
+@silent // for unused msgClass to make class type explicit in the Java API. Not using @unused as the user is likely to see it
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
 
@@ -407,7 +444,7 @@ object EntityTypeKey {
  * A reference to an sharded Entity, which allows `ActorRef`-like usage.
  *
  * An [[EntityRef]] is NOT an [[ActorRef]]–by design–in order to be explicit about the fact that the life-cycle
- * of a sharded Entity is very different than a plain Actors. Most notably, this is shown by features of Entities
+ * of a sharded Entity is very different than a plain Actor. Most notably, this is shown by features of Entities
  * such as re-balancing (an active Entity to a different node) or passivation. Both of which are aimed to be completely
  * transparent to users of such Entity. In other words, if this were to be a plain ActorRef, it would be possible to
  * apply DeathWatch to it, which in turn would then trigger when the sharded Actor stopped, breaking the illusion that
@@ -431,8 +468,10 @@ object EntityTypeKey {
    *
    * Note that if you are inside of an actor you should prefer [[akka.actor.typed.javadsl.ActorContext.ask]]
    * as that provides better safety.
+   *
+   * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Timeout): CompletionStage[U]
+  def ask[Res](message: JFunction[ActorRef[Res], M], timeout: Duration): CompletionStage[Res]
 
   /**
    * INTERNAL API

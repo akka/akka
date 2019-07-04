@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.Done
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
@@ -55,6 +55,7 @@ import scala.util.control.NonFatal
   def props(shell: GraphInterpreterShell): Props =
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
+  @InternalStableApi
   class BatchingActorInputBoundary(
       size: Int,
       shell: GraphInterpreterShell,
@@ -63,7 +64,8 @@ import scala.util.control.NonFatal
       extends UpstreamBoundaryStageLogic[Any]
       with OutHandler {
 
-    final case class OnError(shell: GraphInterpreterShell, cause: Throwable) extends SimpleBoundaryEvent {
+    // can't be final because of SI-4440
+    case class OnError(shell: GraphInterpreterShell, cause: Throwable) extends SimpleBoundaryEvent {
       override def execute(): Unit = {
         if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onError port=$internalPortName")
         BatchingActorInputBoundary.this.onError(cause)
@@ -71,7 +73,8 @@ import scala.util.control.NonFatal
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
     }
-    final case class OnComplete(shell: GraphInterpreterShell) extends SimpleBoundaryEvent {
+    // can't be final because of SI-4440
+    case class OnComplete(shell: GraphInterpreterShell) extends SimpleBoundaryEvent {
       override def execute(): Unit = {
         if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onComplete port=$internalPortName")
         BatchingActorInputBoundary.this.onComplete()
@@ -79,7 +82,8 @@ import scala.util.control.NonFatal
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
     }
-    final case class OnNext(shell: GraphInterpreterShell, e: Any) extends SimpleBoundaryEvent {
+    // can't be final because of SI-4440
+    case class OnNext(shell: GraphInterpreterShell, e: Any) extends SimpleBoundaryEvent {
       override def execute(): Unit = {
         if (GraphInterpreter.Debug) println(s"${interpreter.Name} onNext $e port=$internalPortName")
         BatchingActorInputBoundary.this.onNext(e)
@@ -87,7 +91,8 @@ import scala.util.control.NonFatal
 
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
     }
-    final case class OnSubscribe(shell: GraphInterpreterShell, subscription: Subscription) extends SimpleBoundaryEvent {
+    // can't be final because of SI-4440
+    case class OnSubscribe(shell: GraphInterpreterShell, subscription: Subscription) extends SimpleBoundaryEvent {
       override def execute(): Unit = {
         if (GraphInterpreter.Debug) println(s"${interpreter.Name}  onSubscribe port=$internalPortName")
         shell.subscribeArrived()
@@ -140,6 +145,7 @@ import scala.util.control.NonFatal
       })
     }
 
+    @InternalStableApi
     private def dequeue(): Any = {
       val elem = inputBuffer(nextInputElementCursor)
       if (elem eq null) throw new IllegalArgumentException("Internal queue must never contain a null")
@@ -156,6 +162,7 @@ import scala.util.control.NonFatal
       elem
     }
 
+    @InternalStableApi
     private def clear(): Unit = {
       java.util.Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
       inputBufferElements = 0
@@ -170,6 +177,7 @@ import scala.util.control.NonFatal
       }
     }
 
+    @InternalStableApi
     def onNext(elem: Any): Unit = {
       if (!upstreamCompleted) {
         if (inputBufferElements == size) throw new IllegalStateException("Input buffer overrun")
@@ -464,7 +472,8 @@ import scala.util.control.NonFatal
    * @param promise Will be completed upon processing the event, or failed if processing the event throws
    *                if the event isn't ever processed the promise (the operator stops) is failed elsewhere
    */
-  final case class AsyncInput(
+  // can't be final because of SI-4440
+  case class AsyncInput(
       shell: GraphInterpreterShell,
       logic: GraphStageLogic,
       evt: Any,
@@ -484,7 +493,8 @@ import scala.util.control.NonFatal
     }
   }
 
-  final case class ResumeShell(shell: GraphInterpreterShell) extends BoundaryEvent {
+  // can't be final because of SI-4440
+  case class ResumeShell(shell: GraphInterpreterShell) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int =
       if (!waitingForShutdown) {
         if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
@@ -492,7 +502,8 @@ import scala.util.control.NonFatal
       } else eventLimit
   }
 
-  final case class Abort(shell: GraphInterpreterShell) extends BoundaryEvent {
+  // can't be final because of SI-4440
+  case class Abort(shell: GraphInterpreterShell) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (waitingForShutdown) {
         subscribesPending = 0

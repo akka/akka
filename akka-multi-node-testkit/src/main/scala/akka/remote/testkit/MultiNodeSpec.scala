@@ -30,6 +30,7 @@ import akka.util.ccompat._
 /**
  * Configure the role names and participants of the test, including configuration settings.
  */
+@ccompatUsedUntil213
 abstract class MultiNodeConfig {
 
   private var _commonConf: Option[Config] = None
@@ -109,7 +110,7 @@ abstract class MultiNodeConfig {
   private[akka] def config: Config = {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString("""
-           akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
+           akka.remote.classic.netty.tcp.applied-adapters = [trttl, gremlin]
            akka.remote.artery.advanced.test-mode = on
         """)
       else ConfigFactory.empty
@@ -213,8 +214,8 @@ object MultiNodeSpec {
     Map(
       "akka.actor.provider" -> "remote",
       "akka.remote.artery.canonical.hostname" -> selfName,
-      "akka.remote.netty.tcp.hostname" -> selfName,
-      "akka.remote.netty.tcp.port" -> selfPort,
+      "akka.remote.classic.netty.tcp.hostname" -> selfName,
+      "akka.remote.classic.netty.tcp.port" -> selfPort,
       "akka.remote.artery.canonical.port" -> selfPort))
 
   private[testkit] val baseConfig: Config =
@@ -224,6 +225,7 @@ object MultiNodeSpec {
         loglevel = "WARNING"
         stdout-loglevel = "WARNING"
         coordinated-shutdown.terminate-actor-system = off
+        coordinated-shutdown.run-by-actor-system-terminate = off
         coordinated-shutdown.run-by-jvm-shutdown-hook = off
         actor {
           default-dispatcher {
@@ -239,7 +241,7 @@ object MultiNodeSpec {
       """)
 
   private def mapToConfig(map: Map[String, Any]): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     ConfigFactory.parseMap(map.asJava)
   }
 
@@ -437,7 +439,8 @@ abstract class MultiNodeSpec(
 
   // now add deployments, if so desired
 
-  private final case class Replacement(tag: String, role: RoleName) {
+  // Cannot be final because of https://github.com/scala/bug/issues/4440
+  private case class Replacement(tag: String, role: RoleName) {
     lazy val addr = node(role).address.toString
   }
 
@@ -450,7 +453,7 @@ abstract class MultiNodeSpec(
         case (base, r @ Replacement(tag, _)) =>
           base.indexOf(tag) match {
             case -1 => base
-            case start =>
+            case _ =>
               val replaceWith = try r.addr
               catch {
                 case NonFatal(e) =>
@@ -464,7 +467,7 @@ abstract class MultiNodeSpec(
               base.replace(tag, replaceWith)
           }
       }
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       ConfigFactory.parseString(deployString).root.asScala.foreach {
         case (key, value: ConfigObject) => deployer.parseConfig(key, value.toConfig).foreach(deployer.deploy)
         case (key, x) =>
@@ -493,7 +496,7 @@ abstract class MultiNodeSpec(
    */
   protected def startNewSystem(): ActorSystem = {
     val config = ConfigFactory
-      .parseString(s"akka.remote.netty.tcp{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
+      .parseString(s"akka.remote.classic.netty.tcp{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
       .withFallback(system.settings.config)
     val sys = ActorSystem(system.name, config)
     injectDeployments(sys, myself)

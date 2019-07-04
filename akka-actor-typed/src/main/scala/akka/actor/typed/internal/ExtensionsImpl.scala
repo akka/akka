@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 import akka.actor.typed.ExtensionSetup
 
@@ -31,7 +31,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
    */
   @InternalApi private[akka] def loadExtensions(): Unit = {
 
-    /**
+    /*
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {

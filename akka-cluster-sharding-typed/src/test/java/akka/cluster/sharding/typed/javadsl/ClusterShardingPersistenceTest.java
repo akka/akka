@@ -19,7 +19,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 
@@ -28,7 +28,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
   public static final Config config =
       ConfigFactory.parseString(
           "akka.actor.provider = cluster \n"
-              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
               + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
@@ -66,10 +66,6 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     Get(ActorRef<String> replyTo) {
       this.replyTo = replyTo;
     }
-  }
-
-  static enum StopPlz implements Command {
-    INSTANCE
   }
 
   static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
@@ -131,10 +127,9 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
       sharding.init(
-          Entity.ofPersistentEntity(
-                  TestPersistentEntity.ENTITY_TYPE_KEY,
-                  entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
-              .withStopMessage(StopPlz.INSTANCE));
+          Entity.ofEventSourcedEntity(
+              TestPersistentEntity.ENTITY_TYPE_KEY,
+              entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
 
       _sharding = sharding;
     }
@@ -156,14 +151,13 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
   public void askWithThenReply() {
     TestProbe<Done> p1 = testKit.createTestProbe();
     EntityRef<Command> ref = sharding().entityRefFor(TestPersistentEntity.ENTITY_TYPE_KEY, "456");
-    Timeout askTimeout = Timeout.create(p1.getRemainingOrDefault());
     CompletionStage<Done> done1 =
-        ref.ask(replyTo -> new AddWithConfirmation("a", replyTo), askTimeout);
+        ref.ask(replyTo -> new AddWithConfirmation("a", replyTo), p1.getRemainingOrDefault());
     done1.thenAccept(d -> p1.getRef().tell(d));
     p1.expectMessage(Done.getInstance());
 
     CompletionStage<Done> done2 =
-        ref.ask(replyTo -> new AddWithConfirmation("b", replyTo), askTimeout);
+        ref.ask(replyTo -> new AddWithConfirmation("b", replyTo), p1.getRemainingOrDefault());
     done1.thenAccept(d -> p1.getRef().tell(d));
     p1.expectMessage(Done.getInstance());
 

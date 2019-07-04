@@ -15,6 +15,7 @@ import akka.annotation.InternalApi
 import akka.persistence.AtLeastOnceDelivery.Internal.Delivery
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object AtLeastOnceDelivery {
 
   /**
@@ -33,7 +34,7 @@ object AtLeastOnceDelivery {
      * Java API
      */
     def getUnconfirmedDeliveries: java.util.List[UnconfirmedDelivery] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       unconfirmedDeliveries.asJava
     }
 
@@ -49,7 +50,7 @@ object AtLeastOnceDelivery {
      * Java API
      */
     def getUnconfirmedDeliveries: java.util.List[UnconfirmedDelivery] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       unconfirmedDeliveries.asJava
     }
   }
@@ -242,7 +243,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
     if (redeliverTask.isEmpty) {
       val interval = redeliverInterval / 2
       redeliverTask = Some(
-        context.system.scheduler.schedule(interval, interval, self, RedeliveryTick)(context.dispatcher))
+        context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, RedeliveryTick)(context.dispatcher))
     }
   }
 
@@ -401,66 +402,6 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
       case _ =>
         super.aroundReceive(receive, message)
     }
-}
-
-/**
- * Java API: Use this class instead of `UntypedPersistentActor` to send messages
- * with at-least-once delivery semantics to destinations.
- * Full documentation in [[AtLeastOnceDelivery]].
- *
- * @see [[AtLeastOnceDelivery]]
- * @see [[AtLeastOnceDeliveryLike]]
- */
-@deprecated("Use AbstractPersistentActorWithAtLeastOnceDelivery instead.", since = "2.5.0")
-abstract class UntypedPersistentActorWithAtLeastOnceDelivery
-    extends UntypedPersistentActor
-    with AtLeastOnceDeliveryLike {
-
-  /**
-   * Java API: Send the message created by the `deliveryIdToMessage` function to
-   * the `destination` actor. It will retry sending the message until
-   * the delivery is confirmed with [[#confirmDelivery]]. Correlation
-   * between `deliver` and `confirmDelivery` is performed with the
-   * `deliveryId` that is provided as parameter to the `deliveryIdToMessage`
-   * function. The `deliveryId` is typically passed in the message to the
-   * destination, which replies with a message containing the same `deliveryId`.
-   *
-   * The `deliveryId` is a strictly monotonically increasing sequence number without
-   * gaps. The same sequence is used for all destinations, i.e. when sending to
-   * multiple destinations the destinations will see gaps in the sequence if no
-   * translation is performed.
-   *
-   * During recovery this method will not send out the message, but it will be sent
-   * later if no matching `confirmDelivery` was performed.
-   *
-   * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
-   * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
-   */
-  def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
-    internalDeliver(destination)(id => deliveryIdToMessage.apply(id))
-
-  /**
-   * Java API: Send the message created by the `deliveryIdToMessage` function to
-   * the `destination` actor. It will retry sending the message until
-   * the delivery is confirmed with [[#confirmDelivery]]. Correlation
-   * between `deliver` and `confirmDelivery` is performed with the
-   * `deliveryId` that is provided as parameter to the `deliveryIdToMessage`
-   * function. The `deliveryId` is typically passed in the message to the
-   * destination, which replies with a message containing the same `deliveryId`.
-   *
-   * The `deliveryId` is a strictly monotonically increasing sequence number without
-   * gaps. The same sequence is used for all destinations, i.e. when sending to
-   * multiple destinations the destinations will see gaps in the sequence if no
-   * translation is performed.
-   *
-   * During recovery this method will not send out the message, but it will be sent
-   * later if no matching `confirmDelivery` was performed.
-   *
-   * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
-   * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
-   */
-  def deliver(destination: ActorSelection, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
-    internalDeliver(destination)(id => deliveryIdToMessage.apply(id))
 }
 
 /**

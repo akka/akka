@@ -23,12 +23,12 @@ trait EventHandler[State, Event] {
 }
 
 object EventHandlerBuilder {
-  def builder[State >: Null, Event](): EventHandlerBuilder[State, Event] =
+  def builder[State, Event](): EventHandlerBuilder[State, Event] =
     new EventHandlerBuilder[State, Event]()
 
 }
 
-final class EventHandlerBuilder[State >: Null, Event]() {
+final class EventHandlerBuilder[State, Event]() {
 
   private var builders: List[EventHandlerBuilderByState[State, State, Event]] = Nil
 
@@ -167,7 +167,7 @@ object EventHandlerBuilderByState {
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
    * @return A new, mutable, EventHandlerBuilderByState
    */
-  def builder[S <: State, State >: Null, Event](stateClass: Class[S]): EventHandlerBuilderByState[S, State, Event] =
+  def builder[S <: State, State, Event](stateClass: Class[S]): EventHandlerBuilderByState[S, State, Event] =
     new EventHandlerBuilderByState(stateClass, statePredicate = trueStatePredicate)
 
   /**
@@ -175,7 +175,7 @@ object EventHandlerBuilderByState {
    *                       useful for example when state type is an Optional
    * @return A new, mutable, EventHandlerBuilderByState
    */
-  def builder[State >: Null, Event](statePredicate: Predicate[State]): EventHandlerBuilderByState[State, State, Event] =
+  def builder[State, Event](statePredicate: Predicate[State]): EventHandlerBuilderByState[State, State, Event] =
     new EventHandlerBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
 
   /**
@@ -187,7 +187,7 @@ object EventHandlerBuilderByState {
       handler: BiFunction[State, Event, State])
 }
 
-final class EventHandlerBuilderByState[S <: State, State >: Null, Event](
+final class EventHandlerBuilderByState[S <: State, State, Event](
     private val stateClass: Class[S],
     private val statePredicate: Predicate[S]) {
 
@@ -316,7 +316,7 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](
 
     new EventHandler[State, Event] {
       def apply(state: State, event: Event): State = {
-        var result: OptionVal[State] = OptionVal.None
+        var result: OptionVal[State] = OptionVal.none
         var idx = 0
         while (idx < builtCases.length && result.isEmpty) {
           val curr = builtCases(idx)

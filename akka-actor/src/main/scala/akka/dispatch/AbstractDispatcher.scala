@@ -8,11 +8,13 @@ import java.util.concurrent._
 import java.{ util => ju }
 
 import akka.actor._
+import akka.annotation.InternalStableApi
 import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ unused, Index, Unsafe }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
@@ -96,8 +98,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   val mailboxes = prerequisites.mailboxes
   val eventStream = prerequisites.eventStream
 
-  @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
-  @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
+  @silent @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
+  @silent @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
 
   private final def addInhabitants(add: Long): Long = {
     val old = Unsafe.instance.getAndAddLong(this, inhabitantsOffset, add)
@@ -314,6 +316,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
+  @InternalStableApi
   protected[akka] def shutdown(): Unit
 }
 
@@ -350,14 +353,14 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[ExecutorServiceConfigurator](fqcn, args)
-          .recover({
+          .recover {
             case exception =>
               throw new IllegalArgumentException(
                 ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
                 make sure it has an accessible constructor with a [%s,%s] signature""")
                   .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]),
                 exception)
-          })
+          }
           .get
     }
 

@@ -1,0 +1,12 @@
+# excludes for 2.6
+
+# Remove deprecated features since 2.5.0 https://github.com/akka/akka/issues/26492
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentActor")
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentActorWithAtLeastOnceDelivery")
+
+# #26910 scheduleWithFixedDelay vs scheduleAtFixedRate
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.PersistentFSM#Timer.repeat")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.copy$default$3")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.copy")

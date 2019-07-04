@@ -49,7 +49,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
   "Outbound streams" should {
 
-    "be stopped when they are idle" in withAssociation { (_, remoteAddress, remoteEcho, localArtery, localProbe) =>
+    "be stopped when they are idle" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
       val association = localArtery.association(remoteAddress)
       withClue("When initiating a connection, both the control and ordinary streams are opened") {
         assertStreamActive(association, Association.ControlQueueIndex, expected = true)
@@ -84,51 +84,49 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
         }
     }
 
-    "eliminate quarantined association when not used" in withAssociation {
-      (_, remoteAddress, remoteEcho, localArtery, localProbe) =>
-        val association = localArtery.association(remoteAddress)
-        withClue("When initiating a connection, both the control and ordinary streams are opened") {
-          assertStreamActive(association, Association.ControlQueueIndex, expected = true)
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
-        }
+    "eliminate quarantined association when not used" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
+      val association = localArtery.association(remoteAddress)
+      withClue("When initiating a connection, both the control and ordinary streams are opened") {
+        assertStreamActive(association, Association.ControlQueueIndex, expected = true)
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
+      }
 
-        val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+      val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
 
-        localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
+      localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
 
-        eventually {
-          assertStreamActive(association, Association.ControlQueueIndex, expected = false)
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
-        }
+      eventually {
+        assertStreamActive(association, Association.ControlQueueIndex, expected = false)
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
+      }
 
-        // the outbound streams are inactive and association quarantined, then it's completely removed
-        eventually {
-          localArtery.remoteAddresses should not contain remoteAddress
-        }
+      // the outbound streams are inactive and association quarantined, then it's completely removed
+      eventually {
+        localArtery.remoteAddresses should not contain remoteAddress
+      }
     }
 
-    "remove inbound compression after quarantine" in withAssociation {
-      (_, remoteAddress, remoteEcho, localArtery, localProbe) =>
-        val association = localArtery.association(remoteAddress)
-        val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+    "remove inbound compression after quarantine" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
+      val association = localArtery.association(remoteAddress)
+      val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
 
-        localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
+      localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
 
-        eventually {
-          assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
-        }
-        // compression still exists when idle
-        localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
+      eventually {
+        assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
+      }
+      // compression still exists when idle
+      localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
 
-        localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
-        // after quarantine it should be removed
-        eventually {
-          localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should not contain remoteUid
-        }
+      localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
+      // after quarantine it should be removed
+      eventually {
+        localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should not contain remoteUid
+      }
     }
 
     "remove inbound compression after restart with same host:port" in withAssociation {
-      (remoteSystem, remoteAddress, remoteEcho, localArtery, localProbe) =>
+      (remoteSystem, remoteAddress, _, localArtery, localProbe) =>
         val association = localArtery.association(remoteAddress)
         val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
 

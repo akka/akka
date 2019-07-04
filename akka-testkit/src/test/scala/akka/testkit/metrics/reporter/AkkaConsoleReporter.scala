@@ -9,7 +9,6 @@ import java.util
 import java.util.concurrent.TimeUnit
 import com.codahale.metrics._
 import akka.testkit.metrics._
-import scala.reflect.ClassTag
 
 /**
  * Used to report `akka.testkit.metric.Metric` types that the original `com.codahale.metrics.ConsoleReporter` is unaware of (cannot re-use directly because of private constructor).
@@ -30,7 +29,7 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
       histograms: util.SortedMap[String, Histogram],
       meters: util.SortedMap[String, Meter],
       timers: util.SortedMap[String, Timer]): Unit = {
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
 
     // default Metrics types
     printMetrics(gauges.asScala, printGauge)
@@ -48,9 +47,8 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
     output.flush()
   }
 
-  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T => Unit)(
-      implicit clazz: ClassTag[T]): Unit = {
-    if (!metrics.isEmpty) {
+  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T => Unit): Unit = {
+    if (metrics.nonEmpty) {
       printWithBanner(s"-- ${simpleName(metrics.head._2.getClass)}", '-')
       for ((key, metric) <- metrics) {
         output.println("  " + key)

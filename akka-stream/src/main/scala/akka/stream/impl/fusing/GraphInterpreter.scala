@@ -11,7 +11,7 @@ import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.Done
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
@@ -78,6 +78,7 @@ import akka.stream.snapshot._
    * @param inHandler The handler that contains the callback for input events.
    * @param outHandler The handler that contains the callback for output events.
    */
+  @InternalStableApi
   final class Connection(
       var id: Int,
       var inOwner: GraphStageLogic,
@@ -467,6 +468,7 @@ import akka.stream.snapshot._
     }
 
   // Decodes and processes a single event for the given connection
+  @InternalStableApi
   private def processEvent(connection: Connection): Unit = {
 
     // this must be the state after returning without delivering any signals, to avoid double-finalization of some unlucky stage
@@ -514,6 +516,7 @@ import akka.stream.snapshot._
     }
   }
 
+  @InternalStableApi
   private def processPush(connection: Connection): Unit = {
     if (Debug)
       println(
@@ -523,6 +526,7 @@ import akka.stream.snapshot._
     connection.inHandler.onPush()
   }
 
+  @InternalStableApi
   private def processPull(connection: Connection): Unit = {
     if (Debug)
       println(
@@ -574,6 +578,7 @@ import akka.stream.snapshot._
     if (enabled) shutdownCounter(logic.stageId) |= KeepGoingFlag
     else shutdownCounter(logic.stageId) &= KeepGoingMask
 
+  @InternalStableApi
   private[stream] def finalizeStage(logic: GraphStageLogic): Unit = {
     try {
       logic.postStop()
@@ -612,6 +617,7 @@ import akka.stream.snapshot._
     if ((currentState & OutClosed) == 0) completeConnection(connection.outOwner.stageId)
   }
 
+  @InternalStableApi
   private[stream] def fail(connection: Connection, ex: Throwable): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   fail($connection, $ex) [$currentState]")
@@ -630,6 +636,7 @@ import akka.stream.snapshot._
     if ((currentState & OutClosed) == 0) completeConnection(connection.outOwner.stageId)
   }
 
+  @InternalStableApi
   private[stream] def cancel(connection: Connection): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   cancel($connection) [$currentState]")
@@ -668,19 +675,27 @@ import akka.stream.snapshot._
         logicSnapshots(logicIndexes(connection.inOwner)),
         logicSnapshots(logicIndexes(connection.outOwner)),
         connection.portState match {
-          case InReady  => ConnectionSnapshot.ShouldPull
-          case OutReady => ConnectionSnapshot.ShouldPush
-          case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) =>
+          case InReady                                                     => ConnectionSnapshot.ShouldPull
+          case OutReady                                                    => ConnectionSnapshot.ShouldPush
+          case x if (x & (InClosed | OutClosed)) == (InClosed | OutClosed) =>
+            // At least one side of the connection is closed: we show it as closed
             ConnectionSnapshot.Closed
+          case _ =>
+            // This should not be possible: connection alive and both push and pull enqueued but not received
+            throw new IllegalStateException(s"Unexpected connection state for $connection: ${connection.portState}")
+
         })
     }
+
+    val stoppedStages: List[LogicSnapshot] = shutdownCounter.zipWithIndex.collect {
+      case (activeConnections, idx) if activeConnections < 1 => logicSnapshots(idx)
+    }.toList
 
     RunningInterpreterImpl(
       logicSnapshots.toVector,
       connectionSnapshots.toVector,
       queueStatus,
       runningStages,
-      shutdownCounter.toList.map(n => logicSnapshots(n)))
+      stoppedStages)
   }
-
 }

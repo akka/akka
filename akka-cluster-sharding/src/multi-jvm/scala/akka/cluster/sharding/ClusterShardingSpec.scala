@@ -30,7 +30,7 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
-import akka.pattern.BackoffSupervisor
+import akka.pattern.BackoffOpts
 
 object ClusterShardingSpec {
   //#counter-actor
@@ -202,6 +202,7 @@ object ClusterShardingDocCode {
         (id.toLong % numberOfShards).toString
     }
     //#extractShardId-StartEntity
+    extractShardId.toString() // keep the compiler happy
   }
 
 }
@@ -310,15 +311,16 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
       "AutoMigrateRememberRegionTest").foreach { typeName =>
       val rebalanceEnabled = typeName.toLowerCase.startsWith("rebalancing")
       val rememberEnabled = typeName.toLowerCase.contains("remember")
-      val singletonProps = BackoffSupervisor
-        .props(
-          childProps = coordinatorProps(typeName, rebalanceEnabled, rememberEnabled),
-          childName = "coordinator",
-          minBackoff = 5.seconds,
-          maxBackoff = 5.seconds,
-          randomFactor = 0.1,
-          maxNrOfRetries = -1)
-        .withDeploy(Deploy.local)
+      val singletonProps =
+        BackoffOpts
+          .onFailure(
+            childProps = coordinatorProps(typeName, rebalanceEnabled, rememberEnabled),
+            childName = "coordinator",
+            minBackoff = 5.seconds,
+            maxBackoff = 5.seconds,
+            randomFactor = 0.1)
+          .props
+          .withDeploy(Deploy.local)
       system.actorOf(
         ClusterSingletonManager
           .props(singletonProps, terminationMessage = PoisonPill, settings = ClusterSingletonManagerSettings(system)),
@@ -642,6 +644,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
       //#counter-start
+      counterRegion.toString // keep the compiler happy
+
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
         entityProps = Props[AnotherCounter],
@@ -717,6 +721,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
       // #proxy-dc
+      counterProxyDcB.toString // keep the compiler happy
     }
     enterBarrier("after-dc-proxy")
 
@@ -954,7 +959,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
             entity ! Identify(n)
             receiveOne(3 seconds) match {
               case ActorIdentity(id, Some(_)) if id == n => count = count + 1
-              case ActorIdentity(id, None)               => //Not on the fifth shard
+              case ActorIdentity(_, None)                => //Not on the fifth shard
             }
           }
           count should be >= (2)

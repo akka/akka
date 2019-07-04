@@ -29,7 +29,6 @@ import akka.routing.BroadcastRoutingLogic
 
 import scala.collection.immutable.TreeMap
 import com.typesafe.config.Config
-import akka.dispatch.Dispatchers
 
 object DistributedPubSubSettings {
 
@@ -237,7 +236,7 @@ object DistributedPubSubMediator {
      * Java API
      */
     def getTopics(): java.util.Set[String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       topics.asJava
     }
   }
@@ -329,7 +328,7 @@ object DistributedPubSubMediator {
     trait TopicLike extends Actor {
       import context.dispatcher
       val pruneInterval: FiniteDuration = emptyTimeToLive / 2
-      val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+      val pruneTask = context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
       var pruneDeadline: Option[Deadline] = None
 
       var subscribers = Set.empty[ActorRef]
@@ -354,9 +353,11 @@ object DistributedPubSubMediator {
         case Terminated(ref) =>
           remove(ref)
         case Prune =>
-          for (d <- pruneDeadline if d.isOverdue) {
-            pruneDeadline = None
-            context.parent ! NoMoreSubscribers
+          pruneDeadline match {
+            case Some(deadline) if deadline.isOverdue() =>
+              pruneDeadline = None
+              context.parent ! NoMoreSubscribers
+            case _ =>
           }
         case TerminateRequest =>
           if (subscribers.isEmpty && context.children.isEmpty)
@@ -551,9 +552,9 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
 
   //Start periodic gossip to random nodes in cluster
   import context.dispatcher
-  val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
+  val gossipTask = context.system.scheduler.scheduleWithFixedDelay(gossipInterval, gossipInterval, self, GossipTick)
   val pruneInterval: FiniteDuration = removedTimeToLive / 2
-  val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+  val pruneTask = context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
 
   var registry: Map[Address, Bucket] = Map.empty.withDefault(a => Bucket(a, 0L, TreeMap.empty))
   var nodes: Set[Address] = Set.empty
@@ -589,14 +590,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
     case Send(path, msg, localAffinity) =>
       val routees = registry(selfAddress).content.get(path) match {
         case Some(valueHolder) if localAffinity =>
-          (for {
-            routee <- valueHolder.routee
-          } yield routee).toVector
+          valueHolder.routee.toList.toIndexedSeq
         case _ =>
           (for {
             (_, bucket) <- registry
-            valueHolder <- bucket.content.get(path).toSeq
-            routee <- valueHolder.routee.toSeq
+            valueHolder <- bucket.content.get(path).toList
+            routee <- valueHolder.routee.toList
           } yield routee).toVector
       }
 
@@ -640,7 +639,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
         }
       }
 
-    case msg @ RegisterTopic(t) =>
+    case RegisterTopic(t) =>
       registerTopic(t)
 
     case NoMoreSubscribers =>
@@ -655,7 +654,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
     case GetTopics =>
       sender ! CurrentTopics(getCurrentTopics())
 
-    case msg @ Subscribed(ack, ref) =>
+    case Subscribed(ack, ref) =>
       ref ! ack
 
     case msg @ Unsubscribe(topic, _, _) =>
@@ -667,7 +666,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
         }
       }
 
-    case msg @ Unsubscribed(ack, ref) =>
+    case Unsubscribed(ack, ref) =>
       ref ! ack
 
     case Status(otherVersions, isReplyToStatus) =>
@@ -751,7 +750,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
 
     case Count =>
       val count = registry.map {
-        case (owner, bucket) =>
+        case (_, bucket) =>
           bucket.content.count {
             case (_, valueHolder) => valueHolder.ref.isDefined
           }
@@ -779,8 +778,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
     val refs = for {
       (address, bucket) <- registry
       if !(allButSelf && address == selfAddress) // if we should skip sender() node and current address == self address => skip
-      valueHolder <- bucket.content.get(path).toSeq
-      ref <- valueHolder.ref.toSeq
+      valueHolder <- bucket.content.get(path).toList
+      ref <- valueHolder.ref.toList
     } yield ref
     if (refs.isEmpty) ignoreOrSendToDeadLetters(msg)
     else refs.foreach(_.forward(msg))
@@ -928,10 +927,7 @@ class DistributedPubSub(system: ExtendedActorSystem) extends Extension {
       system.deadLetters
     else {
       val name = system.settings.config.getString("akka.cluster.pub-sub.name")
-      val dispatcher = system.settings.config.getString("akka.cluster.pub-sub.use-dispatcher") match {
-        case "" => Dispatchers.DefaultDispatcherId
-        case id => id
-      }
+      val dispatcher = system.settings.config.getString("akka.cluster.pub-sub.use-dispatcher")
       system.systemActorOf(DistributedPubSubMediator.props(settings).withDispatcher(dispatcher), name)
     }
   }

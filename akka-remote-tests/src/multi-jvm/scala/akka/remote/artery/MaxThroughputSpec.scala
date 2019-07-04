@@ -57,10 +57,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
          # for serious measurements when running this test on only one machine
          # it is recommended to use external media driver
          # See akka-remote/src/test/resources/aeron.properties
-         # advanced.embedded-media-driver = off
-         # advanced.aeron-dir = "akka-remote/target/aeron"
+         # advanced.aeron.embedded-media-driver = off
+         # advanced.aeron.aeron-dir = "akka-remote/target/aeron"
          # on linux, use directory on ram disk, instead
-         # advanced.aeron-dir = "/dev/shm/aeron"
+         # advanced.aeron.aeron-dir = "/dev/shm/aeron"
 
          advanced.compression {
            actor-refs.advertisement-interval = 2 second
@@ -124,7 +124,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
         if (msg.length != payloadSize) throw new IllegalArgumentException("Invalid message")
 
         report()
-      case msg: TestMessage =>
+      case _: TestMessage =>
         report()
 
       case Start(corresponding) =>
@@ -236,7 +236,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
 
     def active: Receive = {
-      case c @ FlowControl(id, t0) =>
+      case _ @FlowControl(id, t0) =>
         val targetCount = pendingFlowControl(id)
         if (targetCount - 1 == 0) {
           pendingFlowControl -= id
@@ -275,7 +275,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
         plotRef ! PlotResult().add(testName, throughput * payloadSize * testSettings.senderReceiverPairs / 1024 / 1024)
         context.stop(self)
 
-      case c: ReceivedActorRefCompressionTable =>
+      case _: ReceivedActorRefCompressionTable =>
     }
 
     val sent = new Array[Long](targets.size)
@@ -352,7 +352,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
       }
 
     override def toBinary(o: AnyRef): Array[Byte] = o match {
-      case FlowControl(id, burstStartTime) =>
+      case FlowControl(_, _) =>
         val buf = ByteBuffer.allocate(12)
         toBinary(o, buf)
         buf.flip()
@@ -451,7 +451,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
     import testSettings._
     val receiverName = testName + "-rcv"
 
-    runPerfFlames(first, second)(delay = 5.seconds, time = 15.seconds)
+    runPerfFlames(first, second)(delay = 5.seconds)
 
     runOn(second) {
       val rep = reporter(testName)
@@ -468,7 +468,6 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
 
     runOn(first) {
       enterBarrier(receiverName + "-started")
-      val ignore = TestProbe()
       val receivers = (for (n <- 1 to senderReceiverPairs) yield identifyReceiver(receiverName + n)).toArray
       val senders = for (n <- 1 to senderReceiverPairs) yield {
         val receiver = receivers(n - 1)

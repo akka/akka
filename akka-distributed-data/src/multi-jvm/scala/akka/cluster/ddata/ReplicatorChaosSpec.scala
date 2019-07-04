@@ -105,6 +105,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
           expectMsg(ReplicaCount(5))
         }
       }
+      enterBarrier("all-joined")
 
       runOn(first) {
         for (_ <- 0 until 5) {

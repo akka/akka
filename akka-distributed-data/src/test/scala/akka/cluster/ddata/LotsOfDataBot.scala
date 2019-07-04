@@ -24,21 +24,20 @@ object LotsOfDataBot {
     if (args.isEmpty)
       startup(Seq("2551", "2552", "0"))
     else
-      startup(args)
+      startup(args.toIndexedSeq)
   }
 
   def startup(ports: Seq[String]): Unit = {
     ports.foreach { port =>
       // Override the configuration of the port
       val config = ConfigFactory
-        .parseString("akka.remote.netty.tcp.port=" + port)
-        .withFallback(
-          ConfigFactory.load(ConfigFactory.parseString("""
+        .parseString("akka.remote.classic.netty.tcp.port=" + port)
+        .withFallback(ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
             akka.remote {
-              netty.tcp {
+              artery.canonical {
                 hostname = "127.0.0.1"
                 port = 0
               }
@@ -46,13 +45,11 @@ object LotsOfDataBot {
 
             akka.cluster {
               seed-nodes = [
-                "akka.tcp://ClusterSystem@127.0.0.1:2551",
-                "akka.tcp://ClusterSystem@127.0.0.1:2552"]
+                "akka://ClusterSystem@127.0.0.1:2551",
+                "akka://ClusterSystem@127.0.0.1:2552"]
 
               auto-down-unreachable-after = 10s
             }
-            akka.cluster.distributed-data.use-offheap-memory = off
-            akka.remote.log-frame-size-exceeding = 10000b
             """)))
 
       // Create an Akka system
@@ -77,9 +74,9 @@ class LotsOfDataBot extends Actor with ActorLogging {
   val isPassive = context.system.settings.config.getBoolean("passive")
   var tickTask =
     if (isPassive)
-      context.system.scheduler.schedule(1.seconds, 1.seconds, self, Tick)
+      context.system.scheduler.scheduleWithFixedDelay(1.seconds, 1.seconds, self, Tick)
     else
-      context.system.scheduler.schedule(20.millis, 20.millis, self, Tick)
+      context.system.scheduler.scheduleWithFixedDelay(20.millis, 20.millis, self, Tick)
 
   val startTime = System.nanoTime()
   var count = 1L
@@ -97,7 +94,7 @@ class LotsOfDataBot extends Actor with ActorLogging {
         if (count == maxEntries) {
           log.info("Reached {} entries", count)
           tickTask.cancel()
-          tickTask = context.system.scheduler.schedule(1.seconds, 1.seconds, self, Tick)
+          tickTask = context.system.scheduler.scheduleWithFixedDelay(1.seconds, 1.seconds, self, Tick)
         }
         val key = ORSetKey[String]((count % maxEntries).toString)
         if (count <= 100)

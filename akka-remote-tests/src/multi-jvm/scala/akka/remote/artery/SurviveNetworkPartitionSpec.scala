@@ -60,7 +60,7 @@ abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(Survive
         // send system message during network partition
         watch(ref)
         // keep the network partition for a while, but shorter than give-up-system-message-after
-        expectNoMsg(RARP(system).provider.remoteSettings.Artery.Advanced.GiveUpSystemMessageAfter - 2.second)
+        expectNoMessage(RARP(system).provider.remoteSettings.Artery.Advanced.GiveUpSystemMessageAfter - 2.second)
 
         // heal the network partition
         testConductor.passThrough(first, second, Direction.Both).await
@@ -97,7 +97,7 @@ abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(Survive
         // send system message during network partition
         watch(ref)
         // keep the network partition for a while, longer than give-up-system-message-after
-        expectNoMsg(RARP(system).provider.remoteSettings.Artery.Advanced.GiveUpSystemMessageAfter - 1.second)
+        expectNoMessage(RARP(system).provider.remoteSettings.Artery.Advanced.GiveUpSystemMessageAfter - 1.second)
         qProbe.expectMsgType[QuarantinedEvent](5.seconds).address should ===(node(second).address)
 
         expectTerminated(ref)

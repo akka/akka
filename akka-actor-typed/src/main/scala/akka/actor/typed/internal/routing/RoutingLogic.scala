@@ -4,9 +4,10 @@
 
 package akka.actor.typed.internal.routing
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
-import akka.dispatch.forkjoin.ThreadLocalRandom
 
 /**
  * Kept in the behavior, not shared between instances, meant to be stateful.
@@ -16,9 +17,6 @@ import akka.dispatch.forkjoin.ThreadLocalRandom
 @InternalApi
 sealed private[akka] trait RoutingLogic[T] {
 
-  /**
-   * @param routees available routees, will contain at least one element. Must not be mutated by select logic.
-   */
   def selectRoutee(): ActorRef[T]
 
   /**

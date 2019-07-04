@@ -8,18 +8,21 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.ActorInitializationException
-import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.Behavior.StoppedBehavior
+import akka.actor.{ ActorInitializationException, ActorRefWithCell }
+import akka.{ actor => untyped }
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+import akka.annotation.InternalApi
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
+import scala.annotation.switch
 
-import akka.{ actor => untyped }
-import akka.annotation.InternalApi
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -31,25 +34,34 @@ import akka.annotation.InternalApi
    * the cause and can fill in the cause in the `ChildFailed` signal
    * Wrapped to avoid it being logged as the typed supervision will already
    * have logged it.
+   *
+   * Should only be thrown if the parent is known to be an `ActorAdapter`.
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
+
+  private val DummyReceive: untyped.Actor.Receive = {
+    case _ => throw new RuntimeException("receive should never be called on the typed ActorAdapter")
+  }
+
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T])
+@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
     extends untyped.Actor
     with untyped.ActorLogging {
-  import Behavior._
 
-  protected var behavior: Behavior[T] = _initialBehavior
-  final def currentBehavior: Behavior[T] = behavior
+  private var behavior: Behavior[T] = _initialBehavior
+  def currentBehavior: Behavior[T] = behavior
 
+  // context adapter construction must be lazy because so that it is not created before the system is ready
+  // when the adapter is used for the user guardian (which avoids touching context until it is safe)
   private var _ctx: ActorContextAdapter[T] = _
-  def ctx: ActorContextAdapter[T] =
-    if (_ctx ne null) _ctx
-    else throw new IllegalStateException("Context was accessed before typed actor was started.")
+  def ctx: ActorContextAdapter[T] = {
+    if (_ctx eq null) _ctx = new ActorContextAdapter[T](context, this)
+    _ctx
+  }
 
   /**
    * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
@@ -57,35 +69,56 @@ import akka.annotation.InternalApi
    */
   private var failures: Map[untyped.ActorRef, Throwable] = Map.empty
 
-  def receive: Receive = running
+  def receive: Receive = ActorAdapter.DummyReceive
 
-  def running: Receive = {
-    case untyped.Terminated(ref) =>
-      val msg =
-        if (failures contains ref) {
-          val ex = failures(ref)
-          failures -= ref
-          ChildFailed(ActorRefAdapter(ref), ex)
-        } else Terminated(ActorRefAdapter(ref))
-      handleSignal(msg)
-    case untyped.ReceiveTimeout =>
-      handleMessage(ctx.receiveTimeoutMsg)
-    case wrapped: AdaptMessage[Any, T] @unchecked =>
-      withSafelyAdapted(() => wrapped.adapt()) {
-        case AdaptWithRegisteredMessageAdapter(msg) =>
-          adaptAndHandle(msg)
-        case msg: T @unchecked =>
-          handleMessage(msg)
-      }
-    case AdaptWithRegisteredMessageAdapter(msg) =>
-      adaptAndHandle(msg)
-    case msg: T @unchecked =>
-      handleMessage(msg)
+  override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    // as we know we never become in "normal" typed actors, it is just the current behavior that
+    // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
+    // we also know that the receive is total, so we can avoid the orElse part as well.
+    msg match {
+      case untyped.Terminated(ref) =>
+        val msg =
+          if (failures contains ref) {
+            val ex = failures(ref)
+            failures -= ref
+            ChildFailed(ActorRefAdapter(ref), ex)
+          } else Terminated(ActorRefAdapter(ref))
+        handleSignal(msg)
+      case untyped.ReceiveTimeout =>
+        handleMessage(ctx.receiveTimeoutMsg)
+      case wrapped: AdaptMessage[Any, T] @unchecked =>
+        withSafelyAdapted(() => wrapped.adapt()) {
+          case AdaptWithRegisteredMessageAdapter(msg) =>
+            adaptAndHandle(msg)
+          case msg: T @unchecked =>
+            handleMessage(msg)
+        }
+      case AdaptWithRegisteredMessageAdapter(msg) =>
+        adaptAndHandle(msg)
+      case signal: Signal =>
+        handleSignal(signal)
+      case msg: T @unchecked =>
+        handleMessage(msg)
+    }
   }
 
   private def handleMessage(msg: T): Unit = {
     try {
-      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+      val c = ctx
+      if (c.hasTimer) {
+        msg match {
+          case timerMsg: TimerMsg =>
+            c.timer.interceptTimerMsg(ctx.log, timerMsg) match {
+              case OptionVal.None => // means TimerMsg not applicable, discard
+              case OptionVal.Some(m) =>
+                next(Behavior.interpretMessage(behavior, c, m), m)
+            }
+          case _ =>
+            next(Behavior.interpretMessage(behavior, c, msg), msg)
+        }
+      } else {
+        next(Behavior.interpretMessage(behavior, c, msg), msg)
+      }
     } catch handleUnstashException
   }
 
@@ -108,18 +141,20 @@ import akka.annotation.InternalApi
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
-    if (Behavior.isUnhandled(b)) unhandled(msg)
-    else {
-      b match {
-        case f: FailedBehavior =>
-          // For the parent untyped supervisor to pick up the exception
-          throw TypedActorFailedException(f.cause)
-        case stopped: StoppedBehavior[T] =>
-          behavior = new ComposedStoppingBehavior[T](behavior, stopped)
-          context.stop(self)
-        case _ =>
-          behavior = Behavior.canonicalize(b, behavior, ctx)
-      }
+    (b._tag: @switch) match {
+      case BehaviorTags.UnhandledBehavior =>
+        unhandled(msg)
+      case BehaviorTags.FailedBehavior =>
+        val f = b.asInstanceOf[BehaviorImpl.FailedBehavior]
+        // For the parent untyped supervisor to pick up the exception
+        if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
+        else context.stop(self)
+      case BehaviorTags.StoppedBehavior =>
+        val stopped = b.asInstanceOf[StoppedBehavior[T]]
+        behavior = new ComposedStoppingBehavior[T](behavior, stopped)
+        context.stop(self)
+      case _ =>
+        behavior = Behavior.canonicalize(b, behavior, ctx)
     }
   }
 
@@ -150,9 +185,15 @@ import akka.annotation.InternalApi
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) => throw DeathPactException(ref)
-    case _: Signal       => // that's ok
-    case other           => super.unhandled(other)
+
+    case Terminated(ref) =>
+      // this should never get here, because if it did, the death pact could
+      // not be supervised - interpretSignal is where this actually happens
+      throw DeathPactException(ref)
+    case _: Signal =>
+    // that's ok
+    case other =>
+      super.unhandled(other)
   }
 
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {
@@ -161,6 +202,12 @@ import akka.annotation.InternalApi
       recordChildFailure(cause)
       untyped.SupervisorStrategy.Stop
     case ex =>
+      val isTypedActor = sender() match {
+        case afwc: ActorRefWithCell =>
+          afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+        case _ =>
+          false
+      }
       recordChildFailure(ex)
       val logMessage = ex match {
         case e: ActorInitializationException if e.getCause ne null =>
@@ -172,7 +219,10 @@ import akka.annotation.InternalApi
       }
       // log at Error as that is what the supervision strategy would have done.
       log.error(ex, logMessage)
-      untyped.SupervisorStrategy.Stop
+      if (isTypedActor)
+        untyped.SupervisorStrategy.Stop
+      else
+        untyped.SupervisorStrategy.Restart
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
@@ -182,95 +232,35 @@ import akka.annotation.InternalApi
     }
   }
 
-  override def preStart(): Unit =
-    if (!isAlive(behavior)) {
-      if (behavior == Behavior.stopped) context.stop(self)
-      else {
-        // post stop hook may touch context
-        initializeContext()
-        context.stop(self)
-      }
-    } else
-      start()
-
-  protected def start(): Unit = {
-    context.become(running)
-    initializeContext()
-    behavior = validateAsInitial(Behavior.start(behavior, ctx))
-    if (!isAlive(behavior)) context.stop(self)
+  override def preStart(): Unit = {
+    if (Behavior.isAlive(behavior)) {
+      behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+    }
+    // either was stopped initially or became stopped on start
+    if (!Behavior.isAlive(behavior)) context.stop(self)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    ctx.cancelAllTimers()
     Behavior.interpretSignal(behavior, ctx, PreRestart)
-    behavior = Behavior.stopped
+    behavior = BehaviorImpl.stopped
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    initializeContext()
-    behavior = validateAsInitial(Behavior.start(behavior, ctx))
-    if (!isAlive(behavior)) context.stop(self)
+    ctx.cancelAllTimers()
+    behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+    if (!Behavior.isAlive(behavior)) context.stop(self)
   }
 
   override def postStop(): Unit = {
+    ctx.cancelAllTimers()
     behavior match {
-      case null                   => // skip PostStop
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
       case b => Behavior.interpretSignal(b, ctx, PostStop)
     }
-
-    behavior = Behavior.stopped
+    behavior = BehaviorImpl.stopped
   }
-
-  protected def initializeContext(): Unit = {
-    _ctx = new ActorContextAdapter[T](context, this)
-  }
-}
-
-/**
- * INTERNAL API
- *
- * A special adapter for the guardian which will defer processing until a special `Start` signal has been received.
- * That will allow to defer typed processing until the untyped ActorSystem has completely started up.
- */
-@InternalApi
-private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
-  import Behavior._
-
-  override def preStart(): Unit =
-    if (!isAlive(behavior))
-      context.stop(self)
-    else
-      context.become(waitingForStart(Nil))
-
-  def waitingForStart(stashed: List[Any]): Receive = {
-    case GuardianActorAdapter.Start =>
-      start()
-
-      stashed.reverse.foreach(receive)
-    case other =>
-      // unlikely to happen but not impossible
-      context.become(waitingForStart(other :: stashed))
-  }
-
-  override def postRestart(reason: Throwable): Unit = {
-    initializeContext()
-
-    super.postRestart(reason)
-  }
-
-  override def postStop(): Unit = {
-    initializeContext()
-
-    super.postStop()
-  }
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[typed] object GuardianActorAdapter {
-  case object Start
 
 }
 
@@ -295,6 +285,6 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
     }
     // and then to the potential stop hook, which can have a call back or not
     stopBehavior.onPostStop(ctx)
-    Behavior.empty
+    BehaviorImpl.empty
   }
 }

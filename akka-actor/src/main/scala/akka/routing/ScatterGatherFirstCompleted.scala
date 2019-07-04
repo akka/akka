@@ -54,9 +54,9 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
       val promise = Promise[Any]()
       routees.foreach {
         case ActorRefRoutee(ref) =>
-          promise.tryCompleteWith(ref.ask(message))
+          promise.completeWith(ref.ask(message))
         case ActorSelectionRoutee(sel) =>
-          promise.tryCompleteWith(sel.ask(message))
+          promise.completeWith(sel.ask(message))
         case _ =>
       }
 
@@ -99,7 +99,7 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
     within: FiniteDuration,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
@@ -179,7 +179,7 @@ final case class ScatterGatherFirstCompletedPool(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedGroup(
-    val paths: immutable.Iterable[String],
+    paths: immutable.Iterable[String],
     within: FiniteDuration,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {

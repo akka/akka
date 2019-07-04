@@ -40,6 +40,8 @@ import com.typesafe.config.Config
     val recoveryEventTimeout: FiniteDuration =
       journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
 
+    Persistence.verifyPluginConfigExists(config, snapshotPluginId, "Snapshot store")
+
     EventSourcedSettings(
       stashCapacity = stashCapacity,
       stashOverflowStrategy,
@@ -49,9 +51,15 @@ import com.typesafe.config.Config
       snapshotPluginId)
   }
 
-  private[akka] final def journalConfigFor(config: Config, journalPluginId: String): Config = {
-    val defaultJournalPluginId = config.getString("akka.persistence.journal.plugin")
+  private def journalConfigFor(config: Config, journalPluginId: String): Config = {
+    def defaultJournalPluginId = {
+      val configPath = config.getString("akka.persistence.journal.plugin")
+      Persistence.verifyPluginConfigIsDefined(configPath, "Default journal")
+      configPath
+    }
+
     val configPath = if (journalPluginId == "") defaultJournalPluginId else journalPluginId
+    Persistence.verifyPluginConfigExists(config, configPath, "Journal")
     config.getConfig(configPath).withFallback(config.getConfig(Persistence.JournalFallbackConfigPath))
   }
 

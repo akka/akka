@@ -13,7 +13,7 @@ import akka.testkit.CustomEventFilter;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;
@@ -69,21 +69,23 @@ public class ActorLoggingTest extends JUnitSuite {
   @Test
   public void loggingProvidesMDC() {
     Behavior<Protocol> behavior =
-        Behaviors.withMdc(
-            null,
-            (message) -> {
-              Map<String, Object> mdc = new HashMap<>();
-              mdc.put("txId", message.getTransactionId());
-              return mdc;
-            },
-            Behaviors.receive(Protocol.class)
-                .onMessage(
-                    Message.class,
-                    (context, message) -> {
-                      context.getLog().info(message.toString());
-                      return Behaviors.same();
-                    })
-                .build());
+        Behaviors.setup(
+            context ->
+                Behaviors.withMdc(
+                    null,
+                    (message) -> {
+                      Map<String, Object> mdc = new HashMap<>();
+                      mdc.put("txId", message.getTransactionId());
+                      return mdc;
+                    },
+                    Behaviors.receive(Protocol.class)
+                        .onMessage(
+                            Message.class,
+                            message -> {
+                              context.getLog().info(message.toString());
+                              return Behaviors.same();
+                            })
+                        .build()));
 
     CustomEventFilter eventFilter =
         new CustomEventFilter(

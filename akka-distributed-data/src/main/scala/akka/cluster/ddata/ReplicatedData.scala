@@ -52,7 +52,7 @@ trait ReplicatedData {
  * receiving side, resulting in set {'a', 'b', 'c', 'd'}.
  *
  * Learn more about this in the paper
- * <a href="paper http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
+ * <a href="http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
  */
 trait DeltaReplicatedData extends ReplicatedData {
 

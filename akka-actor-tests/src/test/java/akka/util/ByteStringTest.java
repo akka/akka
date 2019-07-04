@@ -5,7 +5,7 @@
 package akka.util;
 
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import static junit.framework.TestCase.assertEquals;
 

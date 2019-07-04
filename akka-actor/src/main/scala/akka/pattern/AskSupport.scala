@@ -11,6 +11,8 @@ import akka.annotation.InternalApi
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
 
+import com.github.ghik.silencer.silent
+
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.language.implicitConversions
@@ -259,18 +261,6 @@ trait ExplicitAskSupport {
 
 object AskableActorRef {
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def ask$extension(actorRef: ActorRef, message: Any, timeout: Timeout): Future[Any] =
-    actorRef.internalAsk(message, timeout, ActorRef.noSender)
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def $qmark$extension(actorRef: ActorRef, message: Any, timeout: Timeout): Future[Any] =
-    actorRef.internalAsk(message, timeout, ActorRef.noSender)
-
   private def messagePartOfException(message: Any, sender: ActorRef): String = {
     val msg = if (message == null) "unknown" else message
     val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"
@@ -400,21 +390,6 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
     }
 }
 
-object AskableActorSelection {
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def ask$extension(actorSel: ActorSelection, message: Any, timeout: Timeout): Future[Any] =
-    actorSel.internalAsk(message, timeout, ActorRef.noSender)
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def $qmark$extension(actorSel: ActorSelection, message: Any, timeout: Timeout): Future[Any] =
-    actorSel.internalAsk(message, timeout, ActorRef.noSender)
-}
-
 /*
  * Implementation class of the “ask” pattern enrichment of ActorSelection
  */
@@ -524,9 +499,11 @@ private[akka] final class PromiseActorRef private (
    * Stopped               => stopped, path not yet created
    */
   @volatile
+  @silent
   private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
+  @silent
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @inline
@@ -601,11 +578,13 @@ private[akka] final class PromiseActorRef private (
     case Stopped | _: StoppedWithPath => provider.deadLetters ! message
     case _ =>
       if (message == null) throw InvalidMessageException("Message is null")
-      if (!(result.tryComplete(message match {
-            case Status.Success(r) => Success(r)
-            case Status.Failure(f) => Failure(f)
-            case other             => Success(other)
-          }))) provider.deadLetters ! message
+      val promiseResult = message match {
+        case Status.Success(r) => Success(r)
+        case Status.Failure(f) => Failure(f)
+        case other             => Success(other)
+      }
+      if (!result.tryComplete(promiseResult))
+        provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -635,7 +614,7 @@ private[akka] final class PromiseActorRef private (
     def ensureCompleted(): Unit = {
       result.tryComplete(ActorStopResult)
       val watchers = clearWatchers()
-      if (!watchers.isEmpty) {
+      if (watchers.nonEmpty) {
         watchers.foreach { watcher =>
           // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watcher

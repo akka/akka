@@ -71,7 +71,7 @@ object StreamTestKit {
 
   /** INTERNAL API */
   @InternalApi private[testkit] def snapshotString(snapshot: StreamSnapshotImpl): String = {
-    val builder = StringBuilder.newBuilder
+    val builder = new StringBuilder()
     builder.append(s"activeShells (actor: ${snapshot.self}):\n")
     snapshot.activeInterpreters.foreach { shell =>
       builder.append("  ")

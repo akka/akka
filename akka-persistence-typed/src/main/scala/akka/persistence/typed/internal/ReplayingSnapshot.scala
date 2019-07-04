@@ -6,11 +6,12 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence._
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -38,6 +39,7 @@ private[akka] object ReplayingSnapshot {
 @InternalApi
 private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup[C, E, S])
     extends JournalInteractions[C, E, S]
+    with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S] {
 
   import InternalProtocol._
@@ -55,12 +57,20 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           case JournalResponse(r)          => onJournalResponse(r)
           case RecoveryTickEvent(snapshot) => onRecoveryTick(snapshot)
           case cmd: IncomingCommand[C] =>
-            if (receivedPoisonPill) Behaviors.unhandled
-            else onCommand(cmd)
+            if (receivedPoisonPill) {
+              if (setup.settings.logOnStashing)
+                setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+              Behaviors.unhandled
+            } else
+              onCommand(cmd)
           case RecoveryPermitGranted => Behaviors.unhandled // should not happen, we already have the permit
         }
         .receiveSignal(returnPermitOnStop.orElse {
-          case (_, PoisonPill) => stay(receivedPoisonPill = true)
+          case (_, PoisonPill) =>
+            stay(receivedPoisonPill = true)
+          case (_, signal) =>
+            setup.onSignal(setup.emptyState, signal, catchAndLog = true)
+            Behaviors.same
         })
     }
     stay(receivedPoisonPillInPreviousPhase)
@@ -72,33 +82,29 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
    * The actor is always stopped after this method has been invoked.
    *
    * @param cause failure cause.
-   * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
-  private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+  private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
+    onRecoveryFailed(setup.context, cause)
     setup.cancelRecoveryTimer()
-
-    event match {
-      case Some(evt) =>
-        setup.log.error(cause, "Exception in receiveRecover when replaying snapshot [{}]", evt.getClass.getName)
-      case _ =>
-        setup.log.error(cause, "Persistence failure when replaying snapshot")
-    }
-
+    setup.log.error(cause, s"Persistence failure when replaying snapshot. ${cause.getMessage}")
     Behaviors.stopped
   }
+
+  @InternalStableApi
+  def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = ()
 
   private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {
       // we know we're in snapshotting mode; snapshot recovery timeout arrived
       val ex = new RecoveryTimedOut(
         s"Recovery timed out, didn't get snapshot within ${setup.settings.recoveryEventTimeout}")
-      onRecoveryFailure(ex, None)
+      onRecoveryFailure(ex)
     } else Behaviors.same // ignore, since we received the snapshot already
 
   def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     stashInternal(cmd)
-    Behavior.same
+    Behaviors.same
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
@@ -125,7 +131,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         becomeReplayingEvents(state, seqNr, toSnr, receivedPoisonPill)
 
       case LoadSnapshotFailed(cause) =>
-        onRecoveryFailure(cause, event = None)
+        onRecoveryFailure(cause)
 
       case _ =>
         Behaviors.unhandled
@@ -141,7 +147,13 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
     ReplayingEvents[C, E, S](
       setup,
-      ReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill))
+      ReplayingEvents.ReplayingState(
+        lastSequenceNr,
+        state,
+        eventSeenInInterval = false,
+        toSnr,
+        receivedPoisonPill,
+        System.nanoTime()))
   }
 
 }

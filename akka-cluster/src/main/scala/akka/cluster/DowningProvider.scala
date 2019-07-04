@@ -6,6 +6,7 @@ package akka.cluster
 
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Props }
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -64,6 +65,7 @@ abstract class DowningProvider {
  * is not enabled.
  */
 final class NoDowning(system: ActorSystem) extends DowningProvider {
+  @silent
   override def downRemovalMargin: FiniteDuration = Cluster(system).settings.DownRemovalMargin
   override val downingActorProps: Option[Props] = None
 }

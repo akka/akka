@@ -17,6 +17,7 @@ Like `mapAsync` but @scala[`Future`] @java[`CompletionStage`] results are passed
 Like `mapAsync` but @scala[`Future`] @java[`CompletionStage`] results are passed downstream as they arrive regardless of the order of the elements
 that triggered them.
 
+If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, element is not passed downstream.
 If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
 

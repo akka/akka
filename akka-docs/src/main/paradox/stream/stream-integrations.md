@@ -162,9 +162,14 @@ at a rate that is faster than the stream can consume. You should consider using 
 if you want a backpressured actor interface.
 
 The stream can be completed successfully by sending `akka.actor.Status.Success` to the actor reference.
+If the content is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immidiately.
+If the content is `akka.stream.CompletionStrategy.draining` already buffered elements will be signaled before siganling completion.
+Any other content will be ignored and fall back to the draining behaviour. 
 
 The stream can be completed with failure by sending `akka.actor.Status.Failure` to the
 actor reference.
+
+Note: Sending a `PoisonPill` is deprecated and will be ignored in the future.
 
 The actor will be stopped when the stream is completed, failed or cancelled from downstream,
 i.e. you can watch it to get notified when that happens.
@@ -552,136 +557,3 @@ Java
 
 Please note that a factory is necessary to achieve reusability of the resulting `Flow`.
 
-### Implementing Reactive Streams Publisher or Subscriber
-
-As described above any Akka Streams `Source` can be exposed as a Reactive Streams `Publisher` and
-any `Sink` can be exposed as a Reactive Streams `Subscriber`. Therefore we recommend that you
-implement Reactive Streams integrations with built-in operators or @ref:[custom operators](stream-customize.md).
-
-For historical reasons the `ActorPublisher` and `ActorSubscriber` traits are
-provided to support implementing Reactive Streams `Publisher` and `Subscriber` with
-an `Actor`.
-
-These can be consumed by other Reactive Stream libraries or used as an Akka Streams `Source` or `Sink`.
-
-@@@ warning
-
-`ActorPublisher` and `ActorSubscriber` cannot be used with remote actors,
-because if signals of the Reactive Streams protocol (e.g. `request`) are lost the
-the stream may deadlock.
-
-@@@
-
-#### ActorPublisher
-
-@@@ warning
-
-**Deprecation warning:** `ActorPublisher` is deprecated in favour of the vastly more
-type-safe and safe to implement @ref[`GraphStage`](stream-customize.md). It can also
-expose a "operator actor ref" is needed to be addressed as-if an Actor.
-Custom operators implemented using @ref[`GraphStage`](stream-customize.md) are also automatically fusable.
-
-To learn more about implementing custom operators using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
-
-@@@
-
-Extend  @scala[`akka.stream.actor.ActorPublisher` in your `Actor` to make it]@java[`akka.stream.actor.AbstractActorPublisher` to implement]  a
-stream publisher that keeps track of the subscription life cycle and requested elements.
-
-Here is an example of such an actor. It dispatches incoming jobs to the attached subscriber:
-
-Scala
-:   @@snip [ActorPublisherDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorPublisherDocSpec.scala) { #job-manager }
-
-Java
-:   @@snip [ActorPublisherDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorPublisherDocTest.java) { #job-manager }
-
-You send elements to the stream by calling `onNext`. You are allowed to send as many
-elements as have been requested by the stream subscriber. This amount can be inquired with
-`totalDemand`. It is only allowed to use `onNext` when `isActive` and `totalDemand>0`,
-otherwise `onNext` will throw `IllegalStateException`.
-
-When the stream subscriber requests more elements the `ActorPublisherMessage.Request` message
-is delivered to this actor, and you can act on that event. The `totalDemand`
-is updated automatically.
-
-When the stream subscriber cancels the subscription the `ActorPublisherMessage.Cancel` message
-is delivered to this actor. After that subsequent calls to `onNext` will be ignored.
-
-You can complete the stream by calling `onComplete`. After that you are not allowed to
-call `onNext`, `onError` and `onComplete`.
-
-You can terminate the stream with failure by calling `onError`. After that you are not allowed to
-call `onNext`, `onError` and `onComplete`.
-
-If you suspect that this  @scala[`ActorPublisher`]@java[`AbstractActorPublisher`] may never get subscribed to, you can override the `subscriptionTimeout`
-method to provide a timeout after which this Publisher should be considered canceled. The actor will be notified when
-the timeout triggers via an `ActorPublisherMessage.SubscriptionTimeoutExceeded` message and MUST then perform
-cleanup and stop itself.
-
-If the actor is stopped the stream will be completed, unless it was not already terminated with
-failure, completed or canceled.
-
-More detailed information can be found in the API documentation.
-
-This is how it can be used as input `Source` to a `Flow`:
-
-Scala
-:   @@snip [ActorPublisherDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorPublisherDocSpec.scala) { #actor-publisher-usage }
-
-Java
-:   @@snip [ActorPublisherDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorPublisherDocTest.java) { #actor-publisher-usage }
-
-@scala[A publisher that is created with `Sink.asPublisher` supports a specified number of subscribers. Additional
-       subscription attempts will be rejected with an `IllegalStateException`.
-]@java[You can only attach one subscriber to this publisher. Use a `Broadcast`-element or
-       attach a `Sink.asPublisher(AsPublisher.WITH_FANOUT)` to enable multiple subscribers.
-]
-
-#### ActorSubscriber
-
-@@@ warning
-
-**Deprecation warning:** `ActorSubscriber` is deprecated in favour of the vastly more
-type-safe and safe to implement @ref[`GraphStage`](stream-customize.md). It can also
-expose a "operator actor ref" is needed to be addressed as-if an Actor.
-Custom operators implemented using @ref[`GraphStage`](stream-customize.md) are also automatically fusable.
-
-To learn more about implementing custom operators using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
-
-@@@
-
-Extend  @scala[`akka.stream.actor.ActorSubscriber` in your `Actor` to make it]@java[`akka.stream.actor.AbstractActorSubscriber` to make your class]  a
-stream subscriber with full control of stream back pressure. It will receive
-`ActorSubscriberMessage.OnNext`, `ActorSubscriberMessage.OnComplete` and `ActorSubscriberMessage.OnError`
-messages from the stream. It can also receive other, non-stream messages, in the same way as any actor.
-
-Here is an example of such an actor. It dispatches incoming jobs to child worker actors:
-
-Scala
-:   @@snip [ActorSubscriberDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorSubscriberDocSpec.scala) { #worker-pool }
-
-Java
-:   @@snip [ActorSubscriberDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorSubscriberDocTest.java) { #worker-pool }
-
-Subclass must define the `RequestStrategy` to control stream back pressure.
-After each incoming message the  @scala[`ActorSubscriber`]@java[`AbstractActorSubscriber`] will automatically invoke
-the `RequestStrategy.requestDemand` and propagate the returned demand to the stream.
-
- * The provided `WatermarkRequestStrategy` is a good strategy if the actor performs work itself.
- * The provided `MaxInFlightRequestStrategy` is useful if messages are queued internally or
-delegated to other actors.
- * You can also implement a custom `RequestStrategy` or call `request` manually together with
-`ZeroRequestStrategy` or some other strategy. In that case
-you must also call `request` when the actor is started or when it is ready, otherwise
-it will not receive any elements.
-
-More detailed information can be found in the API documentation.
-
-This is how it can be used as output `Sink` to a `Flow`:
-
-Scala
-:   @@snip [ActorSubscriberDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorSubscriberDocSpec.scala) { #actor-subscriber-usage }
-
-Java
-:   @@snip [ActorSubscriberDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorSubscriberDocTest.java) { #actor-subscriber-usage }

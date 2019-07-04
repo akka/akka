@@ -1,6 +1,0 @@
-# Internal MessageBuffer for actors
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$$buffers")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$_setter_$akka$cluster$pubsub$PerGroupingBuffer$$buffers_=")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.singleton.ClusterSingletonProxy.buffer")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonProxy.buffer_=")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.buffer")

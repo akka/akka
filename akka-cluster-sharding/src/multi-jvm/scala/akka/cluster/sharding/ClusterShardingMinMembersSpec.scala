@@ -19,8 +19,9 @@ import org.apache.commons.io.FileUtils
 import scala.concurrent.duration._
 import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
 import akka.cluster.sharding.ShardRegion.ClusterShardingStats
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object ClusterShardingMinMembersSpec {
   case object StopEntity
 
@@ -169,7 +170,7 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
       runOn(first) {
         region ! 1
         // not allocated because third has not registered yet
-        expectNoMsg(2.second)
+        expectNoMessage(2.second)
       }
       enterBarrier("verified")
 

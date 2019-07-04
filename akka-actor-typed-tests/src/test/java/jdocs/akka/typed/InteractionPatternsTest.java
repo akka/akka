@@ -11,7 +11,7 @@ import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.*;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -33,14 +33,16 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   static final Behavior<PrintMe> printerBehavior =
-      Behaviors.receive(PrintMe.class)
-          .onMessage(
-              PrintMe.class,
-              (context, printMe) -> {
-                context.getLog().info(printMe.message);
-                return Behaviors.same();
-              })
-          .build();
+      Behaviors.setup(
+          context ->
+              Behaviors.receive(PrintMe.class)
+                  .onMessage(
+                      PrintMe.class,
+                      printMe -> {
+                        context.getLog().info(printMe.message);
+                        return Behaviors.same();
+                      })
+                  .build());
   // #fire-and-forget-definition
 
   // #request-response-protocol
@@ -70,7 +72,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     Behaviors.receive(Request.class)
         .onMessage(
             Request.class,
-            (context, request) -> {
+            request -> {
               // ... process request ...
               request.respondTo.tell(new Response("Here's your response!"));
               return Behaviors.same();
@@ -314,7 +316,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     return Behaviors.receive(Msg.class)
         .onMessage(
             Msg.class,
-            (context, message) -> {
+            message -> {
               timers.startSingleTimer(TIMER_KEY, new TimeoutMsg(), after);
               List<Msg> buffer = new ArrayList<>();
               buffer.add(message);
@@ -332,13 +334,13 @@ public class InteractionPatternsTest extends JUnitSuite {
     return Behaviors.receive(Msg.class)
         .onMessage(
             TimeoutMsg.class,
-            (context, message) -> {
+            message -> {
               target.tell(new Batch(buffer));
               return idle(timers, target, after, maxSize);
             })
         .onMessage(
             Msg.class,
-            (context, message) -> {
+            message -> {
               buffer.add(message);
               if (buffer.size() == maxSize) {
                 timers.cancel(TIMER_KEY);
@@ -399,7 +401,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       Behaviors.receive(HalCommand.class)
           .onMessage(
               OpenThePodBayDoorsPlease.class,
-              (context, message) -> {
+              message -> {
                 message.respondTo.tell(
                     new HalResponse("I'm sorry, Dave. I'm afraid I can't do that."));
                 return Behaviors.same();
@@ -465,8 +467,8 @@ public class InteractionPatternsTest extends JUnitSuite {
               // message sent to the actor
               .onMessage(
                   AdaptedResponse.class,
-                  (innerCtx, response) -> {
-                    innerCtx.getLog().info("Got response from HAL: {}", response.message);
+                  response -> {
+                    context.getLog().info("Got response from HAL: {}", response.message);
                     return Behaviors.same();
                   })
               .build();
@@ -571,11 +573,11 @@ public class InteractionPatternsTest extends JUnitSuite {
           return Behaviors.receive(HomeCommand.class)
               .onMessage(
                   LeaveHome.class,
-                  (innerCtx, message) -> {
+                  message -> {
                     context.spawn(
                         new PrepareToLeaveHome(message.who, message.respondTo, keyCabinet, drawer),
                         "leaving" + message.who);
-                    return Behavior.same();
+                    return Behaviors.same();
                   })
               .build();
         });

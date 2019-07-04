@@ -77,14 +77,14 @@ private[akka] final case class TailChoppingRoutees(
     val aIdx = new AtomicInteger()
     val size = shuffled.length
 
-    val tryWithNext = scheduler.schedule(0.millis, interval) {
+    val tryWithNext = scheduler.scheduleWithFixedDelay(Duration.Zero, interval) { () =>
       val idx = aIdx.getAndIncrement
       if (idx < size) {
         shuffled(idx) match {
           case ActorRefRoutee(ref) =>
-            promise.tryCompleteWith(ref.ask(message))
+            promise.completeWith(ref.ask(message))
           case ActorSelectionRoutee(sel) =>
-            promise.tryCompleteWith(sel.ask(message))
+            promise.completeWith(sel.ask(message))
           case _ =>
         }
       }
@@ -150,7 +150,7 @@ private[akka] final case class TailChoppingRoutees(
  */
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
-    val nrOfInstances: Int,
+    nrOfInstances: Int,
     override val resizer: Option[Resizer] = None,
     within: FiniteDuration,
     interval: FiniteDuration,
@@ -248,7 +248,7 @@ final case class TailChoppingPool(
  *   router management messages
  */
 final case class TailChoppingGroup(
-    val paths: immutable.Iterable[String],
+    paths: immutable.Iterable[String],
     within: FiniteDuration,
     interval: FiniteDuration,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)

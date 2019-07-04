@@ -75,7 +75,6 @@ import org.reactivestreams.{ Subscriber, Subscription }
   final def requireNonNullSubscription(subscription: Subscription): Unit =
     if (subscription == null) throw subscriptionMustNotBeNullException
 
-  @SerialVersionUID(1L)
   sealed trait SpecViolation extends Throwable
 
   @SerialVersionUID(1L)
@@ -90,7 +89,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
       case other =>
         try subscriber.onError(other)
         catch {
-          case NonFatal(t) => throw new SignalThrewException(subscriber + ".onError", t)
+          case NonFatal(t) => throw new SignalThrewException(s"${subscriber}.onError", t)
         }
     }
 
@@ -98,21 +97,21 @@ import org.reactivestreams.{ Subscriber, Subscription }
     requireNonNullElement(element)
     try subscriber.onNext(element)
     catch {
-      case NonFatal(t) => throw new SignalThrewException(subscriber + ".onNext", t)
+      case NonFatal(t) => throw new SignalThrewException(s"${subscriber}.onNext", t)
     }
   }
 
   final def tryOnSubscribe[T](subscriber: Subscriber[T], subscription: Subscription): Unit = {
     try subscriber.onSubscribe(subscription)
     catch {
-      case NonFatal(t) => throw new SignalThrewException(subscriber + ".onSubscribe", t)
+      case NonFatal(t) => throw new SignalThrewException(s"${subscriber}.onSubscribe", t)
     }
   }
 
   final def tryOnComplete[T](subscriber: Subscriber[T]): Unit = {
     try subscriber.onComplete()
     catch {
-      case NonFatal(t) => throw new SignalThrewException(subscriber + ".onComplete", t)
+      case NonFatal(t) => throw new SignalThrewException(s"${subscriber}.onComplete", t)
     }
   }
 

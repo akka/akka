@@ -92,7 +92,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
               logEvent.message should ===("received message Hello")
               logEvent.mdc should ===(Map("mdc" -> true))
               true
-            case _ ⇒
+            case _ =>
               false
 
           },
@@ -103,6 +103,16 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       EventFilter.debug("received signal PostStop", source = ref.path.toString, occurrences = 1).intercept {
         testKit.stop(ref)
+      }
+    }
+
+    "log messages of different type" in {
+      val behavior: Behavior[String] = Behaviors.logMessages(Behaviors.ignore[String])
+
+      val ref = spawn(behavior)
+
+      EventFilter.debug("received message 13", source = ref.path.toString, occurrences = 1).intercept {
+        ref.unsafeUpcast[Any] ! 13
       }
     }
 

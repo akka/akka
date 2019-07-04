@@ -45,11 +45,11 @@ class TestFSMRefSpec extends AkkaSpec {
       val fsm = TestFSMRef(new Actor with FSM[Int, Null] {
         startWith(1, null)
         when(1) {
-          case x => stay
+          case _ => stay
         }
       }, "test-fsm-ref-2")
       fsm.isTimerActive("test") should ===(false)
-      fsm.setTimer("test", 12, 10 millis, true)
+      fsm.startTimerWithFixedDelay("test", 12, 10 millis)
       fsm.isTimerActive("test") should ===(true)
       fsm.cancelTimer("test")
       fsm.isTimerActive("test") should ===(false)
@@ -65,7 +65,7 @@ class TestFSMRefSpec extends AkkaSpec {
     class TestFSMActor extends Actor with FSM[Int, Null] {
       startWith(1, null)
       when(1) {
-        case x => stay
+        case _ => stay
       }
       val supervisor = context.parent
       val name = context.self.path.name

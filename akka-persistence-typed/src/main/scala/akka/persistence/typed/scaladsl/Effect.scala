@@ -5,60 +5,59 @@
 package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable => im }
-
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.ReplyEffectImpl
-import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
 
 /**
- * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
+ * Factory methods for creating [[Effect]] directives - how an event sourced actor reacts on a command.
  */
 object Effect {
 
   /**
    * Persist a single event
    *
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
-  def persist[Event, State](event: Event): Effect[Event, State] = Persist(event)
+  def persist[Event, State](event: Event): EffectBuilder[Event, State] = Persist(event)
 
   /**
    * Persist multiple events
    *
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
-  def persist[Event, A <: Event, B <: Event, State](evt1: A, evt2: B, events: Event*): Effect[Event, State] =
+  def persist[Event, A <: Event, B <: Event, State](evt1: A, evt2: B, events: Event*): EffectBuilder[Event, State] =
     persist(evt1 :: evt2 :: events.toList)
 
   /**
    * Persist multiple events
    *
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
-  def persist[Event, State](events: im.Seq[Event]): Effect[Event, State] =
+  def persist[Event, State](events: im.Seq[Event]): EffectBuilder[Event, State] =
     PersistAll(events)
 
   /**
    * Do not persist anything
    *
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
-  def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+  def none[Event, State]: EffectBuilder[Event, State] = PersistNothing.asInstanceOf[EffectBuilder[Event, State]]
 
   /**
    * This command is not handled, but it is not an error that it isn't.
    *
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
-  def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
+  def unhandled[Event, State]: EffectBuilder[Event, State] = Unhandled.asInstanceOf[EffectBuilder[Event, State]]
 
   /**
    * Stop this persistent actor
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
-  def stop[Event, State](): Effect[Event, State] = none.thenStop()
+  def stop[Event, State](): EffectBuilder[Event, State] =
+    none.thenStop()
 
   /**
    * Stash the current command. Can be unstashed later with [[Effect.unstashAll]].
@@ -68,10 +67,10 @@ object Effect {
    * thrown from processing a command or side effect after persisting. The stash buffer is preserved for persist
    * failures if a backoff supervisor strategy is defined with [[EventSourcedBehavior.onPersistFailure]].
    *
-   * Side effects can be chained with `andThen`
+   * Side effects can be chained with `thenRun`
    */
   def stash[Event, State](): ReplyEffect[Event, State] =
-    Stash.asInstanceOf[Effect[Event, State]].thenNoReply()
+    Stash.asInstanceOf[EffectBuilder[Event, State]].thenNoReply()
 
   /**
    * Unstash the commands that were stashed with [[Effect.stash]].
@@ -80,13 +79,10 @@ object Effect {
    * commands will not be processed by this `unstashAll` effect and have to be unstashed
    * by another `unstashAll`.
    *
-   * Side effects can be chained with `andThen`, but note that the side effect is run immediately and not after
-   * processing all unstashed commands.
-   *
    * @see [[Effect.thenUnstashAll]]
    */
   def unstashAll[Event, State](): Effect[Event, State] =
-    none.andThen(SideEffect.unstashAll[State]())
+    CompositeEffect(none.asInstanceOf[EffectBuilder[Event, State]], SideEffect.unstashAll[State]())
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -115,34 +111,36 @@ object Effect {
 }
 
 /**
+ * A command handler returns an `Effect` directive that defines what event or events to persist.
+ *
  * Instances are created through the factories in the [[Effect]] companion object.
  *
  * Not for user extension.
  */
 @DoNotInherit
-trait Effect[+Event, State] {
+trait Effect[+Event, State]
+
+/**
+ *  A command handler returns an `Effect` directive that defines what event or events to persist.
+ *
+ * Instances are created through the factories in the [[Effect]] companion object.
+ *
+ * Additional side effects can be performed in the callback `thenRun`
+ *
+ * Not for user extension.
+ */
+@DoNotInherit
+trait EffectBuilder[+Event, State] extends Effect[Event, State] {
   /* All events that will be persisted in this effect */
   def events: im.Seq[Event]
 
   /**
    * Run the given callback. Callbacks are run sequentially.
    */
-  final def thenRun(callback: State => Unit): Effect[Event, State] =
-    CompositeEffect(this, SideEffect(callback))
-
-  /**
-   *  Run the given callback after the current Effect
-   */
-  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
-
-  /**
-   *  Run the given callbacks sequentially after the current Effect
-   */
-  final def andThen(chainedEffects: im.Seq[SideEffect[State]]): Effect[Event, State] =
-    CompositeEffect(this, chainedEffects)
+  def thenRun(callback: State => Unit): EffectBuilder[Event, State]
 
   /** The side effect is to stop the actor */
-  def thenStop(): Effect[Event, State]
+  def thenStop(): EffectBuilder[Event, State]
 
   /**
    * Unstash the commands that were stashed with [[Effect.stash]].
@@ -166,8 +164,7 @@ trait Effect[+Event, State] {
    * finding mistakes.
    */
   def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(
-      replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State] =
-    CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
+      replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State]
 
   /**
    * When [[EventSourcedBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -185,4 +182,14 @@ trait Effect[+Event, State] {
  *
  * Not intended for user extension.
  */
-@DoNotInherit trait ReplyEffect[+Event, State] extends Effect[Event, State]
+@DoNotInherit trait ReplyEffect[+Event, State] extends Effect[Event, State] {
+
+  /**
+   * Unstash the commands that were stashed with [[Effect.stash]].
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   */
+  def thenUnstashAll(): ReplyEffect[Event, State]
+}

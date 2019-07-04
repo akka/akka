@@ -7,11 +7,11 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
-import akka.event.Logging
-import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
+import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
@@ -41,6 +41,7 @@ object OptionalSnapshotStoreSpec {
 }
 
 class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
+    akka.loggers = [akka.testkit.TestEventListener]
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
@@ -53,29 +54,27 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
 
   import OptionalSnapshotStoreSpec._
 
-  private def logProbe[T](cl: Class[T]) = {
-    val logProbe = TestProbe[Any]
-    system.toUntyped.eventStream.subscribe(logProbe.ref.toUntyped, cl)
-    logProbe
-  }
+  // Needed for the untyped event filter
+  implicit val untyped = system.toUntyped
 
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {
-      val stateProbe = TestProbe[State]()
-      val log = logProbe(classOf[Logging.Warning])
-      spawn(persistentBehavior(stateProbe))
-      val message = log.expectMessageType[Logging.Warning].message.toString
-      message should include("No default snapshot store configured")
-      stateProbe.expectNoMessage()
+      EventFilter.warning(start = "No default snapshot store configured", occurrences = 1).intercept {
+        val stateProbe = TestProbe[State]()
+        spawn(persistentBehavior(stateProbe))
+        stateProbe.expectNoMessage()
+      }
     }
 
     "fail if PersistentActor tries to saveSnapshot without snapshot-store available" in {
-      val stateProbe = TestProbe[State]()
-      val log = logProbe(classOf[Logging.Error])
-      val persistentActor = spawn(persistentBehavior(stateProbe))
-      persistentActor ! AnyCommand
-      log.expectMessageType[Logging.Error].cause.getMessage should include("No snapshot store configured")
-      stateProbe.expectMessageType[State]
+      EventFilter.error(pattern = ".*No snapshot store configured.*", occurrences = 1).intercept {
+        EventFilter.warning(pattern = ".*Failed to save snapshot.*", occurrences = 1).intercept {
+          val stateProbe = TestProbe[State]()
+          val persistentActor = spawn(persistentBehavior(stateProbe))
+          persistentActor ! AnyCommand
+          stateProbe.expectMessageType[State]
+        }
+      }
     }
 
     "successfully save a snapshot when no default snapshot-store configured, yet PersistentActor picked one explicitly" in {

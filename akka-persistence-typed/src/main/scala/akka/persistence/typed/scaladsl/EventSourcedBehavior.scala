@@ -4,22 +4,20 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.util.Try
 import scala.annotation.tailrec
-import akka.Done
+
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.Signal
-import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.internal.InterceptorImpl
-import akka.actor.typed.internal.adapter.ActorContextAdapter
+import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
-import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
@@ -42,6 +40,8 @@ object EventSourcedBehavior {
    */
   type EventHandler[State, Event] = (State, Event) => State
 
+  private val logPrefixSkipList = classOf[EventSourcedBehavior[_, _, _]].getName :: Nil
+
   /**
    * Create a `Behavior` for a persistent actor.
    */
@@ -50,7 +50,7 @@ object EventSourcedBehavior {
       emptyState: State,
       commandHandler: (State, Command) => Effect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
-    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 
@@ -103,15 +103,10 @@ object EventSourcedBehavior {
         case concrete                           => concrete
       }
 
-    context match {
-      case impl: ActorContextAdapter[_] =>
-        extractConcreteBehavior(impl.currentBehavior) match {
-          case w: Running.WithSeqNrAccessible => w.currentSequenceNumber
-          case s =>
-            throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
-        }
-      case c =>
-        throw new IllegalStateException(s"Cannot extract the lastSequenceNumber from context ${c.getClass.getName}")
+    extractConcreteBehavior(context.currentBehavior) match {
+      case w: Running.WithSeqNrAccessible => w.currentSequenceNumber
+      case s =>
+        throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
     }
   }
 
@@ -133,28 +128,12 @@ object EventSourcedBehavior {
    * Akka Persistence specific signals (snapshot and recovery related). Those are all subtypes of
    * [[akka.persistence.typed.EventSourcedSignal]]
    */
-  def receiveSignal(signalHandler: PartialFunction[Signal, Unit]): EventSourcedBehavior[Command, Event, State]
+  def receiveSignal(signalHandler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * @return The currently defined signal handler or an empty handler if no custom handler previously defined
    */
-  def signalHandler: PartialFunction[Signal, Unit]
-
-  /**
-   * Initiates a snapshot if the given function returns true.
-   * When persisting multiple events at once the snapshot is triggered after all the events have
-   * been persisted.
-   *
-   * `predicate` receives the State, Event and the sequenceNr used for the Event
-   */
-  def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
-
-  /**
-   * Snapshot every N events
-   *
-   * `numberOfEvents` should be greater than 0
-   */
-  def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State]
+  def signalHandler: PartialFunction[(State, Signal), Unit]
 
   /**
    * Change the journal plugin id that this actor should use.
@@ -175,6 +154,28 @@ object EventSourcedBehavior {
    * performed by replaying all events -- which may take a long time.
    */
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Initiates a snapshot if the given `predicate` evaluates to true.
+   *
+   * Decide to store a snapshot based on the State, Event and sequenceNr when the event has
+   * been successfully persisted.
+   *
+   * When persisting multiple events at once the snapshot is triggered after all the events have
+   * been persisted.
+   *
+   * Snapshots triggered by `snapshotWhen` will not trigger deletes of old snapshots and events if
+   * [[EventSourcedBehavior.withRetention]] with [[RetentionCriteria.snapshotEvery]] is used together with
+   * `snapshotWhen`. Such deletes are only triggered by snapshots matching the `numberOfEvents` in the
+   * [[RetentionCriteria]].
+   */
+  def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Criteria for retention/deletion of snapshots and events.
+   * By default, retention is disabled and snapshots are not saved and deleted automatically.
+   */
+  def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query

@@ -18,7 +18,7 @@ import java.util.Optional;
 // #imports
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class SyncTestingExampleTest extends JUnitSuite {
 
@@ -67,47 +67,49 @@ public class SyncTestingExampleTest extends JUnitSuite {
   }
 
   public static Behavior<Command> myBehavior =
-      Behaviors.receive(Command.class)
-          .onMessage(
-              CreateAChild.class,
-              (context, message) -> {
-                context.spawn(childActor, message.childName);
-                return Behaviors.same();
-              })
-          .onMessage(
-              CreateAnAnonymousChild.class,
-              (context, message) -> {
-                context.spawnAnonymous(childActor);
-                return Behaviors.same();
-              })
-          .onMessage(
-              SayHelloToChild.class,
-              (context, message) -> {
-                ActorRef<String> child = context.spawn(childActor, message.childName);
-                child.tell("hello");
-                return Behaviors.same();
-              })
-          .onMessage(
-              SayHelloToAnonymousChild.class,
-              (context, message) -> {
-                ActorRef<String> child = context.spawnAnonymous(childActor);
-                child.tell("hello stranger");
-                return Behaviors.same();
-              })
-          .onMessage(
-              SayHello.class,
-              (context, message) -> {
-                message.who.tell("hello");
-                return Behaviors.same();
-              })
-          .onMessage(
-              LogAndSayHello.class,
-              (context, message) -> {
-                context.getLog().info("Saying hello to {}", message.who.path().name());
-                message.who.tell("hello");
-                return Behaviors.same();
-              })
-          .build();
+      Behaviors.setup(
+          context ->
+              Behaviors.receive(Command.class)
+                  .onMessage(
+                      CreateAChild.class,
+                      message -> {
+                        context.spawn(childActor, message.childName);
+                        return Behaviors.same();
+                      })
+                  .onMessage(
+                      CreateAnAnonymousChild.class,
+                      message -> {
+                        context.spawnAnonymous(childActor);
+                        return Behaviors.same();
+                      })
+                  .onMessage(
+                      SayHelloToChild.class,
+                      message -> {
+                        ActorRef<String> child = context.spawn(childActor, message.childName);
+                        child.tell("hello");
+                        return Behaviors.same();
+                      })
+                  .onMessage(
+                      SayHelloToAnonymousChild.class,
+                      message -> {
+                        ActorRef<String> child = context.spawnAnonymous(childActor);
+                        child.tell("hello stranger");
+                        return Behaviors.same();
+                      })
+                  .onMessage(
+                      SayHello.class,
+                      message -> {
+                        message.who.tell("hello");
+                        return Behaviors.same();
+                      })
+                  .onMessage(
+                      LogAndSayHello.class,
+                      message -> {
+                        context.getLog().info("Saying hello to {}", message.who.path().name());
+                        message.who.tell("hello");
+                        return Behaviors.same();
+                      })
+                  .build());
   // #under-test
 
   @Test

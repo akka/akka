@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.actor.DeadLetter
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
@@ -48,7 +49,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
   def target(monitor: ActorRef[Event], timer: TimerScheduler[Command], bumpCount: Int): Behavior[Command] = {
     def bump(): Behavior[Command] = {
       val nextCount = bumpCount + 1
-      timer.startPeriodicTimer("T", Tick(nextCount), interval)
+      timer.startTimerWithFixedDelay("T", Tick(nextCount), interval)
       target(monitor, timer, nextCount)
     }
 
@@ -87,6 +88,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
   }
 
   "A timer" must {
+
     "schedule non-repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
@@ -105,7 +107,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "schedule repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -123,7 +125,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "replace timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -143,7 +145,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "cancel timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -168,7 +170,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val startCounter = new AtomicInteger(0)
       val behv = Behaviors
         .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startPeriodicTimer("T", Tick(startCounter.incrementAndGet()), interval)
+          timer.startTimerWithFixedDelay("T", Tick(startCounter.incrementAndGet()), interval)
           target(probe.ref, timer, 1)
         })
         .onFailure[Exception](SupervisorStrategy.restart)
@@ -195,7 +197,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors
         .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startPeriodicTimer("T", Tick(1), interval)
+          timer.startTimerWithFixedDelay("T", Tick(1), interval)
           target(probe.ref, timer, 1)
         })
         .onFailure[Exception](SupervisorStrategy.restart)
@@ -224,7 +226,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "cancel timers when stopped from exception" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
@@ -237,7 +239,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "cancel timers when stopped voluntarily" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
@@ -248,9 +250,9 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "allow for nested timers" in {
       val probe = TestProbe[String]()
       val ref = spawn(Behaviors.withTimers[String] { outerTimer =>
-        outerTimer.startPeriodicTimer("outer-key", "outer-message", 50.millis)
+        outerTimer.startTimerWithFixedDelay("outer-key", "outer-message", 50.millis)
         Behaviors.withTimers { innerTimer =>
-          innerTimer.startPeriodicTimer("inner-key", "inner-message", 50.millis)
+          innerTimer.startTimerWithFixedDelay("inner-key", "inner-message", 50.millis)
           Behaviors.receiveMessage { message =>
             if (message == "stop") Behaviors.stopped
             else {
@@ -275,7 +277,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "keep timers when behavior changes" in {
       val probe = TestProbe[String]()
       def newBehavior(n: Int): Behavior[String] = Behaviors.withTimers[String] { timers =>
-        timers.startPeriodicTimer(s"key${n}", s"message${n}", 50.milli)
+        timers.startTimerWithFixedDelay(s"key${n}", s"message${n}", 50.milli)
         Behaviors.receiveMessage { message =>
           if (message == "stop") Behaviors.stopped
           else {
@@ -297,33 +299,11 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       ref ! "stop"
     }
 
-    "not grow stack when nesting withTimers" in {
-      def next(n: Int, probe: ActorRef[Array[StackTraceElement]]): Behavior[String] = Behaviors.withTimers { timers =>
-        timers.startSingleTimer("key", "tick", 1.millis)
-        Behaviors.receiveMessage { message =>
-          if (n == 20) {
-            val e = new RuntimeException().fillInStackTrace()
-            val trace = e.getStackTrace
-            probe ! trace
-            Behaviors.stopped
-          } else {
-            next(n + 1, probe)
-          }
-        }
-      }
-
-      val probe = TestProbe[Array[StackTraceElement]]()
-      spawn(next(0, probe.ref))
-      val elements = probe.receiveMessage()
-      if (elements.count(_.getClassName == "TimerInterceptor") > 1)
-        fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
-    }
-
     "not leak timers when PostStop is used" in {
       val probe = TestProbe[Any]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>
-          timers.startPeriodicTimer("test", "test", 250.millis)
+          timers.startTimerWithFixedDelay("test", "test", 250.millis)
           Behaviors.receive { (context, message) =>
             Behaviors.stopped(() => context.log.info(s"stopping"))
           }
@@ -335,6 +315,79 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       probe.expectTerminated(ref)
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
       probe.expectNoMessage(1.second)
+    }
+  }
+
+  "discard TimerMsg on restart" in {
+    // reproducer of similar issue as #26556, ClassCastException TimerMsg
+    val probe = TestProbe[Event]("evt")
+
+    def behv: Behavior[Command] =
+      Behaviors.receiveMessage[Command] {
+        case Tick(-1) =>
+          probe.ref ! Tock(-1)
+          Behaviors.withTimers[Command] { timer =>
+            timer.startSingleTimer("T0", Tick(0), 5.millis)
+            Behaviors.receiveMessage[Command] {
+              case Tick(0) =>
+                probe.ref ! Tock(0)
+                timer.startSingleTimer("T1", Tick(1), 5.millis)
+                // let Tick(0) arrive in mailbox, test will not fail if it arrives later
+                Thread.sleep(100)
+                throw TestException("boom")
+            }
+          }
+        case Tick(n) =>
+          probe.ref ! Tock(n)
+          Behaviors.same
+        case End =>
+          Behaviors.stopped
+      }
+
+    EventFilter[TestException](occurrences = 1).intercept {
+      val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
+      ref ! Tick(-1)
+      probe.expectMessage(Tock(-1))
+      probe.expectMessage(Tock(0))
+      probe.expectNoMessage()
+
+      // confirm that it was restarted, and not stopped due to ClassCastException of TimerMsg
+      ref ! Tick(100)
+      probe.expectMessage(Tock(100))
+
+      ref ! End
+    }
+  }
+
+  "discard TimerMsg when exception from withTimers block" in {
+    val probe = TestProbe[Event]("evt")
+    val behv = Behaviors.receiveMessage[Command] {
+      case Tick(-1) =>
+        probe.ref ! Tock(-1)
+        Behaviors.withTimers[Command] { timer =>
+          timer.startSingleTimer("T0", Tick(0), 5.millis)
+          // let Tick(0) arrive in mailbox, test will not fail if it arrives later
+          Thread.sleep(100)
+          throw TestException("boom")
+        }
+      case Tick(n) =>
+        probe.ref ! Tock(n)
+        Behaviors.same
+      case End =>
+        Behaviors.stopped
+    }
+
+    EventFilter[TestException](occurrences = 1).intercept {
+      val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
+      ref ! Tick(-1)
+      probe.expectMessage(Tock(-1))
+      probe.expectNoMessage()
+
+      // confirm that it was restarted, and not stopped due to ClassCastException of TimerMsg
+      ref ! Tick(100)
+      probe.expectMessage(Tock(100))
+
+      ref ! End
     }
   }
 }

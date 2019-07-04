@@ -6,20 +6,22 @@ package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
+
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
-
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp => IoTcp }
 import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout }
-import akka.util.ByteString
+import akka.util.{ unused, ByteString }
 import akka.{ Done, NotUsed }
+import com.github.ghik.silencer.silent
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -117,6 +119,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       interface: String,
       port: Int,
       backlog: Int = 100,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       halfClose: Boolean = false,
       idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
@@ -125,7 +128,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
         IO(IoTcp)(system),
         new InetSocketAddress(interface, port),
         backlog,
-        options,
+        options.toList,
         halfClose,
         idleTimeout,
         bindShutdownTimeout,
@@ -159,6 +162,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       interface: String,
       port: Int,
       backlog: Int = 100,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       halfClose: Boolean = false,
       idleTimeout: Duration = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
@@ -192,6 +196,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def outgoingConnection(
       remoteAddress: InetSocketAddress,
       localAddress: Option[InetSocketAddress] = None,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       halfClose: Boolean = true,
       connectTimeout: Duration = Duration.Inf,
@@ -203,7 +208,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           IO(IoTcp)(system),
           remoteAddress,
           localAddress,
-          options,
+          options.toList,
           halfClose,
           connectTimeout,
           settings.ioSettings))
@@ -257,12 +262,12 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def outgoingTlsConnection(
       remoteAddress: InetSocketAddress,
       sslContext: SSLContext,
       negotiateNewSession: NegotiateNewSession,
       localAddress: Option[InetSocketAddress] = None,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       connectTimeout: Duration = Duration.Inf,
       idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
@@ -279,6 +284,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       remoteAddress: InetSocketAddress,
       createSSLEngine: () => SSLEngine,
       localAddress: Option[InetSocketAddress] = None,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       connectTimeout: Duration = Duration.Inf,
       idleTimeout: Duration = Duration.Inf,
@@ -300,19 +306,18 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def bindTls(
       interface: String,
       port: Int,
       sslContext: SSLContext,
       negotiateNewSession: NegotiateNewSession,
       backlog: Int = 100,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
-
     val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
 
-    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection =>
+    bind(interface, port, backlog, options, halfClose = false, idleTimeout).map { incomingConnection =>
       incomingConnection.copy(flow = incomingConnection.flow.join(tls))
     }
   }
@@ -325,6 +330,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       port: Int,
       createSSLEngine: () => SSLEngine,
       backlog: Int = 100,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       idleTimeout: Duration = Duration.Inf,
       verifySession: SSLSession => Try[Unit],
@@ -347,7 +353,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def bindAndHandleTls(
       handler: Flow[ByteString, ByteString, _],
       interface: String,
@@ -355,6 +360,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       sslContext: SSLContext,
       negotiateNewSession: NegotiateNewSession,
       backlog: Int = 100,
+      @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       idleTimeout: Duration = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
     bindTls(interface, port, sslContext, negotiateNewSession, backlog, options, idleTimeout)
@@ -366,6 +372,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
 }
 
-final class TcpIdleTimeoutException(msg: String, timeout: Duration)
+final class TcpIdleTimeoutException(msg: String, @unused timeout: Duration)
     extends TimeoutException(msg: String)
     with NoStackTrace // only used from a single stage

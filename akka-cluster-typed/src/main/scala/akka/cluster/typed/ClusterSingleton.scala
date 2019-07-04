@@ -213,7 +213,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem[_]): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      .withRemovalMargin(akka.cluster.Cluster(system.toUntyped).settings.DownRemovalMargin)
+      .withRemovalMargin(akka.cluster.Cluster(system.toUntyped).downingProvider.downRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as
@@ -223,7 +223,7 @@ object ClusterSingletonManagerSettings {
     new ClusterSingletonManagerSettings(
       singletonName = config.getString("singleton-name"),
       role = roleOption(config.getString("role")),
-      removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
+      removalMargin = Duration.Zero, // defaults to ClusterSettings.DownRemovalMargin
       handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
 
   /**

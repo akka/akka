@@ -17,6 +17,7 @@ import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -196,12 +197,14 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** stopWith sets this state while waiting for the SelectionHandler to execute the `cancelAndClose` thunk */
   def unregistering: Receive = {
-    case Unregistered => context.stop(self) // postStop will notify interested parties
+    case Unregistered                                                               => context.stop(self) // postStop will notify interested parties
+    case ChannelReadable | ChannelWritable | ChannelAcceptable | ChannelConnectable => // ignore, we are going away soon anyway
   }
 
   // AUXILIARIES and IMPLEMENTATION
 
   /** used in subclasses to start the common machinery above once a channel is connected */
+  @silent
   def completeConnect(
       registration: ChannelRegistration,
       commander: ActorRef,
@@ -385,7 +388,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     val interestedInClose: Set[ActorRef] =
       (if (writePending) Set(pendingWrite.commander) else Set.empty) ++
-      closedMessage.toSet[CloseInformation].flatMap(_.notificationsTo)
+      closedMessage.toList.flatMap(_.notificationsTo).toSet
 
     if (channel.isOpen) // if channel is still open here, we didn't go through stopWith => unexpected actor termination
       prepareAbort()
@@ -415,8 +418,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         case Write(data, ack) if data.nonEmpty => PendingBufferWrite(commander, data, ack, tail)
         case WriteFile(path, offset, count, ack) =>
           PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
-        case WritePath(path, offset, count, ack) => PendingWriteFile(commander, path, offset, count, ack, tail)
-        case CompoundWrite(h, t)                 => create(h, t)
+        case WritePath(path, offset, count, ack) =>
+          PendingWriteFile(commander, path, offset, count, ack, tail)
+        case CompoundWrite(h, t) => create(h, t)
         case x @ Write(_, ack) => // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
           create(tail)

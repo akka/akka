@@ -27,7 +27,7 @@ private[akka] object DomainName {
   }
 
   def parse(it: ByteIterator, msg: ByteString): String = {
-    val ret = StringBuilder.newBuilder
+    val ret = new StringBuilder()
     while (true) {
       val length = it.getByte
       if (length == 0) {

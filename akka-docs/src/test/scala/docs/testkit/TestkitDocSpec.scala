@@ -154,7 +154,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     assert(fsm.stateName == 1)
 
     assert(fsm.isTimerActive("test") == false)
-    fsm.setTimer("test", 12, 10 millis, true)
+    fsm.startTimerWithFixedDelay("test", 12, 10 millis)
     assert(fsm.isTimerActive("test") == true)
     fsm.cancelTimer("test")
     assert(fsm.isTimerActive("test") == false)

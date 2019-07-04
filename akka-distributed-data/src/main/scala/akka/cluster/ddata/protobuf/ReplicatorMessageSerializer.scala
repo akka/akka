@@ -6,7 +6,7 @@ package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import akka.actor.ExtendedActorSystem
@@ -37,7 +37,9 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object ReplicatorMessageSerializer {
+@ccompatUsedUntil213
+@InternalApi
+private[akka] object ReplicatorMessageSerializer {
 
   /**
    * A cache that is designed for a small number (&lt;= 32) of
@@ -157,10 +159,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     .millis
   private val readCache = new SmallCache[Read, Array[Byte]](4, cacheTimeToLive, m => readToProto(m).toByteArray)
   private val writeCache = new SmallCache[Write, Array[Byte]](4, cacheTimeToLive, m => writeToProto(m).toByteArray)
-  system.scheduler.schedule(cacheTimeToLive, cacheTimeToLive / 2) {
+  system.scheduler.scheduleWithFixedDelay(cacheTimeToLive, cacheTimeToLive / 2) { () =>
     readCache.evict()
     writeCache.evict()
-  }(system.dispatcher)
+  }(system.dispatchers.internalDispatcher)
 
   private val writeAckBytes = dm.Empty.getDefaultInstance.toByteArray
   private val dummyAddress = UniqueAddress(Address("a", "b", "c", 2552), 1L)
@@ -261,42 +263,54 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def statusToProto(status: Status): dm.Status = {
     val b = dm.Status.newBuilder()
     b.setChunk(status.chunk).setTotChunks(status.totChunks)
-    val entries = status.digests.foreach {
+    status.digests.foreach {
       case (key, digest) =>
         b.addEntries(dm.Status.Entry.newBuilder().setKey(key).setDigest(ByteString.copyFrom(digest.toArray)))
     }
+    status.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
+    b.setFromSystemUid(status.fromSystemUid.get)
     b.build()
   }
 
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
+    val toSystemUid = if (status.hasToSystemUid) Some(status.getToSystemUid) else None
+    val fromSystemUid = if (status.hasFromSystemUid) Some(status.getFromSystemUid) else None
     Status(
       status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
       status.getChunk,
-      status.getTotChunks)
+      status.getTotChunks,
+      toSystemUid,
+      fromSystemUid)
   }
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
     val b = dm.Gossip.newBuilder().setSendBack(gossip.sendBack)
-    val entries = gossip.updatedData.foreach {
+    gossip.updatedData.foreach {
       case (key, data) =>
         b.addEntries(dm.Gossip.Entry.newBuilder().setKey(key).setEnvelope(dataEnvelopeToProto(data)))
     }
+    gossip.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
+    b.setFromSystemUid(gossip.fromSystemUid.get)
     b.build()
   }
 
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
+    val toSystemUid = if (gossip.hasToSystemUid) Some(gossip.getToSystemUid) else None
+    val fromSystemUid = if (gossip.hasFromSystemUid) Some(gossip.getFromSystemUid) else None
     Gossip(
       gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
-      sendBack = gossip.getSendBack)
+      sendBack = gossip.getSendBack,
+      toSystemUid,
+      fromSystemUid)
   }
 
   private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
-    val b = dm.DeltaPropagation.newBuilder().setFromNode(uniqueAddressToProto(deltaPropagation.fromNode))
+    val b = dm.DeltaPropagation.newBuilder().setFromNode(uniqueAddressToProto(deltaPropagation._fromNode))
     if (deltaPropagation.reply)
       b.setReply(deltaPropagation.reply)
-    val entries = deltaPropagation.deltas.foreach {
+    deltaPropagation.deltas.foreach {
       case (key, Delta(data, fromSeqNr, toSeqNr)) =>
         val b2 = dm.DeltaPropagation.Entry
           .newBuilder()
@@ -331,11 +345,14 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       case _: ReadAll      => -1
     }
 
+    val timoutInMillis = get.consistency.timeout.toMillis
+    require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in a 32-bit unsigned int")
+
     val b = dm.Get
       .newBuilder()
       .setKey(otherMessageToProto(get.key))
       .setConsistency(consistencyValue)
-      .setTimeout(get.consistency.timeout.toMillis.toInt)
+      .setTimeout(timoutInMillis.toInt)
 
     get.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
@@ -345,7 +362,11 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val get = dm.Get.parseFrom(bytes)
     val key = otherMessageFromProto(get.getKey).asInstanceOf[KeyR]
     val request = if (get.hasRequest()) Some(otherMessageFromProto(get.getRequest)) else None
-    val timeout = Duration(get.getTimeout, TimeUnit.MILLISECONDS)
+    // 32-bit unsigned protobuf integers are mapped to
+    // 32-bit signed Java ints, using the leftmost bit as sign.
+    val timeout =
+      if (get.getTimeout < 0) Duration(Int.MaxValue.toLong + (get.getTimeout - Int.MaxValue), TimeUnit.MILLISECONDS)
+      else Duration(get.getTimeout.toLong, TimeUnit.MILLISECONDS)
     val consistency = get.getConsistency match {
       case 0  => ReadMajority(timeout)
       case -1 => ReadAll(timeout)
@@ -504,18 +525,27 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def writeToProto(write: Write): dm.Write =
-    dm.Write.newBuilder().setKey(write.key).setEnvelope(dataEnvelopeToProto(write.envelope)).build()
+    dm.Write
+      .newBuilder()
+      .setKey(write.key)
+      .setEnvelope(dataEnvelopeToProto(write.envelope))
+      .setFromNode(uniqueAddressToProto(write.fromNode.get))
+      .build()
 
   private def writeFromBinary(bytes: Array[Byte]): Write = {
     val write = dm.Write.parseFrom(bytes)
-    Write(write.getKey, dataEnvelopeFromProto(write.getEnvelope))
+    val fromNode = if (write.hasFromNode) Some(uniqueAddressFromProto(write.getFromNode)) else None
+    Write(write.getKey, dataEnvelopeFromProto(write.getEnvelope), fromNode)
   }
 
   private def readToProto(read: Read): dm.Read =
-    dm.Read.newBuilder().setKey(read.key).build()
+    dm.Read.newBuilder().setKey(read.key).setFromNode(uniqueAddressToProto(read.fromNode.get)).build()
 
-  private def readFromBinary(bytes: Array[Byte]): Read =
-    Read(dm.Read.parseFrom(bytes).getKey)
+  private def readFromBinary(bytes: Array[Byte]): Read = {
+    val read = dm.Read.parseFrom(bytes)
+    val fromNode = if (read.hasFromNode) Some(uniqueAddressFromProto(read.getFromNode)) else None
+    Read(read.getKey, fromNode)
+  }
 
   private def readResultToProto(readResult: ReadResult): dm.ReadResult = {
     val b = dm.ReadResult.newBuilder()

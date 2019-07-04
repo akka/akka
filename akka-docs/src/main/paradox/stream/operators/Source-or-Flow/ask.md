@@ -13,9 +13,9 @@ Use the `ask` pattern to send a request-reply message to the target `ref` actor.
 ## Description
 
 Use the `ask` pattern to send a request-reply message to the target `ref` actor.
-If any of the asks times out it will fail the stream with a @unidoc[AskTimeoutException].
+If any of the asks times out it will fail the stream with a @apidoc[AskTimeoutException].
 
-The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
+The @java[`mapTo` class]@scala[`S` generic] parameter is used to cast the responses from the actor to the expected outgoing flow type.
 
 Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
 An `akka.util.Status#Failure` will cause the operator to fail with the cause carried in the `Failure` message.

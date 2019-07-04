@@ -26,6 +26,7 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-without-cluster = on
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOnAll("""
@@ -96,7 +97,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
+        for (_ <- 0 until iterationCount; _ <- 0 until connectionCount) {
           actor ! "hit"
         }
 
@@ -184,7 +185,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
+        for (_ <- 0 until iterationCount; _ <- 0 until connectionCount) {
           actor ! "hit"
         }
 

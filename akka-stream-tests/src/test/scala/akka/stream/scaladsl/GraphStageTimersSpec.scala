@@ -79,7 +79,7 @@ class GraphStageTimersSpec extends StreamSpec {
           probe ! TestCancelTimerAck
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
         case TestRepeatedTimer =>
-          schedulePeriodically("TestRepeatedTimer", 100.millis.dilated)
+          scheduleWithFixedDelay("TestRepeatedTimer", 100.millis.dilated, 100.millis.dilated)
       }
     }
   }
@@ -101,7 +101,7 @@ class GraphStageTimersSpec extends StreamSpec {
           driver ! TestSingleTimer
           expectMsg(Tick(1))
         }
-        expectNoMsg(1.second)
+        expectNoMessage(1.second)
       }
 
       driver.stopStage()
@@ -118,7 +118,7 @@ class GraphStageTimersSpec extends StreamSpec {
         within(1.second) {
           expectMsg(Tick(2))
         }
-        expectNoMsg(1.second)
+        expectNoMessage(1.second)
       }
 
       driver.stopStage()
@@ -134,7 +134,7 @@ class GraphStageTimersSpec extends StreamSpec {
       within(300.millis, 1.second) {
         expectMsg(Tick(1))
       }
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       driver.stopStage()
     }
@@ -147,7 +147,7 @@ class GraphStageTimersSpec extends StreamSpec {
         case t: Tick => t
       }
       (seq should have).length(5)
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       driver.stopStage()
     }
@@ -156,7 +156,7 @@ class GraphStageTimersSpec extends StreamSpec {
       override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
         var tickCount = 0
 
-        override def preStart(): Unit = schedulePeriodically("tick", 100.millis)
+        override def preStart(): Unit = scheduleWithFixedDelay("tick", 100.millis, 100.millis)
 
         setHandler(out, new OutHandler {
           override def onPull() = () // Do nothing
@@ -188,7 +188,7 @@ class GraphStageTimersSpec extends StreamSpec {
       downstream.expectNext(2)
       downstream.expectNext(3)
 
-      downstream.expectNoMsg(1.second)
+      downstream.expectNoMessage(1.second)
 
       upstream.sendComplete()
       downstream.expectComplete()

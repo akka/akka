@@ -7,14 +7,17 @@ package akka.remote
 import akka.event.Logging.LogLevel
 import akka.event.{ Logging, LoggingAdapter }
 import akka.actor.{ ActorSystem, Address }
+import com.github.ghik.silencer.silent
 
 import scala.runtime.AbstractFunction2
 
+@silent
 @SerialVersionUID(1L)
 sealed trait RemotingLifecycleEvent extends Serializable {
   def logLevel: Logging.LogLevel
 }
 
+@silent
 @SerialVersionUID(1L)
 sealed trait AssociationEvent extends RemotingLifecycleEvent {
   def localAddress: Address
@@ -58,6 +61,7 @@ final case class AssociationErrorEvent(
 
 @SerialVersionUID(1L)
 final case class RemotingListenEvent(listenAddresses: Set[Address]) extends RemotingLifecycleEvent {
+  @silent
   def getListenAddresses: java.util.Set[Address] =
     scala.collection.JavaConverters.setAsJavaSetConverter(listenAddresses).asJava
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
@@ -101,8 +105,9 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
   @deprecated("Use long uid", "2.4.x")
   def uid: Int = longUid.toInt
 
+  @silent
   @deprecated("Use long uid copy method", "2.4.x")
-  def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid)
+  def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid.toLong)
 }
 
 /**

@@ -4,26 +4,20 @@
 
 package akka.actor.typed
 
-import akka.{ actor => untyped }
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.ThreadFactory
-
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.Future
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.typed.internal.InternalRecipientRef
-import akka.actor.typed.internal.adapter.GuardianActorAdapter
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.internal.adapter.PropsAdapter
+import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
+import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
 import akka.util.Timeout
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.{ Done, actor => untyped }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -35,7 +29,6 @@ import com.typesafe.config.ConfigFactory
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] =>
 
   /**
@@ -91,7 +84,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * It is recommended to use the ActorContext’s scheduling capabilities for sending
    * messages to actors instead of registering a Runnable for execution using this facility.
    */
-  def scheduler: untyped.Scheduler
+  def scheduler: Scheduler
 
   /**
    * Facilities for lookup up thread-pools from configuration.
@@ -104,23 +97,35 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   implicit def executionContext: ExecutionContextExecutor
 
   /**
-   * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, then the system guardian
+   * Terminates this actor system by running [[akka.actor.CoordinatedShutdown]] with reason
+   * [[akka.actor.CoordinatedShutdown.ActorSystemTerminateReason]].
+   *
+   * If `akka.coordinated-shutdown.run-by-actor-system-terminate` is configured to `off`
+   * it will not run `CoordinatedShutdown`, but the `ActorSystem` and its actors
+   * will still be terminated.
+   *
+   * This will stop the guardian actor, which in turn
+   * will recursively stop all its child actors, and finally the system guardian
    * (below which the logging actors reside).
+   *
+   * This is an asynchronous operation and completion of the termination can
+   * be observed with [[ActorSystem.whenTerminated]] or [[ActorSystem.getWhenTerminated]].
    */
-  def terminate(): Future[Terminated]
+  def terminate(): Unit
 
   /**
-   * Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed.
+   * Scala API: Returns a Future which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
+   * or by stopping the guardian actor.
    */
-  def whenTerminated: Future[Terminated]
+  def whenTerminated: Future[Done]
 
   /**
-   * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed.
+   * Java API: Returns a CompletionStage which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
+   * or by stopping the guardian actor.
    */
-  def getWhenTerminated: CompletionStage[Terminated]
+  def getWhenTerminated: CompletionStage[Done]
 
   /**
    * The deadLetter address is a destination that will accept (and discard)
@@ -152,6 +157,14 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    */
   def receptionist: ActorRef[Receptionist.Command] =
     Receptionist(this).ref
+
+  /**
+   * Main event bus of this actor system, used for example for logging.
+   * Accepts [[akka.actor.typed.eventstream.Command]].
+   */
+  def eventStream: ActorRef[eventstream.Command] =
+    EventStreamExtension(this).ref
+
 }
 
 object ActorSystem {
@@ -237,11 +250,11 @@ object ActorSystem {
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter(() => guardianBehavior, guardianProps, isGuardian = true)),
+      Some(PropsAdapter[Any](() => new GuardianStartupBehavior(guardianBehavior), guardianProps)),
       setup)
     system.start()
 
-    system.guardian ! GuardianActorAdapter.Start
+    system.guardian ! GuardianStartupBehavior.Start
     ActorSystemAdapter.AdapterExtension(system).adapter
   }
 

@@ -32,7 +32,7 @@ object SharedMediaDriverSupport {
   def startMediaDriver(config: MultiNodeConfig): Unit = {
     val arterySettings = loadArterySettings(config)
     if (arterySettings.Enabled) {
-      val aeronDir = arterySettings.Advanced.AeronDirectoryName
+      val aeronDir = arterySettings.Advanced.Aeron.AeronDirectoryName
       require(aeronDir.nonEmpty, "aeron-dir must be defined")
 
       // Check if the media driver is already started by another multi-node jvm.
@@ -63,10 +63,11 @@ object SharedMediaDriverSupport {
         if (isDriverInactive(MultiNodeSpec.selfIndex)) {
           val driverContext = new MediaDriver.Context
           driverContext.aeronDirectoryName(aeronDir)
-          driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.ClientLivenessTimeout.toNanos)
-          driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.ImageLivenessTimeout.toNanos)
-          driverContext.driverTimeoutMs(arterySettings.Advanced.DriverTimeout.toMillis)
-          val idleCpuLevel = arterySettings.Advanced.IdleCpuLevel
+          driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.Aeron.ClientLivenessTimeout.toNanos)
+          driverContext.publicationUnblockTimeoutNs(arterySettings.Advanced.Aeron.PublicationUnblockTimeout.toNanos)
+          driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.Aeron.ImageLivenessTimeout.toNanos)
+          driverContext.driverTimeoutMs(arterySettings.Advanced.Aeron.DriverTimeout.toMillis)
+          val idleCpuLevel = arterySettings.Advanced.Aeron.IdleCpuLevel
           driverContext
             .threadingMode(ThreadingMode.SHARED)
             .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
@@ -97,7 +98,7 @@ object SharedMediaDriverSupport {
       driver.close()
 
       try {
-        if (arterySettings.Advanced.DeleteAeronDirectory) {
+        if (arterySettings.Advanced.Aeron.DeleteAeronDirectory) {
           IoUtil.delete(new File(driver.aeronDirectoryName), false)
         }
       } catch {

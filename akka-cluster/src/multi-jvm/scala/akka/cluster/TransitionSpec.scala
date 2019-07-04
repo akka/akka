@@ -65,12 +65,10 @@ abstract class TransitionSpec
   }
 
   def awaitMembers(addresses: Address*): Unit = awaitAssert {
-    clusterView.refreshCurrentState()
     memberAddresses should ===(addresses.toSet)
   }
 
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitAssert {
-    clusterView.refreshCurrentState()
     memberStatus(address) should ===(status)
   }
 

@@ -80,7 +80,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
         sender() ! UnexpectedUnregistration
         context.stop(self)
       case Reset => sender() ! ResetOk
-      case msg   => // no consumer, drop
+      case _     => // no consumer, drop
     }
 
     def active(consumer: ActorRef): Receive = {
@@ -298,13 +298,13 @@ class ClusterSingletonManagerSpec
     runOn(controller) {
       queue ! msg
       // make sure it's not terminated, which would be wrong
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
     runOn(oldest) {
       expectMsg(5.seconds, msg)
     }
     runOn(roles.filterNot(r => r == oldest || r == controller || r == observer): _*) {
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
     enterBarrier("after-" + msg + "-verified")
   }
@@ -383,7 +383,6 @@ class ClusterSingletonManagerSpec
 
     "hand over when oldest leaves in 6 nodes cluster " in within(30 seconds) {
       val leaveRole = first
-      val newOldestRole = second
 
       runOn(leaveRole) {
         Cluster(system).leave(node(leaveRole).address)

@@ -14,6 +14,8 @@ import akka.util.ByteString
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
 
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
@@ -35,6 +37,7 @@ private[remote] object FailureInjectorTransportAdapter {
 
   trait FailureInjectorCommand
   @SerialVersionUID(1L)
+  @deprecated("Not implemented", "2.5.22")
   final case class All(mode: GremlinMode)
   @SerialVersionUID(1L)
   final case class One(remoteAddress: Address, mode: GremlinMode)
@@ -58,24 +61,23 @@ private[remote] object FailureInjectorTransportAdapter {
 private[remote] class FailureInjectorTransportAdapter(
     wrappedTransport: Transport,
     val extendedSystem: ExtendedActorSystem)
-    extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatcher)
+    extends AbstractTransportAdapter(wrappedTransport)(extendedSystem.dispatchers.internalDispatcher)
     with AssociationEventListener {
 
   private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, getClass.getName)
-  private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.gremlin.debug")
+  private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.classic.gremlin.debug")
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None
   private[transport] val addressChaosTable = new ConcurrentHashMap[Address, GremlinMode]()
-  @volatile private var allMode: GremlinMode = PassThru
 
   override val addedSchemeIdentifier = FailureInjectorSchemeIdentifier
   protected def maximumOverhead = 0
 
   override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
-    case All(mode) =>
-      allMode = mode
-      Future.successful(true)
+    case All(_) =>
+      Future.failed(
+        new IllegalArgumentException("Setting the mode for all addresses at once is not currently implemented"))
     case One(address, mode) =>
       //  don't care about the protocol part - we are injected in the stack anyway!
       addressChaosTable.put(address.copy(protocol = "", system = ""), mode)
@@ -99,9 +101,9 @@ private[remote] class FailureInjectorTransportAdapter(
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit = {
     // Association is simulated to be failed if there was either an inbound or outbound message drop
-    if (shouldDropInbound(remoteAddress, Unit, "interceptAssociate") || shouldDropOutbound(
+    if (shouldDropInbound(remoteAddress, (), "interceptAssociate") || shouldDropOutbound(
           remoteAddress,
-          Unit,
+          (),
           "interceptAssociate"))
       statusPromise.failure(new FailureInjectorException("Simulated failure of association to " + remoteAddress))
     else
@@ -179,6 +181,10 @@ private[remote] final case class FailureInjectorHandle(
   override def disassociate(reason: String, log: LoggingAdapter): Unit =
     wrappedHandle.disassociate(reason, log)
 
+  @deprecated(
+    message = "Use method that states reasons to make sure disassociation reasons are logged.",
+    since = "2.5.3")
+  @silent
   override def disassociate(): Unit =
     wrappedHandle.disassociate()
 

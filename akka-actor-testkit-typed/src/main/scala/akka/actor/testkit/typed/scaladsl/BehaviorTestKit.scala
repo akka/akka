@@ -7,13 +7,13 @@ package akka.actor.testkit.typed.scaladsl
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
-import akka.annotation.DoNotInherit
-
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
+@ApiMayChange
 object BehaviorTestKit {
   import akka.actor.testkit.typed.scaladsl.TestInbox.address
 
@@ -35,6 +35,7 @@ object BehaviorTestKit {
  * Not for user extension. See `BehaviorTestKit.apply` factory methods
  */
 @DoNotInherit
+@ApiMayChange
 trait BehaviorTestKit[T] {
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
@@ -108,7 +109,7 @@ trait BehaviorTestKit[T] {
 
   /**
    * Returns the current behavior as it was returned from processing the previous message.
-   * For example if [[Behavior.unhandled]] is returned it will be kept here, but not in
+   * For example if [[Behaviors.unhandled]] is returned it will be kept here, but not in
    * [[currentBehavior]].
    */
   def returnedBehavior: Behavior[T]

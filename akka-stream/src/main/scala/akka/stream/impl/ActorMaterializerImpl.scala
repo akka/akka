@@ -10,13 +10,15 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe, retry }
 import akka.stream._
-import akka.stream.impl.fusing.GraphInterpreterShell
-import akka.util.OptionVal
+import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphInterpreterShell }
+import akka.stream.snapshot.StreamSnapshot
+import akka.util.{ OptionVal, Timeout }
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, ExecutionContextExecutor }
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
@@ -129,11 +131,23 @@ private[akka] class SubFusingActorMaterializerImpl(
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
 
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    delegate.scheduleWithFixedDelay(initialDelay, delay, task)
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    delegate.scheduleAtFixedRate(initialDelay, interval, task)
+
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
       task: Runnable): Cancellable =
-    delegate.schedulePeriodically(initialDelay, interval, task)
+    scheduleAtFixedRate(initialDelay, interval, task)
 
   override def withNamePrefix(name: String): SubFusingActorMaterializerImpl =
     new SubFusingActorMaterializerImpl(delegate.withNamePrefix(name), registerShell)
@@ -169,6 +183,19 @@ private[akka] class SubFusingActorMaterializerImpl(
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
 
+  final case class AddFunctionRef(f: (ActorRef, Any) => Unit, name: String)
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
+
+  final case class RemoveFunctionRef(ref: FunctionRef)
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
+
+  case object GetChildrenSnapshots
+  final case class ChildrenSnapshots(seq: immutable.Seq[StreamSnapshot])
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
+
   /** Testing purpose */
   case object GetChildren
 
@@ -187,17 +214,42 @@ private[akka] class SubFusingActorMaterializerImpl(
  */
 @InternalApi private[akka] class StreamSupervisor(haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
-
+  implicit val ec = context.dispatcher
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
     case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
-    case GetChildren => sender() ! Children(context.children.toSet)
+    case AddFunctionRef(f, name) =>
+      val ref = context.asInstanceOf[ActorCell].addFunctionRef(f, name)
+      sender() ! ref
+    case RemoveFunctionRef(ref) =>
+      context.asInstanceOf[ActorCell].removeFunctionRef(ref)
+    case GetChildren =>
+      sender() ! Children(context.children.toSet)
+    case GetChildrenSnapshots =>
+      takeSnapshotsOfChildren().map(ChildrenSnapshots.apply _).pipeTo(sender())
+
     case StopChildren =>
       context.children.foreach(context.stop)
       sender() ! StoppedChildren
+  }
+
+  def takeSnapshotsOfChildren(): Future[immutable.Seq[StreamSnapshot]] = {
+    implicit val scheduler = context.system.scheduler
+    // Arbitrary timeout but should always be quick, the failure scenario is that
+    // the child/stream stopped, and we do retry below
+    implicit val timeout: Timeout = 1.second
+    def takeSnapshot() = {
+      val futureSnapshots =
+        context.children.toList.map(child => (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot])
+      Future.sequence(futureSnapshots)
+    }
+
+    // If the timeout hits it is likely because one of the streams stopped between looking at the list
+    // of children and asking it for a snapshot. We retry the entire snapshot in that case
+    retry(() => takeSnapshot(), 3, Duration.Zero)
   }
 
   override def postStop(): Unit = haveShutDown.set(true)

@@ -1,28 +1,53 @@
 # Other Akka modules
 
-## [Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala.html)
+## [Akka HTTP](https://doc.akka.io/docs/akka-http/current/)
 
 A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
-## [Alpakka](http://developer.lightbend.com/docs/alpakka/current/)
+## [Alpakka](https://doc.akka.io/docs/alpakka/current/)
 
-Various Akka Streams connectors, integration patterns, and data transformations for integration use cases
+Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.
 
-## [Alpakka Kafka Connector](http://doc.akka.io/docs/akka-stream-kafka/current/home.html)
+## [Alpakka Kafka Connector](https://doc.akka.io/docs/akka-stream-kafka/current/)
 
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
-## [Cassandra Plugins for Akka Persistence](https://github.com/akka/akka-persistence-cassandra)
+## [Cassandra Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
 
-A replicated Akka Persistence journal backed by Apache Cassandra.
+An Akka Persistence journal and snapshot store backed by Apache Cassandra.
 
-## [Akka Management](http://developer.lightbend.com/docs/akka-management/current/)
+## [Couchbase Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-couchbase/current/)
 
-Utilities for managing a running Akka Cluster.
+An Akka Persistence journal and snapshot store backed by Couchbase.
+
+## Akka Management
+
+* [Akka Management](https://doc.akka.io/docs/akka-management/current/) provides a central HTTP endpoint for Akka management extensions.
+* [Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) helps bootstrapping an Akka cluster using Akka Discovery.
+* [Akka Management Cluster HTTP](https://doc.akka.io/docs/akka-management/current/cluster-http-management.html) provides HTTP endpoints for introspecting and managing Akka clusters.
+* [Akka Discovery for Kubernetes, Consul, Marathon, and AWS](https://doc.akka.io/docs/akka-management/current/discovery/)
+
+## [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
+
+Akka gRPC provides support for building streaming gRPC servers and clients on top of Akka Streams.
+
+## Akka Resilience Enhancements
+
+* [Akka Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
+* [Kubernetes Lease](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html)
+* [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html)
+* [Akka Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html)
+* [Akka Diagnostics Recorder](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html)
+
+## Akka Persistence Enhancements
+
+* [Akka Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+* [Akka GDPR for Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
+
 
 ## Community Projects
 
-Akka has a vibrant and passionate user community, the members of which have created many independent projects using Akka as well as extensions to it. See [Community Projects](http://akka.io/community/).
+Akka has a vibrant and passionate user community, the members of which have created many independent projects using Akka as well as extensions to it. See [Community Projects](https://akka.io/community/).
 
 ## Related Projects Sponsored by Lightbend
 
@@ -34,3 +59,7 @@ a HTML template language etc. It is built on top of Akka HTTP, and integrates we
 ### [Lagom](https://www.lagomframework.com)
 
 Lagom is a microservice framework which strives to be opinionated and encode best practices for building microservice systems with Akka and Play.
+
+### [Lightbend Telemetry](https://developer.lightbend.com/docs/telemetry/current/home.html)
+
+Distributed tracing, metrics and monitoring for Akka Actors, Cluster, HTTP and more.

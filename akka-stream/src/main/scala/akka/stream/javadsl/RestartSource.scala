@@ -6,6 +6,7 @@ package akka.stream.javadsl
 
 import akka.NotUsed
 import akka.japi.function.Creator
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -72,6 +73,7 @@ object RestartSource {
    *   In order to skip this additional delay pass in `0`.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
+  @silent
   def withBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
@@ -142,6 +144,7 @@ object RestartSource {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
+  @silent
   def withBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
@@ -206,6 +209,7 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
+  @silent
   def onFailuresWithBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
@@ -274,6 +278,7 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
+  @silent
   def onFailuresWithBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,

@@ -147,7 +147,7 @@ abstract class ClusterMetricsDisabledSpec
       //clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)
       ClusterMetricsExtension(system).subscribe(testActor)
-      expectNoMsg
+      expectNoMessage
       // TODO ensure same contract
       //clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)

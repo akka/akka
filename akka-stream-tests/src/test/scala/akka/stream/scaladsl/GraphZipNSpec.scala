@@ -16,7 +16,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
 
   override type Outputs = immutable.Seq[Int]
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val zipN = b.add(ZipN[Int](2))
 
     override def left: Inlet[Int] = zipN.in(0)
@@ -187,7 +187,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
 
       upstream1.sendNext(1)
       upstream1.sendComplete()
-      downstream.expectNoMsg(500.millis)
+      downstream.expectNoMessage(500.millis)
 
       upstream2.sendNext(2)
       upstream2.sendComplete()
@@ -226,7 +226,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
       subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
   }

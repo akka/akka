@@ -4,8 +4,6 @@
 
 package akka.remote.artery
 
-import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
@@ -30,9 +28,7 @@ class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
   val addressC = UniqueAddress(Address("akka", "sysC", "hostB", 1003), 3)
 
-  private def setupStream(
-      inboundContext: InboundContext,
-      timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+  private def setupStream(inboundContext: InboundContext): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = OptionVal.None // not used
     TestSource
       .probe[AnyRef]

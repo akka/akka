@@ -7,6 +7,7 @@ package akka.cluster
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
+import com.github.ghik.silencer.silent
 
 class ReachabilityPerfSpec extends WordSpec with Matchers {
 
@@ -14,8 +15,8 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   // increase for serious measurements
   val iterations = sys.props.get("akka.cluster.ReachabilityPerfSpec.iterations").getOrElse("100").toInt
 
-  val address = Address("akka.tcp", "sys", "a", 2552)
-  val node = Address("akka.tcp", "sys", "a", 2552)
+  val address = Address("akka", "sys", "a", 2552)
+  val node = Address("akka", "sys", "a", 2552)
 
   private def createReachabilityOfSize(base: Reachability, size: Int): Reachability =
     (1 to size).foldLeft(base) {
@@ -26,6 +27,7 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
         r.unreachable(observer, subject).reachable(observer, subject)
     }
 
+  @silent
   private def addUnreachable(base: Reachability, count: Int): Reachability = {
     val observers = base.versions.keySet.take(count)
     val subjects = Stream.continually(base.versions.keySet).flatten.iterator
@@ -45,13 +47,13 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
       r2: Reachability,
       thunk: (Reachability, Reachability) => Unit,
       times: Int): Unit = {
-    for (i <- 1 to times) {
+    for (_ <- 1 to times) {
       thunk(Reachability(r1.records, r1.versions), Reachability(r2.records, r2.versions))
     }
   }
 
   private def checkThunkFor(r1: Reachability, thunk: Reachability => Unit, times: Int): Unit = {
-    for (i <- 1 to times) {
+    for (_ <- 1 to times) {
       thunk(Reachability(r1.records, r1.versions))
     }
   }
@@ -71,12 +73,10 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   }
 
   private def allUnreachableOrTerminated(r1: Reachability): Unit = {
-    val record = r1.records.head
     r1.allUnreachableOrTerminated.isEmpty should ===(false)
   }
 
   private def allUnreachable(r1: Reachability): Unit = {
-    val record = r1.records.head
     r1.allUnreachable.isEmpty should ===(false)
   }
 

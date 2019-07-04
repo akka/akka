@@ -239,7 +239,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
       // after full replication should still not be able to update with data from removed node
       // but it would not work after removal of the PruningPerformed markers
-      expectNoMsg(maxPruningDissemination + 3.seconds)
+      expectNoMessage(maxPruningDissemination + 3.seconds)
 
       runOn(first) {
         updateAfterPruning(expectedValue = 12)

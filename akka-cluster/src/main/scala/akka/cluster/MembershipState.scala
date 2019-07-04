@@ -19,6 +19,7 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 @InternalApi private[akka] object MembershipState {
   import MemberStatus._
   private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
@@ -107,8 +108,8 @@ import scala.util.Random
   /**
    * @return Up to `crossDcConnections` oldest members for each DC
    */
-  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, SortedSet[Member]] = {
-    latestGossip.members.foldLeft(Map.empty[DataCenter, SortedSet[Member]]) { (acc, member) =>
+  lazy val ageSortedTopOldestMembersPerDc: Map[DataCenter, immutable.SortedSet[Member]] = {
+    latestGossip.members.foldLeft(Map.empty[DataCenter, immutable.SortedSet[Member]]) { (acc, member) =>
       acc.get(member.dataCenter) match {
         case Some(set) =>
           if (set.size < crossDcConnections) {
@@ -121,7 +122,7 @@ import scala.util.Random
             }
           }
         case None =>
-          acc + (member.dataCenter -> (SortedSet.empty(Member.ageOrdering) + member))
+          acc + (member.dataCenter -> (immutable.SortedSet.empty(Member.ageOrdering) + member))
       }
     }
   }

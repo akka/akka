@@ -6,6 +6,7 @@ package akka.actor
 
 import language.postfixOps
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
@@ -20,14 +21,16 @@ import akka.testkit.{ filterEvents, filterException, TestDuration, TestLatch }
 import akka.testkit.TestEvent.Mute
 import java.util.concurrent.ConcurrentHashMap
 import java.lang.ref.WeakReference
+
 import akka.event.Logging
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.System.identityHashCode
+
 import akka.util.Helpers.ConfigOps
 import akka.testkit.LongRunningTest
+import com.github.ghik.silencer.silent
 
 object SupervisorHierarchySpec {
-  import FSM.`->`
 
   class FireWorkerException(msg: String) extends Exception(msg)
 
@@ -220,7 +223,7 @@ object SupervisorHierarchySpec {
           throw f.copy(depth = f.depth - 1)
         }
         val prefix = orig match {
-          case f: Failure => "applying "
+          case _: Failure => "applying "
           case _          => "re-applying "
         }
         log :+= Event(prefix + f + " to " + sender(), identityHashCode(this))
@@ -312,7 +315,7 @@ object SupervisorHierarchySpec {
           } else {
             // WARNING: The Terminated that is logged by this is logged by check() above, too. It is not
             // an indication of duplicate Terminate messages
-            log :+= Event(sender() + " terminated while pongOfDeath", identityHashCode(Hierarchy.this))
+            log :+= Event(s"${sender()} terminated while pongOfDeath", identityHashCode(Hierarchy.this))
           }
         case Abort => abort("terminating")
         case PingOfDeath =>
@@ -465,7 +468,7 @@ object SupervisorHierarchySpec {
       case Event(Init, _) =>
         hierarchy = context.watch(
           context.actorOf(Props(new Hierarchy(size, breadth, self, 0, random)).withDispatcher("hierarchy"), "head"))
-        setTimer("phase", StateTimeout, 5 seconds, false)
+        startSingleTimer("phase", StateTimeout, 5 seconds)
         goto(Init)
     }
 
@@ -490,7 +493,7 @@ object SupervisorHierarchySpec {
         idleChildren = children
         activeChildren = children
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
-        setTimer("phase", StateTimeout, 90.seconds.dilated, false)
+        startSingleTimer("phase", StateTimeout, 90.seconds.dilated)
     }
 
     val workSchedule = 50.millis
@@ -596,6 +599,7 @@ object SupervisorHierarchySpec {
     when(Stopping, stateTimeout = 5.seconds.dilated) {
       case Event(PongOfDeath, _) => stay
       case Event(Terminated(r), _) if r == hierarchy =>
+        @silent
         val undead = children.filterNot(_.isTerminated)
         if (undead.nonEmpty) {
           log.info("undead:\n" + undead.mkString("\n"))
@@ -637,7 +641,6 @@ object SupervisorHierarchySpec {
       case Event(GCcheck(weak), _) =>
         val next = weak.filter(_.get ne null)
         if (next.nonEmpty) {
-          println(next.size + " left")
           context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(next))(context.dispatcher)
           System.gc()
           stay
@@ -759,7 +762,9 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       val manager = Await.result((boss ? managerProps).mapTo[ActorRef], timeout.duration)
 
       val workerProps = Props(new CountDownActor(countDown, SupervisorStrategy.defaultStrategy))
-      val workerOne, workerTwo, workerThree = Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration)
+      val workerOne = Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration)
+      Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration) // workerTwo
+      Await.result((manager ? workerProps).mapTo[ActorRef], timeout.duration) // workerThree
 
       filterException[ActorKilledException] {
         workerOne ! Kill
@@ -835,7 +840,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
         boss ! "fail"
         awaitCond(worker.asInstanceOf[LocalActorRef].underlying.mailbox.isSuspended)
         worker ! "ping"
-        expectNoMsg(2 seconds)
+        expectNoMessage(2 seconds)
         latch.countDown()
       }
       expectMsg("pong")
@@ -856,7 +861,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
           system.actorOf(
             Props(new Actor {
               override def supervisorStrategy = OneForOneStrategy() {
-                case e: ActorInitializationException =>
+                case _: ActorInitializationException =>
                   if (createAttempt.get % 2 == 0) SupervisorStrategy.Resume else SupervisorStrategy.Restart
               }
 

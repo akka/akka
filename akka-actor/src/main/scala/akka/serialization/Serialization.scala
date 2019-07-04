@@ -24,6 +24,7 @@ import java.util.NoSuchElementException
 import akka.annotation.InternalApi
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object Serialization {
 
   /**
@@ -62,7 +63,7 @@ object Serialization {
     }
 
     private final def configToMap(cfg: Config): Map[String, String] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       cfg.root.unwrapped.asScala.toMap.map { case (k, v) => (k -> v.toString) }
     }
   }
@@ -188,6 +189,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * using the optional type hint to the Serializer.
    * Returns either the resulting object or an Exception if one was thrown.
    */
+  @deprecated("Use deserialize that accepts the `manifest` as a class name.", since = "2.6.0")
   def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
     Try {
       val serializer = try getSerializerById(serializerId)
@@ -384,6 +386,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
   def serializerOf(serializerFQN: String): Try[Serializer] = {
+    serializerOf(bindingName = "", serializerFQN) // for backwards compatibility since it's a public method
+  }
+
+  /**
+   * Tries to load the specified Serializer by the fully-qualified name; the actual
+   * loading is performed by the system’s [[akka.actor.DynamicAccess]].
+   */
+  private def serializerOf(bindingName: String, serializerFQN: String): Try[Serializer] = {
     // We override each instantiation of the JavaSerializer with the "disabled" serializer which will log warnings if used.
     val fqn =
       if (!system.settings.AllowJavaSerialization && serializerFQN == classOf[JavaSerializer].getName) {
@@ -395,9 +405,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
     system.dynamicAccess.createInstanceFor[Serializer](fqn, List(classOf[ExtendedActorSystem] -> system)).recoverWith {
       case _: NoSuchMethodException =>
-        system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil)
-      // FIXME only needed on 2.13.0-M5 due to https://github.com/scala/bug/issues/11242
-      case t => Failure(t)
+        system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil).recoverWith {
+          case e: NoSuchMethodException =>
+            if (bindingName == "") throw e // compatibility with (public) serializerOf method without bindingName
+            else
+              system.dynamicAccess.createInstanceFor[Serializer](
+                fqn,
+                List(classOf[ExtendedActorSystem] -> system, classOf[String] -> bindingName))
+        }
     }
   }
 
@@ -422,7 +437,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * By default always contains the following mapping: "java" -> akka.serialization.JavaSerializer
    */
   private val serializers: Map[String, Serializer] = {
-    val fromConfig = for ((k: String, v: String) <- settings.Serializers) yield k -> serializerOf(v).get
+    val fromConfig = for ((k: String, v: String) <- settings.Serializers) yield k -> serializerOf(k, v).get
     val result = fromConfig ++ serializerDetails.map(d => d.alias -> d.serializer)
     ensureOnlyAllowedSerializers(result.iterator.map { case (_, ser) => ser })
     result

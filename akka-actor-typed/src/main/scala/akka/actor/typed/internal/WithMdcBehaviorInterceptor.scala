@@ -7,8 +7,8 @@ package akka.actor.typed.internal
 import akka.actor.typed.internal.adapter.AbstractLogger
 import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
-
 import scala.collection.immutable.HashMap
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -16,13 +16,12 @@ import scala.collection.immutable.HashMap
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
   val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
 
-  def apply[T](
+  def apply[T: ClassTag](
       staticMdc: Map[String, Any],
       mdcForMessage: T => Map[String, Any],
       behavior: Behavior[T]): Behavior[T] = {
 
-    val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
-    BehaviorImpl.intercept(interceptor)(behavior)
+    BehaviorImpl.intercept(() => new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage))(behavior)
   }
 
 }
@@ -32,7 +31,7 @@ import scala.collection.immutable.HashMap
  *
  * INTERNAL API
  */
-@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
+@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T: ClassTag] private (
     staticMdc: Map[String, Any],
     mdcForMessage: T => Map[String, Any])
     extends BehaviorInterceptor[T, T] {
@@ -54,11 +53,11 @@ import scala.collection.immutable.HashMap
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case w: WrappingBehavior[T, T] =>
-          val nested = w.nestedBehavior
+        case i: InterceptorImpl[T, T] =>
+          val nested = i.nestedBehavior
           val inner = loop(nested)
-          if (inner eq nested) w
-          else w.replaceNested(inner)
+          if (inner eq nested) i
+          else i.replaceNested(inner)
 
         case b => b
       }

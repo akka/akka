@@ -1,13 +1,38 @@
-# Remoting (codename Artery)
+# Artery Remoting
+
+@@@ note
+
+Remoting is the mechanism by which Actors on different nodes talk to each
+other internally.
+
+When building an Akka application, you would usually not use the Remoting concepts
+directly, but instead use the more high-level
+@ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
+such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
+
+@@@
 
 ## Dependency
 
-To use Remoting (codename Artery), you must add the following dependency in your project:
+To use Artery Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-remote_$scala.binary_version$
   version=$akka.version$
+}
+
+Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
+not using Artery remoting do not have Aeron on the classpath:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=io.aeron
+  artifact=aeron-driver
+  version="$aeron_version$"
+  group2=io.aeron
+  artifact2=aeron-client
+  version2="$aeron_version$"
 }
 
 If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
@@ -24,8 +49,7 @@ akka {
   }
   remote {
     artery {
-      enabled = on
-      transport = aeron-udp # See Selecting a transport below
+      transport = tcp # See Selecting a transport below
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
     }
@@ -63,10 +87,9 @@ underlying module that allows for Cluster, it is still useful to understand deta
 @@@ note
 
 This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
-@ref:[old remoting implementation](remoting.md). Artery with the Aeron transport is ready
-to use in production. The TCP based transport is not ready for use in production yet. The module is
-marked @ref:[may change](common/may-change.md) because some configuration will be changed when the API
-becomes stable.
+@ref:[classic remoting implementation](remoting.md). Artery is ready to use in production, but the
+module is still marked @ref:[may change](common/may-change.md) because some configuration will be
+changed when the API becomes stable in Akka 2.6.0.
 
 @@@
 
@@ -99,7 +122,9 @@ The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the
 when encryption is needed, but it can also be used with plain TCP without TLS. It's also
 the obvious choice when UDP can't be used.
 It has very good performance (high throughput and low latency) but latency at high throughput
-might not be as good as the Aeron transport.
+might not be as good as the Aeron transport. It has less operational complexity than the
+Aeron transport and less risk of trouble in container environments. Artery TCP will be
+the default transport in Akka 2.6.0.
 
 @@@ note
 
@@ -110,9 +135,11 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
 
 @@@
 
+## Migrating from classic remoting
 
+See @ref:[migrating from classic remoting](project/migration-guide-2.5.x-2.6.x.md#classic-to-artery)
 
-### Canonical address
+## Canonical address
 
 In order to remoting to work properly, where each system can send messages to any other system on the same network
 (for example a system forwards a message to a third system, and the third replies directly to the sender system)
@@ -725,7 +752,7 @@ To use the external media driver from the Akka application you need to define th
 configuration properties:
 
 ```
-akka.remote.artery.advanced {
+akka.remote.artery.advanced.aeron {
   embedded-media-driver = off
   aeron-dir = /dev/shm/aeron
 }
@@ -751,7 +778,7 @@ usage and latency with the following configuration:
 ```
 # Values can be from 1 to 10, where 10 strongly prefers low latency
 # and 1 strongly prefers less CPU usage
-akka.remote.artery.advanced.idle-cpu-level = 1
+akka.remote.artery.advanced.aeron.idle-cpu-level = 1
 ```
 
 By setting this value to a lower number, it tells Akka to do longer "sleeping" periods on its thread dedicated
@@ -841,3 +868,32 @@ You can look at the
 @java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
 @scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
 to see what this looks like in practice.
+
+### Running in Docker/Kubernetes
+
+When using `aeron-udp` in a containerized environment special care must be taken that the media driver runs on a ram disk.
+This by default is located in `/dev/shm` which on most physical Linux machines will be mounted as half the size of the system memory.
+
+Docker and Kubernetes mount a 64Mb ram disk. This is unlikely to be large enough. For docker this can be overridden with `--shm-size="512mb"`.
+
+In Kubernetes there is no direct support (yet) for setting `shm` size. Instead mount an `EmptyDir` with type `Memory` to `/dev/shm` for example in a
+deployment.yml:
+
+```
+spec:
+  containers:
+  - name: artery-udp-cluster
+    // rest of container spec...
+    volumeMounts:
+    - mountPath: /dev/shm
+      name: media-driver
+  volumes:
+  - name: media-driver
+    emptyDir:
+      medium: Memory
+      name: media-driver
+```
+
+There is currently no way to limit the size of a memory empty dir but there is a [pull request](https://github.com/kubernetes/kubernetes/pull/63641) for adding it.
+
+Any space used in the mount will count towards your container's memory usage.

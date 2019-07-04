@@ -24,8 +24,8 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 1s
       akka.cluster.prune-gossip-tombstones-after = 1s
-      akka.remote.log-frame-size-exceeding = 1200b
-      akka.remote.artery.advanced {
+      akka.remote.classic.log-frame-size-exceeding = 1200b
+      akka.remote.artery.advanced.aeron {
         idle-cpu-level = 1
         embedded-media-driver = off
         aeron-dir = "target/aeron-NodeChurnSpec"
@@ -143,9 +143,9 @@ abstract class NodeChurnSpec
         enterBarrier("end-round-" + n)
         log.info("end of round-" + n)
         // log listener will send to testActor if payload size exceed configured log-frame-size-exceeding
-        expectNoMsg(2.seconds)
+        expectNoMessage(2.seconds)
       }
-      expectNoMsg(5.seconds)
+      expectNoMessage(5.seconds)
     }
 
   }

@@ -17,14 +17,14 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class RequestMore(subscription: ActorSubscription[_], demand: Long)
+@InternalApi private[akka] final case class RequestMore[T](subscription: ActorSubscription[T], demand: Long)
     extends DeadLetterSuppression
     with NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class Cancel(subscription: ActorSubscription[_])
+@InternalApi private[akka] final case class Cancel[T](subscription: ActorSubscription[T])
     extends DeadLetterSuppression
     with NoSerializationVerificationNeeded
 

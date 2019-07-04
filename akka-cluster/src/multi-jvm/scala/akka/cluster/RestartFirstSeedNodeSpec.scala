@@ -19,8 +19,9 @@ import akka.actor.Actor
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
 import akka.actor.Deploy
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
   val seed2 = role("seed2")
@@ -56,7 +57,7 @@ abstract class RestartFirstSeedNodeSpec
   lazy val restartedSeed1System = ActorSystem(
     system.name,
     ConfigFactory.parseString(s"""
-        akka.remote.netty.tcp.port = ${seedNodes.head.port.get}
+        akka.remote.classic.netty.tcp.port = ${seedNodes.head.port.get}
         akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
         """).withFallback(system.settings.config))
 

@@ -18,7 +18,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
   val seed = new ActorSys()
 
   val testSystems = {
-    val joiners = (0 until 4).map(n => new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
+    val joiners = (0 until 4).map(_ => new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
     joiners :+ seed
   }
 
@@ -69,8 +69,8 @@ object ClusterSingletonProxySpec {
       cluster.jmx.enabled = off
       actor.provider = "cluster"
       remote {
-        log-remote-lifecycle-events = off
-        netty.tcp {
+        classic.log-remote-lifecycle-events = off
+        classic.netty.tcp {
           hostname = "127.0.0.1"
           port = 0
         }

@@ -31,7 +31,7 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
 
   override def receivePluginInternal: Receive = receiveCompactionInternal.orElse {
-    case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) =>
+    case ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) =>
       import context.dispatcher
       val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
       asyncReadHighestSequenceNr(tagAsPersistenceId(tag), readHighestSequenceNrFrom)

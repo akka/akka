@@ -10,7 +10,7 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -25,6 +25,7 @@ import akka.util.ccompat._
 /**
  * Some useful serialization helper methods.
  */
+@ccompatUsedUntil213
 trait SerializationSupport {
 
   private final val BufferSize = 1024 * 4

@@ -9,15 +9,11 @@ import java.net.URLEncoder
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
-import akka.persistence.query.journal.leveldb.{
-  AllPersistenceIdsPublisher,
-  EventsByPersistenceIdPublisher,
-  EventsByTagPublisher
-}
+import akka.persistence.query.journal.leveldb.{ AllPersistenceIdsStage, EventsByPersistenceIdStage, EventsByTagStage }
 import akka.persistence.query.scaladsl.{ ReadJournal, _ }
 import akka.persistence.query.{ EventEnvelope, NoOffset, Offset, Sequence }
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.util.{ unused, ByteString }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -36,7 +32,7 @@ import scala.concurrent.duration._
  * absolute path corresponding to the identifier, which is `"akka.persistence.query.journal.leveldb"`
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  */
-class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
+class LeveldbReadJournal(@unused system: ExtendedActorSystem, config: Config)
     extends ReadJournal
     with PersistenceIdsQuery
     with CurrentPersistenceIdsQuery
@@ -70,9 +66,13 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
   override def persistenceIds(): Source[String, NotUsed] = {
     // no polling for this query, the write journal will push all changes, i.e. no refreshInterval
     Source
-      .actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = true, maxBufSize, writeJournalPluginId))
+      .setup { (mat, _) =>
+        Source
+          .fromGraph(new AllPersistenceIdsStage(liveQuery = true, writeJournalPluginId, mat))
+          .named("allPersistenceIds")
+      }
       .mapMaterializedValue(_ => NotUsed)
-      .named("allPersistenceIds")
+
   }
 
   /**
@@ -82,9 +82,12 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
    */
   override def currentPersistenceIds(): Source[String, NotUsed] = {
     Source
-      .actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = false, maxBufSize, writeJournalPluginId))
+      .setup { (mat, _) =>
+        Source
+          .fromGraph(new AllPersistenceIdsStage(liveQuery = false, writeJournalPluginId, mat))
+          .named("allPersistenceIds")
+      }
       .mapMaterializedValue(_ => NotUsed)
-      .named("currentPersistenceIds")
   }
 
   /**
@@ -118,10 +121,20 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
       fromSequenceNr: Long = 0L,
       toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source
-      .actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher
-        .props(persistenceId, fromSequenceNr, toSequenceNr, refreshInterval, maxBufSize, writeJournalPluginId))
+      .setup { (mat, _) =>
+        Source
+          .fromGraph(
+            new EventsByPersistenceIdStage(
+              persistenceId,
+              fromSequenceNr,
+              toSequenceNr,
+              maxBufSize,
+              writeJournalPluginId,
+              refreshInterval,
+              mat))
+          .named("eventsByPersistenceId-" + persistenceId)
+      }
       .mapMaterializedValue(_ => NotUsed)
-      .named("eventsByPersistenceId-" + persistenceId)
   }
 
   /**
@@ -134,10 +147,21 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
       fromSequenceNr: Long = 0L,
       toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source
-      .actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher
-        .props(persistenceId, fromSequenceNr, toSequenceNr, None, maxBufSize, writeJournalPluginId))
+      .setup { (mat, _) =>
+        Source
+          .fromGraph(
+            new EventsByPersistenceIdStage(
+              persistenceId,
+              fromSequenceNr,
+              toSequenceNr,
+              maxBufSize,
+              writeJournalPluginId,
+              None,
+              mat))
+          .named("currentEventsByPersistenceId-" + persistenceId)
+      }
       .mapMaterializedValue(_ => NotUsed)
-      .named("currentEventsByPersistenceId-" + persistenceId)
+
   }
 
   /**
@@ -183,10 +207,20 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
     offset match {
       case seq: Sequence =>
         Source
-          .actorPublisher[EventEnvelope](EventsByTagPublisher
-            .props(tag, seq.value, Long.MaxValue, refreshInterval, maxBufSize, writeJournalPluginId))
+          .setup { (mat, _) =>
+            Source
+              .fromGraph(
+                new EventsByTagStage(
+                  tag,
+                  seq.value,
+                  maxBufSize,
+                  Long.MaxValue,
+                  writeJournalPluginId,
+                  mat,
+                  refreshInterval))
+              .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+          }
           .mapMaterializedValue(_ => NotUsed)
-          .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
       case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
       case _ =>
         throw new IllegalArgumentException(
@@ -198,19 +232,23 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config)
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
-    offset match {
-      case seq: Sequence =>
-        Source
-          .actorPublisher[EventEnvelope](
-            EventsByTagPublisher.props(tag, seq.value, Long.MaxValue, None, maxBufSize, writeJournalPluginId))
-          .mapMaterializedValue(_ => NotUsed)
-          .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-      case NoOffset => currentEventsByTag(tag, Sequence(0L)) //recursive
-      case _ =>
-        throw new IllegalArgumentException(
-          "LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
-    }
+  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = {
+    Source
+      .setup { (mat, _) =>
+        offset match {
+          case seq: Sequence =>
+            Source
+              .fromGraph(
+                new EventsByTagStage(tag, seq.value, maxBufSize, Long.MaxValue, writeJournalPluginId, mat, None))
+              .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+          case NoOffset => currentEventsByTag(tag, Sequence(0L))
+          case _ =>
+            throw new IllegalArgumentException(
+              "LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
+        }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
 
 }
 

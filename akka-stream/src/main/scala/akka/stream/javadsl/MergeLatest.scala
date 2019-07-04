@@ -7,7 +7,7 @@ package akka.stream.javadsl
 import akka.stream.stage.GraphStage
 import akka.stream.{ scaladsl, UniformFanInShape }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * MergeLatest joins elements from N input streams into stream of lists of size N.

@@ -12,7 +12,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbeSpec;
 import akka.actor.testkit.typed.scaladsl.TestProbeSpec.*;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import static org.junit.Assert.*;
 

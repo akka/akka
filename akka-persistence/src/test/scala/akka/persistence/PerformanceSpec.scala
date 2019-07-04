@@ -80,7 +80,7 @@ object PerformanceSpec {
   class MixedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
     var counter = 0
 
-    val handler: Any => Unit = { evt =>
+    val handler: Any => Unit = { _ =>
       if (lastSequenceNr % 1000 == 0) print(".")
       if (lastSequenceNr == failAt) throw new TestException("boom")
     }
@@ -108,7 +108,7 @@ object PerformanceSpec {
       case "c" =>
         persist("c")(_ => context.unbecome())
         unstashAll()
-      case other => stash()
+      case _ => stash()
     }
   }
 }

@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.event.Logging
 import akka.pattern.BackoffSupervisor
 import akka.stream.Attributes.Attribute
@@ -13,8 +12,9 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
 import akka.stream.stage._
-
 import scala.concurrent.duration._
+
+import akka.stream.Attributes.LogLevels
 
 /**
  * A RestartFlow wraps a [[Flow]] that gets restarted when it completes or fails.
@@ -152,7 +152,15 @@ private final class RestartWithBackoffFlow[In, Out](
   override def shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes) =
-    new RestartWithBackoffLogic("Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
+    new RestartWithBackoffLogic(
+      "Flow",
+      shape,
+      inheritedAttributes,
+      minBackoff,
+      maxBackoff,
+      randomFactor,
+      onlyOnFailures,
+      maxRestarts) {
       val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
 
       var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
@@ -208,6 +216,7 @@ private final class RestartWithBackoffFlow[In, Out](
 private abstract class RestartWithBackoffLogic[S <: Shape](
     name: String,
     shape: S,
+    inheritedAttributes: Attributes,
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double,
@@ -223,6 +232,11 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
   protected def startGraph(): Unit
   protected def backoff(): Unit
+
+  private def loggingEnabled = inheritedAttributes.get[LogLevels] match {
+    case Some(levels) => levels.onFailure != LogLevels.Off
+    case None         => true
+  }
 
   /**
    * @param out The permanent outlet
@@ -249,7 +263,8 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         if (finishing || maxRestartsReached()) {
           fail(out, ex)
         } else {
-          log.warning("Restarting graph due to failure. stack_trace: {}", Logging.stackTraceFor(ex))
+          if (loggingEnabled)
+            log.warning("Restarting graph due to failure. stack_trace: {}", Logging.stackTraceFor(ex))
           scheduleRestartTimer()
         }
       }
@@ -355,7 +370,6 @@ object RestartWithBackoffFlow {
    *
    * Will be removed if/when cancellation can include a cause.
    */
-  @ApiMayChange
   case class Delay(duration: FiniteDuration) extends Attribute
 
   /**

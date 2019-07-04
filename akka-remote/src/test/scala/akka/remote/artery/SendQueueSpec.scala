@@ -91,7 +91,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
         Source.fromGraph(new SendQueue[String](sendToDeadLetters)).toMat(TestSink.probe)(Keep.both).run()
 
       downstream.request(10)
-      downstream.expectNoMsg(200.millis)
+      downstream.expectNoMessage(200.millis)
       sendQueue.inject(queue)
       downstream.expectNext("a")
       downstream.expectNext("b")
@@ -163,7 +163,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
 
       def test(f: (Queue[String], SendQueue.QueueValue[String], TestSubscriber.Probe[String]) => Unit): Unit = {
 
-        (1 to 100).foreach { n =>
+        (1 to 100).foreach { _ =>
           val queue = createQueue[String](16)
           val (sendQueue, downstream) =
             Source.fromGraph(new SendQueue[String](sendToDeadLetters)).toMat(TestSink.probe)(Keep.both).run()

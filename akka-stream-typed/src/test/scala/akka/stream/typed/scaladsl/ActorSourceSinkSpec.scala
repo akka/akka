@@ -6,7 +6,7 @@ package akka.stream.typed.scaladsl
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.OverflowStrategy
+import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -48,20 +48,18 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.receive[AckProto] { (ctx, msg) =>
-        msg match {
-          case m @ Init(sender) =>
-            p.ref ! m
-            sender ! "ACK"
-            Behaviors.same
-          case m @ Msg(sender, _) =>
-            p.ref ! m
-            sender ! "ACK"
-            Behaviors.same
-          case m =>
-            p.ref ! m
-            Behaviors.same
-        }
+      val autoPilot = Behaviors.receiveMessage[AckProto] {
+        case m @ Init(sender) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m @ Msg(sender, _) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m =>
+          p.ref ! m
+          Behaviors.same
       }
 
       val pilotRef: ActorRef[AckProto] = spawn(autoPilot)
@@ -109,6 +107,25 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       out.failed.futureValue.getCause.getMessage shouldBe "boom!"
     }
-  }
 
+    "send message and ack" in {
+      val p = TestProbe[String]()
+
+      val (in, out) = ActorSource
+        .actorRefWithAck[String, String](
+          p.ref,
+          "ack", { case "complete" => CompletionStrategy.draining },
+          PartialFunction.empty)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      in ! "one"
+      p.expectMessage("ack")
+      in ! "two"
+      p.expectMessage("ack")
+      in ! "complete"
+
+      out.futureValue should contain theSameElementsAs Seq("one", "two")
+    }
+  }
 }

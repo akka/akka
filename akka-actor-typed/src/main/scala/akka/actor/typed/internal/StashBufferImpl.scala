@@ -7,9 +7,10 @@ package akka.actor.typed.internal
 import java.util.function.Consumer
 import java.util.function.{ Function => JFunction }
 
+import akka.actor.DeadLetter
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
@@ -125,8 +126,9 @@ import akka.util.ConstantFun
       val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
-        val nextB = try {
-          messages.next() match {
+        val message = messages.next()
+        val interpretResult = try {
+          message match {
             case sig: Signal => Behavior.interpretSignal(b2, ctx, sig)
             case msg         => Behavior.interpretMessage(b2, ctx, msg)
           }
@@ -134,11 +136,46 @@ import akka.util.ConstantFun
           case NonFatal(e) => throw UnstashException(e, b2)
         }
 
-        interpretOne(Behavior.canonicalize(nextB, b2, ctx)) // recursive
+        val actualNext =
+          if (interpretResult == BehaviorImpl.same) b2
+          else if (Behavior.isUnhandled(interpretResult)) {
+            ctx.asScala.onUnhandled(message)
+            b2
+          } else {
+            interpretResult
+          }
+
+        if (Behavior.isAlive(actualNext))
+          interpretOne(Behavior.canonicalize(actualNext, b2, ctx)) // recursive
+        else {
+          unstashRestToDeadLetters(ctx, messages)
+          actualNext
+        }
       }
     }
 
-    interpretOne(Behavior.start(behavior, ctx))
+    val started = Behavior.start(behavior, ctx)
+    val actualInitialBehavior =
+      if (Behavior.isUnhandled(started))
+        throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
+      else if (started == BehaviorImpl.same) {
+        ctx.asScala.currentBehavior
+      } else started
+
+    if (Behavior.isAlive(actualInitialBehavior)) {
+      interpretOne(actualInitialBehavior)
+    } else {
+      unstashRestToDeadLetters(ctx, messages)
+      started
+    }
+  }
+
+  private def unstashRestToDeadLetters(ctx: TypedActorContext[T], messages: Iterator[T]): Unit = {
+    val scalaCtx = ctx.asScala
+    import akka.actor.typed.scaladsl.adapter._
+    val untypedDeadLetters = scalaCtx.system.deadLetters.toUntyped
+    messages.foreach(msg =>
+      scalaCtx.system.deadLetters ! DeadLetter(msg, untypedDeadLetters, ctx.asScala.self.toUntyped))
   }
 
   override def unstash(

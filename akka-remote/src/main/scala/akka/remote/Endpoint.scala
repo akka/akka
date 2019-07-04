@@ -27,7 +27,7 @@ import akka.serialization.Serialization
 import akka.util.ByteString
 import akka.{ AkkaException, OnlyCauseStackTrace }
 import java.io.NotSerializableException
-import java.util.concurrent.{ ConcurrentHashMap, TimeUnit, TimeoutException }
+import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.Deadline
@@ -35,7 +35,8 @@ import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.Future
-import akka.util.OptionVal
+import scala.concurrent.duration.Duration
+
 import akka.util.OptionVal
 
 /**
@@ -256,7 +257,7 @@ private[remote] class ReliableDeliverySupervisor(
   import ReliableDeliverySupervisor._
   import context.dispatcher
 
-  val autoResendTimer = context.system.scheduler.schedule(
+  val autoResendTimer = context.system.scheduler.scheduleWithFixedDelay(
     settings.SysResendTimeout,
     settings.SysResendTimeout,
     self,
@@ -447,7 +448,7 @@ private[remote] class ReliableDeliverySupervisor(
         uid,
         new TimeoutException(
           "Remote system has been silent for too long. " +
-          s"(more than ${settings.QuarantineSilentSystemTimeout.toUnit(TimeUnit.HOURS)} hours)"))
+          s"(more than ${settings.QuarantineSilentSystemTimeout.toCoarsest})"))
     case EndpointWriter.FlushAndStop => context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) =>
       replyTo ! EndpointWriter.StoppedReading(w)
@@ -455,9 +456,17 @@ private[remote] class ReliableDeliverySupervisor(
   }
 
   private def goToIdle(): Unit = {
-    if (maxSilenceTimer.isEmpty)
-      maxSilenceTimer = Some(
-        context.system.scheduler.scheduleOnce(settings.QuarantineSilentSystemTimeout, self, TooLongIdle))
+    if (maxSilenceTimer.isEmpty && settings.QuarantineSilentSystemTimeout > Duration.Zero) {
+      try {
+        maxSilenceTimer = Some(
+          context.system.scheduler.scheduleOnce(settings.QuarantineSilentSystemTimeout, self, TooLongIdle))
+      } catch {
+        case e: IllegalArgumentException =>
+          log.warning(
+            "Too long quarantine-after-silence configuration value, idle timer is not scheduled. " +
+            e.getMessage)
+      }
+    }
     context.become(idle)
   }
 
@@ -624,7 +633,7 @@ private[remote] class EndpointWriter(
   private val markLog = Logging.withMarker(this)
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
   val remoteMetrics = RemoteMetricsExtension(extendedSystem)
-  val backoffDispatcher = context.system.dispatchers.lookup("akka.remote.backoff-remote-dispatcher")
+  val backoffDispatcher = context.system.dispatchers.lookup("akka.remote.classic.backoff-remote-dispatcher")
 
   var reader: Option[ActorRef] = None
   var handle: Option[AkkaProtocolHandle] = handleOrActive
@@ -663,7 +672,7 @@ private[remote] class EndpointWriter(
 
   val ackIdleTimer = {
     val interval = settings.SysMsgAckTimeout / 2
-    context.system.scheduler.schedule(interval, interval, self, AckIdleCheckTimer)
+    context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, AckIdleCheckTimer)
   }
 
   override def preStart(): Unit = {

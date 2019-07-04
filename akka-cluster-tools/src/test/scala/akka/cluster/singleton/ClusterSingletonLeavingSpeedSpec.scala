@@ -52,7 +52,7 @@ class ClusterSingletonLeavingSpeedSpec
   # akka.cluster.gossip-interval = 2s
 
   akka.remote {
-    netty.tcp {
+    classic.netty.tcp {
       hostname = "127.0.0.1"
       port = 0
     }
@@ -71,6 +71,8 @@ class ClusterSingletonLeavingSpeedSpec
 
   override def expectedTestDuration: FiniteDuration = 10.minutes
 
+  import akka.util.ccompat._
+  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem, probe: ActorRef): Unit = {
 
     from.actorOf(
@@ -82,7 +84,7 @@ class ClusterSingletonLeavingSpeedSpec
 
     Cluster(from).join(Cluster(to).selfAddress)
     within(15.seconds) {
-      import akka.util.ccompat.imm._
+
       awaitAssert {
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
         Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))

@@ -68,7 +68,7 @@ class CompressionIntegrationSpec
 
       // cause TestMessage manifest to become a heavy hitter
       // cause echo to become a heavy hitter
-      (1 to messagesToExchange).foreach { i =>
+      (1 to messagesToExchange).foreach { _ =>
         echoRefA ! TestMessage("hello")
       }
       receiveN(messagesToExchange) // the replies
@@ -224,7 +224,7 @@ class CompressionIntegrationSpec
     val echoRefA = expectMsgType[ActorIdentity].ref.get
 
     // cause TestMessage manifest to become a heavy hitter
-    (1 to messagesToExchange).foreach { i =>
+    (1 to messagesToExchange).foreach { _ =>
       echoRefA ! TestMessage("hello")
     }
     receiveN(messagesToExchange) // the replies
@@ -280,7 +280,7 @@ class CompressionIntegrationSpec
       classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
 
     def createAndIdentify(i: Int) = {
-      val echoWrap = systemWrap.actorOf(TestActors.echoActorProps, s"echo_$i")
+      systemWrap.actorOf(TestActors.echoActorProps, s"echo_$i")
       system.actorSelection(rootActorPath(systemWrap) / "user" / s"echo_$i") ! Identify(None)
       expectMsgType[ActorIdentity].ref.get
     }
@@ -304,7 +304,7 @@ class CompressionIntegrationSpec
         allRefs ::= echoWrap
 
         // cause echo to become a heavy hitter
-        (1 to messagesToExchange).foreach { i =>
+        (1 to messagesToExchange).foreach { _ =>
           echoWrap ! TestMessage("hello")
         }
         receiveN(messagesToExchange) // the replies
@@ -336,7 +336,7 @@ class CompressionIntegrationSpec
         remainingExpectedTableVersions = removeFirst(remainingExpectedTableVersions, lastTable.version)
       }
 
-      remainingExpectedTableVersions should be('empty)
+      remainingExpectedTableVersions shouldBe empty
       lastTable.version.toInt should be <= upToNTablesAcceptedAfterWrap // definitely, since we expected to wrap around and start from 0 again
     }
   }

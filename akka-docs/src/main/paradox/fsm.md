@@ -447,14 +447,19 @@ Besides state timeouts, FSM manages timers identified by `String` names.
 You may set a timer using
 
 ```
-setTimer(name, msg, interval, repeat)
+startSingleTimer(name, msg, interval)
+startTimerWithFixedDelay(name, msg, interval)
 ```
 
 where `msg` is the message object which will be sent after the duration
-`interval` has elapsed. If `repeat` is `true`, then the timer is
-scheduled at fixed rate given by the `interval` parameter.
+`interval` has elapsed.
+
 Any existing timer with the same name will automatically be canceled before
 adding the new timer.
+
+The @ref:[Scheduler](scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
 
 Timers may be canceled using
 

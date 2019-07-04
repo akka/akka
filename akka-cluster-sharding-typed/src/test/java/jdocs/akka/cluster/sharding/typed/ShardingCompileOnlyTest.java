@@ -43,14 +43,10 @@ public class ShardingCompileOnlyTest {
 
   public static Behavior<CounterCommand> counter(String entityId, Integer value) {
     return Behaviors.receive(CounterCommand.class)
-        .onMessage(
-            Increment.class,
-            (ctx, msg) -> {
-              return counter(entityId, value + 1);
-            })
+        .onMessage(Increment.class, msg -> counter(entityId, value + 1))
         .onMessage(
             GetValue.class,
-            (ctx, msg) -> {
+            msg -> {
               msg.replyTo.tell(value);
               return Behaviors.same();
             })
@@ -74,32 +70,30 @@ public class ShardingCompileOnlyTest {
 
   private static Behavior<CounterCommand> counter2(
       ActorRef<ClusterSharding.ShardCommand> shard, String entityId, Integer value) {
-    return Behaviors.receive(CounterCommand.class)
-        .onMessage(
-            Increment.class,
-            (ctx, msg) -> {
-              return counter(entityId, value + 1);
-            })
-        .onMessage(
-            GetValue.class,
-            (ctx, msg) -> {
-              msg.replyTo.tell(value);
-              return Behaviors.same();
-            })
-        .onMessage(
-            Idle.class,
-            (ctx, msg) -> {
-              // after receive timeout
-              shard.tell(new ClusterSharding.Passivate<>(ctx.getSelf()));
-              return Behaviors.same();
-            })
-        .onMessage(
-            GoodByeCounter.class,
-            (ctx, msg) -> {
-              // the stopMessage, used for rebalance and passivate
-              return Behaviors.stopped();
-            })
-        .build();
+    return Behaviors.setup(
+        context ->
+            Behaviors.receive(CounterCommand.class)
+                .onMessage(Increment.class, msg -> counter(entityId, value + 1))
+                .onMessage(
+                    GetValue.class,
+                    msg -> {
+                      msg.replyTo.tell(value);
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    Idle.class,
+                    msg -> {
+                      // after receive timeout
+                      shard.tell(new ClusterSharding.Passivate<>(context.getSelf()));
+                      return Behaviors.same();
+                    })
+                .onMessage(
+                    GoodByeCounter.class,
+                    msg -> {
+                      // the stopMessage, used for rebalance and passivate
+                      return Behaviors.stopped();
+                    })
+                .build());
   }
   // #counter-passivate
 
@@ -133,7 +127,7 @@ public class ShardingCompileOnlyTest {
     // #init
 
     // #send
-    EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-`");
+    EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-1");
     counterOne.tell(new Increment());
 
     shardRegion.tell(new ShardingEnvelope<>("counter-1", new Increment()));

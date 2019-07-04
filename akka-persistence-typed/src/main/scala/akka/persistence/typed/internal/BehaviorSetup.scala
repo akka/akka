@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 import akka.actor.Cancellable
 import akka.actor.typed.Logger
@@ -16,8 +17,19 @@ import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.ConstantFun
 import akka.util.OptionVal
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object BehaviorSetup {
+  sealed trait SnapshotAfterPersist
+  case object NoSnapshot extends SnapshotAfterPersist
+  case object SnapshotWithRetention extends SnapshotAfterPersist
+  case object SnapshotWithoutRetention extends SnapshotAfterPersist
+}
 
 /**
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
@@ -30,16 +42,19 @@ private[akka] final class BehaviorSetup[C, E, S](
     val commandHandler: EventSourcedBehavior.CommandHandler[C, E, S],
     val eventHandler: EventSourcedBehavior.EventHandler[S, E],
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
-    private val signalHandler: PartialFunction[Signal, Unit],
-    val tagger: E ⇒ Set[String],
+    private val signalHandler: PartialFunction[(S, Signal), Unit],
+    val tagger: E => Set[String],
     val eventAdapter: EventAdapter[E, _],
-    val snapshotWhen: (S, E, Long) ⇒ Boolean,
+    val snapshotWhen: (S, E, Long) => Boolean,
     val recovery: Recovery,
+    val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
     val stashState: StashState) {
+
   import InternalProtocol.RecoveryTickEvent
   import akka.actor.typed.scaladsl.adapter._
+  import BehaviorSetup._
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
@@ -80,14 +95,12 @@ private[akka] final class BehaviorSetup[C, E, S](
     implicit val ec: ExecutionContext = context.executionContext
     val timer =
       if (snapshot)
-        context.system.scheduler
-          .scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped, RecoveryTickEvent(snapshot = true))
+        context.scheduleOnce(settings.recoveryEventTimeout, context.self, RecoveryTickEvent(snapshot = true))
       else
-        context.system.scheduler.schedule(
-          settings.recoveryEventTimeout,
-          settings.recoveryEventTimeout,
-          context.self.toUntyped,
-          RecoveryTickEvent(snapshot = false))
+        context.system.scheduler.scheduleWithFixedDelay(settings.recoveryEventTimeout, settings.recoveryEventTimeout) {
+          () =>
+            context.self ! RecoveryTickEvent(snapshot = false)
+        }
     recoveryTimer = OptionVal.Some(timer)
   }
 
@@ -99,8 +112,34 @@ private[akka] final class BehaviorSetup[C, E, S](
     recoveryTimer = OptionVal.None
   }
 
-  def onSignal(signal: Signal): Unit = {
-    signalHandler.applyOrElse(signal, ConstantFun.scalaAnyToUnit)
+  /**
+   * `catchAndLog=true` should be used for "unknown" signals in the phases before Running
+   * to avoid restart loops if restart supervision is used.
+   */
+  def onSignal(state: S, signal: Signal, catchAndLog: Boolean): Unit = {
+    try {
+      signalHandler.applyOrElse((state, signal), ConstantFun.scalaAnyToUnit)
+    } catch {
+      case NonFatal(ex) =>
+        if (catchAndLog)
+          log.error(ex, s"Error while processing signal [{}]", signal)
+        else {
+          log.debug(s"Error while processing signal [{}]: {}", signal, ex)
+          throw ex
+        }
+    }
+  }
+
+  def shouldSnapshot(state: S, event: E, sequenceNr: Long): SnapshotAfterPersist = {
+    retention match {
+      case DisabledRetentionCriteria =>
+        if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
+        else NoSnapshot
+      case s: SnapshotCountRetentionCriteriaImpl =>
+        if (s.snapshotWhen(sequenceNr)) SnapshotWithRetention
+        else if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
+        else NoSnapshot
+    }
   }
 
 }

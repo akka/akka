@@ -5,12 +5,16 @@
 package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
-import com.typesafe.config.{ Config, ConfigFactory }
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
 import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
 import akka.event.Logging.Warning
-import akka.event.EventStream
+import akka.event.{ EventStream, LoggingAdapter }
 import akka.ConfigurationException
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.Helpers.ConfigOps
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.ExecutionContext
 
 /**
@@ -29,14 +33,15 @@ trait DispatcherPrerequisites {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] final case class DefaultDispatcherPrerequisites(
-    val threadFactory: ThreadFactory,
-    val eventStream: EventStream,
-    val scheduler: Scheduler,
-    val dynamicAccess: DynamicAccess,
-    val settings: ActorSystem.Settings,
-    val mailboxes: Mailboxes,
-    val defaultExecutionContext: Option[ExecutionContext])
+    threadFactory: ThreadFactory,
+    eventStream: EventStream,
+    scheduler: Scheduler,
+    dynamicAccess: DynamicAccess,
+    settings: ActorSystem.Settings,
+    mailboxes: Mailboxes,
+    defaultExecutionContext: Option[ExecutionContext])
     extends DispatcherPrerequisites
 
 object Dispatchers {
@@ -46,6 +51,21 @@ object Dispatchers {
    * configuration of the default dispatcher.
    */
   final val DefaultDispatcherId = "akka.actor.default-dispatcher"
+
+  /**
+   * The id of a default dispatcher to use for operations known to be blocking. Note that
+   * for optimal performance you will want to isolate different blocking resources
+   * on different thread pools.
+   */
+  final val DefaultBlockingDispatcherId: String = "akka.actor.default-blocking-io-dispatcher"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final val InternalDispatcherId = "akka.actor.internal-dispatcher"
+
+  private val MaxDispatcherAliasDepth = 20
 }
 
 /**
@@ -53,10 +73,19 @@ object Dispatchers {
  * for different environments. Use the `lookup` method to create
  * a dispatcher as specified in configuration.
  *
+ * A dispatcher config can also be an alias, in that case it is a config string value pointing
+ * to the actual dispatcher config.
+ *
  * Look in `akka.actor.default-dispatcher` section of the reference.conf
  * for documentation of dispatcher options.
+ *
+ * Not for user instantiation or extension
  */
-class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: DispatcherPrerequisites) {
+@DoNotInherit
+class Dispatchers @InternalApi private[akka] (
+    val settings: ActorSystem.Settings,
+    val prerequisites: DispatcherPrerequisites,
+    logger: LoggingAdapter) {
 
   import Dispatchers._
 
@@ -73,12 +102,22 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   private val dispatcherConfigurators = new ConcurrentHashMap[String, MessageDispatcherConfigurator]
 
   /**
+   * INTERNAL API
+   */
+  private[akka] val internalDispatcher = lookup(Dispatchers.InternalDispatcherId)
+
+  /**
    * Returns a dispatcher as specified in configuration. Please note that this
-   * method _may_ create and return a NEW dispatcher, _every_ call.
+   * method _may_ create and return a NEW dispatcher, _every_ call (depending on the `MessageDispatcherConfigurator` /
+   * dispatcher config the id points to).
+   *
+   * A dispatcher id can also be an alias. In the case it is a string value in the config it is treated as the id
+   * of the actual dispatcher config to use. If several ids leading to the same actual dispatcher config is used only one
+   * instance is created. This means that for dispatchers you expect to be shared they will be.
    *
    * Throws ConfigurationException if the specified dispatcher cannot be found in the configuration.
    */
-  def lookup(id: String): MessageDispatcher = lookupConfigurator(id).dispatcher()
+  def lookup(id: String): MessageDispatcher = lookupConfigurator(id, 0).dispatcher()
 
   /**
    * Checks that the configuration provides a section for the given dispatcher.
@@ -88,15 +127,37 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   def hasDispatcher(id: String): Boolean = dispatcherConfigurators.containsKey(id) || cachingConfig.hasPath(id)
 
-  private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
+  private def lookupConfigurator(id: String, depth: Int): MessageDispatcherConfigurator = {
+    if (depth > MaxDispatcherAliasDepth)
+      throw new ConfigurationException(
+        s"Didn't find a concrete dispatcher config after following $MaxDispatcherAliasDepth, " +
+        s"is there a loop in your config? last looked for id was $id")
     dispatcherConfigurators.get(id) match {
       case null =>
         // It doesn't matter if we create a dispatcher configurator that isn't used due to concurrent lookup.
         // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
-        val newConfigurator =
-          if (cachingConfig.hasPath(id)) configuratorFrom(config(id))
-          else throw new ConfigurationException(s"Dispatcher [$id] not configured")
+
+        val newConfigurator: MessageDispatcherConfigurator =
+          if (cachingConfig.hasPath(id)) {
+            val valueAtPath = cachingConfig.getValue(id)
+            valueAtPath.valueType() match {
+              case ConfigValueType.STRING =>
+                // a dispatcher key can be an alias of another dispatcher, if it is a string
+                // we treat that string value as the id of a dispatcher to lookup, it will be stored
+                // both under the actual id and the alias id in the 'dispatcherConfigurators' cache
+                val actualId = valueAtPath.unwrapped().asInstanceOf[String]
+                logger.debug("Dispatcher id [{}] is an alias, actual dispatcher will be [{}]", id, actualId)
+                lookupConfigurator(actualId, depth + 1)
+
+              case ConfigValueType.OBJECT =>
+                configuratorFrom(config(id))
+              case unexpected =>
+                throw new ConfigurationException(
+                  s"Expected either a dispatcher config or an alias at [$id] but found [$unexpected]")
+
+            }
+          } else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
           case null     => newConfigurator
@@ -133,7 +194,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    * INTERNAL API
    */
   private[akka] def config(id: String, appConfig: Config): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
       .withFallback(appConfig)
@@ -142,7 +203,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
   }
 
   private def idConfig(id: String): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
 
@@ -187,14 +248,14 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
         val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[MessageDispatcherConfigurator](fqn, args)
-          .recover({
+          .recover {
             case exception =>
               throw new ConfigurationException(
                 ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
                 "make sure it has constructor with [com.typesafe.config.Config] and " +
                 "[akka.dispatch.DispatcherPrerequisites] parameters").format(fqn, cfg.getString("id")),
                 exception)
-          })
+          }
           .get
     }
   }
@@ -238,6 +299,7 @@ private[akka] object BalancingDispatcherConfigurator {
  * Returns the same dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
+@silent
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 

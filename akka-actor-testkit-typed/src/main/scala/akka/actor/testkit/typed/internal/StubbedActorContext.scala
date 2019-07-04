@@ -159,10 +159,11 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  */
-@InternalApi private[akka] class StubbedActorContext[T](val path: ActorPath) extends ActorContextImpl[T] {
+@InternalApi private[akka] class StubbedActorContext[T](val path: ActorPath, currentBehaviorProvider: () => Behavior[T])
+    extends ActorContextImpl[T] {
 
-  def this(name: String) = {
-    this((TestInbox.address / name).withUid(rnd().nextInt()))
+  def this(name: String, currentBehaviorProvider: () => Behavior[T]) = {
+    this((TestInbox.address / name).withUid(rnd().nextInt()), currentBehaviorProvider)
   }
 
   /**
@@ -175,6 +176,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger
+  private var unhandled: List[T] = Nil
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values.map(_.context.self)
   def childrenNames: Iterable[String] = _children.keys
@@ -231,7 +233,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val p = (path / n).withUid(rnd().nextInt())
-    val i = new BehaviorTestKitImpl[U](p, Behavior.ignore)
+    val i = new BehaviorTestKitImpl[U](p, BehaviorImpl.ignore)
     _children += p.name -> i
 
     new FunctionRef[U](p, (message, _) => {
@@ -286,7 +288,23 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries
 
   /**
-   * Clear the log entries
+   * Clear the log entries.
    */
   def clearLog(): Unit = loggingAdapter.clearLog()
+
+  override private[akka] def onUnhandled(msg: T): Unit =
+    unhandled = msg :: unhandled
+
+  /**
+   * Messages that are marked as unhandled.
+   */
+  def unhandledMessages: List[T] = unhandled.reverse
+
+  /**
+   * Clear the list of captured unhandled messages.
+   */
+  def clearUnhandled(): Unit = unhandled = Nil
+
+  override private[akka] def currentBehavior: Behavior[T] = currentBehaviorProvider()
+
 }

@@ -8,18 +8,17 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
+
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.SelectedSnapshot
-import akka.persistence.SnapshotMetadata
-import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
+import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
+import akka.persistence.{ SnapshotMetadata => UntypedSnapshotMetadata }
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -28,15 +27,17 @@ object SnapshotMutableStateSpec {
 
   class SlowInMemorySnapshotStore extends SnapshotStore {
 
-    private var state = Map.empty[String, (Any, SnapshotMetadata)]
+    private var state = Map.empty[String, (Any, UntypedSnapshotMetadata)]
 
-    def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+    def loadAsync(
+        persistenceId: String,
+        criteria: UntypedSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
       Future.successful(state.get(persistenceId).map {
         case (snap, meta) => SelectedSnapshot(meta, snap)
       })
     }
 
-    def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
+    def saveAsync(metadata: UntypedSnapshotMetadata, snapshot: Any): Future[Unit] = {
       val snapshotState = snapshot.asInstanceOf[MutableState]
       val value1 = snapshotState.value
       Thread.sleep(50)
@@ -51,8 +52,19 @@ object SnapshotMutableStateSpec {
       }
     }
 
-    def deleteAsync(metadata: SnapshotMetadata) = ???
-    def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria) = ???
+    override def deleteAsync(metadata: UntypedSnapshotMetadata): Future[Unit] = {
+      state = state.filterNot {
+        case (pid, (_, meta)) => pid == metadata.persistenceId && meta.sequenceNr == metadata.sequenceNr
+      }
+      Future.successful(())
+    }
+
+    override def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria): Future[Unit] = {
+      state = state.filterNot {
+        case (pid, (_, meta)) => pid == persistenceId && criteria.matches(meta)
+      }
+      Future.successful(())
+    }
   }
 
   def conf: Config = ConfigFactory.parseString(s"""
@@ -95,9 +107,9 @@ object SnapshotMutableStateSpec {
             probe ! s"incremented-${state.value}"
             state
         }).receiveSignal {
-      case SnapshotCompleted(meta) =>
+      case (_, SnapshotCompleted(meta)) =>
         probe ! s"snapshot-success-${meta.sequenceNr}"
-      case SnapshotFailed(meta, _) =>
+      case (_, SnapshotFailed(meta, _)) =>
         probe ! s"snapshot-failure-${meta.sequenceNr}"
     }
   }

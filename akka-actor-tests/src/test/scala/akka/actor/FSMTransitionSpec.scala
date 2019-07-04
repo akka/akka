@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object FSMTransitionSpec {
-  import FSM.`->`
 
   class Supervisor extends Actor {
     def receive = { case _ => }
@@ -28,7 +27,7 @@ object FSMTransitionSpec {
   }
 
   class MyFSM(target: ActorRef) extends Actor with FSM[Int, Unit] {
-    startWith(0, Unit)
+    startWith(0, ())
     when(0) {
       case Event("tick", _) => goto(1)
     }
@@ -66,7 +65,6 @@ object FSMTransitionSpec {
 class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
 
   import FSMTransitionSpec._
-  import FSM.`->`
 
   "A FSM transition notifier" must {
 
@@ -74,7 +72,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       val fsm = system.actorOf(Props(new SendAnyTransitionFSM(testActor)))
       expectMsg(0 -> 0) // caused by initialize(), OK.
       fsm ! "stay" // no transition event
-      expectNoMsg(500.millis)
+      expectNoMessage(500.millis)
       fsm ! "goto" // goto(current state)
       expectMsg(0 -> 0)
     }
@@ -102,7 +100,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
         expectMsg(FSM.CurrentState(fsm, 0))
         akka.pattern.gracefulStop(forward, 5 seconds)
         fsm ! "tick"
-        expectNoMsg()
+        expectNoMessage()
       }
     }
   }
@@ -142,7 +140,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
         fsm ! FSM.SubscribeTransitionCallBack(forward)
         expectMsg(FSM.CurrentState(fsm, 0))
         fsm ! "stay"
-        expectNoMsg()
+        expectNoMessage()
       }
     }
 

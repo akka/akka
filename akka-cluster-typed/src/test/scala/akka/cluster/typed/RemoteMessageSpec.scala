@@ -46,7 +46,7 @@ object RemoteMessageSpec {
           "akka.cluster.typed.RemoteMessageSpec$$Ping" = test
         }
       }
-      remote.netty.tcp.port = 0
+      remote.classic.netty.tcp.port = 0
       remote.artery {
         canonical {
           hostname = 127.0.0.1

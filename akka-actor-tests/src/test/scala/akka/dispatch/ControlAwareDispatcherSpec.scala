@@ -40,7 +40,7 @@ class ControlAwareDispatcherSpec extends AkkaSpec(ControlAwareDispatcherSpec.con
     // with RepointableActorRef, since messages might be queued in
     // UnstartedCell and the sent to the PriorityQueue and consumed immediately
     // without the ordering taking place.
-    val actor = system.actorOf(Props(new Actor {
+    system.actorOf(Props(new Actor {
       context.actorOf(Props(new Actor {
 
         self ! "test"

@@ -10,9 +10,9 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
+import org.scalatest.junit.JUnitSuite;
+
+import java.util.concurrent.TimeUnit;
 
 public class ClusterApiTest extends JUnitSuite {
 
@@ -21,11 +21,12 @@ public class ClusterApiTest extends JUnitSuite {
     Config config =
         ConfigFactory.parseString(
             "akka.actor.provider = cluster \n"
-                + "akka.remote.netty.tcp.port = 0 \n"
+                + "akka.remote.classic.netty.tcp.port = 0 \n"
                 + "akka.remote.artery.canonical.port = 0 \n"
                 + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
                 + "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"
                 + "akka.coordinated-shutdown.terminate-actor-system = off \n"
+                + "akka.coordinated-shutdown.run-by-actor-system-terminate = off \n"
                 + "akka.actor { \n"
                 + "  serialize-messages = off \n"
                 + "  allow-java-serialization = off \n"
@@ -56,8 +57,10 @@ public class ClusterApiTest extends JUnitSuite {
 
       probe2.expectMessageClass(SelfRemoved.class);
     } finally {
-      // TODO no java API to terminate actor system
-      Await.result(system1.terminate().zip(system2.terminate()), Duration.create("5 seconds"));
+      system1.terminate();
+      system1.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+      system2.terminate();
+      system2.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
     }
   }
 }

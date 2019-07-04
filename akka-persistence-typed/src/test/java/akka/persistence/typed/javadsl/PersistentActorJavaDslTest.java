@@ -11,7 +11,6 @@ import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.event.Logging;
 import akka.japi.Pair;
-import akka.persistence.SnapshotMetadata;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.NoOffset;
 import akka.persistence.query.PersistenceQuery;
@@ -29,8 +28,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-import scala.Function0;
+import org.scalatest.junit.JUnitSuite;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -192,9 +190,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
     private final ActorContext<Command> ctx;
 
-    CounterBehavior(PersistenceId persistentId, ActorContext<Command> ctx) {
+    CounterBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
       super(
-          persistentId,
+          persistenceId,
           SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
       this.ctx = ctx;
     }
@@ -414,16 +412,16 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
-                  public SignalHandler signalHandler() {
+                  public SignalHandler<State> signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             SnapshotCompleted.class,
-                            (completed) -> {
+                            (state, completed) -> {
                               snapshotProbe.ref().tell(Optional.empty());
                             })
                         .onSignal(
                             SnapshotFailed.class,
-                            (signal) -> {
+                            (state, signal) -> {
                               snapshotProbe.ref().tell(Optional.of(signal.getFailure()));
                             })
                         .build();
@@ -463,7 +461,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
     c.tell(StopThenLog.INSTANCE);
-    probe.expectTerminated(c, Duration.ofSeconds(1));
+    probe.expectTerminated(c);
   }
 
   @Test
@@ -475,11 +473,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                 new CounterBehavior(new PersistenceId("c5"), ctx) {
 
                   @Override
-                  public SignalHandler signalHandler() {
+                  public SignalHandler<State> signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             PostStop.instance(),
-                            () -> {
+                            state -> {
                               probe.ref().tell("stopped");
                             })
                         .build();
@@ -495,12 +493,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
-        new BehaviorInterceptor<Command, Command>() {
-
-          @Override
-          public Class<? extends Command> interceptMessageType() {
-            return Command.class;
-          }
+        new BehaviorInterceptor<Command, Command>(Command.class) {
 
           @Override
           public Behavior<Command> aroundReceive(
@@ -517,7 +510,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
           }
         };
     ActorRef<Command> c =
-        testKit.spawn(Behaviors.intercept(tap, counter(new PersistenceId("tap1"))));
+        testKit.spawn(Behaviors.intercept(() -> tap, counter(new PersistenceId("tap1"))));
     c.tell(Increment.INSTANCE);
     interceptProbe.expectMessage(Increment.INSTANCE);
     signalProbe.expectNoMessage();
@@ -636,11 +629,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<Object> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,
-              (completed) -> {
+              (state, completed) -> {
                 startedProbe.tell("started!");
               })
           .build();
@@ -717,11 +710,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<String> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,
-              (completed) -> {
+              (state, completed) -> {
                 probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
               })
           .build();

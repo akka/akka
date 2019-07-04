@@ -8,8 +8,8 @@ package scaladsl
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import akka.actor.DeadLetter
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -304,7 +304,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       Behaviors.receiveMessage[String] {
         case msg if msg.startsWith("stash") =>
           stash.stash(msg)
-          Behavior.same
+          Behaviors.same
         case "unstash" =>
           stash.unstashAll(ctx, unstashing(0))
         case "get-current" =>
@@ -329,7 +329,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
         case (ctx, "unstash") =>
           val stash = StashBuffer[String](10)
           stash.stash("one")
-          stash.unstashAll(ctx, Behavior.same)
+          stash.unstashAll(ctx, Behaviors.same)
 
         case (_, msg) =>
           probe.ref ! msg
@@ -373,7 +373,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
             case (ctx, "unstash") =>
               val stash = StashBuffer[String](10)
               stash.stash("one")
-              stash.unstashAll(ctx, Behavior.same)
+              stash.unstashAll(ctx, Behaviors.same)
 
             case (_, msg) =>
               probe.ref ! msg
@@ -562,19 +562,15 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
         val stash = StashBuffer[String](10)
         stash.stash("one")
 
-        // FIXME #26148 using AbstractBehavior because unstashAll doesn't support Behavior.same
-
         // unstashing is inside setup
-        new AbstractBehavior[String] {
-          override def onMessage(msg: String): Behavior[String] = msg match {
-            case "unstash" =>
-              Behaviors.setup[String] { ctx =>
-                stash.unstashAll(ctx, this)
-              }
-            case _ =>
-              probe.ref ! msg
-              Behavior.same
-          }
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            Behaviors.setup[String] { ctx =>
+              stash.unstashAll(ctx, Behaviors.same)
+            }
+          case msg =>
+            probe.ref ! msg
+            Behaviors.same
         }
       })
 
@@ -582,6 +578,107 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("one")
     }
 
-  }
+    "deal with unhandled the same way as normal unhandled" in {
+      val probe = TestProbe[String]()
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("unhandled")
+        stash.stash("handled")
+        stash.stash("handled")
+        stash.stash("unhandled")
+        stash.stash("handled")
 
+        def unstashing(n: Int): Behavior[String] =
+          Behaviors.receiveMessage {
+            case "unhandled" => Behaviors.unhandled
+            case "handled" =>
+              probe.ref ! s"handled $n"
+              unstashing(n + 1)
+          }
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, unstashing(1))
+        }
+      })
+
+      EventFilter.warning(start = "unhandled message from", occurrences = 2).intercept {
+        ref ! "unstash"
+      }
+      probe.expectMessage("handled 1")
+      probe.expectMessage("handled 2")
+      probe.expectMessage("handled 3")
+
+      ref ! "handled"
+      probe.expectMessage("handled 4")
+    }
+
+    "fail quick on invalid start behavior" in {
+      val stash = StashBuffer[String](10)
+      stash.stash("one")
+      intercept[IllegalArgumentException](stash.unstashAll(null, Behaviors.unhandled))
+    }
+
+    "deal with initial stop" in {
+      val probe = TestProbe[Any]
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.stopped)
+        }
+      })
+
+      ref ! "unstash"
+      probe.expectTerminated(ref)
+    }
+
+    "deal with stop" in {
+      val probe = TestProbe[Any]
+      import akka.actor.typed.scaladsl.adapter._
+      untypedSys.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+        stash.stash("two")
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.receiveMessage {
+              case unstashed =>
+                probe.ref ! unstashed
+                Behaviors.stopped
+            })
+          case _ =>
+            Behaviors.same
+        }
+      })
+      ref ! "unstash"
+      probe.expectMessage("one")
+      probe.expectMessageType[DeadLetter].message should equal("two")
+      probe.expectTerminated(ref)
+    }
+
+    "work with initial same" in {
+      val probe = TestProbe[Any]
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+        stash.stash("two")
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.same)
+          case msg =>
+            probe.ref ! msg
+            Behaviors.same
+        }
+      })
+      ref ! "unstash"
+      probe.expectMessage("one")
+      probe.expectMessage("two")
+    }
+  }
 }

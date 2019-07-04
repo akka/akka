@@ -19,8 +19,9 @@ import akka.testkit._
 import akka.actor.Props
 import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RARP
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -89,7 +90,6 @@ abstract class UnreachableNodeJoinsAgainSpec
         within(30 seconds) {
           // victim becomes all alone
           awaitAssert {
-            val members = clusterView.members
             clusterView.unreachableMembers.size should ===(roles.size - 1)
           }
           clusterView.unreachableMembers.map(_.address) should ===(allButVictim.map(address).toSet)
@@ -101,7 +101,6 @@ abstract class UnreachableNodeJoinsAgainSpec
         within(30 seconds) {
           // victim becomes unreachable
           awaitAssert {
-            val members = clusterView.members
             clusterView.unreachableMembers.size should ===(1)
           }
           awaitSeenSameState(allButVictim.map(address): _*)
@@ -170,7 +169,7 @@ abstract class UnreachableNodeJoinsAgainSpec
                 }
                """
               else s"""
-              akka.remote.netty.tcp {
+              akka.remote.classic.netty.tcp {
                 hostname = ${victimAddress.host.get}
                 port = ${victimAddress.port.get}
               }""")

@@ -1,0 +1,9 @@
+# These were added for bincompat with 2.4 but no longer part of the public API,
+# so can be safely excluded now. Required to avoid naming clashes with extension
+# methods generated on Scala 2.13 (https://github.com/scala/scala/commit/f9879b63a87b1e3062c58abd9ce30e68d9fee8ca)
+# These should go into the .backwards.excludes for the last 2.5 version in
+# which Scala 2.13 support is merged
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorRef.ask$extension")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorRef.?$extension")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorSelection.ask$extension")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorSelection.?$extension")

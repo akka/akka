@@ -11,12 +11,14 @@ import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.cluster.ClusterEvent.UnreachableMember
+import akka.remote.RARP
 import akka.remote.artery.ArterySettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
+import akka.util.unused
 import com.typesafe.config.ConfigFactory
 
 object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
@@ -61,7 +63,7 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
 
   final case class Slow(payload: Array[Byte])
 
-  class SlowSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+  class SlowSerializer(@unused system: ExtendedActorSystem) extends SerializerWithStringManifest {
     override def identifier = 999
     override def manifest(o: AnyRef) = "a"
     override def toBinary(o: AnyRef) = o match {
@@ -97,6 +99,12 @@ abstract class LargeMessageClusterSpec
   val unreachableProbe = TestProbe()
 
   "Artery Cluster with large messages" must {
+
+    if (!RARP(system).provider.remoteSettings.Artery.Enabled) {
+      info(s"${getClass.getName} is only enabled for Artery")
+      pending
+    }
+
     "init cluster" taggedAs LongRunningTest in {
       Cluster(system).subscribe(unreachableProbe.ref, ClusterEvent.InitialStateAsEvents, classOf[UnreachableMember])
 

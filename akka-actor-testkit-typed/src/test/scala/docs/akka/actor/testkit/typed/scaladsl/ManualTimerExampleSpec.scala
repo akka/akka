@@ -47,8 +47,8 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
 
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer =>
-        timer.startPeriodicTimer("T", Tick, 10.millis)
-        Behaviors.receive { (context, Tick) =>
+        timer.startTimerWithFixedDelay("T", Tick, 10.millis)
+        Behaviors.receiveMessage { _ =>
           probe.ref ! Tock
           Behaviors.same
         }
@@ -56,7 +56,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
 
       spawn(behavior)
 
-      for (_ <- Range(0, 5)) {
+      for (_ <- 0 until 5) {
         manualTime.expectNoMessageFor(9.millis, probe)
 
         manualTime.timePasses(1.milli)
@@ -69,6 +69,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
       case class Tick(n: Int) extends Command
       case class SlowThenBump(nextCount: Int) extends Command
       sealed trait Event
+      case object Started extends Event
       case class Tock(n: Int) extends Event
       case object SlowThenBumpAck extends Event
 
@@ -76,22 +77,26 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
       val interval = 10.millis
 
       val behavior = Behaviors.withTimers[Command] { timer =>
-        timer.startPeriodicTimer("T", Tick(1), interval)
-        Behaviors.receive { (context, cmd) =>
-          cmd match {
-            case Tick(n) =>
-              probe.ref ! Tock(n)
-              Behaviors.same
-            case SlowThenBump(nextCount) =>
-              manualTime.timePasses(interval)
-              timer.startPeriodicTimer("T", Tick(nextCount), interval)
-              probe.ref ! SlowThenBumpAck
-              Behaviors.same
-          }
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
+
+        probe.ref ! Started
+        Behaviors.receiveMessage {
+          case Tick(n) =>
+            probe.ref ! Tock(n)
+            Behaviors.same
+          case SlowThenBump(nextCount) =>
+            manualTime.timePasses(interval)
+            timer.startTimerWithFixedDelay("T", Tick(nextCount), interval)
+            probe.ref ! SlowThenBumpAck
+            Behaviors.same
         }
       }
 
       val ref = spawn(behavior)
+
+      // make sure we actually started the timer before we change the time
+      probe.expectMessage(Started)
+
       manualTime.timePasses(11.millis)
       probe.expectMessage(Tock(1))
 

@@ -11,17 +11,18 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
 import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
+import com.github.ghik.silencer.silent
 import org.apache.commons.codec.binary.Hex.encodeHex
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{ Arbitrary, Gen }
 import org.scalatest.{ Matchers, WordSpec }
-import org.scalatest.prop.Checkers
+import org.scalatestplus.scalacheck.Checkers
 
 import scala.collection.mutable.Builder
 
 class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
-  implicit val betterGeneratorDrivenConfig = PropertyCheckConfig().copy(minSuccessful = 1000)
+  implicit val betterGeneratorDrivenConfig = PropertyCheckConfiguration().copy(minSuccessful = 1000)
 
   def genSimpleByteString(min: Int, max: Int) =
     for {
@@ -157,6 +158,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     body(bsA, bsB) == body(vecA, vecB)
   }
 
+  @silent
   def likeVecIt(bs: ByteString)(body: BufferedIterator[Byte] => Any, strict: Boolean = true): Boolean = {
     val bsIterator = bs.iterator
     val vecIterator = Vector(bs: _*).iterator.buffered
@@ -164,6 +166,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     (!strict || (bsIterator.toSeq == vecIterator.toSeq))
   }
 
+  @silent
   def likeVecIts(a: ByteString, b: ByteString)(
       body: (BufferedIterator[Byte], BufferedIterator[Byte]) => Any,
       strict: Boolean = true): Boolean = {
@@ -739,7 +742,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           a.asByteBuffers.forall(_.isReadOnly)
         }
         check { (a: ByteString) =>
-          import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+          import akka.util.ccompat.JavaConverters._
           a.asByteBuffers.zip(a.getByteBuffers().asScala).forall(x => x._1 == x._2)
         }
       }
@@ -891,18 +894,17 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
 
     "serialize correctly" when {
-      "parsing regular ByteString1C as compat" in {
-        val oldSerd =
-          if (util.Properties.versionNumberString.startsWith("2.11") || util.Properties.versionNumberString.startsWith(
-                "2.12"))
+      // note that this is serialization with Java serialization
+      // real serialization is in akka-remote
+      if (util.Properties.versionNumberString.startsWith("2.12")) {
+        "parsing regular ByteString1C as compat" in {
+          val oldSerd =
             "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e67fa2925150f93468f0200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
-          else
-            // The data is the same, but the class hierarchy changed in 2.13:
-            "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e676c083a30328adea002000078720014616b6b612e7574696c2e42797465537472696e678efa6cf8286d3c930200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
-        val bs = ByteString("teststring", "UTF8")
-        val str = hexFromSer(bs)
+          val bs = ByteString("teststring", "UTF8")
+          val str = hexFromSer(bs)
 
-        str should be(oldSerd)
+          str should be(oldSerd)
+        }
       }
 
       "given all types of ByteString" in {
@@ -1191,7 +1193,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
             bs3.foreach { b =>
               builder += b
             }
-            builder ++= Vector(array2: _*)
+            builder ++= array2.toIndexedSeq
           }
         }
       }

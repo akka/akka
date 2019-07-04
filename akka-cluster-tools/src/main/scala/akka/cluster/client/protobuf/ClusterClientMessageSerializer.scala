@@ -4,10 +4,9 @@
 
 package akka.cluster.client.protobuf
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.actor.ExtendedActorSystem
 import akka.serialization.BaseSerializer
-import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.cluster.client.ClusterReceptionist
 import akka.cluster.client.protobuf.msg.{ ClusterClientMessages => cm }
@@ -20,8 +19,6 @@ private[akka] class ClusterClientMessageSerializer(val system: ExtendedActorSyst
     extends SerializerWithStringManifest
     with BaseSerializer {
   import ClusterReceptionist.Internal._
-
-  private lazy val serialization = SerializationExtension(system)
 
   private val ContactsManifest = "A"
   private val GetContactsManifest = "B"

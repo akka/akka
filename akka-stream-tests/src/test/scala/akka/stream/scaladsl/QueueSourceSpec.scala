@@ -305,7 +305,7 @@ class QueueSourceSpec extends StreamSpec {
       }
 
       "some elements not yet delivered to stage" in {
-        val (queue, probe) =
+        val (queue, _) =
           Source.queue[Unit](10, OverflowStrategy.fail).toMat(TestSink.probe)(Keep.both).run()
         intercept[StreamDetachedException] {
           Await.result((1 to 15).map(_ => queue.offer(())).last, 3.seconds)
@@ -354,6 +354,24 @@ class QueueSourceSpec extends StreamSpec {
         source.watchCompletion().failed.futureValue should ===(ex)
         probe.ensureSubscription().expectError(ex)
       }
+    }
+
+    "materialize to a queue which is seamlessly translatable between scala and java DSL" in {
+      val s = TestSubscriber.manualProbe[Int]()
+
+      val javadslQueue = Source.queue(10, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run().asJava
+      val scaladslQueue = akka.stream.javadsl.SourceQueueWithComplete.asScala(javadslQueue)
+      val sub = s.expectSubscription()
+
+      sub.request(1)
+      assertSuccess(scaladslQueue.offer(42))
+      s.expectNext(42)
+
+      scaladslQueue.watchCompletion().pipeTo(testActor)
+      expectNoMessage(pause)
+
+      sub.cancel()
+      expectMsg(Done)
     }
 
   }

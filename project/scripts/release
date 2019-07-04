@@ -178,13 +178,6 @@ type -P rsync &> /dev/null || fail "rsync command not found"
 # check for a tar command
 type -P tar &> /dev/null || fail "tar command not found"
 
-# get the current git branch
-function get_current_branch {
-  local ref=$(git symbolic-ref HEAD 2> /dev/null)
-  local branch=${ref#refs/heads/}
-  echo "${branch}"
-}
-
 # get the current project version from sbt
 # a little messy as the ansi escape codes are included
 function get_current_version {
@@ -193,12 +186,6 @@ function get_current_version {
   local code0=$(echo -e "\033[0m")
   echo ${result%$code0}
 }
-
-# store the current git branch for cleaning up
-declare -r initial_branch=$(get_current_branch)
-
-# check we have an initial branch
-[[ "${initial_branch}" ]] || fail "Not on a git branch"
 
 # check that we have a clean status
 [[ -z "$(git status --porcelain)" ]] || {
@@ -209,9 +196,6 @@ declare -r initial_branch=$(get_current_branch)
 (read -p "The working directory will now be cleaned from all non-tracked files. Are you sure you want this? " x; test "$x" = yes) || fail "bailing out"
 git clean -fxd || fail "cannot git clean -fxd"
 
-# the branch we'll release on
-declare -r release_branch="releasing-${version}"
-
 # try to run a cleanup command - these shouldn't actually fail
 function safely {
   "$@" || fail "Failed to clean up release - please check current state"
@@ -220,15 +204,10 @@ function safely {
 # perform a clean up when a failure has occurred
 function git_cleanup {
   echoerr "Cleaning up..."
-  local branch=$(get_current_branch)
   safely git reset --hard
   safely git clean -f
-  if [ "${branch}" == "${release_branch}" ]; then
-    safely git checkout ${initial_branch}
-    safely git branch -D ${release_branch}
-    local tags=$(git tag -l)
-    [[ "${tags}" == *v${version}* ]] && safely git tag -d v${version}
-  fi
+  local tags=$(git tag -l)
+  [[ "${tags}" == *v${version}* ]] && safely git tag -d v${version}
 }
 
 # clean up and fail the script with an error message
@@ -269,17 +248,11 @@ try ssh -t ${release_server} echo "Successfully contacted release server."
 
 echolog "Getting current project version from sbt..."
 declare -r current_version=$(get_current_version)
-echolog "Current version is ${current_version} on branch $initial_branch"
+echolog "Current version is ${current_version}"
 
 if [ "${current_version:0:3}" != "${version:0:3}" ]; then
-  fail "Releasing $version from wrong branch $initial_branch with version $current_version"
+  fail "Releasing $version from wrong with version $current_version"
 fi
-
-# check out a release branch
-try git checkout -b ${release_branch}
-
-# find and replace the version
-try ${script_dir}/find-replace ${current_version} ${version}
 
 # start clean
 try sbt clean
@@ -294,27 +267,27 @@ fi
 # build the release
 echolog "Building the release..."
 if [ ! $dry_run ]; then
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
+  RELEASE_OPT="-Dakka.build.version=${version} -Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 else
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
+  RELEASE_OPT="-Dakka.build.version=${version} -Dakka.genjavadoc.enabled=true"
 fi
+
 try sbt $RELEASE_OPT +buildRelease
+
 try sbt $RELEASE_OPT buildDocs
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
 if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Running migration manager report..."
-  sbt +mimaReportBinaryIssues
+  sbt $RELEASE_OPT +mimaReportBinaryIssues
   echodry "Finished migration manager report"
 fi
 
-try sbt whitesourceCheckPolicies
+try sbt $RELEASE_OPT whitesourceCheckPolicies
 
 # commit and tag this release
-echolog "Committing and tagging..."
-try git add .
-try git commit -am "Update version for release ${version}"
+echolog "Tagging..."
 try git tag -am "Version ${version}" v${version}
 
 # the point of no return... we're now pushing out to servers
@@ -354,23 +327,15 @@ else
   important git push origin --tags
 fi
 
-echolog "Uploading whitesource report"
-if [ $dry_run ]; then
-  echodry "Not actually uploading whitesource report. Commands:"
-  echodry "  sbt whitesourceUpdate"
-else
-  important sbt whitesourceUpdate
-fi
-
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Commands:"
-  echodry "  sbt deployRsync"
+  echodry "  sbt $RELEASE_OPT deployRsync"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads --exclude ${release_dir}/docs ${release_dir}/ ${publish_path}/"
 else
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
-  important sbt "deployRsync ${release_server}"
+  important sbt $RELEASE_OPT "deployRsync ${release_server}"
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude downloads --exclude docs ${release_dir}/ ${publish_path}/
   #important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
   #important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
@@ -383,14 +348,12 @@ echolog "*****"
 
 if [ $dry_run ]; then
   if [ $no_revert ]; then
-    echodry "No revert: git branch ${release_branch} and git tag v${version} remain"
+    echodry "No revert: git tag v${version} remains"
   else
     git_cleanup
   fi
   echodry "Successfully created release ${version}"
   echodry "See ${release_dir}"
 else
-  echolog "Switching back to initial branch"
-  git checkout ${initial_branch}
   echolog "Successfully created release ${version}"
 fi

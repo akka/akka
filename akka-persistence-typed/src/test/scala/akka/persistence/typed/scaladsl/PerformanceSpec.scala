@@ -7,6 +7,7 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -75,20 +76,20 @@ object PerformanceSpec {
           persistenceId = PersistenceId(name),
           "",
           commandHandler = CommandHandler.command {
-            case StopMeasure ⇒
+            case StopMeasure =>
               Effect.none.thenRun(_ => probe.ref ! StopMeasure)
-            case FailAt(sequence) ⇒
+            case FailAt(sequence) =>
               Effect.none.thenRun(_ => parameters.failAt = sequence)
-            case command ⇒ other(command, parameters)
+            case command => other(command, parameters)
           },
           eventHandler = {
             case (state, _) => state
           }).receiveSignal {
-          case RecoveryCompleted(_) =>
+          case (_, RecoveryCompleted) =>
             if (parameters.every(1000)) print("r")
         }
       })
-      .onFailure(SupervisorStrategy.restart)
+      .onFailure(SupervisorStrategy.restart.withLoggingEnabled(false))
   }
 
   def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Reply]) =

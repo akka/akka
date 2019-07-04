@@ -5,14 +5,17 @@
 package akka.dispatch
 
 import language.postfixOps
-
 import com.typesafe.config.Config
-
 import akka.actor.{ Actor, ActorSystem, Props }
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
+import akka.util.unused
+
 import scala.concurrent.duration._
 
 object PriorityDispatcherSpec {
+
+  case object Result
+
   val config = """
     unbounded-prio-dispatcher {
       mailbox-type = "akka.dispatch.PriorityDispatcherSpec$Unbounded"
@@ -22,21 +25,22 @@ object PriorityDispatcherSpec {
     }
     """
 
-  class Unbounded(settings: ActorSystem.Settings, config: Config)
+  class Unbounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends UnboundedPriorityMailbox(PriorityGenerator({
-        case i: Int  => i //Reverse order
-        case 'Result => Int.MaxValue
+        case i: Int => i //Reverse order
+        case Result => Int.MaxValue
       }: Any => Int))
 
-  class Bounded(settings: ActorSystem.Settings, config: Config)
+  class Bounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends BoundedPriorityMailbox(PriorityGenerator({
-        case i: Int  => i //Reverse order
-        case 'Result => Int.MaxValue
+        case i: Int => i //Reverse order
+        case Result => Int.MaxValue
       }: Any => Int), 1000, 10 seconds)
 
 }
 
 class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) with DefaultTimeout {
+  import PriorityDispatcherSpec._
 
   "A PriorityDispatcher" must {
     "Order it's messages according to the specified comparator using an unbounded mailbox" in {
@@ -57,7 +61,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
     // with RepointableActorRef, since messages might be queued in
     // UnstartedCell and the sent to the PriorityQueue and consumed immediately
     // without the ordering taking place.
-    val actor = system.actorOf(Props(new Actor {
+    system.actorOf(Props(new Actor {
       context.actorOf(Props(new Actor {
 
         val acc = scala.collection.mutable.ListBuffer[Int]()
@@ -66,11 +70,11 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
           self ! m
         }
 
-        self.tell('Result, testActor)
+        self.tell(Result, testActor)
 
         def receive = {
-          case i: Int  => acc += i
-          case 'Result => sender() ! acc.toList
+          case i: Int => acc += i
+          case Result => sender() ! acc.toList
         }
       }).withDispatcher(dispatcherKey))
 

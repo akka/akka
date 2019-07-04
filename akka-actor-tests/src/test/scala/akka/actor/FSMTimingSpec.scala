@@ -56,7 +56,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       // the timeout in state TestStateTimeout is 800 ms, then it will change to Initial
       within(400 millis) {
         fsm ! TestStateTimeoutOverride
-        expectNoMsg
+        expectNoMessage
       }
       within(1 second) {
         fsm ! Cancel
@@ -72,7 +72,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
           expectMsg(Tick)
           expectMsg(Transition(fsm, TestSingleTimer, Initial))
         }
-        expectNoMsg
+        expectNoMessage
       }
     }
 
@@ -86,7 +86,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
           expectMsg(Tock)
           expectMsg(Transition(fsm, TestSingleTimerResubmit, Initial))
         }
-        expectNoMsg
+        expectNoMessage
       }
     }
 
@@ -195,10 +195,10 @@ object FSMTimingSpec {
     startWith(Initial, 0)
     when(Initial) {
       case Event(TestSingleTimer, _) =>
-        setTimer("tester", Tick, 500.millis.dilated, false)
+        startSingleTimer("tester", Tick, 500.millis.dilated)
         goto(TestSingleTimer)
       case Event(TestRepeatedTimer, _) =>
-        setTimer("tester", Tick, 100.millis.dilated, true)
+        startTimerWithFixedDelay("tester", Tick, 100.millis.dilated)
         goto(TestRepeatedTimer).using(4)
       case Event(TestStateTimeoutOverride, _) =>
         goto(TestStateTimeout).forMax(Duration.Inf)
@@ -214,12 +214,12 @@ object FSMTimingSpec {
         goto(Initial)
     }
     onTransition {
-      case Initial -> TestSingleTimerResubmit => setTimer("blah", Tick, 500.millis.dilated)
+      case Initial -> TestSingleTimerResubmit => startSingleTimer("blah", Tick, 500.millis.dilated)
     }
     when(TestSingleTimerResubmit) {
       case Event(Tick, _) =>
         tester ! Tick
-        setTimer("blah", Tock, 500.millis.dilated)
+        startSingleTimer("blah", Tock, 500.millis.dilated)
         stay()
       case Event(Tock, _) =>
         tester ! Tock
@@ -227,11 +227,11 @@ object FSMTimingSpec {
     }
     when(TestCancelTimer) {
       case Event(Tick, _) =>
-        setTimer("hallo", Tock, 1.milli.dilated)
+        startSingleTimer("hallo", Tock, 1.milli.dilated)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1.second.dilated)
         cancelTimer("hallo")
         sender() ! Tick
-        setTimer("hallo", Tock, 500.millis.dilated)
+        startSingleTimer("hallo", Tock, 500.millis.dilated)
         stay
       case Event(Tock, _) =>
         tester ! Tock
@@ -254,7 +254,7 @@ object FSMTimingSpec {
       // FSM is suspended after processing this message and resumed 500ms later
       case Event(Tick, _) =>
         suspend(self)
-        setTimer("named", Tock, 1.millis.dilated)
+        startSingleTimer("named", Tock, 1.millis.dilated)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1.second.dilated)
         stay.forMax(1.millis.dilated).replying(Tick)
       case Event(Tock, _) =>

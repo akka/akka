@@ -143,9 +143,8 @@ object Coroner {
                 #Heap usage: ${memMx.getHeapMemoryUsage()}
                 #Non-heap usage: ${memMx.getNonHeapMemoryUsage()}""".stripMargin('#'))
 
-    def dumpAllThreads: Seq[ThreadInfo] = {
-      threadMx.dumpAllThreads(threadMx.isObjectMonitorUsageSupported, threadMx.isSynchronizerUsageSupported)
-    }
+    def dumpAllThreads: Seq[ThreadInfo] =
+      threadMx.dumpAllThreads(threadMx.isObjectMonitorUsageSupported, threadMx.isSynchronizerUsageSupported).toSeq
 
     def findDeadlockedThreads: (Seq[ThreadInfo], String) = {
       val (ids, desc) = if (threadMx.isSynchronizerUsageSupported()) {
@@ -157,7 +156,7 @@ object Coroner {
         (Seq.empty, desc)
       } else {
         val maxTraceDepth = 1000 // Seems deep enough
-        (threadMx.getThreadInfo(ids, maxTraceDepth), desc)
+        (threadMx.getThreadInfo(ids, maxTraceDepth).toSeq, desc)
       }
     }
 

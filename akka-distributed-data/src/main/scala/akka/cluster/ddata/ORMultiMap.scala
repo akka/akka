@@ -102,7 +102,7 @@ final class ORMultiMap[A, B] private[akka] (
    * Java API: All entries of a multimap where keys are strings and values are sets.
    */
   def getEntries(): java.util.Map[A, java.util.Set[B]] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val result = new java.util.HashMap[A, java.util.Set[B]]
     if (withValueDeltas)
       underlying.entries.foreach {
@@ -136,7 +136,7 @@ final class ORMultiMap[A, B] private[akka] (
 
   /**
    * Convenience for put. Requires an implicit SelfUniqueAddress.
-   * @see [[#put]]
+   * @see [[ORMultiMap#put(node:akka\.cluster\.ddata\.SelfUniqueAddress,key:A,value:Set*]]
    */
   def :+(entry: (A, Set[B]))(implicit node: SelfUniqueAddress): ORMultiMap[A, B] = {
     val (key, value) = entry
@@ -165,14 +165,14 @@ final class ORMultiMap[A, B] private[akka] (
    * replicated data set.
    */
   def put(node: SelfUniqueAddress, key: A, value: java.util.Set[B]): ORMultiMap[A, B] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     put(node.uniqueAddress, key, value.asScala.toSet)
   }
 
   @Deprecated
   @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(node: Cluster, key: A, value: java.util.Set[B]): ORMultiMap[A, B] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     put(node.selfUniqueAddress, key, value.asScala.toSet)
   }
 
@@ -181,7 +181,7 @@ final class ORMultiMap[A, B] private[akka] (
    */
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: Set[B]): ORMultiMap[A, B] = {
     val newUnderlying = underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas) { existing =>
-      value.foldLeft(existing.clear(node)) { (s, element) =>
+      value.foldLeft(existing.clear()) { (s, element) =>
         s.add(node, element)
       }
     }
@@ -196,7 +196,7 @@ final class ORMultiMap[A, B] private[akka] (
 
   /**
    * Convenience for remove. Requires an implicit Cluster.
-   * @see [[#remove]]
+   * @see [[ORMultiMap#remove(node:akka\.cluster\.ddata\.SelfUniqueAddress*]]
    */
   @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def -(key: A)(implicit node: Cluster): ORMultiMap[A, B] = remove(node.selfUniqueAddress, key)
@@ -216,7 +216,7 @@ final class ORMultiMap[A, B] private[akka] (
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): ORMultiMap[A, B] = {
     if (withValueDeltas) {
       val u = underlying.updated(node, key, ORSet.empty[B], valueDeltas = true) { existing =>
-        existing.clear(node)
+        existing.clear()
       }
       new ORMultiMap(u.removeKey(node, key), withValueDeltas)
     } else {

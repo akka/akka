@@ -18,7 +18,7 @@ import akka.util.ccompat._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
+import akka.util.ccompat.JavaConverters._
 import java.io.NotSerializableException
 
 import akka.dispatch.Dispatchers
@@ -26,6 +26,7 @@ import akka.dispatch.Dispatchers
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
  */
+@ccompatUsedUntil213
 class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
   private final val BufferSize = 4 * 1024

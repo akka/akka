@@ -6,11 +6,13 @@ package akka.routing
 
 import scala.collection.immutable
 import java.util.concurrent.ThreadLocalRandom
+
 import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
 import akka.japi.Util.immutableSeq
 import akka.actor.ActorSystem
+import com.github.ghik.silencer.silent
 
 object RandomRoutingLogic {
   def apply(): RandomRoutingLogic = new RandomRoutingLogic
@@ -19,6 +21,7 @@ object RandomRoutingLogic {
 /**
  * Randomly selects one of the target routees to send a message to
  */
+@silent
 @SerialVersionUID(1L)
 final class RandomRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =

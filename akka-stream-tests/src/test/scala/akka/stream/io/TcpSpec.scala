@@ -344,7 +344,6 @@ class TcpSpec extends StreamSpec("""
 
     "shut down both streams when connection is aborted remotely" in assertAllStagesStopped {
       // Client gets a PeerClosed event and does not know that the write side is also closed
-      val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
       val tcpWriteProbe = new TcpWriteProbe()
@@ -462,7 +461,6 @@ class TcpSpec extends StreamSpec("""
         """).withFallback(system.settings.config))
 
       try {
-        implicit val ec: ExecutionContext = system2.dispatcher
         val mat2 = ActorMaterializer.create(system2)
 
         val serverAddress = temporaryServerAddress()
@@ -686,7 +684,7 @@ class TcpSpec extends StreamSpec("""
 
       val (bindingFuture, connection) = Tcp(system).bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
 
-      val proxy = connection.map { c =>
+      connection.map { c =>
         c.handleWith(Flow[ByteString])
       }
 
@@ -852,8 +850,8 @@ class TcpSpec extends StreamSpec("""
       defaultParams.setCipherSuites(cipherSuites)
 
       val negotiateNewSession = TLSProtocol.NegotiateNewSession
-        .withCipherSuites(cipherSuites: _*)
-        .withProtocols(protocols: _*)
+        .withCipherSuites(cipherSuites.toIndexedSeq: _*)
+        .withProtocols(protocols.toIndexedSeq: _*)
         .withParameters(defaultParams)
         .withClientAuth(TLSClientAuth.None)
 

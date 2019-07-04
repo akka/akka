@@ -5,14 +5,16 @@
 package akka.cluster
 
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.remote.FailureDetector
 import com.typesafe.config.Config
 import akka.event.EventStream
+import akka.util.unused
 
 /**
  * User controllable "puppet" failure detector.
  */
-class FailureDetectorPuppet(config: Config, ev: EventStream) extends FailureDetector {
+class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) extends FailureDetector {
 
   trait Status
   object Up extends Status

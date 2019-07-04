@@ -5,14 +5,16 @@
 package akka.dispatch
 
 import language.postfixOps
-
 import com.typesafe.config.Config
-
 import akka.actor.{ Actor, ActorSystem, Props }
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
+import akka.util.unused
+
 import scala.concurrent.duration._
 
 object StablePriorityDispatcherSpec {
+  case object Result
+
   val config = """
     unbounded-stable-prio-dispatcher {
       mailbox-type = "akka.dispatch.StablePriorityDispatcherSpec$Unbounded"
@@ -22,23 +24,24 @@ object StablePriorityDispatcherSpec {
     }
     """
 
-  class Unbounded(settings: ActorSystem.Settings, config: Config)
+  class Unbounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends UnboundedStablePriorityMailbox(PriorityGenerator({
         case i: Int if i <= 100 => i // Small integers have high priority
-        case i: Int             => 101 // Don't care for other integers
-        case 'Result            => Int.MaxValue
+        case _: Int             => 101 // Don't care for other integers
+        case Result             => Int.MaxValue
       }: Any => Int))
 
-  class Bounded(settings: ActorSystem.Settings, config: Config)
+  class Bounded(@unused settings: ActorSystem.Settings, @unused config: Config)
       extends BoundedStablePriorityMailbox(PriorityGenerator({
         case i: Int if i <= 100 => i // Small integers have high priority
-        case i: Int             => 101 // Don't care for other integers
-        case 'Result            => Int.MaxValue
+        case _: Int             => 101 // Don't care for other integers
+        case Result             => Int.MaxValue
       }: Any => Int), 1000, 10 seconds)
 
 }
 
 class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec.config) with DefaultTimeout {
+  import StablePriorityDispatcherSpec._
 
   "A StablePriorityDispatcher" must {
     "Order its messages according to the specified comparator while preserving FIFO for equal priority messages, " +
@@ -61,7 +64,7 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
       // with RepointableActorRef, since messages might be queued in
       // UnstartedCell and then sent to the StablePriorityQueue and consumed immediately
       // without the ordering taking place.
-      val actor = system.actorOf(Props(new Actor {
+      system.actorOf(Props(new Actor {
         context.actorOf(Props(new Actor {
 
           val acc = scala.collection.mutable.ListBuffer[Int]()
@@ -70,11 +73,11 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
             self ! m
           }
 
-          self.tell('Result, testActor)
+          self.tell(Result, testActor)
 
           def receive = {
-            case i: Int  => acc += i
-            case 'Result => sender() ! acc.toList
+            case i: Int => acc += i
+            case Result => sender() ! acc.toList
           }
         }).withDispatcher(dispatcherKey))
 

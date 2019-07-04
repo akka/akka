@@ -1,0 +1,16 @@
+## removing compiler warnings #26673
+# unused
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.TransformerLike")
+# internal
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.RequestMore$")
+ProblemFilters.exclude[MissingFieldProblem]("akka.stream.impl.ReactiveStreamsCompliance#SpecViolation.serialVersionUID")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.Cancel$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.streamref.StreamRefsMaster.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.OutgoingConnectionStage.<init>$default$4")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.ConnectionSourceStage.options")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.ConnectionSourceStage.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.OutgoingConnectionStage.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.MergeHub#MergedSourceLogic.this")
+
+# 26896 JavaDSL FlowWithContext
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.FlowWithContext.this")

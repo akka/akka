@@ -75,6 +75,7 @@ trait UnrestrictedStash extends Actor with StashSupport {
    *  Overridden callback. Prepends all messages in the stash to the mailbox,
    *  clears the stash, stops all children and invokes the postStop() callback.
    */
+  @throws(classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     try unstashAll()
     finally super.preRestart(reason, message)
@@ -85,6 +86,7 @@ trait UnrestrictedStash extends Actor with StashSupport {
    *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
    *  when actor stops.
    */
+  @throws(classOf[Exception])
   override def postStop(): Unit =
     try unstashAll()
     finally super.postStop()
@@ -256,7 +258,7 @@ private[akka] trait StashSupport {
   private def enqueueFirst(envelope: Envelope): Unit = {
     mailbox.enqueueFirst(self, envelope)
     envelope.message match {
-      case Terminated(ref) => actorCell.terminatedQueuedFor(ref)
+      case Terminated(ref) => actorCell.terminatedQueuedFor(ref, None)
       case _               =>
     }
   }

@@ -16,6 +16,7 @@ import akka.remote.transport._
 import com.typesafe.config.Config
 import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
+
 import scala.collection.immutable.{ HashMap, Seq }
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -23,12 +24,16 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
+
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
+
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
+import akka.annotation.InternalStableApi
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -127,6 +132,7 @@ private[remote] object Remoting {
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider) {
 
@@ -140,6 +146,8 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   @volatile var defaultAddress: Address = _
 
   import provider.remoteSettings._
+
+  private implicit val ec = system.dispatchers.lookup(Dispatcher)
 
   val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
 
@@ -162,7 +170,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           endpointManager = None
         }
 
-        import system.dispatcher
         (manager ? ShutdownAndFlush)
           .mapTo[Boolean]
           .andThen {
@@ -247,7 +254,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
     case Some(manager) =>
-      import system.dispatcher
       implicit val timeout = CommandAckTimeout
       (manager ? ManagementCommand(cmd)).map { case ManagementCommandAck(status) => status }
     case None =>
@@ -286,6 +292,7 @@ private[remote] object EndpointManager {
   final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
+  @InternalStableApi
   final case class Send(
       message: Any,
       senderOption: OptionVal[ActorRef],
@@ -492,7 +499,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
   val pruneInterval: FiniteDuration = (settings.RetryGateClosedFor * 2).max(1.second).min(10.seconds)
 
   val pruneTimerCancellable: Cancellable =
-    context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+    context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
 
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()
@@ -524,7 +531,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         settings.QuarantineDuration match {
           case d: FiniteDuration =>
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
-            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
+            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
           case _ => // disabled
         }
         Stop
@@ -653,7 +660,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
           uidOption match {
             case Some(`quarantineUid`) =>
               endpoints.markAsQuarantined(address, quarantineUid, Deadline.now + settings.QuarantineDuration)
-              eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid))
+              eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid.toLong))
               context.stop(endpoint)
             // or it does not match with the UID to be quarantined
             case None if !endpoints.refuseUid(address).contains(quarantineUid) =>
@@ -668,7 +675,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         case (_, Some(quarantineUid))                                                 =>
           // the current state is gated or quarantined, and we know the UID, update
           endpoints.markAsQuarantined(address, quarantineUid, Deadline.now + settings.QuarantineDuration)
-          eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid))
+          eventPublisher.notifyListeners(QuarantinedEvent(address, quarantineUid.toLong))
         case _ => // the current state is Gated, WasGated or Quarantined, and we don't know the UID, do nothing.
       }
 
@@ -755,7 +762,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         case Some(Pass(endpoint, _)) =>
           if (refuseUidOption.contains(uid)) {
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + settings.QuarantineDuration)
-            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
+            eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
             context.stop(endpoint)
           } else endpoints.registerWritableEndpointUid(remoteAddress, uid)
           handleStashedInbound(sender(), writerIsIdle = false)
@@ -768,6 +775,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ShutdownAndFlush =>
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
+      @silent
       def shutdownAll[T](resources: IterableOnce[T])(shutdown: T => Future[Boolean]): Future[Boolean] = {
         Future.sequence(resources.toList.map(shutdown)).map(_.forall(identity)).recover {
           case NonFatal(_) => false

@@ -20,6 +20,9 @@ import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.runner.RunWith;
+import org.scalatest.junit.JUnitRunner;
 import scala.concurrent.Future;
 import java.util.function.Consumer;
 import org.iq80.leveldb.util.FileUtils;
@@ -41,7 +44,7 @@ public class LambdaPersistencePluginDocTest {
         class SharedStorageUsage extends AbstractActor {
           @Override
           public void preStart() throws Exception {
-            String path = "akka.tcp://example@127.0.0.1:2552/user/store";
+            String path = "akka://example@127.0.0.1:2552/user/store";
             ActorSelection selection = getContext().actorSelection(path);
             selection.tell(new Identify(1), getSelf());
           }
@@ -130,6 +133,7 @@ public class LambdaPersistencePluginDocTest {
   static Object o2 =
       new Object() {
         // #journal-tck-java
+        @RunWith(JUnitRunner.class)
         class MyJournalSpecTest extends JavaJournalSpec {
 
           public MyJournalSpecTest() {
@@ -150,6 +154,7 @@ public class LambdaPersistencePluginDocTest {
   static Object o3 =
       new Object() {
         // #snapshot-store-tck-java
+        @RunWith(JUnitRunner.class)
         class MySnapshotStoreTest extends JavaSnapshotStoreSpec {
 
           public MySnapshotStoreTest() {
@@ -164,7 +169,9 @@ public class LambdaPersistencePluginDocTest {
 
   static Object o4 =
       new Object() {
+        // https://github.com/akka/akka/issues/26826
         // #journal-tck-before-after-java
+        @RunWith(JUnitRunner.class)
         class MyJournalSpecTest extends JavaJournalSpec {
 
           List<File> storageLocations = new ArrayList<File>();

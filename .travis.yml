@@ -4,13 +4,13 @@ sudo: false
 
 scala:
   - "2.12.8"
-  - "2.11.12"
-  - "2.13.0-M5"
+  - "2.13.0"
 
 before_install:
   # using jabba for custom jdk management
   - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@~1.8.202-08
+  - jabba install $TRAVIS_JDK
+install: jabba use "$TRAVIS_JDK" && java -Xmx32m -version
 
 addons:
   apt:
@@ -27,16 +27,30 @@ cache:
     - $HOME/.sbt/boot
     - $HOME/.jabba/jdk
 
-script:
-  - jabba use "adopt@~1.8.202-08"
-  # need to override as the default is to test
-  - sbt -jvm-opts .jvmopts-travis ";++$TRAVIS_SCALA_VERSION update ;++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues ;++$TRAVIS_SCALA_VERSION test:compile ;++$TRAVIS_SCALA_VERSION validateCompile"
-  # make 'git branch' work again
-  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
-  # check policies, if on master also upload
-  - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
+# script for the default 'test' stage:
+script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
+
+jobs:
+  include:
+    - stage: whitesource
+      name: whitesource
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
+
+stages:
+  - name: whitesource
+    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) = "2.12.8"
+  - name: test
+    if: type == pull_request OR NOT tag =~ ^v
 
 env:
   global:
-    # encrypt with: travis encrypt WHITESOURCE_KEY=...
-    - secure: "L/wJ7TbgY+oPULgbv+giFZejnQERfv/8/9Ex/nwRni8qnpxw5Q6BqB86Sch6b79irQiOdb+hr2tq3/m3KzXjC58xppRPfnmXsu3yI9XAln9WPi/sPvqUL8WPJmRfGswAw3L8w2JdD9VBP4iv0dWpRghGD27iqgipVRdN62PU+nU="
+    - TRAVIS_JDK=adopt@~1.8.202-08
+    # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
+    - secure: "BCWtUqKG7trI7n5OZE2ReCGXQE/f5P8kXpfcpa5DXJeautBnpH/jettY5ermB5JLl12CisG6S4nS3BSKP4Uf8WPpPeSq402CZYTCbUxMWCvS+9N+kEQrHU7iwYqHQBL/RMy6eIyWPRD+JqxKuvlgfNuSEry9pMagwW7mNQrZgYU="
+
+# safelist
+branches:
+  only:
+  - master
+  - release-2.5
+  - /^v\d+\.\d+(\.\d+)?(-\S*)?$/

@@ -37,9 +37,9 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       private var waitQueue = immutable.Queue.empty[ActorRef]
       private var permitTokens = maxAvailableTokens
-      private val replenishTimer = system.scheduler.schedule(
+      private val replenishTimer = system.scheduler.scheduleWithFixedDelay(
         initialDelay = tokenRefreshPeriod,
-        interval = tokenRefreshPeriod,
+        delay = tokenRefreshPeriod,
         receiver = self,
         ReplenishTokens)
 
@@ -115,11 +115,11 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       probe.expectNext() should startWith("E")
       probe.expectNext() should startWith("E")
-      probe.expectNoMsg(500.millis)
+      probe.expectNoMessage()
 
       limiter ! Limiter.ReplenishTokens
       probe.expectNext() should startWith("E")
-      probe.expectNoMsg(500.millis)
+      probe.expectNoMessage()
 
       var resultSet = Set.empty[String]
       for (_ <- 1 to 100) {

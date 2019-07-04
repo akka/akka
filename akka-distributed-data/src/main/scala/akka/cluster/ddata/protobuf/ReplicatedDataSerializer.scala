@@ -11,7 +11,7 @@ import java.util.Comparator
 import java.util.TreeSet
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 
 import akka.actor.ExtendedActorSystem
@@ -25,11 +25,14 @@ import akka.protobuf.{ ByteString, GeneratedMessage }
 import akka.util.ByteString.UTF_8
 import java.io.NotSerializableException
 
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorRef
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.serialization.Serialization
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 private object ReplicatedDataSerializer {
   /*
    * Generic superclass to allow to compare Entry types used in protobuf.
@@ -37,23 +40,28 @@ private object ReplicatedDataSerializer {
   abstract class KeyComparator[A <: GeneratedMessage] extends Comparator[A] {
 
     /**
-     * Get the key from the entry. The key may be a String, Integer, Long, or Any
+     * Get the key from the entry. The key may be a String, Int, Long, or OtherMessage
      * @param entry The protobuf entry used with Map types
      * @return The Key
      */
     def getKey(entry: A): Any
     final def compare(x: A, y: A): Int = compareKeys(getKey(x), getKey(y))
+
+    @silent
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
       case (k1: String, k2: String)             => k1.compareTo(k2)
-      case (k1: String, k2)                     => -1
-      case (k1, k2: String)                     => 1
+      case (_: String, _)                       => -1
+      case (_, _: String)                       => 1
       case (k1: Int, k2: Int)                   => k1.compareTo(k2)
-      case (k1: Int, k2)                        => -1
-      case (k1, k2: Int)                        => 1
+      case (_: Int, _)                          => -1
+      case (_, _: Int)                          => 1
       case (k1: Long, k2: Long)                 => k1.compareTo(k2)
-      case (k1: Long, k2)                       => -1
-      case (k1, k2: Long)                       => 1
+      case (_: Long, _)                         => -1
+      case (_, _: Long)                         => 1
       case (k1: OtherMessage, k2: OtherMessage) => OtherMessageComparator.compare(k1, k2)
+      case (k1, k2) =>
+        throw new IllegalStateException(
+          s"Invalid keys (${k1.getClass}, ${k2.getClass}): must be of type String, Int, Long or OtherMessage")
     }
   }
 
@@ -541,7 +549,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
         b.addEntries(createEntry(rd.ORSetDeltaOp.Remove, u))
       case ORSet.FullStateDeltaOp(u) =>
         b.addEntries(createEntry(rd.ORSetDeltaOp.Full, u))
-      case ORSet.DeltaGroup(u) =>
+      case ORSet.DeltaGroup(_) =>
         throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
     }
     b.build()
@@ -899,7 +907,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       case ORMap.UpdateDeltaOp(op, m, zt) =>
         b.addEntries(
           createEntry(rd.ORMapDeltaOp.ORMapUpdate, op.asInstanceOf[ORSet.AddDeltaOp[_]].underlying, m, zt.value))
-      case ORMap.DeltaGroup(u) =>
+      case ORMap.DeltaGroup(_) =>
         throw new IllegalArgumentException("ORMap.DeltaGroup should not be nested")
     }
     b.build()

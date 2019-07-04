@@ -25,10 +25,11 @@ import akka.io.Inet.SocketOption
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
-import javax.net.ssl.SSLContext
 
-import akka.annotation.{ ApiMayChange, InternalApi }
+import javax.net.ssl.SSLContext
+import akka.annotation.InternalApi
 import akka.stream.TLSProtocol.NegotiateNewSession
+import com.github.ghik.silencer.silent
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -245,7 +246,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
-  @ApiMayChange
   def outgoingTlsConnection(
       remoteAddress: InetSocketAddress,
       sslContext: SSLContext,
@@ -272,8 +272,9 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * @see [[Tcp.bind()]]
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
+   *
+   * Note: the half close parameter is currently ignored
    */
-  @ApiMayChange
   def bindTls(
       interface: String,
       port: Int,
@@ -281,6 +282,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       negotiateNewSession: NegotiateNewSession,
       backlog: Int,
       options: JIterable[SocketOption],
+      @silent // FIXME unused #26689
       halfClose: Boolean,
       idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(

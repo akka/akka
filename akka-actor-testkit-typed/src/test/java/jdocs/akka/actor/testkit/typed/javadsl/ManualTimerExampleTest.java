@@ -10,7 +10,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.testkit.typed.javadsl.ManualTime;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import java.time.Duration;
 
 import akka.actor.typed.javadsl.Behaviors;

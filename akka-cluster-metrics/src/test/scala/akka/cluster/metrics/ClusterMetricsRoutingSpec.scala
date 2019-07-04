@@ -18,10 +18,10 @@ class MetricsSelectorSpec extends WordSpec with Matchers {
     override def capacity(nodeMetrics: Set[NodeMetrics]): Map[Address, Double] = Map.empty
   }
 
-  val a1 = Address("akka.tcp", "sys", "a1", 2551)
-  val b1 = Address("akka.tcp", "sys", "b1", 2551)
-  val c1 = Address("akka.tcp", "sys", "c1", 2551)
-  val d1 = Address("akka.tcp", "sys", "d1", 2551)
+  val a1 = Address("akka", "sys", "a1", 2551)
+  val b1 = Address("akka", "sys", "b1", 2551)
+  val c1 = Address("akka", "sys", "c1", 2551)
+  val d1 = Address("akka", "sys", "d1", 2551)
 
   val decayFactor = Some(0.18)
 

@@ -8,6 +8,7 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
 import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage }
+import akka.util.unused
 import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
@@ -120,7 +121,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
 
     def onError(input: Int, e: Throwable): Unit
 
-    def onDepleted(input: Int): Unit = ()
+    def onDepleted(@unused input: Int): Unit = ()
 
     def onCompleteWhenNoInput(): Unit = ()
 

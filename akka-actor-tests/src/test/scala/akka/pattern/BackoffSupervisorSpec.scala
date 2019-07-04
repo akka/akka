@@ -6,6 +6,7 @@ package akka.pattern
 
 import akka.actor._
 import akka.testkit._
+import com.github.ghik.silencer.silent
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
@@ -46,10 +47,13 @@ object BackoffSupervisorSpec {
 class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
+  @silent
   def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
     Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  @silent
   def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
     Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  @silent
   def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
 
   "BackoffSupervisor" must {
@@ -174,6 +178,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "reply to sender if replyWhileStopped is specified" in {
       filterException[TestException] {
+        @silent
         val supervisor = create(
           Backoff
             .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1)
@@ -199,6 +204,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
+        @silent
         val supervisor =
           create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
         supervisor ! BackoffSupervisor.GetCurrentChild
@@ -216,7 +222,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         }
 
         supervisor ! "boom" //this will be sent to deadLetters
-        expectNoMsg(500.milliseconds)
+        expectNoMessage(500.milliseconds)
       }
     }
 

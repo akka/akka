@@ -94,7 +94,7 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
       (listenAddress, listenerPromise) <- wrappedTransport.listen
       // Enforce ordering between the signalling of "listen ready" to upstream
       // and initialization happening in interceptListen
-      _ <- listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future)).future
+      _ <- listenerPromise.completeWith(interceptListen(listenAddress, upstreamListenerPromise.future)).future
     } yield (augmentScheme(listenAddress), upstreamListenerPromise)
   }
 
@@ -156,7 +156,7 @@ object ActorTransportAdapter {
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
-    extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
+    extends AbstractTransportAdapter(wrappedTransport)(system.dispatchers.internalDispatcher) {
 
   import ActorTransportAdapter._
 

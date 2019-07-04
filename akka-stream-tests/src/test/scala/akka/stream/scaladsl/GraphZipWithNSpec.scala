@@ -15,7 +15,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(2))
     override def left: Inlet[Int] = zip.in(0)
     override def right: Inlet[Int] = zip.in(1)
@@ -81,7 +81,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
       probe.expectError() match {
         case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
       }
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage(200.millis)
     }
 
     commonTests()
@@ -115,7 +115,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
       subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "work with 3 inputs" in {

@@ -2,15 +2,6 @@
 
 ## Introduction
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
-
-@@@
-
 With an understanding of actor hierarchy and behavior, the remaining question is how to map the top-level components of our IoT system to actors. The _user guardian_ can be an actor that represents the whole application. In other words, we will have a single top-level actor in our IoT system. The components that create and manage devices and dashboards will be children of this actor. This allows us to refactor the example use case architecture diagram into a tree of actors:
 
 ![actor tree diagram of the architecture](diagrams/arch_tree_diagram.png)

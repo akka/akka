@@ -11,7 +11,7 @@ import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
@@ -19,6 +19,8 @@ import java.util.Comparator
 
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
+
+import com.github.ghik.silencer.silent
 
 import scala.reflect.ClassTag
 
@@ -676,6 +678,7 @@ class SubFlow[In, Out, Mat](
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
+  @silent
   def groupedWithin(n: Int, d: java.time.Duration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
     groupedWithin(n, d.asScala)
 
@@ -723,6 +726,7 @@ class SubFlow[In, Out, Mat](
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
+  @silent
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
@@ -784,6 +788,7 @@ class SubFlow[In, Out, Mat](
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
+  @silent
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): SubFlow[In, Out, Mat] =
     delay(of.asScala, strategy)
 
@@ -829,6 +834,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def dropWithin(d: java.time.Duration): SubFlow[In, Out, Mat] =
     dropWithin(d.asScala)
 
@@ -1043,6 +1049,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
+  @silent
   def takeWithin(d: java.time.Duration): SubFlow[In, Out, Mat] =
     takeWithin(d.asScala)
 
@@ -1629,6 +1636,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def initialTimeout(timeout: java.time.Duration): SubFlow[In, Out, Mat] =
     initialTimeout(timeout.asScala)
 
@@ -1661,6 +1669,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def completionTimeout(timeout: java.time.Duration): SubFlow[In, Out, Mat] =
     completionTimeout(timeout.asScala)
 
@@ -1695,6 +1704,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def idleTimeout(timeout: java.time.Duration): SubFlow[In, Out, Mat] =
     idleTimeout(timeout.asScala)
 
@@ -1729,6 +1739,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def backpressureTimeout(timeout: java.time.Duration): SubFlow[In, Out, Mat] =
     backpressureTimeout(timeout.asScala)
 
@@ -1771,6 +1782,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): SubFlow[In, Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
@@ -2138,6 +2150,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def initialDelay(delay: java.time.Duration): SubFlow[In, Out, Mat] =
     initialDelay(delay.asScala)
 

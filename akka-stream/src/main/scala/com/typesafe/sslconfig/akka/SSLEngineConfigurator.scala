@@ -21,6 +21,7 @@ final class DefaultSSLEngineConfigurator(
     enabledProtocols: Array[String],
     enabledCipherSuites: Array[String])
     extends SSLEngineConfigurator {
+  config ne null // @unused unavailable
   def configure(engine: SSLEngine, sslContext: SSLContext): SSLEngine = {
     engine.setSSLParameters(sslContext.getDefaultSSLParameters)
     engine.setEnabledProtocols(enabledProtocols)

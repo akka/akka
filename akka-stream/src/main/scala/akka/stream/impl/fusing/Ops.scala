@@ -18,19 +18,21 @@ import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
-
 import akka.stream.ActorAttributes.SupervisionStrategy
+
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.util.control.Exception.Catcher
-
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
+import akka.util.unused
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -473,7 +475,7 @@ private[stream] object Collect {
           })
       }
 
-      private def onRestart(t: Throwable): Unit = {
+      private def onRestart(): Unit = {
         current = zero
         elementHandled = false
       }
@@ -498,7 +500,7 @@ private[stream] object Collect {
           case Supervision.Stop   => failStage(t)
           case Supervision.Resume => safePull()
           case Supervision.Restart =>
-            onRestart(t)
+            onRestart()
             safePull()
         }
         elementHandled = true
@@ -531,7 +533,7 @@ private[stream] object Collect {
           case NonFatal(ex) =>
             decider(ex) match {
               case Supervision.Stop    => failStage(ex)
-              case Supervision.Restart => onRestart(ex)
+              case Supervision.Restart => onRestart()
               case Supervision.Resume  => ()
             }
             tryPull(in)
@@ -629,7 +631,7 @@ private[stream] object Collect {
       private var aggregator: Out = zero
       private var aggregating: Future[Out] = Future.successful(aggregator)
 
-      private def onRestart(t: Throwable): Unit = {
+      private def onRestart(@unused t: Throwable): Unit = {
         aggregator = zero
       }
 
@@ -1206,10 +1208,7 @@ private[stream] object Collect {
     }
 
     def setElem(t: Try[T]): Unit = {
-      elem = t match {
-        case Success(null) => Failure[T](ReactiveStreamsCompliance.elementMustNotBeNullException)
-        case other         => other
-      }
+      elem = t
     }
 
     override def apply(t: Try[T]): Unit = {
@@ -1295,9 +1294,13 @@ private[stream] object Collect {
         else if (isAvailable(out)) {
           val holder = buffer.dequeue()
           holder.elem match {
-            case Success(elem) =>
+            case Success(elem) if elem != null =>
               push(out, elem)
               pullIfNeeded()
+
+            case Success(null) =>
+              pullIfNeeded()
+              pushNextIfPossible()
 
             case Failure(NonFatal(ex)) =>
               holder.supervisionDirectiveFor(decider, ex) match {
@@ -1354,11 +1357,10 @@ private[stream] object Collect {
               if (!hasBeenPulled(in)) tryPull(in)
               push(out, elem)
             } else buffer.enqueue(elem)
-          case other =>
-            val ex = other match {
-              case Failure(t)              => t
-              case Success(s) if s == null => ReactiveStreamsCompliance.elementMustNotBeNullException
-            }
+          case Success(null) =>
+            if (isClosed(in) && todo == 0) completeStage()
+            else if (!hasBeenPulled(in)) tryPull(in)
+          case Failure(ex) =>
             if (decider(ex) == Supervision.Stop) failStage(ex)
             else if (isClosed(in) && todo == 0) completeStage()
             else if (!hasBeenPulled(in)) tryPull(in)
@@ -1407,6 +1409,7 @@ private[stream] object Collect {
       private lazy val self = getStageActor {
         case (_, Terminated(`targetRef`)) =>
           failStage(new WatchedActorTerminatedException("Watch", targetRef))
+        case (_, _) => // keep the compiler happy (stage actor receive is total)
       }
 
       override def preStart(): Unit = {
@@ -1602,7 +1605,7 @@ private[stream] object Collect {
       private var hasElements = false
 
       override def preStart() = {
-        schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+        scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
         pull(in)
       }
 
@@ -1628,7 +1631,7 @@ private[stream] object Collect {
                 // we also have to pull if downstream hasn't yet requested an element.
                 pull(in)
               } else {
-                schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+                scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
                 emitGroup()
               }
             }
@@ -1642,7 +1645,7 @@ private[stream] object Collect {
               pending = elem
               pendingWeight = cost
             }
-            schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+            scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
             tryCloseGroup()
           }
         }
@@ -1778,10 +1781,16 @@ private[stream] object Collect {
         }
       }
 
-      def pullCondition: Boolean =
-        !strategy.isBackpressure || buffer.used < size
+      def pullCondition: Boolean = strategy match {
+        case EmitEarly =>
+          // when buffer is full we can only emit early if out is available
+          buffer.used < size || isAvailable(out)
+        case _ =>
+          !strategy.isBackpressure || buffer.used < size
+      }
 
       def grabAndPull(): Unit = {
+        if (buffer.used == size) throw new IllegalStateException("Trying to enqueue but buffer is full")
         buffer.enqueue((System.nanoTime(), grab(in)))
         if (pullCondition) pull(in)
       }
@@ -1892,7 +1901,7 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler { self =>
       override def toString = s"Reduce.Logic(aggregator=$aggregator)"
 
-      var aggregator: T = _
+      private var aggregator: T = _
 
       private def decider =
         inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
@@ -1911,6 +1920,7 @@ private[stream] object Collect {
         })
       }
 
+      @silent // compiler complaining about aggregator = _: T
       override def onPush(): Unit = {
         val elem = grab(in)
         try {

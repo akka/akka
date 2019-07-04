@@ -32,6 +32,7 @@ import scala.util.control.NonFatal
 import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.RARP
+import com.github.ghik.silencer.silent
 
 class ThrottlerProvider extends TransportAdapterProvider {
 
@@ -342,6 +343,8 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
       Future.successful(SetThrottleAck)
   }
 
+  // silent because of use of isTerminated
+  @silent
   private def askModeWithDeathCompletion(target: ActorRef, mode: ThrottleMode)(
       implicit timeout: Timeout): Future[SetThrottleAck.type] = {
     if (target.isTerminated) Future.successful(SetThrottleAck)
@@ -567,7 +570,7 @@ private[transport] class ThrottledAssociation(
   def scheduleDequeue(delay: FiniteDuration): Unit = inboundThrottleMode match {
     case Blackhole                   => // Do nothing
     case _ if delay <= Duration.Zero => self ! Dequeue
-    case _                           => setTimer(DequeueTimerName, Dequeue, delay, repeat = false)
+    case _                           => startSingleTimer(DequeueTimerName, Dequeue, delay)
   }
 
 }

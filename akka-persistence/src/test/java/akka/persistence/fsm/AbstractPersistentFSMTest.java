@@ -21,7 +21,7 @@ import java.time.Duration;
 
 import akka.persistence.fsm.PersistentFSM.CurrentState;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import static akka.persistence.fsm.PersistentFSM.FSMState;
 

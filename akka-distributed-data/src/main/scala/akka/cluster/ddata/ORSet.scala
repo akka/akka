@@ -6,10 +6,9 @@ package akka.cluster.ddata
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
-import akka.util.HashCode
+import akka.util.{ unused, HashCode }
 import akka.annotation.InternalApi
 
 object ORSet {
@@ -310,7 +309,7 @@ final class ORSet[A] private[akka] (
    * Java API
    */
   def getElements(): java.util.Set[A] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     elements.asJava
   }
 
@@ -389,18 +388,19 @@ final class ORSet[A] private[akka] (
 
   /**
    * Removes all elements from the set, but keeps the history.
-   * This has the same result as using [[#remove]] for each
-   * element, but it is more efficient.
+   * This has the same result as using
+   * [[ORSet#remove(node:akka\.cluster\.ddata\.SelfUniqueAddress*]]
+   * for each element, but it is more efficient.
    */
-  def clear(node: SelfUniqueAddress): ORSet[A] = clear(node.uniqueAddress)
+  def clear(@unused node: SelfUniqueAddress): ORSet[A] = clear()
 
   @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def clear(node: Cluster): ORSet[A] = clear(node.selfUniqueAddress)
+  def clear(@unused node: Cluster): ORSet[A] = clear()
 
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def clear(node: UniqueAddress): ORSet[A] = {
+  @InternalApi private[akka] def clear(): ORSet[A] = {
     val newFullState = new ORSet[A](elementsMap = Map.empty, vvector)
     val clearOp = ORSet.FullStateDeltaOp(newFullState)
     val newDelta = delta match {
@@ -461,7 +461,7 @@ final class ORSet[A] private[akka] (
           case (acc, op: ORSet.AddDeltaOp[A])       => acc.dryMerge(op.underlying, addDeltaOp = true)
           case (acc, op: ORSet.RemoveDeltaOp[A])    => acc.mergeRemoveDelta(op)
           case (acc, op: ORSet.FullStateDeltaOp[A]) => acc.dryMerge(op.underlying, addDeltaOp = false)
-          case (acc, op: ORSet.DeltaGroup[A]) =>
+          case (_, _: ORSet.DeltaGroup[A]) =>
             throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
         }
     }

@@ -14,6 +14,7 @@ import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.{ unused, Helpers, ReentrantGuard }
 import akka.{ AkkaException, ConfigurationException }
+import com.github.ghik.silencer.silent
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
@@ -121,16 +122,16 @@ trait LoggingBus extends ActorEventBus {
         } yield {
           system.dynamicAccess
             .getClassFor[Actor](loggerName)
-            .map({
-              case actorClass => addLogger(system, actorClass, level, logName)
-            })
-            .recover({
+            .map { actorClass =>
+              addLogger(system, actorClass, level, logName)
+            }
+            .recover {
               case e =>
                 throw new ConfigurationException(
                   "Logger specified in config can't be loaded [" + loggerName +
                   "] due to [" + e.toString + "]",
                   e)
-            })
+            }
             .get
         }
       guard.withGuard {
@@ -166,6 +167,7 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
+    @silent
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
@@ -674,17 +676,6 @@ object Logging {
   def getLogger(logSource: Actor): DiagnosticLoggingAdapter = apply(logSource)
 
   /**
-   * Obtain LoggingAdapter with MDC support for the given actor.
-   * Don't use it outside its specific Actor as it isn't thread safe
-   */
-  @deprecated("Use AbstractActor instead of UntypedActor.", since = "2.5.0")
-  def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
-    val (str, clazz) = LogSource.fromAnyRef(logSource)
-    val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]
-    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
-  }
-
-  /**
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
@@ -707,7 +698,7 @@ object Logging {
      * The thread that created this log event
      */
     @transient
-    val thread: Thread = Thread.currentThread
+    val thread: Thread = Thread.currentThread()
 
     /**
      * When this LogEvent was created according to System.currentTimeMillis
@@ -743,7 +734,7 @@ object Logging {
      * Java API: Retrieve the contents of the MDC.
      */
     def getMDC: java.util.Map[String, Any] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       mdc.asJava
     }
   }
@@ -967,7 +958,6 @@ object Logging {
 
   /**
    * LoggerInitializationException is thrown to indicate that there was a problem initializing a logger
-   * @param msg
    */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
@@ -1062,7 +1052,7 @@ object Logging {
       val size = mdc.size
       if (size == 0) ""
       else if (size == 1) s"[${mdc.head._1}:${mdc.head._2}]"
-      else mdc.map({ case (k, v) => s"$k:$v" }).mkString("[", "][", "]")
+      else mdc.map { case (k, v) => s"$k:$v" }.mkString("[", "][", "]")
     }
   }
   object StdOutLogger {
@@ -1455,12 +1445,16 @@ trait LoggingAdapter {
    * there are more than four arguments.
    */
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a: _*)
-    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => formatImpl(t, a.toSeq)
+    case a: Array[_]                                             => formatImpl(t, a.map(_.asInstanceOf[AnyRef]).toSeq)
     case x                                                       => format(t, x)
   }
 
   def format(t: String, arg: Any*): String = {
+    formatImpl(t, arg)
+  }
+
+  private def formatImpl(t: String, arg: Seq[Any]): String = {
     val sb = new java.lang.StringBuilder(64)
     var p = 0
     var startIndex = 0
@@ -1498,6 +1492,11 @@ trait LoggingFilter {
   def isDebugEnabled(logClass: Class[_], logSource: String): Boolean
 }
 
+/**
+ * In retrospect should have been abstract, but we cannot change that
+ * without breaking binary compatibility
+ */
+@silent
 trait LoggingFilterWithMarker extends LoggingFilter {
   def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
     isErrorEnabled(logClass, logSource)
@@ -1554,7 +1553,7 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
   import Logging._
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   private var _mdc = emptyMDC
 
@@ -1883,8 +1882,8 @@ class MarkerLoggingAdapter(
 
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a: _*)
-    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a.toIndexedSeq)
+    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]).toIndexedSeq)
     case x                                                       => format(t, x)
   }
 }

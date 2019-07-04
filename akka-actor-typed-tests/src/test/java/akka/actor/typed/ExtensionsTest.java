@@ -5,10 +5,11 @@
 package akka.actor.typed;
 
 import akka.actor.setup.ActorSystemSetup;
+import akka.actor.typed.javadsl.Behaviors;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.util.function.Function;
 
@@ -54,7 +55,7 @@ public class ExtensionsTest extends JUnitSuite {
                 "akka.actor.typed.extensions += \"akka.actor.typed.ExtensionsTest$MyExtension\"")
             .resolve();
     final ActorSystem<Object> system =
-        ActorSystem.create(Behavior.empty(), "loadJavaExtensionsFromConfig", cfg);
+        ActorSystem.create(Behaviors.empty(), "loadJavaExtensionsFromConfig", cfg);
 
     try {
       // note that this is not the intended end user way to access it
@@ -71,7 +72,7 @@ public class ExtensionsTest extends JUnitSuite {
 
   @Test
   public void loadScalaExtension() {
-    final ActorSystem<Object> system = ActorSystem.create(Behavior.empty(), "loadScalaExtension");
+    final ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "loadScalaExtension");
     try {
       DummyExtension1 instance1 = DummyExtension1.get(system);
       DummyExtension1 instance2 = DummyExtension1.get(system);
@@ -86,7 +87,7 @@ public class ExtensionsTest extends JUnitSuite {
   public void overrideExtensionsViaActorSystemSetup() {
     final ActorSystem<Object> system =
         ActorSystem.create(
-            Behavior.empty(),
+            Behaviors.empty(),
             "overrideExtensionsViaActorSystemSetup",
             ActorSystemSetup.create(new MyExtensionSetup(sys -> new MyExtImplViaSetup())));
 

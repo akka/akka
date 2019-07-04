@@ -6,10 +6,11 @@ package akka.stream.scaladsl
 
 import akka.testkit.DefaultTimeout
 import org.scalatest.time.{ Millis, Span }
+
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-
 import akka.stream.testkit.Utils.TE
+import com.github.ghik.silencer.silent
 //#imports
 import akka.stream._
 
@@ -23,6 +24,7 @@ import java.util.stream.BaseStream
 
 import akka.stream.testkit.scaladsl.TestSink
 
+@silent // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
   implicit val materializer = ActorMaterializer()
@@ -107,7 +109,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val sub = out.expectSubscription()
       sub.request(10)
 
-      val subs = for (i <- 0 to 4) {
+      for (i <- 0 to 4) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)

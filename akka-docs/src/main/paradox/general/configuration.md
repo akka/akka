@@ -67,56 +67,15 @@ of the JAR file.
 @@@ warning
 
 Akka's configuration approach relies heavily on the notion of every
-module/jar having its own reference.conf file, all of these will be
+module/jar having its own `reference.conf` file. All of these will be
 discovered by the configuration and loaded. Unfortunately this also means
 that if you put/merge multiple jars into the same jar, you need to merge all the
-reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
+`reference.conf` files as well: otherwise all defaults will be lost.
 
 @@@
 
-If you are using Maven to package your application, you can also make use of
-the [Apache Maven Shade Plugin](http://maven.apache.org/plugins/maven-shade-plugin) support for [Resource
-Transformers](http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
-to merge all the reference.confs on the build classpath into one. 
-
-The plugin configuration might look like this:
-
-```
-<plugin>
- <groupId>org.apache.maven.plugins</groupId>
- <artifactId>maven-shade-plugin</artifactId>
- <version>1.5</version>
- <executions>
-  <execution>
-   <phase>package</phase>
-   <goals>
-    <goal>shade</goal>
-   </goals>
-   <configuration>
-    <shadedArtifactAttached>true</shadedArtifactAttached>
-    <shadedClassifierName>allinone</shadedClassifierName>
-    <artifactSet>
-     <includes>
-      <include>*:*</include>
-     </includes>
-    </artifactSet>
-    <transformers>
-      <transformer
-       implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-       <resource>reference.conf</resource>
-      </transformer>
-      <transformer
-       implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-       <manifestEntries>
-        <Main-Class>akka.Main</Main-Class>
-       </manifestEntries>
-      </transformer>
-    </transformers>
-   </configuration>
-  </execution>
- </executions>
-</plugin>
-```
+See the @ref[deployment documentation](../additional/deploy.md)
+for information on how to merge the `reference.conf` resources while bundling.
 
 ## Custom application.conf
 
@@ -155,9 +114,9 @@ akka {
     }
   }
 
-  remote {
-    # The port clients should connect to. Default is 2552.
-    netty.tcp.port = 4711
+  remote.artery {
+    # The port clients should connect to.
+    canonical.port = 4711
   }
 }
 ```
@@ -423,16 +382,6 @@ Each Akka module has a reference configuration file with the default values.
 ### akka-actor
 
 @@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
-
-<a id="config-akka-agent"></a>
-### akka-agent
-
-@@snip [reference.conf](/akka-agent/src/main/resources/reference.conf)
-
-<a id="config-akka-camel"></a>
-### akka-camel
-
-@@snip [reference.conf](/akka-camel/src/main/resources/reference.conf)
 
 <a id="config-akka-cluster"></a>
 ### akka-cluster

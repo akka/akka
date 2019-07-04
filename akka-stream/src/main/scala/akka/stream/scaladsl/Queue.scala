@@ -4,33 +4,41 @@
 
 package akka.stream.scaladsl
 
+import java.util.Optional
+import java.util.concurrent.CompletionStage
+
 import scala.concurrent.Future
+
 import akka.Done
 import akka.stream.QueueOfferResult
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+
+import akka.annotation.InternalApi
 
 /**
- * This trait allows to have the queue as a data source for some stream.
+ * This trait allows to have a queue as a data source for some stream.
  */
 trait SourceQueue[T] {
 
   /**
-   * Method offers next element to a stream and returns future that:
-   * - completes with `Enqueued` if element is consumed by a stream
-   * - completes with `Dropped` when stream dropped offered element
-   * - completes with `QueueClosed` when stream is completed during future is active
-   * - completes with `Failure(f)` when failure to enqueue element from upstream
-   * - fails when stream is completed
+   * Offers an element to a stream and returns a [[Future]] that:
+   * - completes with `Enqueued` if the element is consumed by a stream
+   * - completes with `Dropped` when the stream dropped the offered element
+   * - completes with `QueueClosed` when the stream is completed whilst the [[Future]] is active
+   * - completes with `Failure(f)` in case of failure to enqueue element from upstream
+   * - fails when stream is already completed
    *
    * Additionally when using the backpressure overflowStrategy:
-   * - If the buffer is full the Future won't be completed until there is space in the buffer
-   * - Calling offer before the Future is completed in this case will return a failed Future
+   * - If the buffer is full the [[Future]] won't be completed until there is space in the buffer
+   * - Calling offer before the [[Future]] is completed, in this case it will return a failed [[Future]]
    *
    * @param elem element to send to a stream
    */
   def offer(elem: T): Future[QueueOfferResult]
 
   /**
-   * Method returns a [[Future]] that will be completed if this operator
+   * Returns a [[Future]] that will be completed if this operator
    * completes, or will be failed when the operator faces an internal failure.
    *
    * Note that this only means the elements have been passed downstream, not
@@ -45,7 +53,7 @@ trait SourceQueue[T] {
 trait SourceQueueWithComplete[T] extends SourceQueue[T] {
 
   /**
-   * Complete the stream normally. Use `watchCompletion` to be notified of this
+   * Completes the stream normally. Use `watchCompletion` to be notified of this
    * operation’s success.
    *
    * Note that this only means the elements have been passed downstream, not
@@ -54,7 +62,7 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
   def complete(): Unit
 
   /**
-   * Complete the stream with a failure. Use `watchCompletion` to be notified of this
+   * Completes the stream with a failure. Use `watchCompletion` to be notified of this
    * operation’s success.
    */
   def fail(ex: Throwable): Unit
@@ -70,17 +78,44 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
   def watchCompletion(): Future[Done]
 }
 
+object SourceQueueWithComplete {
+  final implicit class QueueOps[T](val queue: SourceQueueWithComplete[T]) extends AnyVal {
+    // would have been better to add `asJava` in SourceQueueWithComplete trait, but not doing
+    // that for backwards compatibility reasons
+
+    /**
+     * Converts the queue into a `javadsl.SourceQueueWithComplete`
+     */
+    def asJava: akka.stream.javadsl.SourceQueueWithComplete[T] =
+      SourceQueueWithComplete.asJava(queue)
+  }
+
+  /**
+   * INTERNAL API: Converts the queue into a `javadsl.SourceQueueWithComplete`
+   */
+  @InternalApi private[akka] def asJava[T](
+      queue: SourceQueueWithComplete[T]): akka.stream.javadsl.SourceQueueWithComplete[T] =
+    new akka.stream.javadsl.SourceQueueWithComplete[T] {
+      def offer(elem: T): CompletionStage[QueueOfferResult] =
+        queue.offer(elem).toJava
+      def watchCompletion(): CompletionStage[Done] =
+        queue.watchCompletion().toJava
+      def complete(): Unit = queue.complete()
+      def fail(ex: Throwable): Unit = queue.fail(ex)
+    }
+}
+
 /**
- * Trait allows to have the queue as a sink for some stream.
- * "SinkQueue" pulls data from stream with backpressure mechanism.
+ * This trait allows to have a queue as a sink for a stream.
+ * A [[SinkQueue]] pulls data from a stream with a backpressure mechanism.
  */
 trait SinkQueue[T] {
 
   /**
-   * Method pulls elements from stream and returns future that:
-   * - fails if stream is failed
-   * - completes with None in case if stream is completed
-   * - completes with `Some(element)` in case next element is available from stream.
+   * Pulls elements from the stream and returns a [[Future]] that:
+   * - fails if the stream is failed
+   * - completes with None in case the stream is completed
+   * - completes with `Some(element)` in case the next element is available from stream.
    */
   def pull(): Future[Option[T]]
 }
@@ -91,7 +126,28 @@ trait SinkQueue[T] {
 trait SinkQueueWithCancel[T] extends SinkQueue[T] {
 
   /**
-   * Cancel the stream. This method returns right away without waiting for actual finalizing stream.
+   * Cancels the stream. This method returns right away without waiting for actual finalizing the stream.
    */
   def cancel(): Unit
+}
+
+object SinkQueueWithCancel {
+  final implicit class QueueOps[T](val queue: SinkQueueWithCancel[T]) extends AnyVal {
+    // would have been better to add `asJava` in SinkQueueWithCancel trait, but not doing
+    // that for backwards compatibility reasons
+
+    def asJava: akka.stream.javadsl.SinkQueueWithCancel[T] =
+      SinkQueueWithCancel.asJava(queue)
+  }
+
+  /**
+   * INTERNAL API: Converts the queue into a `javadsl.SinkQueueWithCancel`
+   */
+  @InternalApi private[akka] def asJava[T](queue: SinkQueueWithCancel[T]): akka.stream.javadsl.SinkQueueWithCancel[T] =
+    new akka.stream.javadsl.SinkQueueWithCancel[T] {
+      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
+      override def pull(): CompletionStage[Optional[T]] =
+        queue.pull().map(_.asJava)(same).toJava
+      override def cancel(): Unit = queue.cancel()
+    }
 }

@@ -50,6 +50,7 @@ import org.agrona.concurrent.status.CountersReader.MetaData
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends ArteryTransport(_system, _provider) {
   import AeronSource.AeronLifecycle
@@ -65,7 +66,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
   @volatile private[this] var aeronErrorLog: AeronErrorLog = _
 
-  private val taskRunner = new TaskRunner(system, settings.Advanced.IdleCpuLevel)
+  private val taskRunner = new TaskRunner(system, settings.Advanced.Aeron.IdleCpuLevel)
 
   private def inboundChannel = s"aeron:udp?endpoint=${bindAddress.address.host.get}:${bindAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -75,7 +76,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     startAeron()
     startAeronErrorLog()
     topLevelFlightRecorder.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
-    if (settings.LogAeronCounters) {
+    if (settings.Advanced.Aeron.LogAeronCounters) {
       startAeronCounterLog()
     }
     taskRunner.start()
@@ -83,21 +84,22 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   private def startMediaDriver(): Unit = {
-    if (settings.Advanced.EmbeddedMediaDriver) {
+    if (settings.Advanced.Aeron.EmbeddedMediaDriver) {
       val driverContext = new MediaDriver.Context
-      if (settings.Advanced.AeronDirectoryName.nonEmpty) {
-        driverContext.aeronDirectoryName(settings.Advanced.AeronDirectoryName)
+      if (settings.Advanced.Aeron.AeronDirectoryName.nonEmpty) {
+        driverContext.aeronDirectoryName(settings.Advanced.Aeron.AeronDirectoryName)
       } else {
         // create a random name but include the actor system name for easier debugging
         val uniquePart = UUID.randomUUID().toString
         val randomName = s"${CommonContext.AERON_DIR_PROP_DEFAULT}-${system.name}-$uniquePart"
         driverContext.aeronDirectoryName(randomName)
       }
-      driverContext.clientLivenessTimeoutNs(settings.Advanced.ClientLivenessTimeout.toNanos)
-      driverContext.imageLivenessTimeoutNs(settings.Advanced.ImageLivenessTimeout.toNanos)
-      driverContext.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
+      driverContext.clientLivenessTimeoutNs(settings.Advanced.Aeron.ClientLivenessTimeout.toNanos)
+      driverContext.publicationUnblockTimeoutNs(settings.Advanced.Aeron.PublicationUnblockTimeout.toNanos)
+      driverContext.imageLivenessTimeoutNs(settings.Advanced.Aeron.ImageLivenessTimeout.toNanos)
+      driverContext.driverTimeoutMs(settings.Advanced.Aeron.DriverTimeout.toMillis)
 
-      val idleCpuLevel = settings.Advanced.IdleCpuLevel
+      val idleCpuLevel = settings.Advanced.Aeron.IdleCpuLevel
       if (idleCpuLevel == 10) {
         driverContext
           .threadingMode(ThreadingMode.DEDICATED)
@@ -130,7 +132,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   private def aeronDir: String = mediaDriver.get match {
     case Some(driver) => driver.aeronDirectoryName
-    case None         => settings.Advanced.AeronDirectoryName
+    case None         => settings.Advanced.Aeron.AeronDirectoryName
   }
 
   private def stopMediaDriver(): Unit = {
@@ -146,7 +148,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       }
 
       try {
-        if (settings.Advanced.DeleteAeronDirectory) {
+        if (settings.Advanced.Aeron.DeleteAeronDirectory) {
           IoUtil.delete(new File(driver.aeronDirectoryName), false)
           topLevelFlightRecorder.loFreq(Transport_MediaFileDeleted, NoMetaData)
         }
@@ -164,7 +166,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   private def startAeron(): Unit = {
     val ctx = new Aeron.Context
 
-    ctx.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
+    ctx.driverTimeoutMs(settings.Advanced.Aeron.DriverTimeout.toMillis)
 
     ctx.availableImageHandler(new AvailableImageHandler {
       override def onAvailableImage(img: Image): Unit = {
@@ -207,11 +209,11 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
               "{} Aeron media driver. Possible configuration properties to mitigate the problem are " +
               "'client-liveness-timeout' or 'driver-timeout'. {}",
               Logging.simpleName(cause),
-              if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
+              if (settings.Advanced.Aeron.EmbeddedMediaDriver) "embedded" else "external",
               cause)
             taskRunner.stop()
             aeronErrorLogTask.cancel()
-            if (settings.LogAeronCounters) aeronCounterTask.cancel()
+            if (settings.Advanced.Aeron.LogAeronCounters) aeronCounterTask.cancel()
             system.terminate()
             throw new AeronTerminated(cause)
           }
@@ -254,8 +256,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   private def startAeronErrorLog(): Unit = {
     aeronErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
     val lastTimestamp = new AtomicLong(0L)
-    import system.dispatcher
-    aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
+    implicit val ec = system.dispatchers.internalDispatcher
+    aeronErrorLogTask = system.scheduler.scheduleWithFixedDelay(3.seconds, 5.seconds) { () =>
       if (!isShutdown) {
         val newLastTimestamp = aeronErrorLog.logErrors(log, lastTimestamp.get)
         lastTimestamp.set(newLastTimestamp + 1)
@@ -264,8 +266,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   private def startAeronCounterLog(): Unit = {
-    import system.dispatcher
-    aeronCounterTask = system.scheduler.schedule(5.seconds, 5.seconds) {
+    implicit val ec = system.dispatchers.internalDispatcher
+    aeronCounterTask = system.scheduler.scheduleWithFixedDelay(5.seconds, 5.seconds) { () =>
       if (!isShutdown && log.isDebugEnabled) {
         aeron.countersReader.forEach(new MetaData() {
           def accept(counterId: Int, typeId: Int, keyBuffer: DirectBuffer, label: String): Unit = {
@@ -283,7 +285,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
     val giveUpAfter =
       if (streamId == ControlStreamId) settings.Advanced.GiveUpSystemMessageAfter
-      else settings.Advanced.GiveUpMessageAfter
+      else settings.Advanced.Aeron.GiveUpMessageAfter
     // TODO: Note that the AssociationState.controlStreamIdleKillSwitch in control stream is not used for the
     // Aeron transport. Would be difficult to handle the Future[Done] materialized value.
     // If we want to stop for Aeron also it is probably easier to stop the publication inside the
@@ -312,8 +314,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   private def aeronSourceSpinningStrategy: Int =
     if (settings.Advanced.InboundLanes > 1 || // spinning was identified to be the cause of massive slowdowns with multiple lanes, see #21365
-        settings.Advanced.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
-    else 50 * settings.Advanced.IdleCpuLevel - 240
+        settings.Advanced.Aeron.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
+    else 50 * settings.Advanced.Aeron.IdleCpuLevel - 240
 
   override protected def runInboundStreams(): Unit = {
     runInboundControlStream()
@@ -378,7 +380,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
             }
             .to(immutable.Vector)
 
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
@@ -419,19 +421,20 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   override protected def shutdownTransport(): Future[Done] = {
-    import system.dispatcher
-    taskRunner.stop().map { _ =>
-      topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
-      if (aeronErrorLogTask != null) {
-        aeronErrorLogTask.cancel()
-        topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
-      }
-      if (aeron != null) aeron.close()
-      if (aeronErrorLog != null) aeronErrorLog.close()
-      if (mediaDriver.get.isDefined) stopMediaDriver()
+    taskRunner
+      .stop()
+      .map { _ =>
+        topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
+        if (aeronErrorLogTask != null) {
+          aeronErrorLogTask.cancel()
+          topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
+        }
+        if (aeron != null) aeron.close()
+        if (aeronErrorLog != null) aeronErrorLog.close()
+        if (mediaDriver.get.isDefined) stopMediaDriver()
 
-      Done
-    }
+        Done
+      }(system.dispatchers.internalDispatcher)
   }
 
 }

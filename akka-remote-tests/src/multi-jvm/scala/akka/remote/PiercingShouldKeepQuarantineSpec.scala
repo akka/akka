@@ -66,7 +66,7 @@ abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldK
         // Quarantine is up -- Should not be able to communicate with remote system any more
         for (_ <- 1 to 4) {
           system.actorSelection(node(second) / "user" / "subject") ! "getuid"
-          expectNoMsg(2.seconds)
+          expectNoMessage(2.seconds)
         }
 
         enterBarrier("quarantine-intact")

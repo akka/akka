@@ -5,6 +5,7 @@
 package akka.osgi
 
 import akka.actor.ActorSystem
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.osgi.framework.BundleContext
 
@@ -40,7 +41,7 @@ class OsgiActorSystemFactory(
    * ensuring that the default/reference configuration is loaded from the akka-actor bundle.
    * Configuration files found in akka-actor bundle
    */
-  def actorSystemConfig(context: BundleContext): Config = {
+  def actorSystemConfig(@unused context: BundleContext): Config = {
     config.withFallback(
       ConfigFactory
         .load(classloader)

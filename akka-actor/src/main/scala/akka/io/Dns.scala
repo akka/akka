@@ -18,6 +18,7 @@ import akka.util.unused
 import scala.collection.immutable
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 abstract class Dns {
 
   /**
@@ -58,16 +59,10 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
-      val ipv4: immutable.Seq[Inet4Address] = addresses.iterator
-        .collect({
-          case a: Inet4Address => a
-        })
-        .to(immutable.IndexedSeq)
-      val ipv6: immutable.Seq[Inet6Address] = addresses.iterator
-        .collect({
-          case a: Inet6Address => a
-        })
-        .to(immutable.IndexedSeq)
+      val ipv4: immutable.Seq[Inet4Address] =
+        addresses.iterator.collect { case a: Inet4Address => a }.to(immutable.IndexedSeq)
+      val ipv6: immutable.Seq[Inet6Address] =
+        addresses.iterator.collect { case a: Inet6Address => a }.to(immutable.IndexedSeq)
       Resolved(name, ipv4, ipv6)
     }
   }

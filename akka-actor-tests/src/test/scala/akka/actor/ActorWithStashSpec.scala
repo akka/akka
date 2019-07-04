@@ -5,15 +5,17 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
+
 import scala.concurrent.Await
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.junit.JUnitSuiteLike
+import org.scalatest.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 
@@ -31,7 +33,7 @@ object ActorWithStashSpec {
         state.s = "hello"
         unstashAll()
         context.become(greeted)
-      case msg => stash()
+      case _ => stash()
     }
   }
 
@@ -42,10 +44,10 @@ object ActorWithStashSpec {
           stash()
           stash()
         } catch {
-          case e: IllegalStateException =>
+          case _: IllegalStateException =>
             state.expectedException.open()
         }
-      case msg => // do nothing
+      case _ => // do nothing
     }
   }
 
@@ -59,10 +61,10 @@ object ActorWithStashSpec {
           case "close" =>
             unstashAll()
             context.unbecome()
-          case msg => stash()
+          case _ => stash()
         }
       case "done" => state.finished.await
-      case msg    => stash()
+      case _      => stash()
     }
   }
 
@@ -100,8 +102,10 @@ object ActorWithStashSpec {
 
 }
 
+@silent
 class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
+@silent
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
@@ -155,7 +159,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
             throw new Exception("Crashing...")
 
           // when restartLatch is not yet open, stash all messages != "crash"
-          case msg if !restartLatch.isOpen =>
+          case _ if !restartLatch.isOpen =>
             stash()
 
           // when restartLatch is open, must receive "hello"
@@ -183,36 +187,5 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       expectMsg("terminated")
       expectMsg("terminated")
     }
-  }
-
-  "An ActWithStash" must {
-
-    "allow using whenRestarted" in {
-      import ActorDSL._
-      val a = actor(new ActWithStash {
-        become {
-          case "die" => throw new RuntimeException("dying")
-        }
-        whenRestarted { thr =>
-          testActor ! "restarted"
-        }
-      })
-      EventFilter[RuntimeException]("dying", occurrences = 1).intercept {
-        a ! "die"
-      }
-      expectMsg("restarted")
-    }
-
-    "allow using whenStopping" in {
-      import ActorDSL._
-      val a = actor(new ActWithStash {
-        whenStopping {
-          testActor ! "stopping"
-        }
-      })
-      a ! PoisonPill
-      expectMsg("stopping")
-    }
-
   }
 }

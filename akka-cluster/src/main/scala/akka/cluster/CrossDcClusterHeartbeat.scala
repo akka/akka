@@ -33,7 +33,8 @@ import scala.collection.immutable
  * nodes which aggressively come and go as the traffic in the service changes.
  */
 @InternalApi
-private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogging {
+@ccompatUsedUntil213
+private[cluster] class CrossDcHeartbeatSender extends Actor with ActorLogging {
   import CrossDcHeartbeatSender._
 
   val cluster = Cluster(context.system)
@@ -55,16 +56,21 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
 
   val crossDcFailureDetector = cluster.crossDcFailureDetector
 
-  val selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress)
+  var sequenceNr: Long = 0
+
+  def nextHeartBeat() = {
+    sequenceNr += 1
+    ClusterHeartbeatSender.Heartbeat(selfAddress, sequenceNr, System.nanoTime())
+  }
 
   var dataCentersState: CrossDcHeartbeatingState = CrossDcHeartbeatingState.init(
     selfDataCenter,
     crossDcFailureDetector,
     crossDcSettings.NrOfMonitoringActors,
-    SortedSet.empty)
+    immutable.SortedSet.empty)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask = scheduler.schedule(
+  val heartbeatTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval,
     self,
@@ -109,7 +115,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
 
   def active: Actor.Receive = {
     case ClusterHeartbeatSender.HeartbeatTick                => heartbeat()
-    case ClusterHeartbeatSender.HeartbeatRsp(from)           => heartbeatRsp(from)
+    case ClusterHeartbeatSender.HeartbeatRsp(from, _, _)     => heartbeatRsp(from)
     case MemberRemoved(m, _)                                 => removeMember(m)
     case evt: MemberEvent                                    => addMember(evt.member)
     case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from) => triggerFirstHeartbeat(from)
@@ -152,6 +158,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
     }
 
   def heartbeat(): Unit = {
+    val nextHB = nextHeartBeat()
     dataCentersState.activeReceivers.foreach { to =>
       if (crossDcFailureDetector.isMonitoring(to.address)) {
         if (verboseHeartbeat) logDebug("(Cross) Heartbeat to [{}]", to.address)
@@ -161,7 +168,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ClusterHeartbeatSender.ExpectedFirstHeartbeat(to))
       }
-      heartbeatReceiver(to.address) ! selfHeartbeat
+      heartbeatReceiver(to.address) ! nextHB
     }
   }
 
@@ -218,7 +225,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
     selfDataCenter: DataCenter,
     failureDetector: FailureDetectorRegistry[Address],
     nrOfMonitoredNodesPerDc: Int,
-    state: Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
+    state: Map[ClusterSettings.DataCenter, immutable.SortedSet[Member]]) {
   import CrossDcHeartbeatingState._
 
   /**
@@ -242,7 +249,8 @@ private[cluster] final case class CrossDcHeartbeatingState(
     // we need to remove the member first, to avoid having "duplicates"
     // this is because the removal and uniqueness we need is only by uniqueAddress
     // which is not used by the `ageOrdering`
-    val oldMembersWithoutM = state.getOrElse(dc, emptyMembersSortedSet).filterNot(_.uniqueAddress == m.uniqueAddress)
+    val oldMembersWithoutM: immutable.SortedSet[Member] =
+      state.getOrElse(dc, emptyMembersSortedSet).filterNot(_.uniqueAddress == m.uniqueAddress)
 
     val updatedMembers = oldMembersWithoutM + m
     val updatedState = this.copy(state = state.updated(dc, updatedMembers))
@@ -307,7 +315,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
 private[cluster] object CrossDcHeartbeatingState {
 
   /** Sorted by age */
-  private def emptyMembersSortedSet: SortedSet[Member] = SortedSet.empty[Member](Member.ageOrdering)
+  private def emptyMembersSortedSet: immutable.SortedSet[Member] = immutable.SortedSet.empty[Member](Member.ageOrdering)
 
   // Since we need ordering of oldests guaranteed, we must only look at Up (or Leaving, Exiting...) nodes
   def atLeastInUpState(m: Member): Boolean =
@@ -317,7 +325,7 @@ private[cluster] object CrossDcHeartbeatingState {
       selfDataCenter: DataCenter,
       crossDcFailureDetector: FailureDetectorRegistry[Address],
       nrOfMonitoredNodesPerDc: Int,
-      members: SortedSet[Member]): CrossDcHeartbeatingState = {
+      members: immutable.SortedSet[Member]): CrossDcHeartbeatingState = {
     new CrossDcHeartbeatingState(selfDataCenter, crossDcFailureDetector, nrOfMonitoredNodesPerDc, state = {
       // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
       val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
@@ -329,7 +337,7 @@ private[cluster] object CrossDcHeartbeatingState {
         // we need to enforce the ageOrdering for the SortedSet in each DC
         groupedByDc.map {
           case (dc, ms) =>
-            dc -> (SortedSet.empty[Member](Member.ageOrdering).union(ms))
+            dc -> immutable.SortedSet.empty[Member](Member.ageOrdering).union(ms)
         }
       }
     })

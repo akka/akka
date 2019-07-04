@@ -17,7 +17,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val zip = b.add(ZipWith((_: Int) + (_: Int)))
     override def left: Inlet[Int] = zip.in0
     override def right: Inlet[Int] = zip.in1
@@ -97,7 +97,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
         case a: java.lang.ArithmeticException =>
           a.getMessage should be("/ by zero")
       }
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage(200.millis)
     }
 
     commonTests()
@@ -133,7 +133,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
       subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "zipLatestWith a ETA expanded Person.apply (3 inputs)" in {
@@ -193,9 +193,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
               v19: Int,
               v20: String,
               v21: Int,
-              v22: String) =>
-            v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 +
-            v11 + v12 + v13 + v14 + v15 + v16 + v17 + v18 + v19 + v20 + v21 + v22
+              v22: String) => s"$v1$v2$v3$v4$v5$v6$v7$v8$v9$v10$v11$v12$v13$v14$v15$v16$v17$v18$v19$v20$v21$v22"
 
           // odd input ports will be Int, even input ports will be String
           val zip = b.add(ZipLatestWith(sum22))

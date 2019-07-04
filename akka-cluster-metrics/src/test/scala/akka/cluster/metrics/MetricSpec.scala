@@ -7,12 +7,16 @@ package akka.cluster.metrics
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.cluster.metrics.StandardMetrics._
+
 import scala.util.Failure
 import akka.actor.Address
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import java.lang.System.{ currentTimeMillis => newTimestamp }
 
+import com.github.ghik.silencer.silent
+
+@silent
 class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {
@@ -51,10 +55,11 @@ class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumer
   }
 }
 
+@silent
 class NodeMetricsSpec extends WordSpec with Matchers {
 
-  val node1 = Address("akka.tcp", "sys", "a", 2554)
-  val node2 = Address("akka.tcp", "sys", "a", 2555)
+  val node1 = Address("akka", "sys", "a", 2554)
+  val node2 = Address("akka", "sys", "a", 2555)
 
   "NodeMetrics must" must {
 
@@ -146,11 +151,11 @@ class MetricsGossipSpec
 
   "A MetricsGossip" must {
     "add new NodeMetrics" in {
-      val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      m1.metrics.size should be > (3)
-      m2.metrics.size should be > (3)
+      m1.metrics.size should be > 3
+      m2.metrics.size should be > 3
 
       val g1 = MetricsGossip.empty :+ m1
       g1.nodes.size should ===(1)
@@ -163,12 +168,11 @@ class MetricsGossipSpec
     }
 
     "merge peer metrics" in {
-      val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       g1.nodes.size should ===(2)
-      val beforeMergeNodes = g1.nodes
 
       val m2Updated = m2.copy(metrics = newSample(m2.metrics), timestamp = m2.timestamp + 1000)
       val g2 = g1 :+ m2Updated // merge peers
@@ -179,9 +183,9 @@ class MetricsGossipSpec
     }
 
     "merge an existing metric set for a node and update node ring" in {
-      val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
-      val m3 = NodeMetrics(Address("akka.tcp", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m3 = NodeMetrics(Address("akka", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
       val m2Updated = m2.copy(metrics = newSample(m2.metrics), timestamp = m2.timestamp + 1000)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
@@ -195,19 +199,19 @@ class MetricsGossipSpec
       mergedGossip.nodeMetricsFor(m1.address).map(_.metrics) should ===(Some(m1.metrics))
       mergedGossip.nodeMetricsFor(m2.address).map(_.metrics) should ===(Some(m2Updated.metrics))
       mergedGossip.nodeMetricsFor(m3.address).map(_.metrics) should ===(Some(m3.metrics))
-      mergedGossip.nodes.foreach(_.metrics.size should be > (3))
+      mergedGossip.nodes.foreach(_.metrics.size should be > 3)
       mergedGossip.nodeMetricsFor(m2.address).map(_.timestamp) should ===(Some(m2Updated.timestamp))
     }
 
     "get the current NodeMetrics if it exists in the local nodes" in {
-      val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val g1 = MetricsGossip.empty :+ m1
       g1.nodeMetricsFor(m1.address).map(_.metrics) should ===(Some(m1.metrics))
     }
 
     "remove a node if it is no longer Up" in {
-      val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       g1.nodes.size should ===(2)
@@ -219,8 +223,8 @@ class MetricsGossipSpec
     }
 
     "filter nodes" in {
-      val m1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       g1.nodes.size should ===(2)
@@ -233,13 +237,14 @@ class MetricsGossipSpec
   }
 }
 
+@silent
 class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
   import akka.cluster.metrics.StandardMetrics._
 
   val collector = createMetricsCollector
 
-  val node1 = NodeMetrics(Address("akka.tcp", "sys", "a", 2554), 1, collector.sample.metrics)
-  val node2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), 1, collector.sample.metrics)
+  val node1 = NodeMetrics(Address("akka", "sys", "a", 2554), 1, collector.sample.metrics)
+  val node2 = NodeMetrics(Address("akka", "sys", "a", 2555), 1, collector.sample.metrics)
 
   val nodes: Seq[NodeMetrics] = {
     (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) =>
@@ -256,37 +261,37 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
     "extract expected metrics for load balancing" in {
       val stream1 = node2.metric(HeapMemoryCommitted).get.value.longValue
       val stream2 = node1.metric(HeapMemoryUsed).get.value.longValue
-      stream1 should be >= (stream2)
+      stream1 should be >= stream2
     }
 
     "extract expected MetricValue types for load balancing" in {
       nodes.foreach { node =>
         node match {
-          case HeapMemory(address, _, used, committed, _) =>
-            used should be > (0L)
-            committed should be >= (used)
+          case HeapMemory(_, _, used, committed, _) =>
+            used should be > 0L
+            committed should be >= used
             // Documentation java.lang.management.MemoryUsage says that committed <= max,
             // but in practice that is not always true (we have seen it happen). Therefore
             // we don't check the heap max value in this test.
             // extract is the java api
-            StandardMetrics.extractHeapMemory(node) should not be (null)
+            StandardMetrics.extractHeapMemory(node) should not be null
         }
 
         node match {
-          case Cpu(address, _, systemLoadAverageOption, cpuCombinedOption, cpuStolenOption, processors) =>
-            processors should be > (0)
+          case Cpu(_, _, systemLoadAverageOption, cpuCombinedOption, cpuStolenOption, processors) =>
+            processors should be > 0
             if (systemLoadAverageOption.isDefined)
-              systemLoadAverageOption.get should be >= (0.0)
+              systemLoadAverageOption.get should be >= 0.0
             if (cpuCombinedOption.isDefined) {
-              cpuCombinedOption.get should be <= (1.0)
-              cpuCombinedOption.get should be >= (0.0)
+              cpuCombinedOption.get should be <= 1.0
+              cpuCombinedOption.get should be >= 0.0
             }
             if (cpuStolenOption.isDefined) {
-              cpuStolenOption.get should be <= (1.0)
-              cpuStolenOption.get should be >= (0.0)
+              cpuStolenOption.get should be <= 1.0
+              cpuStolenOption.get should be >= 0.0
             }
             // extract is the java api
-            StandardMetrics.extractCpu(node) should not be (null)
+            StandardMetrics.extractCpu(node) should not be null
         }
       }
     }

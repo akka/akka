@@ -8,7 +8,7 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
@@ -40,20 +40,20 @@ public class BehaviorBuilderTest extends JUnitSuite {
         Behaviors.receive(Message.class)
             .onMessage(
                 One.class,
-                (context, o) -> {
+                o -> {
                   o.foo();
                   return same();
                 })
-            .onMessage(One.class, o -> o.foo().startsWith("a"), (context, o) -> same())
+            .onMessage(One.class, o -> o.foo().startsWith("a"), o -> same())
             .onMessageUnchecked(
                 MyList.class,
-                (ActorContext<Message> context, MyList<String> l) -> {
+                (MyList<String> l) -> {
                   String first = l.get(0);
                   return Behaviors.<Message>same();
                 })
             .onSignal(
                 Terminated.class,
-                (context, t) -> {
+                t -> {
                   System.out.println("Terminating along with " + t.getRef());
                   return stopped();
                 })
@@ -67,13 +67,13 @@ public class BehaviorBuilderTest extends JUnitSuite {
         BehaviorBuilder.create()
             .onMessage(
                 String.class,
-                (context, msg) -> {
+                msg -> {
                   probe.ref().tell("handler 1: " + msg);
                   return Behaviors.same();
                 })
             .onMessage(
                 String.class,
-                (context, msg) -> {
+                msg -> {
                   probe.ref().tell("handler 2: " + msg);
                   return Behaviors.same();
                 })
@@ -90,7 +90,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
         BehaviorBuilder.create()
             .onMessageEquals(
                 "message",
-                (context) -> {
+                () -> {
                   probe.ref().tell("got it");
                   return Behaviors.same();
                 })
@@ -107,14 +107,14 @@ public class BehaviorBuilderTest extends JUnitSuite {
         BehaviorBuilder.create()
             .onMessage(
                 String.class,
-                (msg) -> "other".equals(msg),
-                (context, msg) -> {
+                "other"::equals,
+                msg -> {
                   probe.ref().tell("handler 1: " + msg);
                   return Behaviors.same();
                 })
             .onMessage(
                 String.class,
-                (context, msg) -> {
+                msg -> {
                   probe.ref().tell("handler 2: " + msg);
                   return Behaviors.same();
                 })
@@ -130,7 +130,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
     Behavior<Object> behavior =
         BehaviorBuilder.create()
             .onAnyMessage(
-                (context, msg) -> {
+                msg -> {
                   probe.ref().tell(msg);
                   return same();
                 })
@@ -164,12 +164,12 @@ public class BehaviorBuilderTest extends JUnitSuite {
     return Behaviors.receive(CounterMessage.class)
         .onMessage(
             Increase.class,
-            (context, o) -> {
+            o -> {
               return immutableCounter(currentValue + 1);
             })
         .onMessage(
             Get.class,
-            (context, o) -> {
+            o -> {
               o.sender.tell(new Got(currentValue));
               return same();
             })

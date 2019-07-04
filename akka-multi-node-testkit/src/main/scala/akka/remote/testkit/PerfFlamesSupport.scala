@@ -22,12 +22,12 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec =>
    *
    * Options are currently to be passed in via `export PERF_MAP_OPTIONS` etc.
    */
-  def runPerfFlames(nodes: RoleName*)(delay: FiniteDuration, time: FiniteDuration = 15.seconds): Unit = {
+  def runPerfFlames(nodes: RoleName*)(delay: FiniteDuration): Unit = {
     if (isPerfJavaFlamesAvailable && isNode(nodes: _*)) {
       import scala.concurrent.ExecutionContext.Implicits.global
 
       val afterDelay = akka.pattern.after(delay, system.scheduler)(Future.successful("GO!"))
-      afterDelay.onComplete { it =>
+      afterDelay.onComplete { _ =>
         import java.lang.management._
         val name = ManagementFactory.getRuntimeMXBean.getName
         val pid = name.substring(0, name.indexOf('@')).toInt

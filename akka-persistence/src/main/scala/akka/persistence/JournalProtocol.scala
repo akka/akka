@@ -144,3 +144,13 @@ private[persistence] object JournalProtocol {
   final case class ReplayMessagesFailure(cause: Throwable) extends Response with DeadLetterSuppression
 
 }
+
+/**
+ * Reply message to a successful [[JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesSuccess(toSequenceNr: Long) extends JournalProtocol.Response
+
+/**
+ * Reply message to a failed [[JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long) extends JournalProtocol.Response

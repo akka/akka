@@ -2,14 +2,14 @@
 
 ## Prerequisites
 
-### JDK 8 and JDK 9
+### JDK 8 and JDK 11
 
-Releasing Akka requires running on at least JDK 9, but also having JDK 8
+Releasing Akka requires running on JDK 11, but also having JDK 8
 installed. The reason for this is that we want the Akka artifacts to be
-usable with JRE 8, but also want to compile some classes with JDK9-specific
+usable with JRE 8, but also want to compile some classes with JDK11-specific
 types.
 
-When we stop supporting Scala 2.11 we might be able to update the build towork
+In the future we might be able to update the build to work
 without having JDK 8 installed, by using the `-release` option.
 
 ### MinGW
@@ -52,23 +52,26 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
  * go to the [Milestones tab](https://github.com/akka/akka/milestones)
  * move all open issues so that this milestone contains completed work only
  * close that milestone
+ * create a new milestone for next patch version
 
-* In case of a new major release:
+* In case of a new minor release:
  * update the branch descriptions at CONTRIBUTING.md#branches-summary
+ * write blog post for akka.io and lightbend.com
 
 * Create an announcement as a PR against akka/akka.github.com .
   * credits can be generated with `scripts/authors.scala v2.3.5 v2.3.6`
   * also update the `latest` variable in `_config.yml`.
 
-* Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
-
 Now wait until all artifacts have been properly propagated. Then:
+
+* Update `MiMa.latestPatchOf` and PR that change (`project/MiMa.scala`)
 
 * Change the symbolic links from 'current': `ssh akkarepo@gustav.akka.io ./update-akka-current-version.sh <x.y.z>`
 
-* Merge the release announcement
+* Publish the release announcement
 * Tweet about it
-* Post about it on Gitter and Discuss
+* Post about it on Discuss
+* Post about it on Gitter
 
 ## Update references
 

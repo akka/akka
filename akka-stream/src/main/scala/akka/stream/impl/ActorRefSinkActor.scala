@@ -11,6 +11,7 @@ import akka.stream.actor.WatermarkRequestStrategy
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.annotation.InternalApi
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -23,6 +24,7 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
+@silent
 @InternalApi private[akka] class ActorRefSinkActor(
     ref: ActorRef,
     highWatermark: Int,

@@ -9,9 +9,12 @@ import akka.actor.ActorCell
 import akka.event.Logging
 import akka.dispatch.sysmsg.SystemMessage
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
+
+import com.github.ghik.silencer.silent
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
@@ -41,6 +44,11 @@ class Dispatcher(
     def copy(): LazyExecutorServiceDelegate = new LazyExecutorServiceDelegate(factory)
   }
 
+  /**
+   * At first glance this var does not seem to be updated anywhere, but in
+   * fact it is, via the esUpdater [[AtomicReferenceFieldUpdater]] below.
+   */
+  @silent
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
     new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, threadFactory))
 

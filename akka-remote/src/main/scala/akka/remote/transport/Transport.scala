@@ -6,13 +6,13 @@ package akka.remote.transport
 
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
-
 import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
 import akka.util.{ unused, ByteString }
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
 import akka.actor.DeadLetterSuppression
 import akka.event.LoggingAdapter
+import com.github.ghik.silencer.silent
 
 object Transport {
 
@@ -278,6 +278,7 @@ trait AssociationHandle {
    * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
    * could be called arbitrarily many times.
    */
+  @silent
   def disassociate(reason: String, log: LoggingAdapter): Unit = {
     if (log.isDebugEnabled)
       log.debug(

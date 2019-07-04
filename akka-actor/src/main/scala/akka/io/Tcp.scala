@@ -12,15 +12,16 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
 import akka.actor._
 import java.lang.{ Iterable => JIterable }
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 
 import akka.annotation.InternalApi
+import com.github.ghik.silencer.silent
 
 /**
  * TCP Extension for Akka’s IO layer.
@@ -116,6 +117,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
+  @silent
   final case class Connect(
       remoteAddress: InetSocketAddress,
       localAddress: Option[InetSocketAddress] = None,
@@ -143,6 +145,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    *
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
+  @silent
   final case class Bind(
       handler: ActorRef,
       localAddress: InetSocketAddress,
@@ -465,7 +468,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
 
     // Needs to be added with a mutable var for compatibility reasons.
     // The cause will be lost in the unlikely case that someone uses `copy` on an instance.
-    @InternalApi /** Creates a copy of this object with a new cause set. */
+    /** Creates a copy of this object with a new cause set. */
+    @InternalApi
     private[akka] def withCause(cause: Throwable): CommandFailed = {
       val newInstance = copy()
       newInstance._cause = Some(cause)
@@ -867,7 +871,20 @@ object TcpMessage {
    * a particular write has been sent by the O/S.
    */
   def writeFile(filePath: String, position: Long, count: Long, ack: Event): Command =
-    WriteFile(filePath, position, count, ack)
+    WritePath(Paths.get(filePath), position, count, ack)
+
+  /**
+   * Write `count` bytes starting at `position` from file at `filePath` to the connection.
+   * The count must be &gt; 0. The connection actor will reply with a [[Tcp.CommandFailed]]
+   * message if the write could not be enqueued. If [[Tcp.SimpleWriteCommand#wantsAck]]
+   * returns true, the connection actor will reply with the supplied [[Tcp.SimpleWriteCommand#ack]]
+   * token once the write has been successfully enqueued to the O/S kernel.
+   * <b>Note that this does not in any way guarantee that the data will be
+   * or have been sent!</b> Unfortunately there is no way to determine whether
+   * a particular write has been sent by the O/S.
+   */
+  def writePath(filePath: Path, position: Long, count: Long, ack: Event): Command =
+    WritePath(filePath, position, count, ack)
 
   /**
    * When `useResumeWriting` is in effect as was indicated in the [[Tcp.Register]] message

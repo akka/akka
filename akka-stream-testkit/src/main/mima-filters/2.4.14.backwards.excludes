@@ -1,2 +1,0 @@
-# #20737 aligned test sink and test source stage factory methods types
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply")

@@ -10,7 +10,7 @@ import org.reactivestreams.Publisher
 
 abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 
-  abstract class Fixture(b: GraphDSL.Builder[_]) {
+  abstract class Fixture {
     def left: Inlet[Int]
     def right: Inlet[Int]
     def out: Outlet[Outputs]

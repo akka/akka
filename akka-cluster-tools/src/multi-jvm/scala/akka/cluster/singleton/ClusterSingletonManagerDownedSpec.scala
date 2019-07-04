@@ -17,9 +17,10 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit._
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 
+@ccompatUsedUntil213
 object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")

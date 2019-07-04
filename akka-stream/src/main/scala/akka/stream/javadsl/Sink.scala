@@ -10,7 +10,7 @@ import akka.{ japi, Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.{ LinearTraversalBuilder, SinkQueueAdapter }
+import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -18,6 +18,8 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
+
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -196,7 +198,7 @@ object Sink {
    * If there is a failure signaled in the stream the `CompletionStage` will be completed with failure.
    */
   def takeLast[In](n: Int): Sink[In, CompletionStage[java.util.List[In]]] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     new Sink(
       scaladsl.Sink
         .takeLast[In](n)
@@ -214,7 +216,7 @@ object Sink {
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
   def seq[In]: Sink[In, CompletionStage[java.util.List[In]]] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     new Sink(
       scaladsl.Sink
         .seq[In]
@@ -286,6 +288,14 @@ object Sink {
     }
 
   /**
+   * Defers the creation of a [[Sink]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Sink]] returned by this method.
+   */
+  def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    scaladsl.Sink.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+
+  /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
   def combine[T, U](
@@ -293,14 +303,14 @@ object Sink {
       output2: Sink[U, _],
       rest: java.util.List[Sink[U, _]],
       strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]]): Sink[T, NotUsed] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala).toSeq else immutable.Seq()
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num => strategy.apply(num)))
   }
 
   /**
-   * Creates a `Sink` that is materialized as an [[akka.stream.javadsl.SinkQueue]].
-   * [[akka.stream.javadsl.SinkQueue.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
+   * Creates a `Sink` that is materialized as an [[akka.stream.javadsl.SinkQueueWithCancel]].
+   * [[akka.stream.javadsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
    * `CompletionStage` completes when element is available.
    *
    * Before calling pull method second time you need to wait until previous CompletionStage completes.
@@ -310,13 +320,13 @@ object Sink {
    * upstream and then stop back pressure.  You can configure size of input
    * buffer by using [[Sink.withAttributes]] method.
    *
-   * For stream completion you need to pull all elements from [[akka.stream.javadsl.SinkQueue]] including last None
+   * For stream completion you need to pull all elements from [[akka.stream.javadsl.SinkQueueWithCancel]] including last None
    * as completion marker
    *
    * @see [[akka.stream.javadsl.SinkQueueWithCancel]]
    */
   def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
-    new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(new SinkQueueAdapter(_)))
+    new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(_.asJava))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,

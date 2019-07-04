@@ -4,18 +4,19 @@
 
 package jdocs.akka.actor.testkit.typed.javadsl;
 
-import akka.actor.Scheduler;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.actor.typed.javadsl.Behaviors;
+// #test-header
 import akka.actor.testkit.typed.javadsl.ActorTestKit;
+
+// #test-header
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-import scala.util.Success;
-import scala.util.Try;
+import org.scalatest.junit.JUnitSuite;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
@@ -26,7 +27,11 @@ import java.util.Objects;
 import static org.junit.Assert.assertEquals;
 
 // #test-header
-public class AsyncTestingExampleTest extends JUnitSuite {
+public class AsyncTestingExampleTest
+    // #test-header
+    extends JUnitSuite
+// #test-header
+{
   static final ActorTestKit testKit = ActorTestKit.create();
   // #test-header
 
@@ -70,13 +75,17 @@ public class AsyncTestingExampleTest extends JUnitSuite {
           });
   // #under-test
 
+  static Behavior<Ping> echoActor() {
+    return echoActor();
+  }
+
   // #under-test-2
 
   static class Message {
     int i;
-    ActorRef<Try<Integer>> replyTo;
+    ActorRef<Integer> replyTo;
 
-    Message(int i, ActorRef<Try<Integer>> replyTo) {
+    Message(int i, ActorRef<Integer> replyTo) {
       this.i = i;
       this.replyTo = replyTo;
     }
@@ -96,10 +105,10 @@ public class AsyncTestingExampleTest extends JUnitSuite {
       IntStream.range(0, messages).forEach(this::publish);
     }
 
-    private CompletionStage<Try<Integer>> publish(int i) {
+    private CompletionStage<Integer> publish(int i) {
       return AskPattern.ask(
           publisher,
-          (ActorRef<Try<Integer>> ref) -> new Message(i, ref),
+          (ActorRef<Integer> ref) -> new Message(i, ref),
           Duration.ofSeconds(3),
           scheduler);
     }
@@ -157,12 +166,12 @@ public class AsyncTestingExampleTest extends JUnitSuite {
     Behavior<Message> mockedBehavior =
         Behaviors.receiveMessage(
             message -> {
-              message.replyTo.tell(new Success<>(message.i));
+              message.replyTo.tell(message.i);
               return Behaviors.same();
             });
     TestProbe<Message> probe = testKit.createTestProbe();
     ActorRef<Message> mockedPublisher =
-        testKit.spawn(Behaviors.monitor(probe.ref(), mockedBehavior));
+        testKit.spawn(Behaviors.monitor(Message.class, probe.ref(), mockedBehavior));
 
     // test our component
     Producer producer = new Producer(testKit.scheduler(), mockedPublisher);
@@ -183,4 +192,6 @@ public class AsyncTestingExampleTest extends JUnitSuite {
   public void systemNameShouldComeFromTestClass() {
     assertEquals(testKit.system().name(), "AsyncTestingExampleTest");
   }
+  // #test-header
 }
+// #test-header

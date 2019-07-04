@@ -25,7 +25,7 @@ import akka.serialization.SerializerWithStringManifest
   private val ShardingEnvelopeManifest = "a"
 
   override def manifest(o: AnyRef): String = o match {
-    case ref: ShardingEnvelope[_] => ShardingEnvelopeManifest
+    case _: ShardingEnvelope[_] => ShardingEnvelopeManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }

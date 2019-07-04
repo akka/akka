@@ -7,6 +7,7 @@ package akka.remote
 import akka.AkkaException
 import akka.Done
 import akka.actor._
+import akka.annotation.InternalStableApi
 import akka.event.LoggingAdapter
 
 import scala.collection.immutable
@@ -95,6 +96,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    * @param uid UID of the remote system, if the uid is not defined it will not be a strong quarantine but
    *   the current endpoint writer will be stopped (dropping system messages) and the address will be gated
    */
+  @InternalStableApi
   def quarantine(address: Address, uid: Option[Long], reason: String): Unit
 
 }

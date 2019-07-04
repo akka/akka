@@ -14,7 +14,6 @@ import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import akka.cluster.MemberStatus
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
@@ -26,6 +25,7 @@ import akka.cluster.ddata.GSet
 import akka.cluster.ddata.GSetKey
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
+import akka.cluster.ddata.SelfUniqueAddress
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -108,14 +108,14 @@ object ShardCoordinator {
         shardId: ShardId,
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
 
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       allocateShard(requester, shardId, currentShardAllocations.asJava)
     }
 
     override final def rebalance(
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       implicit val ec = ExecutionContexts.sameThreadExecutionContext
       rebalance(currentShardAllocations.asJava, rebalanceInProgress.asJava).map(_.asScala.toSet)
     }
@@ -191,7 +191,7 @@ object ShardCoordinator {
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       if (rebalanceInProgress.size < maxSimultaneousRebalance) {
-        val (regionWithLeastShards, leastShards) = currentShardAllocations.minBy { case (_, v) => v.size }
+        val (_, leastShards) = currentShardAllocations.minBy { case (_, v) => v.size }
         val mostShards = currentShardAllocations
           .collect {
             case (_, v) => v.filterNot(s => rebalanceInProgress(s))
@@ -467,7 +467,6 @@ object ShardCoordinator {
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 abstract class ShardCoordinator(
-    typeName: String,
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
     extends Actor
@@ -497,7 +496,8 @@ abstract class ShardCoordinator(
   var regionTerminationInProgress = Set.empty[ActorRef]
 
   import context.dispatcher
-  val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
+  val rebalanceTask =
+    context.system.scheduler.scheduleWithFixedDelay(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
 
   cluster.subscribe(self, initialStateMode = InitialStateAsEvents, ClusterShuttingDown.getClass)
 
@@ -509,8 +509,8 @@ abstract class ShardCoordinator(
 
   def isMember(region: ActorRef): Boolean = {
     val regionAddress = region.path.address
-    (region.path.address == self.path.address ||
-    cluster.state.members.exists(m => m.address == regionAddress && m.status == MemberStatus.Up))
+    regionAddress == self.path.address ||
+    cluster.state.isMemberUp(regionAddress)
   }
 
   def active: Receive =
@@ -538,17 +538,18 @@ abstract class ShardCoordinator(
         }
 
       case RegisterProxy(proxy) =>
-        log.debug("ShardRegion proxy registered: [{}]", proxy)
-        if (state.regionProxies.contains(proxy))
-          proxy ! RegisterAck(self)
-        else {
-          update(ShardRegionProxyRegistered(proxy)) { evt =>
-            state = state.updated(evt)
-            context.watch(proxy)
+        if (isMember(proxy)) {
+          log.debug("ShardRegion proxy registered: [{}]", proxy)
+          if (state.regionProxies.contains(proxy))
             proxy ! RegisterAck(self)
+          else {
+            update(ShardRegionProxyRegistered(proxy)) { evt =>
+              state = state.updated(evt)
+              context.watch(proxy)
+              proxy ! RegisterAck(self)
+            }
           }
         }
-
       case GetShardHome(shard) =>
         if (!handleGetShardHome(shard)) {
           // location not know, yet
@@ -573,7 +574,7 @@ abstract class ShardCoordinator(
           }
         }
 
-      case AllocateShardResult(shard, None, getShardHomeSender) =>
+      case AllocateShardResult(shard, None, _) =>
         log.debug("Shard [{}] allocation failed. It will be retried.", shard)
 
       case AllocateShardResult(shard, Some(region), getShardHomeSender) =>
@@ -667,7 +668,7 @@ abstract class ShardCoordinator(
             }.toMap)
           }
           .recover {
-            case x: AskTimeoutException => ShardRegion.ClusterShardingStats(Map.empty)
+            case _: AskTimeoutException => ShardRegion.ClusterShardingStats(Map.empty)
           }
           .pipeTo(sender())
 
@@ -724,11 +725,14 @@ abstract class ShardCoordinator(
       true
     } else {
       state.shards.get(shard) match {
-        case Some(ref) =>
-          if (regionTerminationInProgress(ref))
-            log.debug("GetShardHome [{}] request ignored, due to region [{}] termination in progress.", shard, ref)
+        case Some(shardRegionRef) =>
+          if (regionTerminationInProgress(shardRegionRef))
+            log.debug(
+              "GetShardHome [{}] request ignored, due to region [{}] termination in progress.",
+              shard,
+              shardRegionRef)
           else
-            sender() ! ShardHome(shard, ref)
+            sender() ! ShardHome(shard, shardRegionRef)
           true
         case None =>
           false // location not known, yet, caller will handle allocation
@@ -862,7 +866,13 @@ abstract class ShardCoordinator(
       }
     }
 
-  def continueRebalance(shards: Set[ShardId]): Unit =
+  def continueRebalance(shards: Set[ShardId]): Unit = {
+    if (log.isInfoEnabled && (shards.nonEmpty || rebalanceInProgress.nonEmpty)) {
+      log.info(
+        "Starting rebalance for shards [{}]. Current shards rebalancing: [{}]",
+        shards.mkString(","),
+        rebalanceInProgress.keySet.mkString(","))
+    }
     shards.foreach { shard =>
       if (!rebalanceInProgress.contains(shard)) {
         state.shards.get(shard) match {
@@ -881,6 +891,7 @@ abstract class ShardCoordinator(
 
       }
     }
+  }
 
 }
 
@@ -893,7 +904,7 @@ class PersistentShardCoordinator(
     typeName: String,
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
-    extends ShardCoordinator(typeName, settings, allocationStrategy)
+    extends ShardCoordinator(settings, allocationStrategy)
     with PersistentActor {
   import ShardCoordinator.Internal._
   import settings.tuningParameters._
@@ -908,9 +919,9 @@ class PersistentShardCoordinator(
     case evt: DomainEvent =>
       log.debug("receiveRecover {}", evt)
       evt match {
-        case ShardRegionRegistered(region) =>
+        case _: ShardRegionRegistered =>
           state = state.updated(evt)
-        case ShardRegionProxyRegistered(proxy) =>
+        case _: ShardRegionProxyRegistered =>
           state = state.updated(evt)
         case ShardRegionTerminated(region) =>
           if (state.regions.contains(region))
@@ -925,7 +936,7 @@ class PersistentShardCoordinator(
         case ShardRegionProxyTerminated(proxy) =>
           if (state.regionProxies.contains(proxy))
             state = state.updated(evt)
-        case ShardHomeAllocated(shard, region) =>
+        case _: ShardHomeAllocated =>
           state = state.updated(evt)
         case _: ShardHomeDeallocated =>
           state = state.updated(evt)
@@ -1001,7 +1012,7 @@ class DDataShardCoordinator(
     replicator: ActorRef,
     majorityMinCap: Int,
     rememberEntities: Boolean)
-    extends ShardCoordinator(typeName, settings, allocationStrategy)
+    extends ShardCoordinator(settings, allocationStrategy)
     with Stash {
   import ShardCoordinator.Internal._
   import akka.cluster.ddata.Replicator.Update
@@ -1010,6 +1021,7 @@ class DDataShardCoordinator(
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
 
   implicit val node = Cluster(context.system)
+  private implicit val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
   val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
@@ -1018,6 +1030,9 @@ class DDataShardCoordinator(
     if (rememberEntities) Set(CoordinatorStateKey, AllShardsKey) else Set(CoordinatorStateKey)
 
   var shards = Set.empty[String]
+
+  var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
+
   if (rememberEntities)
     replicator ! Subscribe(AllShardsKey, self)
 
@@ -1095,9 +1110,13 @@ class DDataShardCoordinator(
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized =>
+      unstashGetShardHomeRequests()
       unstashAll()
       stateInitialized()
       activate()
+
+    case g: GetShardHome =>
+      stashGetShardHomeRequest(sender(), g)
 
     case _ => stash()
   }
@@ -1149,9 +1168,9 @@ class DDataShardCoordinator(
         evt)
       throw cause
 
-    case GetShardHome(shard) =>
+    case g @ GetShardHome(shard) =>
       if (!handleGetShardHome(shard))
-        stash() // must wait for update that is in progress
+        stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
     case _ => stash()
   }
@@ -1159,7 +1178,24 @@ class DDataShardCoordinator(
   private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E => Unit): Unit = {
     context.unbecome()
     afterUpdateCallback(evt)
+    unstashGetShardHomeRequests()
     unstashAll()
+  }
+
+  private def stashGetShardHomeRequest(sender: ActorRef, request: GetShardHome): Unit = {
+    log.debug(
+      "GetShardHome [{}] request from [{}] stashed, because waiting for initial state or update of state. " +
+      "It will be handled afterwards.",
+      request.shard,
+      sender)
+    getShardHomeRequests += (sender -> request)
+  }
+
+  private def unstashGetShardHomeRequests(): Unit = {
+    getShardHomeRequests.foreach {
+      case (originalSender, request) => self.tell(request, sender = originalSender)
+    }
+    getShardHomeRequests = Set.empty
   }
 
   def activate() = {
@@ -1200,8 +1236,9 @@ class DDataShardCoordinator(
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
-    replicator ! Update(CoordinatorStateKey, LWWRegister(initEmptyState), writeMajority, Some(evt)) { reg =>
-      reg.withValue(s)
+    replicator ! Update(CoordinatorStateKey, LWWRegister(selfUniqueAddress, initEmptyState), writeMajority, Some(evt)) {
+      reg =>
+        reg.withValueOf(s)
     }
   }
 

@@ -10,6 +10,7 @@ import akka.actor._
 import akka.persistence.EndToEndEventAdapterSpec.NewA
 import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.testkit.{ EventFilter, TestProbe }
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
@@ -27,7 +28,7 @@ object EndToEndEventAdapterSpec {
 
   case class JSON(payload: Any)
 
-  class AEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
+  class AEndToEndAdapter(@unused system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
@@ -37,7 +38,7 @@ object EndToEndEventAdapterSpec {
       case _                                             => EventSeq.empty
     }
   }
-  class NewAEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
+  class NewAEndToEndAdapter(@unused system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
@@ -47,7 +48,7 @@ object EndToEndEventAdapterSpec {
       case _                                             => EventSeq.empty
     }
   }
-  class BEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
+  class BEndToEndAdapter(@unused system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
@@ -57,7 +58,7 @@ object EndToEndEventAdapterSpec {
       case _                                             => EventSeq.empty
     }
   }
-  class NewBEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
+  class NewBEndToEndAdapter(@unused system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
@@ -68,7 +69,7 @@ object EndToEndEventAdapterSpec {
     }
   }
 
-  class EndToEndAdapterActor(name: String, override val journalPluginId: String, probe: Option[ActorRef])
+  class EndToEndAdapterActor(name: String, override val journalPluginId: String, @unused probe: Option[ActorRef])
       extends NamedPersistentActor(name)
       with PersistentActor {
 

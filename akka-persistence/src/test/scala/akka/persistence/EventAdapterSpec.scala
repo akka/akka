@@ -35,9 +35,9 @@ object EventAdapterSpec {
     val Minor = Set("minor")
 
     override def toJournal(event: Any): Any = event match {
-      case e @ UserDataChanged(_, age) if age > 18 => Tagged(e, Adult)
-      case e @ UserDataChanged(_, age)             => Tagged(e, Minor)
-      case e                                       => NotTagged(e)
+      case e: UserDataChanged if e.age > 18 => Tagged(e, Adult)
+      case e @ UserDataChanged(_, _)        => Tagged(e, Minor)
+      case e                                => NotTagged(e)
     }
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
@@ -51,7 +51,7 @@ object EventAdapterSpec {
   class ReplayPassThroughAdapter extends UserAgeTaggingAdapter {
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
-        case m: JournalModel => event // don't unpack, just pass through the JournalModel
+        case m: JournalModel => m // don't unpack, just pass through the JournalModel
       }
     }
   }

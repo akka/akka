@@ -13,8 +13,7 @@ import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.DeadLetterSuppression
+import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.util.HashCode
 
 object ServiceDiscovery {
@@ -29,13 +28,14 @@ object ServiceDiscovery {
 
   /** Result of a successful resolve request */
   final class Resolved(val serviceName: String, val addresses: immutable.Seq[ResolvedTarget])
-      extends DeadLetterSuppression {
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded {
 
     /**
      * Java API
      */
     def getAddresses: java.util.List[ResolvedTarget] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       addresses.asJava
     }
 
@@ -58,6 +58,8 @@ object ServiceDiscovery {
   object ResolvedTarget {
     // Simply compare the bytes of the address.
     // This may not work in exotic cases such as IPv4 addresses encoded as IPv6 addresses.
+    import com.github.ghik.silencer.silent
+    @silent
     private implicit val inetAddressOrdering: Ordering[InetAddress] =
       Ordering.by[InetAddress, Iterable[Byte]](_.getAddress)
 
@@ -80,7 +82,8 @@ object ServiceDiscovery {
    * @param port optional port number
    * @param address optional IP address of the target. This is used during cluster bootstap when available.
    */
-  final class ResolvedTarget(val host: String, val port: Option[Int], val address: Option[InetAddress]) {
+  final class ResolvedTarget(val host: String, val port: Option[Int], val address: Option[InetAddress])
+      extends NoSerializationVerificationNeeded {
 
     /**
      * Java API
@@ -119,9 +122,10 @@ object ServiceDiscovery {
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
  *
- * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
+ * @param serviceName must not be 'null' or an empty String
  */
-final class Lookup(val serviceName: String, val portName: Option[String], val protocol: Option[String]) {
+final class Lookup(val serviceName: String, val portName: Option[String], val protocol: Option[String])
+    extends NoSerializationVerificationNeeded {
 
   require(serviceName != null, "'serviceName' cannot be null")
   require(serviceName.trim.nonEmpty, "'serviceName' cannot be empty")
@@ -199,7 +203,30 @@ case object Lookup {
 
   private val SrvQuery = """^_(.+?)\._(.+?)\.(.+?)$""".r
 
-  private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$".r
+  /**
+   * Validates domain name:
+   * (as defined in https://tools.ietf.org/html/rfc1034)
+   *
+   * - a label has 1 to 63 chars
+   * - valid chars for a label are: a-z, A-Z, 0-9 and -
+   * - a label can't start with a 'hyphen' (-)
+   * - a label can't start with a 'digit' (0-9)
+   * - a label can't end with a 'hyphen' (-)
+   * - labels are separated by a 'dot' (.)
+   *
+   * Starts with a label:
+   * Label Pattern: (?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)
+   *      (?![0-9-]) => negative look ahead, first char can't be hyphen (-) or digit (0-9)
+   *      [A-Za-z0-9-]{1,63} => digits, letters and hyphen, from 1 to 63
+   *      (?<!-) => negative look behind, last char can't be hyphen (-)
+   *
+   * A label can be followed by other labels:
+   *    Pattern: (\.(?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)))*
+   *      . => separated by a . (dot)
+   *      label pattern => (?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)
+   *      * => match zero or more times
+   */
+  private val DomainName = "^((?![0-9-])[A-Za-z0-9-]{1,63}(?<!-))((\\.(?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)))*$".r
 
   /**
    * Create a service Lookup from a string with format:
@@ -208,13 +235,13 @@ case object Lookup {
    *
    * If the passed string conforms with this format, a SRV Lookup is returned.
    * The serviceName part must be a valid domain name.
+   * (as defined in https://tools.ietf.org/html/rfc1034)
    *
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
    *
-   *
-   * @throws NullPointerException If the passed string is null
-   * @throws IllegalArgumentException If the string doesn't not conform with the SRV format
+   * @throws java.lang.NullPointerException If the passed string is null
+   * @throws java.lang.IllegalArgumentException If the string doesn't not conform with the SRV format
    */
   def parseSrv(str: String): Lookup =
     str match {

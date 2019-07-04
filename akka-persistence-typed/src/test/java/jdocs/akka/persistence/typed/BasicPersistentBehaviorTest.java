@@ -4,19 +4,26 @@
 
 package jdocs.akka.persistence.typed;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.DeleteEventsFailed;
+import akka.persistence.typed.DeleteSnapshotsFailed;
 import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.SnapshotFailed;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
+// #behavior
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.PersistenceId;
+
+// #behavior
+import akka.persistence.typed.javadsl.RetentionCriteria;
 import akka.persistence.typed.javadsl.SignalHandler;
 
 import java.time.Duration;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -202,8 +209,8 @@ public class BasicPersistentBehaviorTest {
       public SignalHandler signalHandler() {
         return newSignalHandlerBuilder()
             .onSignal(
-                RecoveryCompleted.class,
-                (completed) -> {
+                RecoveryCompleted.instance(),
+                state -> {
                   throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
                 })
             .build();
@@ -264,13 +271,6 @@ public class BasicPersistentBehaviorTest {
         };
       }
 
-      // #snapshottingEveryN
-      @Override // override snapshotEvery in EventSourcedBehavior
-      public long snapshotEvery() {
-        return 100;
-      }
-      // #snapshottingEveryN
-
       // #snapshottingPredicate
       @Override // override shouldSnapshot in EventSourcedBehavior
       public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
@@ -278,6 +278,50 @@ public class BasicPersistentBehaviorTest {
       }
       // #snapshottingPredicate
 
+      // #retentionCriteria
+      @Override // override retentionCriteria in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.snapshotEvery(100, 2);
+      }
+      // #retentionCriteria
+
+      // #retentionCriteriaWithSignals
+      @Override
+      public SignalHandler signalHandler() {
+        return newSignalHandlerBuilder()
+            .onSignal(
+                SnapshotFailed.class,
+                (state, completed) -> {
+                  throw new RuntimeException("TODO: add some on-snapshot-failed side-effect here");
+                })
+            .onSignal(
+                DeleteSnapshotsFailed.class,
+                (state, completed) -> {
+                  throw new RuntimeException(
+                      "TODO: add some on-delete-snapshot-failed side-effect here");
+                })
+            .onSignal(
+                DeleteEventsFailed.class,
+                (state, completed) -> {
+                  throw new RuntimeException(
+                      "TODO: add some on-delete-snapshot-failed side-effect here");
+                })
+            .build();
+      }
+      // #retentionCriteriaWithSignals
+    }
+
+    public static class Snapshotting2 extends Snapshotting {
+      public Snapshotting2(PersistenceId persistenceId) {
+        super(persistenceId);
+      }
+
+      // #snapshotAndEventDeletes
+      @Override // override retentionCriteria in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.snapshotEvery(100, 2).withDeleteEventsOnSnapshot();
+      }
+      // #snapshotAndEventDeletes
     }
   }
 
@@ -298,9 +342,13 @@ public class BasicPersistentBehaviorTest {
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
 
+      // optionally if you only need `ActorContext.getSelf()`
+      private final ActorRef<Command> self;
+
       public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
         this.ctx = ctx;
+        this.self = ctx.getSelf();
       }
 
       // #actor-context

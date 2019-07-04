@@ -10,7 +10,6 @@ import akka.actor.Identify
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -76,7 +75,6 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec
   "Decompression table" must {
 
     import scala.concurrent.duration._
-    implicit val timeout = Timeout(10.seconds)
 
     "be kept even if inbound lane is restarted, and decode into correct actors still" taggedAs LongRunningTest in {
       val probeA = TestProbe()

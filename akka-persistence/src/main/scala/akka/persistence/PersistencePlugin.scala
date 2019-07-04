@@ -82,11 +82,11 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
       (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
       (classOf[String], configPath) :: Nil)
       .recoverWith {
-        case x: NoSuchMethodException =>
+        case _: NoSuchMethodException =>
           instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
       }
-      .recoverWith { case x: NoSuchMethodException => instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
-      .recoverWith { case x: NoSuchMethodException => instantiate(Nil) }
+      .recoverWith { case _: NoSuchMethodException => instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
+      .recoverWith { case _: NoSuchMethodException => instantiate(Nil) }
       .recoverWith {
         case ex: Exception =>
           Failure.apply(

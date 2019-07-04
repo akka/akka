@@ -22,7 +22,6 @@ class DnsClientSpec extends AkkaSpec with ImplicitSender {
     val exampleResponseMessage = Message(42, MessageFlags(answer = true))
     val exampleResponse = Answer(42, Nil)
     val dnsServerAddress = InetSocketAddress.createUnresolved("foo", 53)
-    val localAddress = InetSocketAddress.createUnresolved("localhost", 13441)
 
     "not connect to the DNS server over TCP eagerly" in {
       val udpExtensionProbe = TestProbe()

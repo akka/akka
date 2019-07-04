@@ -43,7 +43,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
       singleton.stopMessage match {
         case Some(_) => behv
-        case None    => Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+        case None    => Behaviors.intercept(() => new PoisonPillInterceptor[M])(behv)
       }
     }
 
@@ -70,7 +70,6 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
   private def getProxy[T](name: String, settings: ClusterSingletonSettings): ActorRef[T] = {
     val proxyCreator = new JFunction[(String, Option[DataCenter]), ActorRef[_]] {
       def apply(singletonNameAndDc: (String, Option[DataCenter])): ActorRef[_] = {
-        println("Creating for " + singletonNameAndDc)
         val (singletonName, _) = singletonNameAndDc
         val proxyName = s"singletonProxy$singletonName-${settings.dataCenter.getOrElse("no-dc")}"
         untypedSystem.systemActorOf(

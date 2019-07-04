@@ -34,7 +34,7 @@ object TimerPersistentActorSpec {
     override def receiveCommand: Receive = {
       case Scheduled(msg, replyTo) =>
         replyTo ! msg
-      case AutoReceivedMessageWrapper(msg) =>
+      case AutoReceivedMessageWrapper(_) =>
         timers.startSingleTimer("PoisonPill", PoisonPill, Duration.Zero)
       case msg =>
         timers.startSingleTimer("key", Scheduled(msg, sender()), Duration.Zero)

@@ -6,6 +6,7 @@ package docs.stream.operators
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.testkit.TestProbe
 
 object SourceOperators {
 
@@ -35,6 +36,7 @@ object SourceOperators {
     import akka.actor.Status.Success
     import akka.actor.ActorRef
     import akka.stream.OverflowStrategy
+    import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
 
     implicit val system: ActorSystem = ActorSystem()
@@ -48,7 +50,32 @@ object SourceOperators {
     actorRef ! "hello"
 
     // The stream completes successfully with the following message
-    actorRef ! Success("completes stream")
+    actorRef ! Success(CompletionStrategy.immediately)
     //#actorRef
+  }
+
+  def actorRefWithAck(): Unit = {
+    //#actorRefWithAck
+
+    import akka.actor.Status.Success
+    import akka.actor.ActorRef
+    import akka.stream.CompletionStrategy
+    import akka.stream.scaladsl._
+
+    implicit val system: ActorSystem = ActorSystem()
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+    val probe = TestProbe()
+
+    val source: Source[Any, ActorRef] = Source.actorRefWithAck[Any]("ack")
+    val actorRef: ActorRef = source.to(Sink.foreach(println)).run()
+
+    probe.send(actorRef, "hello")
+    probe.expectMsg("ack")
+    probe.send(actorRef, "hello")
+    probe.expectMsg("ack")
+
+    // The stream completes successfully with the following message
+    actorRef ! Success(CompletionStrategy.immediately)
+    //#actorRefWithAck
   }
 }

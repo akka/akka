@@ -103,8 +103,9 @@ object IntroSpec {
     //#hello-world-main-with-dispatchers
   }
 
-  //#chatroom-actor
+  //#chatroom-behavior
   object ChatRoom {
+    //#chatroom-behavior
     //#chatroom-protocol
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
@@ -125,7 +126,7 @@ object IntroSpec {
     //#chatroom-protocol
     //#chatroom-behavior
 
-    val behavior: Behavior[RoomCommand] =
+    def apply(): Behavior[RoomCommand] =
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionCommand]]): Behavior[RoomCommand] =
@@ -149,21 +150,42 @@ object IntroSpec {
         room: ActorRef[PublishSessionMessage],
         screenName: String,
         client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receive { (context, message) =>
-        message match {
-          case PostMessage(message) =>
-            // from client, publish to others via the room
-            room ! PublishSessionMessage(screenName, message)
+      Behaviors.receiveMessage {
+        case PostMessage(message) =>
+          // from client, publish to others via the room
+          room ! PublishSessionMessage(screenName, message)
+          Behaviors.same
+        case NotifyClient(message) =>
+          // published from the room
+          client ! message
+          Behaviors.same
+      }
+  }
+  //#chatroom-behavior
+
+  //#chatroom-gabbler
+  object Gabbler {
+    import ChatRoom._
+
+    def apply(): Behavior[SessionEvent] =
+      Behaviors.setup { context =>
+        Behaviors.receiveMessage {
+          //#chatroom-gabbler
+          // We document that the compiler warns about the missing handler for `SessionDenied`
+          case SessionDenied(reason) =>
+            context.log.info("cannot start chat room session: {}", reason)
+            Behaviors.stopped
+          //#chatroom-gabbler
+          case SessionGranted(handle) =>
+            handle ! PostMessage("Hello World!")
             Behaviors.same
-          case NotifyClient(message) =>
-            // published from the room
-            client ! message
-            Behaviors.same
+          case MessagePosted(screenName, message) =>
+            context.log.info("message has been posted by '{}': {}", screenName, message)
+            Behaviors.stopped
         }
       }
-    //#chatroom-behavior
   }
-  //#chatroom-actor
+  //#chatroom-gabbler
 
 }
 
@@ -190,42 +212,23 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "chat" in {
-      //#chatroom-gabbler
-      import ChatRoom._
-
-      val gabbler: Behavior[SessionEvent] =
-        Behaviors.receiveMessage {
-          //#chatroom-gabbler
-          // We document that the compiler warns about the missing handler for `SessionDenied`
-          case SessionDenied(reason) =>
-            println(s"cannot start chat room session: $reason")
-            Behaviors.stopped
-          //#chatroom-gabbler
-          case SessionGranted(handle) =>
-            handle ! PostMessage("Hello World!")
-            Behaviors.same
-          case MessagePosted(screenName, message) =>
-            println(s"message has been posted by '$screenName': $message")
-            Behaviors.stopped
-        }
-      //#chatroom-gabbler
-
       //#chatroom-main
       val main: Behavior[NotUsed] =
         Behaviors.setup { context =>
-          val chatRoom = context.spawn(ChatRoom.behavior, "chatroom")
-          val gabblerRef = context.spawn(gabbler, "gabbler")
+          val chatRoom = context.spawn(ChatRoom(), "chatroom")
+          val gabblerRef = context.spawn(Gabbler(), "gabbler")
           context.watch(gabblerRef)
-          chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+          chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
 
           Behaviors.receiveSignal {
-            case (_, Terminated(ref)) =>
+            case (_, Terminated(_)) =>
               Behaviors.stopped
           }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
       //#chatroom-main
+      system.whenTerminated // remove compiler warnings
     }
   }
 

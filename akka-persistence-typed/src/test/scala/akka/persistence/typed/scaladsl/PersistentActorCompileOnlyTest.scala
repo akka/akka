@@ -11,10 +11,12 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.persistence.typed.SideEffect
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.Future
 
+// unused names in pattern match can be useful in the docs
+@silent
 object PersistentActorCompileOnlyTest {
 
   import akka.persistence.typed.scaladsl.EventSourcedBehavior._
@@ -62,7 +64,7 @@ object PersistentActorCompileOnlyTest {
     def performSideEffect(sender: ActorRef[AcknowledgeSideEffect], correlationId: Int, data: String): Unit = {
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout: akka.util.Timeout = 1.second
-      implicit val scheduler: akka.actor.Scheduler = ???
+      implicit val scheduler: akka.actor.typed.Scheduler = ???
       implicit val ec: ExecutionContext = ???
 
       val response: Future[RecoveryComplete.Response] =
@@ -91,11 +93,11 @@ object PersistentActorCompileOnlyTest {
                 case IntentRecorded(correlationId, data) =>
                   EventsInFlight(
                     nextCorrelationId = correlationId + 1,
-                    dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
+                    dataByCorrelationId = state.dataByCorrelationId + (correlationId -> data))
                 case SideEffectAcknowledged(correlationId) =>
                   state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
               }).receiveSignal {
-            case RecoveryCompleted(state: EventsInFlight) =>
+            case (state, RecoveryCompleted) =>
               state.dataByCorrelationId.foreach {
                 case (correlationId, data) => performSideEffect(ctx.self, correlationId, data)
               }
@@ -141,7 +143,7 @@ object PersistentActorCompileOnlyTest {
       })
 
     Behaviors.withTimers((timers: TimerScheduler[Command]) => {
-      timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
+      timers.startTimerWithFixedDelay("swing", MoodSwing, 10.seconds)
       b
     })
   }
@@ -289,7 +291,7 @@ object PersistentActorCompileOnlyTest {
             case ItemAdded(id)   => id +: state
             case ItemRemoved(id) => state.filter(_ != id)
           }).receiveSignal {
-        case RecoveryCompleted(state: List[Id]) =>
+        case (state, RecoveryCompleted) =>
           state.foreach(id => metadataRegistry ! GetMetaData(id, adapt))
       }
     }
@@ -311,17 +313,17 @@ object PersistentActorCompileOnlyTest {
     case class MoodChanged(to: Mood) extends Event
     case class Remembered(memory: String) extends Event
 
-    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): Effect[Event, Mood] =
+    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): EffectBuilder[Event, Mood] =
       if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
     //#commonChainedEffects
-    // Example factoring out a chained effect rather than using `andThen`
-    val commonChainedEffects = SideEffect[Mood](_ => println("Command processed"))
+    // Example factoring out a chained effect to use in several places with `thenRun`
+    val commonChainedEffects: Mood => Unit = _ => println("Command processed")
     // Then in a command handler:
     Effect
       .persist(Remembered("Yep")) // persist event
-      .andThen(commonChainedEffects) // add on common chained effect
+      .thenRun(commonChainedEffects) // add on common chained effect
     //#commonChainedEffects
 
     val commandHandler: CommandHandler[Command, Event, Mood] = { (state, cmd) =>
@@ -334,12 +336,12 @@ object PersistentActorCompileOnlyTest {
             .thenRun { _ =>
               sender ! Ack
             }
-            .andThen(commonChainedEffects)
+            .thenRun(commonChainedEffects)
         case Remember(memory) =>
           // A more elaborate example to show we still have full control over the effects
           // if needed (e.g. when some logic is factored out but you want to add more effects)
-          val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
-          Effect.persist(commonEffects.events :+ Remembered(memory)).andThen(commonChainedEffects)
+          val commonEffects: EffectBuilder[Event, Mood] = changeMoodIfNeeded(state, Happy)
+          Effect.persist(commonEffects.events :+ Remembered(memory)).thenRun(commonChainedEffects)
       }
     }
 

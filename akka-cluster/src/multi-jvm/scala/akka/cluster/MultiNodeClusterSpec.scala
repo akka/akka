@@ -25,10 +25,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 import scala.concurrent.Await
 
+@ccompatUsedUntil213
 object MultiNodeClusterSpec {
 
   def clusterConfigWithFailureDetectorPuppet: Config =
@@ -250,8 +251,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     cluster.join(joinNode)
     awaitCond(
       {
-        clusterView.refreshCurrentState()
-        if (memberInState(joinNode, List(MemberStatus.up)) &&
+        if (memberInState(joinNode, List(MemberStatus.Up)) &&
             memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
           true
         else {

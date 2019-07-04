@@ -149,7 +149,7 @@ class DistributedPubSubMediatorSpec
   var chatUsers: Map[String, ActorRef] = Map.empty
 
   def createChatUser(name: String): ActorRef = {
-    var a = system.actorOf(Props(classOf[TestChatUser], mediator, testActor), name)
+    val a = system.actorOf(Props(classOf[TestChatUser], mediator, testActor), name)
     chatUsers += (name -> a)
     a
   }
@@ -292,7 +292,7 @@ class DistributedPubSubMediatorSpec
         lastSender.path.name should ===("u7")
       }
       runOn(third) {
-        expectNoMsg(2.seconds)
+        expectNoMessage(2.seconds)
       }
 
       enterBarrier("after-6")
@@ -331,7 +331,7 @@ class DistributedPubSubMediatorSpec
         lastSender.path.name should ===("u10")
       }
       runOn(third) {
-        expectNoMsg(2.seconds)
+        expectNoMessage(2.seconds)
       }
 
       enterBarrier("after-7")
@@ -407,7 +407,7 @@ class DistributedPubSubMediatorSpec
         lastSender.path.name should ===("u11")
       }
       runOn(third) {
-        expectNoMsg(2.seconds) // sender() node should not receive a message
+        expectNoMessage(2.seconds) // sender() node should not receive a message
       }
 
       enterBarrier("after-11")
@@ -437,7 +437,7 @@ class DistributedPubSubMediatorSpec
 
       runOn(first, second) {
         expectMsg("hi")
-        expectNoMsg(2.seconds) // each group receive only one message
+        expectNoMessage(2.seconds) // each group receive only one message
       }
       enterBarrier("12-published")
 

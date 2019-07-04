@@ -4,15 +4,12 @@
 
 package akka.stream.impl
 
-import java.util.concurrent.CompletionStage
-
 import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._
 import akka.stream.scaladsl.SourceQueueWithComplete
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ Future, Promise }
 
 /**
@@ -213,15 +210,4 @@ import scala.concurrent.{ Future, Promise }
 
     (stageLogic, stageLogic)
   }
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T])
-    extends akka.stream.javadsl.SourceQueueWithComplete[T] {
-  def offer(elem: T): CompletionStage[QueueOfferResult] = delegate.offer(elem).toJava
-  def watchCompletion(): CompletionStage[Done] = delegate.watchCompletion().toJava
-  def complete(): Unit = delegate.complete()
-  def fail(ex: Throwable): Unit = delegate.fail(ex)
 }

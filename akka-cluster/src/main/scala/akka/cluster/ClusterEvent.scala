@@ -19,6 +19,8 @@ import akka.util.ccompat._
 
 import scala.runtime.AbstractFunction5
 
+import com.github.ghik.silencer.silent
+
 /**
  * Domain events published to the event bus.
  * Subscribe with:
@@ -120,25 +122,28 @@ object ClusterEvent {
      * Java API: get current member list.
      */
     def getMembers: java.lang.Iterable[Member] = {
-      import scala.collection.JavaConverters._
+      import akka.util.ccompat.JavaConverters._
       members.asJava
     }
 
     /**
      * Java API: get current unreachable set.
      */
+    @silent
     def getUnreachable: java.util.Set[Member] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
 
     /**
      * Java API: All data centers in the cluster
      */
+    @silent
     def getUnreachableDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
 
     /**
      * Java API: get current “seen-by” set.
      */
+    @silent
     def getSeenBy: java.util.Set[Address] =
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
@@ -166,6 +171,7 @@ object ClusterEvent {
     /**
      * Java API: All node roles in the cluster
      */
+    @silent
     def getAllRoles: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
 
@@ -177,6 +183,7 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
+    @silent
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
@@ -185,6 +192,14 @@ object ClusterEvent {
      */
     def withUnreachableDataCenters(unreachableDataCenters: Set[DataCenter]): CurrentClusterState =
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
+
+    /**
+     * INTERNAL API
+     * Returns true if the address is a cluster member and that member is `MemberStatus.Up`.
+     */
+    @InternalApi
+    private[akka] def isMemberUp(address: Address): Boolean =
+      members.exists(m => m.address == address && m.status == MemberStatus.Up)
 
     // for binary compatibility (used to be a case class)
     def copy(
@@ -369,6 +384,7 @@ object ClusterEvent {
    * INTERNAL API
    * The nodes that have seen current version of the Gossip.
    */
+  @ccompatUsedUntil213
   private[cluster] final case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
   /**
@@ -484,7 +500,6 @@ object ClusterEvent {
             if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber =>
           newMember
       }
-      import akka.util.ccompat.imm._
       val memberEvents = (newMembers ++ changedMembers).unsorted.collect {
         case m if m.status == Joining  => MemberJoined(m)
         case m if m.status == WeaklyUp => MemberWeaklyUp(m)

@@ -16,22 +16,22 @@ class GossipSpec extends WordSpec with Matchers {
 
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up)
+  val a1 = TestMember(Address("akka", "sys", "a", 2552), Up)
   val a2 = TestMember(a1.address, Joining)
-  val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up)
+  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up)
   val b2 = TestMember(b1.address, Removed)
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving)
+  val c1 = TestMember(Address("akka", "sys", "c", 2552), Leaving)
   val c2 = TestMember(c1.address, Up)
   val c3 = TestMember(c1.address, Exiting)
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Leaving)
-  val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining)
+  val d1 = TestMember(Address("akka", "sys", "d", 2552), Leaving)
+  val e1 = TestMember(Address("akka", "sys", "e", 2552), Joining)
   val e2 = TestMember(e1.address, Up)
   val e3 = TestMember(e1.address, Down)
 
-  val dc1a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
-  val dc1b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
-  val dc2c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc2")
-  val dc2d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Up, Set.empty, dataCenter = "dc2")
+  val dc1a1 = TestMember(Address("akka", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
+  val dc1b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
+  val dc2c1 = TestMember(Address("akka", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc2")
+  val dc2d1 = TestMember(Address("akka", "sys", "d", 2552), Up, Set.empty, dataCenter = "dc2")
   val dc2d2 = TestMember(dc2d1.address, status = Down, roles = Set.empty, dataCenter = dc2d1.dataCenter)
   // restarted with another uid
   val dc2d3 =
@@ -487,11 +487,10 @@ class GossipSpec extends WordSpec with Matchers {
     }
 
     "update members" in {
-      val joining = TestMember(Address("akka.tcp", "sys", "d", 2552), Joining, Set.empty, dataCenter = "dc2")
+      val joining = TestMember(Address("akka", "sys", "d", 2552), Joining, Set.empty, dataCenter = "dc2")
       val g = Gossip(members = SortedSet(dc1a1, joining))
 
       g.member(joining.uniqueAddress).status should ===(Joining)
-      val oldMembers = g.members
 
       val updated = g.update(SortedSet(joining.copy(status = Up)))
 

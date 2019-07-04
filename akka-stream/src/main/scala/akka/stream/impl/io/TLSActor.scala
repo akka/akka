@@ -237,14 +237,14 @@ import scala.util.{ Failure, Success, Try }
   val flushingOutbound = TransferPhase(outboundHalfClosed) { () =>
     if (tracing) log.debug("flushingOutbound")
     try doWrap()
-    catch { case ex: SSLException => nextPhase(completedPhase) }
+    catch { case _: SSLException => nextPhase(completedPhase) }
   }
 
   val awaitingClose = TransferPhase(inputBunch.inputsAvailableFor(TransportIn) && engineInboundOpen) { () =>
     if (tracing) log.debug("awaitingClose")
     transportInChoppingBlock.chopInto(transportInBuffer)
     try doUnwrap(ignoreOutput = true)
-    catch { case ex: SSLException => nextPhase(completedPhase) }
+    catch { case _: SSLException => nextPhase(completedPhase) }
   }
 
   val outboundClosed = TransferPhase(outboundHalfClosed || inbound) { () =>
@@ -253,7 +253,7 @@ import scala.util.{ Failure, Success, Try }
     if (continue && outboundHalfClosed.isReady) {
       if (tracing) log.debug("outboundClosed continue")
       try doWrap()
-      catch { case ex: SSLException => nextPhase(completedPhase) }
+      catch { case _: SSLException => nextPhase(completedPhase) }
     }
   }
 
@@ -274,7 +274,7 @@ import scala.util.{ Failure, Success, Try }
     if (inputBunch.isDepleted(TransportIn) && transportInChoppingBlock.isEmpty) {
       if (tracing) log.debug("closing inbound")
       try engine.closeInbound()
-      catch { case ex: SSLException => outputBunch.enqueue(UserOut, SessionTruncated) }
+      catch { case _: SSLException => outputBunch.enqueue(UserOut, SessionTruncated) }
       lastHandshakeStatus = engine.getHandshakeStatus
       completeOrFlush()
       false
@@ -305,7 +305,7 @@ import scala.util.{ Failure, Success, Try }
     } else true
 
   private def doOutbound(isInboundClosed: Boolean): Unit =
-    if (inputBunch.isDepleted(UserIn) && userInChoppingBlock.isEmpty) {
+    if (inputBunch.isDepleted(UserIn) && userInChoppingBlock.isEmpty && mayCloseOutbound) {
       if (!isInboundClosed && closing.ignoreComplete) {
         if (tracing) log.debug("ignoring closeOutbound")
       } else {
@@ -326,6 +326,16 @@ import scala.util.{ Failure, Success, Try }
           fail(ex, closeTransport = false)
           completeOrFlush()
       }
+    }
+
+  /**
+   * In JDK 8 it is not allowed to call `closeOutbound` before the handshake is done or otherwise
+   * an IllegalStateException might be thrown when the next handshake packet arrives.
+   */
+  private def mayCloseOutbound: Boolean =
+    lastHandshakeStatus match {
+      case HandshakeStatus.NOT_HANDSHAKING | HandshakeStatus.FINISHED => true
+      case _                                                          => false
     }
 
   def flushToTransport(): Unit = {

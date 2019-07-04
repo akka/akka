@@ -40,7 +40,7 @@ object ClusterShardingPersistenceSpec {
 
       akka.actor.provider = cluster
 
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
 
@@ -121,22 +121,22 @@ object ClusterShardingPersistenceSpec {
               stashing = false
               Effect.unstashAll()
 
-            case UnstashAllAndPassivate ⇒
+            case UnstashAllAndPassivate =>
               stashing = false
               shard ! Passivate(ctx.self)
               Effect.unstashAll()
           },
-        eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
-        case RecoveryCompleted(state) ⇒
+        eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
+        case (state, RecoveryCompleted) =>
           ctx.log.debug("onRecoveryCompleted: [{}]", state)
           lifecycleProbes.get(entityId) match {
-            case null ⇒ ctx.log.debug("no lifecycleProbe (onRecoveryCompleted) for [{}]", entityId)
-            case p ⇒ p ! s"recoveryCompleted:$state"
+            case null => ctx.log.debug("no lifecycleProbe (onRecoveryCompleted) for [{}]", entityId)
+            case p    => p ! s"recoveryCompleted:$state"
           }
-        case PostStop ⇒
+        case (_, PostStop) =>
           lifecycleProbes.get(entityId) match {
-            case null ⇒ ctx.log.debug("no lifecycleProbe (postStop) for [{}]", entityId)
-            case p ⇒ p ! "stopped"
+            case null => ctx.log.debug("no lifecycleProbe (postStop) for [{}]", entityId)
+            case p    => p ! "stopped"
           }
       }
     }

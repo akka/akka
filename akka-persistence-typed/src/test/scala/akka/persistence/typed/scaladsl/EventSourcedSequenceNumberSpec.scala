@@ -9,12 +9,15 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedSequenceNumberSpec {
 
   private val conf = ConfigFactory.parseString(s"""
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 
@@ -24,17 +27,20 @@ class EventSourcedSequenceNumberSpec
     extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf)
     with WordSpecLike {
 
+  import akka.actor.typed.scaladsl.adapter._
+  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.setup(ctx ⇒
+    Behaviors.setup(ctx =>
       EventSourcedBehavior[String, String, String](pid, "", { (_, command) =>
-        probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onCommand")
-        Effect.persist(command).thenRun(_ ⇒ probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun"))
-      }, { (state, evt) ⇒
-        probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
+        probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onCommand"
+        Effect.persist(command).thenRun(_ => probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} thenRun")
+      }, { (state, evt) =>
+        probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} eventHandler"
         state + evt
       }).receiveSignal {
-        case RecoveryCompleted(_) ⇒
-          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
+        case (_, RecoveryCompleted) =>
+          probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onRecoveryComplete"
       })
 
   "The sequence number" must {

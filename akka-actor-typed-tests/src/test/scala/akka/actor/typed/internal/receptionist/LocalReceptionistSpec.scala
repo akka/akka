@@ -29,8 +29,8 @@ object LocalReceptionistSpec {
   case object Stop extends ServiceA with ServiceB
   val stoppableBehavior = Behaviors.receive[Any] { (_, message) =>
     message match {
-      case Stop => Behavior.stopped
-      case _    => Behavior.same
+      case Stop => Behaviors.stopped
+      case _    => Behaviors.same
     }
   }
 
@@ -120,6 +120,10 @@ class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike 
       val listing: Listing = probe.receiveMessage()
       listing.isForKey(ServiceKeyA) should ===(true)
       listing.serviceInstances(ServiceKeyA) should be(Set())
+    }
+
+    "not conflict with the ClusterClient receptionist default name" in {
+      system.systemActorOf(Behaviors.ignore, "receptionist")
     }
   }
 }

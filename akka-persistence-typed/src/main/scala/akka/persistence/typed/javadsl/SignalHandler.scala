@@ -4,16 +4,19 @@
 
 package akka.persistence.typed.javadsl
 
+import java.util.function.BiConsumer
+import java.util.function.Consumer
+
 import akka.actor.typed.Signal
 import akka.annotation.InternalApi
-import akka.japi.function.Procedure
-import akka.japi.function.{ Effect ⇒ JEffect }
 
 object SignalHandler {
-  val Empty: SignalHandler = new SignalHandler(PartialFunction.empty)
+  private val Empty: SignalHandler[Any] = new SignalHandler[Any](PartialFunction.empty)
+
+  def empty[State]: SignalHandler[State] = Empty.asInstanceOf[SignalHandler[State]]
 }
 
-final class SignalHandler(_handler: PartialFunction[Signal, Unit]) {
+final class SignalHandler[State](_handler: PartialFunction[(State, Signal), Unit]) {
 
   /**
    * INTERNAL API
@@ -25,7 +28,11 @@ final class SignalHandler(_handler: PartialFunction[Signal, Unit]) {
    * INTERNAL API
    */
   @InternalApi
-  private[akka] def handler: PartialFunction[Signal, Unit] = _handler
+  private[akka] def handler: PartialFunction[(State, Signal), Unit] = _handler
+}
+
+object SignalHandlerBuilder {
+  def builder[State]: SignalHandlerBuilder[State] = new SignalHandlerBuilder
 }
 
 /**
@@ -33,17 +40,17 @@ final class SignalHandler(_handler: PartialFunction[Signal, Unit]) {
  *
  * Not for user instantiation, use [[EventSourcedBehavior#newSignalHandlerBuilder()]] to get an instance.
  */
-final class SignalHandlerBuilder {
+final class SignalHandlerBuilder[State] {
 
-  private var handler: PartialFunction[Signal, Unit] = PartialFunction.empty
+  private var handler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty
 
   /**
    * If the behavior recieves a signal of type `T`, `callback` is invoked with the signal instance as input.
    */
-  def onSignal[T <: Signal](signalType: Class[T], callback: Procedure[T]): SignalHandlerBuilder = {
-    val newPF: PartialFunction[Signal, Unit] = {
-      case t if signalType.isInstance(t) ⇒
-        callback(t.asInstanceOf[T])
+  def onSignal[T <: Signal](signalType: Class[T], callback: BiConsumer[State, T]): SignalHandlerBuilder[State] = {
+    val newPF: PartialFunction[(State, Signal), Unit] = {
+      case (state, t) if signalType.isInstance(t) =>
+        callback.accept(state, t.asInstanceOf[T])
     }
     handler = newPF.orElse(handler)
     this
@@ -52,15 +59,15 @@ final class SignalHandlerBuilder {
   /**
    * If the behavior receives exactly the signal `signal`, `callback` is invoked.
    */
-  def onSignal[T <: Signal](signal: T, callback: JEffect): SignalHandlerBuilder = {
-    val newPF: PartialFunction[Signal, Unit] = {
-      case `signal` ⇒
-        callback()
+  def onSignal[T <: Signal](signal: T, callback: Consumer[State]): SignalHandlerBuilder[State] = {
+    val newPF: PartialFunction[(State, Signal), Unit] = {
+      case (state, `signal`) =>
+        callback.accept(state)
     }
     handler = newPF.orElse(handler)
     this
   }
 
-  def build: SignalHandler = new SignalHandler(handler)
+  def build: SignalHandler[State] = new SignalHandler(handler)
 
 }

@@ -40,7 +40,7 @@ class GraphBalanceSpec extends StreamSpec {
 
       sub1.request(1)
       c1.expectNext(1)
-      c1.expectNoMsg(100.millis)
+      c1.expectNoMessage(100.millis)
 
       sub2.request(2)
       c2.expectNext(2)
@@ -63,14 +63,14 @@ class GraphBalanceSpec extends StreamSpec {
 
       val sub1 = s1.expectSubscription()
       sub1.request(1)
-      s1.expectNoMsg(200.millis)
+      s1.expectNoMessage(200.millis)
 
       val s2 = TestSubscriber.manualProbe[Int]()
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
       // still no demand from s2
-      s1.expectNoMsg(200.millis)
+      s1.expectNoMessage(200.millis)
 
       sub2.request(2)
       s1.expectNext(1)
@@ -107,7 +107,7 @@ class GraphBalanceSpec extends StreamSpec {
       val sub3 = s3.expectSubscription()
 
       sub2.request(2)
-      s1.expectNoMsg(200.millis)
+      s1.expectNoMessage(200.millis)
       sub3.cancel()
 
       s1.expectNext(1)

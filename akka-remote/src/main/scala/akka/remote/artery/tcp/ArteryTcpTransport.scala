@@ -6,6 +6,7 @@ package akka.remote.artery
 package tcp
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -62,6 +63,7 @@ private[remote] object ArteryTcpTransport {
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[remote] class ArteryTcpTransport(
     _system: ExtendedActorSystem,
     _provider: RemoteActorRefProvider,
@@ -123,17 +125,20 @@ private[remote] class ArteryTcpTransport(
         Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
-          connectTimeout = settings.Advanced.ConnectionTimeout,
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)))
       } else {
         Tcp().outgoingConnection(
           remoteAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-          connectTimeout = settings.Advanced.ConnectionTimeout)
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout)
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
+      val restartCount = new AtomicInteger(0)
+
       val flowFactory = () => {
+        val onFailureLogLevel = if (restartCount.incrementAndGet() == 1) Logging.WarningLevel else Logging.DebugLevel
 
         def flow(controlIdleKillSwitch: OptionVal[SharedKillSwitch]) =
           Flow[ByteString]
@@ -152,7 +157,7 @@ private[remote] class ArteryTcpTransport(
             }))
             .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal => Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
-            .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
+            .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = onFailureLogLevel))
 
         if (streamId == ControlStreamId) {
           // must replace the KillSwitch when restarted
@@ -167,11 +172,15 @@ private[remote] class ArteryTcpTransport(
       // Restart of inner connection part important in control stream, since system messages
       // are buffered and resent from the outer SystemMessageDelivery stage. No maxRestarts limit for control
       // stream. For message stream it's best effort retry a few times.
-      RestartFlow.withBackoff[ByteString, ByteString](
-        settings.Advanced.OutboundRestartBackoff,
-        settings.Advanced.OutboundRestartBackoff * 5,
-        0.1,
-        maxRestarts)(flowFactory)
+      RestartFlow
+        .withBackoff[ByteString, ByteString](
+          settings.Advanced.OutboundRestartBackoff,
+          settings.Advanced.OutboundRestartBackoff * 5,
+          0.1,
+          maxRestarts)(flowFactory)
+        // silence "Restarting graph due to failure" logging by RestartFlow
+        .addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
+
     }
 
     Flow[EnvelopeBuffer]
@@ -388,7 +397,7 @@ private[remote] class ArteryTcpTransport(
             }
             .to(immutable.Vector)
 
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
@@ -432,7 +441,7 @@ private[remote] class ArteryTcpTransport(
   }
 
   override protected def shutdownTransport(): Future[Done] = {
-    import system.dispatcher
+    implicit val ec = system.dispatchers.internalDispatcher
     inboundKillSwitch.shutdown()
     unbind().map { _ =>
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
@@ -443,7 +452,7 @@ private[remote] class ArteryTcpTransport(
   private def unbind(): Future[Done] = {
     serverBinding match {
       case Some(binding) =>
-        import system.dispatcher
+        implicit val ec = system.dispatchers.internalDispatcher
         for {
           b <- binding
           _ <- b.unbind()

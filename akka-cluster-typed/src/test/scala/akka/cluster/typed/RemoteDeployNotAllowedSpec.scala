@@ -23,7 +23,7 @@ object RemoteDeployNotAllowedSpec {
         warn-about-java-serializer-usage = off
         serialize-creators = off
       }
-      remote.netty.tcp.port = 0
+      remote.classic.netty.tcp.port = 0
       remote.artery {
         canonical {
           hostname = 127.0.0.1
@@ -63,7 +63,7 @@ class RemoteDeployNotAllowedSpec
           case SpawnChild(name) =>
             // this should throw
             try {
-              ctx.spawn(Behaviors.setup[AnyRef] { ctx =>
+              ctx.spawn(Behaviors.setup[AnyRef] { _ =>
                 Behaviors.empty
               }, name)
             } catch {
@@ -74,7 +74,7 @@ class RemoteDeployNotAllowedSpec
           case SpawnAnonymous =>
             // this should throw
             try {
-              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx =>
+              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { _ =>
                 Behaviors.empty
               })
             } catch {

@@ -6,7 +6,7 @@ package jdocs.akka.typed;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import akka.actor.typed.DispatcherSelector;
 
 public class DispatchersDocTest {
@@ -26,6 +26,7 @@ public class DispatchersDocTest {
                 yourBehavior,
                 "DispatcherFromConfig",
                 DispatcherSelector.fromConfig("your-dispatcher"));
+            context.spawn(yourBehavior, "ParentDispatcher", DispatcherSelector.sameAsParent());
             // #spawn-dispatcher
 
             return Behaviors.same();

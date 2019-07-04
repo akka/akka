@@ -8,17 +8,8 @@ import java.util
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
-import akka.actor.{
-  ActorContext,
-  ActorRef,
-  ActorRefFactory,
-  ActorSystem,
-  Cancellable,
-  Deploy,
-  ExtendedActorSystem,
-  PoisonPill
-}
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, ExtendedActorSystem, PoisonPill }
+import akka.annotation.{ DoNotInherit, InternalApi, InternalStableApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -421,20 +412,28 @@ private final case class SavedIslandData(
     Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
       ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
-      ActorAttributes.Dispatcher(if (settings.dispatcher == Deploy.NoDispatcherGiven) Dispatchers.DefaultDispatcherId
-      else settings.dispatcher) :: Nil)
+      ActorAttributes.Dispatcher(settings.dispatcher) :: Nil)
   }
 
-  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
-    case Deploy.NoDispatcherGiven => Dispatchers.DefaultDispatcherId
-    case other                    => other
-  })
+  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher)
+
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    system.scheduler.scheduleWithFixedDelay(initialDelay, delay)(task)(executionContext)
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    system.scheduler.scheduleAtFixedRate(initialDelay, interval)(task)(executionContext)
 
   override def schedulePeriodically(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
       task: Runnable): Cancellable =
-    system.scheduler.schedule(initialDelay, interval, task)(executionContext)
+    system.scheduler.scheduleAtFixedRate(initialDelay, interval)(task)(executionContext)
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
     system.scheduler.scheduleOnce(delay, task)(executionContext)
@@ -442,6 +441,7 @@ private final case class SavedIslandData(
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
     materialize(_runnableGraph, defaultAttributes)
 
+  @InternalStableApi
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
@@ -625,14 +625,19 @@ private final case class SavedIslandData(
 
   def name: String
 
+  @InternalStableApi
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (M, Any)
 
+  @InternalStableApi
   def assignPort(in: InPort, slot: Int, logic: M): Unit
 
+  @InternalStableApi
   def assignPort(out: OutPort, slot: Int, logic: M): Unit
 
+  @InternalStableApi
   def createPublisher(out: OutPort, logic: M): Publisher[Any]
 
+  @InternalStableApi
   def takePublisher(slot: Int, publisher: Publisher[Any]): Unit
 
   def onIslandReady(): Unit
@@ -671,7 +676,7 @@ private final case class SavedIslandData(
     // TODO: bail on unknown types
     val stageModule = mod.asInstanceOf[GraphStageModule[Shape, Any]]
     val stage = stageModule.stage
-    val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
+    val matAndLogic = stage.createLogicAndMaterializedValue(attributes, materializer)
     val logic = matAndLogic._1
     logic.originalStage = OptionVal.Some(stage)
     logic.attributes = attributes
@@ -782,7 +787,7 @@ private final case class SavedIslandData(
       case _ =>
         val props = ActorGraphInterpreter
           .props(shell)
-          .withDispatcher(ActorAttributes.Dispatcher.resolve(effectiveAttributes, settings))
+          .withDispatcher(effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
 
         val actorName = fullIslandName match {
           case OptionVal.Some(n) => n
@@ -933,7 +938,7 @@ private final case class SavedIslandData(
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
-    val dispatcher = ActorAttributes.Dispatcher.resolve(attributes, materializer.settings)
+    val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =

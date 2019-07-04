@@ -175,22 +175,6 @@ object BehaviorSpec {
   /*
    * function converters for Java, to ease the pain on Scala 2.11
    */
-  def fs(f: (JActorContext[Command], Signal) => Behavior[Command]) =
-    new F2[JActorContext[Command], Signal, Behavior[Command]] {
-      override def apply(context: JActorContext[Command], sig: Signal) = f(context, sig)
-    }
-  def fc(f: (JActorContext[Command], Command) => Behavior[Command]) =
-    new F2[JActorContext[Command], Command, Behavior[Command]] {
-      override def apply(context: JActorContext[Command], command: Command) = f(context, command)
-    }
-  def ps(f: (JActorContext[Command], Signal) => Unit) =
-    new P2[JActorContext[Command], Signal] {
-      override def apply(context: JActorContext[Command], sig: Signal) = f(context, sig)
-    }
-  def pc(f: (JActorContext[Command], Command) => Unit) =
-    new P2[JActorContext[Command], Command] {
-      override def apply(context: JActorContext[Command], command: Command) = f(context, command)
-    }
   def pf(f: PFBuilder[Command, Command] => PFBuilder[Command, Command]) =
     new F1[PFBuilder[Command, Command], PFBuilder[Command, Command]] {
       override def apply(in: PFBuilder[Command, Command]) = f(in)
@@ -198,10 +182,6 @@ object BehaviorSpec {
   def fi(f: Command => Command) =
     new FI.Apply[Command, Command] {
       override def apply(in: Command) = f(in)
-    }
-  def df(f: JActorContext[Command] => Behavior[Command]) =
-    new F1e[JActorContext[Command], Behavior[Command]] {
-      override def apply(in: JActorContext[Command]) = f(in)
     }
 
   trait Lifecycle extends Common {
@@ -260,7 +240,8 @@ object BehaviorSpec {
     "Unhandled" must {
       "must return Unhandled" in {
         val Setup(testKit, inbox, aux) = mkCtx()
-        Behavior.interpretMessage(testKit.currentBehavior, testKit.context, Miss) should be(Behavior.UnhandledBehavior)
+        val next = Behavior.interpretMessage(testKit.currentBehavior, testKit.context, Miss)
+        Behavior.isUnhandled(next) should ===(true)
         inbox.receiveAll() should ===(Missed :: Nil)
         checkAux(Miss, aux)
       }
@@ -533,7 +514,7 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
         target(context, signal)
       }
     }
-    (SBehaviors.intercept(tap)(super.behavior(monitor)._1), inbox)
+    (SBehaviors.intercept(() => tap)(super.behavior(monitor)._1), inbox)
   }
 }
 
@@ -547,7 +528,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) -> null
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
     JBehaviors.receive(
-      fc((context, message) =>
+      (context, message) =>
         message match {
           case GetSelf =>
             monitor ! Self(context.getSelf)
@@ -569,47 +550,46 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
             SBehaviors.same
           case Stop       => SBehaviors.stopped
           case _: AuxPing => SBehaviors.unhandled
-        }),
-      fs((_, sig) => {
+        },
+      (_, sig) => {
         monitor ! ReceivedSignal(sig)
         SBehaviors.same
-      }))
+      })
 }
 
 class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) -> null
   def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-    JBehaviors.receive {
-      fc((context, message) =>
-        message match {
-          case GetSelf =>
-            monitor ! Self(context.getSelf)
-            SBehaviors.same
-          case Miss =>
-            monitor ! Missed
-            SBehaviors.unhandled
-          case Ignore =>
-            monitor ! Ignored
-            SBehaviors.same
-          case Ping =>
-            monitor ! Pong
-            behv(monitor, state)
-          case Swap =>
-            monitor ! Swapped
-            behv(monitor, state.next)
-          case GetState() =>
-            monitor ! state
-            SBehaviors.same
-          case Stop       => SBehaviors.stopped
-          case _: AuxPing => SBehaviors.unhandled
-        })
+    JBehaviors.receive { (context, message) =>
+      message match {
+        case GetSelf =>
+          monitor ! Self(context.getSelf)
+          SBehaviors.same
+        case Miss =>
+          monitor ! Missed
+          SBehaviors.unhandled
+        case Ignore =>
+          monitor ! Ignored
+          SBehaviors.same
+        case Ping =>
+          monitor ! Pong
+          behv(monitor, state)
+        case Swap =>
+          monitor ! Swapped
+          behv(monitor, state.next)
+        case GetState() =>
+          monitor ! state
+          SBehaviors.same
+        case Stop       => SBehaviors.stopped
+        case _: AuxPing => SBehaviors.unhandled
+      }
     }
 }
 
 class WidenedJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Command]("widenedListener")
-    JBehaviors.widened(super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
+    JBehaviors.widened(classOf[Command], super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
       inbox.ref ! x
       x
     })))) -> inbox
@@ -621,10 +601,10 @@ class DeferredJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Done]("deferredListener")
-    (JBehaviors.setup(df(_ => {
+    (JBehaviors.setup(_ => {
       inbox.ref ! Done
       super.behavior(monitor)._1
-    })), inbox)
+    }), inbox)
   }
 
   override def checkAux(signal: Signal, aux: Aux): Unit =
@@ -653,7 +633,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
         target(context, signal)
       }
     }
-    (JBehaviors.intercept(tap, super.behavior(monitor)._1), inbox)
+    (JBehaviors.intercept(() => tap, super.behavior(monitor)._1), inbox)
   }
 }
 

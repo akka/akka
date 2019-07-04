@@ -12,6 +12,7 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
+
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.Exception._
@@ -122,7 +123,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
     assert(perpetrator == self)
 
     setReceiveTimeout(Duration.Undefined)
-    cancelReceiveTimeout
+    cancelReceiveTimeout()
 
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
     children.foreach(stop)
@@ -141,7 +142,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
 
   protected def terminate(): Unit = {
     setReceiveTimeout(Duration.Undefined)
-    cancelReceiveTimeout
+    cancelReceiveTimeout()
 
     // prevent Deadletter(Terminated) messages
     unwatchWatchedActors(actor)
@@ -179,8 +180,8 @@ private[akka] trait FaultHandling { this: ActorCell =>
       suspendNonRecursive()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(_, _, _), child) => { setFailed(child); Set(child) }
-        case _                                => { setFailed(self); Set.empty }
+        case Envelope(Failed(_, _, _), child) => setFailed(child); Set(child)
+        case _                                => setFailed(self); Set.empty
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       t match {

@@ -15,7 +15,7 @@ import akka.actor.typed.javadsl.Adapter;
 import akka.testkit.javadsl.TestKit;
 import akka.testkit.TestProbe;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
 import static akka.actor.typed.javadsl.Behaviors.same;
@@ -50,11 +50,11 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
             return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
                 .onMessage(
                     Typed.Pong.class,
-                    (_ctx, message) -> {
+                    message -> {
                       Adapter.stop(context, second);
                       return same();
                     })
-                .onSignal(akka.actor.typed.Terminated.class, (_ctx, sig) -> stopped())
+                .onSignal(akka.actor.typed.Terminated.class, sig -> stopped())
                 .build();
           });
     }

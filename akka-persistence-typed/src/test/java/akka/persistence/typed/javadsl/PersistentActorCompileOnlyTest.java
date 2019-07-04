@@ -4,15 +4,16 @@
 
 package akka.persistence.typed.javadsl;
 
-import akka.actor.Scheduler;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.japi.function.Procedure;
+import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.SideEffect;
 
 import java.time.Duration;
 import java.util.*;
@@ -100,7 +101,7 @@ public class PersistentActorCompileOnlyTest {
 
           @Override
           public EventHandler<SimpleState, SimpleEvent> eventHandler() {
-            return (state, event) -> state.addEvent(event);
+            return SimpleState::addEvent;
           }
 
           // #install-event-adapter
@@ -110,6 +111,44 @@ public class PersistentActorCompileOnlyTest {
           }
           // #install-event-adapter
         };
+
+    static class AdditionalSettings
+        extends EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> {
+
+      public AdditionalSettings(PersistenceId persistenceId) {
+        super(new PersistenceId("p1"));
+      }
+
+      @Override
+      public SimpleState emptyState() {
+        return new SimpleState();
+      }
+
+      @Override
+      public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
+        return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
+      }
+
+      @Override
+      public EventHandler<SimpleState, SimpleEvent> eventHandler() {
+        return SimpleState::addEvent;
+      }
+
+      @Override
+      public SnapshotSelectionCriteria snapshotSelectionCriteria() {
+        return SnapshotSelectionCriteria.none();
+      }
+
+      @Override
+      public String journalPluginId() {
+        return "other.journal";
+      }
+
+      @Override
+      public String snapshotPluginId() {
+        return "other.snapshot-store";
+      }
+    }
   }
 
   abstract static class WithAck {
@@ -142,9 +181,9 @@ public class PersistentActorCompileOnlyTest {
     }
 
     // #commonChainedEffects
-    // Factored out Chained effect
-    static final SideEffect<ExampleState> commonChainedEffect =
-        SideEffect.create(s -> System.out.println("Command handled!"));
+    // Example factoring out a chained effect to use in several places with `thenRun`
+    static final Procedure<ExampleState> commonChainedEffect =
+        state -> System.out.println("Command handled!");
 
     // #commonChainedEffects
 
@@ -168,7 +207,7 @@ public class PersistentActorCompileOnlyTest {
                         Effect()
                             .persist(new Evt(cmd.data))
                             .thenRun(() -> cmd.sender.tell(new Ack()))
-                            .andThen(commonChainedEffect))
+                            .thenRun(commonChainedEffect))
                 .build();
             // #commonChainedEffects
           }

@@ -16,7 +16,7 @@ import akka.actor.typed.javadsl.Adapter;
 import akka.testkit.TestProbe;
 import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
 import static akka.actor.typed.javadsl.Behaviors.same;
@@ -74,7 +74,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
       return Behaviors.receive(Typed.Command.class)
           .onMessage(
               Typed.Ping.class,
-              (context, message) -> {
+              message -> {
                 message.replyTo.tell(new Pong());
                 return same();
               })

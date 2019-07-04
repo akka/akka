@@ -36,6 +36,7 @@ private[akka] object RoutedActorCell {
 /**
  * INTERNAL API
  */
+@ccompatUsedUntil213
 private[akka] class RoutedActorCell(
     _system: ActorSystemImpl,
     _ref: InternalActorRef,
