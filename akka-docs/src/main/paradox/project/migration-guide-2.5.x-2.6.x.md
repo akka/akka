@@ -390,6 +390,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `BehaviorInterceptor`, `Behaviors.monitor`, `Behaviors.withMdc` and @scala[`widen`]@java[`Behaviors.widen`] takes
   a @scala[`ClassTag` parameter (probably source compatible)]@java[`interceptMessageClass` parameter].
   `interceptMessageType` method in `BehaviorInterceptor` is replaced with this @scala[`ClassTag`]@java[`Class`] parameter.
+* `Behavior.orElse` has been removed because it wasn't safe together with `narrow`.
 
 #### Akka Typed Stream API changes
 
