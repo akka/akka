@@ -44,7 +44,7 @@ private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster)
     case hb: Heartbeat =>
       // TODO log the sequence nr once serializer is enabled
       if (verboseHeartbeat) cluster.ClusterLogger.logDebug("Heartbeat from [{}]", hb.from)
-      sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.sendNanoTime)
+      sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.creationTimeNanos)
   }
 
 }
@@ -67,7 +67,7 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent at regular intervals for failure detection.
    */
-  final case class Heartbeat(from: Address, sequenceNr: Long, sendNanoTime: Long)
+  final case class Heartbeat(from: Address, sequenceNr: Long, creationTimeNanos: Long)
       extends ClusterMessage
       with HeartbeatMessage
       with DeadLetterSuppression
@@ -75,7 +75,7 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent as reply to [[Heartbeat]] messages.
    */
-  final case class HeartbeatRsp(from: UniqueAddress, sequenceNr: Long, sendTimeNanos: Long)
+  final case class HeartbeatRsp(from: UniqueAddress, sequenceNr: Long, creationTimeNanos: Long)
       extends ClusterMessage
       with HeartbeatMessage
       with DeadLetterSuppression
