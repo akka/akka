@@ -248,7 +248,7 @@ class FlowDelaySpec extends StreamSpec {
       results.length shouldBe N
 
       // check if every elements are delayed by roughly the same amount of time
-      val delayHistogram = results.map(x ⇒ Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).map {
+      val delayHistogram = results.map(x => Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).map {
         case (bucket, delays) => (bucket, delays.length)
       }
 
