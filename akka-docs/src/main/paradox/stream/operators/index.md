@@ -306,7 +306,6 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 
 @@@ index
 
-* [combine](Source/combine.md)
 * [asSourceWithContext](Source/asSourceWithContext.md)
 * [fromPublisher](Source/fromPublisher.md)
 * [fromIterator](Source/fromIterator.md)
@@ -329,6 +328,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [asSubscriber](Source/asSubscriber.md)
 * [actorRef](Source/actorRef.md)
 * [actorRefWithAck](Source/actorRefWithAck.md)
+* [combine](Source/combine.md)
 * [zipN](Source/zipN.md)
 * [zipWithN](Source/zipWithN.md)
 * [queue](Source/queue.md)
