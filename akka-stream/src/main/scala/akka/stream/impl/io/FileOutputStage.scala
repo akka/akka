@@ -80,7 +80,9 @@ private[akka] final class FileOutputStage(path: Path, startPosition: Long, openO
       }
 
       override def postStop(): Unit = {
-        mat.tryFailure(new AbruptStageTerminationException(this))
+        val failure = new AbruptStageTerminationException(this)
+        closeFile(Some(failure))
+        mat.tryFailure(failure)
       }
 
       private def closeFile(failed: Option[Throwable]): Unit = {
