@@ -19,8 +19,6 @@ import akka.persistence.query.NoOffset
 object EventsByTagSpec {
   val config = s"""
     akka.loglevel = INFO
-    akka.stream.materializer.max-input-buffer-size = 1
-    akka.stream.materializer.initial-input-buffer-size = 1
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
 
     akka.persistence.journal.leveldb {

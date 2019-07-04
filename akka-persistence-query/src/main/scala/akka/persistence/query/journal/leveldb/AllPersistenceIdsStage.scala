@@ -15,10 +15,13 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphSt
  * INTERNAL API
  */
 @InternalApi
-private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPluginId: String, mat: ActorMaterializer)
+final private[akka] class AllPersistenceIdsStage(
+    liveQuery: Boolean,
+    writeJournalPluginId: String,
+    mat: ActorMaterializer)
     extends GraphStage[SourceShape[String]] {
 
-  val out: Outlet[String] = Outlet("AllPersistenceIdsSource")
+  val out: Outlet[String] = Outlet("AllPersistenceIds.out")
 
   override def shape: SourceShape[String] = SourceShape(out)
 

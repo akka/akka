@@ -32,9 +32,9 @@ private[akka] object EventsByTagStage {
 /**
  * INTERNAL API
  */
-private[leveldb] class EventsByTagStage(
-    val tag: String,
-    val fromOffset: Long,
+final private[leveldb] class EventsByTagStage(
+    tag: String,
+    fromOffset: Long,
     maxBufSize: Int,
     initialTooOffset: Long,
     writeJournalPluginId: String,
@@ -70,8 +70,8 @@ private[leveldb] class EventsByTagStage(
       }
 
       private def requestMore(): Unit = {
-        val limit = maxBufSize - bufferSize
         if (!replayInProgress) {
+          val limit = maxBufSize - bufferSize
           if (limit > 0) {
             replayInProgress = true
             outstandingReplay = false

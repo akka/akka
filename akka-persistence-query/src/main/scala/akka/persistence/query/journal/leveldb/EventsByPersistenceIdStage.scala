@@ -29,7 +29,7 @@ private[akka] object EventsByPersistenceIdStage {
  * INTERNAL API
  */
 @InternalApi
-private[akka] class EventsByPersistenceIdStage(
+final private[akka] class EventsByPersistenceIdStage(
     persistenceId: String,
     fromSequenceNr: Long,
     initialToSequenceNr: Long,
@@ -61,8 +61,8 @@ private[akka] class EventsByPersistenceIdStage(
       }
 
       private def requestMore(): Unit = {
-        val limit = maxBufSize - bufferSize
         if (!replayInProgress) {
+          val limit = maxBufSize - bufferSize
           if (limit > 0 && nextSequenceNr <= toSequenceNr) {
             replayInProgress = true
             outstandingReplay = false
