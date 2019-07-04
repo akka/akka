@@ -761,7 +761,7 @@ private[akka] class ShardRegion(
   }
 
   def askAllShards[T: ClassTag](msg: Any): Future[Seq[(ShardId, T)]] = {
-    implicit val timeout: Timeout = 3.seconds
+    implicit val timeout: Timeout = settings.shardRegionQueryTimeout
     Future.sequence(shards.toSeq.map {
       case (shardId, ref) => (ref ? msg).mapTo[T].map(t => (shardId, t))
     })

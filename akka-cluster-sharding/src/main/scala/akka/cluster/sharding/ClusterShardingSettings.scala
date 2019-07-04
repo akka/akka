@@ -72,6 +72,7 @@ object ClusterShardingSettings {
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
       passivateIdleEntityAfter = passivateIdleAfter,
+      shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
       coordinatorSingletonSettings,
       lease)
@@ -189,7 +190,6 @@ object ClusterShardingSettings {
         100.milliseconds,
         5)
     }
-
   }
 }
 
@@ -211,6 +211,7 @@ object ClusterShardingSettings {
  *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
  *   Use 0 to disable automatic passivation. It is always disabled if `rememberEntities` is enabled.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
+ * @param shardRegionQueryTimeout the timeout for querying a shard region, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
     val role: Option[String],
@@ -219,6 +220,7 @@ final class ClusterShardingSettings(
     val snapshotPluginId: String,
     val stateStoreMode: String,
     val passivateIdleEntityAfter: FiniteDuration,
+    val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
@@ -241,6 +243,7 @@ final class ClusterShardingSettings(
       snapshotPluginId,
       stateStoreMode,
       passivateIdleEntityAfter,
+      3.seconds,
       tuningParameters,
       coordinatorSingletonSettings,
       None)
@@ -302,6 +305,9 @@ final class ClusterShardingSettings(
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration.asScala)
 
+  def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
+    copy(shardRegionQueryTimeout = duration.asScala)
+
   def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 
@@ -320,6 +326,7 @@ final class ClusterShardingSettings(
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: String = stateStoreMode,
       passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
+      shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterShardingSettings =
@@ -330,6 +337,7 @@ final class ClusterShardingSettings(
       snapshotPluginId,
       stateStoreMode,
       passivateIdleAfter,
+      shardRegionQueryTimeout,
       tuningParameters,
       coordinatorSingletonSettings,
       leaseSettings)
