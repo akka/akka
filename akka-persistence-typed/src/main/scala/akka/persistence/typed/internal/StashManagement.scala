@@ -5,7 +5,7 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.Dropped
+import akka.actor.Dropped
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.StashOverflowException
 import akka.actor.typed.scaladsl.ActorContext
@@ -52,7 +52,7 @@ private[akka] trait StashManagement[C, E, S] {
               }
               context.log.warning("Stash buffer is full, dropping message [{}]", dropName)
             }
-            context.system.toUntyped.eventStream.publish(Dropped(msg, context.self))
+            context.system.toUntyped.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toUntyped))
           case StashOverflowStrategy.Fail =>
             throw e
         }

@@ -4,7 +4,9 @@
 
 package akka.actor.typed.internal.routing
 
+import akka.actor.Dropped
 import akka.actor.typed._
+import akka.actor.typed.eventstream.Publish
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, StashBuffer }
@@ -56,8 +58,13 @@ private final class InitialGroupRouterImpl[T](
       val activeGroupRouter = new GroupRouterImpl[T](ctx, serviceKey, routingLogic, update.isEmpty)
       stash.unstashAll(ctx, activeGroupRouter)
     case msg: T @unchecked =>
+      import akka.actor.typed.scaladsl.adapter._
       if (!stash.isFull) stash.stash(msg)
-      else ctx.system.deadLetters ! Dropped(msg, ctx.self) // don't fail on full stash
+      else
+        ctx.system.eventStream ! Publish(Dropped(
+          msg,
+          s"Stash is full in group router for [$serviceKey]",
+          ctx.self.toUntyped)) // don't fail on full stash
       this
   }
 }
@@ -85,8 +92,11 @@ private final class GroupRouterImpl[T](
       routeesEmpty = update.isEmpty
       this
     case msg: T @unchecked =>
+      import akka.actor.typed.scaladsl.adapter._
       if (!routeesEmpty) routingLogic.selectRoutee() ! msg
-      else ctx.system.deadLetters ! Dropped(msg, ctx.self)
+      else
+        ctx.system.eventStream ! Publish(
+          Dropped(msg, s"No routees in group router for [$serviceKey]", ctx.self.toUntyped))
       this
   }
 }

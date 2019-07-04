@@ -8,6 +8,7 @@ import scala.util.matching.Regex
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
+
 import akka.actor.{ ActorSystem, DeadLetter, UnhandledMessage }
 import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Debug, Error, Info, InitializeLogger, LogEvent, LoggerInitialized, Warning }
@@ -15,6 +16,8 @@ import akka.event.Logging
 import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable => JIterable }
+
+import akka.actor.Dropped
 import akka.util.BoxedType
 import akka.util.ccompat._
 
@@ -548,7 +551,7 @@ class TestEventListener extends Logging.DefaultLogger {
 
   override def receive = {
     case InitializeLogger(bus) =>
-      Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter], classOf[UnhandledMessage])
+      Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter], classOf[UnhandledMessage], classOf[Dropped])
         .foreach(bus.subscribe(context.self, _))
       sender() ! LoggerInitialized
     case Mute(filters)   => filters.foreach(addFilter)
@@ -560,15 +563,20 @@ class TestEventListener extends Logging.DefaultLogger {
         if (!filter(event)) {
           val msgPrefix =
             if (msg.isInstanceOf[SystemMessage]) "received dead system message"
-            else if (snd eq context.system.deadLetters) "received dead letter without sender"
+            else if (snd eq context.system.deadLetters) "received dead letter"
             else "received dead letter from " + snd
           val event2 = Warning(rcp.path.toString, rcp.getClass, msgPrefix + ": " + msg)
           if (!filter(event2)) print(event2)
         }
       }
     case UnhandledMessage(msg, sender, rcp) =>
-      val event = Warning(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg)
+      val event = Warning(rcp.path.toString, rcp.getClass, s"unhandled message from $sender: $msg")
       if (!filter(event)) print(event)
+    case Dropped(msg, reason, sender, rcp) =>
+      val event =
+        Warning(rcp.path.toString, rcp.getClass, s"dropped message from $sender. $reason: $msg")
+      if (!filter(event)) print(event)
+
     case m => print(Debug(context.system.name, this.getClass, m))
   }
 
