@@ -8,7 +8,6 @@ import java.util
 import java.util.Optional
 
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.ApiMayChange
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
@@ -3597,10 +3596,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def log(name: String): javadsl.Source[Out, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
-  /**
-   * API MAY CHANGE
-   */
-  @ApiMayChange
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 }

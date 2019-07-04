@@ -4,7 +4,6 @@
 
 package akka.stream.javadsl
 
-import akka.annotation.ApiMayChange
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
 import akka.event.LoggingAdapter
@@ -16,10 +15,6 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
 
-/**
- * API MAY CHANGE
- */
-@ApiMayChange
 object FlowWithContext {
 
   def create[In, Ctx](): FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] =
@@ -42,9 +37,7 @@ object FlowWithContext {
  *
  * An "empty" flow can be created by calling `FlowWithContext[Ctx, T]`.
  *
- * API MAY CHANGE
  */
-@ApiMayChange
 final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
     delegate: javadsl.Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat])
     extends GraphDelegate(delegate) {
