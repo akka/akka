@@ -6,17 +6,21 @@ package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.StashBufferImpl
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 
-object StashBuffer {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object StashBuffer {
 
   /**
+   * INTERNAL API
    * Create an empty message buffer.
    *
    * @param capacity the buffer can hold at most this number of messages
    * @return an empty message buffer
    */
-  private[akka] def apply[T](ctx: ActorContext[T], capacity: Int): StashBuffer[T] =
+  @InternalApi private[akka] def apply[T](ctx: ActorContext[T], capacity: Int): StashBuffer[T] =
     StashBufferImpl[T](ctx, capacity)
 }
 

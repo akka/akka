@@ -32,7 +32,7 @@ object Behaviors {
   /**
    * Support for stashing messages to unstash at a later timej.
    */
-  def withStash[T](capacity: Int, factory: StashBuffer[T] => Behavior[T]): Behavior[T] =
+  def withStash[T](capacity: Int)(factory: StashBuffer[T] => Behavior[T]): Behavior[T] =
     setup(ctx => {
       val stash = StashBuffer[T](ctx, capacity)
       factory(stash)
