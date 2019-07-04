@@ -51,7 +51,7 @@ public class SpawnProtocolDocTest {
         AskPattern.ask(
             system,
             replyTo ->
-                new SpawnProtocol.Spawn<>(HelloWorld.greeter, "greeter", Props.empty(), replyTo),
+                new SpawnProtocol.Spawn<>(HelloWorld.create(), "greeter", Props.empty(), replyTo),
             timeout,
             system.scheduler());
 
