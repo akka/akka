@@ -1505,11 +1505,11 @@ private[stream] object Collect {
         super.onUpstreamFinish()
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (isEnabled(logLevels.onFinish))
-          log.log(logLevels.onFinish, "[{}] Downstream finished.", name)
+          log.log(logLevels.onFinish, "[{}] Downstream finished.", name) // FIXME
 
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause: Throwable)
       }
 
       private def isEnabled(l: LogLevel): Boolean = l.asInt != OffInt

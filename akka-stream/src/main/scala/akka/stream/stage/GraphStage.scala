@@ -1433,11 +1433,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           available = true
           handler.onPull()
         }
-      case SubSink.Cancel =>
+      case SubSink.Cancel(cause) =>
         if (!closed) {
           available = false
           closed = true
-          handler.onDownstreamFinish()
+          handler.onDownstreamFinish(cause)
         }
     }
 
