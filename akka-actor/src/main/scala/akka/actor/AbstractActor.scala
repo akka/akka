@@ -11,7 +11,6 @@ import scala.runtime.BoxedUnit
 import java.util.Optional
 
 import akka.util.JavaDurationConverters
-import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
