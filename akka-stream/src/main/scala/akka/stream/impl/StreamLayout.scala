@@ -502,15 +502,15 @@ import scala.util.control.NonFatal
   def onSubscriptionTimeout(am: ActorMaterializer): Unit = {
     import StreamSubscriptionTimeoutTerminationMode._
     get() match {
-      case null | _: Publisher[_] ⇒
+      case null | _: Publisher[_] =>
         am.settings.subscriptionTimeoutSettings.mode match {
-          case CancelTermination ⇒ subscribe(new CancellingSubscriber[T])
-          case WarnTermination ⇒
+          case CancelTermination => subscribe(new CancellingSubscriber[T])
+          case WarnTermination =>
             am.logger.warning("Subscription timeout for {}", this)
-          case NoopTermination ⇒ // never happens
+          case NoopTermination => // never happens
         }
 
-      case _ ⇒ // we're ok
+      case _ => // we're ok
     }
   }
 
