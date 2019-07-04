@@ -10,7 +10,14 @@ import java.nio.file.{ OpenOption, Path }
 import scala.collection.immutable
 import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
+import akka.stream.{
+  AbruptStageTerminationException,
+  Attributes,
+  IOOperationIncompleteException,
+  IOResult,
+  Inlet,
+  SinkShape
+}
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import akka.util.ByteString
 import akka.util.ccompat.JavaConverters._
@@ -70,6 +77,10 @@ private[akka] final class FileOutputStage(path: Path, startPosition: Long, openO
       override def onUpstreamFinish(): Unit = {
         closeFile(None)
         completeStage()
+      }
+
+      override def postStop(): Unit = {
+        mat.tryFailure(new AbruptStageTerminationException(this))
       }
 
       private def closeFile(failed: Option[Throwable]): Unit = {
