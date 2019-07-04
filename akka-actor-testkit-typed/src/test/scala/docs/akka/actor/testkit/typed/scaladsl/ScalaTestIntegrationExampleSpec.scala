@@ -5,6 +5,7 @@
 package docs.akka.actor.testkit.typed.scaladsl
 
 import com.github.ghik.silencer.silent
+import docs.akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.{ echoActor, Ping, Pong }
 
 //#scalatest-integration
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -17,8 +18,10 @@ class ScalaTestIntegrationExampleSpec extends ScalaTestWithActorTestKit with Wor
 
   "Something" must {
     "behave correctly" in {
-      val probe = createTestProbe[String]()
-      // ... assertions etc.
+      val pinger = testKit.spawn(echoActor, "ping")
+      val probe = testKit.createTestProbe[Pong]()
+      pinger ! Ping("hello", probe.ref)
+      probe.expectMessage(Pong("hello"))
     }
   }
 }
