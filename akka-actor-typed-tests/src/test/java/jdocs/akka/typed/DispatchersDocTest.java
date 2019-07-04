@@ -26,6 +26,7 @@ public class DispatchersDocTest {
                 yourBehavior,
                 "DispatcherFromConfig",
                 DispatcherSelector.fromConfig("your-dispatcher"));
+            context.spawn(yourBehavior, "ParentDispatcher", DispatcherSelector.sameAsParent());
             // #spawn-dispatcher
 
             return Behaviors.same();

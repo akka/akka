@@ -10,4 +10,5 @@ public class DispatcherSelectorTest {
 
   private DispatcherSelector def = DispatcherSelector.defaultDispatcher();
   private DispatcherSelector conf = DispatcherSelector.fromConfig("somepath");
+  private DispatcherSelector parent = DispatcherSelector.sameAsParent();
 }
