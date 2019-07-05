@@ -74,7 +74,8 @@ final case class Address private (protocol: String, system: String, host: Option
    * are any unusual characters in the host string.
    */
   @InternalApi
-  private[akka] def hasInvalidHostCharacters: Boolean = host.exists(_.contains("_"))
+  private[akka] def hasInvalidHostCharacters: Boolean =
+    host.exists(Address.InvalidHostRegex.findFirstIn(_).nonEmpty)
 
   /** INTERNAL API */
   @InternalApi
@@ -84,6 +85,9 @@ final case class Address private (protocol: String, system: String, host: Option
 }
 
 object Address {
+
+  // if underscore and no dot after, then invalid
+  val InvalidHostRegex = "_[^.]*$".r
 
   /**
    * Constructs a new Address with the specified protocol and system name
