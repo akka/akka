@@ -19,7 +19,7 @@ import akka.annotation.DoNotInherit
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class StashBuffer[T] {
+@DoNotInherit trait StashBuffer[T] {
 
   /**
    * Check if the message buffer is empty.
