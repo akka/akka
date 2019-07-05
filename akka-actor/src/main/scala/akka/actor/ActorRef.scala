@@ -259,6 +259,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * INTERNAL API: Returns “true” if the actor is locally known to be terminated, “false” if
    * alive or uncertain.
    */
+  @InternalApi
   private[akka] def isTerminated: Boolean
 }
 
@@ -462,7 +463,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def suspend(): Unit = ()
   override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+
   override private[akka] def isTerminated = false
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = ()
@@ -554,7 +555,6 @@ private[akka] class EmptyLocalActorRef(
     val eventStream: EventStream)
     extends MinimalActorRef {
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated = true
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
@@ -775,7 +775,11 @@ private[akka] final class FunctionRef(
   private[this] var watching = ActorCell.emptyActorRefSet
   private[this] var _watchedBy: OptionVal[Set[ActorRef]] = OptionVal.Some(ActorCell.emptyActorRefSet)
 
-  override def isTerminated: Boolean = _watchedBy.isEmpty
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  override private[akka] def isTerminated: Boolean = _watchedBy.isEmpty
 
   //noinspection EmptyCheck
   protected def sendTerminated(): Unit = {
