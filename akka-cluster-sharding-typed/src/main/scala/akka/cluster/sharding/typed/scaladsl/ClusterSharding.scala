@@ -312,7 +312,7 @@ object StartEntity {
  *
  * Not for user extension.
  */
-@DoNotInherit trait EntityTypeKey[T] {
+@DoNotInherit trait EntityTypeKey[-T] {
 
   /**
    * Name of the entity type.
@@ -362,7 +362,7 @@ object EntityTypeKey {
  * [[ActorRef]] and watch it in case such notification is desired.
  * Not for user extension.
  */
-@DoNotInherit trait EntityRef[M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
+@DoNotInherit trait EntityRef[-M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
