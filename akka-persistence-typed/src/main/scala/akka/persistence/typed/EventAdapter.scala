@@ -14,8 +14,9 @@ import akka.annotation.InternalApi
  * Typical use cases include (but are not limited to):
  * <ul>
  *   <li>extracting events from "envelopes"</li>
- *   <li>manually converting to the Journals storage format, such as JSON, BSON or any specialised binary format</li>
- *   <li>adapting incoming events from a "data model" to the "domain model"</li>
+ *   <li>adapting events from a "domain model" to the "data model", e.g. converting to the Journals storage format,
+ *       such as JSON, BSON or any specialised binary format</li>
+ *   <li>adapting events from a "data model" to the "domain model"</li>
  *   <li>adding metadata that is understood by the journal</li>
  *   <li>migration by splitting up events into sequences of other events</li>
  *   <li>migration filtering out unused events, or replacing an event with another</li>

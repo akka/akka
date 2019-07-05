@@ -115,12 +115,12 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
    * old records from v2.3 may have this as `true` if
    * it was a non-permanent delete.
    */
-  def deleted: Boolean
+  def deleted: Boolean // FIXME deprecate, issue #27278
 
   /**
    * Not used, can be `null`
    */
-  def sender: ActorRef
+  def sender: ActorRef // FIXME deprecate, issue #27278
 
   /**
    * Creates a new copy of this [[PersistentRepr]].

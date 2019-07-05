@@ -130,7 +130,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           } catch {
             case NonFatal(ex) =>
               state = state.copy(repr.sequenceNr)
-              onRecoveryFailure(ex, Option(eventForErrorReporting.getOrElse(null)))
+              onRecoveryFailure(ex, eventForErrorReporting.toOption)
           }
 
         case RecoverySuccess(highestSeqNr) =>
