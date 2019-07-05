@@ -222,6 +222,7 @@ In an actual session child you would likely want to include some form of timeout
  * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
  * It increases complexity, since each such child can execute concurrently with other children and the parent
  
+<a id="typed-scheduling"></a>
 ## Scheduling messages to self
 
 The following example demonstrates how to use timers to schedule messages to an actor. 

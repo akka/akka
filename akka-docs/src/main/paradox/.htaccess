@@ -23,3 +23,5 @@ RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/unzip\.html$ $1/stream/o
 RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/UnzipWith\.html$ $1/stream/operators/UnzipWith.html
 
 RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/apply\.html$ $1/stream/operators/Source/from.html
+
+RedirectMatch 301 ^(.*)/guide/(.*) $1/typed/guide/$2
