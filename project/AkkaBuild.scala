@@ -157,7 +157,7 @@ object AkkaBuild {
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
-    licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+    licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
 
