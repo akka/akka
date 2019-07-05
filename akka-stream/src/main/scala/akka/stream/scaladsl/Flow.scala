@@ -2404,6 +2404,43 @@ trait FlowOps[+Out, +Mat] {
    */
   def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Repr[(A, U)] = {
+    via(zipAllFlow(that, thisElem, thatElem))
+  }
+
+  protected def zipAllFlow[U, A >: Out, Mat2](
+      that: Graph[SourceShape[U], Mat2],
+      thisElem: A,
+      thatElem: U): Flow[Out @uncheckedVariance, (A, U), Mat2] = {
+    case object passedEnd
+    val passedEndSrc = Source.repeat(passedEnd)
+    val left: Flow[Out, Any, NotUsed] = Flow[A].concat(passedEndSrc)
+    val right: Source[Any, Mat2] = Source.fromGraph(that).concat(passedEndSrc)
+    val zipFlow: Flow[Out, (A, U), Mat2] = left
+      .zipMat(right)(Keep.right)
+      .takeWhile {
+        case (`passedEnd`, `passedEnd`) => false
+        case _                          => true
+      }
+      .map {
+        case (`passedEnd`, r: U @unchecked) => (thisElem, r)
+        case (l: A @unchecked, `passedEnd`) => (l, thatElem)
+        case t: (A, U) @unchecked           => t
+      }
+    zipFlow
+  }
+
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
     GraphDSL.create(that) { implicit b => r =>
       val zip = b.add(Zip[Out, U]())
@@ -2909,6 +2946,24 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3): ReprMat[(Out, U), Mat3] =
     viaMat(zipGraph(that))(matF)
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): ReprMat[(A, U), Mat3] = {
+    viaMat(zipAllFlow(that, thisElem, thatElem))(matF)
+  }
 
   /**
    * Put together the elements of current flow and the given [[Source]]
