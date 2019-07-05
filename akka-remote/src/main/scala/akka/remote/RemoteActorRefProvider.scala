@@ -320,7 +320,7 @@ private[akka] class RemoteActorRefProvider(
       "remote-deployment-watcher")
 
   /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
-  protected def warnIfDirectUse() = {
+  protected def warnIfDirectUse(): Unit = {
     if (remoteSettings.WarnAboutDirectUse) {
       log.warning(
         "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
@@ -426,11 +426,6 @@ private[akka] class RemoteActorRefProvider(
         }
       }
 
-      def warnThenFallback() = {
-        warnIfNotRemoteActorRef(path)
-        local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
-      }
-
       (Iterator(props.deploy) ++ deployment.iterator).reduce((a, b) => b.withFallback(a)) match {
         case d @ Deploy(_, _, _, RemoteScope(address), _, _) =>
           if (hasAddress(address)) {
@@ -456,13 +451,16 @@ private[akka] class RemoteActorRefProvider(
                   (RootActorPath(address) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements)
                     .withUid(path.uid)
                 new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
-              } else warnThenFallback()
+              } else {
+                warnIfNotRemoteActorRef(path)
+                local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+              }
 
             } catch {
               case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
             }
         case _ =>
-          warnThenFallback()
+          local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
 
