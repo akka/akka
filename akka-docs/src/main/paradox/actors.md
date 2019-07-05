@@ -1,8 +1,19 @@
-# Actors
+# Classic Actors
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistense](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see @ref[actors](typed/actors.md).
+
+@@@
 
 ## Dependency
 
-To use Actors, you must add the following dependency in your project:
+To use Classic Actors, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

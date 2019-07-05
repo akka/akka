@@ -144,7 +144,7 @@ interpreted correctly on replay. Cluster Sharding ensures that there is only one
 
 ## Accessing the ActorContext
 
-If the persistent behavior needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by 
+If the `EventSourcedBehavior` needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by
 wrapping construction with `Behaviors.setup`:
 
 Scala
@@ -357,20 +357,20 @@ to another type that is then passed to the journal.
 Defining an event adapter is done by extending an EventAdapter:
 
 Scala
-:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/EventSourcedBehaviorSpec.scala) { #event-wrapper }
+:  @@snip [x](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #event-wrapper }
 
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
 
-Then install it on a persistent behavior:
+Then install it on a `EventSourcedBehavior`:
 
 Scala
-:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/EventSourcedBehaviorSpec.scala) { #install-event-adapter }
+:  @@snip [x](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #install-event-adapter }
 
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #install-event-adapter }
 
-## Wrapping Persistent Behaviors
+## Wrapping EventSourcedBehavior
 
 When creating a `EventSourcedBehavior`, it is possible to wrap `EventSourcedBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance

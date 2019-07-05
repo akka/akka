@@ -8,8 +8,16 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
-import akka.actor.{ Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, RootActorPath }
+import akka.actor.{
+  Actor,
+  ActorLogging,
+  ActorPath,
+  ActorSelection,
+  Address,
+  DeadLetterSuppression,
+  Props,
+  RootActorPath
+}
 import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
@@ -23,19 +31,20 @@ import akka.util.ccompat._
  */
 @InternalApi
 @ccompatUsedUntil213
-private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLogging {
+private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster) extends Actor with ActorLogging {
   import ClusterHeartbeatSender._
 
   // Important - don't use Cluster(context.system) in constructor because that would
   // cause deadlock. See startup sequence in ClusterDaemon.
-  lazy val cluster = Cluster(context.system)
-  lazy val selfHeartbeatRsp = HeartbeatRsp(cluster.selfUniqueAddress)
+  lazy val cluster = getCluster()
+
   lazy val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
 
-  def receive = {
-    case Heartbeat(from) =>
-      if (verboseHeartbeat) cluster.ClusterLogger.logDebug("Heartbeat from [{}]", from)
-      sender() ! selfHeartbeatRsp
+  def receive: Receive = {
+    case hb: Heartbeat =>
+      // TODO log the sequence nr once serializer is enabled
+      if (verboseHeartbeat) cluster.ClusterLogger.logDebug("Heartbeat from [{}]", hb.from)
+      sender() ! HeartbeatRsp(cluster.selfUniqueAddress, hb.sequenceNr, hb.creationTimeNanos)
   }
 
 }
@@ -44,6 +53,7 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
 @InternalApi
 private[cluster] object ClusterHeartbeatReceiver {
 
+  def props(clusterFactory: () => Cluster): Props = Props(new ClusterHeartbeatReceiver(clusterFactory))
   def name: String = "heartbeatReceiver"
   def path(address: Address): ActorPath =
     RootActorPath(address) / "system" / "cluster" / name
@@ -57,12 +67,15 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent at regular intervals for failure detection.
    */
-  final case class Heartbeat(from: Address) extends ClusterMessage with HeartbeatMessage with DeadLetterSuppression
+  final case class Heartbeat(from: Address, sequenceNr: Long, creationTimeNanos: Long)
+      extends ClusterMessage
+      with HeartbeatMessage
+      with DeadLetterSuppression
 
   /**
    * Sent as reply to [[Heartbeat]] messages.
    */
-  final case class HeartbeatRsp(from: UniqueAddress)
+  final case class HeartbeatRsp(from: UniqueAddress, sequenceNr: Long, creationTimeNanos: Long)
       extends ClusterMessage
       with HeartbeatMessage
       with DeadLetterSuppression
@@ -80,7 +93,7 @@ private[cluster] object ClusterHeartbeatSender {
  * a few other nodes, which will reply and then this actor updates the
  * failure detector.
  */
-private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogging {
+private[cluster] class ClusterHeartbeatSender extends Actor with ActorLogging {
   import ClusterHeartbeatSender._
 
   val cluster = Cluster(context.system)
@@ -93,7 +106,12 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   val filterInternalClusterMembers: Member => Boolean =
     _.dataCenter == cluster.selfDataCenter
 
-  val selfHeartbeat = Heartbeat(selfAddress)
+  var sequenceNr = 0
+
+  def selfHeartbeat(): Heartbeat = {
+    sequenceNr += 1
+    Heartbeat(selfAddress, sequenceNr, System.nanoTime())
+  }
 
   val failureDetector = cluster.failureDetector
 
@@ -141,7 +159,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   def active: Actor.Receive = {
     case HeartbeatTick                => heartbeat()
-    case HeartbeatRsp(from)           => heartbeatRsp(from)
+    case response: HeartbeatRsp       => heartbeatRsp(response)
     case MemberRemoved(m, _)          => removeMember(m)
     case evt: MemberEvent             => addMember(evt.member)
     case UnreachableMember(m)         => unreachableMember(m)
@@ -181,6 +199,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     state = state.reachableMember(m.uniqueAddress)
 
   def heartbeat(): Unit = {
+    val nextHB = selfHeartbeat()
     state.activeReceivers.foreach { to =>
       if (failureDetector.isMonitoring(to.address)) {
         if (verboseHeartbeat) logDebug("Heartbeat to [{}]", to.address)
@@ -190,7 +209,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ExpectedFirstHeartbeat(to))
       }
-      heartbeatReceiver(to.address) ! selfHeartbeat
+      heartbeatReceiver(to.address) ! nextHB
     }
 
     checkTickInterval()
@@ -210,9 +229,10 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
 
   }
 
-  def heartbeatRsp(from: UniqueAddress): Unit = {
-    if (verboseHeartbeat) logDebug("Heartbeat response from [{}]", from.address)
-    state = state.heartbeatRsp(from)
+  def heartbeatRsp(response: HeartbeatRsp): Unit = {
+    // TODO: log response time and validate sequence nrs once serialisation of sendTime is released
+    if (verboseHeartbeat) logDebug("Heartbeat response from [{}]", response.from.address)
+    state = state.heartbeatRsp(response.from)
   }
 
   def triggerFirstHeartbeat(from: UniqueAddress): Unit =

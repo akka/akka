@@ -9,7 +9,10 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Actor
 import akka.actor.ActorRef
+import akka.actor.AllDeadLetters
 import akka.actor.DeadLetter
+import akka.actor.DeadLetterActorRef
+import akka.actor.Dropped
 import akka.event.Logging.Info
 import akka.util.PrettyDuration._
 
@@ -20,8 +23,10 @@ class DeadLetterListener extends Actor {
   private val isAlwaysLoggingDeadLetters = maxCount == Int.MaxValue
   protected var count: Int = 0
 
-  override def preStart(): Unit =
+  override def preStart(): Unit = {
     eventStream.subscribe(self, classOf[DeadLetter])
+    eventStream.subscribe(self, classOf[Dropped])
+  }
 
   // don't re-subscribe, skip call to preStart
   override def postRestart(reason: Throwable): Unit = ()
@@ -51,54 +56,67 @@ class DeadLetterListener extends Actor {
       }
 
   private def receiveWithAlwaysLogging: Receive = {
-    case DeadLetter(message, snd, recipient) =>
+    case d: AllDeadLetters =>
       incrementCount()
-      logDeadLetter(message, snd, recipient, doneMsg = "")
+      logDeadLetter(d, doneMsg = "")
   }
 
   private def receiveWithMaxCountLogging: Receive = {
-    case DeadLetter(message, snd, recipient) =>
+    case d: AllDeadLetters =>
       incrementCount()
       if (count == maxCount) {
-        logDeadLetter(message, snd, recipient, ", no more dead letters will be logged")
+        logDeadLetter(d, ", no more dead letters will be logged")
         context.stop(self)
       } else {
-        logDeadLetter(message, snd, recipient, "")
+        logDeadLetter(d, "")
       }
   }
 
   private def receiveWithSuspendLogging(suspendDuration: FiniteDuration): Receive = {
-    case DeadLetter(message, snd, recipient) =>
+    case d: AllDeadLetters =>
       incrementCount()
       if (count == maxCount) {
         val doneMsg = s", no more dead letters will be logged in next [${suspendDuration.pretty}]"
-        logDeadLetter(message, snd, recipient, doneMsg)
+        logDeadLetter(d, doneMsg)
         context.become(receiveWhenSuspended(suspendDuration, Deadline.now + suspendDuration))
       } else
-        logDeadLetter(message, snd, recipient, "")
+        logDeadLetter(d, "")
   }
 
   private def receiveWhenSuspended(suspendDuration: FiniteDuration, suspendDeadline: Deadline): Receive = {
-    case DeadLetter(message, snd, recipient) =>
+    case d: AllDeadLetters =>
       incrementCount()
       if (suspendDeadline.isOverdue()) {
         val doneMsg = s", of which ${count - maxCount - 1} were not logged. The counter will be reset now"
-        logDeadLetter(message, snd, recipient, doneMsg)
+        logDeadLetter(d, doneMsg)
         count = 0
         context.become(receiveWithSuspendLogging(suspendDuration))
       }
   }
 
-  private def logDeadLetter(message: Any, snd: ActorRef, recipient: ActorRef, doneMsg: String): Unit = {
-    val origin = if (snd eq context.system.deadLetters) "without sender" else s"from $snd"
+  private def logDeadLetter(d: AllDeadLetters, doneMsg: String): Unit = {
+    val origin = if (isReal(d.sender)) s" from ${d.sender}" else ""
+    val logMessage = d match {
+      case dropped: Dropped =>
+        val destination = if (isReal(d.recipient)) s" to ${d.recipient}" else ""
+        s"Message [${d.message.getClass.getName}]$origin$destination was dropped. ${dropped.reason}. " +
+        s"[$count] dead letters encountered$doneMsg. "
+      case _ =>
+        s"Message [${d.message.getClass.getName}]$origin to ${d.recipient} was not delivered. " +
+        s"[$count] dead letters encountered$doneMsg. " +
+        s"If this is not an expected behavior then ${d.recipient} may have terminated unexpectedly. "
+    }
     eventStream.publish(
       Info(
-        recipient.path.toString,
-        recipient.getClass,
-        s"Message [${message.getClass.getName}] $origin to $recipient was not delivered. [$count] dead letters encountered$doneMsg. " +
-        s"If this is not an expected behavior then $recipient may have terminated unexpectedly. " +
+        d.recipient.path.toString,
+        d.recipient.getClass,
+        logMessage +
         "This logging can be turned off or adjusted with configuration settings 'akka.log-dead-letters' " +
         "and 'akka.log-dead-letters-during-shutdown'."))
+  }
+
+  private def isReal(snd: ActorRef): Boolean = {
+    (snd ne ActorRef.noSender) && (snd ne context.system.deadLetters) && !snd.isInstanceOf[DeadLetterActorRef]
   }
 
 }

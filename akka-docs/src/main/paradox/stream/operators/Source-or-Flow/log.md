@@ -21,7 +21,7 @@ This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attrib
 ## Example
 
 Scala
-:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOrFlow.scala) { #log }
+:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Log.scala) { #log }
 
 Java
 :   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #log }

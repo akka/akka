@@ -126,8 +126,8 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         }
       }
 
-      EventFilter.warning(occurrences = 1, message = "received dead letter without sender: boo").intercept {
-        EventFilter.info(occurrences = 1, start = "Message [java.lang.String] without sender").intercept {
+      EventFilter.warning(occurrences = 1, message = "received dead letter: boo").intercept {
+        EventFilter.info(occurrences = 1, start = "Message [java.lang.String]").intercept {
           spawn(snitch)
         }
       }

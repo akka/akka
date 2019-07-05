@@ -4,32 +4,46 @@
 
 package akka.actor.typed
 
+import scala.reflect.ClassTag
+
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.util.BoxedType
 
 /**
  * A behavior interceptor allows for intercepting message and signal reception and perform arbitrary logic -
- * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors. Many built-in
- * intercepting behaviors are provided through factories in the respective `Behaviors`.
+ * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors.
  *
- * If the interceptor does keep mutable state care must be taken to create the instance in a `setup` block
- * so that a new instance is created per spawned actor rather than shared among actor instance.
+ * The `BehaviorInterceptor` API is considered a low level tool for building other features and
+ * shouldn't be used for "normal" application logic. Several built-in intercepting behaviors
+ * are provided through factories in the respective `Behaviors`.
  *
- * @tparam O The outer message type – the type of messages the intercepting behavior will accept
- * @tparam I The inner message type - the type of message the wrapped behavior accepts
+ * If the interceptor does keep mutable state care must be taken to create a new instance from
+ * the factory function of `Behaviors.intercept` so that a new instance is created per spawned
+ * actor rather than shared among actor instance.
+ *
+ * @param interceptMessageClass Ensures that the interceptor will only receive `O` message types.
+ *                              If the message is not of this class or a subclass thereof
+ *                              (e.g. a private protocol) will bypass the interceptor and be
+ *                              continue to the inner behavior untouched.
+ *
+ * @tparam Outer The outer message type – the type of messages the intercepting behavior will accept
+ * @tparam Inner The inner message type - the type of message the wrapped behavior accepts
+ *
+ * @see [[BehaviorSignalInterceptor]]
  */
-abstract class BehaviorInterceptor[O, I] {
+abstract class BehaviorInterceptor[Outer, Inner](val interceptMessageClass: Class[Outer]) {
   import BehaviorInterceptor._
 
   /**
-   * Allows for applying the interceptor only to certain message types. Useful if the official protocol and the actual
-   * protocol of an actor causes problems, for example class cast exceptions for a message not of type `O` that
-   * the actor still knows how to deal with. Note that this is only possible to use when `O` and `I` are the same type.
-   *
-   * @return A subtype of `O` that should be intercepted or `null` to intercept all `O`s.
-   *         Subtypes of `O` matching this are passed directly to the inner behavior without interception.
+   * Scala API: The `ClassTag` for `Outer` ensures that only messages of this class or a subclass
+   * thereof will be intercepted. Other message types (e.g. a private protocol) will bypass the
+   * interceptor and be continue to the inner behavior untouched.
    */
-  // null for all to avoid having to deal with class tag/explicit class in the default case of no filter
-  def interceptMessageType: Class[_ <: O] = null
+  def this()(implicit interceptMessageClassTag: ClassTag[Outer]) =
+    this({
+      val runtimeClass = interceptMessageClassTag.runtimeClass
+      (if (runtimeClass eq null) runtimeClass else BoxedType(runtimeClass)).asInstanceOf[Class[Outer]]
+    })
 
   /**
    * Override to intercept actor startup. To trigger startup of
@@ -37,7 +51,7 @@ abstract class BehaviorInterceptor[O, I] {
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] =
+  def aroundStart(ctx: TypedActorContext[Outer], target: PreStartTarget[Inner]): Behavior[Inner] =
     target.start(ctx)
 
   /**
@@ -47,15 +61,18 @@ abstract class BehaviorInterceptor[O, I] {
    *
    * @return The behavior for next message or signal
    */
-  def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
+  def aroundReceive(ctx: TypedActorContext[Outer], msg: Outer, target: ReceiveTarget[Inner]): Behavior[Inner]
 
   /**
-   * Intercept a signal sent to the running actor. Pass the signal on to the next behavior
+   * Override to intercept a signal sent to the running actor. Pass the signal on to the next behavior
    * in the stack by passing it to `target.apply`.
    *
    * @return The behavior for next message or signal
+   *
+   * @see [[BehaviorSignalInterceptor]]
    */
-  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
+  def aroundSignal(ctx: TypedActorContext[Outer], signal: Signal, target: SignalTarget[Inner]): Behavior[Inner] =
+    target(ctx, signal)
 
   /**
    * @return `true` if this behavior logically the same as another behavior interceptor and can therefore be eliminated
@@ -108,5 +125,45 @@ object BehaviorInterceptor {
   trait SignalTarget[T] {
     def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[T]
   }
+
+}
+
+/**
+ * A behavior interceptor allows for intercepting signals reception and perform arbitrary logic -
+ * transform, filter, send to a side channel etc.
+ *
+ * The `BehaviorSignalInterceptor` API is considered a low level tool for building other features and
+ * shouldn't be used for "normal" application logic. Several built-in intercepting behaviors
+ * are provided through factories in the respective `Behaviors`.
+ *
+ * If the interceptor does keep mutable state care must be taken to create a new instance from
+ * the factory function of `Behaviors.intercept` so that a new instance is created per spawned
+ * actor rather than shared among actor instance.
+ *
+ * @tparam Inner The inner message type - the type of message the wrapped behavior accepts
+ *
+ * @see [[BehaviorInterceptor]]
+ */
+abstract class BehaviorSignalInterceptor[Inner] extends BehaviorInterceptor[Inner, Inner](null) {
+  import BehaviorInterceptor._
+
+  /**
+   * Only signals and not messages are intercepted by `BehaviorSignalInterceptor`.
+   */
+  final override def aroundReceive(
+      ctx: TypedActorContext[Inner],
+      msg: Inner,
+      target: ReceiveTarget[Inner]): Behavior[Inner] = {
+    // by using `null` as interceptMessageClass of `BehaviorInterceptor` no messages will pass here
+    throw new IllegalStateException(s"Unexpected message in ${getClass.getName}, it should only intercept signals.")
+  }
+
+  /**
+   * Intercept a signal sent to the running actor. Pass the signal on to the next behavior
+   * in the stack by passing it to `target.apply`.
+   *
+   * @return The behavior for next message or signal
+   */
+  override def aroundSignal(ctx: TypedActorContext[Inner], signal: Signal, target: SignalTarget[Inner]): Behavior[Inner]
 
 }

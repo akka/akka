@@ -1,4 +1,4 @@
-# Cluster Metrics Extension
+# Classic Cluster Metrics Extension
 
 ## Dependency
 

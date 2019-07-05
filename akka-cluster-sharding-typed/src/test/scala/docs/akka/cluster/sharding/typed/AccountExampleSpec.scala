@@ -65,17 +65,28 @@ class AccountExampleSpec extends ScalaTestWithActorTestKit(AccountExampleSpec.co
       probe.expectMessage(Confirmed)
       ref ! Withdraw(10, probe.ref)
       probe.expectMessage(Confirmed)
+
+      // The same probe can be used with other commands too:
+      ref ! GetBalance(probe.ref)
+      probe.expectMessage(CurrentBalance(90))
     }
 
     "reject Withdraw overdraft" in {
+      // AccountCommand[_] is the command type, but it should also be possible to narrow it to
+      // AccountCommand[OperationResult]
       val probe = createTestProbe[OperationResult]()
-      val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "3")
+      val ref = ClusterSharding(system).entityRefFor[AccountCommand[OperationResult]](AccountEntity.TypeKey, "3")
       ref ! CreateAccount(probe.ref)
       probe.expectMessage(Confirmed)
       ref ! Deposit(100, probe.ref)
       probe.expectMessage(Confirmed)
       ref ! Withdraw(110, probe.ref)
       probe.expectMessageType[Rejected]
+
+      // ... thus restricting the entity ref from being sent other commands, e.g.:
+      // val probe2 = createTestProbe[CurrentBalance]()
+      // val msg = GetBalance(probe2.ref)
+      // ref ! msg // type mismatch: GetBalance NOT =:= AccountCommand[OperationResult]
     }
 
     "handle GetBalance" in {

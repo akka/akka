@@ -86,13 +86,6 @@ object AbstractActor {
     def getChildren(): java.lang.Iterable[ActorRef]
 
     /**
-     * Returns a reference to the named child or null if no child with
-     * that name exists.
-     */
-    @deprecated("Use findChild instead", "2.5.0")
-    def getChild(name: String): ActorRef
-
-    /**
      * Returns a reference to the named child if it exists.
      *
      * *Warning*: This method is not thread-safe and must not be accessed from threads other

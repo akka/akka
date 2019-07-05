@@ -7,8 +7,8 @@ package akka.actor.typed.internal
 import akka.actor.typed.internal.adapter.AbstractLogger
 import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
-
 import scala.collection.immutable.HashMap
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -16,7 +16,7 @@ import scala.collection.immutable.HashMap
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
   val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
 
-  def apply[T](
+  def apply[T: ClassTag](
       staticMdc: Map[String, Any],
       mdcForMessage: T => Map[String, Any],
       behavior: Behavior[T]): Behavior[T] = {
@@ -31,7 +31,7 @@ import scala.collection.immutable.HashMap
  *
  * INTERNAL API
  */
-@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
+@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T: ClassTag] private (
     staticMdc: Map[String, Any],
     mdcForMessage: T => Map[String, Any])
     extends BehaviorInterceptor[T, T] {

@@ -12,6 +12,8 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
 import akka.testkit.TimingTest
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.time.{ Milliseconds, Span }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -218,6 +220,51 @@ class FlowDelaySpec extends StreamSpec {
         Source(1 to 2).delay(1.second, EmitEarly).withAttributes(Attributes.inputBuffer(1, 1)).runWith(TestSink.probe)
 
       probe.request(10).expectNextN(1 to 2).expectComplete()
+    }
+
+    "not block overdue elements from being pushed to downstream stages" in {
+      val N = 128
+      val batchSize = 16
+      val delayMillis = 500
+
+      val elements = (1 to N).iterator
+
+      val future = Source
+        .tick(0.millis, 10.millis, 1)
+        .mapConcat(_ => (1 to batchSize).map(_ => elements.next()))
+        .take(N)
+        .map { elem =>
+          System.nanoTime() -> elem
+        }
+        .delay(delayMillis.millis, DelayOverflowStrategy.backpressure)
+        .withAttributes(Attributes.inputBuffer(4, 4))
+        .map {
+          case (startTimestamp, elem) =>
+            (System.nanoTime() - startTimestamp) / 1e6 -> elem
+        }
+        .runWith(Sink.seq)
+
+      val results = future.futureValue(PatienceConfiguration.Timeout(Span(60000, Milliseconds)))
+      results.length shouldBe N
+
+      // check if every elements are delayed by roughly the same amount of time
+      val delayHistogram = results.map(x => Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).map {
+        case (bucket, delays) => (bucket, delays.length)
+      }
+
+      delayHistogram shouldEqual Map(delayMillis.toDouble -> N)
+    }
+
+    // repeater for #27095
+    "not throw NPE when using EmitEarly and buffer is full" taggedAs TimingTest in {
+      val result =
+        Source(1 to 9)
+          .delay(1.second, DelayOverflowStrategy.emitEarly)
+          .addAttributes(Attributes.inputBuffer(5, 5))
+          .runWith(Sink.seq)
+          .futureValue
+
+      result should ===((1 to 9).toSeq)
     }
   }
 }
