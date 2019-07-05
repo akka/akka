@@ -26,17 +26,20 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
-  protected def internalPersist(state: Running.RunningState[S], event: EventOrTagged): Running.RunningState[S] = {
+  protected def internalPersist(
+      state: Running.RunningState[S],
+      event: EventOrTagged,
+      eventAdapterManifest: String): Running.RunningState[S] = {
 
     val newState = state.nextSequenceNr()
 
-    val senderNotKnownBecauseAkkaTyped = null
     val repr = PersistentRepr(
       event,
       persistenceId = setup.persistenceId.id,
       sequenceNr = newState.seqNr,
+      manifest = eventAdapterManifest,
       writerUuid = setup.writerIdentity.writerUuid,
-      sender = senderNotKnownBecauseAkkaTyped)
+      sender = ActorRef.noSender)
 
     val write = AtomicWrite(repr) :: Nil
     setup.journal
@@ -46,19 +49,21 @@ private[akka] trait JournalInteractions[C, E, S] {
   }
 
   protected def internalPersistAll(
-      events: immutable.Seq[EventOrTagged],
-      state: Running.RunningState[S]): Running.RunningState[S] = {
+      state: Running.RunningState[S],
+      events: immutable.Seq[(EventOrTagged, String)]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
-      val writes = events.map { event =>
-        newState = newState.nextSequenceNr()
-        PersistentRepr(
-          event,
-          persistenceId = setup.persistenceId.id,
-          sequenceNr = newState.seqNr,
-          writerUuid = setup.writerIdentity.writerUuid,
-          sender = ActorRef.noSender)
+      val writes = events.map {
+        case (event, eventAdapterManifest) =>
+          newState = newState.nextSequenceNr()
+          PersistentRepr(
+            event,
+            persistenceId = setup.persistenceId.id,
+            sequenceNr = newState.seqNr,
+            manifest = eventAdapterManifest,
+            writerUuid = setup.writerIdentity.writerUuid,
+            sender = ActorRef.noSender)
       }
       val write = AtomicWrite(writes)
 

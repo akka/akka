@@ -336,6 +336,37 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
+  "Subscription timeouts" must {
+
+    implicit val materializer = ActorMaterializer(
+      ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
+        StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 100.millis)))
+
+    "be effective for dangling downstream (no fanout)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe()
+      val (sub, _) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
+      upstream.subscribe(sub)
+      upstream.expectCancellation()
+    }
+
+    "be effective for dangling downstream (with fanout)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe()
+      val (sub, _) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(true))
+      upstream.subscribe(sub)
+      upstream.expectCancellation()
+    }
+
+    // this one seems close to impossible to actually implement
+    "be effective for dangling upstream" in pendingUntilFixed(assertAllStagesStopped {
+      val downstream = TestSubscriber.probe[String]()
+      val (_, pub) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
+      pub.subscribe(downstream)
+      downstream.ensureSubscription()
+      downstream.expectError() shouldBe a[SubscriptionTimeoutException]
+    })
+
+  }
+
 }
 
 class TimeoutChecksSpec extends WordSpecLike with Matchers {

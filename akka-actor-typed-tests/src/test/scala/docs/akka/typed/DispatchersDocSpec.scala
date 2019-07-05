@@ -47,6 +47,7 @@ object DispatchersDocSpec {
     context.spawn(yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.default())
     context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking())
     context.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"))
+    context.spawn(yourBehavior, "ParentDispatcher", DispatcherSelector.sameAsParent())
     //#spawn-dispatcher
 
     Behaviors.same

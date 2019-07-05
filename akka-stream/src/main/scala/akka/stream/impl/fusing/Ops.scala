@@ -1747,7 +1747,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+            pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1770,15 +1770,27 @@ private[stream] object Collect {
         else {
           grabAndPull()
           if (!isTimerActive(timerName)) {
-            scheduleOnce(timerName, d)
+            // schedule a timer for the full-delay `d` only if the buffer is empty, because otherwise a
+            // full-length timer will starve subsequent `onPull` callbacks, preventing overdue elements
+            // to be discharged.
+            if (buffer.isEmpty)
+              scheduleOnce(timerName, d)
+            else
+              scheduleOnce(timerName, Math.max(DelayPrecisionMS, nextElementWaitTime()).millis)
           }
         }
       }
 
-      def pullCondition: Boolean =
-        !strategy.isBackpressure || buffer.used < size
+      def pullCondition: Boolean = strategy match {
+        case EmitEarly =>
+          // when buffer is full we can only emit early if out is available
+          buffer.used < size || isAvailable(out)
+        case _ =>
+          !strategy.isBackpressure || buffer.used < size
+      }
 
       def grabAndPull(): Unit = {
+        if (buffer.used == size) throw new IllegalStateException("Trying to enqueue but buffer is full")
         buffer.enqueue((System.nanoTime(), grab(in)))
         if (pullCondition) pull(in)
       }

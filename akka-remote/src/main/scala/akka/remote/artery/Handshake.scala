@@ -294,14 +294,10 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
         if (isKnownOrigin(env))
           push(out, env)
         else {
-          if (log.isDebugEnabled)
-            log.debug(
-              s"Dropping message [{}] from unknown system with UID [{}]. " +
-              "This system with UID [{}] was probably restarted. " +
-              "Messages will be accepted when new handshake has been completed.",
-              env.message.getClass.getName,
-              env.originUid,
-              inboundContext.localAddress.uid)
+          val dropReason = s"Unknown system with UID [${env.originUid}]. " +
+            s"This system with UID [${inboundContext.localAddress.uid}] was probably restarted. " +
+            "Messages will be accepted when new handshake has been completed."
+          inboundContext.publishDropped(env, dropReason)
           pull(in)
         }
       }

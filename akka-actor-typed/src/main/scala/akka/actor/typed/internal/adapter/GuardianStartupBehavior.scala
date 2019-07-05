@@ -8,10 +8,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.StashBuffer
+import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors, StashOverflowException }
 import akka.annotation.InternalApi
 
 /**
@@ -34,21 +31,22 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
 
   import GuardianStartupBehavior.Start
 
-  private val stash = StashBuffer[T](1000)
+  private var tempStash: List[Any] = Nil
 
   override def onMessage(msg: Any): Behavior[Any] =
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.setup(
-          ctx =>
-            stash
-              .unstashAll(
-                ctx.asInstanceOf[ActorContext[T]],
-                Behaviors.intercept(() => new GuardianStopInterceptor[T])(guardianBehavior))
-              .unsafeCast[Any])
+        Behaviors.withStash[Any](1000) { stash =>
+          tempStash.reverse.foreach(stash.stash)
+          tempStash = null
+          stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor)(guardianBehavior.unsafeCast[Any]))
+        }
       case other =>
-        stash.stash(other.asInstanceOf[T])
+        tempStash = other :: tempStash
+        if (tempStash.size > 1000) {
+          throw new StashOverflowException("Guardian Behavior did not receive start and buffer is full.")
+        }
         this
     }
 
@@ -61,24 +59,24 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
  * as part of that we must intercept when the guardian is stopped and call ActorSystem.terminate()
  * explicitly.
  */
-@InternalApi private[akka] final class GuardianStopInterceptor[T] extends BehaviorInterceptor[T, T] {
+@InternalApi private[akka] final class GuardianStopInterceptor extends BehaviorInterceptor[Any, Any] {
   override def aroundReceive(
-      ctx: TypedActorContext[T],
-      msg: T,
-      target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
+      ctx: TypedActorContext[Any],
+      msg: Any,
+      target: BehaviorInterceptor.ReceiveTarget[Any]): Behavior[Any] = {
     val next = target(ctx, msg)
     interceptStopped(ctx, next)
   }
 
   override def aroundSignal(
-      ctx: TypedActorContext[T],
+      ctx: TypedActorContext[Any],
       signal: Signal,
-      target: BehaviorInterceptor.SignalTarget[T]): Behavior[T] = {
+      target: BehaviorInterceptor.SignalTarget[Any]): Behavior[Any] = {
     val next = target(ctx, signal)
     interceptStopped(ctx, next)
   }
 
-  private def interceptStopped(ctx: TypedActorContext[T], next: Behavior[T]): Behavior[T] = {
+  private def interceptStopped(ctx: TypedActorContext[Any], next: Behavior[Any]): Behavior[Any] = {
     if (Behavior.isAlive(next))
       next
     else {

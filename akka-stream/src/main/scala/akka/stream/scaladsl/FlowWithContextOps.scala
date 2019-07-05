@@ -9,7 +9,6 @@ import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.util.ConstantFun
@@ -19,9 +18,7 @@ import akka.event.LoggingAdapter
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
  * element with each data element.
  *
- * API MAY CHANGE
  */
-@ApiMayChange
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
     type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]

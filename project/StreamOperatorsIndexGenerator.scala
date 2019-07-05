@@ -202,7 +202,9 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
           lines
             .map(_._2)
             .sortBy(_._2)
-            .map { case (element, method, md, description) => s"""|$element|<a name="${method.toLowerCase}"></a>@ref[$method]($md)|$description|""" }
+            .map { case (element, method, md, description) =>
+              s"""|$element|<a name="${method.toLowerCase}"></a>@ref[${methodToShow(method)}]($md)|$description|"""
+            }
             .mkString("\n")
       )
 
@@ -217,10 +219,15 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "# Operators\n\n" +
         tables +
         "\n\n@@@ index\n\n" +
-        groupedDefs.map { case (_, method, md) => s"* [$method]($md)" }.mkString("\n") + "\n\n@@@\n"
+        groupedDefs.map { case (_, method, md) => s"* [${methodToShow(method)}]($md)" }.mkString("\n") + "\n\n@@@\n"
 
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
     Seq(file)
+  }
+
+  def methodToShow(method: String): String = method match {
+    case "from" => "@scala[apply]@java[from]"
+    case other => other
   }
 
   def getDetails(file: File): (String, String) = try {

@@ -19,6 +19,8 @@ import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
+
+import akka.actor.Dropped
 import akka.actor.typed.SupervisorStrategy.Resume
 import akka.event.Logging
 
@@ -787,14 +789,16 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
-      ref ! Ping(1)
-      ref ! Ping(2)
-      ref ! Ping(3)
-      ref ! Ping(4)
-      probe.expectMessage(Pong(1))
-      probe.expectMessage(Pong(2))
-      droppedMessagesProbe.expectMessage(Dropped(Ping(3), ref))
-      droppedMessagesProbe.expectMessage(Dropped(Ping(4), ref))
+      EventFilter.warning(start = "dropped message", occurrences = 2).intercept {
+        ref ! Ping(1)
+        ref ! Ping(2)
+        ref ! Ping(3)
+        ref ! Ping(4)
+        probe.expectMessage(Pong(1))
+        probe.expectMessage(Pong(2))
+        droppedMessagesProbe.expectMessage(Dropped(Ping(3), "Stash is full in [RestartSupervisor]", ref.toUntyped))
+        droppedMessagesProbe.expectMessage(Dropped(Ping(4), "Stash is full in [RestartSupervisor]", ref.toUntyped))
+      }
     }
 
     "restart after exponential backoff" in {
@@ -818,7 +822,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! IncrementState
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
-        ref ! Ping(1) // dropped due to backoff, no stashing
+        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
+          ref ! Ping(1) // dropped due to backoff, no stashing
+        }
       }
 
       startedProbe.expectNoMessage(minBackoff - 100.millis)
@@ -832,7 +838,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! IncrementState
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
-        ref ! Ping(2) // dropped due to backoff, no stashing
+        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
+          ref ! Ping(2) // dropped due to backoff, no stashing
+        }
       }
 
       startedProbe.expectNoMessage((minBackoff * 2) - 100.millis)
@@ -888,7 +896,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! IncrementState
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
-        ref ! Ping(1) // dropped due to backoff, no stash
+        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
+          ref ! Ping(1) // dropped due to backoff, no stash
+        }
       }
 
       probe.expectNoMessage(minBackoff + 100.millis.dilated)
@@ -901,7 +911,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! IncrementState
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
-        ref ! Ping(2) // dropped due to backoff
+        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
+          ref ! Ping(2) // dropped due to backoff
+        }
       }
 
       // backoff was reset, so restarted after the minBackoff
@@ -1084,12 +1096,6 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
             message: String,
             target: ReceiveTarget[String]): Behavior[String] =
           target(context, message)
-
-        override def aroundSignal(
-            context: TypedActorContext[String],
-            signal: Signal,
-            target: SignalTarget[String]): Behavior[String] =
-          target(context, signal)
       }
 
       val behv = supervise[String](Behaviors.receiveMessage {
@@ -1233,6 +1239,36 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
+    }
+
+    "handle exceptions from different message type" in {
+      val probe = TestProbe[Event]("evt")
+
+      val inner: Behavior[Command] = Behaviors
+        .receiveMessage[Any] {
+          case Ping(n) =>
+            probe.ref ! Pong(n)
+            Behaviors.same
+          case _ => throw new Exc1
+        }
+        .receiveSignal {
+          case (_, PreRestart) =>
+            probe.ref ! ReceivedSignal(PreRestart)
+            Behaviors.same
+        }
+        .narrow
+
+      val behv = Behaviors.supervise(inner).onFailure[Exc1](SupervisorStrategy.restart)
+      val ref = spawn(behv)
+      ref ! Ping(1)
+      probe.expectMessage(Pong(1))
+
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref.unsafeUpcast ! "boom"
+        probe.expectMessage(ReceivedSignal(PreRestart))
+      }
+      ref ! Ping(2)
+      probe.expectMessage(Pong(2))
     }
 
   }

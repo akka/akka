@@ -5,7 +5,7 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.DeadLetter
+import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.Behavior
@@ -145,18 +145,21 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       testKit.stop(group)
     }
 
-    "pass messages to dead letters when there are no routees available" in {
+    "publish Dropped messages when there are no routees available" in {
       val serviceKey = ServiceKey[String]("group-routing-2")
       val group = spawn(Routers.group(serviceKey), "group-router-2")
-      val probe = TestProbe[DeadLetter]()
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      val probe = TestProbe[Dropped]()
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
 
       (0 to 3).foreach { n =>
         val msg = s"message-$n"
-        /* FIXME cant watch log events until #26432 is fixed
-         EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
-        group ! msg
-        probe.expectMessageType[DeadLetter]
+//         EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
+        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
+          EventFilter.info(pattern = ".*was dropped. No routees in group router", occurrences = 1).intercept {
+            group ! msg
+            probe.expectMessageType[Dropped]
+          }
+        }
       /* } */
       }
 

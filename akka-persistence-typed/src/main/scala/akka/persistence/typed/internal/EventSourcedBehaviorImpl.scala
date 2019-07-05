@@ -34,7 +34,8 @@ import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl._
-import akka.util.{ unused, ConstantFun }
+import akka.util.ConstantFun
+import akka.util.unused
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -83,7 +84,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
     // stashState outside supervise because StashState should survive restarts due to persist failures
-    val stashState = new StashState(settings)
+    val stashState = new StashState(ctx.asInstanceOf[ActorContext[InternalProtocol]], settings)
 
     val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
@@ -129,15 +130,28 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             stashState = stashState)
 
           // needs to accept Any since we also can get messages from the journal
-          // not part of the protocol
-          val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
+          // not part of the user facing Command protocol
+          def interceptor: BehaviorInterceptor[Any, InternalProtocol] = new BehaviorInterceptor[Any, InternalProtocol] {
 
             import BehaviorInterceptor._
-            def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
-                : Behavior[Any] = { target(ctx, msg) }
+            override def aroundReceive(
+                ctx: typed.TypedActorContext[Any],
+                msg: Any,
+                target: ReceiveTarget[InternalProtocol]): Behavior[InternalProtocol] = {
+              val innerMsg = msg match {
+                case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
+                case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
+                case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
+                case internal: InternalProtocol              => internal // such as RecoveryTickEvent
+                case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
+              }
+              target(ctx, innerMsg)
+            }
 
-            def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
-                : Behavior[Any] = {
+            override def aroundSignal(
+                ctx: typed.TypedActorContext[Any],
+                signal: Signal,
+                target: SignalTarget[InternalProtocol]): Behavior[InternalProtocol] = {
               if (signal == PostStop) {
                 eventSourcedSetup.cancelRecoveryTimer()
                 // clear stash to be GC friendly
@@ -145,16 +159,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
               }
               target(ctx, signal)
             }
-            override def toString: String = "onStopInterceptor"
+
+            override def toString: String = "EventSourcedBehaviorInterceptor"
           }
-          val widened = RequestingRecoveryPermit(eventSourcedSetup).widen[Any] {
-            case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
-            case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
-            case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
-            case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-            case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
-          }
-          Behaviors.intercept(() => onStopInterceptor)(widened).narrow[Command]
+
+          Behaviors.intercept(() => interceptor)(RequestingRecoveryPermit(eventSourcedSetup)).narrow
         }
 
       }

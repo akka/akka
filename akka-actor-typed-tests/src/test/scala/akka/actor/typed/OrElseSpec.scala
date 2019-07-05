@@ -4,14 +4,19 @@
 
 package akka.actor.typed
 
-import akka.actor
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl._
-import akka.testkit.EventFilter
-import akka.actor.typed.scaladsl.adapter._
-import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
+import scala.annotation.tailrec
 
-object OrElseStubbedSpec {
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
+
+/**
+ * Background: Originally there was an `OrElseBehavior` that could compose two `Behavior`, but that
+ * wasn't safe when used together with narrow so `OrElseBehavior` was removed. Kept this
+ * test to illustrate how functions can be used for composition.
+ */
+object OrElseSpec {
 
   sealed trait Ping
   final case class Ping1(replyTo: ActorRef[Pong]) extends Ping
@@ -21,44 +26,172 @@ object OrElseStubbedSpec {
 
   case class Pong(counter: Int)
 
-  def ping(counters: Map[String, Int]): Behavior[Ping] = {
+  object CompositionWithFunction {
 
-    val ping1: Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping1(replyTo: ActorRef[Pong]) =>
-        val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
-        replyTo ! Pong(newCounters("ping1"))
-        ping(newCounters)
+    def ping(counters: Map[String, Int]): Behavior[Ping] = {
+
+      val ping1: Ping => Behavior[Ping] = {
+        case Ping1(replyTo: ActorRef[Pong]) =>
+          val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
+          replyTo ! Pong(newCounters("ping1"))
+          ping(newCounters)
+        case _ => Behaviors.unhandled
+      }
+
+      val ping2: Ping => Behavior[Ping] = {
+        case Ping2(replyTo: ActorRef[Pong]) =>
+          val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
+          replyTo ! Pong(newCounters("ping2"))
+          ping(newCounters)
+        case _ => Behaviors.unhandled
+      }
+
+      val ping3: Ping => Behavior[Ping] = {
+        case Ping3(replyTo: ActorRef[Pong]) =>
+          val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
+          replyTo ! Pong(newCounters("ping3"))
+          ping(newCounters)
+        case _ => Behaviors.unhandled
+      }
+
+      val pingHandlers: List[Ping => Behavior[Ping]] = ping1 :: ping2 :: ping3 :: Nil
+
+      // this could be provided as a general purpose utility
+      @tailrec def handle(command: Ping, handlers: List[Ping => Behavior[Ping]]): Behavior[Ping] = {
+        handlers match {
+          case Nil => Behaviors.unhandled
+          case head :: tail =>
+            val next = head(command)
+            if (Behavior.isUnhandled(next)) handle(command, tail)
+            else next
+        }
+      }
+
+      Behaviors.receiveMessage(command => handle(command, pingHandlers))
+    }
+  }
+
+  object CompositionWithPartialFunction {
+
+    def ping(counters: Map[String, Int]): Behavior[Ping] = {
+
+      val ping1: PartialFunction[Ping, Behavior[Ping]] = {
+        case Ping1(replyTo: ActorRef[Pong]) =>
+          val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
+          replyTo ! Pong(newCounters("ping1"))
+          ping(newCounters)
+      }
+
+      val ping2: PartialFunction[Ping, Behavior[Ping]] = {
+        case Ping2(replyTo: ActorRef[Pong]) =>
+          val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
+          replyTo ! Pong(newCounters("ping2"))
+          ping(newCounters)
+      }
+
+      val ping3: PartialFunction[Ping, Behavior[Ping]] = {
+        case Ping3(replyTo: ActorRef[Pong]) =>
+          val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
+          replyTo ! Pong(newCounters("ping3"))
+          ping(newCounters)
+      }
+
+      val pingHandlers: List[PartialFunction[Ping, Behavior[Ping]]] = ping1 :: ping2 :: ping3 :: Nil
+
+      // this could be provided as a general purpose utility
+      def handle(command: Ping, handlers: List[PartialFunction[Ping, Behavior[Ping]]]): Behavior[Ping] = {
+        handlers match {
+          case Nil          => Behaviors.unhandled
+          case head :: tail => head.applyOrElse(command, handle(_, tail))
+        }
+      }
+
+      Behaviors.receiveMessage(command => handle(command, pingHandlers))
+    }
+  }
+
+  object CompositionWithInterceptor {
+    // This is much more useful for independent composition than the original OrElseBehavior,
+    // but it has the same type safety problem when combined with narrow
+    class OrElseInterceptor(initialHandlers: Vector[Behavior[Ping]]) extends BehaviorInterceptor[Ping, Ping] {
+
+      private var handlers: Vector[Behavior[Ping]] = initialHandlers
+
+      override def aroundReceive(
+          ctx: TypedActorContext[Ping],
+          msg: Ping,
+          target: BehaviorInterceptor.ReceiveTarget[Ping]): Behavior[Ping] = {
+
+        @tailrec def handle(i: Int): Behavior[Ping] = {
+          if (i == handlers.size)
+            target(ctx, msg)
+          else {
+            val next = Behavior.interpretMessage(handlers(i), ctx, msg)
+            if (Behavior.isUnhandled(next))
+              handle(i + 1)
+            else if (!Behavior.isAlive(next))
+              next
+            else {
+              handlers = handlers.updated(i, Behavior.canonicalize(next, handlers(i), ctx))
+              Behaviors.same
+            }
+          }
+        }
+
+        handle(0)
+      }
+
+      // could do same for signals
+
+      override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
+        other.isInstanceOf[OrElseInterceptor]
+
+      }
     }
 
-    val ping2: Behavior[Ping] = Behaviors.receiveMessage {
+    def ping1(count: Int): Behavior[Ping] = Behaviors.receiveMessagePartial {
+      case Ping1(replyTo: ActorRef[Pong]) =>
+        val newCount = count + 1
+        replyTo ! Pong(newCount)
+        // note that this is nice since it doesn't have to know anything about the shared
+        // state (counters Map) as in the other examples, and it can switch to it's own
+        // new behavior
+        ping1(newCount)
+    }
+
+    def ping2(count: Int): Behavior[Ping] = Behaviors.receiveMessage {
       case Ping2(replyTo: ActorRef[Pong]) =>
-        val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
-        replyTo ! Pong(newCounters("ping2"))
-        ping(newCounters)
+        val newCount = count + 1
+        replyTo ! Pong(newCount)
+        ping2(newCount)
       case _ => Behaviors.unhandled
     }
 
-    val ping3: Behavior[Ping] = Behaviors.receiveMessagePartial {
+    def ping3(count: Int): Behavior[Ping] = Behaviors.receiveMessagePartial {
       case Ping3(replyTo: ActorRef[Pong]) =>
-        val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
-        replyTo ! Pong(newCounters("ping3"))
-        ping(newCounters)
+        val newCount = count + 1
+        replyTo ! Pong(newCount)
+        ping3(newCount)
     }
 
-    ping1.orElse(ping2).orElse(ping3)
+    def ping(): Behavior[Ping] = {
+      val handlers = Vector(ping1(0), ping2(0), ping3(0))
+      Behaviors.intercept(() => new OrElseInterceptor(handlers))(Behaviors.empty)
+    }
+
   }
 
 }
 
-class OrElseStubbedSpec extends WordSpec with Matchers {
+class OrElseSpec extends WordSpec with Matchers {
 
-  import OrElseStubbedSpec._
+  import OrElseSpec._
 
-  "Behavior.orElse" must {
+  "Behavior that is composed" must {
 
-    "use first matching behavior" in {
+    def testFirstMatching(behavior: Behavior[Ping]): Unit = {
       val inbox = TestInbox[Pong]("reply")
-      val testkit = BehaviorTestKit(ping(Map.empty))
+      val testkit = BehaviorTestKit(behavior)
       testkit.run(Ping1(inbox.ref))
       inbox.receiveMessage() should ===(Pong(1))
       testkit.run(Ping1(inbox.ref))
@@ -77,145 +210,17 @@ class OrElseStubbedSpec extends WordSpec with Matchers {
       inbox.receiveMessage() should ===(Pong(3))
     }
 
-  }
-
-}
-
-class OrElseSpec extends ScalaTestWithActorTestKit("""
-      akka.loglevel = DEBUG # test verifies debug
-      akka.loggers = ["akka.testkit.TestEventListener"]
-    """) with WordSpecLike {
-
-  import OrElseStubbedSpec._
-
-  implicit val untyped: actor.ActorSystem = system.toUntyped
-
-  "Behavior.orElse" must {
-    "work for deferred behavior on the left" in {
-      val orElseDeferred = Behaviors
-        .setup[Ping] { _ =>
-          Behaviors.receiveMessage { _ =>
-            Behaviors.unhandled
-          }
-        }
-        .orElse(ping(Map.empty))
-
-      val p = spawn(orElseDeferred)
-      val probe = TestProbe[Pong]
-      p ! Ping1(probe.ref)
-      probe.expectMessage(Pong(1))
-
+    "use first matching function" in {
+      testFirstMatching(CompositionWithFunction.ping(Map.empty))
     }
 
-    "work for deferred behavior on the right" in {
-      val orElseDeferred = ping(Map.empty).orElse(Behaviors.setup { _ =>
-        Behaviors.receiveMessage {
-          case PingInfinite(replyTo) =>
-            replyTo ! Pong(-1)
-            Behaviors.same
-          case _ => Behaviors.unhandled
-        }
-      })
-
-      val p = spawn(orElseDeferred)
-      val probe = TestProbe[Pong]
-      p ! PingInfinite(probe.ref)
-      probe.expectMessage(Pong(-1))
+    "use first matching partial function" in {
+      testFirstMatching(CompositionWithPartialFunction.ping(Map.empty))
     }
 
-    "handle nested OrElse" in {
-
-      sealed trait Parent
-      final case class Add(o: Any) extends Parent
-      final case class Remove(o: Any) extends Parent
-      final case class Stack(s: ActorRef[Array[StackTraceElement]]) extends Parent
-      final case class Get(s: ActorRef[Set[Any]]) extends Parent
-
-      def dealer(set: Set[Any]): Behavior[Parent] = {
-        val add = Behaviors.receiveMessage[Parent] {
-          case Add(o) => dealer(set + o)
-          case _      => Behaviors.unhandled
-        }
-        val remove = Behaviors.receiveMessage[Parent] {
-          case Remove(o) => dealer(set - o)
-          case _         => Behaviors.unhandled
-        }
-        val getStack = Behaviors.receiveMessagePartial[Parent] {
-          case Stack(sender) =>
-            sender ! Thread.currentThread().getStackTrace
-            Behaviors.same
-        }
-        val getSet = Behaviors.receiveMessagePartial[Parent] {
-          case Get(sender) =>
-            sender ! set
-            Behaviors.same
-        }
-        add.orElse(remove).orElse(getStack).orElse(getSet)
-      }
-
-      val y = spawn(dealer(Set.empty))
-
-      (0 to 10000).foreach { i =>
-        y ! Add(i)
-      }
-      (0 to 9999).foreach { i =>
-        y ! Remove(i)
-      }
-      val probe = TestProbe[Set[Any]]
-      y ! Get(probe.ref)
-      probe.expectMessage(Set[Any](10000))
-
+    "use first matching behavor via delegating interceptor" in {
+      testFirstMatching(CompositionWithInterceptor.ping())
     }
-
-    "pass unhandled Terminated along" in {
-      val probe = TestProbe[String]()
-      spawn(Behaviors.setup[String] { ctx =>
-        // arrange with a deathwatch triggering
-        ctx.watch(ctx.spawnAnonymous(Behaviors.stopped[String]))
-
-        Behaviors
-          .receiveSignal[String] {
-            case (_, PreRestart) =>
-              Behaviors.same
-          }
-          .orElse(Behaviors.receiveSignal {
-            case (_, Terminated(_)) =>
-              probe.ref ! "orElse saw it"
-              Behaviors.same
-          })
-      })
-
-      probe.expectMessage("orElse saw it")
-    }
-
-    "pass unhandled Terminated along and fail if alternative doesn't handle either" in {
-      val probe = TestProbe[String]()
-
-      val ref =
-        EventFilter[DeathPactException](occurrences = 1).intercept {
-          spawn(Behaviors.setup[String] { ctx =>
-            // arrange with a deathwatch triggering
-            ctx.watch(ctx.spawnAnonymous(Behaviors.stopped[String]))
-
-            Behaviors
-              .receiveSignal[String] {
-                case (_, Terminated(_)) =>
-                  probe.ref ! "first handler saw it"
-                  Behaviors.unhandled
-              }
-              .orElse(Behaviors.receiveSignal {
-                case (_, Terminated(_)) =>
-                  probe.ref ! "second handler saw it"
-                  Behaviors.unhandled
-              })
-          })
-        }
-
-      probe.expectMessage("first handler saw it")
-      probe.expectMessage("second handler saw it")
-      probe.expectTerminated(ref)
-    }
-
   }
 
 }
