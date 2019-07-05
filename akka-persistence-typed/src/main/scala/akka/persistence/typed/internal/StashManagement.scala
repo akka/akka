@@ -72,7 +72,7 @@ private[akka] trait StashManagement[C, E, S] {
 
       stashState.decrementUnstashAllProgress()
 
-      buffer.unstash(setup.context, behavior, 1, ConstantFun.scalaIdentityFunction)
+      buffer.unstash(behavior, 1, ConstantFun.scalaIdentityFunction)
     } else behavior
 
   }
@@ -123,10 +123,10 @@ private[akka] trait StashManagement[C, E, S] {
 
 /** INTERNAL API: stash buffer state in order to survive restart of internal behavior */
 @InternalApi
-private[akka] class StashState(settings: EventSourcedSettings) {
+private[akka] class StashState(ctx: ActorContext[InternalProtocol], settings: EventSourcedSettings) {
 
-  private var _internalStashBuffer: StashBuffer[InternalProtocol] = StashBuffer(settings.stashCapacity)
-  private var _userStashBuffer: StashBuffer[InternalProtocol] = StashBuffer(settings.stashCapacity)
+  private var _internalStashBuffer: StashBuffer[InternalProtocol] = StashBuffer(ctx, settings.stashCapacity)
+  private var _userStashBuffer: StashBuffer[InternalProtocol] = StashBuffer(ctx, settings.stashCapacity)
   private var unstashAllInProgress = 0
 
   def internalStashBuffer: StashBuffer[InternalProtocol] = _internalStashBuffer
@@ -134,8 +134,8 @@ private[akka] class StashState(settings: EventSourcedSettings) {
   def userStashBuffer: StashBuffer[InternalProtocol] = _userStashBuffer
 
   def clearStashBuffers(): Unit = {
-    _internalStashBuffer = StashBuffer(settings.stashCapacity)
-    _userStashBuffer = StashBuffer(settings.stashCapacity)
+    _internalStashBuffer = StashBuffer(ctx, settings.stashCapacity)
+    _userStashBuffer = StashBuffer(ctx, settings.stashCapacity)
     unstashAllInProgress = 0
   }
 

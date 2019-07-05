@@ -5,8 +5,8 @@
 package akka.actor
 
 import scala.collection.immutable
-
 import akka.AkkaException
+import akka.annotation.InternalStableApi
 import akka.dispatch.{
   DequeBasedMessageQueueSemantics,
   Envelope,
@@ -230,6 +230,7 @@ private[akka] trait StashSupport {
    *  @param filterPredicate only stashed messages selected by this predicate are
    *                         prepended to the mailbox.
    */
+  @InternalStableApi
   private[akka] def unstashAll(filterPredicate: Any => Boolean): Unit = {
     try {
       val i = theStash.reverseIterator.filter(envelope => filterPredicate(envelope.message))
@@ -244,6 +245,7 @@ private[akka] trait StashSupport {
    *
    * Clears the stash and and returns all envelopes that have not been unstashed.
    */
+  @InternalStableApi
   private[akka] def clearStash(): Vector[Envelope] = {
     val stashed = theStash
     theStash = Vector.empty[Envelope]

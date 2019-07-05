@@ -49,14 +49,14 @@ private final class InitialGroupRouterImpl[T](
   // messages to a router
   ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self.unsafeUpcast[Any].narrow[Receptionist.Listing])
 
-  private val stash = StashBuffer[T](capacity = 10000)
+  private val stash = StashBuffer[T](ctx, capacity = 10000)
 
   def onMessage(msg: T): Behavior[T] = msg match {
     case serviceKey.Listing(update) =>
       // we don't need to watch, because receptionist already does that
       routingLogic.routeesUpdated(update)
       val activeGroupRouter = new GroupRouterImpl[T](ctx, serviceKey, routingLogic, update.isEmpty)
-      stash.unstashAll(ctx, activeGroupRouter)
+      stash.unstashAll(activeGroupRouter)
     case msg: T @unchecked =>
       import akka.actor.typed.scaladsl.adapter._
       if (!stash.isFull) stash.stash(msg)
