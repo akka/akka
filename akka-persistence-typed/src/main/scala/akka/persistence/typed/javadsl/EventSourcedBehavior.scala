@@ -149,6 +149,10 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   def tagsFor(@unused event: Event): java.util.Set[String] = Collections.emptySet()
 
+  /**
+   * Transform the event in another type before giving to the journal. Can be used to wrap events
+   * in types Journals understand but is of a different type than `Event`.
+   */
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
   /**

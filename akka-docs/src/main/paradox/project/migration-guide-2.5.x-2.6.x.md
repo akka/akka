@@ -206,7 +206,7 @@ By default, these remoting features are disabled when not using Akka Cluster:
 When used with Cluster, all previous behavior is the same except a remote watch of an actor is no longer possible before a node joins a cluster, only after.
 
 To optionally enable them without Cluster, if you understand
-the @ref[consequences](../remoting-artery.md#quarantine), set 
+the @ref[consequences](../remoting-artery.md#quarantine), set
 ```
 akka.remote.use-unsafe-remote-features-without-cluster = on`.
 ```
@@ -214,7 +214,7 @@ akka.remote.use-unsafe-remote-features-without-cluster = on`.
 When used without Cluster
 
 * An initial warning is logged on startup of `RemoteActorRefProvider`
-* A warning will be logged on remote watch attempts, which you can suppress by setting 
+* A warning will be logged on remote watch attempts, which you can suppress by setting
 ```
 akka.remote.warn-unsafe-watch-without-cluster = off
 ```
@@ -305,7 +305,7 @@ akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
 `StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
 to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
-the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException]. 
+the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException].
 
 ### Akka now uses Fork Join Pool from JDK
 
@@ -387,6 +387,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
    to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
 * Java @apidoc[akka.cluster.sharding.typed.javadsl.EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
+* Changed method signature for `EventAdapter.fromJournal` and support for `manifest` in `EventAdapter`.
 * `BehaviorInterceptor`, `Behaviors.monitor`, `Behaviors.withMdc` and @scala[`widen`]@java[`Behaviors.widen`] takes
   a @scala[`ClassTag` parameter (probably source compatible)]@java[`interceptMessageClass` parameter].
   `interceptMessageType` method in `BehaviorInterceptor` is replaced with this @scala[`ClassTag`]@java[`Class`] parameter.
