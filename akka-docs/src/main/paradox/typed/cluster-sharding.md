@@ -122,3 +122,5 @@ time to keep the actor alive. Note that only messages sent through sharding are 
 to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
 Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
 It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
+
+
