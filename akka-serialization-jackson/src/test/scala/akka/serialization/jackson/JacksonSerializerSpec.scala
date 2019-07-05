@@ -68,6 +68,7 @@ object ScalaTestMessages {
   final case class CommandWithTypedActorRef(name: String, replyTo: akka.actor.typed.ActorRef[String])
       extends TestMessage
   final case class CommandWithAddress(name: String, address: Address) extends TestMessage
+  case object SingletonCaseObject extends TestMessage
 
   final case class Event1(field1: String) extends TestMessage
   final case class Event2(field1V2: String, field2: Int) extends TestMessage
@@ -508,6 +509,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
       }
     }
 
+    "serialize case object" in {
+      checkSerialization(TopLevelSingletonCaseObject)
+      checkSerialization(SingletonCaseObject)
+    }
+
     "serialize with ActorRef" in {
       val echo = system.actorOf(TestActors.echoActorProps)
       checkSerialization(CommandWithActorRef("echo", echo))
@@ -617,3 +623,5 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   }
 }
+
+case object TopLevelSingletonCaseObject extends ScalaTestMessages.TestMessage

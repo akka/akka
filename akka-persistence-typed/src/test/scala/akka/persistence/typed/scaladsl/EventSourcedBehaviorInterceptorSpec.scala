@@ -84,8 +84,6 @@ class EventSourcedBehaviorInterceptorSpec
     }
 
     "be possible to combine with widen" in {
-      // EventSourcedBehaviorImpl should use a plain BehaviorInterceptor instead of widen
-      pending // FIXME #25887
       val probe = createTestProbe[String]()
       val pid = nextPid()
       val ref = spawn(testBehavior(pid, probe.ref).widen[String] {

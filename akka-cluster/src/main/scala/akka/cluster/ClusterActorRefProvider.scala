@@ -51,6 +51,8 @@ private[akka] class ClusterActorRefProvider(
     Cluster(system)
   }
 
+  override protected def warnIfDirectUse(): Unit = ()
+
   override protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
     // make sure Cluster extension is initialized/loaded from init thread
     Cluster(system)

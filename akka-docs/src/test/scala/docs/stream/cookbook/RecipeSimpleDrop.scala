@@ -33,7 +33,7 @@ class RecipeSimpleDrop extends RecipeSpec {
       messageSource.via(realDroppyStream).to(sink).run()
 
       val subscription = sub.expectSubscription()
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage()
 
       pub.sendNext("1")
       pub.sendNext("2")

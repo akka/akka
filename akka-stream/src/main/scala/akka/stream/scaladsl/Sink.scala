@@ -440,8 +440,7 @@ object Sink {
       ref: ActorRef,
       onCompleteMessage: Any,
       onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(ref, onCompleteMessage, onFailureMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(new ActorRefSinkStage[T](ref, onCompleteMessage, onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
@@ -459,13 +458,7 @@ object Sink {
    * limiting operator in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(
-        ref,
-        onCompleteMessage,
-        t => Status.Failure(t),
-        DefaultAttributes.actorRefSink,
-        shape("ActorRefSink")))
+    fromGraph(new ActorRefSinkStage[T](ref, onCompleteMessage, t => Status.Failure(t)))
 
   /**
    * INTERNAL API

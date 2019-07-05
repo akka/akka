@@ -75,6 +75,10 @@ public class AsyncTestingExampleTest
           });
   // #under-test
 
+  static Behavior<Ping> echoActor() {
+    return echoActor();
+  }
+
   // #under-test-2
 
   static class Message {

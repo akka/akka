@@ -72,3 +72,11 @@ ProblemFilters.exclude[FinalMethodProblem]("akka.actor.TimerScheduler.startSingl
 # only in current version
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.startTimerAtFixedRate")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.startTimerWithFixedDelay")
+
+# Remove deprecated features
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getChild")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorIdentity.getRef")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onClose")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onOpen")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onHalfOpen")
+

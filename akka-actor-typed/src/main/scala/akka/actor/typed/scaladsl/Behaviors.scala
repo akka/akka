@@ -30,6 +30,15 @@ object Behaviors {
     BehaviorImpl.DeferredBehavior(factory)
 
   /**
+   * Support for stashing messages to unstash at a later timej.
+   */
+  def withStash[T](capacity: Int)(factory: StashBuffer[T] => Behavior[T]): Behavior[T] =
+    setup(ctx => {
+      val stash = StashBuffer[T](ctx, capacity)
+      factory(stash)
+    })
+
+  /**
    * Return this behavior from message processing in order to advise the
    * system to reuse the previous behavior. This is provided in order to
    * avoid the allocation overhead of recreating the current behavior where

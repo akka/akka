@@ -26,3 +26,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArterySet
 # Disable remote watch and remote deployment outside Cluster #26176
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteActorRefProvider.remoteWatcher")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.props")
+
+# #26432 Log of Dropped
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.InboundContext.publishDropped")
+

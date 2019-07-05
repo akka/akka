@@ -148,8 +148,9 @@ private[akka] object Running {
           val newState = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
+          val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
-          val newState2 = internalPersist(newState, eventToPersist)
+          val newState2 = internalPersist(newState, eventToPersist, eventAdapterManifest)
 
           val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 
@@ -169,9 +170,9 @@ private[akka] object Running {
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
-            val eventsToPersist = events.map(adaptEvent)
+            val eventsToPersist = events.map(evt => (adaptEvent(evt), setup.eventAdapter.manifest(evt)))
 
-            val newState2 = internalPersistAll(eventsToPersist, newState)
+            val newState2 = internalPersistAll(newState, eventsToPersist)
 
             persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
 

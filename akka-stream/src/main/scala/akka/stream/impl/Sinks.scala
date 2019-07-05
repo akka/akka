@@ -88,7 +88,16 @@ import org.reactivestreams.Subscriber
    * subscription a VirtualProcessor would perform (and it also saves overhead).
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
+
     val proc = new VirtualPublisher[In]
+    context.materializer match {
+      case am: ActorMaterializer =>
+        if (am.settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop)
+          am.scheduleOnce(am.settings.subscriptionTimeoutSettings.timeout, new Runnable {
+            def run(): Unit = proc.onSubscriptionTimeout(am)
+          })
+      case _ => // not possible to setup timeout
+    }
     (proc, proc)
   }
 
@@ -110,8 +119,8 @@ import org.reactivestreams.Subscriber
       context,
       FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
-    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
+    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     (fanoutProcessor, fanoutProcessor)
   }
 
@@ -173,32 +182,6 @@ import org.reactivestreams.Subscriber
     new ActorSubscriberSink[In](props, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] =
     new ActorSubscriberSink[In](props, attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] final class ActorRefSink[In](
-    ref: ActorRef,
-    onCompleteMessage: Any,
-    onFailureMessage: Throwable => Any,
-    val attributes: Attributes,
-    shape: SinkShape[In])
-    extends SinkModule[In, NotUsed](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
-    val subscriberRef = actorMaterializer.actorOf(
-      context,
-      ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage, onFailureMessage))
-    (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
-  }
-
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attr, amendShape(attr))
 }
 
 /**

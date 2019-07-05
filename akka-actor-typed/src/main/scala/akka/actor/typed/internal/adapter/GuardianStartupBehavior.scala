@@ -8,9 +8,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.StashBuffer
+import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors, StashOverflowException }
 import akka.annotation.InternalApi
 
 /**
@@ -33,17 +31,22 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
 
   import GuardianStartupBehavior.Start
 
-  private val stash = StashBuffer[Any](1000)
+  private var tempStash: List[Any] = Nil
 
   override def onMessage(msg: Any): Behavior[Any] =
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.setup(ctx =>
-          stash
-            .unstashAll(ctx, Behaviors.intercept(() => new GuardianStopInterceptor)(guardianBehavior.unsafeCast[Any])))
+        Behaviors.withStash[Any](1000) { stash =>
+          tempStash.reverse.foreach(stash.stash)
+          tempStash = null
+          stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor)(guardianBehavior.unsafeCast[Any]))
+        }
       case other =>
-        stash.stash(other)
+        tempStash = other :: tempStash
+        if (tempStash.size > 1000) {
+          throw new StashOverflowException("Guardian Behavior did not receive start and buffer is full.")
+        }
         this
     }
 

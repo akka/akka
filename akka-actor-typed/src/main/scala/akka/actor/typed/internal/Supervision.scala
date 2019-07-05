@@ -14,6 +14,7 @@ import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
 import akka.actor.DeadLetterSuppression
+import akka.actor.Dropped
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
 import akka.actor.typed.BehaviorInterceptor.ReceiveTarget
 import akka.actor.typed.BehaviorInterceptor.SignalTarget
@@ -90,7 +91,8 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
 
   def dropped(ctx: TypedActorContext[_], signalOrMessage: Any): Unit = {
     import akka.actor.typed.scaladsl.adapter._
-    ctx.asScala.system.toUntyped.eventStream.publish(Dropped(signalOrMessage, ctx.asScala.self))
+    ctx.asScala.system.toUntyped.eventStream
+      .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toUntyped))
   }
 
   protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Catcher[Behavior[I]]
@@ -328,7 +330,8 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     val stashCapacity =
       if (strategy.stashCapacity >= 0) strategy.stashCapacity
       else ctx.asScala.system.settings.RestartStashCapacity
-    restartingInProgress = OptionVal.Some((StashBuffer[Any](stashCapacity), childrenToStop))
+    restartingInProgress = OptionVal.Some(
+      (StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity), childrenToStop))
 
     strategy match {
       case backoff: Backoff =>
@@ -362,7 +365,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
         case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>
           restartingInProgress = OptionVal.None
-          stashBuffer.unstashAll(ctx.asScala, newBehavior.unsafeCast)
+          stashBuffer.unstashAll(newBehavior.unsafeCast)
       }
       nextBehavior.narrow
     } catch handleException(ctx, signalRestart = {
