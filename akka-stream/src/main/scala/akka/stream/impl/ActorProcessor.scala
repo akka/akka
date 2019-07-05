@@ -250,6 +250,10 @@ import akka.util.unused
 
 }
 
+private[akka] object ActorProcessorImpl {
+  case object SubscriptionTimeout
+}
+
 /**
  * INTERNAL API
  */
@@ -268,6 +272,7 @@ import akka.util.unused
   }
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
+  def subTimeoutHandling: Receive
 
   /**
    * Subclass may override [[#activeReceive]]
@@ -279,7 +284,8 @@ import akka.util.unused
     }
   }
 
-  def activeReceive: Receive = primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive)
+  def activeReceive: Receive =
+    primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive).orElse(subTimeoutHandling)
 
   protected def onError(e: Throwable): Unit = fail(e)
 
