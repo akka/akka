@@ -1747,7 +1747,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+            pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1770,7 +1770,13 @@ private[stream] object Collect {
         else {
           grabAndPull()
           if (!isTimerActive(timerName)) {
-            scheduleOnce(timerName, d)
+            // schedule a timer for the full-delay `d` only if the buffer is empty, because otherwise a
+            // full-length timer will starve subsequent `onPull` callbacks, preventing overdue elements
+            // to be discharged.
+            if (buffer.isEmpty)
+              scheduleOnce(timerName, d)
+            else
+              scheduleOnce(timerName, Math.max(DelayPrecisionMS, nextElementWaitTime()).millis)
           }
         }
       }
