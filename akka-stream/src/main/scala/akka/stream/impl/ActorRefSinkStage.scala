@@ -36,7 +36,7 @@ final private[akka] class ActorRefSinkStage[T](
           case (_, Terminated(`ref`)) =>
             completeStage()
           case msg =>
-            log.error("Unexpected message to stage actor {}", msg)
+            log.error("Unexpected message to stage actor {}", msg.getClass)
         }).watch(ref)
         pull(in)
       }
