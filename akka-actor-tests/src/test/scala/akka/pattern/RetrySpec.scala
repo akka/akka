@@ -82,6 +82,48 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         intercept[IllegalStateException] { Await.result(retried, remaining) }.getMessage should ===("6")
       }
     }
+
+    "return a failure for a Future that would have succeeded but retires were exhausted with delay function" in {
+      @volatile var failCount = 0
+      @volatile var attemptedCount = 0;
+
+      def attempt() = {
+        if (failCount < 10) {
+          failCount += 1
+          Future.failed(new IllegalStateException(failCount.toString))
+        } else Future.successful(5)
+      }
+
+      val retried = retry(() => attempt, 5, attempted => {
+        attemptedCount = attempted
+        Some(100.milliseconds * attempted)
+      })
+      within(30000000 seconds) {
+        intercept[IllegalStateException] { Await.result(retried, remaining) }.getMessage should ===("6")
+        attemptedCount shouldBe 5
+      }
+    }
+
+    "retry can be attempted without any delay" in {
+      @volatile var failCount = 0
+
+      def attempt() = {
+        if (failCount < 1000) {
+          failCount += 1
+          Future.failed(new IllegalStateException(failCount.toString))
+        } else Future.successful(1)
+      }
+      val start = System.currentTimeMillis()
+      val retried = retry(() => attempt, 999)
+
+      within(1 seconds) {
+        intercept[IllegalStateException] {
+          Await.result(retried, remaining)
+        }.getMessage should ===("1000")
+        val elapse = System.currentTimeMillis() - start
+        elapse <= 100 shouldBe true
+      }
+    }
   }
 
 }
