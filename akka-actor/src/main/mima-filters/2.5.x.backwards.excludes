@@ -80,3 +80,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onOpen")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onHalfOpen")
 
+# #27290 Remove PatternsCS
+ProblemFilters.exclude[MissingClassProblem]("akka.pattern.PatternsCS")
+ProblemFilters.exclude[MissingClassProblem]("akka.pattern.PatternsCS$")
