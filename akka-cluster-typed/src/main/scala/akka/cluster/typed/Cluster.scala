@@ -81,7 +81,9 @@ sealed trait ClusterCommand
  * The name of the [[akka.actor.ActorSystem]] must be the same for all members of a
  * cluster.
  */
-final case class Join(address: Address) extends ClusterCommand
+final case class Join(address: Address) extends ClusterCommand {
+  address.checkHostCharacters()
+}
 
 object Join {
 
@@ -100,6 +102,7 @@ object Join {
  * cluster or to join the same cluster again.
  */
 final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends ClusterCommand {
+  seedNodes.foreach(_.checkHostCharacters())
 
   /**
    * Java API: Join the specified seed nodes without defining them in config.
