@@ -227,6 +227,9 @@ final class ClusterShardingSettings(
     extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.23
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
+    since = "2.6.0")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
@@ -252,7 +255,7 @@ final class ClusterShardingSettings(
   // bin compat for 2.5.21
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
-    "2.5.21")
+    since = "2.5.21")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
@@ -277,7 +280,7 @@ final class ClusterShardingSettings(
   // included for binary compatibility reasons
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead",
-    "2.5.18")
+    since = "2.5.18")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
