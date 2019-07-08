@@ -227,6 +227,9 @@ final class ClusterShardingSettings(
     extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.21
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
+    "2.5.18")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
@@ -304,6 +307,9 @@ final class ClusterShardingSettings(
 
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration.asScala)
+
+  def withShardRegionQueryTimeout(duration: FiniteDuration): ClusterShardingSettings =
+    copy(shardRegionQueryTimeout = duration)
 
   def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration.asScala)
