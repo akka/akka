@@ -107,14 +107,13 @@ import scala.util.control.NonFatal
 
     private def createResource(): Unit = {
       create().onComplete { resource =>
-        createdCallback(resource).failed.foreach {
-          case _: StreamDetachedException =>
-            // stream stopped
-            resource match {
-              case Success(r) =>
-                close(r)
-              case Failure(ex) => throw ex // failed to open but stream is stopped already
-            }
+        createdCallback(resource).failed.foreach { _ =>
+          // stream stopped
+          resource match {
+            case Success(r) =>
+              close(r)
+            case Failure(ex) => throw ex // failed to open but stream is stopped already
+          }
         }
       }
     }
