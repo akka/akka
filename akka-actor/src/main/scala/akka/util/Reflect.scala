@@ -10,6 +10,7 @@ import java.lang.reflect.Type
 import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
 import scala.util.Try
+import com.github.ghik.silencer.silent
 
 /**
  * Collection of internal reflection utilities which may or may not be
@@ -42,8 +43,9 @@ private[akka] object Reflect {
    * @param clazz the class which to instantiate an instance of
    * @return a new instance from the default constructor of the given class
    */
+  @silent
   private[akka] def instantiate[T](clazz: Class[T]): T =
-    try clazz.getDeclaredConstructor().newInstance()
+    try clazz.newInstance
     catch {
       case _: IllegalAccessException =>
         val ctor = clazz.getDeclaredConstructor()
