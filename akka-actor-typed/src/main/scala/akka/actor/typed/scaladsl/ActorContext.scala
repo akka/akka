@@ -5,14 +5,15 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed._
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.{ApiMayChange, DoNotInherit}
 import akka.util.Timeout
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 import akka.annotation.InternalApi
+import org.slf4j.Logger
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in

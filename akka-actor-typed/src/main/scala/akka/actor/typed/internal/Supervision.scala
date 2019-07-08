@@ -82,7 +82,7 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
-      ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+      ctx.asScala.log.error("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
     }
   }
 
@@ -307,7 +307,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error(ex, "failure during PreRestart")
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart with ex {}",ex)
         }
 
         prepareRestart(ctx, t)

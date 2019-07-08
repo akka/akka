@@ -133,6 +133,8 @@ object Dependencies {
 
   val actor = l ++= Seq(config, java8Compat.value)
 
+  val actorTyped = l ++= Seq(slf4jApi)
+
   val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
 
   val coordination = l ++= Seq(Test.junit, Test.scalatest.value)

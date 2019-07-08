@@ -374,6 +374,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  .settings(Dependencies.actorTyped)
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=
     """

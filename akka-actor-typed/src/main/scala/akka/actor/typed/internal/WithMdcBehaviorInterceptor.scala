@@ -4,9 +4,11 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
+import akka.actor.typed.{Behavior, BehaviorInterceptor, Signal, TypedActorContext}
 import akka.annotation.InternalApi
+import org.slf4j.MDC
+import scala.collection.JavaConverters._
+
 
 import scala.collection.immutable.HashMap
 
@@ -14,11 +16,11 @@ import scala.collection.immutable.HashMap
  * INTERNAL API
  */
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
-  val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
+  val noMdcPerMessage = (_: Any) => Map.empty[String, String]
 
   def apply[T](
-      staticMdc: Map[String, Any],
-      mdcForMessage: T => Map[String, Any],
+      staticMdc: Map[String, String],
+      mdcForMessage: T => Map[String, String],
       behavior: Behavior[T]): Behavior[T] = {
 
     val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
@@ -33,8 +35,8 @@ import scala.collection.immutable.HashMap
  * INTERNAL API
  */
 @InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
-    staticMdc: Map[String, Any],
-    mdcForMessage: T => Map[String, Any])
+    staticMdc: Map[String, String],
+    mdcForMessage: T => Map[String, String])
     extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
@@ -75,31 +77,31 @@ import scala.collection.immutable.HashMap
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val mdc = merge(staticMdc, mdcForMessage(msg))
-    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
+    MDC.setContextMap(mdc.asJava)
     val next =
       try {
         target(ctx, msg)
       } finally {
-        ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
+        MDC.clear()
       }
     next
   }
 
   override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = staticMdc
+    MDC.setContextMap(staticMdc.asJava)
     try {
       target(ctx, signal)
     } finally {
-      ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
+      MDC.clear()
     }
   }
 
-  private def merge(staticMdc: Map[String, Any], mdcForMessage: Map[String, Any]): Map[String, Any] = {
+  private def merge(staticMdc: Map[String, String], mdcForMessage: Map[String, String]): Map[String, String] = {
     if (staticMdc.isEmpty) mdcForMessage
     else if (mdcForMessage.isEmpty) staticMdc
-    else if (staticMdc.isInstanceOf[HashMap[String, Any]] && mdcForMessage.isInstanceOf[HashMap[String, Any]]) {
+    else if (staticMdc.isInstanceOf[HashMap[String, String]] && mdcForMessage.isInstanceOf[HashMap[String, String]]) {
       // merged is more efficient than ++
-      mdcForMessage.asInstanceOf[HashMap[String, Any]].merged(staticMdc.asInstanceOf[HashMap[String, Any]])(null)
+      mdcForMessage.asInstanceOf[HashMap[String, String]].merged(staticMdc.asInstanceOf[HashMap[String, String]])(null)
     } else {
       staticMdc ++ mdcForMessage
     }

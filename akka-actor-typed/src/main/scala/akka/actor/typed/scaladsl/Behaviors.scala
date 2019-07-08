@@ -232,10 +232,9 @@ object Behaviors {
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
-   * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
+  def withMdc[T](mdcForMessage: T => Map[String, String])(behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](Map.empty[String, String], mdcForMessage)(behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -244,10 +243,9 @@ object Behaviors {
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
-   * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    withMdc[T](staticMdc, (_: T) => Map.empty[String, Any])(behavior)
+  def withMdc[T](staticMdc: Map[String, String])(behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](staticMdc, (_: T) => Map.empty[String, String])(behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -264,9 +262,8 @@ object Behaviors {
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
-   * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
+  def withMdc[T](staticMdc: Map[String, String], mdcForMessage: T => Map[String, String])(
       behavior: Behavior[T]): Behavior[T] =
     WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 

@@ -49,7 +49,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
             else throw new RuntimeException(s"[$extensionIdFQCN] is not an 'ExtensionId'")
           case Failure(problem) =>
             if (!throwOnLoadFail)
-              log.error(problem, "While trying to load extension [{}], skipping...", extensionIdFQCN)
+             log.error("Has been problem with {}, While trying to load extension [{}], skipping...",Array(problem, extensionIdFQCN))
             else throw new RuntimeException(s"While trying to load extension [$extensionIdFQCN]", problem)
         }
       }

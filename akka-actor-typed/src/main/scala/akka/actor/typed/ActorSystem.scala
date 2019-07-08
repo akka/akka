@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadFactory
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import akka.Done
-import akka.{ actor => untyped }
+import akka.{actor => untyped}
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.InternalRecipientRef
@@ -24,6 +24,7 @@ import akka.util.Helpers.Requiring
 import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.slf4j.Logger
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -55,7 +56,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   def logConfiguration(): Unit
 
   /**
-   * A [[akka.actor.typed.Logger]] that can be used to emit log messages
+   * A [[org.slf4j.Logger]] that can be used to emit log messages
    * without specifying a more detailed source. Typically it is desirable to
    * use the dedicated `Logger` available from each Actor’s [[TypedActorContext]]
    * as that ties the log entries to the actor.

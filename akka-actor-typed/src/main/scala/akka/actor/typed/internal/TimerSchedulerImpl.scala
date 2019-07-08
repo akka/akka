@@ -6,7 +6,6 @@ package akka.actor.typed
 package internal
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
 import akka.actor.typed.scaladsl.ActorContext
@@ -14,6 +13,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
+import org.slf4j.Logger
 
 /**
  * INTERNAL API
@@ -133,9 +133,9 @@ import akka.util.OptionVal
           // it was from an old timer that was enqueued in mailbox before canceled
           log.debug(
             "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
-            timerMsg.key,
+            Array(timerMsg.key,
             timerMsg.generation,
-            t.generation)
+            t.generation))
           OptionVal.none // message should be ignored
         }
     }

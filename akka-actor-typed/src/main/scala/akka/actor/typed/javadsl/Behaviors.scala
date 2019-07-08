@@ -300,12 +300,11 @@ object Behaviors {
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
-   * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-      mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
+      mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, String]],
       behavior: Behavior[T]): Behavior[T] =
-    withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
+    withMdc(Collections.emptyMap[String, String], mdcForMessage, behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -314,9 +313,8 @@ object Behaviors {
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
-   * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T](staticMdc: java.util.Map[String, String], behavior: Behavior[T]): Behavior[T] =
     withMdc(staticMdc, null, behavior)
 
   /**
@@ -334,19 +332,18 @@ object Behaviors {
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
-   * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
-      staticMdc: java.util.Map[String, Any],
-      mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
+      staticMdc: java.util.Map[String, String],
+      mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, String]],
       behavior: Behavior[T]): Behavior[T] = {
 
-    def asScalaMap(m: java.util.Map[String, Any]): Map[String, Any] = {
-      if (m == null || m.isEmpty) Map.empty[String, Any]
+    def asScalaMap(m: java.util.Map[String, String]): Map[String, String] = {
+      if (m == null || m.isEmpty) Map.empty[String, String]
       else m.asScala.toMap
     }
 
-    val mdcForMessageFun: T => Map[String, Any] =
+    val mdcForMessageFun: T => Map[String, String] =
       if (mdcForMessage == null) Map.empty
       else { message =>
         asScalaMap(mdcForMessage.apply(message))

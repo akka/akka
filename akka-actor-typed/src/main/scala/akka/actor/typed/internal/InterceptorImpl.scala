@@ -9,7 +9,9 @@ import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.util.LineNumbers
+import org.slf4j.LoggerFactory
 
 /**
  * Provides the impl of any behavior that could nest another behavior
@@ -82,11 +84,6 @@ private[akka] final class InterceptorImpl[O, I](
     deduplicate(result, ctx)
   }
 
-  override def receiveSignal(ctx: typed.TypedActorContext[O], signal: Signal): Behavior[O] = {
-    val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
-    deduplicate(interceptedResult, ctx)
-  }
-
   private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
     val started = Behavior.start(interceptedResult, ctx.asInstanceOf[TypedActorContext[I]])
     if (started == UnhandledBehavior || started == SameBehavior || !Behavior.isAlive(started)) {
@@ -103,6 +100,11 @@ private[akka] final class InterceptorImpl[O, I](
       if (duplicateInterceptExists) started.unsafeCast[O]
       else new InterceptorImpl[O, I](interceptor, started)
     }
+  }
+
+  override def receiveSignal(ctx: typed.TypedActorContext[O], signal: Signal): Behavior[O] = {
+    val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
+    deduplicate(interceptedResult, ctx)
   }
 
   override def toString(): String = s"Interceptor($interceptor, $nestedBehavior)"
@@ -144,15 +146,31 @@ private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) exten
 
   import BehaviorInterceptor._
 
+  val log = LoggerFactory.getLogger(classOf[BehaviorInterceptor[T, T]])
+
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     if (opts.enabled)
-      opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received message {}", msg)
+      opts.level match {
+        case Logging.ErrorLevel   => log.error("received message {}", msg)
+        case Logging.WarningLevel => log.warn("received message {}", msg)
+        case Logging.InfoLevel    => log.info("received message {}", msg)
+        case Logging.DebugLevel   => log.debug("received message {}", msg)
+        //TODO check this debug case is actually best option
+        case _ => log.debug("received message {}", msg)
+      }
     target(ctx, msg)
   }
 
   override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     if (opts.enabled)
-      opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received signal {}", signal)
+      opts.level match {
+        case Logging.ErrorLevel   => log.error("received signal {}", signal)
+        case Logging.WarningLevel => log.warn("received signal {}", signal)
+        case Logging.InfoLevel    => log.info("received signal {}", signal)
+        case Logging.DebugLevel   => log.debug("received signal {}", signal)
+        //TODO check this debug case is actually best option
+        case _ => log.debug("received signal {}", signal)
+      }
     target(ctx, signal)
   }
 
@@ -179,8 +197,8 @@ private[akka] object WidenedInterceptor {
 @InternalApi
 private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I])
     extends BehaviorInterceptor[O, I] {
-  import WidenedInterceptor._
   import BehaviorInterceptor._
+  import WidenedInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     // If they use the same pf instance we can allow it, to have one way to workaround defining

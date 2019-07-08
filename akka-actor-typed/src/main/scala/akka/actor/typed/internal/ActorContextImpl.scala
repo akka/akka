@@ -6,20 +6,21 @@ package akka.actor.typed
 package internal
 
 import java.time.Duration
-import java.util.function.{ Function => JFunction }
+import java.util.function.{Function => JFunction}
 import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.BiConsumer
 import java.util.function.BiFunction
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.reflect.ClassTag
 import scala.util.Try
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
 import akka.util.JavaDurationConverters._
+import org.slf4j.Logger
 
 /**
  * INTERNAL API
