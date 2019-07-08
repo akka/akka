@@ -226,10 +226,33 @@ final class ClusterShardingSettings(
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
 
+  // bin compat for 2.5.23
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      passivateIdleEntityAfter,
+      3.seconds,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      None)
+
   // bin compat for 2.5.21
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
-    "2.5.18")
+    "2.5.21")
   def this(
       role: Option[String],
       rememberEntities: Boolean,

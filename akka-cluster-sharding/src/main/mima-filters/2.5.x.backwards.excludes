@@ -3,6 +3,3 @@ ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
 
 # #25191
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")
-
-# #27273 Configurable shard query timeout
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ClusterShardingSettings.this")
