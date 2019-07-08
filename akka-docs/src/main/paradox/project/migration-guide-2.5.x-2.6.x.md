@@ -306,9 +306,9 @@ and then it will behave as in Akka 2.5.x:
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
 
-### IOSources
+### IOSources & FileIO
 
-`StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
+`FileIO.toPath` and `StreamConverters.fromInputStream` now always fails the materialized value in case of failure. It is no longer required
 to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
 the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException].
 
