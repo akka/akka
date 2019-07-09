@@ -204,7 +204,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
               handle ! PostMessage("Hello World!")
               Behaviors.same
             case MessagePosted(screenName, message) =>
-              context.log.info("message has been posted by '{}': {}", screenName, message)
+              context.log.info("message has been posted by '{}': {}", Array(screenName, message))
               Behaviors.stopped
           }
         }

@@ -82,7 +82,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
     }
 
     "log messages with decorated MDC values" in {
-      val behavior = Behaviors.withMdc[String](Map("mdc" -> true))(Behaviors.logMessages(Behaviors.ignore))
+      val behavior = Behaviors.withMdc[String](Map("mdc" -> "true"))(Behaviors.logMessages(Behaviors.ignore))
 
       val ref = spawn(behavior)
       EventFilter

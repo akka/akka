@@ -1,21 +1,20 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C,cause) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.Properties
-
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ Behavior, LogMarker }
 import akka.event.Logging
-import akka.event.Logging.{ LogEvent, LogEventWithCause, LogEventWithMarker }
+import akka.event.Logging.{LogEvent, LogEventWithCause, LogEventWithMarker}
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
+import org.slf4j.helpers.{BasicMarker, BasicMarkerFactory}
 
 class SomeClass
 
@@ -43,7 +42,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     """) with WordSpecLike {
 
-  val marker = LogMarker("marker")
+  val marker = new BasicMarkerFactory().getMarker("marker")
   val cause = new TestException("böö")
 
   implicit val untyped = system.toUntyped
@@ -127,17 +126,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       }, occurrences = 1)
 
       eventFilter.intercept {
-        spawn(
-          Behaviors.setup[String] { context =>
-            val log = context.log
-              .withMdc(Map("mdc" -> true))
-              .withLoggerClass(classOf[SomeClass])
-              .withLogSource("who-knows-where-it-came-from")
-            log.info("Started")
-
-            Behaviors.empty
-          },
-          "the-actor-with-custom-class")
+        spawn(Behaviors.setup[String] { context =>
+          context.log.info("Started")
+          Behaviors.empty
+        }, "the-actor-with-custom-class")
       }
     }
 
@@ -149,24 +141,21 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         .intercept(spawn(Behaviors.setup[Any] { context =>
           context.log.debug(marker, "whatever")
           context.log.info(marker, "whatever")
-          context.log.warning(marker, "whatever")
+          context.log.warn(marker, "whatever")
           context.log.error(marker, "whatever")
-          context.log.error(marker, cause, "whatever")
-          Logging.AllLogLevels.foreach(level => {
-            context.log.log(level, marker, "whatever")
-          })
+          context.log.error(marker, "whatever", cause)
           Behaviors.stopped
         }))
     }
 
-    "pass cause with warning" in {
+    "pass cause with warn" in {
       EventFilter
         .custom({
           case event: LogEventWithCause if event.cause == cause => true
         }, occurrences = 2)
         .intercept(spawn(Behaviors.setup[Any] { context =>
-          context.log.warning(cause, "whatever")
-          context.log.warning(marker, cause, "whatever")
+          context.log.warn("whatever", cause)
+          context.log.warn(marker, "whatever", cause)
           Behaviors.stopped
         }))
     }
@@ -183,98 +172,56 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           spawn(Behaviors.setup[String] { context =>
             context.log.debug("message")
             context.log.debug("{}", "arg1")
-            context.log.debug("{} {}", "arg1", "arg2")
-            context.log.debug("{} {} {}", "arg1", "arg2", "arg3")
-            context.log.debug("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            context.log.debug("{} {}", Array("arg1", "arg2"))
+            context.log.debug("{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.debug("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.debug("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
             context.log.debug(marker, "message")
             context.log.debug(marker, "{}", "arg1")
-            context.log.debug(marker, "{} {}", "arg1", "arg2")
-            context.log.debug(marker, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.debug(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            context.log.debug(marker, "{} {}", Array("arg1", "arg2"))
+            context.log.debug(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.debug(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.debug(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
 
             context.log.info("message")
             context.log.info("{}", "arg1")
-            context.log.info("{} {}", "arg1", "arg2")
-            context.log.info("{} {} {}", "arg1", "arg2", "arg3")
-            context.log.info("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            context.log.info("{} {}", Array("arg1", "arg2"))
+            context.log.info("{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.info("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.info("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
             context.log.info(marker, "message")
             context.log.info(marker, "{}", "arg1")
-            context.log.info(marker, "{} {}", "arg1", "arg2")
-            context.log.info(marker, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.info(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            context.log.info(marker, "{} {}", Array("arg1", "arg2"))
+            context.log.info(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.info(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.info(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
 
-            context.log.warning("message")
-            context.log.warning("{}", "arg1")
-            context.log.warning("{} {}", "arg1", "arg2")
-            context.log.warning("{} {} {}", "arg1", "arg2", "arg3")
-            context.log.warning("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-            context.log.warning("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-            context.log.warning(marker, "message")
-            context.log.warning(marker, "{}", "arg1")
-            context.log.warning(marker, "{} {}", "arg1", "arg2")
-            context.log.warning(marker, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.warning(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-            context.log.warning(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-
-            context.log.warning(cause, "message")
-            context.log.warning(cause, "{}", "arg1")
-            context.log.warning(cause, "{} {}", "arg1", "arg2")
-            context.log.warning(cause, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.warning(cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-            context.log.warning(cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-            context.log.warning(marker, cause, "message")
-            context.log.warning(marker, cause, "{}", "arg1")
-            context.log.warning(marker, cause, "{} {}", "arg1", "arg2")
-            context.log.warning(marker, cause, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.warning(marker, cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-            context.log.warning(marker, cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.warn("message")
+            context.log.warn("{}", "arg1")
+            context.log.warn("{} {}", Array("arg1", "arg2"))
+            context.log.warn("{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.warn("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
+            context.log.warn("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.warn(marker, "message")
+            context.log.warn(marker, "{}", "arg1")
+            context.log.warn(marker, "{} {}", Array("arg1", "arg2"))
+            context.log.warn(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.warn(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
+            context.log.warn(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
 
             context.log.error("message")
             context.log.error("{}", "arg1")
-            context.log.error("{} {}", "arg1", "arg2")
-            context.log.error("{} {} {}", "arg1", "arg2", "arg3")
-            context.log.error("{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            context.log.error("{} {}", Array("arg1", "arg2"))
+            context.log.error("{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.error("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.error("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
             context.log.error(marker, "message")
             context.log.error(marker, "{}", "arg1")
-            context.log.error(marker, "{} {}", "arg1", "arg2")
-            context.log.error(marker, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.error(marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            context.log.error(marker, "{} {}", Array("arg1", "arg2"))
+            context.log.error(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
+            context.log.error(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.error(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-
-            context.log.error(cause, "message")
-            context.log.error(cause, "{}", "arg1")
-            context.log.error(cause, "{} {}", "arg1", "arg2")
-            context.log.error(cause, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.error(cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-            context.log.error(cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-            context.log.error(marker, cause, "message")
-            context.log.error(marker, cause, "{}", "arg1")
-            context.log.error(marker, cause, "{} {}", "arg1", "arg2")
-            context.log.error(marker, cause, "{} {} {}", "arg1", "arg2", "arg3")
-            context.log.error(marker, cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-            context.log.error(marker, cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-
-            Logging.AllLogLevels.foreach(level => {
-              context.log.log(level, "message")
-              context.log.log(level, "{}", "arg1")
-              context.log.log(level, "{} {}", "arg1", "arg2")
-              context.log.log(level, "{} {} {}", "arg1", "arg2", "arg3")
-              context.log.log(level, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-              context.log.log(level, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-
-              context.log.log(level, marker, "message")
-              context.log.log(level, marker, "{}", "arg1")
-              context.log.log(level, marker, "{} {}", "arg1", "arg2")
-              context.log.log(level, marker, "{} {} {}", "arg1", "arg2", "arg3")
-              context.log.log(level, marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
-              context.log.log(level, marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-            })
-
+            
             Behaviors.stopped
           })
         }
@@ -291,12 +238,13 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "provide the MDC values in the log" in {
       val behaviors = Behaviors.withMdc[Protocol](
-        Map("static" -> 1),
+        Map("static" -> "1"),
         // FIXME why u no infer the type here Scala??
+        //TODO review that change from Map[String,Any] to Map[String,String] is viable
         (message: Protocol) =>
           if (message.transactionId == 1)
-            Map("txId" -> message.transactionId, "first" -> true)
-          else Map("txId" -> message.transactionId)) {
+            Map("txId" -> message.transactionId.toString, "first" -> "true")
+          else Map("txId" -> message.transactionId.toString)) {
         Behaviors.setup { context =>
           context.log.info("Starting")
           Behaviors.receiveMessage { _ =>
@@ -355,8 +303,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "use the outermost initial mdc" in {
       // when we declare it, we expect the outermost to win
       val behavior =
-        Behaviors.withMdc[String](Map("outermost" -> true)) {
-          Behaviors.withMdc(Map("innermost" -> true)) {
+        Behaviors.withMdc[String](Map("outermost" -> "true")) {
+          Behaviors.withMdc(Map("innermost" -> "true")) {
             Behaviors.receive { (context, message) =>
               context.log.info(message)
               Behaviors.same
@@ -392,7 +340,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           }
         }
 
-      val ref = spawn(Behaviors.withMdc(Map("hasMdc" -> true))(behavior))
+      val ref = spawn(Behaviors.withMdc(Map("hasMdc" -> "true"))(behavior))
       EventFilter
         .custom(
           {
@@ -429,7 +377,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       // when it changes while running, we expect the latest one to apply
       val id = new AtomicInteger(0)
       def behavior: Behavior[String] =
-        Behaviors.withMdc(Map("mdc-version" -> id.incrementAndGet())) {
+        Behaviors.withMdc(Map("mdc-version" -> id.incrementAndGet().toString)) {
           Behaviors.receive { (context, message) =>
             message match {
               case "new-mdc" =>
@@ -475,7 +423,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "provide a withMdc decorator" in {
       val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(Behaviors.setup { context =>
         Behaviors.receiveMessage { _ =>
-          context.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
+          org.slf4j.MDC.put("mdc","inner")
+          context.log.info("Got message log.withMDC!")
           // after log.withMdc so we know it didn't change the outer mdc
           context.log.info("Got message behavior.withMdc!")
           Behaviors.same
