@@ -6,80 +6,57 @@ package akka.actor.typed.eventstream
 
 import akka.actor.typed.ActorRef
 import akka.annotation.{ DoNotInherit, InternalApi }
-
 import scala.reflect.ClassTag
 
-/**
- * Not for user Extension
- */
-@DoNotInherit sealed trait Command
-
-/**
- * Publish an event of type E
- * @param event
- * @tparam E
- */
-final case class Publish[E](event: E) extends Command
-
-object Publish {
+object EventStream {
 
   /**
-   * Java API.
+   * The set of commands accepted by the [[akka.actor.typed.ActorSystem.eventStream]].
+   *
+   * Not for user Extension
    */
-  def of[E](event: E): Publish[E] = apply(event)
-}
-
-/**
- * Subscribe a typed actor to listen for types or subtypes of E.
- * ==Simple example==
- * {{{
- *   sealed trait A
- *   case object A1 extends A
- *   //listen for all As
- *   def subscribe(actorSystem: ActorSystem[_], actorRef: ActorRef[A]) =
- *     actorSystem.eventStream ! Subscribe(actorRef)
- *   //listen for A1s only
- *   def subscribe(actorSystem: ActorSystem[_], actorRef: ActorRef[A]) =
- *     actorSystem.eventStream ! Subscribe[A1](actorRef)
- * }}}
- *
- * @param subscriber
- * @param classTag
- * @tparam E
- */
-final case class Subscribe[E](subscriber: ActorRef[E])(implicit classTag: ClassTag[E]) extends Command {
+  @DoNotInherit sealed trait Command
 
   /**
-   * Java API.
+   * Publish an event of type E by sending this command to
+   * the [[akka.actor.typed.ActorSystem.eventStream]].
    */
-  def this(clazz: Class[E], subscriber: ActorRef[E]) = this(subscriber)(ClassTag(clazz))
+  final case class Publish[E](event: E) extends Command
 
   /**
-   * INTERNAL API
+   * Subscribe a typed actor to listen for types or subtypes of E
+   * by sending this command to the [[akka.actor.typed.ActorSystem.eventStream]].
+   *
+   * ==Simple example==
+   * {{{
+   *   sealed trait A
+   *   case object A1 extends A
+   *   //listen for all As
+   *   def subscribe(actorSystem: ActorSystem[_], actorRef: ActorRef[A]) =
+   *     actorSystem.eventStream ! EventStream.Subscribe(actorRef)
+   *   //listen for A1s only
+   *   def subscribe(actorSystem: ActorSystem[_], actorRef: ActorRef[A]) =
+   *     actorSystem.eventStream ! EventStream.Subscribe[A1](actorRef)
+   * }}}
+   *
    */
-  @InternalApi private[akka] def topic: Class[_] = classTag.runtimeClass
-}
+  final case class Subscribe[E](subscriber: ActorRef[E])(implicit classTag: ClassTag[E]) extends Command {
 
-object Subscribe {
+    /**
+     * Java API.
+     */
+    def this(clazz: Class[E], subscriber: ActorRef[E]) = this(subscriber)(ClassTag(clazz))
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def topic: Class[_] = classTag.runtimeClass
+  }
 
   /**
-   * Java API.
+   * Unsubscribe an actor ref from the event stream
+   * by sending this command to the [[akka.actor.typed.ActorSystem.eventStream]].
    */
-  def of[E](clazz: java.lang.Class[E], subscriber: ActorRef[E]): Subscribe[E] =
-    Subscribe(subscriber)(ClassTag(clazz))
-}
+  final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
 
-/**
- * Unsubscribe an actor ref from the event stream
- * @param subscriber
- * @tparam E
- */
-final case class Unsubscribe[E](subscriber: ActorRef[E]) extends Command
-
-object Unsubscribe {
-
-  /**
-   * Java API.
-   */
-  def of[E](subscriber: ActorRef[E]): Unsubscribe[E] = apply(subscriber)
 }
