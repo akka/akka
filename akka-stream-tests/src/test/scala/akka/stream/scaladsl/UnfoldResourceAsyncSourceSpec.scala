@@ -207,7 +207,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             Future.successful {
               startCount.incrementAndGet()
               List(1, 2, 3).iterator
-          },
+            },
           reader =>
             if (!failed) {
               failed = true
@@ -232,7 +232,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             Future.successful {
               startCount.incrementAndGet()
               List(1, 2, 3).iterator
-          },
+            },
           reader =>
             if (!failed) {
               failed = true
@@ -342,7 +342,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             Future.successful {
               closeLatch.countDown()
               Done
-          })
+            })
         .runWith(Sink.asPublisher(false))(mat)
       val c = TestSubscriber.manualProbe[String]()
       p.subscribe(c)
