@@ -45,8 +45,13 @@ import scala.util.control.NonFatal
         decider(ex) match {
           case Supervision.Stop =>
             failStage(ex)
-          case Supervision.Restart => restartResource()
-          case Supervision.Resume  => onPull()
+          case Supervision.Restart =>
+            try {
+              restartResource()
+            } catch {
+              case NonFatal(ex) => failStage(ex)
+            }
+          case Supervision.Resume => onPull()
         }
     }
 
@@ -107,13 +112,16 @@ import scala.util.control.NonFatal
 
     private def createResource(): Unit = {
       create().onComplete { resource =>
-        createdCallback(resource).failed.foreach { _ =>
-          // stream stopped
-          resource match {
-            case Success(r) =>
-              close(r)
-            case Failure(ex) => throw ex // failed to open but stream is stopped already
-          }
+        createdCallback(resource).failed.foreach {
+          case _: StreamDetachedException =>
+            // stream stopped before created callback could be invoked, we need
+            // to close the resource if it is was opened, to not leak it
+            resource match {
+              case Success(r) =>
+                close(r)
+              case Failure(ex) =>
+                throw ex // failed to open but stream is stopped already
+            }
         }
       }
     }
