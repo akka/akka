@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.protobuf
 
+import scala.concurrent.duration._
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 import akka.actor.Props
@@ -93,6 +95,20 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     "be able to serialize StartEntity" in {
       checkSerialization(ShardRegion.StartEntity("42"))
       checkSerialization(ShardRegion.StartEntityAck("13", "37"))
+    }
+
+    "be able to serialize GetCurrentRegions" in {
+      checkSerialization(ShardRegion.GetCurrentRegions)
+      checkSerialization(
+        ShardRegion.CurrentRegions(Set(Address("akka", "sys", "a", 2552), Address("akka", "sys", "b", 2552))))
+    }
+
+    "be able to serialize GetClusterShardingStats" in {
+      checkSerialization(ShardRegion.GetClusterShardingStats(3.seconds))
+      checkSerialization(
+        ShardRegion.ClusterShardingStats(Map(
+          Address("akka", "sys", "a", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)),
+          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)))))
     }
   }
 }
