@@ -470,16 +470,16 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("b") // bypass toUpper interceptor
     }
 
-    "be possible to combine with widen" in {
+    "be possible to combine with transformMessages" in {
       val probe = createTestProbe[String]()
-      val ref = spawn(MultiProtocol(probe.ref).widen[String] {
+      val ref = spawn(MultiProtocol(probe.ref).transformMessages[String] {
         case s => Command(s.toUpperCase())
       })
 
       ref ! "a"
       probe.expectMessage("A")
       ref.unsafeUpcast ! ExternalResponse("b")
-      probe.expectMessage("b") // bypass widen interceptor
+      probe.expectMessage("b") // bypass transformMessages interceptor
     }
 
     "be possible to combine with MDC" in {
