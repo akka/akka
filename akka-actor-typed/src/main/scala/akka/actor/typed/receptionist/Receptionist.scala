@@ -4,13 +4,12 @@
 
 package akka.actor.typed.receptionist
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Dispatchers, Extension, ExtensionId, ExtensionSetup, Props }
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, ExtensionSetup }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
 
 import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
-import akka.annotation.InternalApi
 
 /**
  * This class is not intended for user extension other than for test purposes (e.g.
@@ -20,34 +19,6 @@ import akka.annotation.InternalApi
 @DoNotInherit
 abstract class Receptionist extends Extension {
   def ref: ActorRef[Receptionist.Command]
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] class ReceptionistImpl(system: ActorSystem[_]) extends Receptionist {
-
-  override val ref: ActorRef[Receptionist.Command] = {
-    val provider: ReceptionistBehaviorProvider =
-      if (system.settings.untypedSettings.ProviderSelectionType.hasCluster) {
-        system.dynamicAccess
-          .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
-          .recover {
-            case e =>
-              throw new RuntimeException(
-                "ClusterReceptionist could not be loaded dynamically. Make sure you have " +
-                "'akka-cluster-typed' in the classpath.",
-                e)
-          }
-          .get
-      } else LocalReceptionist
-
-    import akka.actor.typed.scaladsl.adapter._
-    system.internalSystemActorOf(
-      provider.behavior,
-      provider.name,
-      Props.empty.withDispatcherFromConfig(Dispatchers.InternalDispatcherId))
-  }
 }
 
 object ServiceKey {
