@@ -8,8 +8,8 @@ package adapter
 
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-import akka.{actor => untyped}
-import org.slf4j.{Logger, LoggerFactory}
+import akka.{ actor => untyped }
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._

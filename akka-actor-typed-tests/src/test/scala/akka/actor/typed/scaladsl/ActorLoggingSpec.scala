@@ -11,10 +11,10 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
-import akka.event.Logging.{LogEvent, LogEventWithCause, LogEventWithMarker}
+import akka.event.Logging.{ LogEvent, LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
-import org.slf4j.helpers.{BasicMarker, BasicMarkerFactory}
+import org.slf4j.helpers.{ BasicMarker, BasicMarkerFactory }
 
 class SomeClass
 
@@ -221,7 +221,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
             context.log.error(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
             context.log.error(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
             context.log.error(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
-            
+
             Behaviors.stopped
           })
         }
@@ -423,7 +423,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "provide a withMdc decorator" in {
       val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(Behaviors.setup { context =>
         Behaviors.receiveMessage { _ =>
-          org.slf4j.MDC.put("mdc","inner")
+          org.slf4j.MDC.put("mdc", "inner")
           context.log.info("Got message log.withMDC!")
           // after log.withMdc so we know it didn't change the outer mdc
           context.log.info("Got message behavior.withMdc!")

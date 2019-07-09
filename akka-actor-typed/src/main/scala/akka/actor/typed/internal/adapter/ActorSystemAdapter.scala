@@ -12,7 +12,7 @@ import akka.actor
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
-import akka.{actor => untyped}
+import akka.{ actor => untyped }
 
 import scala.concurrent.ExecutionContextExecutor
 import akka.util.Timeout
@@ -22,7 +22,7 @@ import akka.annotation.InternalApi
 
 import scala.compat.java8.FutureConverters
 import akka.actor.ActorRefProvider
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).

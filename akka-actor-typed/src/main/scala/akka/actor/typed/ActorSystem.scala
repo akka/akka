@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadFactory
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import akka.Done
-import akka.{actor => untyped}
+import akka.{ actor => untyped }
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.InternalRecipientRef

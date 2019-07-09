@@ -117,5 +117,3 @@ object LogOptions {
    */
   def create(): LogOptions = apply()
 }
-
-

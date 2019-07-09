@@ -307,7 +307,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart with ex {}",ex)
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart with ex {}", ex)
         }
 
         prepareRestart(ctx, t)

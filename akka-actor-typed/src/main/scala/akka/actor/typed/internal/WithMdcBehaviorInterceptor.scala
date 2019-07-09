@@ -4,11 +4,10 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.{Behavior, BehaviorInterceptor, Signal, TypedActorContext}
+import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
 import org.slf4j.MDC
 import scala.collection.JavaConverters._
-
 
 import scala.collection.immutable.HashMap
 
