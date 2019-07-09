@@ -12,6 +12,8 @@ import akka.util.ccompat.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
+ * Register and discover actors that implement a service with a protocol defined by a [[ServiceKey]].
+ *
  * This class is not intended for user extension other than for test purposes (e.g.
  * stub implementation). More methods may be added in the future and that may break
  * such implementations.
@@ -91,8 +93,10 @@ object Receptionist extends ExtensionId[Receptionist] {
   @DoNotInherit abstract class Command
 
   /**
-   * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
-   * registrations can be made for the same key. De-registration is implied by
+   * `Register` message. Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]
+   * by sending this command to the [[Receptionist.ref]].
+   *
+   * Multiple registrations can be made for the same key. De-registration is implied by
    * the end of the referenced Actor’s lifecycle.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor
@@ -114,12 +118,24 @@ object Receptionist extends ExtensionId[Receptionist] {
   }
 
   /**
-   * Java API: A Register message without Ack that the service was registered
+   * Java API: A Register message without Ack that the service was registered.
+   * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]
+   * by sending this command to the [[Receptionist.ref]].
+   *
+   * Multiple registrations can be made for the same key. De-registration is implied by
+   * the end of the referenced Actor’s lifecycle.
    */
   def register[T](key: ServiceKey[T], service: ActorRef[T]): Command = Register(key, service)
 
   /**
-   * Java API: A Register message with Ack that the service was registered
+   * Java API: A `Register` message with Ack that the service was registered.
+   * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]
+   * by sending this command to the [[Receptionist.ref]].
+   *
+   * Multiple registrations can be made for the same key. De-registration is implied by
+   * the end of the referenced Actor’s lifecycle.
+   *
+   * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
    */
   def register[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered]): Command =
     Register(key, service, replyTo)
@@ -173,7 +189,8 @@ object Receptionist extends ExtensionId[Receptionist] {
     Registered(key, serviceInstance)
 
   /**
-   * Subscribe the given actor to service updates. When new instances are registered or unregistered to the given key
+   * `Subscribe` message. The given actor will subscribe to service updates when this command is sent to
+   * the [[Receptionist.ref]]. When new instances are registered or unregistered to the given key
    * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
    *
    * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
@@ -190,7 +207,8 @@ object Receptionist extends ExtensionId[Receptionist] {
   }
 
   /**
-   * Java API: Subscribe the given actor to service updates. When new instances are registered or unregistered to the given key
+   * Java API: `Subscribe` message. The given actor to service updates when this command is sent to
+   * * the [[Receptionist.ref]]. When new instances are registered or unregistered to the given key
    * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
    *
    * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
@@ -199,8 +217,8 @@ object Receptionist extends ExtensionId[Receptionist] {
   def subscribe[T](key: ServiceKey[T], subscriber: ActorRef[Listing]): Command = Subscribe(key, subscriber)
 
   /**
-   * Query the Receptionist for a list of all Actors implementing the given
-   * protocol at one point in time.
+   * `Find` message. Query the Receptionist for a list of all Actors implementing the given
+   * protocol at one point in time by sending this command to the [[Receptionist.ref]].
    */
   object Find {
 
@@ -215,8 +233,8 @@ object Receptionist extends ExtensionId[Receptionist] {
   }
 
   /**
-   * Java API: Query the Receptionist for a list of all Actors implementing the given
-   * protocol at one point in time.
+   * Java API: `Find` message. Query the Receptionist for a list of all Actors implementing the given
+   * protocol at one point in time by sending this command to the [[Receptionist.ref]].
    */
   def find[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
     Find(key, replyTo)
