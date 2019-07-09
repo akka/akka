@@ -12,6 +12,20 @@ class AsciiStringCopySpec extends WordSpec with Matchers {
 
   "The copyUSAsciiStrToBytes optimization" must {
 
+    "select working algorithm" in {
+      if (Unsafe.isIsJavaVersion9Plus) {
+        Unsafe.testUSAsciiStrToBytesAlgorithm0("abc") should ===(true)
+        // this is known to fail with JDK 11 on ARM32 (Raspberry Pi),
+        // and therefore algorithm 0 is selected on that architecture
+        Unsafe.testUSAsciiStrToBytesAlgorithm1("abc") should ===(true)
+        Unsafe.testUSAsciiStrToBytesAlgorithm2("abc") should ===(false)
+      } else {
+        Unsafe.testUSAsciiStrToBytesAlgorithm0("abc") should ===(true)
+        Unsafe.testUSAsciiStrToBytesAlgorithm1("abc") should ===(false)
+        Unsafe.testUSAsciiStrToBytesAlgorithm2("abc") should ===(true)
+      }
+    }
+
     "copy string internal representation successfully" in {
       val ascii = "abcdefghijklmnopqrstuvxyz"
       val byteArray = new Array[Byte](ascii.length)
