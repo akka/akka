@@ -9,18 +9,18 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BinaryOperator
 
 import akka.NotUsed
-import akka.actor.{ActorRef, Props}
-import akka.annotation.{DoNotInherit, InternalApi}
+import akka.actor.{ ActorRef, Props }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
-import akka.stream.impl.QueueSink.{Output, Pull}
+import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.scaladsl.{Sink, SinkQueueWithCancel, Source}
+import akka.stream.scaladsl.{ Sink, SinkQueueWithCancel, Source }
 import akka.stream.stage._
-import org.reactivestreams.{Publisher, Subscriber}
+import org.reactivestreams.{ Publisher, Subscriber }
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 
