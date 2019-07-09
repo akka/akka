@@ -19,6 +19,7 @@ import java.util.Optional;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import org.scalatest.junit.JUnitSuite;
+import org.slf4j.event.LoggingEvent;
 
 public class SyncTestingExampleTest extends JUnitSuite {
 

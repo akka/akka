@@ -4,24 +4,13 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.util.concurrent.{ CompletionStage, ThreadFactory }
+import java.util.concurrent.{CompletionStage, ThreadFactory}
 
 import akka.actor.typed.internal.ActorRefImpl
-import akka.actor.typed.{
-  ActorRef,
-  ActorSystem,
-  Behavior,
-  DispatcherSelector,
-  Dispatchers,
-  Extension,
-  ExtensionId,
-  Logger,
-  Props,
-  Settings
-}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Props, Settings}
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor => untyped }
+import akka.{actor => untyped}
 import akka.Done
 import com.typesafe.config.ConfigFactory
 
@@ -30,6 +19,8 @@ import scala.concurrent._
 import akka.actor.ActorRefProvider
 import akka.actor.typed.internal.InternalRecipientRef
 import com.github.ghik.silencer.silent
+import org.slf4j.Logger
+import org.slf4j.helpers.SubstituteLoggerFactory
 
 /**
  * INTERNAL API
@@ -100,5 +91,7 @@ import com.github.ghik.silencer.silent
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
     throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
 
-  def log: Logger = new StubbedLogger
+  def loggerFactory = new SubstituteLoggerFactory()
+
+  def log: Logger = loggerFactory.getLogger("StubbedLogger")
 }
