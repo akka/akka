@@ -1,0 +1,3 @@
+# #24304 stack overflow in StreamConverters
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.CollectorState")
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.ReducerState")
