@@ -45,7 +45,7 @@ A few differences to note:
   since the state in `AbstractBehavior` instance must not be shared between actor instances.
   This is "hidden" in the functional style since the immutable state is captured by the function.
 * In the object-oriented style one can return `this` to stay with the same behavior for next message.
-  In the functional style there is no `this` so `Behviors.same` is used instead.
+  In the functional style there is no `this` so `Behaviors.same` is used instead.
 * @scala[The `ActorContext` is accessed in different ways. In the object-oriented style it's retrieved from
   `Behaviors.setup` and kept as an instance field, while in the functional style it's passed in alongside
   the message. That said, `Behaviors.setup` is often used in the functional style as well, and then
@@ -75,7 +75,7 @@ Some reasons why you may want to use the functional style:
 * The state is immutable and can be passed to "next" behavior.
 * The `Behavior` is stateless.
 * The actor lifecycle has several different phases that can be represented by switching between different
-  behaviors, like a finite state machine. This is also supported with the object-oriented style, but
+  behaviors, like a @ref:[finite state machine](fsm.md). This is also supported with the object-oriented style, but
   it's typically nicer with the functional style.
 * It's less risk of accessing mutable state in the actor from other threads, like `Future` or Streams
   callbacks.
@@ -94,7 +94,7 @@ Some reasons why you may want to use the object-oriented style:
 
 @@@ div {.group-java}
 
-When developing in Java the functional style will probably be the choice for many.
+When developing in Java the object-oriented style will probably be the choice for many.
 
 Some reasons why you may want to use the object-oriented style:
 
@@ -117,7 +117,7 @@ Some reasons why you may want to use the functional style:
 * The state is immutable and can be passed to "next" behavior.
 * The `Behavior` is stateless.
 * The actor lifecycle has several different phases that can be represented by switching between different
-  behaviors, like a finite state machine. This is also supported with the object-oriented style, but
+  behaviors, like a @ref:[finite state machine](fsm.md). This is also supported with the object-oriented style, but
   it's typically nicer with the functional style.
 * It's less risk of accessing mutable state in the actor from other threads, like `CompletionStage` or Streams
   callbacks.

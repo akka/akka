@@ -16,6 +16,6 @@
 * [stream](stream.md)
 * [fsm](fsm.md)
 * [testing](testing.md)
-* [actors](style-guide.md)
+* [style-guide](style-guide.md)
 
 @@@
