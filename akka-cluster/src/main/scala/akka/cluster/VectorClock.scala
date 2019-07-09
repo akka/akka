@@ -26,12 +26,19 @@ private[cluster] object VectorClock {
 
     def fromHash(hash: String): Node = hash
 
-    private def hash(name: String): String = {
+    private[this] def hash(name: String): String = {
       val digester = MessageDigest.getInstance("MD5")
       digester.update(name.getBytes("UTF-8"))
-      digester.digest.map { h =>
-        "%02x".format(0xFF & h)
-      }.mkString
+      val digest = digester.digest
+      val ch = new Array[Char](digest.length * 2)
+      var i = 0
+      while (i < digest.length) {
+        val h = digest(i)
+        ch(i * 2) = Character.forDigit((h >> 4) & 0xF, 16)
+        ch(i * 2 + 1) = Character.forDigit(h & 0xF, 16)
+        i += 1
+      }
+      String.valueOf(ch)
     }
   }
 
