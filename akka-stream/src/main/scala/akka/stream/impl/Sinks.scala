@@ -6,29 +6,21 @@ package akka.stream.impl
 
 import java.util.Optional
 import java.util.concurrent.CompletionStage
+import java.util.function.BinaryOperator
 
 import akka.NotUsed
-import akka.actor.{ ActorRef, Props }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.actor.{ActorRef, Props}
+import akka.annotation.{DoNotInherit, InternalApi}
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
-import akka.stream.impl.QueueSink.{ Output, Pull }
+import akka.stream.impl.QueueSink.{Output, Pull}
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.scaladsl.{ Sink, SinkQueueWithCancel, Source }
+import akka.stream.scaladsl.{Sink, SinkQueueWithCancel, Source}
 import akka.stream.stage._
-import org.reactivestreams.{ Publisher, Subscriber }
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.{ immutable, mutable }
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
-import scala.collection.immutable
+import org.reactivestreams.{Publisher, Subscriber}
 import akka.util.ccompat._
 
 /**
@@ -445,7 +437,7 @@ import akka.util.ccompat._
  * INTERNAL API
  */
 @InternalApi private[akka] final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T])
-    extends akka.stream.javadsl.SinkQueueWithCancel[T] {
+  extends akka.stream.javadsl.SinkQueueWithCancel[T] {
   import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
   def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
   def cancel(): Unit = delegate.cancel()
@@ -455,18 +447,78 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  *
+ * Helper class to be able to express collection as a fold using mutable data without
+ * accidentally sharing state between materializations
+ */
+@InternalApi private[akka] trait CollectorState[T, R] {
+  def accumulated(): Any
+  def update(elem: T): CollectorState[T, R]
+  def finish(): R
+}
+
+/**
+ * INTERNAL API
+ *
  * Helper class to be able to express collection as a fold using mutable data
  */
-@InternalApi private[akka] final class CollectorState[T, R](val collector: java.util.stream.Collector[T, Any, R]) {
-  lazy val accumulated = collector.supplier().get()
-  private lazy val accumulator = collector.accumulator()
+@InternalApi private[akka] final class FirstCollectorState[T, R](
+    collectorFactory: () => java.util.stream.Collector[T, Any, R])
+    extends CollectorState[T, R] {
 
-  def update(elem: T): CollectorState[T, R] = {
+  override def update(elem: T): CollectorState[T, R] = {
+    // on first update, return a new mutable collector to ensure not
+    // sharing collector between streams
+    val collector = collectorFactory()
+    val accumulator = collector.accumulator()
+    val accumulated = collector.supplier().get()
+    accumulator.accept(accumulated, elem)
+    new MutableCollectorState(collector, accumulator, accumulated)
+  }
+
+  override def accumulated(): Any = {
+    // only called if it is asked about accumulated before accepting a first element
+    val collector = collectorFactory()
+    collector.supplier().get()
+  }
+
+  override def finish(): R = {
+    // only called if completed without elements
+    val collector = collectorFactory()
+    collector.finisher().apply(collector.supplier().get())
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express collection as a fold using mutable data
+ */
+@InternalApi private[akka] final class MutableCollectorState[T, R](
+    collector: java.util.stream.Collector[T, Any, R],
+    accumulator: java.util.function.BiConsumer[Any, T],
+    val accumulated: Any)
+    extends CollectorState[T, R] {
+
+  override def update(elem: T): CollectorState[T, R] = {
     accumulator.accept(accumulated, elem)
     this
   }
 
-  def finish(): R = collector.finisher().apply(accumulated)
+  override def finish(): R = {
+    // only called if completed without elements
+    collector.finisher().apply(accumulated)
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express reduce as a fold for parallel collector without
+ * accidentally sharing state between materializations
+ */
+@InternalApi private[akka] trait ReducerState[T, R] {
+  def update(batch: Any): ReducerState[T, R]
+  def finish(): R
 }
 
 /**
@@ -474,13 +526,38 @@ import akka.util.ccompat._
  *
  * Helper class to be able to express reduce as a fold for parallel collector
  */
-@InternalApi private[akka] final class ReducerState[T, R](val collector: java.util.stream.Collector[T, Any, R]) {
-  private var reduced: Any = null.asInstanceOf[Any]
-  private lazy val combiner = collector.combiner()
+@InternalApi private[akka] final class FirstReducerState[T, R](
+    collectorFactory: () => java.util.stream.Collector[T, Any, R])
+    extends ReducerState[T, R] {
 
   def update(batch: Any): ReducerState[T, R] = {
-    if (reduced == null) reduced = batch
-    else reduced = combiner(reduced, batch)
+    // on first update, return a new mutable collector to ensure not
+    // sharing collector between streams
+    val collector = collectorFactory()
+    val combiner = collector.combiner()
+    new MutableReducerState(collector, combiner, batch)
+  }
+
+  def finish(): R = {
+    // only called if completed without elements
+    val collector = collectorFactory()
+    collector.finisher().apply(null)
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express reduce as a fold for parallel collector
+ */
+@InternalApi private[akka] final class MutableReducerState[T, R](
+    val collector: java.util.stream.Collector[T, Any, R],
+    val combiner: BinaryOperator[Any],
+    var reduced: Any)
+    extends ReducerState[T, R] {
+
+  def update(batch: Any): ReducerState[T, R] = {
+    reduced = combiner(reduced, batch)
     this
   }
 
