@@ -22,7 +22,7 @@ Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
+:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
 
 With these in place we can define our first Actor, and it will say
 hello!
@@ -31,7 +31,7 @@ Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
 
 Java
-:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
+:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
 
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
@@ -141,7 +141,8 @@ The next example is more realistic and demonstrates some important patterns:
 
 First we will show this example in a functional style, and then the same example is shown with an
 @ref:[Object-oriented style](#object-oriented-style). Which style you choose to use is a matter of
-taste and both styles can be mixed depending on which is best for a specific actor.
+taste and both styles can be mixed depending on which is best for a specific actor. Considerations
+for the choice is provided in the @ref:[Style Guide](style-guide.md#functional-vs-object-oriented-style).
 
 Consider an Actor that runs a chat room: client Actors may connect by sending
 a message that contains their screen name and then they can post messages. The
@@ -271,41 +272,15 @@ the JVM alive until the root actor stops.
 
 ### Object-oriented style
 
-The samples shown so far are all based on a functional programming style 
-where you pass a function to a factory which then constructs a behavior, for stateful 
-actors this means passing immutable state around as parameters and switching to a new behavior 
-whenever you need to act on a changed state. An alternative way to express the same is a more 
-object oriented style where a concrete class for the actor behavior is defined and mutable 
-state is kept inside of it as fields. Which style you choose to use is a matter of
-taste and both styles can be mixed depending on which is best for a specific actor.
+The above sample used the functional programming style where you pass a function to a factory which
+then constructs a behavior, for stateful actors this means passing immutable state around as
+parameters and switching to a new behavior whenever you need to act on a changed state.
+An alternative way to express the same is a more object oriented style where a concrete class
+for the actor behavior is defined and mutable state is kept inside of it as fields.
 
-Some reasons why you may want to use the object-oriented style:
-
-@@@ div {.group-java}
-
- * you are more familiar with an object-oriented style of structuring the code with methods
-   in a class rather than functions
- * Java lambdas can only close over final or effectively final fields, making it 
-   impractical to use this style in behaviors that mutate their fields
- * some state is not immutable, e.g. immutable collections are not widely used in Java
- * it could be more familiar and easier to migrate existing untyped actors to this style
- * mutable state can sometimes have better performance, e.g. mutable collections and 
-   avoiding allocating new instance for next behavior (be sure to benchmark if this is your 
-   motivation)
-
-@@@
-
-@@@ div {.group-scala}
-
- * you are more familiar with an object-oriented style of structuring the code with methods
-   in a class rather than functions
- * some state is not immutable
- * it could be more familiar and easier to migrate existing untyped actors to this style
- * mutable state can sometimes have better performance, e.g. mutable collections and 
-   avoiding allocating new instance for next behavior (be sure to benchmark if this is your 
-   motivation)
-
-@@@
+Which style you choose to use is a matter of taste and both styles can be mixed depending on which
+is best for a specific actor. Considerations for the choice is provided in the
+@ref:[Style Guide](style-guide.md#functional-vs-object-oriented-style).
 
 #### AbstractBehavior API
 
