@@ -94,8 +94,7 @@ private[akka] final class GroupRouterImpl[T](
           // are unreachable, in that case trying the unreachable ones is better than dropping messages
           l.allServiceInstances(serviceKey)
       routeesEmpty = routees.isEmpty
-      if (!routeesEmpty)
-        routingLogic.routeesUpdated(routees)
+      routingLogic.routeesUpdated(routees)
       this
     case msg: T @unchecked =>
       import akka.actor.typed.scaladsl.adapter._
