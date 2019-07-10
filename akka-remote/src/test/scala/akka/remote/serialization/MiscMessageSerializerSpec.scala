@@ -23,7 +23,9 @@ object MiscMessageSerializerSpec {
   val serializationTestOverrides =
     s"""
     akka.actor {
-      serialization-bindings = { "akka.remote.serialization.MiscMessageSerializerSpec$$TestException" = akka-misc } $${akka.actor.java-serialization-disabled-additional-serialization-bindings}
+      serialization-bindings = { 
+        "akka.remote.serialization.MiscMessageSerializerSpec$$TestException" = akka-misc
+      }
     }
     """
 

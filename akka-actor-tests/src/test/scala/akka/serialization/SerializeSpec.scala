@@ -116,10 +116,7 @@ object SerializationTests {
 
   def mostlyReferenceSystem: ActorSystem = {
     val referenceConf = ConfigFactory.defaultReference()
-    // we are checking the old Java serialization formats here
-    val mostlyReferenceConf = ConfigFactory.parseString("""
-      akka.actor.enable-additional-serialization-bindings = off
-      """).withFallback(AkkaSpec.testConf.withFallback(referenceConf))
+    val mostlyReferenceConf = AkkaSpec.testConf.withFallback(referenceConf)
     ActorSystem("SerializationSystem", mostlyReferenceConf)
   }
 

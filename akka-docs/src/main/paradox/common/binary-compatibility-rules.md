@@ -146,7 +146,3 @@ manual exception overrides may be put in place if the change happened to be in a
 
 Scala does not maintain serialization compatibility across major versions. This means that if Java serialization is used
 there is no guarantee objects can be cleanly deserialized if serialized with a different version of Scala.
-
-The internal Akka Protobuf serializers that can be enabled explicitly with `enable-additional-serialization-bindings`
-or implicitly with `akka.actor.allow-java-serialization = off` (which is preferable from a security standpoint)
-does not suffer from this problem.
