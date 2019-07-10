@@ -286,7 +286,7 @@ object Receptionist extends ExtensionId[Receptionist] {
      * In a non-clustered `ActorSystem` this will always be all registered instances
      * for a service key.
      *
-     * For a clustered `ActorSystem` it only contain services on nodes that has
+     * For a clustered `ActorSystem` it only contain services on nodes that
      * are not seen as unreachable (note that they could have still have become
      * unreachable between this message being sent and the receiving actor processing it).
      *
@@ -315,10 +315,8 @@ object Receptionist extends ExtensionId[Receptionist] {
      *
      * In a non-clustered `ActorSystem` this will always be the same as [[#serviceInstances]].
      *
-     * For a clustered `ActorSystem` services on nodes that has
-     * been observed unreachable is not among these (note that they could have
-     * become unreachable between this message being sent and the receiving actor
-     * processing it).
+     * For a clustered `ActorSystem` this include both services on nodes that are reachable
+     * and nodes that are unreachable.
      */
     def allServiceInstances[T](key: ServiceKey[T]): Set[ActorRef[T]]
 
@@ -327,12 +325,24 @@ object Receptionist extends ExtensionId[Receptionist] {
      *
      * In a non-clustered `ActorSystem` this will always be the same as [[#getServiceInstances]].
      *
-     * For a clustered `ActorSystem` services on nodes that has
-     * been observed unreachable is not among these (note that they could have
-     * become unreachable between this message being sent and the receiving actor
-     * processing it).
+     * For a clustered `ActorSystem` this include both services on nodes that are reachable
+     * and nodes that are unreachable.
      */
     def getAllServiceInstances[T](key: ServiceKey[T]): java.util.Set[ActorRef[T]]
+
+    /**
+     * Scala API: `true` only if new services was added or removed and `false` if this listing is
+     * only about reachability changes. Useful for subscribers that only cares about [[#allServiceInstances]].
+     * In a non-clustered `ActorSystem` this will be `true` for all listings.
+     */
+    def allServiceInstancesChanged: Boolean
+
+    /**
+     * JavaAPI: `true` only if new services was added or removed and `false` if this listing is
+     * only about reachability changes. Useful for subscribers that only cares about [[#getAllServiceInstances]].
+     * In a non-clustered `ActorSystem` this will be `true` for all listings.
+     */
+    def getAllServiceInstancesChanged: Boolean
   }
 
   /**
@@ -342,8 +352,15 @@ object Receptionist extends ExtensionId[Receptionist] {
 
     /** Scala API: */
     def apply[T](key: ServiceKey[T], serviceInstances: Set[ActorRef[T]]): Listing =
-      new ReceptionistMessages.Listing[T](key, serviceInstances)
+      apply(key, serviceInstances, serviceInstances, allServiceInstancesChanged = true)
 
+    /** Scala API: */
+    def apply[T](
+        key: ServiceKey[T],
+        serviceInstances: Set[ActorRef[T]],
+        allServiceInstances: Set[ActorRef[T]],
+        allServiceInstancesChanged: Boolean): Listing =
+      new ReceptionistMessages.Listing[T](key, serviceInstances, allServiceInstances, allServiceInstancesChanged)
   }
 
   /**
@@ -351,6 +368,20 @@ object Receptionist extends ExtensionId[Receptionist] {
    */
   def listing[T](key: ServiceKey[T], serviceInstances: java.util.Set[ActorRef[T]]): Listing =
     Listing(key, Set[ActorRef[T]](serviceInstances.asScala.toSeq: _*))
+
+  /**
+   * Java API: Sent by the receptionist, available here for easier testing
+   */
+  def listing[T](
+      key: ServiceKey[T],
+      serviceInstances: java.util.Set[ActorRef[T]],
+      allServiceInstances: java.util.Set[ActorRef[T]],
+      allServiceInstancesChanged: Boolean): Listing =
+    Listing(
+      key,
+      Set[ActorRef[T]](serviceInstances.asScala.toSeq: _*),
+      Set[ActorRef[T]](allServiceInstances.asScala.toSeq: _*),
+      allServiceInstancesChanged)
 
 }
 
