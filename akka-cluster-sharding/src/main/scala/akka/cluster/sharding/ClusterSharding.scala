@@ -8,7 +8,7 @@ import java.net.URLEncoder
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
@@ -31,7 +31,6 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
 import akka.cluster.singleton.ClusterSingletonManager
-import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.pattern.BackoffOpts
 import akka.pattern.ask
@@ -179,10 +178,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   private lazy val guardian: ActorRef = {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
-    val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher") match {
-      case "" => Dispatchers.DefaultDispatcherId
-      case id => id
-    }
+    val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher")
     system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
 
@@ -191,7 +187,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[shardRegion]] method.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the roles of
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the roles of
    * the current cluster node and the role specified in [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
@@ -235,7 +231,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[shardRegion]] method.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the roles of
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the roles of
    * the current cluster node and the role specified in [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
@@ -322,7 +318,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the
    * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
@@ -358,7 +354,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the
    * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
@@ -387,7 +383,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the
    * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
@@ -433,7 +429,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the
    * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
@@ -465,7 +461,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
    * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
    *
-   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the
    * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section

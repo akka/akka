@@ -6,8 +6,11 @@ package akka.actor
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.MalformedURLException
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+
+import akka.annotation.InternalApi
 
 /**
  * The address specifies the physical location under which an Actor can be
@@ -65,9 +68,26 @@ final case class Address private (protocol: String, system: String, host: Option
    * `system@host:port`
    */
   def hostPort: String = toString.substring(protocol.length + 3)
+
+  /** INTERNAL API
+   * Check if the address is not created through `AddressFromURIString`, if there
+   * are any unusual characters in the host string.
+   */
+  @InternalApi
+  private[akka] def hasInvalidHostCharacters: Boolean =
+    host.exists(Address.InvalidHostRegex.findFirstIn(_).nonEmpty)
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def checkHostCharacters(): Unit =
+    require(!hasInvalidHostCharacters, s"Using invalid host characters '$host' in the Address is not allowed.")
+
 }
 
 object Address {
+
+  // if underscore and no dot after, then invalid
+  val InvalidHostRegex = "_[^.]*$".r
 
   /**
    * Constructs a new Address with the specified protocol and system name

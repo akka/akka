@@ -158,14 +158,13 @@ public class FSMDocTest {
   private static Behavior<Event> uninitialized() {
     return Behaviors.receive(Event.class)
         .onMessage(
-            SetTarget.class,
-            (context, message) -> idle(new Todo(message.getRef(), Collections.emptyList())))
+            SetTarget.class, message -> idle(new Todo(message.getRef(), Collections.emptyList())))
         .build();
   }
 
   private static Behavior<Event> idle(Todo data) {
     return Behaviors.receive(Event.class)
-        .onMessage(Queue.class, (context, message) -> active(data.addElement(message)))
+        .onMessage(Queue.class, message -> active(data.addElement(message)))
         .build();
   }
 
@@ -175,16 +174,16 @@ public class FSMDocTest {
           // State timeouts done with withTimers
           timers.startSingleTimer("Timeout", TIMEOUT, Duration.ofSeconds(1));
           return Behaviors.receive(Event.class)
-              .onMessage(Queue.class, (context, message) -> active(data.addElement(message)))
+              .onMessage(Queue.class, message -> active(data.addElement(message)))
               .onMessage(
                   Flush.class,
-                  (context, message) -> {
+                  message -> {
                     data.getTarget().tell(new Batch(data.queue));
                     return idle(data.copy(new ArrayList<>()));
                   })
               .onMessage(
                   Timeout.class,
-                  (context, message) -> {
+                  message -> {
                     data.getTarget().tell(new Batch(data.queue));
                     return idle(data.copy(new ArrayList<>()));
                   })

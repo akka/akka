@@ -32,7 +32,6 @@ import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.Sequence
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
@@ -50,14 +49,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedBehaviorSpec {
-
-  //#event-wrapper
-  case class Wrapper[T](t: T)
-  class WrapperEventAdapter[T] extends EventAdapter[T, Wrapper[T]] {
-    override def toJournal(e: T): Wrapper[T] = Wrapper(e)
-    override def fromJournal(p: Wrapper[T]): T = p.t
-  }
-  //#event-wrapper
 
   class SlowInMemorySnapshotStore extends SnapshotStore {
 
@@ -482,70 +473,6 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
       val events = queries.currentEventsByTag("tag1").runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1)))
-    }
-
-    "adapt events" in {
-      val pid = nextPid
-      val c = spawn(Behaviors.setup[Command] { ctx =>
-        val persistentBehavior = counter(ctx, pid)
-
-        //#install-event-adapter
-        persistentBehavior.eventAdapter(new WrapperEventAdapter[Event])
-      //#install-event-adapter
-      })
-      val replyProbe = TestProbe[State]()
-
-      c ! Increment
-      c ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
-
-      val c2 = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])))
-      c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-    }
-
-    "adapter multiple events with persist all" in {
-      val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])))
-      val replyProbe = TestProbe[State]()
-
-      c ! IncrementWithPersistAll(2)
-      c ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(2, Vector(0, 1)))
-
-      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(
-        EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))),
-        EventEnvelope(Sequence(2), pid.id, 2, Wrapper(Incremented(1))))
-
-      val c2 = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])))
-      c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(2, Vector(0, 1)))
-    }
-
-    "adapt and tag events" in {
-      val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx =>
-        counter(ctx, pid).withTagger(_ => Set("tag99")).eventAdapter(new WrapperEventAdapter[Event])))
-      val replyProbe = TestProbe[State]()
-
-      c ! Increment
-      c ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
-
-      val c2 = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])))
-      c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-      val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
-      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
     }
 
     "handle scheduled message arriving before recovery completed " in {

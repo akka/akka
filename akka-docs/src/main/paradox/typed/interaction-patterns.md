@@ -222,6 +222,7 @@ In an actual session child you would likely want to include some form of timeout
  * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
  * It increases complexity, since each such child can execute concurrently with other children and the parent
  
+<a id="typed-scheduling"></a>
 ## Scheduling messages to self
 
 The following example demonstrates how to use timers to schedule messages to an actor. 
@@ -244,5 +245,63 @@ This can be used with any type of `Behavior`, including `receive`, `receiveMessa
 * The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
 * `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from previous incarnation.
 
+## Responding to a sharded actor
+
+The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
+for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply 
+will sent to dead letters.
+
+An alternative is to send the `entityId` in the message and have the reply sent via sharding:
+
+Scala
+:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #sharded-response }
+
+Java
+:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingReplyCompileOnlyTest.java) { #sharded-response }
+
+A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
+could be included in the message if it is not known statically.
+
+
+### Schedule periodically
+
+Scheduling of recurring messages can have two different characteristics:
+
+* fixed-delay - The delay between sending subsequent messages will always be (at least) the given `delay`.
+  Use `startTimerWithFixedDelay`.
+* fixed-rate - The frequency of execution over time will meet the given `interval`. Use `startTimerAtFixedRate`.
+
+If you are uncertain of which one to use you should pick `startTimerWithFixedDelay`.
+
+When using **fixed-delay** it will not compensate the delay between messages if the scheduling is delayed longer
+than specified for some reason. The delay between sending subsequent messages will always be (at least) the given
+`delay`. In the long run, the frequency of messages will generally be slightly lower than the reciprocal of the
+specified `delay`.
+
+Fixed-delay execution is appropriate for recurring activities that require "smoothness." In other words,
+it is appropriate for activities where it is more important to keep the frequency accurate in the short run
+than in the long run.
+
+When using **fixed-rate** it will compensate the delay for a subsequent task if the previous messages were delayed
+too long. In such cases, the actual sending interval will differ from the interval passed to the `scheduleAtFixedRate`
+method.
+
+If the tasks are delayed longer than the `interval`, the subsequent message will be sent immediately after the
+prior one. This also has the consequence that after long garbage collection pauses or other reasons when the JVM
+was suspended all "missed" tasks will execute when the process wakes up again. For example, `scheduleAtFixedRate`
+with an interval of 1 second and the process is suspended for 30 seconds will result in 30 messages being sent
+in rapid succession to catch up. In the long run, the frequency of execution will be exactly the reciprocal of
+the specified `interval`.
+
+Fixed-rate execution is appropriate for recurring activities that are sensitive to absolute time
+or where the total time to perform a fixed number of executions is important, such as a countdown
+timer that ticks once every second for ten seconds.
+
+@@@ warning
+
+`scheduleAtFixedRate` can result in bursts of scheduled messages after long garbage collection pauses,
+which may in worst case cause undesired load on the system. `scheduleWithFixedDelay` is often preferred.
+
+@@@
 
 

@@ -570,7 +570,7 @@ private[transport] class ThrottledAssociation(
   def scheduleDequeue(delay: FiniteDuration): Unit = inboundThrottleMode match {
     case Blackhole                   => // Do nothing
     case _ if delay <= Duration.Zero => self ! Dequeue
-    case _                           => setTimer(DequeueTimerName, Dequeue, delay, repeat = false)
+    case _                           => startSingleTimer(DequeueTimerName, Dequeue, delay)
   }
 
 }

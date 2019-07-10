@@ -6,14 +6,12 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotFailure
@@ -39,6 +37,7 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl.Effect
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -149,8 +148,9 @@ private[akka] object Running {
           val newState = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
+          val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
-          val newState2 = internalPersist(newState, eventToPersist)
+          val newState2 = internalPersist(newState, eventToPersist, eventAdapterManifest)
 
           val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 
@@ -170,9 +170,9 @@ private[akka] object Running {
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
-            val eventsToPersist = events.map(adaptEvent)
+            val eventsToPersist = events.map(evt => (adaptEvent(evt), setup.eventAdapter.manifest(evt)))
 
-            val newState2 = internalPersistAll(eventsToPersist, newState)
+            val newState2 = internalPersistAll(newState, eventsToPersist)
 
             persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
 
@@ -228,7 +228,8 @@ private[akka] object Running {
       var visibleState: RunningState[S], // previous state until write success
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
-      var sideEffects: immutable.Seq[SideEffect[S]])
+      var sideEffects: immutable.Seq[SideEffect[S]],
+      persistStartTime: Long = System.nanoTime())
       extends AbstractBehavior[InternalProtocol]
       with WithSeqNrAccessible {
 
@@ -256,7 +257,9 @@ private[akka] object Running {
     }
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
-      setup.log.debug("Received Journal response: {}", response)
+      if (setup.log.isDebugEnabled) {
+        setup.log.debug("Received Journal response: {} after: {} nanos", response, System.nanoTime() - persistStartTime)
+      }
 
       def onWriteResponse(p: PersistentRepr): Behavior[InternalProtocol] = {
         state = state.updateLastSequenceNr(p)
@@ -283,13 +286,17 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
+            // current + 1 as it is the inflight event that that has failed
+            onWriteRejected(setup.context, cause, p.payload, currentSequenceNumber + 1)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
-          if (id == setup.writerIdentity.instanceId)
+          if (id == setup.writerIdentity.instanceId) {
+            // current + 1 as it is the inflight event that that has failed
+            onWriteFailed(setup.context, cause, p.payload, currentSequenceNumber + 1)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
-          else this
+          } else this
 
         case WriteMessagesSuccessful =>
           // ignore
@@ -496,5 +503,18 @@ private[akka] object Running {
         Behaviors.unhandled // unexpected snapshot response
     }
   }
+
+  @InternalStableApi
+  private[akka] def onWriteFailed(
+      @unused ctx: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: Any,
+      @unused sequenceNr: Long): Unit = ()
+  @InternalStableApi
+  private[akka] def onWriteRejected(
+      @unused ctx: ActorContext[_],
+      @unused reason: Throwable,
+      @unused event: Any,
+      @unused sequenceNr: Long): Unit = ()
 
 }

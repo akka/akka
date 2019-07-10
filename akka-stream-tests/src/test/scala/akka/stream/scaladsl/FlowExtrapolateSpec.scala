@@ -61,7 +61,7 @@ class FlowExtrapolateSpec extends StreamSpec {
       publisher.sendNext(-42)
 
       // The request below is otherwise in race with the above sendNext
-      subscriber.expectNoMsg(500.millis)
+      subscriber.expectNoMessage(500.millis)
       subscriber.requestNext(-42)
 
       subscriber.cancel()
@@ -101,7 +101,7 @@ class FlowExtrapolateSpec extends StreamSpec {
       publisher.sendComplete()
 
       // The request below is otherwise in race with the above sendNext(2) (and completion)
-      subscriber.expectNoMsg(500.millis)
+      subscriber.expectNoMessage(500.millis)
 
       subscriber.requestNext(2)
       subscriber.expectComplete()
@@ -143,7 +143,7 @@ class FlowExtrapolateSpec extends StreamSpec {
         pending -= 1
       }
 
-      publisher.expectNoMsg(1.second)
+      publisher.expectNoMessage(1.second)
 
       subscriber.request(2)
       subscriber.expectNext(2)
@@ -158,7 +158,7 @@ class FlowExtrapolateSpec extends StreamSpec {
       val (source, sink) =
         TestSource.probe[Int].expand(i => Iterator.from(0).map(i -> _).take(3)).toMat(TestSink.probe)(Keep.both).run()
       source.sendNext(1)
-      sink.request(4).expectNext(1 -> 0, 1 -> 1, 1 -> 2).expectNoMsg(100.millis)
+      sink.request(4).expectNext(1 -> 0, 1 -> 1, 1 -> 2).expectNoMessage(100.millis)
       source.sendNext(2).sendComplete()
       sink.expectNext(2 -> 0).expectComplete()
     }

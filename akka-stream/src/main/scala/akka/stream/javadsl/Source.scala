@@ -8,25 +8,25 @@ import java.util
 import java.util.Optional
 
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.ApiMayChange
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
-import akka.stream.impl.{ LinearTraversalBuilder }
+import akka.stream.impl.LinearTraversalBuilder
 import akka.util.{ ConstantFun, Timeout }
 import akka.util.JavaDurationConverters._
 import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
+
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-import java.util.function.Supplier
+import java.util.function.{ BiFunction, Supplier }
 
 import akka.util.unused
 import com.github.ghik.silencer.silent
@@ -141,9 +141,6 @@ object Source {
     // but there is not anything we can do to prevent that from happening.
     // ConcurrentModificationException will be thrown in some cases.
     val scalaIterable = new immutable.Iterable[O] {
-
-      import collection.JavaConverters._
-
       override def iterator: Iterator[O] = iterable.iterator().asScala
     }
     new Source(scaladsl.Source(scalaIterable))
@@ -322,9 +319,9 @@ object Source {
    * completion.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
-   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately,
    * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
-   * already buffered elements will be signaled before siganling completion.
+   * already buffered elements will be signaled before signaling completion.
    * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
@@ -349,6 +346,28 @@ object Source {
     new Source(scaladsl.Source.actorRef(bufferSize, overflowStrategy))
 
   /**
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
+   * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
+   *
+   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
+   * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
+   * already buffered element will be signaled before siganling completion.
+   *
+   * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
+   * actor reference. In case the Actor is still draining its internal buffer (after having received
+   * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
+   * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   */
+  def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
+    new Source(scaladsl.Source.actorRefWithAck(ackMessage))
+
+  /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
@@ -358,6 +377,14 @@ object Source {
       case s if s eq scaladsl.Source.empty => empty().asInstanceOf[Source[T, M]]
       case other                           => new Source(scaladsl.Source.fromGraph(other))
     }
+
+  /**
+   * Defers the creation of a [[Source]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Source]] returned by this method.
+   */
+  def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Source[T, M]]): Source[T, CompletionStage[M]] =
+    scaladsl.Source.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
@@ -530,7 +557,7 @@ object Source {
  */
 final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   override def shape: SourceShape[Out] = delegate.shape
 
@@ -1126,6 +1153,37 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
     this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Source[Pair[A, U], Mat] =
+    new Source(delegate.zipAll(that, thisElem, thatElem).map { case (a, u) => Pair.create(a, u) })
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): Source[Pair[A, U], Mat3] =
+    new Source(delegate.zipAllMat(that, thisElem, thatElem)(matF).map { case (a, u) => Pair.create(a, u) })
 
   /**
    * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
@@ -3570,10 +3628,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def log(name: String): javadsl.Source[Out, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
-  /**
-   * API MAY CHANGE
-   */
-  @ApiMayChange
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 }

@@ -5,8 +5,8 @@
 package akka.actor
 
 import scala.collection.immutable
-
 import akka.AkkaException
+import akka.annotation.InternalStableApi
 import akka.dispatch.{
   DequeBasedMessageQueueSemantics,
   Envelope,
@@ -75,6 +75,7 @@ trait UnrestrictedStash extends Actor with StashSupport {
    *  Overridden callback. Prepends all messages in the stash to the mailbox,
    *  clears the stash, stops all children and invokes the postStop() callback.
    */
+  @throws(classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     try unstashAll()
     finally super.preRestart(reason, message)
@@ -85,6 +86,7 @@ trait UnrestrictedStash extends Actor with StashSupport {
    *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
    *  when actor stops.
    */
+  @throws(classOf[Exception])
   override def postStop(): Unit =
     try unstashAll()
     finally super.postStop()
@@ -228,6 +230,7 @@ private[akka] trait StashSupport {
    *  @param filterPredicate only stashed messages selected by this predicate are
    *                         prepended to the mailbox.
    */
+  @InternalStableApi
   private[akka] def unstashAll(filterPredicate: Any => Boolean): Unit = {
     try {
       val i = theStash.reverseIterator.filter(envelope => filterPredicate(envelope.message))
@@ -242,6 +245,7 @@ private[akka] trait StashSupport {
    *
    * Clears the stash and and returns all envelopes that have not been unstashed.
    */
+  @InternalStableApi
   private[akka] def clearStash(): Vector[Envelope] = {
     val stashed = theStash
     theStash = Vector.empty[Envelope]

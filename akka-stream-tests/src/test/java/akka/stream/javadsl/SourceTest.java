@@ -326,7 +326,7 @@ public class SourceTest extends StreamTest {
 
     List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
-    probe.expectNoMsg(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
   }
 
   @Test
@@ -891,6 +891,38 @@ public class SourceTest extends StreamTest {
     probe.expectMsgAllOf(Boolean.TRUE, Boolean.FALSE);
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToZipAll() {
+    final TestKit probe = new TestKit(system);
+    final Iterable<String> input1 =
+        Arrays.asList("A", "B", "C", "D", "new kid on the block1", "second newbie");
+    final Iterable<Integer> input2 = Arrays.asList(1, 2, 3, 4);
+
+    Source<String, NotUsed> src1 = Source.from(input1);
+    Source<Integer, NotUsed> src2 = Source.from(input2);
+    Sink<Pair<String, Integer>, CompletionStage<Done>> sink =
+        Sink.foreach(
+            new Procedure<Pair<String, Integer>>() {
+              @Override
+              public void apply(Pair<String, Integer> param) throws Exception {
+                probe.getRef().tell(param, ActorRef.noSender());
+              }
+            });
+    Source<Pair<String, Integer>, NotUsed> zippedSrc = src1.zipAll(src2, "MISSING", -1);
+    zippedSrc.runWith(sink, materializer);
+
+    List<Object> output = probe.receiveN(6);
+    List<Pair<String, Integer>> expected =
+        Arrays.asList(
+            new Pair<String, Integer>("A", 1),
+            new Pair<String, Integer>("B", 2),
+            new Pair<String, Integer>("C", 3),
+            new Pair<String, Integer>("D", 4),
+            new Pair<String, Integer>("new kid on the block1", -1),
+            new Pair<String, Integer>("second newbie", -1));
+    assertEquals(expected, output);
   }
 
   @Test

@@ -1,8 +1,19 @@
-# Actors
+# Classic Actors
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see @ref[actors](typed/actors.md).
+
+@@@
 
 ## Dependency
 
-To use Actors, you must add the following dependency in your project:
+To use Classic Actors, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -89,7 +100,7 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template="Akka" layout="v75" minheight="400px" }
 
 @@@
 
@@ -350,7 +361,6 @@ Java
 
 The implementations shown above are the defaults provided by the @scala[`Actor` trait.] @java[`AbstractActor` class.]
 
-<a id="actor-lifecycle"></a>
 ### Actor Lifecycle
 
 ![actor_lifecycle.png](./images/actor_lifecycle.png)
@@ -442,7 +452,6 @@ using `context.unwatch(target)`. This works even if the `Terminated`
 message has already been enqueued in the mailbox; after calling `unwatch`
 no `Terminated` message for that actor will be processed anymore.
 
-<a id="start-hook"></a>
 ### Start Hook
 
 Right after starting the actor, its `preStart` method is invoked.
@@ -469,8 +478,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1.
-    The old actor is informed by calling `preRestart` with the exception
+ 1. The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
 message, e.g. when a supervisor does not trap the exception and is restarted
@@ -502,7 +510,6 @@ See @ref:[Discussion: Message Ordering](general/message-delivery-reliability.md#
 
 @@@
 
-<a id="stop-hook"></a>
 ### Stop Hook
 
 After stopping an actor, its `postStop` hook is called, which may be used
@@ -597,7 +604,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting-artery.md#looking-up-remote-actors).
 
 ## Messages and immutability
 
@@ -904,6 +911,10 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TimerDocTest.java) { #timers }
 
+The @ref:[Scheduler](scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
+
 Each timer has a key and can be replaced or cancelled. It's guaranteed that a message from the
 previous incarnation of the timer with the same key is not received, even though it might already
 be enqueued in the mailbox when it was cancelled or the new timer was started.
@@ -912,7 +923,6 @@ The timers are bound to the lifecycle of the actor that owns it, and thus are ca
 automatically when it is restarted or stopped. Note that the `TimerScheduler` is not thread-safe, 
 i.e. it must only be used within the actor that owns it.
 
-<a id="stopping-actors"></a>
 ## Stopping actors
 
 Actors are stopped by invoking the `stop` method of a `ActorRefFactory`,
@@ -1035,7 +1045,6 @@ message, i.e. not for top-level actors.
 
 @@@
 
-<a id="coordinated-shutdown"></a>
 ### Coordinated Shutdown
 
 There is an extension named `CoordinatedShutdown` that will stop certain actors and
@@ -1095,6 +1104,8 @@ To enable a hard `System.exit` as a final action you can configure:
 akka.coordinated-shutdown.exit-jvm = on
 ```
 
+The coordinated shutdown process can also be started by calling `ActorSystem.terminate()`.
+
 When using @ref:[Akka Cluster](cluster-usage.md) the `CoordinatedShutdown` will automatically run
 when the cluster node sees itself as `Exiting`, i.e. leaving from another node will trigger
 the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
@@ -1125,6 +1136,7 @@ used in the test:
 ```
 # Don't terminate ActorSystem via CoordinatedShutdown in tests
 akka.coordinated-shutdown.terminate-actor-system = off
+akka.coordinated-shutdown.run-by-actor-system-terminate = off
 akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
 akka.cluster.run-coordinated-shutdown-when-down = off
 ```
@@ -1177,7 +1189,6 @@ Java
 
 See this @extref[Unnested receive example](github:akka-docs/src/test/scala/docs/actor/UnnestedReceives.scala).
 
-<a id="stash"></a>
 ## Stash
 
 The @scala[`Stash` trait] @java[`AbstractActorWithStash` class] enables an actor to temporarily stash away messages

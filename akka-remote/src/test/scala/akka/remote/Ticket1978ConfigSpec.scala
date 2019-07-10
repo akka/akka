@@ -8,14 +8,14 @@ import akka.testkit._
 import akka.remote.transport.netty.SSLSettings
 
 class Ticket1978ConfigSpec extends AkkaSpec("""
-    akka.remote.netty.ssl.security {
+    akka.remote.classic.netty.ssl.security {
       random-number-generator = "SecureRandom"
     }
     """) with ImplicitSender with DefaultTimeout {
 
   "SSL Remoting" must {
     "be able to parse these extra Netty config elements" in {
-      val settings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
+      val settings = new SSLSettings(system.settings.config.getConfig("akka.remote.classic.netty.ssl.security"))
 
       settings.SSLKeyStore should ===("keystore")
       settings.SSLKeyStorePassword should ===("changeme")

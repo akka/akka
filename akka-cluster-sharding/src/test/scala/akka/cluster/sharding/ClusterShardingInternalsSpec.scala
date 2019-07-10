@@ -30,14 +30,18 @@ object ClusterShardingInternalsSpec {
 
 class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
-    |akka.remote.netty.tcp.port = 0
+    |akka.remote.classic.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
+    |akka.cluster.sharding.shard-region-query-timeout = 10 s
     |""".stripMargin) with MockitoSugar {
   import ClusterShardingInternalsSpec._
 
   val clusterSharding = spy(new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]))
 
   "ClusterSharding" must {
+    "have a configurable shard region query timeout" in {
+      ClusterShardingSettings(system).shardRegionQueryTimeout shouldEqual 10.seconds
+    }
     "start a region in proxy mode in case of node role mismatch" in {
 
       val settingsWithRole = ClusterShardingSettings(system).withRole("nonExistingRole")

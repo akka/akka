@@ -10,6 +10,7 @@ import org.slf4j.MDC
 import scala.collection.JavaConverters._
 
 import scala.collection.immutable.HashMap
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -17,13 +18,12 @@ import scala.collection.immutable.HashMap
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
   val noMdcPerMessage = (_: Any) => Map.empty[String, String]
 
-  def apply[T](
+  def apply[T: ClassTag](
       staticMdc: Map[String, String],
       mdcForMessage: T => Map[String, String],
       behavior: Behavior[T]): Behavior[T] = {
 
-    val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
-    BehaviorImpl.intercept(interceptor)(behavior)
+    BehaviorImpl.intercept(() => new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage))(behavior)
   }
 
 }
@@ -33,7 +33,7 @@ import scala.collection.immutable.HashMap
  *
  * INTERNAL API
  */
-@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
+@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T: ClassTag] private (
     staticMdc: Map[String, String],
     mdcForMessage: T => Map[String, String])
     extends BehaviorInterceptor[T, T] {

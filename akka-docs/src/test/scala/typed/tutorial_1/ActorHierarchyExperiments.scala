@@ -146,7 +146,8 @@ class Main(context: ActorContext[String]) extends AbstractBehavior[String] {
 }
 
 object ActorHierarchyExperiments extends App {
-  ActorSystem(Main(), "testSystem")
+  val testSystem = ActorSystem(Main(), "testSystem")
+  testSystem ! "start"
 }
 //#print-refs
 

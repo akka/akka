@@ -2,7 +2,7 @@
 
 ## Dependency
 
-Dispatchers are part of core akka, which means that they are part of the akka-actor-typed dependency:
+Dispatchers are part of core Akka, which means that they are part of the akka-actor-typed dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -30,8 +30,11 @@ Scala
 Java
 :  @@snip [DispatcherDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/DispatchersDocTest.java) { #spawn-dispatcher }
 
-`DispatcherSelector` has two convenience methods to look up the default dispatcher and a dispatcher you can use to 
-execute actors that block e.g. a legacy database API that does not support @scala[`Future`]@java[`CompletionStage`]s.
+`DispatcherSelector` has a few convenience methods:
+
+* @scala[`DispatcherSelector.default`]@java[`DispatcherSelector.defaultDispatcher`] to look up the default dispatcher
+* `DispatcherSelector.blocking` can be used to execute actors that block e.g. a legacy database API that does not support @scala[`Future`]@java[`CompletionStage`]s
+* `DispatcherSelector.sameAsParent` to use the same dispatcher as the parent actor
 
 The final example shows how to load a custom dispatcher from configuration and replies on this being in your application.conf:
 

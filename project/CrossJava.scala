@@ -15,8 +15,9 @@ import akka.CrossJava.nullBlank
 
 /*
  * Tools for discovering different Java versions,
- * will be in sbt 1.3.0 (https://github.com/sbt/sbt/pull/4139 et al)
- * but until that time replicated here
+ *
+ * Some of these will be in sbt 1.3.0 (https://github.com/sbt/sbt/pull/4139 et al)
+ * but are replicated here until that time
  */
 case class JavaVersion(numbers: Vector[Long], vendor: Option[String]) {
   def numberStr: String = numbers.mkString(".")
@@ -49,21 +50,59 @@ object JavaVersion {
   def sourceAndTarget(fullJavaHome: File): Seq[String] =
     if (isJdk8) Seq.empty
     else Seq("-source", "8", "-target", "8", "-bootclasspath", fullJavaHome + "/jre/lib/rt.jar")
+
 }
 
-object CrossJava {
-  object Keys {
+object CrossJava extends AutoPlugin {
+  object autoImport {
     val discoveredJavaHomes = settingKey[Map[String, File]]("Discovered Java home directories")
     val javaHomes = settingKey[Map[String, File]]("The user-defined additional Java home directories")
     val fullJavaHomes = settingKey[Map[String, File]]("Combines discoveredJavaHomes and custom javaHomes.")
+    val targetSystemJdk = settingKey[Boolean]("Target the system JDK instead of building against JDK 8. When this is enabled resulting artifacts may not work on JDK 8!")
   }
+  import autoImport._
 
-  import Keys._
+  def targetJdkScalacOptions(targetSystemJdk: Boolean, fullJavaHomes: Map[String, File]): Seq[String] =
+    selectOptions(
+      targetSystemJdk,
+      fullJavaHomes,
+      Seq("-target:jvm-1.8"),
+      // '-release 8' is not enough, for some reason we need the 8 rt.jar
+      // explicitly. To test whether this has the desired effect, compile
+      // akka-remote and check the invocation of 'ByteBuffer.clear()' in
+      // EnvelopeBuffer.class with 'javap -c': it should refer to
+      //""java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not
+      // "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer". Issue #27079
+      (java8home: File) => Seq("-release", "8", "-javabootclasspath", java8home + "/jre/lib/rt.jar")
+    )
+  def targetJdkJavacOptions(targetSystemJdk: Boolean, fullJavaHomes: Map[String, File]): Seq[String] =
+    selectOptions(
+      targetSystemJdk,
+      fullJavaHomes,
+      Nil,
+      // '-release 8' would be a neater option here, but is currently not an
+      // option because it doesn't provide access to `sun.misc.Unsafe` #27079
+      (java8home: File) => Seq("-source", "8", "-target", "8", "-bootclasspath", java8home + "/jre/lib/rt.jar")
+  )
+
+  private def selectOptions(targetSystemJdk: Boolean, fullJavaHomes: Map[String, File], jdk8options: Seq[String], jdk11options: File => Seq[String]): Seq[String] =
+    if (targetSystemJdk)
+      Nil
+    else if (JavaVersion.isJdk8)
+      jdk8options
+    else fullJavaHomes.get("8") match {
+      case Some(java8home) =>
+        jdk11options(java8home)
+      case None =>
+        throw new MessageOnlyException("A JDK 8 installation was not found, but is required to build Akka. To target your system JDK, use the \"set every targetSystemJdk := true\" sbt command. Resulting artifacts may not work on JDK 8")
+    }
 
   val crossJavaSettings = Seq(
     discoveredJavaHomes := CrossJava.discoverJavaHomes,
     javaHomes := ListMap.empty,
-    fullJavaHomes := CrossJava.expandJavaHomes(discoveredJavaHomes.value ++ javaHomes.value))
+    fullJavaHomes := CrossJava.expandJavaHomes(discoveredJavaHomes.value ++ javaHomes.value),
+    targetSystemJdk := false,
+  )
 
   // parses jabaa style version number adopt@1.8
   def parseJavaVersion(version: String): JavaVersion = {

@@ -146,6 +146,14 @@ object Sink {
     }
 
   /**
+   * Defers the creation of a [[Sink]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Sink]] returned by this method.
+   */
+  def setup[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
+    Sink.fromGraph(new SetupSinkStage(factory))
+
+  /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
   def fromSubscriber[T](subscriber: Subscriber[T]): Sink[T, NotUsed] =
@@ -432,8 +440,7 @@ object Sink {
       ref: ActorRef,
       onCompleteMessage: Any,
       onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(ref, onCompleteMessage, onFailureMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(new ActorRefSinkStage[T](ref, onCompleteMessage, onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
@@ -451,13 +458,7 @@ object Sink {
    * limiting operator in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(
-        ref,
-        onCompleteMessage,
-        t => Status.Failure(t),
-        DefaultAttributes.actorRefSink,
-        shape("ActorRefSink")))
+    fromGraph(new ActorRefSinkStage[T](ref, onCompleteMessage, t => Status.Failure(t)))
 
   /**
    * INTERNAL API

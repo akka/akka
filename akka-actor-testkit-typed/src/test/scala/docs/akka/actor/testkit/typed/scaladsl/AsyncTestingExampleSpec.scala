@@ -4,15 +4,21 @@
 
 package docs.akka.actor.testkit.typed.scaladsl
 
-import akka.actor.Scheduler
+import akka.actor.typed.Scheduler
+//#test-header
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+
+//#test-header
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+//#test-header
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
+
+//#test-header
 import scala.concurrent.duration._
 
 import scala.concurrent.Future
@@ -124,4 +130,6 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Match
   //#test-shutdown
   override def afterAll(): Unit = testKit.shutdownTestKit()
   //#test-shutdown
+//#test-header
 }
+//#test-header

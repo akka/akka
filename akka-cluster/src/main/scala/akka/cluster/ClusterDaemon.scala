@@ -223,7 +223,7 @@ private[cluster] final class ClusterDaemon(joinConfigCompatChecker: JoinConfigCo
         Props(classOf[ClusterCoreSupervisor], joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
         name = "core"))
     context.actorOf(
-      Props[ClusterHeartbeatReceiver].withDispatcher(context.props.dispatcher),
+      ClusterHeartbeatReceiver.props(() => Cluster(context.system)).withDispatcher(context.props.dispatcher),
       name = "heartbeatReceiver")
   }
 
@@ -377,17 +377,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval, self, GossipTick)
+  val gossipTask =
+    scheduler.scheduleWithFixedDelay(PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval, self, GossipTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask = scheduler.schedule(
+  val failureDetectorReaperTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
     UnreachableNodesReaperInterval,
     self,
     ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  val leaderActionsTask = scheduler.schedule(
+  val leaderActionsTask = scheduler.scheduleWithFixedDelay(
     PeriodicTasksInitialDelay.max(LeaderActionsInterval),
     LeaderActionsInterval,
     self,
@@ -397,7 +398,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   val publishStatsTask: Option[Cancellable] = PublishStatsInterval match {
     case Duration.Zero | _: Duration.Infinite => None
     case d: FiniteDuration =>
-      Some(scheduler.schedule(PeriodicTasksInitialDelay.max(d), d, self, PublishStatsTick))
+      Some(scheduler.scheduleWithFixedDelay(PeriodicTasksInitialDelay.max(d), d, self, PublishStatsTick))
   }
 
   override def preStart(): Unit = {
@@ -443,7 +444,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   def uninitialized: Actor.Receive =
     ({
-      case InitJoin =>
+      case InitJoin(_) =>
         logInfo("Received InitJoin message from [{}], but this node is not initialized yet", sender())
         sender() ! InitJoinNack(selfAddress)
       case ClusterUserAction.JoinTo(address) =>
@@ -464,7 +465,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     ({
       case Welcome(from, gossip) =>
         welcome(joinWith, from, gossip)
-      case InitJoin =>
+      case InitJoin(_) =>
         logInfo("Received InitJoin message from [{}], but this node is not a member yet", sender())
         sender() ! InitJoinNack(selfAddress)
       case ClusterUserAction.JoinTo(address) =>
@@ -826,33 +827,36 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     logInfo("Exiting completed")
     // ExitingCompleted sent via CoordinatedShutdown to continue the leaving process.
     exitingTasksInProgress = false
-    // mark as seen
-    membershipState = membershipState.seen()
-    assertLatestGossip()
-    publishMembershipState()
+    // status Removed also before joining
+    if (membershipState.selfMember.status != MemberStatus.Removed) {
+      // mark as seen
+      membershipState = membershipState.seen()
+      assertLatestGossip()
+      publishMembershipState()
 
-    // Let others know (best effort) before shutdown. Otherwise they will not see
-    // convergence of the Exiting state until they have detected this node as
-    // unreachable and the required downing has finished. They will still need to detect
-    // unreachable, but Exiting unreachable will be removed without downing, i.e.
-    // normally the leaving of a leader will be graceful without the need
-    // for downing. However, if those final gossip messages never arrive it is
-    // alright to require the downing, because that is probably caused by a
-    // network failure anyway.
-    gossipRandomN(NumberOfGossipsBeforeShutdownWhenLeaderExits)
+      // Let others know (best effort) before shutdown. Otherwise they will not see
+      // convergence of the Exiting state until they have detected this node as
+      // unreachable and the required downing has finished. They will still need to detect
+      // unreachable, but Exiting unreachable will be removed without downing, i.e.
+      // normally the leaving of a leader will be graceful without the need
+      // for downing. However, if those final gossip messages never arrive it is
+      // alright to require the downing, because that is probably caused by a
+      // network failure anyway.
+      gossipRandomN(NumberOfGossipsBeforeShutdownWhenLeaderExits)
 
-    // send ExitingConfirmed to two potential leaders
-    val membersExceptSelf = latestGossip.members.filter(_.uniqueAddress != selfUniqueAddress)
+      // send ExitingConfirmed to two potential leaders
+      val membersExceptSelf = latestGossip.members.filter(_.uniqueAddress != selfUniqueAddress)
 
-    membershipState.leaderOf(membersExceptSelf) match {
-      case Some(node1) =>
-        clusterCore(node1.address) ! ExitingConfirmed(selfUniqueAddress)
-        membershipState.leaderOf(membersExceptSelf.filterNot(_.uniqueAddress == node1)) match {
-          case Some(node2) =>
-            clusterCore(node2.address) ! ExitingConfirmed(selfUniqueAddress)
-          case None => // no more potential leader
-        }
-      case None => // no leader
+      membershipState.leaderOf(membersExceptSelf) match {
+        case Some(node1) =>
+          clusterCore(node1.address) ! ExitingConfirmed(selfUniqueAddress)
+          membershipState.leaderOf(membersExceptSelf.filterNot(_.uniqueAddress == node1)) match {
+            case Some(node2) =>
+              clusterCore(node2.address) ! ExitingConfirmed(selfUniqueAddress)
+            case None => // no more potential leader
+          }
+        case None => // no leader
+      }
     }
 
     shutdown()
@@ -1165,7 +1169,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
             node => unreachable(node) || latestGossip.seenByNode(node))) {
         // the reason for not shutting down immediately is to give the gossip a chance to spread
         // the downing information to other downed nodes, so that they can shutdown themselves
-        logInfo("Shutting down myself")
+        logInfo("Node has been marked as DOWN. Shutting down myself")
         // not crucial to send gossip, but may speedup removal since fallback to failure detection is not needed
         // if other downed know that this node has seen the version
         gossipRandomN(MaxGossipsBeforeShuttingDownMyself)
@@ -1511,7 +1515,7 @@ private[cluster] final class FirstSeedNodeProcess(
 
   // retry until one ack, or all nack, or timeout
   import context.dispatcher
-  val retryTask = cluster.scheduler.schedule(1.second, 1.second, self, JoinSeedNode)
+  val retryTask = cluster.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, JoinSeedNode)
   self ! JoinSeedNode
 
   override def postStop(): Unit = retryTask.cancel()

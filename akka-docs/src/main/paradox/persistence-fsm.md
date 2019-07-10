@@ -1,4 +1,15 @@
-# Persistent FSM
+# Classic Persistent FSM
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see FIXME https://github.com/akka/akka/issues/26490
+
+@@@
 
 ## Dependency
 
@@ -10,16 +21,12 @@ Persistent FSMs are part of Akka persistence, you must add the following depende
   version="$akka.version$"
 }
 
-<a id="persistent-fsm"></a>
-## Persistent FSM
-
 @@@ warning
 
 Persistent FSM is no longer actively developed and will be replaced by @ref[Akka Typed Persistence](typed/persistence.md). It is not advised
 to build new applications with Persistent FSM.
 
 @@@
-
 
 @scala[`PersistentFSM`]@java[`AbstractPersistentFSM`] handles the incoming messages in an FSM like fashion.
 Its internal state is persisted as a sequence of changes, later referred to as domain events.

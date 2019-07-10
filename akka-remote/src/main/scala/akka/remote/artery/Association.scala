@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import java.net.ConnectException
+
 import akka.util.PrettyDuration._
 import java.util.Queue
 import java.util.concurrent.CountDownLatch
@@ -16,6 +18,7 @@ import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
@@ -42,9 +45,10 @@ import akka.stream.scaladsl.Source
 import akka.util.{ OptionVal, Unsafe, WildcardIndex }
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.SharedKillSwitch
-
 import scala.util.control.NoStackTrace
+
 import akka.actor.Cancellable
+import akka.actor.Dropped
 import akka.stream.StreamTcpException
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
@@ -196,7 +200,7 @@ private[remote] class Association(
     updateOutboundCompression(c => c.clearCompression())
 
   private def updateOutboundCompression(action: OutboundCompressionAccess => Future[Done]): Future[Done] = {
-    import transport.system.dispatcher
+    implicit val ec = transport.system.dispatchers.internalDispatcher
     val c = outboundCompressionAccess
     if (c.isEmpty) Future.successful(Done)
     else if (c.size == 1) action(c.head)
@@ -276,7 +280,7 @@ private[remote] class Association(
         // clear outbound compression, it's safe to do that several times if someone else
         // completes handshake at same time, but it's important to clear it before
         // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
-        import transport.system.dispatcher
+        implicit val ec = transport.system.dispatchers.internalDispatcher
         clearOutboundCompression().map { _ =>
           current.uniqueRemoteAddressPromise.trySuccess(peer)
           current.uniqueRemoteAddressValue() match {
@@ -336,17 +340,12 @@ private[remote] class Association(
         case OptionVal.Some(ref) => ref.cachedAssociation = null // don't use this Association instance any more
         case OptionVal.None      =>
       }
-      if (log.isDebugEnabled) {
-        val reason =
-          if (removed) "removed unused quarantined association"
-          else s"overflow of send queue, size [$qSize]"
-        log.debug(
-          "Dropping message [{}] from [{}] to [{}] due to {}",
-          Logging.messageClassName(message),
-          sender.getOrElse(deadletters),
-          recipient.getOrElse(recipient),
-          reason)
-      }
+      val reason =
+        if (removed) "Due to removed unused quarantined association"
+        else s"Due to overflow of send queue, size [$qSize]"
+      transport.system.eventStream
+        .publish(Dropped(message, reason, env.sender.getOrElse(ActorRef.noSender), recipient.getOrElse(deadletters)))
+
       flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env
     }
@@ -572,7 +571,7 @@ private[remote] class Association(
     stopQuarantinedTimer.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
       if (associationState.isQuarantined())
         abortQuarantined()
-    }(transport.system.dispatcher)))
+    }(transport.system.dispatchers.internalDispatcher)))
   }
 
   private def abortQuarantined(): Unit = {
@@ -600,45 +599,46 @@ private[remote] class Association(
       val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
       val QuarantineIdleOutboundAfter = settings.Advanced.QuarantineIdleOutboundAfter
       val interval = StopIdleOutboundAfter / 2
-      val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
-      val task = transport.system.scheduler.schedule(initialDelay, interval) {
-        val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
-        if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {
-          // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
-          // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
-          quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
-        } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
-          streamMatValues.get.foreach {
-            case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
-              if (isStreamActive(queueIndex) && stopping.isEmpty) {
-                if (queueIndex != ControlQueueIndex) {
-                  streamKillSwitch match {
-                    case OptionVal.Some(k) =>
-                      // for non-control streams we can stop the entire stream
-                      log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
-                      flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
-                      setStopReason(queueIndex, OutboundStreamStopIdleSignal)
-                      clearStreamKillSwitch(queueIndex, k)
-                      k.abort(OutboundStreamStopIdleSignal)
-                    case OptionVal.None => // already aborted
-                  }
+      val initialDelay = settings.Advanced.Tcp.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
+      val task =
+        transport.system.scheduler.scheduleWithFixedDelay(initialDelay, interval) { () =>
+          val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
+          if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {
+            // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
+            // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
+            quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
+          } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
+            streamMatValues.get.foreach {
+              case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
+                if (isStreamActive(queueIndex) && stopping.isEmpty) {
+                  if (queueIndex != ControlQueueIndex) {
+                    streamKillSwitch match {
+                      case OptionVal.Some(k) =>
+                        // for non-control streams we can stop the entire stream
+                        log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
+                        flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                        setStopReason(queueIndex, OutboundStreamStopIdleSignal)
+                        clearStreamKillSwitch(queueIndex, k)
+                        k.abort(OutboundStreamStopIdleSignal)
+                      case OptionVal.None => // already aborted
+                    }
 
-                } else {
-                  // only stop the transport parts of the stream because SystemMessageDelivery stage has
-                  // state (seqno) and system messages might be sent at the same time
-                  associationState.controlIdleKillSwitch match {
-                    case OptionVal.Some(killSwitch) =>
-                      log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
-                      flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
-                      setControlIdleKillSwitch(OptionVal.None)
-                      killSwitch.abort(OutboundStreamStopIdleSignal)
-                    case OptionVal.None => // already stopped
+                  } else {
+                    // only stop the transport parts of the stream because SystemMessageDelivery stage has
+                    // state (seqno) and system messages might be sent at the same time
+                    associationState.controlIdleKillSwitch match {
+                      case OptionVal.Some(killSwitch) =>
+                        log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
+                        flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                        setControlIdleKillSwitch(OptionVal.None)
+                        killSwitch.abort(OutboundStreamStopIdleSignal)
+                      case OptionVal.None => // already stopped
+                    }
                   }
                 }
-              }
+            }
           }
-        }
-      }(transport.system.dispatcher)
+        }(transport.system.dispatcher)
 
       if (!idleTimer.compareAndSet(None, Some(task))) {
         // another thread did same thing and won
@@ -803,7 +803,7 @@ private[remote] class Association(
 
       val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 
-      import transport.system.dispatcher
+      implicit val ec = transport.system.dispatchers.internalDispatcher
 
       // tear down all parts if one part fails or completes
       Future.firstCompletedOf(laneCompletedValues).failed.foreach { reason =>
@@ -938,6 +938,10 @@ private[remote] class Association(
           }
         }
 
+        def isConnectException: Boolean =
+          cause.isInstanceOf[StreamTcpException] && cause.getCause != null && cause.getCause
+            .isInstanceOf[ConnectException]
+
         if (stoppedIdle) {
           log.debug("{} to [{}] was idle and stopped. It will be restarted if used again.", streamName, remoteAddress)
           lazyRestart()
@@ -948,7 +952,11 @@ private[remote] class Association(
             remoteAddress)
           lazyRestart()
         } else if (bypassRestartCounter || restartCounter.restart()) {
-          log.error(cause, "{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
+          // ConnectException may happen repeatedly and are already logged in connectionFlowWithRestart
+          if (isConnectException)
+            log.debug("{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause)
+          else
+            log.warning("{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause)
           lazyRestart()
         } else {
           log.error(

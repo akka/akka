@@ -1,4 +1,15 @@
-# Routing
+# Classic Routing
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see @ref[routers](typed/routers.md).
+
+@@@
 
 ## Dependency
 
@@ -683,7 +694,6 @@ Note that these special messages, except for the `Broadcast` message, are only h
 self contained router actors and not by the `akka.routing.Router` component described 
 in [A Simple Router](#simple-router).
 
-<a id="broadcast-messages"></a>
 ### Broadcast Messages
 
 A `Broadcast` message can be used to send a message to *all* of a router's routees. When a router
@@ -909,7 +919,6 @@ routers were implemented with normal actors. Fortunately all of this complexity 
 consumers of the routing API. However, it is something to be aware of when implementing your own
 routers.
 
-<a id="custom-router"></a>
 ## Custom Router
 
 You can create your own router should you not find any of the ones provided by Akka sufficient for your needs.

@@ -7,23 +7,18 @@ package internal
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.concurrent.duration.Deadline
-import scala.concurrent.duration.FiniteDuration
+import akka.actor.{ DeadLetterSuppression, Dropped }
+import akka.actor.typed.BehaviorInterceptor.{ PreStartTarget, ReceiveTarget, SignalTarget }
+import akka.actor.typed.SupervisorStrategy._
+import akka.actor.typed.scaladsl.{ Behaviors, StashBuffer }
+import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.util.{ unused, OptionVal }
+
+import scala.concurrent.duration.{ Deadline, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
-import akka.actor.DeadLetterSuppression
-import akka.actor.typed.BehaviorInterceptor.PreStartTarget
-import akka.actor.typed.BehaviorInterceptor.ReceiveTarget
-import akka.actor.typed.BehaviorInterceptor.SignalTarget
-import akka.actor.typed.SupervisorStrategy._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.StashBuffer
-import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -33,16 +28,13 @@ import akka.util.unused
 
     strategy match {
       case r: RestartOrBackoff =>
-        Behaviors.setup { _ =>
-          // deferred to make sure supervisor instance not shared among instances
-          Behaviors.intercept[T, T](new RestartSupervisor(initialBehavior, r))(initialBehavior)
-        }
+        Behaviors.intercept[Any, T](() => new RestartSupervisor(initialBehavior, r))(initialBehavior).narrow
       case r: Resume =>
         // stateless so safe to share
-        Behaviors.intercept[T, T](new ResumeSupervisor(r))(initialBehavior)
+        Behaviors.intercept[Any, T](() => new ResumeSupervisor(r))(initialBehavior).narrow
       case r: Stop =>
         // stateless so safe to share
-        Behaviors.intercept[T, T](new StopSupervisor(initialBehavior, r))(initialBehavior)
+        Behaviors.intercept[Any, T](() => new StopSupervisor(initialBehavior, r))(initialBehavior).narrow
     }
   }
 }
@@ -51,29 +43,25 @@ import akka.util.unused
  * INTERNAL API
  */
 @InternalApi
-private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: SupervisorStrategy)(
-    implicit ev: ClassTag[Thr])
-    extends BehaviorInterceptor[O, I] {
+private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: SupervisorStrategy)(implicit ev: ClassTag[Thr])
+    extends BehaviorInterceptor[Any, I] {
 
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
 
-  protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =
-    throwableClass.isAssignableFrom(UnstashException.unwrap(t).getClass)
-
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
     other match {
-      case as: AbstractSupervisor[_, _, Thr] if throwableClass == as.throwableClass => true
-      case _                                                                        => false
+      case as: AbstractSupervisor[_, Thr] if throwableClass == as.throwableClass => true
+      case _                                                                     => false
     }
   }
 
-  override def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] = {
+  override def aroundStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Behavior[I] = {
     try {
       target.start(ctx)
     } catch handleExceptionOnStart(ctx, target)
   }
 
-  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] = {
+  override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[I]): Behavior[I] = {
     try {
       target(ctx, signal)
     } catch handleSignalException(ctx, target)
@@ -82,60 +70,79 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
-      ctx.asScala.log.error("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+      strategy.logLevel match {
+        case Logging.ErrorLevel =>
+          ctx.asScala.log.error("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+        case Logging.WarningLevel =>
+          ctx.asScala.log.warn("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+        case Logging.InfoLevel =>
+          ctx.asScala.log.info("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+        case Logging.DebugLevel =>
+          ctx.asScala.log.debug("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+        //TODO check this debug case is actually best option when other level is found
+        case _ => ctx.asScala.log.debug("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+      }
     }
   }
 
   def dropped(ctx: TypedActorContext[_], signalOrMessage: Any): Unit = {
     import akka.actor.typed.scaladsl.adapter._
-    ctx.asScala.system.toUntyped.eventStream.publish(Dropped(signalOrMessage, ctx.asScala.self))
+    ctx.asScala.system.toUntyped.eventStream
+      .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toUntyped))
   }
 
-  protected def handleExceptionOnStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Catcher[Behavior[I]]
-  protected def handleSignalException(ctx: TypedActorContext[O], target: SignalTarget[I]): Catcher[Behavior[I]]
-  protected def handleReceiveException(ctx: TypedActorContext[O], target: ReceiveTarget[I]): Catcher[Behavior[I]]
-
   override def toString: String = Logging.simpleName(getClass)
+
+  protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =
+    throwableClass.isAssignableFrom(UnstashException.unwrap(t).getClass)
+
+  protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Catcher[Behavior[I]]
+
+  protected def handleSignalException(ctx: TypedActorContext[Any], target: SignalTarget[I]): Catcher[Behavior[I]]
+
+  protected def handleReceiveException(ctx: TypedActorContext[Any], target: ReceiveTarget[I]): Catcher[Behavior[I]]
 }
 
 /**
  * For cases where O == I for BehaviorInterceptor.
  */
 private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: SupervisorStrategy)
-    extends AbstractSupervisor[T, T, Thr](ss) {
+    extends AbstractSupervisor[T, Thr](ss) {
 
-  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[T]): Behavior[T] = {
     try {
-      target(ctx, msg)
+      target(ctx, msg.asInstanceOf[T])
     } catch handleReceiveException(ctx, target)
   }
 
-  protected def handleException(@unused ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
+  protected def handleReceiveException(ctx: TypedActorContext[Any], target: ReceiveTarget[T]): Catcher[Behavior[T]] =
+    handleException(ctx)
+
+  protected def handleException(@unused ctx: TypedActorContext[Any]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
-      Behavior.failed(t)
+      BehaviorImpl.failed(t)
   }
 
   // convenience if target not required to handle exception
-  protected def handleExceptionOnStart(ctx: TypedActorContext[T], target: PreStartTarget[T]): Catcher[Behavior[T]] =
+  protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[T]): Catcher[Behavior[T]] =
     handleException(ctx)
-  protected def handleSignalException(ctx: TypedActorContext[T], target: SignalTarget[T]): Catcher[Behavior[T]] =
-    handleException(ctx)
-  protected def handleReceiveException(ctx: TypedActorContext[T], target: ReceiveTarget[T]): Catcher[Behavior[T]] =
+
+  protected def handleSignalException(ctx: TypedActorContext[Any], target: SignalTarget[T]): Catcher[Behavior[T]] =
     handleException(ctx)
 }
 
 private class StopSupervisor[T, Thr <: Throwable: ClassTag](@unused initial: Behavior[T], strategy: Stop)
     extends SimpleSupervisor[T, Thr](strategy) {
 
-  override def handleException(ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
+  override def handleException(ctx: TypedActorContext[Any]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       log(ctx, t)
-      Behavior.failed(t)
+      BehaviorImpl.failed(t)
   }
 }
 
 private class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extends SimpleSupervisor[T, Thr](ss) {
-  override protected def handleException(ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
+  override protected def handleException(ctx: TypedActorContext[Any]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       log(ctx, t)
       t match {
@@ -165,13 +172,13 @@ private object RestartSupervisor {
       }
   }
 
-  final case class ScheduledRestart(owner: RestartSupervisor[_, _, _ <: Throwable]) extends DeadLetterSuppression
-  final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _, _ <: Throwable])
+  final case class ScheduledRestart(owner: RestartSupervisor[_, _ <: Throwable]) extends DeadLetterSuppression
+  final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _ <: Throwable])
       extends DeadLetterSuppression
 }
 
-private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: RestartOrBackoff)
-    extends AbstractSupervisor[O, T, Thr](strategy) {
+private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: RestartOrBackoff)
+    extends AbstractSupervisor[T, Thr](strategy) {
   import RestartSupervisor._
 
   private var restartingInProgress: OptionVal[(StashBuffer[Any], Set[ActorRef[Nothing]])] = OptionVal.None
@@ -179,12 +186,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   private var gotScheduledRestart = true
   private var deadline: OptionVal[Deadline] = OptionVal.None
 
-  private def deadlineHasTimeLeft: Boolean = deadline match {
-    case OptionVal.None    => true
-    case OptionVal.Some(d) => d.hasTimeLeft
-  }
-
-  override def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     restartingInProgress match {
       case OptionVal.None =>
         super.aroundSignal(ctx, signal, target)
@@ -209,8 +211,8 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
   }
 
-  override def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[T]): Behavior[T] = {
-    msg.asInstanceOf[Any] match {
+  override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[T]): Behavior[T] = {
+    msg match {
       case ScheduledRestart(owner) =>
         if (owner eq this) {
           restartingInProgress match {
@@ -235,7 +237,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
           if (current == restartCount) {
             restartCount = 0
           }
-          Behavior.same
+          BehaviorImpl.same
         } else {
           // ResetRestartCount from nested Backoff strategy
           target(ctx, msg.asInstanceOf[T])
@@ -258,7 +260,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   }
 
   override protected def handleExceptionOnStart(
-      ctx: TypedActorContext[O],
+      ctx: TypedActorContext[Any],
       @unused target: PreStartTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       ctx.asScala.cancelAllTimers()
@@ -277,23 +279,29 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   }
 
   override protected def handleSignalException(
-      ctx: TypedActorContext[O],
+      ctx: TypedActorContext[Any],
       target: SignalTarget[T]): Catcher[Behavior[T]] = {
     handleException(ctx, signalRestart = {
-      case e: UnstashException[O] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
-      case _                                 => target(ctx, PreRestart)
-    })
-  }
-  override protected def handleReceiveException(
-      ctx: TypedActorContext[O],
-      target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
-    handleException(ctx, signalRestart = {
-      case e: UnstashException[O] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
-      case _                                 => target.signalRestart(ctx)
+      case e: UnstashException[Any] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
+      case _                                   => target(ctx, PreRestart)
     })
   }
 
-  private def handleException(ctx: TypedActorContext[O], signalRestart: Throwable => Unit): Catcher[Behavior[T]] = {
+  override protected def handleReceiveException(
+      ctx: TypedActorContext[Any],
+      target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
+    handleException(ctx, signalRestart = {
+      case e: UnstashException[Any] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
+      case _                                   => target.signalRestart(ctx)
+    })
+  }
+
+  private def deadlineHasTimeLeft: Boolean = deadline match {
+    case OptionVal.None    => true
+    case OptionVal.Some(d) => d.hasTimeLeft
+  }
+
+  private def handleException(ctx: TypedActorContext[Any], signalRestart: Throwable => Unit): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       ctx.asScala.cancelAllTimers()
       if (strategy.maxRestarts != -1 && restartCount >= strategy.maxRestarts && deadlineHasTimeLeft) {
@@ -301,20 +309,20 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
           case _: Restart => throw t
           case _: Backoff =>
             log(ctx, t)
-            Behavior.failed(t)
+            BehaviorImpl.failed(t)
         }
 
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart with ex {}", ex)
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart", ex)
         }
 
         prepareRestart(ctx, t)
       }
   }
 
-  private def prepareRestart(ctx: TypedActorContext[O], reason: Throwable): Behavior[T] = {
+  private def prepareRestart(ctx: TypedActorContext[Any], reason: Throwable): Behavior[T] = {
     log(ctx, reason)
 
     val currentRestartCount = restartCount
@@ -326,14 +334,15 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     val stashCapacity =
       if (strategy.stashCapacity >= 0) strategy.stashCapacity
       else ctx.asScala.system.settings.RestartStashCapacity
-    restartingInProgress = OptionVal.Some((StashBuffer[Any](stashCapacity), childrenToStop))
+    restartingInProgress = OptionVal.Some(
+      (StashBuffer[Any](ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], stashCapacity), childrenToStop))
 
     strategy match {
       case backoff: Backoff =>
         val restartDelay =
           calculateDelay(currentRestartCount, backoff.minBackoff, backoff.maxBackoff, backoff.randomFactor)
         gotScheduledRestart = false
-        ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self.unsafeUpcast[Any], ScheduledRestart(this))
+        ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self, ScheduledRestart(this))
         Behaviors.empty
       case _: Restart =>
         if (childrenToStop.isEmpty)
@@ -343,17 +352,14 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
   }
 
-  private def restartCompleted(ctx: TypedActorContext[O]): Behavior[T] = {
+  private def restartCompleted(ctx: TypedActorContext[Any]): Behavior[T] = {
     // probably already done, but doesn't hurt to make sure they are canceled
     ctx.asScala.cancelAllTimers()
 
     strategy match {
       case backoff: Backoff =>
         gotScheduledRestart = false
-        ctx.asScala.scheduleOnce(
-          backoff.resetBackoffAfter,
-          ctx.asScala.self.unsafeUpcast[Any],
-          ResetRestartCount(restartCount, this))
+        ctx.asScala.scheduleOnce(backoff.resetBackoffAfter, ctx.asScala.self, ResetRestartCount(restartCount, this))
       case _: Restart =>
     }
 
@@ -363,12 +369,12 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
         case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>
           restartingInProgress = OptionVal.None
-          stashBuffer.unstashAll(ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], newBehavior.unsafeCast)
+          stashBuffer.unstashAll(newBehavior.unsafeCast)
       }
       nextBehavior.narrow
     } catch handleException(ctx, signalRestart = {
-      case e: UnstashException[O] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
-      case _                                 => ()
+      case e: UnstashException[Any] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
+      case _                                   => ()
     })
   }
 

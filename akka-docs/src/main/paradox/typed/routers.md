@@ -22,12 +22,14 @@ There are two kinds of routers included in Akka Typed - the pool router and the 
 
 ## Pool Router
 
-The pool router is created with a routee `Behavior` and spawns a number of children with that behavior which it will 
+The pool router is created with a routee `Behavior` factory and spawns a number of children with that behavior which it will 
 then forward messages to.
 
 If a child is stopped the pool router removes it from its set of routees. When the last child stops the router itself stops.
 To make a resilient router that deals with failures the routee `Behavior` must be supervised.
 
+Note that it is important that the factory returns a new behavior instance for every call to the factory or else
+routees may end up sharing mutable state and not work as expected.
 
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #pool }
@@ -38,7 +40,7 @@ Java
 
 ## Group Router
 
-The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#Receptionist)) to discover
+The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
 Since the receptionist is used this means the group router is cluster aware out of the box and will pick up routees

@@ -14,13 +14,12 @@ import org.reactivestreams.Processor
 import scala.concurrent.duration.FiniteDuration
 import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
-import java.util.function.Supplier
+import java.util.function.{ BiFunction, Supplier }
 
 import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
-import akka.annotation.ApiMayChange
 import akka.util.unused
 import com.github.ghik.silencer.silent
 
@@ -61,6 +60,15 @@ object Flow {
       case f: Flow[I, O, M] => f
       case other            => new Flow(scaladsl.Flow.fromGraph(other))
     }
+
+  /**
+   * Defers the creation of a [[Flow]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Flow]] returned by this method.
+   */
+  def setup[I, O, M](
+      factory: BiFunction[ActorMaterializer, Attributes, Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
+    scaladsl.Flow.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
@@ -289,7 +297,7 @@ object Flow {
 
 /** Create a `Flow` which can process elements of type `T`. */
 final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
   override def traversalBuilder = delegate.traversalBuilder
@@ -2541,6 +2549,37 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       matF)
 
   /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Flow[In, Pair[A, U], Mat] =
+    new Flow(delegate.zipAll(that, thisElem, thatElem).map { case (a, u) => Pair.create(a, u) })
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): Flow[In, Pair[A, U], Mat3] =
+    new Flow(delegate.zipAllMat(that, thisElem, thatElem)(matF).map { case (a, u) => Pair.create(a, u) })
+
+  /**
    * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
    *
    * A `ZipLatest` has a `left` and a `right` input port and one `out` port.
@@ -3402,9 +3441,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
    * @param extractContext turn each outgoing element of this Flow into an outgoing context value
    *
-   * API MAY CHANGE
    */
-  @ApiMayChange
   def asFlowWithContext[U, CtxU, CtxOut](
       collapseContext: function.Function2[U, CtxU, In],
       extractContext: function.Function[Out, CtxOut]): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =

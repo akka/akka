@@ -44,7 +44,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
     private val signalHandler: PartialFunction[(S, Signal), Unit],
     val tagger: E => Set[String],
-    val eventAdapter: EventAdapter[E, _],
+    val eventAdapter: EventAdapter[E, Any],
     val snapshotWhen: (S, E, Long) => Boolean,
     val recovery: Recovery,
     val retention: RetentionCriteria,
@@ -95,14 +95,12 @@ private[akka] final class BehaviorSetup[C, E, S](
     implicit val ec: ExecutionContext = context.executionContext
     val timer =
       if (snapshot)
-        context.system.scheduler
-          .scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped, RecoveryTickEvent(snapshot = true))
+        context.scheduleOnce(settings.recoveryEventTimeout, context.self, RecoveryTickEvent(snapshot = true))
       else
-        context.system.scheduler.schedule(
-          settings.recoveryEventTimeout,
-          settings.recoveryEventTimeout,
-          context.self.toUntyped,
-          RecoveryTickEvent(snapshot = false))
+        context.system.scheduler.scheduleWithFixedDelay(settings.recoveryEventTimeout, settings.recoveryEventTimeout) {
+          () =>
+            context.self ! RecoveryTickEvent(snapshot = false)
+        }
     recoveryTimer = OptionVal.Some(timer)
   }
 

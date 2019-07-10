@@ -144,7 +144,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
 
       val sizesAfterRoundtrip =
         Source
-          .fromIterator(() => sizes.toIterator.map(createByteString))
+          .fromIterator(() => sizes.iterator.map(createByteString))
           .via(encoderFlow)
           .via(decoderFlow())
           .runFold(Seq.empty[Int])(_ :+ _.size)

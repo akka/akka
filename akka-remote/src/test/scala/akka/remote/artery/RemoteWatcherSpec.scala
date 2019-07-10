@@ -6,9 +6,11 @@ package akka.remote.artery
 
 import language.postfixOps
 import scala.concurrent.duration._
+
 import akka.testkit._
 import akka.actor._
 import akka.remote._
+import com.typesafe.config.ConfigFactory
 
 object RemoteWatcherSpec {
 
@@ -65,7 +67,12 @@ object RemoteWatcherSpec {
 
 }
 
-class RemoteWatcherSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
+class RemoteWatcherSpec
+    extends ArteryMultiNodeSpec(
+      ConfigFactory
+        .parseString("akka.remote.use-unsafe-remote-features-without-cluster = on")
+        .withFallback(ArterySpecSupport.defaultConfig))
+    with ImplicitSender {
 
   import RemoteWatcherSpec._
   import RemoteWatcher._

@@ -4,13 +4,14 @@
 
 package akka.stream.scaladsl
 
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.testkit.TestProbe
+
+import scala.util.control.NoStackTrace
 
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {
@@ -18,6 +19,8 @@ object ActorRefSinkSpec {
       case msg => ref.forward(msg)
     }
   }
+
+  val te = new RuntimeException("oh dear") with NoStackTrace
 }
 
 class ActorRefSinkSpec extends StreamSpec {
@@ -44,6 +47,12 @@ class ActorRefSinkSpec extends StreamSpec {
       publisher.expectCancellation()
     }
 
+    "sends error message if upstream fails" in assertAllStagesStopped {
+      val actorProbe = TestProbe()
+      val probe = TestSource.probe[String].to(Sink.actorRef(actorProbe.ref, "complete", _ => "failure")).run()
+      probe.sendError(te)
+      actorProbe.expectMsg("failure")
+    }
   }
 
 }

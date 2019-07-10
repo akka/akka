@@ -23,6 +23,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import akka.testkit.AkkaJUnitActorSystemResource;
+import scala.Tuple2;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -545,6 +546,36 @@ public class FlowTest extends StreamTest {
             new Pair<String, Integer>("A", 1),
             new Pair<String, Integer>("B", 2),
             new Pair<String, Integer>("C", 3));
+    assertEquals(expected, output);
+  }
+
+  @Test
+  public void mustBeAbleToUseZipAll() {
+    final TestKit probe = new TestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<Integer> input2 = Arrays.asList(1, 2, 3, 4);
+
+    Source<String, NotUsed> src1 = Source.from(input1);
+    Source<Integer, NotUsed> src2 = Source.from(input2);
+    Sink<Pair<String, Integer>, CompletionStage<Done>> sink =
+        Sink.foreach(
+            new Procedure<Pair<String, Integer>>() {
+              @Override
+              public void apply(Pair<String, Integer> param) throws Exception {
+                probe.getRef().tell(param, ActorRef.noSender());
+              }
+            });
+    Flow<String, Pair<String, Integer>, NotUsed> fl =
+        Flow.<String>create().zipAll(src2, "MISSING", -1);
+    src1.via(fl).runWith(sink, materializer);
+
+    List<Object> output = probe.receiveN(4);
+    List<Pair<String, Integer>> expected =
+        Arrays.asList(
+            new Pair<String, Integer>("A", 1),
+            new Pair<String, Integer>("B", 2),
+            new Pair<String, Integer>("C", 3),
+            new Pair<String, Integer>("MISSING", 4));
     assertEquals(expected, output);
   }
 

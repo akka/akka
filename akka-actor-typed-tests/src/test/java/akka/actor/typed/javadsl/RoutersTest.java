@@ -15,6 +15,8 @@ public class RoutersTest {
     Behavior<String> group = Routers.group(key).withRandomRouting().withRoundRobinRouting();
 
     Behavior<String> pool =
-        Routers.pool(5, Behaviors.<String>empty()).withRandomRouting().withRoundRobinRouting();
+        Routers.pool(5, () -> Behaviors.<String>empty())
+            .withRandomRouting()
+            .withRoundRobinRouting();
   }
 }

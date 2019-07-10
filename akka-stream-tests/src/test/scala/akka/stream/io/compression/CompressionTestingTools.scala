@@ -15,6 +15,7 @@ import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
 
 // a few useful helpers copied over from akka-http
+@ccompatUsedUntil213
 object CompressionTestingTools {
   implicit class AddFutureAwaitResult[T](val future: Future[T]) extends AnyVal {
 
@@ -31,7 +32,7 @@ object CompressionTestingTools {
     }
   }
   implicit class EnhancedByteStringTraversableOnce(val byteStrings: IterableOnce[ByteString]) extends AnyVal {
-    def join: ByteString = byteStrings.foldLeft(ByteString.empty)(_ ++ _)
+    def join: ByteString = byteStrings.iterator.foldLeft(ByteString.empty)(_ ++ _)
   }
   implicit class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
     def join(implicit materializer: Materializer): Future[ByteString] =

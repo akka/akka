@@ -4,15 +4,20 @@
 
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef, Deploy, Props }
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream.{ ActorMaterializerSettings, Attributes }
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.annotation.InternalApi
+import akka.stream.ActorMaterializerSettings
+import akka.stream.Attributes
+import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
 
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class FanoutOutputs(
+@InternalApi private[akka] abstract class FanoutOutputs(
     val maxBufferSize: Int,
     val initialBufferSize: Int,
     self: ActorRef,
@@ -20,9 +25,14 @@ import org.reactivestreams.Subscriber
     extends DefaultOutputTransferStates
     with SubscriberManagement[Any] {
 
+  private var _subscribed = false
+  def subscribed: Boolean = _subscribed
+
   override type S = ActorSubscriptionWithCursor[_ >: Any]
-  override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
+  override def createSubscription(subscriber: Subscriber[_ >: Any]): S = {
+    _subscribed = true
     new ActorSubscriptionWithCursor(self, subscriber)
+  }
 
   protected var exposedPublisher: ActorPublisher[Any] = _
 
@@ -111,6 +121,12 @@ import org.reactivestreams.Subscriber
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
     extends ActorProcessorImpl(attributes, _settings) {
 
+  if (settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+    import context.dispatcher
+    context.system.scheduler
+      .scheduleOnce(_settings.subscriptionTimeoutSettings.timeout, self, ActorProcessorImpl.SubscriptionTimeout)
+  }
+
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
     new FanoutOutputs(inputBuffer.max, inputBuffer.initial, self, this) {
@@ -130,4 +146,19 @@ import org.reactivestreams.Subscriber
   def afterFlush(): Unit = context.stop(self)
 
   initialPhase(1, running)
+
+  def subTimeoutHandling: Receive = {
+    case ActorProcessorImpl.SubscriptionTimeout =>
+      import StreamSubscriptionTimeoutTerminationMode._
+      if (!primaryOutputs.subscribed) {
+        settings.subscriptionTimeoutSettings.mode match {
+          case CancelTermination =>
+            primaryInputs.cancel()
+            context.stop(self)
+          case WarnTermination =>
+            context.system.log.warning("Subscription timeout for {}", this)
+          case NoopTermination => // won't happen
+        }
+      }
+  }
 }

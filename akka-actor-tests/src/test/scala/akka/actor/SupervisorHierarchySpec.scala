@@ -468,7 +468,7 @@ object SupervisorHierarchySpec {
       case Event(Init, _) =>
         hierarchy = context.watch(
           context.actorOf(Props(new Hierarchy(size, breadth, self, 0, random)).withDispatcher("hierarchy"), "head"))
-        setTimer("phase", StateTimeout, 5 seconds, false)
+        startSingleTimer("phase", StateTimeout, 5 seconds)
         goto(Init)
     }
 
@@ -493,7 +493,7 @@ object SupervisorHierarchySpec {
         idleChildren = children
         activeChildren = children
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
-        setTimer("phase", StateTimeout, 90.seconds.dilated, false)
+        startSingleTimer("phase", StateTimeout, 90.seconds.dilated)
     }
 
     val workSchedule = 50.millis

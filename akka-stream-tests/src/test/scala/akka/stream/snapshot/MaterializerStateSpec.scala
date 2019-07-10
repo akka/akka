@@ -4,11 +4,10 @@
 
 package akka.stream.snapshot
 
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.{ ActorMaterializer, FlowShape }
+import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Source }
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.StreamSpec
-
-import scala.concurrent.duration._
 
 class MaterializerStateSpec extends StreamSpec {
 
@@ -16,16 +15,85 @@ class MaterializerStateSpec extends StreamSpec {
 
     "snapshot a running stream" in {
       implicit val mat = ActorMaterializer()
-      Source.maybe[Int].map(_.toString).zipWithIndex.runWith(Sink.seq)
+      try {
+        Source.maybe[Int].map(_.toString).zipWithIndex.runWith(Sink.seq)
 
-      awaitAssert({
-        val snapshot = MaterializerState.streamSnapshots(mat).futureValue
+        awaitAssert({
+          val snapshot = MaterializerState.streamSnapshots(mat).futureValue
 
-        snapshot should have size (1)
-        snapshot.head.activeInterpreters should have size (1)
-        snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
-      }, 3.seconds)
+          snapshot should have size (1)
+          snapshot.head.activeInterpreters should have size (1)
+          snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
+        }, remainingOrDefault)
+      } finally {
+        mat.shutdown()
+      }
     }
+
+    "snapshot a stream that has a stopped stage" in {
+      implicit val mat = ActorMaterializer()
+      try {
+        val probe = TestSink.probe[String](system)
+        val out = Source
+          .single("one")
+          .concat(Source.maybe[String]) // make sure we leave it running
+          .runWith(probe)
+        out.requestNext("one")
+        awaitAssert({
+          val snapshot = MaterializerState.streamSnapshots(mat).futureValue
+          snapshot should have size (1)
+          snapshot.head.activeInterpreters should have size (1)
+          snapshot.head.activeInterpreters.head.stoppedLogics should have size (2) // Source.single and a detach
+        }, remainingOrDefault)
+
+      } finally {
+        mat.shutdown()
+      }
+    }
+
+    "snapshot a more complicated graph" in {
+      implicit val mat = ActorMaterializer()
+      try {
+        // snapshot before anything is running
+        MaterializerState.streamSnapshots(mat).futureValue
+
+        val graph = Flow.fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val partition = b.add(Partition[String](4, {
+            case "green" => 0
+            case "red"   => 1
+            case "blue"  => 2
+            case _       => 3
+          }))
+          val merge = b.add(Merge[String](4, eagerComplete = false))
+          val discard = b.add(Sink.ignore.async)
+          val one = b.add(Source.single("purple"))
+
+          partition.out(0) ~> merge.in(0)
+          partition.out(1).via(Flow[String].map(_.toUpperCase()).async) ~> merge.in(1)
+          partition.out(2).groupBy(2, identity).mergeSubstreams ~> merge.in(2)
+          partition.out(3) ~> discard
+
+          one ~> merge.in(3)
+
+          FlowShape(partition.in, merge.out)
+        })
+
+        val callMeMaybe =
+          Source.maybe[String].viaMat(graph)(Keep.left).toMat(Sink.ignore)(Keep.left).run()
+
+        // just check that we can snapshot without errors
+        MaterializerState.streamSnapshots(mat).futureValue
+        callMeMaybe.success(Some("green"))
+        MaterializerState.streamSnapshots(mat).futureValue
+        Thread.sleep(100) // just to give it a bigger chance to cover different states of shutting down
+        MaterializerState.streamSnapshots(mat).futureValue
+
+      } finally {
+        mat.shutdown()
+      }
+    }
+
   }
 
 }

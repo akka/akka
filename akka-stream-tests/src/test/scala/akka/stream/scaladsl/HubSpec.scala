@@ -82,7 +82,7 @@ class HubSpec extends StreamSpec {
       expectMsg(1)
       expectMsg(2)
       expectMsg(3)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
 
       // One element consumed (it was requested), demand 0 remains at producer
       downstream.expectNext(1)
@@ -96,7 +96,7 @@ class HubSpec extends StreamSpec {
 
       expectMsg(4)
       expectMsg(5)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
 
       // Two additional elements have been sent:
       //  - 3, 4, 5 are pending
@@ -108,7 +108,7 @@ class HubSpec extends StreamSpec {
       sub.request(1)
       downstream.expectNext(3)
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
 
       sub.request(1)
       downstream.expectNext(4)
@@ -329,8 +329,8 @@ class HubSpec extends StreamSpec {
       downstream1.expectNext(1, 2, 3, 4)
       downstream2.expectNext(1, 2, 3, 4, 5, 6, 7, 8)
 
-      downstream1.expectNoMsg(100.millis)
-      downstream2.expectNoMsg(100.millis)
+      downstream1.expectNoMessage(100.millis)
+      downstream2.expectNoMessage(100.millis)
 
       upstream.sendError(TE("Failed"))
 
@@ -410,7 +410,7 @@ class HubSpec extends StreamSpec {
 
     "work in the happy case with one stream" in assertAllStagesStopped {
       val source =
-        Source(1 to 10).runWith(PartitionHub.sink((size, elem) => 0, startAfterNrOfConsumers = 0, bufferSize = 8))
+        Source(1 to 10).runWith(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 0, bufferSize = 8))
       source.runWith(Sink.seq).futureValue should ===(1 to 10)
     }
 
@@ -429,7 +429,7 @@ class HubSpec extends StreamSpec {
       val source = Source(0 until 10).runWith(PartitionHub.statefulSink(() => {
         var n = 0L
 
-        (info, elem) => {
+        (info, _) => {
           n += 1
           info.consumerIdByIdx((n % info.size).toInt)
         }
@@ -465,7 +465,7 @@ class HubSpec extends StreamSpec {
     "be able to use as fastest consumer router" in assertAllStagesStopped {
       val source = Source(0 until 1000).runWith(
         PartitionHub.statefulSink(
-          () => (info, elem) => info.consumerIds.toVector.minBy(id => info.queueSize(id)),
+          () => (info, _) => info.consumerIds.toVector.minBy(id => info.queueSize(id)),
           startAfterNrOfConsumers = 2,
           bufferSize = 4))
       val result1 = source.runWith(Sink.seq)
@@ -501,7 +501,7 @@ class HubSpec extends StreamSpec {
       testSource.sendNext(7)
       probe1.expectNext(5)
       probe1.expectNext(7)
-      probe0.expectNoMsg(10.millis)
+      probe0.expectNoMessage(10.millis)
       probe0.request(10)
       probe0.expectNext(6)
 
@@ -513,8 +513,7 @@ class HubSpec extends StreamSpec {
     "route unevenly" in assertAllStagesStopped {
       val (testSource, hub) = TestSource
         .probe[Int]
-        .toMat(PartitionHub.sink((size, elem) => (elem % 3) % 2, startAfterNrOfConsumers = 2, bufferSize = 8))(
-          Keep.both)
+        .toMat(PartitionHub.sink((_, elem) => (elem % 3) % 2, startAfterNrOfConsumers = 2, bufferSize = 8))(Keep.both)
         .run()
       val probe0 = hub.runWith(TestSink.probe[Int])
       val probe1 = hub.runWith(TestSink.probe[Int])
@@ -547,7 +546,7 @@ class HubSpec extends StreamSpec {
     "backpressure" in assertAllStagesStopped {
       val (testSource, hub) = TestSource
         .probe[Int]
-        .toMat(PartitionHub.sink((size, elem) => 0, startAfterNrOfConsumers = 2, bufferSize = 4))(Keep.both)
+        .toMat(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 2, bufferSize = 4))(Keep.both)
         .run()
       val probe0 = hub.runWith(TestSink.probe[Int])
       val probe1 = hub.runWith(TestSink.probe[Int])
@@ -611,8 +610,8 @@ class HubSpec extends StreamSpec {
       downstream1.expectNext(0, 2, 4, 6)
       downstream2.expectNext(1, 3, 5, 7, 9, 11, 13, 15)
 
-      downstream1.expectNoMsg(100.millis)
-      downstream2.expectNoMsg(100.millis)
+      downstream1.expectNoMessage(100.millis)
+      downstream2.expectNoMessage(100.millis)
 
       upstream.sendError(TE("Failed"))
 
@@ -633,7 +632,7 @@ class HubSpec extends StreamSpec {
     "remember completion for materialisations after completion" in {
 
       val (sourceProbe, source) =
-        TestSource.probe[Unit].toMat(PartitionHub.sink((size, elem) => 0, startAfterNrOfConsumers = 0))(Keep.both).run()
+        TestSource.probe[Unit].toMat(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 0))(Keep.both).run()
       val sinkProbe = source.runWith(TestSink.probe[Unit])
 
       sourceProbe.sendComplete()
@@ -651,7 +650,7 @@ class HubSpec extends StreamSpec {
 
     "properly signal error to consumers arriving after producer finished" in assertAllStagesStopped {
       val source =
-        Source.failed[Int](TE("Fail!")).runWith(PartitionHub.sink((size, elem) => 0, startAfterNrOfConsumers = 0))
+        Source.failed[Int](TE("Fail!")).runWith(PartitionHub.sink((_, _) => 0, startAfterNrOfConsumers = 0))
       // Wait enough so the Hub gets the failure. This is racy, but this is fine because both
       // cases should work in the end
       Thread.sleep(10)

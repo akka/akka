@@ -261,18 +261,6 @@ trait ExplicitAskSupport {
 
 object AskableActorRef {
 
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def ask$extension(actorRef: ActorRef, message: Any, timeout: Timeout): Future[Any] =
-    actorRef.internalAsk(message, timeout, ActorRef.noSender)
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def $qmark$extension(actorRef: ActorRef, message: Any, timeout: Timeout): Future[Any] =
-    actorRef.internalAsk(message, timeout, ActorRef.noSender)
-
   private def messagePartOfException(message: Any, sender: ActorRef): String = {
     val msg = if (message == null) "unknown" else message
     val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"
@@ -400,21 +388,6 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
           if (sender == null) null else messageFactory(sender.asInstanceOf[InternalActorRef].provider.deadLetters)
         Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
     }
-}
-
-object AskableActorSelection {
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def ask$extension(actorSel: ActorSelection, message: Any, timeout: Timeout): Future[Any] =
-    actorSel.internalAsk(message, timeout, ActorRef.noSender)
-
-  /**
-   * INTERNAL API: for binary compatibility
-   */
-  private[pattern] def $qmark$extension(actorSel: ActorSelection, message: Any, timeout: Timeout): Future[Any] =
-    actorSel.internalAsk(message, timeout, ActorRef.noSender)
 }
 
 /*
@@ -605,11 +578,13 @@ private[akka] final class PromiseActorRef private (
     case Stopped | _: StoppedWithPath => provider.deadLetters ! message
     case _ =>
       if (message == null) throw InvalidMessageException("Message is null")
-      if (!(result.tryComplete(message match {
-            case Status.Success(r) => Success(r)
-            case Status.Failure(f) => Failure(f)
-            case other             => Success(other)
-          }))) provider.deadLetters ! message
+      val promiseResult = message match {
+        case Status.Success(r) => Success(r)
+        case Status.Failure(f) => Failure(f)
+        case other             => Success(other)
+      }
+      if (!result.tryComplete(promiseResult))
+        provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -628,7 +603,6 @@ private[akka] final class PromiseActorRef private (
     case _ =>
   }
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated: Boolean = state match {
     case Stopped | _: StoppedWithPath => true
     case _                            => false
@@ -639,7 +613,7 @@ private[akka] final class PromiseActorRef private (
     def ensureCompleted(): Unit = {
       result.tryComplete(ActorStopResult)
       val watchers = clearWatchers()
-      if (!watchers.isEmpty) {
+      if (watchers.nonEmpty) {
         watchers.foreach { watcher =>
           // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watcher

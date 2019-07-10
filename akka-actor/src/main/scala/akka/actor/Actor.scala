@@ -86,13 +86,6 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 
   /**
    * Java API: `ActorRef` of the actor replying to the request or
-   * null if no actor matched the request.
-   */
-  @deprecated("Use getActorRef instead", "2.5.0")
-  def getRef: ActorRef = ref.orNull
-
-  /**
-   * Java API: `ActorRef` of the actor replying to the request or
    * not defined if no actor matched the request.
    */
   def getActorRef: Optional[ActorRef] = {
@@ -488,7 +481,7 @@ trait Actor {
    */
   implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
-    if ((contextStack.isEmpty) || (contextStack.head eq null))
+    if (contextStack.isEmpty || (contextStack.head eq null))
       throw ActorInitializationException(
         s"You cannot create an instance of [${getClass.getName}] explicitly using the constructor (new). " +
         "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation.")

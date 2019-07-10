@@ -67,6 +67,7 @@ object TypedActorSpec {
   trait Foo {
     def pigdog(): String
 
+    @silent
     @throws(classOf[TimeoutException])
     def self = TypedActor.self[Foo]
 
@@ -132,6 +133,7 @@ object TypedActorSpec {
       Future.successful(pigdog + numbered)
     }
 
+    @silent
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
       foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
@@ -187,6 +189,7 @@ object TypedActorSpec {
       with LifeCycles
       with Receiver {
 
+    @silent
     private def ensureContextAvailable[T](f: => T): T = TypedActor.context match {
       case null => throw new IllegalStateException("TypedActor.context is null!")
       case _    => f
@@ -241,6 +244,7 @@ object TypedActorSpec {
 
 }
 
+@silent
 class TypedActorSpec
     extends AkkaSpec(TypedActorSpec.config)
     with BeforeAndAfterEach
@@ -564,6 +568,7 @@ class TypedActorSpec
   }
 }
 
+@silent
 class TypedActorRouterSpec
     extends AkkaSpec(TypedActorSpec.config)
     with BeforeAndAfterEach

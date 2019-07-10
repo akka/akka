@@ -23,11 +23,13 @@ import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
 
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
+@silent
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
@@ -185,7 +187,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
 
       sub.request(demandAllButOneChunks)
-      for (i <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
+      for (_ <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
       c.expectNoMessage(300.millis)
 
       sub.request(1)
@@ -251,7 +253,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           .supervisor
           .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
-        try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
+        try assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
         finally p.cancel()
       } finally shutdown(sys)
     }

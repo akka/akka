@@ -1,6 +1,6 @@
-# from
+# @scala[apply]@java[from]
 
-Stream the values of an `Iterable`.
+Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -9,14 +9,14 @@ Stream the values of an `Iterable`.
 
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/javadsl/Source.scala) { #from }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #apply }
 
 @@@
 
 ## Description
 
-Stream the values of an `Iterable`. Make sure the `Iterable` is immutable or at least not modified after being used
-as a source. Otherwise the stream may fail with `ConcurrentModificationException` or other more subtle errors may occur.
+Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`]. @java[Make sure the `Iterable` is immutable or at least not modified after being used
+as a source. Otherwise the stream may fail with `ConcurrentModificationException` or other more subtle errors may occur.]
 
 @@@div { .callout }
 

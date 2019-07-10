@@ -7,13 +7,14 @@ package akka.actor.typed
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
+
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
 
 class DummyExtension1 extends Extension
@@ -123,7 +124,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "handle extensions that fail to initialize" in {
       def create(): Unit = {
         ActorSystem[Any](
-          Behavior.EmptyBehavior,
+          Behaviors.empty[Any],
           "ExtensionsSpec04",
           ConfigFactory.parseString("""
           akka.actor.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
@@ -259,8 +260,8 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       case None    => BootstrapSetup(ExtensionsSpec.config)
     }
     val sys = setup match {
-      case None    => ActorSystem[Any](Behavior.EmptyBehavior, name, bootstrap)
-      case Some(s) => ActorSystem[Any](Behavior.EmptyBehavior, name, s.and(bootstrap))
+      case None    => ActorSystem[Any](Behaviors.empty[Any], name, bootstrap)
+      case Some(s) => ActorSystem[Any](Behaviors.empty[Any], name, s.and(bootstrap))
     }
 
     try f(sys)

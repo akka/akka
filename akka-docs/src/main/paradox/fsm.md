@@ -1,4 +1,15 @@
-# FSM
+# Classic FSM
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see @ref[fsm](typed/fsm.md).
+
+@@@
 
 ## Dependency
 
@@ -447,14 +458,19 @@ Besides state timeouts, FSM manages timers identified by `String` names.
 You may set a timer using
 
 ```
-setTimer(name, msg, interval, repeat)
+startSingleTimer(name, msg, interval)
+startTimerWithFixedDelay(name, msg, interval)
 ```
 
 where `msg` is the message object which will be sent after the duration
-`interval` has elapsed. If `repeat` is `true`, then the timer is
-scheduled at fixed rate given by the `interval` parameter.
+`interval` has elapsed.
+
 Any existing timer with the same name will automatically be canceled before
 adding the new timer.
+
+The @ref:[Scheduler](scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
 
 Timers may be canceled using
 

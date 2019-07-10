@@ -4,13 +4,23 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.util.concurrent.{CompletionStage, ThreadFactory}
+import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.typed.internal.ActorRefImpl
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Props, Settings}
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
+import akka.actor.typed.Dispatchers
+import akka.actor.typed.Extension
+import akka.actor.typed.ExtensionId
+import akka.actor.typed.Logger
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
+import akka.actor.typed.Settings
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{actor => untyped}
+import akka.{ actor => untyped }
 import akka.Done
 import com.typesafe.config.ConfigFactory
 
@@ -19,8 +29,6 @@ import scala.concurrent._
 import akka.actor.ActorRefProvider
 import akka.actor.typed.internal.InternalRecipientRef
 import com.github.ghik.silencer.silent
-import org.slf4j.Logger
-import org.slf4j.helpers.SubstituteLoggerFactory
 
 /**
  * INTERNAL API
@@ -63,7 +71,7 @@ import org.slf4j.helpers.SubstituteLoggerFactory
 
   override def logConfiguration(): Unit = log.info(settings.toString)
 
-  override def scheduler: untyped.Scheduler = throw new UnsupportedOperationException("no scheduler")
+  override def scheduler: Scheduler = throw new UnsupportedOperationException("no scheduler")
 
   private val terminationPromise = Promise[Done]
   override def terminate(): Unit = terminationPromise.trySuccess(Done)
@@ -91,7 +99,5 @@ import org.slf4j.helpers.SubstituteLoggerFactory
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
     throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
 
-  def loggerFactory = new SubstituteLoggerFactory()
-
-  def log: Logger = loggerFactory.getLogger("StubbedLogger")
+  def log: Logger = new StubbedLogger
 }

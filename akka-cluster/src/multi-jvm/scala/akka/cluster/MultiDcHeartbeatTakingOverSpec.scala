@@ -44,7 +44,7 @@ object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
 
-      remote.log-remote-lifecycle-events = off
+      remote.classic.log-remote-lifecycle-events = off
 
       cluster {
         debug.verbose-heartbeat-logging = off

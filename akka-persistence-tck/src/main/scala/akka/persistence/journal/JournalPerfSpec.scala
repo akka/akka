@@ -20,14 +20,14 @@ object JournalPerfSpec {
     var counter = 0
 
     override def receiveCommand: Receive = {
-      case c @ Cmd("p", payload) =>
+      case c @ Cmd("p", _) =>
         persist(c) { d =>
           counter += 1
           require(d.payload == counter, s"Expected to receive [$counter] yet got: [${d.payload}]")
           if (counter == replyAfter) replyTo ! d.payload
         }
 
-      case c @ Cmd("pa", payload) =>
+      case c @ Cmd("pa", _) =>
         persistAsync(c) { d =>
           counter += 1
           require(d.payload == counter, s"Expected to receive [$counter] yet got: [${d.payload}]")
@@ -41,7 +41,7 @@ object JournalPerfSpec {
         }
         if (counter == replyAfter) replyTo ! payload
 
-      case c @ Cmd("n", payload) =>
+      case Cmd("n", payload) =>
         counter += 1
         require(payload == counter, s"Expected to receive [$counter] yet got: [${payload}]")
         if (counter == replyAfter) replyTo ! payload

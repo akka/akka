@@ -29,7 +29,7 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
       histograms: util.SortedMap[String, Histogram],
       meters: util.SortedMap[String, Meter],
       timers: util.SortedMap[String, Timer]): Unit = {
-    import collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
 
     // default Metrics types
     printMetrics(gauges.asScala, printGauge)

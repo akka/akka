@@ -4,18 +4,21 @@
 
 package akka.stream.scaladsl
 
-//#zip-with
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Sink
-
-//#zip-with
-
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import org.reactivestreams.Publisher
+
 import scala.concurrent.duration._
 import akka.testkit.EventFilter
+import com.github.ghik.silencer.silent
 
+@silent // keep unused imports
 class FlowZipWithSpec extends BaseTwoStreamsSetup {
+
+//#zip-with
+  import akka.stream.scaladsl.Source
+  import akka.stream.scaladsl.Sink
+
+//#zip-with
 
   override type Outputs = Int
 
@@ -60,7 +63,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
       probe.expectError() match {
         case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
       }
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage(200.millis)
     }
 
     commonTests()

@@ -6,7 +6,7 @@ package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import akka.actor.ExtendedActorSystem
@@ -159,10 +159,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     .millis
   private val readCache = new SmallCache[Read, Array[Byte]](4, cacheTimeToLive, m => readToProto(m).toByteArray)
   private val writeCache = new SmallCache[Write, Array[Byte]](4, cacheTimeToLive, m => writeToProto(m).toByteArray)
-  system.scheduler.schedule(cacheTimeToLive, cacheTimeToLive / 2) {
+  system.scheduler.scheduleWithFixedDelay(cacheTimeToLive, cacheTimeToLive / 2) { () =>
     readCache.evict()
     writeCache.evict()
-  }(system.dispatcher)
+  }(system.dispatchers.internalDispatcher)
 
   private val writeAckBytes = dm.Empty.getDefaultInstance.toByteArray
   private val dummyAddress = UniqueAddress(Address("a", "b", "c", 2552), 1L)

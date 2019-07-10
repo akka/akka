@@ -1,4 +1,15 @@
-# Distributed Data
+# Classic Distributed Data
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see @ref[distributed-data](typed/distributed-data.md).
+
+@@@
 
 ## Dependency
 
@@ -28,7 +39,7 @@ All data entries are spread to all nodes, or nodes with a certain role, in the c
 via direct replication and gossip based dissemination. You have fine grained control
 of the consistency level for reads and writes.
 
-The nature CRDTs makes it possible to perform updates from any node without coordination.
+The nature of CRDTs makes it possible to perform updates from any node without coordination.
 Concurrent updates from different nodes will automatically be resolved by the monotonic
 merge function, which all data types must provide. The state changes always converge.
 Several useful data types for counters, sets, maps and registers are provided and
@@ -323,7 +334,7 @@ Java
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local
-local `Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
+`Replicator`. As reply of the `Delete` a `Replicator.DeleteSuccess` is sent to
 the sender of the `Delete` if the value was successfully deleted according to the supplied
 consistency level within the supplied timeout. Otherwise a `Replicator.ReplicationDeleteFailure`
 is sent. Note that `ReplicationDeleteFailure` does not mean that the delete completely failed or
@@ -355,7 +366,6 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-<a id="delta-crdt"></a>
 ### delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
@@ -739,7 +749,6 @@ This would be possible if a node with durable data didn't participate in the pru
 be stopped for longer time than this duration and if it is joining again after this
 duration its data should first be manually removed (from the lmdb directory).
 
-<a id="crdt-garbage"></a>
 ### CRDT Garbage
 
 One thing that can be problematic with CRDTs is that some data types accumulate history (garbage).

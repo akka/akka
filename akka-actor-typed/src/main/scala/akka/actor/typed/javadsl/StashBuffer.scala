@@ -8,21 +8,8 @@ import java.util.function.Consumer
 import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.StashBufferImpl
 import akka.actor.typed.scaladsl
 import akka.annotation.DoNotInherit
-
-object StashBuffer {
-
-  /**
-   * Create an empty message buffer.
-   *
-   * @param capacity the buffer can hold at most this number of messages
-   * @return an empty message buffer
-   */
-  def create[T](capacity: Int): StashBuffer[T] =
-    StashBufferImpl[T](capacity)
-}
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors
@@ -32,7 +19,7 @@ object StashBuffer {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class StashBuffer[T] {
+@DoNotInherit trait StashBuffer[T] {
 
   /**
    * Check if the message buffer is empty.
@@ -103,7 +90,7 @@ object StashBuffer {
    *
    * The `behavior` passed to `unstashAll` must not be `unhandled`.
    */
-  def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
+  def unstashAll(behavior: Behavior[T]): Behavior[T]
 
   /**
    * Process `numberOfMessages` of the stashed messages with the `behavior`
@@ -126,7 +113,7 @@ object StashBuffer {
    *
    * The `behavior` passed to `unstash` must not be `unhandled`.
    */
-  def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T]
+  def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T]
 
 }
 

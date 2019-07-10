@@ -8,7 +8,6 @@ import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.actor.testkit.typed.internal.TestInboxImpl
-
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
@@ -35,6 +34,7 @@ object TestInbox {
  * Not for user extension
  */
 @DoNotInherit
+@ApiMayChange
 trait TestInbox[T] {
 
   /**

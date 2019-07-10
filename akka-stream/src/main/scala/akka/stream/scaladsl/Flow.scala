@@ -11,6 +11,7 @@ import akka.stream.impl.{
   fusing,
   LinearTraversalBuilder,
   ProcessorModule,
+  SetupFlowStage,
   SubFlowImpl,
   Throttle,
   Timers,
@@ -29,7 +30,7 @@ import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -319,10 +320,7 @@ final class Flow[-In, +Out, +Mat](
    *
    * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
    * @param extractContext turn each outgoing element of this Flow into an outgoing context value
-   *
-   * API MAY CHANGE
    */
-  @ApiMayChange
   def asFlowWithContext[U, CtxU, CtxOut](collapseContext: (U, CtxU) => In)(
       extractContext: Out => CtxOut): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
     new FlowWithContext(
@@ -389,6 +387,14 @@ object Flow {
 
       case _ => new Flow(LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right), g.shape)
     }
+
+  /**
+   * Defers the creation of a [[Flow]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Flow]] returned by this method.
+   */
+  def setup[T, U, M](factory: (ActorMaterializer, Attributes) => Flow[T, U, M]): Flow[T, U, Future[M]] =
+    Flow.fromGraph(new SetupFlowStage(factory))
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
@@ -1017,7 +1023,13 @@ trait FlowOps[+Out, +Mat] {
     val askFlow = Flow[Out]
       .watch(ref)
       .mapAsync(parallelism) { el =>
-        akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
+        akka.pattern.ask(ref).?(el)(timeout)
+      }
+      .map {
+        case e: S => e
+        case o =>
+          throw new ClassCastException(
+            s"'Flow.ask' failed: expected response of type [${tag.runtimeClass}], got [${o.getClass}]")
       }
       .mapError {
         // the purpose of this recovery is to change the name of the stage in that exception
@@ -2392,6 +2404,43 @@ trait FlowOps[+Out, +Mat] {
    */
   def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Repr[(A, U)] = {
+    via(zipAllFlow(that, thisElem, thatElem))
+  }
+
+  protected def zipAllFlow[U, A >: Out, Mat2](
+      that: Graph[SourceShape[U], Mat2],
+      thisElem: A,
+      thatElem: U): Flow[Out @uncheckedVariance, (A, U), Mat2] = {
+    case object passedEnd
+    val passedEndSrc = Source.repeat(passedEnd)
+    val left: Flow[Out, Any, NotUsed] = Flow[A].concat(passedEndSrc)
+    val right: Source[Any, Mat2] = Source.fromGraph(that).concat(passedEndSrc)
+    val zipFlow: Flow[Out, (A, U), Mat2] = left
+      .zipMat(right)(Keep.right)
+      .takeWhile {
+        case (`passedEnd`, `passedEnd`) => false
+        case _                          => true
+      }
+      .map {
+        case (`passedEnd`, r: U @unchecked) => (thisElem, r)
+        case (l: A @unchecked, `passedEnd`) => (l, thatElem)
+        case t: (A, U) @unchecked           => t
+      }
+    zipFlow
+  }
+
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
     GraphDSL.create(that) { implicit b => r =>
       val zip = b.add(Zip[Out, U]())
@@ -2897,6 +2946,24 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def zipMat[U, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3): ReprMat[(Out, U), Mat3] =
     viaMat(zipGraph(that))(matF)
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): ReprMat[(A, U), Mat3] = {
+    viaMat(zipAllFlow(that, thisElem, thatElem))(matF)
+  }
 
   /**
    * Put together the elements of current flow and the given [[Source]]

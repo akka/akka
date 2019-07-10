@@ -1,4 +1,15 @@
-# Testing Actor Systems
+# Testing Classic Actors
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+For the new API see @ref[testing](typed/testing.md).
+
+@@@
 
 ## Dependency
 
@@ -20,6 +31,7 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
+<a id="async-integration-testing"></a>
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
@@ -566,7 +578,6 @@ Which of these methods is the best depends on what is most important to test. Th
 most generic option is to create the parent actor by passing it a function that is
 responsible for the Actor creation, but @scala[the]@java[using `TestProbe` or having a] fabricated parent is often sufficient.
 
-<a id="callingthreaddispatcher"></a>
 ## CallingThreadDispatcher
 
 The `CallingThreadDispatcher` serves good purposes in unit testing, as

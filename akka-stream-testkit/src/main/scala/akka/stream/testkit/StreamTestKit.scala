@@ -152,6 +152,7 @@ object TestPublisher {
 
     /**
      * Expect no messages.
+     * Waits for the default period configured as `akka.actor.testkit.expect-no-message-default`.
      */
     def expectNoMessage(): Self = executeAfterSubscription {
       probe.expectNoMessage()
@@ -621,6 +622,18 @@ object TestSubscriber {
      */
     def expectNoMessage(remaining: FiniteDuration): Self = {
       probe.expectNoMessage(remaining)
+      self
+    }
+
+    /**
+     * Fluent DSL
+     *
+     * Assert that no message is received for the specified time.
+     * Waits for the default period configured as `akka.test.expect-no-message-default`.
+     * That timeout is scaled using the configuration entry "akka.test.timefactor".
+     */
+    def expectNoMessage(): Self = {
+      probe.expectNoMessage()
       self
     }
 

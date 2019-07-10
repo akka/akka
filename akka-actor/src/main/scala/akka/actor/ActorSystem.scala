@@ -5,29 +5,28 @@
 package akka.actor
 
 import java.io.Closeable
+import java.util.Optional
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.event._
-import akka.dispatch._
-import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
-import akka.util._
-import akka.util.Helpers.toRootLowerCase
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.{ ControlThrowable, NonFatal }
-import java.util.Optional
-
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
-
+import akka.ConfigurationException
+import akka.dispatch._
+import akka.event._
+import akka.japi.Util.immutableSeq
+import akka.util.Helpers.toRootLowerCase
+import akka.util._
+import com.typesafe.config.{ Config, ConfigFactory }
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
+import scala.util.control.{ ControlThrowable, NonFatal }
+import scala.util.{ Failure, Success, Try }
 
 object BootstrapSetup {
 
@@ -83,11 +82,23 @@ object BootstrapSetup {
 
 }
 
-abstract class ProviderSelection private (private[akka] val identifier: String)
+/**
+ * @param identifier the simple name of the selected provider
+ * @param fqcn the fully-qualified class name of the selected provider
+ */
+abstract class ProviderSelection private (
+    private[akka] val identifier: String,
+    private[akka] val fqcn: String,
+    private[akka] val hasCluster: Boolean)
 object ProviderSelection {
-  case object Local extends ProviderSelection("local")
-  case object Remote extends ProviderSelection("remote")
-  case object Cluster extends ProviderSelection("cluster")
+  private[akka] val RemoteActorRefProvider = "akka.remote.RemoteActorRefProvider"
+  private[akka] val ClusterActorRefProvider = "akka.cluster.ClusterActorRefProvider"
+
+  case object Local extends ProviderSelection("local", classOf[LocalActorRefProvider].getName, hasCluster = false)
+  // these two cannot be referenced by class as they may not be on the classpath
+  case object Remote extends ProviderSelection("remote", RemoteActorRefProvider, hasCluster = false)
+  case object Cluster extends ProviderSelection("cluster", ClusterActorRefProvider, hasCluster = true)
+  final case class Custom(override val fqcn: String) extends ProviderSelection("custom", fqcn, hasCluster = false)
 
   /**
    * JAVA API
@@ -104,6 +115,15 @@ object ProviderSelection {
    */
   def cluster(): ProviderSelection = Cluster
 
+  /** INTERNAL API */
+  @InternalApi private[akka] def apply(providerClass: String): ProviderSelection =
+    providerClass match {
+      case "local" => Local
+      // additional fqcn for older configs not using 'remote' or 'cluster'
+      case "remote" | RemoteActorRefProvider   => Remote
+      case "cluster" | ClusterActorRefProvider => Cluster
+      case fqcn                                => Custom(fqcn)
+    }
 }
 
 /**
@@ -194,14 +214,14 @@ object ActorSystem {
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config): ActorSystem = apply(name, config)
 
   /**
    * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
 
@@ -218,7 +238,7 @@ object ActorSystem {
    * executor = "default-executor", including those that have not defined the executor setting and thereby fallback
    * to the default of "default-dispatcher.executor".
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(
       name: String,
@@ -271,14 +291,14 @@ object ActorSystem {
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config): ActorSystem = apply(name, Option(config), None, None)
 
   /**
    * Creates a new ActorSystem with the specified name, the specified Config, and specified ClassLoader
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem =
     apply(name, Option(config), Option(classLoader), None)
@@ -292,7 +312,7 @@ object ActorSystem {
    * If no ExecutionContext is given, the system will fallback to the executor configured under "akka.actor.default-dispatcher.default-executor.fallback".
    * The system will use the passed in config, or falls back to the default reference configuration using the ClassLoader.
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(
       name: String,
@@ -306,7 +326,7 @@ object ActorSystem {
    *
    * For more detailed information about the different possible configuration options, look in the Akka Documentation under "Configuration"
    *
-   * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+   * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String, val setup: ActorSystemSetup) {
 
@@ -315,11 +335,16 @@ object ActorSystem {
     /**
      * The backing Config of this ActorSystem's Settings
      *
-     * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
+     * @see <a href="https://lightbend.github.io/config/latest/api/index.html" target="_blank">The Typesafe Config Library API Documentation</a>
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
-      config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
+
+      config.checkValid(
+        ConfigFactory
+          .defaultReference(classLoader)
+          .withoutPath(Dispatchers.InternalDispatcherId), // allow this to be both string and config object
+        "akka")
       config
     }
 
@@ -327,18 +352,18 @@ object ActorSystem {
     import config._
 
     final val ConfigVersion: String = getString("akka.version")
-    final val ProviderClass: String =
-      setup
-        .get[BootstrapSetup]
-        .flatMap(_.actorRefProvider)
-        .map(_.identifier)
-        .getOrElse(getString("akka.actor.provider")) match {
-        case "local" => classOf[LocalActorRefProvider].getName
-        // these two cannot be referenced by class as they may not be on the classpath
-        case "remote"  => "akka.remote.RemoteActorRefProvider"
-        case "cluster" => "akka.cluster.ClusterActorRefProvider"
-        case fqcn      => fqcn
-      }
+
+    private final val providerSelectionSetup = setup
+      .get[BootstrapSetup]
+      .flatMap(_.actorRefProvider)
+      .map(_.identifier)
+      .getOrElse(getString("akka.actor.provider"))
+
+    final val ProviderSelectionType: ProviderSelection = ProviderSelection(providerSelectionSetup)
+
+    final val ProviderClass: String = ProviderSelectionType.fqcn
+
+    final val HasCluster: Boolean = ProviderSelectionType.hasCluster
 
     final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
@@ -363,6 +388,13 @@ object ActorSystem {
       case _               => config.getInt("akka.log-dead-letters")
     }
     final val LogDeadLettersDuringShutdown: Boolean = config.getBoolean("akka.log-dead-letters-during-shutdown")
+    final val LogDeadLettersSuspendDuration: Duration = {
+      val key = "akka.log-dead-letters-suspend-duration"
+      toRootLowerCase(config.getString(key)) match {
+        case "infinite" => Duration.Inf
+        case _          => config.getMillisDuration(key)
+      }
+    }
 
     final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
@@ -381,6 +413,15 @@ object ActorSystem {
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
     final val JvmShutdownHooks: Boolean = getBoolean("akka.jvm-shutdown-hooks")
+
+    final val CoordinatedShutdownTerminateActorSystem: Boolean = getBoolean(
+      "akka.coordinated-shutdown.terminate-actor-system")
+    final val CoordinatedShutdownRunByActorSystemTerminate: Boolean = getBoolean(
+      "akka.coordinated-shutdown.run-by-actor-system-terminate")
+    if (CoordinatedShutdownRunByActorSystemTerminate && !CoordinatedShutdownTerminateActorSystem)
+      throw new ConfigurationException(
+        "akka.coordinated-shutdown.run-by-actor-system-terminate=on and " +
+        "akka.coordinated-shutdown.terminate-actor-system=off is not a supported configuration combination.")
 
     final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
@@ -499,13 +540,12 @@ abstract class ActorSystem extends ActorRefFactory {
    * effort basis and hence not strictly guaranteed.
    */
   def deadLetters: ActorRef
-  //#scheduler
+
   /**
    * Light-weight scheduler for running asynchronous tasks after some deadline
    * in the future. Not terribly precise but cheap.
    */
   def scheduler: Scheduler
-  //#scheduler
 
   /**
    * Java API: Light-weight scheduler for running asynchronous tasks after some deadline
@@ -566,12 +606,19 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination(code: Runnable): Unit
 
   /**
-   * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, the system guardian
+   * Terminates this actor system by running [[CoordinatedShutdown]] with reason
+   * [[CoordinatedShutdown.ActorSystemTerminateReason]].
+   *
+   * If `akka.coordinated-shutdown.run-by-actor-system-terminate` is configured to `off`
+   * it will not run `CoordinatedShutdown`, but the `ActorSystem` and its actors
+   * will still be terminated.
+   *
+   * This will stop the guardian actor, which in turn
+   * will recursively stop all its child actors, and finally the system guardian
    * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future
-   * using the `dispatcher` of this actor system as it will have been shut down before the
+   * using the dispatcher of this actor system as it will have been shut down before the
    * future completes.
    */
   def terminate(): Future[Terminated]
@@ -676,6 +723,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * helping debugging in case something already went terminally wrong.
    */
   private[akka] def printTree: String
+
+  /**
+   * INTERNAL API: final step of `terminate()`
+   */
+  @InternalApi private[akka] def finalTerminate(): Unit
 
 }
 
@@ -840,7 +892,8 @@ private[akka] class ActorSystemImpl(
       dynamicAccess,
       settings,
       mailboxes,
-      defaultExecutionContext))
+      defaultExecutionContext),
+    log)
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
@@ -930,9 +983,25 @@ private[akka] class ActorSystemImpl(
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {
+    if (settings.CoordinatedShutdownRunByActorSystemTerminate && !aborting) {
+      // Note that the combination CoordinatedShutdownRunByActorSystemTerminate==true &&
+      // CoordinatedShutdownTerminateActorSystem==false is disallowed, checked in Settings.
+      // It's not a combination that is valuable to support and it would be complicated to
+      // protect against concurrency race conditions between calls to ActorSystem.terminate()
+      // and CoordinateShutdown.run()
+
+      // it will call finalTerminate() at the end
+      CoordinatedShutdown(this).run(CoordinatedShutdown.ActorSystemTerminateReason)
+    } else {
+      finalTerminate()
+    }
+    whenTerminated
+  }
+
+  override private[akka] def finalTerminate(): Unit = {
+    // these actions are idempotent
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
     guardian.stop()
-    whenTerminated
   }
 
   @volatile var aborting = false
@@ -940,8 +1009,8 @@ private[akka] class ActorSystemImpl(
   /**
    * This kind of shutdown attempts to bring the system down and release its
    * resources more forcefully than plain shutdown. For example it will not
-   * wait for remote-deployed child actors to terminate before terminating their
-   * parents.
+   * run CoordinatedShutdown and not wait for remote-deployed child actors to
+   * terminate before terminating their parents.
    */
   def abort(): Unit = {
     aborting = true
@@ -1013,7 +1082,7 @@ private[akka] class ActorSystemImpl(
                 extensions.replace(ext, inProcessOfRegistration, t) //In case shit hits the fan, remove the inProcess signal
                 throw t //Escalate to caller
             } finally {
-              inProcessOfRegistration.countDown //Always notify listeners of the inProcess signal
+              inProcessOfRegistration.countDown() //Always notify listeners of the inProcess signal
             }
           case _ =>
             registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry

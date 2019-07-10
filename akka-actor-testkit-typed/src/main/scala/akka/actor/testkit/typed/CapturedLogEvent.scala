@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging.LogLevel
 import akka.util.OptionVal
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.compat.java8.OptionConverters._
 
 /**

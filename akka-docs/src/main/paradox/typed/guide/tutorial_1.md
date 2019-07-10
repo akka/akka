@@ -12,14 +12,6 @@ Add the following dependency in your project:
 
 ## Introduction
 
-@@@ note
-
-This module is ready to be used in production, but it is still marked as @ref:[may change](../../common/may-change.md).
-This means that API or semantics can change without warning or deprecation period, but such changes will
-be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
-
-@@@
-
 Use of Akka relieves you from creating the infrastructure for an actor system and from writing the low-level code necessary to control basic behavior. To appreciate this, let's look at the relationships between actors you create in your code and those that Akka creates and manages for you internally, the actor lifecycle, and failure handling.
 
 ## The Akka actor hierarchy

@@ -5,7 +5,7 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed._
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.util.Timeout
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -36,7 +36,6 @@ import org.slf4j.Logger
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 trait ActorContext[T] extends TypedActorContext[T] {
 
   /**

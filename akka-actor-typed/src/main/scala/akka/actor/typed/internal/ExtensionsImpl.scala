@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 import akka.actor.typed.ExtensionSetup
 

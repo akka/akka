@@ -1,4 +1,15 @@
-# Cluster Client
+# Classic Cluster Client
+
+@@@ note
+
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
+known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
+the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
+ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
+
+Instead of the cluster client we recommend Akka gRPC (FIXME https://github.com/akka/akka/issues/26175)
+
+@@@
 
 ## Dependency
 
@@ -26,7 +37,7 @@ can both connect and be connected to with Akka Remoting from all the nodes in th
 This creates a tight coupling in that the client and cluster systems may need to have the same version of 
 both Akka, libraries, message classes, serializers and potentially even the JVM. In many cases it is a better solution 
 to use a more explicit and decoupling protocol such as [HTTP](https://doc.akka.io/docs/akka-http/current/index.html) or 
-[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/).
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/).
 
 Additionally since Akka Remoting is primarily designed as a protocol for Akka Cluster there is no explicit resource
 management, when a @apidoc[ClusterClient] has been used it will cause connections with the cluster until the ActorSystem is 

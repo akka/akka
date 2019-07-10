@@ -44,6 +44,7 @@ object ClusterShardingSettings {
       journalPluginId = untypedSettings.journalPluginId,
       snapshotPluginId = untypedSettings.snapshotPluginId,
       passivateIdleEntityAfter = untypedSettings.passivateIdleEntityAfter,
+      shardRegionQueryTimeout = untypedSettings.shardRegionQueryTimeout,
       stateStoreMode = StateStoreMode.byName(untypedSettings.stateStoreMode),
       new TuningParameters(untypedSettings.tuningParameters),
       new ClusterSingletonManagerSettings(
@@ -62,6 +63,7 @@ object ClusterShardingSettings {
       snapshotPluginId = settings.snapshotPluginId,
       stateStoreMode = settings.stateStoreMode.name,
       passivateIdleEntityAfter = settings.passivateIdleEntityAfter,
+      shardRegionQueryTimeout = settings.shardRegionQueryTimeout,
       new UntypedShardingSettings.TuningParameters(
         bufferSize = settings.tuningParameters.bufferSize,
         coordinatorFailureBackoff = settings.tuningParameters.coordinatorFailureBackoff,
@@ -87,7 +89,8 @@ object ClusterShardingSettings {
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
         settings.coordinatorSingletonSettings.removalMargin,
-        settings.coordinatorSingletonSettings.handOverRetryInterval))
+        settings.coordinatorSingletonSettings.handOverRetryInterval),
+      leaseSettings = None)
 
   }
 
@@ -262,6 +265,7 @@ final class ClusterShardingSettings(
     val journalPluginId: String,
     val snapshotPluginId: String,
     val passivateIdleEntityAfter: FiniteDuration,
+    val shardRegionQueryTimeout: FiniteDuration,
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings)
@@ -313,6 +317,12 @@ final class ClusterShardingSettings(
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivateIdleEntityAfter = duration.asScala)
 
+  def withShardRegionQueryTimeout(duration: FiniteDuration): ClusterShardingSettings =
+    copy(shardRegionQueryTimeout = duration)
+
+  def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
+    copy(shardRegionQueryTimeout = duration.asScala)
+
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the
    * coordinator singleton will be the same as the `role` of `ClusterShardingSettings`.
@@ -330,7 +340,8 @@ final class ClusterShardingSettings(
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
-      passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter): ClusterShardingSettings =
+      passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter,
+      shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout): ClusterShardingSettings =
     new ClusterShardingSettings(
       numberOfShards,
       role,
@@ -339,6 +350,7 @@ final class ClusterShardingSettings(
       journalPluginId,
       snapshotPluginId,
       passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
       stateStoreMode,
       tuningParameters,
       coordinatorSingletonSettings)

@@ -9,7 +9,6 @@ import scala.concurrent.Future
 import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import akka.NotUsed
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.util.ConstantFun
@@ -19,9 +18,7 @@ import akka.event.LoggingAdapter
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
  * element with each data element.
  *
- * API MAY CHANGE
  */
-@ApiMayChange
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
     type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]
@@ -49,7 +46,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting Flow.
    *
-   * @see [[akka.stream.scaladsl.FlowOps.viaMat]]
+   * @see [[akka.stream.scaladsl.FlowOpsMat.viaMat]]
    */
   def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
       combine: (Mat, Mat2) => Mat3): ReprMat[Out2, Ctx2, Mat3]

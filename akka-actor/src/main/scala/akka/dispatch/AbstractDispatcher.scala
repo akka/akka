@@ -8,6 +8,7 @@ import java.util.concurrent._
 import java.{ util => ju }
 
 import akka.actor._
+import akka.annotation.InternalStableApi
 import akka.dispatch.affinity.AffinityPoolConfigurator
 import akka.dispatch.sysmsg._
 import akka.event.EventStream
@@ -25,7 +26,12 @@ final case class Envelope private (val message: Any, val sender: ActorRef)
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
-    if (message == null) throw InvalidMessageException("Message is null")
+    if (message == null) {
+      if (sender eq Actor.noSender)
+        throw InvalidMessageException(s"Message is null.")
+      else
+        throw InvalidMessageException(s"Message sent from [$sender] is null.")
+    }
     new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
   }
 }
@@ -315,6 +321,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
+  @InternalStableApi
   protected[akka] def shutdown(): Unit
 }
 
@@ -351,14 +358,14 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
           .createInstanceFor[ExecutorServiceConfigurator](fqcn, args)
-          .recover({
+          .recover {
             case exception =>
               throw new IllegalArgumentException(
                 ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
                 make sure it has an accessible constructor with a [%s,%s] signature""")
                   .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]),
                 exception)
-          })
+          }
           .get
     }
 

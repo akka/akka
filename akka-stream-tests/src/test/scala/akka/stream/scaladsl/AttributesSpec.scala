@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.{ CompletionStage, TimeUnit }
 
 import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
 import akka.{ Done, NotUsed }
 import akka.stream.Attributes._
 import akka.stream._
@@ -14,6 +15,7 @@ import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.testkit.TestKit
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
@@ -101,6 +103,7 @@ object AttributesSpec {
   case class WhateverAttribute(label: String) extends Attribute
 }
 
+@silent // tests deprecated APIs
 class AttributesSpec
     extends StreamSpec(
       ConfigFactory
@@ -282,8 +285,8 @@ class AttributesSpec
         Source
           .fromGraph(
             // directly on stage
-            new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher").addAttributes(
-              ActorAttributes.dispatcher("my-dispatcher")))
+            new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher)
+              .addAttributes(ActorAttributes.dispatcher("my-dispatcher")))
           .runWith(Sink.head)
           .futureValue
 
@@ -293,20 +296,20 @@ class AttributesSpec
     "use the most specific dispatcher when another one is defined on a surrounding composed graph" in {
       val dispatcher =
         Source
-          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           .map(identity)
           // this is now for the composed source -> flow graph
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(Sink.head)
           .futureValue
 
-      dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+      dispatcher should startWith(s"AttributesSpec-${Dispatchers.DefaultBlockingDispatcherId}")
     }
 
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcher =
         Source
-          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           // this already introduces an async boundary here
           .map(identity)
           // this is now just for map since there already is one in-between stage and map
@@ -315,13 +318,13 @@ class AttributesSpec
           .runWith(Sink.head)
           .futureValue
 
-      dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+      dispatcher should startWith(s"AttributesSpec-${Dispatchers.DefaultBlockingDispatcherId}")
     }
 
     "change dispatcher when defined directly on top of the async boundary" in {
       val dispatcher =
         Source
-          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           .async
           .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(Sink.head)
@@ -333,7 +336,7 @@ class AttributesSpec
     "change dispatcher when defined on the async call" in {
       val dispatcher =
         Source
-          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           .async("my-dispatcher")
           .runWith(Sink.head)
           .futureValue
@@ -411,7 +414,7 @@ class AttributesSpec
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcherF =
         javadsl.Source
-          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           // this already introduces an async boundary here
           .detach
           // this is now just for map since there already is one in-between stage and map
@@ -421,13 +424,13 @@ class AttributesSpec
 
       val dispatcher = dispatcherF.toCompletableFuture.get(remainingOrDefault.toMillis, TimeUnit.MILLISECONDS)
 
-      dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+      dispatcher should startWith(s"AttributesSpec-${Dispatchers.DefaultBlockingDispatcherId}")
     }
 
     "change dispatcher when defined directly on top of the async boundary" in {
       val dispatcherF =
         javadsl.Source
-          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           .async
           .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(javadsl.Sink.head(), materializer)
@@ -507,12 +510,12 @@ class AttributesSpec
       try {
         val dispatcher =
           Source
-            .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+            .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
             .runWith(Sink.head)(myDispatcherMaterializer)
             .futureValue
 
         // should not override stage specific dispatcher
-        dispatcher should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+        dispatcher should startWith("AttributesSpec-akka.actor.default-blocking-io-dispatcher")
 
       } finally {
         myDispatcherMaterializer.shutdown()
@@ -565,7 +568,7 @@ class AttributesSpec
       val threadName =
         Source.fromGraph(new ThreadNameSnitchingStage(None).addAttributes(Attributes(IODispatcher))).runWith(Sink.head)
 
-      threadName.futureValue should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+      threadName.futureValue should startWith("AttributesSpec-akka.actor.default-blocking-io-dispatcher")
     }
 
     "allow for specifying a custom default io-dispatcher" in {
@@ -585,19 +588,6 @@ class AttributesSpec
       } finally {
         TestKit.shutdownActorSystem(system)
       }
-    }
-
-    "resolve the dispatcher attribute" in {
-      import ActorAttributes._
-
-      Dispatcher.resolve(dispatcher("my-dispatcher"), materializer.settings) should be("my-dispatcher")
-    }
-
-    "resolve the blocking io dispatcher attribute" in {
-      import ActorAttributes._
-
-      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings) should be(
-        "akka.stream.default-blocking-io-dispatcher")
     }
   }
 

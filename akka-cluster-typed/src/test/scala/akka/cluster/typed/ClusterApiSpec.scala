@@ -4,6 +4,7 @@
 
 package akka.cluster.typed
 
+import akka.actor.Address
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
@@ -18,11 +19,12 @@ object ClusterApiSpec {
   val config =
     ConfigFactory.parseString("""
       akka.actor.provider = cluster
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
       akka.actor {
         serialize-messages = off
         allow-java-serialization = off
@@ -41,6 +43,12 @@ class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) wi
   val untypedSystem1 = system.toUntyped
 
   "A typed Cluster" must {
+
+    "fail fast in a join attempt if invalid chars are in host names, e.g. docker host given name" in {
+      val address = Address("akka", "sys", Some("in_valid"), Some(0))
+      intercept[IllegalArgumentException](Join(address))
+      intercept[IllegalArgumentException](JoinSeedNodes(scala.collection.immutable.Seq(address)))
+    }
 
     "join a cluster and observe events from both sides" in {
 

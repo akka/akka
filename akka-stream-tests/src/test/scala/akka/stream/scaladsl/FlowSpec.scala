@@ -13,6 +13,7 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream._
 import akka.testkit.TestDuration
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -22,7 +23,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 object FlowSpec {
-  class Fruit
+  class Fruit extends Serializable
   class Apple extends Fruit
   class Orange extends Fruit
   val fruits = () =>
@@ -33,6 +34,7 @@ object FlowSpec {
 
 }
 
+@silent // tests type assignments compile
 class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 
@@ -67,13 +69,13 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       new ChainSetup(identity, settings, toPublisher) {
         upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
         downstreamSubscription.request(1)
-        upstream.expectNoMsg(100.millis)
+        upstream.expectNoMessage(100.millis)
         downstreamSubscription.request(2)
-        upstream.expectNoMsg(100.millis)
+        upstream.expectNoMessage(100.millis)
         upstreamSubscription.sendNext("a")
         downstream.expectNext("a")
         upstream.expectRequest(upstreamSubscription, 1)
-        upstream.expectNoMsg(100.millis)
+        upstream.expectNoMessage(100.millis)
         upstreamSubscription.sendNext("b")
         upstreamSubscription.sendNext("c")
         upstreamSubscription.sendNext("d")
@@ -150,7 +152,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       flowOut.subscribe(c1)
       val sub1 = c1.expectSubscription()
       sub1.request(3)
-      c1.expectNoMsg(200.millis)
+      c1.expectNoMessage(200.millis)
 
       val source: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
       source.subscribe(flowIn)
@@ -169,7 +171,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       flowOut.subscribe(c1)
       val sub1 = c1.expectSubscription()
       sub1.request(3)
-      c1.expectNoMsg(200.millis)
+      c1.expectNoMessage(200.millis)
 
       val source: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
       source.subscribe(flowIn)
@@ -321,7 +323,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         upstream.expectRequest(upstreamSubscription, 1)
         upstreamSubscription.sendNext("element2")
 
-        downstream.expectNoMsg(1.second)
+        downstream.expectNoMessage(1.second)
         downstream2Subscription.request(1)
         downstream2.expectNext("firstElement")
 
@@ -349,13 +351,13 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element3")
         // downstream2 has not requested anything, fan-out buffer 2
-        downstream.expectNoMsg(100.millis.dilated)
+        downstream.expectNoMessage(100.millis.dilated)
 
         downstream2Subscription.request(2)
         downstream.expectNext("element3")
         downstream2.expectNext("element1")
         downstream2.expectNext("element2")
-        downstream2.expectNoMsg(100.millis.dilated)
+        downstream2.expectNoMessage(100.millis.dilated)
 
         upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element4")
@@ -395,7 +397,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
 
         upstreamSubscription.sendNext("a3")
         downstream.expectNext("a3")
-        downstream2.expectNoMsg(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
+        downstream2.expectNoMessage(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
         downstream2Subscription.request(1)
         downstream2.expectNext("a3")
@@ -429,9 +431,9 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         upstreamSubscription.sendNext("element3")
         upstreamSubscription.expectRequest(1)
 
-        downstream.expectNoMsg(200.millis.dilated)
-        downstream2.expectNoMsg(200.millis.dilated)
-        upstream.expectNoMsg(200.millis.dilated)
+        downstream.expectNoMessage(200.millis.dilated)
+        downstream2.expectNoMessage(200.millis.dilated)
+        upstream.expectNoMessage(200.millis.dilated)
 
         // should unblock fanoutbox
         downstream2Subscription.cancel()
@@ -469,7 +471,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         downstream.expectNext("a3")
         downstream.expectComplete()
 
-        downstream2.expectNoMsg(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
+        downstream2.expectNoMessage(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
         downstream2Subscription.request(1)
         downstream2.expectNext("a3")

@@ -9,12 +9,14 @@ import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.cluster.InternalClusterAction.CompatibleConfig
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.RoundRobinPool
+import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
 
 import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
+@silent
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -39,19 +41,19 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
 
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Joining, Set.empty[String])
-  val b1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
-  val d1 = TestMember(Address("akka.tcp", "sys", "d", 2552), Exiting, Set("r1"), "foo")
-  val e1 = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, Set("r3"))
-  val f1 = TestMember(Address("akka.tcp", "sys", "f", 2552), Removed, Set("r3"), "foo")
+  val a1 = TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String])
+  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"))
+  val c1 = TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
+  val d1 = TestMember(Address("akka", "sys", "d", 2552), Exiting, Set("r1"), "foo")
+  val e1 = TestMember(Address("akka", "sys", "e", 2552), Down, Set("r3"))
+  val f1 = TestMember(Address("akka", "sys", "f", 2552), Removed, Set("r3"), "foo")
 
   "ClusterMessages" must {
 
     "be serializable" in {
-      val address = Address("akka.tcp", "system", "some.host.org", 4711)
+      val address = Address("akka", "system", "some.host.org", 4711)
       val uniqueAddress = UniqueAddress(address, 17L)
-      val address2 = Address("akka.tcp", "system", "other.host.org", 4711)
+      val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
       checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
       checkSerialization(ClusterUserAction.Leave(address))
@@ -59,8 +61,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(InternalClusterAction.InitJoin(ConfigFactory.empty))
       checkSerialization(InternalClusterAction.InitJoinAck(address, CompatibleConfig(ConfigFactory.empty)))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
-      checkSerialization(ClusterHeartbeatSender.Heartbeat(address))
-      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress))
+      checkSerialization(ClusterHeartbeatSender.Heartbeat(address, -1, -1))
+      checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress, -1, -1))
       checkSerialization(InternalClusterAction.ExitingConfirmed(uniqueAddress))
 
       val node1 = VectorClock.Node("node1")
@@ -103,7 +105,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       // we must use the old singleton class name so that the other side will see an InitJoin
       // but discard the config as it does not know about the config check
       val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        Address("akka", "cluster", "127.0.0.1", 2552),
         InternalClusterAction.UncheckedConfig)
       val serializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
 
@@ -114,7 +116,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
 
     "serialize to wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
       val initJoinAck = InternalClusterAction.InitJoinAck(
-        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        Address("akka", "cluster", "127.0.0.1", 2552),
         InternalClusterAction.ConfigCheckUnsupportedByJoiningNode)
       val bytes = serializer.toBinary(initJoinAck)
 
@@ -148,8 +150,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
             pool.settings.totalInstances should ===(123)
             pool.settings.maxInstancesPerNode should ===(345)
             pool.settings.allowLocalRoutees should ===(true)
-            @silent
-            val _ = pool.settings.useRole should ===(Some("role ABC"))
+            pool.settings.useRole should ===(Some("role ABC"))
             pool.settings.useRoles should ===(Set("role ABC"))
         }
       } finally {
@@ -169,6 +170,47 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       join.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
     }
   }
+
+  "Rolling upgrades for heart beat message changes in 2.5.23" must {
+    // FIXME, add issue for serializing this as the new message type
+
+    "serialize heart beats as Address to support versions prior or 2.5.23" in {
+      serializer.manifest(ClusterHeartbeatSender.Heartbeat(a1.address, -1, -1)) should ===(
+        ClusterMessageSerializer.HeartBeatManifestPre2523)
+    }
+
+    "serialize heart beat responses as UniqueAddress to support versions prior to 2.5.23" in {
+      serializer.manifest(ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, -1, -1)) should ===(
+        ClusterMessageSerializer.HeartBeatRspManifest2523)
+    }
+
+    "be able to deserialize HeartBeat protobuf message" in {
+      val hbProtobuf = cm.Heartbeat
+        .newBuilder()
+        .setFrom(serializer.addressToProto(a1.address))
+        .setSequenceNr(1)
+        .setCreationTime(2)
+        .build()
+        .toByteArray
+
+      serializer.fromBinary(hbProtobuf, ClusterMessageSerializer.HeartBeatManifest) should ===(
+        ClusterHeartbeatSender.Heartbeat(a1.address, 1, 2))
+    }
+
+    "be able to deserialize HeartBeatRsp probuf message" in {
+      val hbrProtobuf = cm.HeartBeatResponse
+        .newBuilder()
+        .setFrom(serializer.uniqueAddressToProto(a1.uniqueAddress))
+        .setSequenceNr(1)
+        .setCreationTime(2)
+        .build()
+        .toByteArray
+
+      serializer.fromBinary(hbrProtobuf, ClusterMessageSerializer.HeartBeatRspManifest) should ===(
+        ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, 1, 2))
+    }
+  }
+
   "Cluster router pool" must {
     "be serializable with no role" in {
       checkSerialization(

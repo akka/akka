@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
@@ -222,10 +222,6 @@ final class Source[+Out, +Mat](
       combineRest(2, rest.iterator)
     })
 
-  /**
-   * API MAY CHANGE
-   */
-  @ApiMayChange
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 }
@@ -294,6 +290,14 @@ object Source {
       // composite source shaped graph
       new Source(LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right), other.shape)
   }
+
+  /**
+   * Defers the creation of a [[Source]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Source]] returned by this method.
+   */
+  def setup[T, M](factory: (ActorMaterializer, Attributes) => Source[T, M]): Source[T, Future[M]] =
+    Source.fromGraph(new SetupSourceStage(factory))
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -535,9 +539,9 @@ object Source {
    * this Source; as such, it is never safe to assume the downstream will always generate demand.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
-   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately,
    * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
-   * already buffered elements will be signaled before siganling completion.
+   * already buffered elements will be signaled before signaling completion.
    * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
@@ -560,6 +564,43 @@ object Source {
       case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
       case akka.actor.Status.Success                        => CompletionStrategy.Draining
     }, { case akka.actor.Status.Failure(cause)              => cause }, bufferSize, overflowStrategy)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def actorRefWithAck[T](
+      ackTo: Option[ActorRef],
+      ackMessage: Any,
+      completionMatcher: PartialFunction[Any, CompletionStrategy],
+      failureMatcher: PartialFunction[Any, Throwable]): Source[T, ActorRef] = {
+    Source.fromGraph(new ActorRefBackpressureSource(ackTo, ackMessage, completionMatcher, failureMatcher))
+  }
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
+   * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
+   *
+   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
+   * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
+   * already buffered element will be signaled before siganling completion.
+   *
+   * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
+   * actor reference. In case the Actor is still draining its internal buffer (after having received
+   * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
+   * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   */
+  def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
+    actorRefWithAck(None, ackMessage, {
+      case akka.actor.Status.Success(s: CompletionStrategy) => s
+      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+      case akka.actor.Status.Success                        => CompletionStrategy.Draining
+    }, { case akka.actor.Status.Failure(cause)              => cause })
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.

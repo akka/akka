@@ -8,7 +8,6 @@ import java.time.Duration
 import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
@@ -38,7 +37,6 @@ import scala.concurrent.ExecutionContextExecutor
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 trait ActorContext[T] extends TypedActorContext[T] {
   // this must be a pure interface, i.e. only abstract methods
 

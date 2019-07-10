@@ -316,8 +316,6 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
     throw new IllegalArgumentException(
       "# is a fragment separator and is not legal in ActorPath names: [%s]".format(name))
 
-  def this(parent: ActorPath, name: String) = this(parent, name, ActorCell.undefinedUid)
-
   override def address: Address = root.address
 
   override def /(child: String): ActorPath = {
@@ -384,7 +382,7 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
   private def addressStringLengthDiff(address: Address): Int = {
     val r = root
     if (r.address.host.isDefined) 0
-    else (address.toString.length - r.address.toString.length)
+    else address.toString.length - r.address.toString.length
   }
 
   /**

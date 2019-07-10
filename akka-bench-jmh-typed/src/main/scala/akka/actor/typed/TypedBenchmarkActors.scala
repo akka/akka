@@ -5,7 +5,6 @@
 package akka.actor.typed
 
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.typed.scaladsl.ActorContext

@@ -455,7 +455,7 @@ class TraversalBuilderSpec extends AkkaSpec {
       val sub = TestSubscriber.probe[Int]()
       val graph = Source.repeat(1).take(10).toMat(Sink.asPublisher(false))(Keep.right)
 
-      val pub = graph.run().subscribe(sub)
+      graph.run().subscribe(sub)
 
       sub.request(10)
       sub.expectNextN(List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))

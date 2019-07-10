@@ -10,13 +10,19 @@ import akka.routing._
 import akka.util.WildcardIndex
 import com.github.ghik.silencer.silent
 import com.typesafe.config._
-
 import scala.annotation.tailrec
+
+import akka.annotation.InternalApi
 
 object Deploy {
   final val NoDispatcherGiven = ""
   final val NoMailboxGiven = ""
   val local = Deploy(scope = LocalScope)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final val DispatcherSameAsParent = ".."
 }
 
 /**
@@ -135,7 +141,7 @@ case object NoScopeGiven extends NoScopeGiven {
  */
 private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   private val resizerEnabled: Config = ConfigFactory.parseString("resizer.enabled=on")
   private val deployments = new AtomicReference(WildcardIndex[Deploy]())
@@ -153,12 +159,11 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       .toMap
 
   config.root.asScala
-    .map {
+    .flatMap {
       case ("default", _)             => None
       case (key, value: ConfigObject) => parseConfig(key, value.toConfig)
       case _                          => None
     }
-    .flatten
     .foreach(deploy)
 
   def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1))
@@ -216,18 +221,18 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       val args2 = List(classOf[Config] -> deployment2, classOf[DynamicAccess] -> dynamicAccess)
       dynamicAccess
         .createInstanceFor[RouterConfig](fqn, args1)
-        .recover({
+        .recover {
           case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
           case e: NoSuchMethodException =>
             dynamicAccess
               .createInstanceFor[RouterConfig](fqn, args2)
-              .recover({
+              .recover {
                 case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
                 case _                                                      => throwCannotInstantiateRouter(args2, e)
-              })
+              }
               .get
           case e => throwCannotInstantiateRouter(args2, e)
-        })
+        }
         .get
     }
 

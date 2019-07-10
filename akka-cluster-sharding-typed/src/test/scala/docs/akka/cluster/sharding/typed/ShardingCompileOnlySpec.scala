@@ -12,6 +12,7 @@ import com.github.ghik.silencer.silent
 import docs.akka.persistence.typed.BlogPostExample
 import docs.akka.persistence.typed.BlogPostExample.BlogCommand
 
+@silent
 object ShardingCompileOnlySpec {
 
   val system = ActorSystem(Behaviors.empty, "Sharding")
@@ -71,7 +72,6 @@ object ShardingCompileOnlySpec {
   case object Idle extends CounterCommand
   case object GoodByeCounter extends CounterCommand
 
-  @silent
   def counter2(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[CounterCommand] = {
     Behaviors.setup { ctx =>
       def become(value: Int): Behavior[CounterCommand] =
@@ -99,5 +99,31 @@ object ShardingCompileOnlySpec {
     Entity(typeKey = TypeKey, createBehavior = ctx => counter2(ctx.shard, ctx.entityId))
       .withStopMessage(GoodByeCounter))
   //#counter-passivate
+
+  def counterWithResponseToShardedActor(): Unit = {
+
+    //#sharded-response
+    // a sharded actor that needs counter updates
+    trait Command
+    final case class NewCount(count: Long) extends Command
+    val entityTypeKey: EntityTypeKey[Command] = EntityTypeKey[Command]("example-sharded-response")
+
+    // a sharded counter that sends responses to another sharded actor
+    trait CounterCommand
+    case object Increment extends CounterCommand
+    final case class GetValue(replyToEntityId: String) extends CounterCommand
+
+    def counter(value: Long): Behavior[CounterCommand] =
+      Behaviors.receiveMessage[CounterCommand] {
+        case Increment =>
+          counter(value + 1)
+        case GetValue(replyToEntityId) =>
+          sharding.entityRefFor(entityTypeKey, replyToEntityId) ! NewCount(value)
+          Behaviors.same
+      }
+    //#sharded-response
+
+    counter(1)
+  }
 
 }

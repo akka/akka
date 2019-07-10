@@ -49,6 +49,7 @@ class Member private[cluster] (
   /**
    * Java API
    */
+  @silent
   def getRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
 

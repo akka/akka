@@ -24,7 +24,7 @@ import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.BalancingPool
 import akka.routing.TailChoppingGroup
 import akka.routing.TailChoppingPool
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 object RouterDocSpec {
 
@@ -210,7 +210,7 @@ akka.actor.deployment {
   /parent/remotePool {
     router = round-robin-pool
     nr-of-instances = 10
-    target.nodes = ["akka.tcp://app@10.0.0.2:2552", "akka.tcp://app@10.0.0.3:2552"]
+    target.nodes = ["akka://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
   }
 }
 #//#config-remote-round-robin-pool
@@ -230,9 +230,9 @@ akka.actor.deployment {
   /parent/remoteGroup {
     router = round-robin-group
     routees.paths = [
-      "akka.tcp://app@10.0.0.1:2552/user/workers/w1",
-      "akka.tcp://app@10.0.0.2:2552/user/workers/w1",
-      "akka.tcp://app@10.0.0.3:2552/user/workers/w1"]
+      "akka://app@10.0.0.1:2552/user/workers/w1",
+      "akka://app@10.0.0.2:2552/user/workers/w1",
+      "akka://app@10.0.0.3:2552/user/workers/w1"]
   }
 }
 #//#config-remote-round-robin-group
@@ -596,9 +596,8 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     //#remoteRoutees
     import akka.actor.{ Address, AddressFromURIString }
     import akka.remote.routing.RemoteRouterConfig
-    val addresses = Seq(
-      Address("akka.tcp", "remotesys", "otherhost", 1234),
-      AddressFromURIString("akka.tcp://othersys@anotherhost:1234"))
+    val addresses =
+      Seq(Address("akka", "remotesys", "otherhost", 1234), AddressFromURIString("akka://othersys@anotherhost:1234"))
     val routerRemote = system.actorOf(RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
     //#remoteRoutees
   }

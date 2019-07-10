@@ -56,7 +56,7 @@ Java
 ## Use with Actors
 
 There are generally two ways of getting a reply from an @scala[`Actor`]@java[`AbstractActor`]: the first is by a sent message (@scala[`actor ! msg`]@java[`actorRef.tell(msg, sender)`]),
-which only works if the original sender was an @scala[`Actor`]@java[`AbstractActor`]) and the second is through a `Future`.
+which only works if the original sender was an @scala[`Actor`]@java[`AbstractActor`] and the second is through a `Future`.
 
 Using @scala[an `Actor`'s `?`]@java[the `ActorRef`'s `ask`] method to send a message will return a `Future`.
 To wait for and retrieve the actual result the simplest method is:

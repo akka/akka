@@ -17,6 +17,7 @@ import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.persistence.typed.*;
+import akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -29,14 +30,12 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.Function0;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
 import static akka.Done.done;
-import static akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec.*;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -44,7 +43,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   public static final Config config =
       ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]")
-          .withFallback(conf().withFallback(ConfigFactory.load()));
+          .withFallback(EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load()));
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -191,9 +190,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
     private final ActorContext<Command> ctx;
 
-    CounterBehavior(PersistenceId persistentId, ActorContext<Command> ctx) {
+    CounterBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
       super(
-          persistentId,
+          persistenceId,
           SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
       this.ctx = ctx;
     }
@@ -413,7 +412,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
-                  public SignalHandler signalHandler() {
+                  public SignalHandler<State> signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             SnapshotCompleted.class,
@@ -462,7 +461,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
     c.tell(StopThenLog.INSTANCE);
-    probe.expectTerminated(c, Duration.ofSeconds(1));
+    probe.expectTerminated(c);
   }
 
   @Test
@@ -474,7 +473,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                 new CounterBehavior(new PersistenceId("c5"), ctx) {
 
                   @Override
-                  public SignalHandler signalHandler() {
+                  public SignalHandler<State> signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             PostStop.instance(),
@@ -494,12 +493,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
-        new BehaviorInterceptor<Command, Command>() {
-
-          @Override
-          public Class<? extends Command> interceptMessageType() {
-            return Command.class;
-          }
+        new BehaviorInterceptor<Command, Command>(Command.class) {
 
           @Override
           public Behavior<Command> aroundReceive(
@@ -516,7 +510,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
           }
         };
     ActorRef<Command> c =
-        testKit.spawn(Behaviors.intercept(tap, counter(new PersistenceId("tap1"))));
+        testKit.spawn(Behaviors.intercept(() -> tap, counter(new PersistenceId("tap1"))));
     c.tell(Increment.INSTANCE);
     interceptProbe.expectMessage(Increment.INSTANCE);
     signalProbe.expectNoMessage();
@@ -589,15 +583,47 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   // event-wrapper
-  class WrapperEventAdapter extends EventAdapter<Incremented, Wrapper> {
+  public static class Wrapper<T> implements Serializable {
+    private final T t;
+
+    public Wrapper(T t) {
+      this.t = t;
+    }
+
+    public T getT() {
+      return t;
+    }
+
     @Override
-    public Wrapper toJournal(Incremented incremented) {
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Wrapper<?> wrapper = (Wrapper<?>) o;
+
+      return t.equals(wrapper.t);
+    }
+
+    @Override
+    public int hashCode() {
+      return t.hashCode();
+    }
+  }
+
+  class WrapperEventAdapter extends EventAdapter<Incremented, Wrapper<Incremented>> {
+    @Override
+    public Wrapper<Incremented> toJournal(Incremented incremented) {
       return new Wrapper<>(incremented);
     }
 
     @Override
-    public Incremented fromJournal(Wrapper wrapper) {
-      return (Incremented) wrapper.t();
+    public String manifest(Incremented event) {
+      return "";
+    }
+
+    @Override
+    public EventSeq<Incremented> fromJournal(Wrapper<Incremented> wrapper, String manifest) {
+      return EventSeq.single(wrapper.getT());
     }
   }
   // event-wrapper
@@ -635,7 +661,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<Object> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,
@@ -716,7 +742,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<String> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,

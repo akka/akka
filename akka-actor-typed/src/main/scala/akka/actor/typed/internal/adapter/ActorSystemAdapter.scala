@@ -2,26 +2,36 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed
-package internal
-package adapter
+package akka.actor.typed.internal.adapter
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor
+import scala.compat.java8.FutureConverters
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
 import akka.Done
+import akka.actor
+import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
-import akka.{ actor => untyped }
-
-import scala.concurrent.ExecutionContextExecutor
-import akka.util.Timeout
-
-import scala.concurrent.Future
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
+import akka.actor.typed.Dispatchers
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
+import akka.actor.typed.Settings
+import akka.actor.typed.internal.ActorRefImpl
+import akka.actor.typed.internal.ExtensionsImpl
+import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.internal.PropsImpl.DispatcherDefault
+import akka.actor.typed.internal.PropsImpl.DispatcherFromConfig
+import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
+import akka.actor.typed.internal.SystemMessage
 import akka.annotation.InternalApi
-
-import scala.compat.java8.FutureConverters
-import akka.actor.ActorRefProvider
+import akka.util.Timeout
+import akka.{ actor => untyped }
 import org.slf4j.{ Logger, LoggerFactory }
 
 /**
@@ -34,8 +44,8 @@ import org.slf4j.{ Logger, LoggerFactory }
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untypedSystem: untyped.ActorSystemImpl)
     extends ActorSystem[T]
     with ActorRef[T]
-    with internal.ActorRefImpl[T]
-    with internal.InternalRecipientRef[T]
+    with ActorRefImpl[T]
+    with InternalRecipientRef[T]
     with ExtensionsImpl {
 
   // note that the untypedSystem may not be initialized yet here, and that is fine because
@@ -52,7 +62,7 @@ import org.slf4j.{ Logger, LoggerFactory }
   // impl ActorRefImpl
   override def isLocal: Boolean = true
   // impl ActorRefImpl
-  override def sendSystem(signal: internal.SystemMessage): Unit = sendSystemMessage(untypedSystem.guardian, signal)
+  override def sendSystem(signal: SystemMessage): Unit = sendSystemMessage(untypedSystem.guardian, signal)
 
   // impl InternalRecipientRef
   override def provider: ActorRefProvider = untypedSystem.provider
@@ -71,15 +81,16 @@ import org.slf4j.{ Logger, LoggerFactory }
       selector match {
         case DispatcherDefault(_)         => untypedSystem.dispatcher
         case DispatcherFromConfig(str, _) => untypedSystem.dispatchers.lookup(str)
+        case DispatcherSameAsParent(_)    => untypedSystem.dispatcher
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override val log: Logger = LoggerFactory.getLogger(getClass)
+  override val log: Logger = LoggerFactory.getLogger(classOf[ActorSystem[_]])
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
-  override def scheduler: akka.actor.Scheduler = untypedSystem.scheduler
+  override val scheduler: Scheduler = new SchedulerAdapter(untypedSystem.scheduler)
   override def settings: Settings = new Settings(untypedSystem.settings)
   override def startTime: Long = untypedSystem.startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = untypedSystem.threadFactory

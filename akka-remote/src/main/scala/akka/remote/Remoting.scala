@@ -31,6 +31,7 @@ import akka.util.OptionVal
 
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
+import akka.annotation.InternalStableApi
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 
@@ -146,6 +147,8 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
+  private implicit val ec = system.dispatchers.lookup(Dispatcher)
+
   val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
 
   override def localAddressForRemote(remote: Address): Address =
@@ -167,7 +170,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           endpointManager = None
         }
 
-        import system.dispatcher
         (manager ? ShutdownAndFlush)
           .mapTo[Boolean]
           .andThen {
@@ -252,7 +254,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
     case Some(manager) =>
-      import system.dispatcher
       implicit val timeout = CommandAckTimeout
       (manager ? ManagementCommand(cmd)).map { case ManagementCommandAck(status) => status }
     case None =>
@@ -291,6 +292,7 @@ private[remote] object EndpointManager {
   final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
+  @InternalStableApi
   final case class Send(
       message: Any,
       senderOption: OptionVal[ActorRef],
@@ -497,7 +499,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
   val pruneInterval: FiniteDuration = (settings.RetryGateClosedFor * 2).max(1.second).min(10.seconds)
 
   val pruneTimerCancellable: Cancellable =
-    context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
+    context.system.scheduler.scheduleWithFixedDelay(pruneInterval, pruneInterval, self, Prune)
 
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()

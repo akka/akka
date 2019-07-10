@@ -53,6 +53,12 @@ private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
   def getOrElse[B >: A](default: B): B =
     if (x == null) default else x
 
+  /**
+   * Convert to `scala.Option`
+   */
+  def toOption: Option[A] =
+    Option(x)
+
   def contains[B >: A](it: B): Boolean =
     x != null && x == it
 

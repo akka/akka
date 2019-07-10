@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigFactory
 object HandshakeRetrySpec {
   val commonConfig = ConfigFactory.parseString(s"""
      akka.remote.artery.advanced.handshake-timeout = 10s
-     akka.remote.artery.advanced.image-liveness-timeout = 7s
+     akka.remote.artery.advanced.aeron.image-liveness-timeout = 7s
   """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
