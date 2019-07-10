@@ -341,7 +341,7 @@ object Receptionist extends ExtensionId[Receptionist] {
 
     /**
      * JavaAPI: `true` only if new services were added or removed and `false` if this listing is
-     * only about reachability changes. Useful for subscribers that only care about [[#getAllServiceInstances]].
+     * only about reachability changes. Useful for subscribers only concerned with [[#getAllServiceInstances]].
      *
      * In a non-clustered `ActorSystem` this will be `true` for all listings.
      * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
