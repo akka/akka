@@ -124,3 +124,69 @@ Some reasons why you may want to use the functional style:
 
 @@@
 
+## Passing around too many parameters
+
+One thing you will quickly run into when using the functional style is that you need to pass around many parameters.
+
+Let's add `name` parameter and timers to the previous `Counter` example. A first approach would be to just add those
+as separate parameters:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #fun-style-setup-params1 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #fun-style-setup-params1 }
+
+Ouch, that doesn't look good. More things may be needed, such as stashing or application specific "constructor"
+parameters. As you can imagine, that will be too much boilerplate.
+
+As a first step we can place all these parameters in a class so that we at least only have to pass around one thing.
+Still good to have the "changing" state, the @scala[`n: Int`]@java[`final int n`] here, as a separate parameter.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #fun-style-setup-params2 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #fun-style-setup-params2 }
+
+That's better. Only one thing to carry around and easy to add more things to it without rewriting everything.
+@scala[Note that we also placed the `ActorContext` in the `Setup` class, and therefore switched from
+`Behaviors.receive` to `Behaviors.receiveMessage` since we already have access to the `context`.]
+
+It's still rather annoying to have to pass the same thing around everywhere.
+
+We can do better by introducing an enclosing class, even though it's still using the functional style.
+The "constructor" parameters can be @scala[immutable]@java[`final`] instance fields and can be accessed from
+member methods.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #fun-style-setup-params3 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #fun-style-setup-params3 }
+
+That's nice. One thing to be cautious with here is that it's important that you create a new instance for
+each spawned actor, since those parameters must not be shared between different actor instances. That comes natural
+when creating the instance from `Behaviors.setup` as in the above example. Having a
+@scala[`apply` factory method in the companion object and making the constructor private is recommended.]
+@java[static `create` factory method and making the constructor private is highly recommended.]
+
+This can also be useful when testing the behavior by creating a test subclass that overrides certain methods in the
+class. The test would create the instance without the @scala[`apply` factory method]@java[static `create` factory method].
+Then you need to relax the visibility constraints of the constructor and methods.
+
+It's not recommended to place mutable state and @scala[`var` members]@java[non-final members] in the enclosing class.
+It would be correct from an actor thread-safety perspective as long as the same instance of the enclosing class
+is not shared between different actor instances, but if that is what you need you should rather use the
+object-oriented style with the `AbstractBehavior` class.
+
+@@@ div {.group-scala}
+
+Similar can be achieved without an enclosing class by placing the `def counter` inside the `Behaviors.setup`
+block. That works fine, but for more complex behaviors it can be better to structure the methods in a class.
+For completeness, here is how it would look like:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #fun-style-setup-params4 }
+
+@@@
