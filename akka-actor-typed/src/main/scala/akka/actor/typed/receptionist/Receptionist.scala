@@ -89,9 +89,9 @@ abstract class ServiceKey[T] extends AbstractServiceKey { key =>
    *   case MyServiceKey.Listing(reachable) =>
    * ```
    *
-   * In a non-clustered actorsystem this will always be all registered instances
-   * for a service key. For a clustered environment services on nodes that has
-   * been observed unreachable is not among these (note that they could have
+   * In a non-clustered `ActorSystem` this will always be all registered instances
+   * for a service key. For a clustered environment services on nodes that have
+   * been observed unreachable are not among these (note that they could have
    * become unreachable between this message being sent and the receiving actor
    * processing it).
    */
@@ -331,8 +331,8 @@ object Receptionist extends ExtensionId[Receptionist] {
     def getAllServiceInstances[T](key: ServiceKey[T]): java.util.Set[ActorRef[T]]
 
     /**
-     * Scala API: `true` only if new services was added or removed and `false` if this listing is
-     * only about reachability changes. Useful for subscribers that only cares about [[#allServiceInstances]].
+     * Scala API: `true` only if new services were added or removed and `false` if this listing is
+     * only about reachability changes. Useful for subscribers only concerned with [[#allServiceInstances]].
      *
      * In a non-clustered `ActorSystem` this will be `true` for all listings.
      * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
@@ -340,8 +340,8 @@ object Receptionist extends ExtensionId[Receptionist] {
     def allServiceInstancesChanged: Boolean
 
     /**
-     * JavaAPI: `true` only if new services was added or removed and `false` if this listing is
-     * only about reachability changes. Useful for subscribers that only cares about [[#getAllServiceInstances]].
+     * JavaAPI: `true` only if new services were added or removed and `false` if this listing is
+     * only about reachability changes. Useful for subscribers that only care about [[#getAllServiceInstances]].
      *
      * In a non-clustered `ActorSystem` this will be `true` for all listings.
      * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
