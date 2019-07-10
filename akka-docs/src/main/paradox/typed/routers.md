@@ -43,8 +43,8 @@ Java
 The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
-Since the receptionist is used this means the group router is cluster aware out of the box and will pick up routees
-registered on any node in the cluster (there is currently no logic to avoid routing to unreachable nodes, see [#26355](https://github.com/akka/akka/issues/26355)).
+Since the receptionist is used this means the group router is cluster aware out of the box and will route to 
+registered actors on any node in the cluster that is reachable.
 
 It also means that the set of routees is eventually consistent, and that immediately when the group router is started
 the set of routees it knows about is empty. When the set of routees is empty messages sent to the router is forwarded

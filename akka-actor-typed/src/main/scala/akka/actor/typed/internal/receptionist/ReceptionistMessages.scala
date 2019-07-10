@@ -4,8 +4,6 @@
 
 package akka.actor.typed.internal.receptionist
 
-import java.util
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
@@ -68,7 +66,7 @@ private[akka] object ReceptionistMessages {
       _allServiceInstances.asInstanceOf[Set[ActorRef[M]]]
     }
 
-    override def getAllServiceInstances[M](key: ServiceKey[M]): util.Set[ActorRef[M]] =
+    override def getAllServiceInstances[M](key: ServiceKey[M]): java.util.Set[ActorRef[M]] =
       allServiceInstances(key).asJava
 
     override def getAllServiceInstancesChanged: Boolean = allServiceInstancesChanged
