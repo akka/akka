@@ -14,7 +14,10 @@ import akka.dispatch.BoundedNodeMessageQueue
 import akka.dispatch.MessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
 import akka.testkit.EventFilter
+import akka.testkit.TestLatch
 import org.scalatest.WordSpecLike
+
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
@@ -62,22 +65,25 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
     }
 
     "set capacity on a bounded mailbox" in {
-      case object Continue
-      val continueProbe = createTestProbe[Continue.type]()
+      val latch = TestLatch(1)
       val actor = spawn(Behaviors.receiveMessage[String] {
         case "one" =>
-          continueProbe.receiveMessage(10.seconds)
+          // block here so we can fill mailbox up
+          Await.ready(latch, 10.seconds)
           Behaviors.same
         case _ =>
           Behaviors.same
       }, MailboxSelector.bounded(2))
       actor ! "one" // actor will block here
       actor ! "two"
-      actor ! "three"
-      EventFilter.info(pattern = ".*\\[1\\] dead letters encountered.*", occurrences = 1).intercept {
-        actor ! "four" // doesn't fit in mailbox
+      EventFilter.warning(start = "received dead letter:", occurrences = 1).intercept {
+        // one or both of these doesn't fit in mailbox
+        // depending on race with how fast actor consumes
+        actor ! "three"
+        actor ! "four"
       }
-      continueProbe.ref ! Continue
+      latch.open()
+      Thread.sleep(200)
     }
 
     "select an arbitrary mailbox from config" in {

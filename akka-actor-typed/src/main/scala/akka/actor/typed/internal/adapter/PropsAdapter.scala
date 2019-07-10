@@ -14,6 +14,7 @@ import akka.actor.typed.MailboxSelector
 import akka.actor.typed.Props
 import akka.actor.typed.internal.PropsImpl._
 import akka.annotation.InternalApi
+import akka.dispatch.Mailboxes
 
 /**
  * INTERNAL API
@@ -35,7 +36,7 @@ import akka.annotation.InternalApi
       case _: DefaultMailboxSelector           => p1
       case BoundedMailboxSelector(capacity, _) =>
         // specific support in untyped Mailboxes
-        p1.withMailbox(s"typed-bounded:$capacity")
+        p1.withMailbox(s"${Mailboxes.BoundedCapacityPrefix}$capacity")
       case MailboxFromConfigSelector(path, _) =>
         props.withMailbox(path)
     }

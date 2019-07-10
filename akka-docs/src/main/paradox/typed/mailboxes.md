@@ -16,7 +16,8 @@ Each actor in Akka has a `Mailbox`, this is where the messages are enqueued befo
 
 By default an unbounded mailbox is used, this means any number of messages can be enqueued into the mailbox. 
 
-The unbounded mailbox is a convenient default but in a scenario where messages are constantly added in a higher rate than the actor can process them, this can lead to running out of memory.
+The unbounded mailbox is a convenient default but in a scenario where messages are added to the mailbox faster
+than the actor can process them, this can lead to the application running out of memory.
 For this reason a bounded mailbox can be specified, the bounded mailbox will pass new messages to `deadletters` when the
 mailbox is full.
 
@@ -31,3 +32,9 @@ Scala
 
 Java
 :  @@snip [MailboxDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/MailboxDocTest.java) { #select-mailbox }
+
+`fromConfig` takes an absolute config path to a block defining the dispatcher in the config file like this:
+
+@@snip [MailboxDocSpec.scala](/akka-actor-typed-tests/src/test/resources/mailbox-config-sample.conf) { }
+
+For more details on advanced mailbox config and custom mailbox implementations, see @ref[Classic Mailboxes](../mailboxes.md#builtin-mailbox-implementations).
