@@ -240,7 +240,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         case ReceptionistMessages.Find(key, replyTo) =>
           val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
-          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, true)
+          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, onlyReachabilityChanged = false)
           Behaviors.same
 
         case ReceptionistMessages.Subscribe(key, subscriber) =>
@@ -249,7 +249,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           // immediately reply with initial listings to the new subscriber
           val listing = {
             val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
-            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, true)
+            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, onlyReachabilityChanged = false)
           }
           subscriber ! listing
 
@@ -299,7 +299,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               val subscribers = subscriptions.get(changedKey)
               if (subscribers.nonEmpty) {
                 val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
-                val listing = ReceptionistMessages.Listing(serviceKey, reachable, all, true)
+                val listing = ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = false)
                 subscribers.foreach(_ ! listing)
               }
 
@@ -365,7 +365,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               if (subscribers.nonEmpty) {
                 val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
                 val listing =
-                  ReceptionistMessages.Listing(serviceKey, reachable, all, allServiceInstancesChanged = false)
+                  ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = true)
                 subscribers.foreach(_ ! listing)
               }
             }
@@ -387,7 +387,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               if (subscribers.nonEmpty) {
                 val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
                 val listing =
-                  ReceptionistMessages.Listing(serviceKey, reachable, all, allServiceInstancesChanged = false)
+                  ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = true)
                 subscribers.foreach(_ ! listing)
               }
             }

@@ -79,17 +79,17 @@ import scala.concurrent.duration.Deadline
     val ddataKey = ddataKeyFor(key)
     val entries = serviceRegistries(ddataKey).entriesFor(key)
     val selfAddress = selfUniqueAddress.address
-    val (reachable, all) = entries.foldLeft((Set.newBuilder[ActorRef[T]], Set.newBuilder[ActorRef[T]])) {
-      case (builders @ (reachable, all), entry) =>
-        val entryAddress = entry.uniqueAddress(selfAddress)
-        if (nodes.contains(entryAddress) && !hasTombstone(entry.ref)) {
-          val ref = entry.ref.asInstanceOf[ActorRef[key.Protocol]]
-          all += ref
-          if (!unreachable.contains(entryAddress)) {
-            reachable += ref
-          }
+    val reachable = Set.newBuilder[ActorRef[T]]
+    val all = Set.newBuilder[ActorRef[T]]
+    entries.foreach { entry =>
+      val entryAddress = entry.uniqueAddress(selfAddress)
+      if (nodes.contains(entryAddress) && !hasTombstone(entry.ref)) {
+        val ref = entry.ref.asInstanceOf[ActorRef[key.Protocol]]
+        all += ref
+        if (!unreachable.contains(entryAddress)) {
+          reachable += ref
         }
-        builders
+      }
     }
     (reachable.result(), all.result())
   }

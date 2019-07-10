@@ -46,7 +46,7 @@ private[akka] object ReceptionistMessages {
       key: ServiceKey[T],
       _serviceInstances: Set[ActorRef[T]],
       _allServiceInstances: Set[ActorRef[T]],
-      allServiceInstancesChanged: Boolean)
+      onlyReachabilityChanged: Boolean)
       extends Receptionist.Listing {
 
     def isForKey(key: ServiceKey[_]): Boolean = key == this.key
@@ -68,8 +68,6 @@ private[akka] object ReceptionistMessages {
 
     override def getAllServiceInstances[M](key: ServiceKey[M]): java.util.Set[ActorRef[M]] =
       allServiceInstances(key).asJava
-
-    override def getAllServiceInstancesChanged: Boolean = allServiceInstancesChanged
   }
 
   final case class Subscribe[T] private[akka] (key: ServiceKey[T], subscriber: ActorRef[Receptionist.Listing])
