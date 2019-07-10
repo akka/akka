@@ -32,11 +32,15 @@ object ActorTestKit {
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
    */
   def apply(): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      config = noConfigSet,
+      config = ApplicationTestConfig,
       settings = None)
 
   /**
@@ -46,9 +50,28 @@ object ActorTestKit {
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
    */
   def apply(name: String): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = noConfigSet, settings = None)
+    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = ApplicationTestConfig, settings = None)
+
+  /**
+   * Create a testkit named from the class that is calling this method,
+   * and use a custom config for the actor system.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def apply(customConfig: Config): ActorTestKit =
+    new ActorTestKit(
+      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+      config = customConfig,
+      settings = None)
 
   /**
    * Create a named testkit, and use a custom config for the actor system.
@@ -89,9 +112,10 @@ object ActorTestKit {
   def shutdown(system: ActorSystem[_], timeout: Duration, throwIfShutdownFails: Boolean = false): Unit =
     TestKitUtils.shutdown(system, timeout, throwIfShutdownFails)
 
-  // place holder for no custom config specified to avoid the boilerplate
-  // of an option for config in the trait
-  private val noConfigSet = ConfigFactory.parseString("")
+  /**
+   * Config loaded from `application-test.conf`, which is used if no specific config is given.
+   */
+  val ApplicationTestConfig: Config = ConfigFactory.load("application-test")
 
 }
 
@@ -116,8 +140,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * INTERNAL API
    */
   @InternalApi private[akka] val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
-    if (config eq ActorTestKit.noConfigSet) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
-    else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
+    ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
 
   implicit def system: ActorSystem[Nothing] = internalSystem
 
