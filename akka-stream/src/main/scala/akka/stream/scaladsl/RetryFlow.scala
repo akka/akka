@@ -4,159 +4,279 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
-import akka.stream.{Attributes, BidiShape, FlowShape, Graph, Inlet, Outlet}
-import com.typesafe.config.ConfigFactory
+import akka.pattern.BackoffSupervisor
+import akka.stream.scaladsl.RetryFlowCoordinator.InternalState
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
+import akka.stream.{ Attributes, BidiShape, FlowShape, Inlet, Outlet }
 
 import scala.collection.immutable
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Success, Try}
+import scala.concurrent.duration._
+import scala.util.Try
 
 object RetryFlow {
 
+  /**
+   * Allows retrying individual elements in the stream with exponential backoff.
+   *
+   * The retry condition is controlled by the `retryWith` partial function. It takes an output element of the wrapped
+   * flow and should return one or more requests to be retried. For example:
+   *
+   * case Failure(_) => Some(List(..., ..., ...)) - for every failed response will issue three requests to retry
+   *
+   * case Failure(_) => Some(Nil) - every failed response will be ignored
+   *
+   * case Failure(_) => None - every failed response will be propagated downstream
+   *
+   * case Success(_) => Some(List(...)) - for every successful response a single retry will be issued
+   *
+   * A successful or failed response will be propagated downstream if it is not matched by the `retryFlow` function.
+   *
+   * If a successful response is matched and issued a retry, the response is still propagated downstream.
+   *
+   * The implementation of the RetryFlow assumes that `flow` follows one-in-out-out element semantics.
+   *
+   * The wrapped `flow` and `retryWith` takes an additional `State` parameter which can be used to correlate a request
+   * with a response.
+   *
+   * Backoff state is tracked separately per-element coming into the wrapped `flow`.
+   *
+   * @param parallelism controls the number of in-flight requests in the wrapped flow
+   * @param minBackoff minimum duration to backoff between issuing retries
+   * @param maxBackoff maximum duration to backoff between issuing retries
+   * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
+   * @param flow a flow to retry elements from
+   * @param retryWith retry condition decision partial function
+   */
   def withBackoff[In, Out, State, Mat](
       parallelism: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       flow: Flow[(In, State), (Try[Out], State), Mat])(
-      retryWith: (Try[Out], State) => Option[immutable.Iterable[(In, State)]])
-      : Graph[FlowShape[(In, State), (Try[Out], State)], Mat] = {
-    GraphDSL.create(flow) { implicit b => origFlow =>
-      import GraphDSL.Implicits._
+      retryWith: PartialFunction[(Try[Out], State), Option[immutable.Iterable[(In, State)]]])
+      : Flow[(In, State), (Try[Out], State), Mat] =
+    withBackoffAndContext(parallelism, minBackoff, maxBackoff, randomFactor, FlowWithContext.fromTuples(flow))(
+      retryWith).asFlow
 
-      println(minBackoff)
-      println(maxBackoff)
-      println(randomFactor)
+  /**
+   * Allows retrying individual elements in the stream with exponential backoff.
+   *
+   * The retry condition is controlled by the `retryWith` partial function. It takes an output element of the wrapped
+   * flow and should return one or more requests to be retried. For example:
+   *
+   * case Failure(_) => Some(List(..., ..., ...)) - for every failed response will issue three requests to retry
+   *
+   * case Failure(_) => Some(Nil) - every failed response will be ignored
+   *
+   * case Failure(_) => None - every failed response will be propagated downstream
+   *
+   * case Success(_) => Some(List(...)) - for every successful response a single retry will be issued
+   *
+   * A successful or failed response will be propagated downstream if it is not matched by the `retryFlow` function.
+   *
+   * If a successful response is matched and issued a retry, the response is still propagated downstream.
+   *
+   * The implementation of the RetryFlow assumes that `flow` follows one-in-out-out element semantics.
+   *
+   * The wrapped `flow` and `retryWith` takes an additional `State` parameter which can be used to correlate a request
+   * with a response.
+   *
+   * Backoff state is tracked separately per-element coming into the wrapped `flow`.
+   *
+   * @param parallelism controls the number of in-flight requests in the wrapped flow
+   * @param minBackoff minimum duration to backoff between issuing retries
+   * @param maxBackoff maximum duration to backoff between issuing retries
+   * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
+   * @param flow a flow with context to retry elements from
+   * @param retryWith retry condition decision partial function
+   */
+  def withBackoffAndContext[In, Out, State, Mat](
+      parallelism: Int,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      flow: FlowWithContext[In, State, Try[Out], State, Mat])(
+      retryWith: PartialFunction[(Try[Out], State), Option[immutable.Iterable[(In, State)]]])
+      : FlowWithContext[In, State, Try[Out], State, Mat] =
+    FlowWithContext.fromTuples {
+      Flow.fromGraph {
+        GraphDSL.create(flow) { implicit b =>
+          origFlow =>
+            import GraphDSL.Implicits._
 
-      val retry = b.add(new RetryFlowCoordinator[In, State, Out](10, parallelism, retryWith))
+            val retry =
+              b.add(new RetryFlowCoordinator[In, State, Out](parallelism, retryWith, minBackoff, maxBackoff, randomFactor))
+            val broadcast = b.add(new Broadcast[(In, State, InternalState)](outputPorts = 2, eagerCancel = true))
+            val zip = b.add(new ZipWith2[(Try[Out], State), InternalState, (Try[Out], State, InternalState)]((el, state) =>
+              (el._1, el._2, state)))
 
-      retry.out2 ~> origFlow ~> retry.in2
+            retry.out2 ~> broadcast.in
 
-      FlowShape(retry.in1, retry.out1)
+            broadcast.out(0).map(msg => (msg._1, msg._2)) ~> origFlow ~> zip.in0
+            broadcast.out(1).map(msg => msg._3) ~> zip.in1
+
+            zip.out ~> retry.in2
+
+            FlowShape(retry.in1, retry.out1)
+        }
+      }
     }
-  }
+}
 
+private object RetryFlowCoordinator {
+  case class InternalState(numberOfRestarts: Int, retryDeadline: Long)
+  case object InternalState {
+    def apply(): InternalState = InternalState(0, System.currentTimeMillis())
+  }
+  case object RetryTimer
 }
 
 private class RetryFlowCoordinator[In, State, Out](
-    retriesLimit: Long,
-    bufferLimit: Long,
-    retryWith: (Try[Out], State) => Option[immutable.Iterable[(In, State)]])
-    extends GraphStage[BidiShape[(In, State), (Try[Out], State), (Try[Out], State), (In, State)]] {
+    parallelism: Long,
+    retryWith: PartialFunction[(Try[Out], State), Option[immutable.Iterable[(In, State)]]],
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double)
+    extends GraphStage[
+      BidiShape[(In, State), (Try[Out], State), (Try[Out], State, InternalState), (In, State, InternalState)]] {
 
-  val in1 = Inlet[(In, State)]("RetryFlow.ext.in")
-  val out1 = Outlet[(Try[Out], State)]("RetryFlow.ext.out")
-  val in2 = Inlet[(Try[Out], State)]("RetryFlow.int.in")
-  val out2 = Outlet[(In, State)]("RetryFlow.int.out")
+  private val externalIn = Inlet[(In, State)]("RetryFlow.externalIn")
+  private val externalOut = Outlet[(Try[Out], State)]("RetryFlow.externalOut")
 
-  override val shape = BidiShape[(In, State), (Try[Out], State), (Try[Out], State), (In, State)](in1, out1, in2, out2)
+  private val internalIn = Inlet[(Try[Out], State, InternalState)]("RetryFlow.internalIn")
+  private val internalOut = Outlet[(In, State, InternalState)]("RetryFlow.internalOut")
 
-  override def createLogic(attributes: Attributes) = new GraphStageLogic(shape) {
-    var numElementsInCycle = 0
-    val queueRetries = scala.collection.mutable.Queue.empty[(In, State)]
-    val queueOut1 = scala.collection.mutable.Queue.empty[(Try[Out], State)]
-    lazy val timeout =
-      Duration.fromNanos(ConfigFactory.load().getDuration("akka.stream.contrib.retry-timeout").toNanos)
+  override val shape
+      : BidiShape[(In, State), (Try[Out], State), (Try[Out], State, InternalState), (In, State, InternalState)] =
+    BidiShape(externalIn, externalOut, internalIn, internalOut)
+
+  override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+    private var numElementsInCycle = 0
+    private var queueRetries =
+      scala.collection.immutable.SortedSet.empty[(In, State, InternalState)](Ordering.fromLessThan {
+        case ((_, _, InternalState(_, deadline1)), (_, _, InternalState(_, deadline2))) => deadline1 < deadline2
+      })
+    private val queueOut = scala.collection.mutable.Queue.empty[(Try[Out], State)]
+
+    private final val RetryTimer = "retry_timer"
 
     setHandler(
-      in1,
+      externalIn,
       new InHandler {
-        override def onPush() = {
-          val is = grab(in1)
-          if (isAvailable(out2)) {
-            push(out2, is)
+        override def onPush(): Unit = {
+          val is = {
+            val in = grab(externalIn)
+            (in._1, in._2, InternalState())
+          }
+          if (isAvailable(internalOut)) {
+            push(internalOut, is)
             numElementsInCycle += 1
-          } else queueRetries.enqueue(is)
+          } else {
+            queueRetries += is
+          }
         }
 
-        override def onUpstreamFinish() =
+        override def onUpstreamFinish(): Unit =
           if (numElementsInCycle == 0 && queueRetries.isEmpty) {
-            if (queueOut1.isEmpty) completeStage()
-            else emitMultiple(out1, queueOut1.iterator, () => completeStage())
+            if (queueOut.isEmpty) completeStage()
+            else emitMultiple(externalOut, queueOut.iterator, () => completeStage())
           }
       })
 
     setHandler(
-      out1,
+      externalOut,
       new OutHandler {
-        override def onPull() =
+        override def onPull(): Unit =
           // prioritize pushing queued element if available
-          if (queueOut1.isEmpty) pull(in2)
-          else push(out1, queueOut1.dequeue())
+          if (queueOut.isEmpty) {
+            if (!hasBeenPulled(internalIn)) pull(internalIn)
+          } else push(externalOut, queueOut.dequeue())
       })
 
     setHandler(
-      in2,
+      internalIn,
       new InHandler {
-        override def onPush() = {
+        override def onPush(): Unit = {
           numElementsInCycle -= 1
-          grab(in2) match {
-            case s @ (_: Success[Out], _) => pushAndCompleteIfLast(s)
-            case failure =>
-              retryWith.tupled(failure).fold(pushAndCompleteIfLast(failure)) {
-                xs =>
-                  if (xs.size + queueRetries.size > retriesLimit)
-                    failStage(new IllegalStateException(
-                      s"Queue limit of $retriesLimit has been exceeded. Trying to append ${xs.size} elements to a queue that has ${queueRetries.size} elements."))
-                  else {
-                    xs.foreach(queueRetries.enqueue(_))
-                    if (queueRetries.isEmpty) {
-                      if (isClosed(in1) && queueOut1.isEmpty) completeStage()
-                      else pull(in2)
-                    } else {
-                      pull(in2)
-                      if (isAvailable(out2)) {
-                        val elem = queueRetries.dequeue()
-                        push(out2, elem)
-                        numElementsInCycle += 1
-                      }
+          grab(internalIn) match {
+            case (out, s, internalState) =>
+              retryWith
+                .applyOrElse[(Try[Out], State), Option[immutable.Iterable[(In, State)]]]((out, s), _ => None)
+                .fold(pushAndCompleteIfLast((out, s))) {
+                  xs =>
+                    xs.foreach {
+                      case (in, state) =>
+                        val numRestarts = internalState.numberOfRestarts + 1
+                        val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
+                        queueRetries += (
+                          (
+                            in,
+                            state,
+                            InternalState(numRestarts, System.currentTimeMillis() + delay.toMillis)))
                     }
-                  }
-              }
+
+                    out.foreach { _ =>
+                      pushAndCompleteIfLast((out, s))
+                    }
+
+                    if (queueRetries.isEmpty) {
+                      if (isClosed(externalIn) && queueOut.isEmpty) completeStage()
+                      else pull(internalIn)
+                    } else {
+                      pull(internalIn)
+                      cancelTimer(RetryTimer)
+                      scheduleOnce(RetryTimer, smallestRetryDelay())
+                    }
+                }
           }
         }
       })
 
-    def pushAndCompleteIfLast(elem: (Try[Out], State)): Unit = {
-      if (isAvailable(out1) && queueOut1.isEmpty) {
-        push(out1, elem)
-      } else if (queueOut1.size + 1 > bufferLimit) {
-        failStage(new IllegalStateException(
-          s"Buffer limit of $bufferLimit has been exceeded. Trying to append 1 element to a buffer that has ${queueOut1.size} elements."))
+    override def onTimer(timerKey: Any): Unit = timerKey match {
+      case `RetryTimer` =>
+        if (isAvailable(internalOut)) {
+          val elem = queueRetries.head
+          queueRetries = queueRetries.tail
+
+          push(internalOut, elem)
+          numElementsInCycle += 1
+        }
+    }
+
+    private def pushAndCompleteIfLast(elem: (Try[Out], State)): Unit = {
+      if (isAvailable(externalOut) && queueOut.isEmpty) {
+        push(externalOut, elem)
+      } else if (queueOut.size + 1 > parallelism) {
+        failStage(new IllegalStateException(s"Buffer limit of $parallelism has been exceeded"))
       } else {
-        queueOut1.enqueue(elem)
+        queueOut.enqueue(elem)
       }
 
-      if (isClosed(in1) && queueRetries.isEmpty && numElementsInCycle == 0 && queueOut1.isEmpty) {
+      if (isClosed(externalIn) && queueRetries.isEmpty && numElementsInCycle == 0 && queueOut.isEmpty) {
         completeStage()
       }
     }
 
     setHandler(
-      out2,
+      internalOut,
       new OutHandler {
-        override def onPull() =
+        override def onPull(): Unit =
           if (queueRetries.isEmpty) {
-            if (!hasBeenPulled(in1) && !isClosed(in1)) {
-              pull(in1)
+            if (!hasBeenPulled(externalIn) && !isClosed(externalIn)) {
+              pull(externalIn)
             }
           } else {
-            push(out2, queueRetries.dequeue())
-            numElementsInCycle += 1
+            cancelTimer(RetryTimer)
+            scheduleOnce(RetryTimer, smallestRetryDelay())
           }
 
-        override def onDownstreamFinish() =
-          materializer.scheduleOnce(timeout, new Runnable {
-            override def run() =
-              getAsyncCallback[Unit] { _ =>
-                if (!isClosed(in2)) {
-                  failStage(
-                    new IllegalStateException(
-                      s"inner flow canceled only upstream, while downstream remain available for $timeout"))
-                }
-              }.invoke(())
-          })
+        override def onDownstreamFinish(): Unit = {
+          // waiting for the failure from the upstream
+          setKeepGoing(true)
+        }
       })
+
+    private def smallestRetryDelay() =
+      (queueRetries.head._3.retryDeadline - System.currentTimeMillis()).millis
   }
 }
