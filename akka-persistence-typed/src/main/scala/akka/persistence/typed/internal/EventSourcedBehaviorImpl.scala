@@ -28,7 +28,6 @@ import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.SnapshotAdapter
-import akka.persistence.typed.NoOpSnapshotAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotCompleted

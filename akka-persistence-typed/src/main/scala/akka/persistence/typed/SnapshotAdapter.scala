@@ -27,20 +27,6 @@ trait SnapshotAdapter[State] {
   def fromJournal(from: Any): State
 }
 
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] class NoOpSnapshotAdapter extends SnapshotAdapter[Any] {
-  override def toJournal(state: Any): Any = state
-  override def fromJournal(from: Any): Any = from
-}
 
-/**
- * INTERNAL API
- */
-@InternalApi
-object NoOpSnapshotAdapter {
-  val i = new NoOpSnapshotAdapter
-  def instance[S]: SnapshotAdapter[S] = i.asInstanceOf[SnapshotAdapter[S]]
-}
+
+
