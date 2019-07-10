@@ -83,5 +83,5 @@ will eventually reach the same set of actors per `ServiceKey`.
 registered actors that are reachable. The full set of actors, including unreachable ones, is available through 
 @scala[`Listing.allServiceInstances`]@java[`Listing.getAllServiceInstances`].
 
-One important difference from a local only receptions is the serialisation concerns, all messages sent to and back from 
+One important difference from local only receptions are the serialization concerns, all messages sent to and back from 
 an actor on another node must be serializable, see @ref:[clustering](cluster.md#serialization).
