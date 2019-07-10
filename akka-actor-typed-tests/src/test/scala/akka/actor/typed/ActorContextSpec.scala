@@ -683,9 +683,9 @@ class NormalActorContextSpec extends ActorContextSpec {
   override def decoration[T: ClassTag] = x => x
 }
 
-class WidenActorContextSpec extends ActorContextSpec {
+class TransformMessagesActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag] = b => b.widen { case x => x }
+  override def decoration[T: ClassTag] = b => b.transformMessages { case x => x }
 }
 
 class DeferredActorContextSpec extends ActorContextSpec {

@@ -469,11 +469,11 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
     }
 }
 
-class WidenedScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with Siphon {
+class TransformMessagesScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with Siphon {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = TestInbox[Command]("widenedListener")
-    super.behavior(monitor)._1.widen[Command] { case c => inbox.ref ! c; c } -> inbox
+    val inbox = TestInbox[Command]("transformMessagesListener")
+    super.behavior(monitor)._1.transformMessages[Command] { case c => inbox.ref ! c; c } -> inbox
   }
 }
 
@@ -586,10 +586,10 @@ class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
     }
 }
 
-class WidenedJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
+class TransformMessagesJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = TestInbox[Command]("widenedListener")
-    JBehaviors.widened(classOf[Command], super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
+    val inbox = TestInbox[Command]("transformMessagesListener")
+    JBehaviors.transformMessages(classOf[Command], super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
       inbox.ref ! x
       x
     })))) -> inbox

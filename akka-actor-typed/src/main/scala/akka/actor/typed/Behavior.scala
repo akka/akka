@@ -110,18 +110,24 @@ object Behavior {
   final implicit class BehaviorDecorators[Inner](val behavior: Behavior[Inner]) extends AnyVal {
 
     /**
-     * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+     * Transform the incoming messages by placing a funnel in front of the wrapped `Behavior`: the supplied
      * PartialFunction decides which message to pull in (those that it is defined
      * at) and may transform the incoming message to place them into the wrapped
      * Behavior’s type hierarchy. Signals are not transformed.
      *
      * Example:
      * {{{
-     * receive[String] { (ctx, msg) => println(msg); same }.widen[Number] {
-     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
-     *   case i: BigInteger => s"BigInteger(&dollar;i)"
-     *   // all other kinds of Number will be `unhandled`
-     * }
+     *   val b: Behavior[Number] =
+     *     Behaviors
+     *       .receive[String] { (ctx, msg) =>
+     *         println(msg)
+     *         Behaviors.same
+     *       }
+     *       .transformMessages[Number] {
+     *         case b: BigDecimal => s"BigDecimal(&dollar;b)"
+     *         case i: BigInt     => s"BigInteger(&dollar;i)"
+     *         // all other kinds of Number will be `unhandled`
+     *       }
      * }}}
      *
      * The `ClassTag` for `Outer` ensures that only messages of this class or a subclass thereof will be
@@ -129,8 +135,8 @@ object Behavior {
      * the interceptor and be continue to the inner behavior untouched.
      *
      */
-    def widen[Outer: ClassTag](matcher: PartialFunction[Outer, Inner]): Behavior[Outer] =
-      BehaviorImpl.widened(behavior, matcher)
+    def transformMessages[Outer: ClassTag](matcher: PartialFunction[Outer, Inner]): Behavior[Outer] =
+      BehaviorImpl.transformMessages(behavior, matcher)
 
   }
 

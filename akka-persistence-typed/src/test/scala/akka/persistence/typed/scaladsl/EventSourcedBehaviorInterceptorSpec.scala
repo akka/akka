@@ -83,10 +83,10 @@ class EventSourcedBehaviorInterceptorSpec
       probe.expectMessage("ABC")
     }
 
-    "be possible to combine with widen" in {
+    "be possible to combine with transformMessages" in {
       val probe = createTestProbe[String]()
       val pid = nextPid()
-      val ref = spawn(testBehavior(pid, probe.ref).widen[String] {
+      val ref = spawn(testBehavior(pid, probe.ref).transformMessages[String] {
         case s => s.toUpperCase()
       })
 
