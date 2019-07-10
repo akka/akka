@@ -331,9 +331,9 @@ object Receptionist extends ExtensionId[Receptionist] {
     def getAllServiceInstances[T](key: ServiceKey[T]): java.util.Set[ActorRef[T]]
 
     /**
-     * Returns `false` only if new services were added or removed and `true` if this listing is
-     * only about reachability changes. Useful for subscribers only concerned with [[#allServiceInstances]]
-     * or [[#getAllServiceInstances]] that can then ignore such `Listing`s.
+     * Returns `true` if this listing is only about reachability changes and `false` if new services were
+     * actually added or removed to the receptionist. Useful for subscribers only concerned with [[#allServiceInstances]]
+     * or [[#getAllServiceInstances]] that can then ignore `Listing`s related to reachability.
      *
      * In a non-clustered `ActorSystem` this will be `false` for all listings.
      * For `Find` queries and the initial listing for a `Subscribe` this will always be `false`.
