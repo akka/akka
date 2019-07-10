@@ -7,11 +7,12 @@ package akka.stream.scaladsl
 import akka.stream.{ActorMaterializer, KillSwitches}
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-class RetryFlowSpec extends StreamSpec() {
+class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
   implicit val mat = ActorMaterializer()
 
@@ -22,191 +23,178 @@ class RetryFlowSpec extends StreamSpec() {
   }
 
   "RetryFlow.withBackoff" should {
-    "swallow failed elements that are retried with an empty Seq" in {
+    "skip elements that are retried with an empty collection" in {
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) { (_, _) =>
-          Some(Nil)
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+          case (Failure(_), _) => Some(Nil)
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(2), 1))
+
       source.sendNext(2)
       sink.expectNoMessage()
+
       source.sendNext(3)
-      assert(sink.expectNext()._1 === Success(4))
+      sink.expectNext((Success(4), 3))
+
       source.sendNext(4)
       sink.expectNoMessage()
+
       source.sendComplete()
       sink.expectComplete()
     }
 
-    "concat incremented ints and modulo 3 incremented ints from retries" in {
+    "retry elements that fail while retrying" in {
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) { (_, os) =>
-          val s = (os + 1) % 3
-          if (os < 42) Some(List((os + 1, os + 1), (s, s)))
-          else if (os == 42) Some(Nil)
-          else None
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+          case (Failure(_), os) =>
+            val s = (os + 1) % 3
+            if (os < 42) Some(List((os + 1, os + 1), (s, s)))
+            else if (os == 42) Some(Nil)
+            else None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(2), 1))
+
       source.sendNext(2)
-      assert(sink.expectNext()._1 === Success(4))
-      assert(sink.expectNext()._1 === Success(2))
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(4), 3))
+      sink.expectNext((Success(2), 1))
+      sink.expectNext((Success(2), 1))
+
       source.sendNext(44)
-      assert(sink.expectNext()._1 === failedElem)
+      sink.expectNext((failedElem, 44))
+
       source.sendNext(42)
       sink.expectNoMessage()
+
       source.sendComplete()
       sink.expectComplete()
     }
 
-    "retry squares by division" in {
-      val (source, sink) = TestSource
-        .probe[Int]
-        .map(i => (i, i * i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) {
-          case (_, x) if x % 4 == 0 => Some(List((x / 2, x / 4)))
-          case (_, x) => {
-            val sqrt = scala.math.sqrt(x.toDouble).toInt
-            Some(List((sqrt, x)))
-          }
-        })
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      sink.request(99)
-      source.sendNext(1)
-      assert(sink.expectNext()._1 === Success(2))
-      source.sendNext(2)
-      assert(sink.expectNext()._1 === Success(2))
-      source.sendNext(4)
-      assert(sink.expectNext()._1 === Success(2))
-      sink.expectNoMessage(3.seconds)
-      source.sendComplete()
-      sink.expectComplete()
-    }
-
-    "tolerate killswitch terminations after start" in {
+    "tolerate killswitch abort after start" in {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .viaMat(KillSwitches.single[Int])(Keep.both)
-        .map(i => (i, i * i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) {
-          case (_, x) if x % 4 == 0 => Some(List((x / 2, x / 4)))
-          case (_, x) => {
-            val sqrt = scala.math.sqrt(x.toDouble).toInt
-            Some(List((sqrt, x)))
-          }
+        .map(i => (i, i))
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+          case (Failure(_), x) => Some(List((x + 1, x)))
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(2), 1))
+
       source.sendNext(2)
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(4), 2))
+
       killSwitch.abort(failedElem.failed.get)
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations on start" in {
+    "tolerate killswitch abort on start" in {
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .viaMat(KillSwitches.single[Int])(Keep.right)
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) { (_, x) =>
-          Some(List((x, x + 1)))
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+          case (Failure(_), x) => Some(List((x + 1, x)))
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       killSwitch.abort(failedElem.failed.get)
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations before start" in {
+    "tolerate killswitch abort before start" in {
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .viaMat(KillSwitches.single[Int])(Keep.right)
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) { (_, x) =>
-          Some(List((x, x + 1)))
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+          case (Failure(_), x) => Some(List((x + 1, x)))
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       killSwitch.abort(failedElem.failed.get)
+
       sink.request(1)
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations inside the flow after start" in {
+    "tolerate killswitch abort on the inner flow after start" in {
       val innerFlow = flow[Int].viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
-        .map(i => (i, i * i))
-        .viaMat(RetryFlow.withBackoff(100, 1.second, 1.second, 100, innerFlow) {
-          case (_, x) if x % 4 == 0 => Some(List((x / 2, x / 4)))
-          case (_, x) => {
-            val sqrt = scala.math.sqrt(x.toDouble).toInt
-            Some(List((sqrt, x)))
-          }
+        .map(i => (i, i))
+        .viaMat(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, innerFlow) {
+          case (Failure(_), x) => Some(List((x + 1, x)))
         })(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(2), 1))
+
       source.sendNext(2)
-      assert(sink.expectNext()._1 === Success(2))
+      sink.expectNext((Success(4), 2))
+
       killSwitch.abort(failedElem.failed.get)
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations inside the flow on start" in {
+    "tolerate killswitch abort on the inner flow on start" in {
       val innerFlow = flow[Int].viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .viaMat(RetryFlow.withBackoff(100, 1.second, 1.second, 100, innerFlow) { (_, x) =>
-          Some(List((x, x + 1)))
+        .viaMat(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, innerFlow) {
+          case (Failure(_), x) => Some(List((x + 1, x)))
         })(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       killSwitch.abort(failedElem.failed.get)
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations inside the flow before start" in {
+    "tolerate killswitch abort on the inner flow before start" in {
       val innerFlow = flow[Int].viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .viaMat(RetryFlow.withBackoff(100, 1.second, 1.second, 100, innerFlow) { (_, x) =>
-          Some(List((x, x + 1)))
+        .viaMat(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, innerFlow) {
+          case (Failure(_), x) => Some(List((x + 1, x)))
         })(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       killSwitch.abort(failedElem.failed.get)
+
       sink.request(1)
       sink.expectError(failedElem.failed.get)
     }
@@ -215,11 +203,11 @@ class RetryFlowSpec extends StreamSpec() {
       case (_, j) => (failedElem, j)
     }
 
-    val alwaysRecoveringFunc: (Try[Int], Int) => Option[List[(Int, Int)]] = (_, i) => Some(List(i -> i))
+    val alwaysRecoveringFunc: PartialFunction[(Try[Int], Int), Option[List[(Int, Int)]]] = { case (Failure(_), i) => Some(List(i -> i)) }
 
-    val stuckForeverRetrying = RetryFlow.withBackoff(Int.MaxValue, 1.second, 1.second, Long.MaxValue, alwaysFailingFlow)(alwaysRecoveringFunc)
+    val stuckForeverRetrying = RetryFlow.withBackoff(8, 10.millis, 5.second, 0, alwaysFailingFlow)(alwaysRecoveringFunc)
 
-    "tolerate killswitch terminations before the flow while on fail spin" in {
+    "tolerate killswitch abort before the RetryFlow while on retry spin" in {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .viaMat(KillSwitches.single[Int])(Keep.both)
@@ -229,19 +217,20 @@ class RetryFlowSpec extends StreamSpec() {
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
       sink.expectNoMessage()
+
       killSwitch.abort(failedElem.failed.get)
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations inside the flow while on fail spin" in {
+    "tolerate killswitch abort on the inner flow while on retry spin" in {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
         .viaMat(
-          RetryFlow.withBackoff(Int.MaxValue, 1.second, 1.second,
-            Long.MaxValue,
+          RetryFlow.withBackoff(8, 10.millis, 5.second, 0,
             alwaysFailingFlow.viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right))(alwaysRecoveringFunc)
         )(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
@@ -254,7 +243,7 @@ class RetryFlowSpec extends StreamSpec() {
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch terminations after the flow while on fail spin" in {
+    "tolerate killswitch abort after the RetryFkiw while on retry spin" in {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -264,8 +253,10 @@ class RetryFlowSpec extends StreamSpec() {
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
       sink.expectNoMessage()
+
       killSwitch.abort(failedElem.failed.get)
       sink.expectError(failedElem.failed.get)
     }
@@ -273,29 +264,131 @@ class RetryFlowSpec extends StreamSpec() {
     "finish only after processing all elements in stream" in {
       val (source, sink) = TestSource
         .probe[Int]
-        .map(i => (i, i * i))
-        .via(RetryFlow.withBackoff(100, 1.second, 1.second, 100, flow[Int]) {
-          case (_, x) => Some(List.fill(x)(1 -> 1))
+        .map(i => (i, i))
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+          case (Failure(_), x) => Some(List.fill(x)(1 -> 1))
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(99)
+
       source.sendNext(1)
-      assert(sink.expectNext()._1 == Success(2))
+      sink.expectNext((Success(2), 1))
 
       source.sendNext(3)
-      assert(sink.expectNext()._1 == Success(4))
+      sink.expectNext((Success(4), 3))
 
       source.sendNext(2)
       source.sendComplete()
-      assert(sink.expectNext()._1 == Success(2))
-      assert(sink.expectNext()._1 == Success(2))
-      assert(sink.expectNext()._1 == Success(2))
-      assert(sink.expectNext()._1 == Success(2))
+      sink.expectNext((Success(2), 1))
+      sink.expectNext((Success(2), 1))
 
+      sink.expectComplete()
+    }
+
+    "exponentially backoff between retries" in {
+      val NumRetries = 7
+
+      case class State(counter: Int, retriedAt: List[Long])
+
+      val flow = Flow.fromFunction[(Int, State), (Try[Int], State)] {
+        case (i, j) if i % NumRetries == 0 => (Success(i), j)
+        case (_, State(counter, retriedAt)) => (failedElem, State(counter + 1, System.currentTimeMillis() :: retriedAt))
+      }
+
+      val (source, sink) = TestSource
+        .probe[Int]
+        .map(i => (i, State(i, Nil)))
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow) {
+          case (Failure(_), s @ State(counter, _)) => Some(List(counter -> s))
+        })
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      sink.request(1)
+
+      source.sendNext(1)
+      val (result, State(_, retriedAt)) = sink.expectNext()
+
+      result shouldBe Success(NumRetries)
+      val timesBetweenRetries = retriedAt.sliding(2).collect {
+        case before :: after :: Nil => before - after
+      }.toIndexedSeq
+
+      timesBetweenRetries.reverse should strictlyIncrease
+
+      source.sendComplete()
+      sink.expectComplete()
+    }
+
+    "allow a retry for a successful element" in {
+      val flow = Flow.fromFunction[(Int, Unit), (Try[Int], Unit)] {
+        case (i, _) => (Success(i / 2), ())
+      }
+
+      val (source, sink) = TestSource
+        .probe[Int]
+        .map(i => (i, ()))
+        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow) {
+          case (Success(i), _) if i > 0 => Some(List((i, ())))
+        })
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      sink.request(4)
+
+      source.sendNext(8)
+      sink.expectNext((Success(4), ()))
+      sink.expectNext((Success(2), ()))
+      sink.expectNext((Success(1), ()))
+      sink.expectNext((Success(0), ()))
+
+      source.sendComplete()
+      sink.expectComplete()
+    }
+
+    "support flow with context" in {
+      val flow = Flow[Int].asFlowWithContext((i: Int, _: Int) => i)(identity).map {
+        case i if i > 0 => Failure(new Error("i is larger than 0"))
+        case i => Success(i)
+      }
+
+      val (source, sink) = TestSource
+        .probe[Int]
+        .asSourceWithContext(identity)
+        .via(RetryFlow.withBackoffAndContext(8, 10.millis, 5.second, 0, flow) {
+          case (Failure(_), ctx) if ctx > 0 => Some(List((ctx / 2, ctx / 2)))
+        })
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      sink.request(1)
+
+      source.sendNext(8)
+      sink.expectNext((Success(0), 0))
+
+      source.sendComplete()
       sink.expectComplete()
     }
   }
 
+}
+
+trait CustomMatchers {
+
+  class StrictlyIncreasesMatcher() extends Matcher[Seq[Long]] {
+
+    def apply(left: Seq[Long]) = {
+      val result = left.sliding(2).map(pair => pair.head < pair.last).reduceOption(_ && _).getOrElse(false)
+
+      MatchResult(
+        result,
+        s"""Collection $left elements are not increasing strictly""",
+        s"""Collection $left elements are increasing strictly"""
+      )
+    }
+  }
+
+  def strictlyIncrease = new StrictlyIncreasesMatcher()
 }
