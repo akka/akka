@@ -7,6 +7,7 @@ package akka.remote
 import scala.collection.immutable._
 import akka.AkkaException
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object SeqNo {
 
   implicit val ord: Ordering[SeqNo] = new Ordering[SeqNo] {
@@ -21,6 +22,7 @@ object SeqNo {
 /**
  * Implements a 64 bit sequence number with proper wrap-around ordering.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class SeqNo(rawValue: Long) extends Ordered[SeqNo] {
 
   /**
@@ -42,6 +44,7 @@ final case class SeqNo(rawValue: Long) extends Ordered[SeqNo] {
   override def toString = String.valueOf(rawValue)
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object HasSequenceNumber {
   implicit def seqOrdering[T <: HasSequenceNumber]: Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = x.seq.compare(y.seq)
@@ -52,6 +55,7 @@ object HasSequenceNumber {
  * Messages that are to be buffered in [[akka.remote.AckedSendBuffer]] or [[akka.remote.AckedReceiveBuffer]] has
  * to implement this interface to provide the sequence needed by the buffers.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait HasSequenceNumber {
 
   /**
@@ -66,13 +70,16 @@ trait HasSequenceNumber {
  * @param cumulativeAck Represents the highest sequence number received.
  * @param nacks Set of sequence numbers between the last delivered one and cumulativeAck that has been not yet received.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class Ack(cumulativeAck: SeqNo, nacks: Set[SeqNo] = Set.empty) {
   override def toString = s"ACK[$cumulativeAck, ${nacks.mkString("{", ", ", "}")}]"
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ResendBufferCapacityReachedException(c: Int)
     extends AkkaException(s"Resend buffer capacity of [$c] has been reached.")
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ResendUnfulfillableException
     extends AkkaException(
       "Unable to fulfill resend request since negatively acknowledged payload is no longer in buffer. " +
@@ -89,6 +96,7 @@ class ResendUnfulfillableException
  * @param maxSeq The maximum sequence number that has been stored in this buffer. Messages having lower sequence number
  *               will be not stored but rejected with [[java.lang.IllegalArgumentException]]
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class AckedSendBuffer[T <: HasSequenceNumber](
     capacity: Int,
     nonAcked: IndexedSeq[T] = Vector.empty[T],
@@ -144,6 +152,7 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
  * @param cumulativeAck The highest sequence number received so far.
  * @param buf Buffer of messages that are waiting for delivery
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class AckedReceiveBuffer[T <: HasSequenceNumber](
     lastDelivered: SeqNo = SeqNo(-1),
     cumulativeAck: SeqNo = SeqNo(-1),

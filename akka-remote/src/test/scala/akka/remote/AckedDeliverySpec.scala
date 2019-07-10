@@ -8,6 +8,9 @@ import akka.testkit.AkkaSpec
 import scala.annotation.tailrec
 import java.util.concurrent.ThreadLocalRandom
 
+import com.github.ghik.silencer.silent
+
+@silent // deprecated
 object AckedDeliverySpec {
 
   final case class Sequenced(seq: SeqNo, body: String) extends HasSequenceNumber {
@@ -16,6 +19,7 @@ object AckedDeliverySpec {
 
 }
 
+@silent // deprecated
 class AckedDeliverySpec extends AkkaSpec {
   import AckedDeliverySpec._
 

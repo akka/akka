@@ -38,7 +38,6 @@ import akka.remote.AddressUidExtension
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
-import akka.remote.ThisActorSystemQuarantinedEvent
 import akka.remote.UniqueAddress
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
@@ -59,6 +58,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.util.{ unused, OptionVal, WildcardIndex }
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -627,7 +627,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               // and can result in forming two separate clusters (cluster split).
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
-              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
+              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress, from)
               system.eventStream.publish(lifecycleEvent)
 
             case _ => // not interesting
@@ -741,6 +741,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private[remote] def isShutdown: Boolean = hasBeenShutdown.get()
 
+  @silent // ThrottleMode from classic is deprecated, we can replace when removing classic
   override def managementCommand(cmd: Any): Future[Boolean] = {
     cmd match {
       case SetThrottle(address, direction, Blackhole) =>

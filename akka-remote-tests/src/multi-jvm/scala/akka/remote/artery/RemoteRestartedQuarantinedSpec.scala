@@ -7,7 +7,7 @@ package akka.remote.artery
 import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
+import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 

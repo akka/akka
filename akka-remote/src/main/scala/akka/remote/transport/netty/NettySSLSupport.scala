@@ -8,6 +8,7 @@ import akka.japi.Util._
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -42,6 +43,7 @@ private[akka] class SSLSettings(config: Config) {
  * The `SSLEngine` is created via the configured [[SSLEngineProvider]].
  */
 @ccompatUsedUntil213
+@silent // deprecated
 private[akka] object NettySSLSupport {
 
   /**

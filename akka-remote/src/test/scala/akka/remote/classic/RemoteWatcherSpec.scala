@@ -67,6 +67,7 @@ object RemoteWatcherSpec {
 
 }
 
+@silent // deprecated
 class RemoteWatcherSpec extends AkkaSpec("""akka {
        loglevel = INFO
        log-dead-letters-during-shutdown = false

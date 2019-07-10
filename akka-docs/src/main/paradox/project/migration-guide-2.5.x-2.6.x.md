@@ -156,6 +156,11 @@ is completely different. It will require a full cluster shutdown and new startup
 If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
 for how to do this.
 
+The following events that are published to the `eventStream` have changed:
+
+* classic `akka.remote.QuarantinedEvent` is `akka.remote.artery.QuarantinedEvent` in Artery
+* classic `akka.remote.GracefulShutdownQuarantinedEvent` is `akka.remote.artery.GracefulShutdownQuarantinedEvent` in Artery
+* classic `akka.remote.ThisActorSystemQuarantinedEvent` is `akka.remote.artery.ThisActorSystemQuarantinedEvent` in Artery
 
 #### Migration from 2.5.x Artery to 2.6.x Artery
 

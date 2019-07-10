@@ -12,9 +12,11 @@ import akka.remote.transport.Transport._
 import akka.remote.transport.{ AssociationRegistry => _, _ }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.util.ByteString
-
 import scala.concurrent.{ Await, Future }
 
+import com.github.ghik.silencer.silent
+
+@silent // deprecated
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
     extends AkkaSpec("""
          akka.remote.artery.enabled = false

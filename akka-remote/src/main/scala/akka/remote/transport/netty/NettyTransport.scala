@@ -56,6 +56,7 @@ import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.util.HashedWheelTimer
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object NettyFutureBridge {
   def apply(nettyFuture: ChannelFuture): Future[Channel] = {
     val p = Promise[Channel]()
@@ -92,6 +93,7 @@ object NettyFutureBridge {
 }
 
 @SerialVersionUID(1L)
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class NettyTransportException(msg: String, cause: Throwable)
     extends RuntimeException(msg, cause)
     with OnlyCauseStackTrace {
@@ -99,12 +101,14 @@ class NettyTransportException(msg: String, cause: Throwable)
 }
 
 @SerialVersionUID(1L)
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class NettyTransportExceptionNoStack(msg: String, cause: Throwable)
     extends NettyTransportException(msg, cause)
     with NoStackTrace {
   def this(msg: String) = this(msg, null)
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class NettyTransportSettings(config: Config) {
 
   import akka.util.Helpers.ConfigOps
@@ -206,6 +210,7 @@ class NettyTransportSettings(config: Config) {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[netty] trait CommonHandlers extends NettyHelpers {
   protected val transport: NettyTransport
 
@@ -248,6 +253,7 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[netty] abstract class ServerHandler(
     protected final val transport: NettyTransport,
     private final val associationListenerFuture: Future[AssociationEventListener])
@@ -279,6 +285,7 @@ private[netty] abstract class ServerHandler(
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[netty] abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
     extends NettyClientHelpers
     with CommonHandlers {
@@ -327,6 +334,7 @@ private[transport] object NettyTransport {
     addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedActorSystem) extends Transport {
 
   def this(system: ExtendedActorSystem, conf: Config) = this(new NettyTransportSettings(conf), system)

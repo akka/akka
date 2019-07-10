@@ -7,6 +7,7 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -18,6 +19,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.util.unused
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -95,6 +97,7 @@ object TransportFailSpec {
  * This was fixed by not stopping the ReliableDeliverySupervisor so that the
  * receive buffer was preserved.
  */
+@silent // deprecated
 abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConfig) {
   import TransportFailConfig._
   import TransportFailSpec._

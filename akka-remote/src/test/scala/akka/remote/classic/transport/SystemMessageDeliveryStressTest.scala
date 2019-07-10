@@ -12,9 +12,10 @@ import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.remote.{ EndpointException, QuarantinedEvent, RARP }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest, _ }
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 
 object SystemMessageDeliveryStressTest {
   val msgCount = 5000
@@ -98,6 +99,7 @@ object SystemMessageDeliveryStressTest {
 
 }
 
+@silent // deprecated
 abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
     extends AkkaSpec(ConfigFactory.parseString(cfg).withFallback(SystemMessageDeliveryStressTest.baseConfig))
     with ImplicitSender

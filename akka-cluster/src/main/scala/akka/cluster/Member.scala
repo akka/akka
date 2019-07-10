@@ -288,6 +288,9 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
   @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
 
+  def apply(remoteUniqueAddress: akka.remote.UniqueAddress): UniqueAddress =
+    new UniqueAddress(remoteUniqueAddress.address, remoteUniqueAddress.uid)
+
 }
 
 /**

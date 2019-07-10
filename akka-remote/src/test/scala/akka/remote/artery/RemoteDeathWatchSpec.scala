@@ -11,7 +11,6 @@ import akka.actor.RootActorPath
 
 import scala.concurrent.duration._
 import akka.testkit.SocketUtil
-import akka.remote.QuarantinedEvent
 import akka.remote.RARP
 import com.github.ghik.silencer.silent
 
