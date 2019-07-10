@@ -541,7 +541,7 @@ object Source {
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately.
    * Otherwise, if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
-   * already buffered elements will be send out before signaling completion.
+   * already buffered elements will be sent out before signaling completion.
    * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
    * Using [[akka.actor.ActorSystem.stop]] to stop the actor and complete the stream is *not supported*.
    *
