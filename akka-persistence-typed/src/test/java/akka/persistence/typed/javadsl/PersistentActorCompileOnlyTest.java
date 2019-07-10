@@ -121,7 +121,7 @@ public class PersistentActorCompileOnlyTest {
 
           @Override
           public SnapshotAdapter<SimpleState> snapshotAdapter() {
-             return new SnapshotAdapter<>() {
+             return new SnapshotAdapter<SimpleState>() {
 
                @Override
                public Object toJournal(SimpleState simpleState) {
