@@ -333,14 +333,18 @@ object Receptionist extends ExtensionId[Receptionist] {
     /**
      * Scala API: `true` only if new services was added or removed and `false` if this listing is
      * only about reachability changes. Useful for subscribers that only cares about [[#allServiceInstances]].
+     *
      * In a non-clustered `ActorSystem` this will be `true` for all listings.
+     * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
      */
     def allServiceInstancesChanged: Boolean
 
     /**
      * JavaAPI: `true` only if new services was added or removed and `false` if this listing is
      * only about reachability changes. Useful for subscribers that only cares about [[#getAllServiceInstances]].
+     *
      * In a non-clustered `ActorSystem` this will be `true` for all listings.
+     * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
      */
     def getAllServiceInstancesChanged: Boolean
   }
