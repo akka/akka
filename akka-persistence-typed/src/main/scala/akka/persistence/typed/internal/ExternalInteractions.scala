@@ -148,7 +148,9 @@ private[akka] trait SnapshotInteractions[C, E, S] {
       throw new IllegalStateException("A snapshot must not be a null state.")
     else
       setup.snapshotStore.tell(
-        SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId.id, state.seqNr), state.state),
+        SnapshotProtocol.SaveSnapshot(
+          SnapshotMetadata(setup.persistenceId.id, state.seqNr),
+          setup.snapshotAdapter.toJournal(state.state)),
         setup.selfUntyped)
   }
 

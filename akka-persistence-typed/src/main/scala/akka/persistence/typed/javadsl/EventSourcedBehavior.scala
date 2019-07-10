@@ -156,6 +156,12 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
   /**
+   * Transform the state into another type before giving it to and from the journal. Can be used
+   * to migrate from different state types e.g. when migration from PersistentFSM to Typed Persistence
+   */
+  def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
+
+  /**
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
@@ -178,6 +184,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .withRetention(retentionCriteria.asScala)
       .withTagger(tagger)
       .eventAdapter(eventAdapter())
+      .snapshotAdapter(snapshotAdapter())
       .withJournalPluginId(journalPluginId)
       .withSnapshotPluginId(snapshotPluginId)
       .withSnapshotSelectionCriteria(snapshotSelectionCriteria)

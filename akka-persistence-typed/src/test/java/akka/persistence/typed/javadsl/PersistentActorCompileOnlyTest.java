@@ -10,11 +10,8 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.function.Procedure;
-import akka.persistence.typed.EventSeq;
-import akka.persistence.typed.SnapshotSelectionCriteria;
-import akka.persistence.typed.EventAdapter;
+import akka.persistence.typed.*;
 import akka.actor.testkit.typed.javadsl.TestInbox;
-import akka.persistence.typed.PersistenceId;
 
 import java.time.Duration;
 import java.util.*;
@@ -120,6 +117,23 @@ public class PersistentActorCompileOnlyTest {
             return new EventAdapterExample();
           }
           // #install-event-adapter
+
+
+          @Override
+          public SnapshotAdapter<SimpleState> snapshotAdapter() {
+             return new SnapshotAdapter<>() {
+
+               @Override
+               public Object toJournal(SimpleState simpleState) {
+                 return simpleState;
+               }
+
+               @Override
+               public SimpleState fromJournal(Object from) {
+                 return (SimpleState) from;
+               }
+             };
+          }
         };
 
     static class AdditionalSettings

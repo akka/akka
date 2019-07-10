@@ -4,147 +4,99 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, TestProbe}
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.query.{EventEnvelope, PersistenceQuery, Sequence}
+import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{ PersistenceId, SnapshotAdapter }
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.WordSpecLike
 
+object EventSourcedSnapshotAdapterSpec {
+  private val conf: Config = ConfigFactory.parseString(s"""
+    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+    akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+  """)
+  case class State(s: String)
+  case class Command(c: String)
+  case class Event(e: String)
+  case class PersistedState(s: String)
+}
 
 class EventSourcedSnapshotAdapterSpec
-    extends ScalaTestWithActorTestKit(EventSourcedEventAdapterSpec.conf)
+    extends ScalaTestWithActorTestKit(EventSourcedSnapshotAdapterSpec.conf)
     with WordSpecLike {
-  import EventSourcedBehaviorSpec._
-  import EventSourcedEventAdapterSpec._
+  import EventSourcedSnapshotAdapterSpec._
   import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
   implicit val materializer = ActorMaterializer()(system.toUntyped)
-  val queries: LeveldbReadJournal = PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+  val queries: LeveldbReadJournal =
+    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
-  private def behavior(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
-    EventSourcedBehavior(pid, "", commandHandler = { (_, command) =>
-      Effect.persist(command).thenRun(newState => probe ! newState)
-    }, eventHandler = { (state, evt) =>
-      state + evt
-    })
+  private def behavior(pid: PersistenceId, probe: ActorRef[State]): EventSourcedBehavior[Command, Event, State] =
+    EventSourcedBehavior[Command, Event, State](
+      pid,
+      State(""),
+      commandHandler = { (state, command) =>
+        command match {
+          case Command(c) if c == "shutdown" =>
+            Effect.stop()
+          case Command(c) if c == "get" =>
+            probe.tell(state)
+            Effect.none
+          case _ =>
+            Effect.persist(Event(command.c)).thenRun(newState => probe ! newState)
+        }
+      },
+      eventHandler = { (state, evt) =>
+        state.copy(s = state.s + "|" + evt.e)
+      })
 
   "Snapshot adapter" must {
 
-    "wrap single snaphots" in {
-        pending
-    }
-
-    "filter unused snapshots" in {
-      pending
-    }
-
-    "split one into several" in {
-      val probe = TestProbe[String]()
+    "adapt snapshots to any" in {
       val pid = nextPid()
-      val ref = spawn(behavior(pid, probe.ref).eventAdapter(new SplitEventAdapter))
+      val stateProbe = TestProbe[State]()
+      val snapshotFromJournal = TestProbe[PersistedState]()
+      val snapshotToJournal = TestProbe[State]()
+      val b = behavior(pid, stateProbe.ref)
+        .snapshotAdapter(new SnapshotAdapter[State]() {
+          override def toJournal(state: State): Any = {
+            snapshotToJournal.ref.tell(state)
+            PersistedState(state.s)
+          }
+          override def fromJournal(from: Any): State = from match {
+            case ps: PersistedState =>
+              snapshotFromJournal.ref.tell(ps)
+              State(ps.s)
+          }
+        })
+        .snapshotWhen { (_, event, _) =>
+          event.e.contains("snapshot")
+        }
 
-      ref ! "a"
-      ref ! "bc"
-      probe.expectMessage("a")
-      probe.expectMessage("abc")
+      val ref = spawn(b)
 
-      // replay
-      val ref2 = spawn(behavior(pid, probe.ref).eventAdapter(new SplitEventAdapter))
-      ref2 ! "d"
-      probe.expectMessage("<A><B><C>d")
+      ref.tell(Command("one"))
+      stateProbe.expectMessage(State("|one"))
+      ref.tell(Command("snapshot now"))
+      stateProbe.expectMessage(State("|one|snapshot now"))
+      snapshotToJournal.expectMessage(State("|one|snapshot now"))
+      ref.tell(Command("shutdown"))
+
+      val ref2 = spawn(b)
+      snapshotFromJournal.expectMessage(PersistedState("|one|snapshot now"))
+      ref2.tell(Command("get"))
+      stateProbe.expectMessage(State("|one|snapshot now"))
     }
 
-    "support manifest" in {
-      val probe = TestProbe[String]()
-      val pid = nextPid()
-      val ref = spawn(behavior(pid, probe.ref).eventAdapter(new EventAdapterWithManifest))
-
-      ref ! "a"
-      ref ! "bcd"
-      probe.expectMessage("a")
-      probe.expectMessage("abcd")
-
-      // replay
-      val ref2 = spawn(behavior(pid, probe.ref).eventAdapter(new EventAdapterWithManifest))
-      ref2 ! "e"
-      probe.expectMessage("A1BCD3e")
-    }
-
-    "adapt events" in {
-      val pid = nextPid()
-      val c = spawn(Behaviors.setup[Command] { ctx =>
-        val persistentBehavior = counter(ctx, pid)
-
-        persistentBehavior.eventAdapter(new GenericWrapperEventAdapter[Event])
-      })
-      val replyProbe = TestProbe[State]()
-
-      c ! Increment
-      c ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))))
-
-      val c2 =
-        spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
-      c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-    }
-
-    "adapter multiple events with persist all" in {
-      val pid = nextPid()
-      val c =
-        spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
-      val replyProbe = TestProbe[State]()
-
-      c ! IncrementWithPersistAll(2)
-      c ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(2, Vector(0, 1)))
-
-      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(
-        EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))),
-        EventEnvelope(Sequence(2), pid.id, 2, GenericWrapper(Incremented(1))))
-
-      val c2 =
-        spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
-      c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(2, Vector(0, 1)))
-    }
-
-    "adapt and tag events" in {
-      val pid = nextPid()
-      val c = spawn(Behaviors.setup[Command](ctx =>
-        counter(ctx, pid).withTagger(_ => Set("tag99")).eventAdapter(new GenericWrapperEventAdapter[Event])))
-      val replyProbe = TestProbe[State]()
-
-      c ! Increment
-      c ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))))
-
-      val c2 =
-        spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
-      c2 ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(1, Vector(0)))
-
-      val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
-      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))))
-    }
   }
 }
