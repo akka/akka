@@ -4,6 +4,7 @@
 
 package jdoc.akka.serialization.jackson.v2a;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jdoc.akka.serialization.jackson.MySerializable;
 
 import java.util.Optional;
@@ -16,6 +17,7 @@ public class ItemAdded implements MySerializable {
   public final Optional<Double> discount;
   public final String note;
 
+  @JsonCreator
   public ItemAdded(
       String shoppingCartId,
       String productId,
@@ -26,7 +28,10 @@ public class ItemAdded implements MySerializable {
     this.productId = productId;
     this.quantity = quantity;
     this.discount = discount;
-    this.note = note;
+
+    // default for note is "" if not included in json
+    if (note == null) this.note = "";
+    else this.note = note;
   }
 
   public ItemAdded(
