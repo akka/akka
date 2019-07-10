@@ -4,8 +4,6 @@
 
 package akka.persistence.typed
 
-import akka.annotation.InternalApi
-
 /**
  * Facility to convert snapshots from and to a specialized data model.
  * Can be used when migration from different state types e.g. when migration
