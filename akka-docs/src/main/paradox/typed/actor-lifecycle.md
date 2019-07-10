@@ -45,14 +45,14 @@ Java
 
 Many of the methods in `ActorContext` are not thread-safe and
 
-* Must not be accessed by threads from @scala[`scala.concurrent.Future`]@java[`java.util.concurrent.CompletionStage`] callbacks  
+* Must not be accessed by threads from @scala[`scala.concurrent.Future`]@java[`java.util.concurrent.CompletionStage`] callbacks
 * Must not be shared between several actor instances
 * Should only be used in the ordinary actor message processing thread
 
 ### The Guardian Actor
 
-The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor 
-system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`, 
+The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
+system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`,
 named `HelloWorldMain.main` in the example below:
 
 Scala
@@ -68,12 +68,12 @@ In the untyped counter part, the @apidoc[akka.actor.ActorSystem], the root actor
 could spawn top-level actors from the outside of the `ActorSystem` using `actorOf`. @ref:[SpawnProtocol](#spawnprotocol)
 is a tool that mimics the old style of starting up actors.
 
-@@@ 
+@@@
 
 
 ### Spawning Children
 
-Child actors are spawned with @scala[@apidoc[akka.actor.typed.scaladsl.ActorContext]]@java[@apidoc[akka.actor.typed.javadsl.ActorContext]]'s `spawn`. 
+Child actors are spawned with @apidoc[typed.*.ActorContext]'s `spawn`.
 In the example below, when the root actor
 is started, it spawns a child actor described by the behavior `HelloWorld.greeter`. Additionally, when the root actor receives a
 `Start` message, it creates a child actor defined by the behavior `HelloWorldBot.bot`:
