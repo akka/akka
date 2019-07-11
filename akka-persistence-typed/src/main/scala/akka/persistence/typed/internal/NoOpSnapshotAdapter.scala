@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.persistence.typed.internal
 
 import akka.annotation.InternalApi
@@ -16,7 +20,7 @@ private[akka] class NoOpSnapshotAdapter extends SnapshotAdapter[Any] {
  * INTERNAL API
  */
 @InternalApi
-object NoOpSnapshotAdapter {
+private[akka] object NoOpSnapshotAdapter {
   val i = new NoOpSnapshotAdapter
   def instance[S]: SnapshotAdapter[S] = i.asInstanceOf[SnapshotAdapter[S]]
 }

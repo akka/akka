@@ -24,7 +24,3 @@ trait SnapshotAdapter[State] {
    */
   def fromJournal(from: Any): State
 }
-
-
-
-

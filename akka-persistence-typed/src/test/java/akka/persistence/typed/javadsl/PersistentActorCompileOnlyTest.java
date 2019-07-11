@@ -118,7 +118,6 @@ public class PersistentActorCompileOnlyTest {
           }
           // #install-event-adapter
 
-
           @Override
           public SnapshotAdapter<SimpleState> snapshotAdapter() {
             return new SnapshotAdapter<SimpleState>() {
