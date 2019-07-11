@@ -6,6 +6,7 @@ package jdocs.akka.typed;
 
 // #oo-style
 // #fun-style
+import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
@@ -402,5 +403,58 @@ interface StyleGuideDocExamples {
       }
     }
     // #fun-style-setup-params3
+  }
+
+  interface FactoryMethod {
+    // #behavior-factory-method
+    public class CountDown extends AbstractBehavior<CountDown.Command> {
+
+      public interface Command {}
+
+      public enum Down implements Command {
+        INSTANCE
+      }
+
+      // factory for the initial `Behavior`
+      public static Behavior<Command> create(int countDownFrom, ActorRef<Done> notifyWhenZero) {
+        return Behaviors.setup(context -> new CountDown(countDownFrom, notifyWhenZero));
+      }
+
+      private final ActorRef<Done> notifyWhenZero;
+      private int remaining;
+
+      private CountDown(int countDownFrom, ActorRef<Done> notifyWhenZero) {
+        this.remaining = countDownFrom;
+        this.notifyWhenZero = notifyWhenZero;
+      }
+
+      @Override
+      public Receive<Command> createReceive() {
+        return newReceiveBuilder().onMessage(Down.class, notUsed -> onDown()).build();
+      }
+
+      private Behavior<Command> onDown() {
+        remaining--;
+        if (remaining == 0) {
+          notifyWhenZero.tell(Done.getInstance());
+          return Behaviors.stopped();
+        } else {
+          return this;
+        }
+      }
+    }
+    // #behavior-factory-method
+
+    public class Usage {
+      private ActorContext<?> context = null;
+      private ActorRef<Done> doneRef = null;
+
+      {
+        // #behavior-factory-method-spawn
+        ActorRef<CountDown.Command> countDown =
+            context.spawn(CountDown.create(100, doneRef), "countDown");
+        // #behavior-factory-method-spawn
+      }
+    }
   }
 }

@@ -169,7 +169,7 @@ That's nice. One thing to be cautious with here is that it's important that you 
 each spawned actor, since those parameters must not be shared between different actor instances. That comes natural
 when creating the instance from `Behaviors.setup` as in the above example. Having a
 @scala[`apply` factory method in the companion object and making the constructor private is recommended.]
-@java[static `create` factory method and making the constructor private is highly recommended.]
+@java[static `create` factory method and making the constructor private is recommended.]
 
 This can also be useful when testing the behavior by creating a test subclass that overrides certain methods in the
 class. The test would create the instance without the @scala[`apply` factory method]@java[static `create` factory method].
@@ -190,3 +190,41 @@ Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #fun-style-setup-params4 }
 
 @@@
+
+## Behavior factory method
+
+The initial behavior should be created via @scala[a factory method in the companion object]@java[a static factory method].
+Thereby the usage of the behavior doesn't change when the implementation is changed, for example if
+changing between object-oriented and function style.
+
+The factory method is a good place for retrieving resources like `Behaviors.withTimers` and `Behaviors.withStash`.
+
+When using the object-oriented style it's a good convention to always create the instance from a `Behaviors.setup`
+block in the this factory method even though the `ActorContext` is not needed. The reason is that it prevents
+mistakes of sharing the same instance of the `Behavior` between different actor instances.
+Typically, the `ActorContext` is needed anyway.
+
+The naming convention for the factory method is @scala[`apply` (when using Scala)]@java[`create` (when using Java)].
+Consistent naming makes it easier for readers of the code to find the "starting point" of the behavior.
+
+In the functional style the factory could even have been defined as a @scala[`val`]@java[`static field`]
+if all state is immutable and captured by the function, but since most behaviors need some initialization
+parameters it is preferred to consistently use a method @scala[(`def`)] for the factory.
+
+Example:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #behavior-factory-method }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #behavior-factory-method }
+
+When spawning an actor from this initial behavior it looks like:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #behavior-factory-method-spawn }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #behavior-factory-method-spawn }
+
+

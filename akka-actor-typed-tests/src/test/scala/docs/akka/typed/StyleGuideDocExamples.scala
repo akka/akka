@@ -17,6 +17,8 @@ import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.scaladsl.AbstractBehavior
 //#oo-style
 
+import akka.Done
+
 object StyleGuideDocExamples {
 
   object FunctionalStyle {
@@ -252,6 +254,44 @@ object StyleGuideDocExamples {
     }
 
     // #fun-style-setup-params4
+  }
+
+  object FactoryMethod {
+    //#behavior-factory-method
+    object CountDown {
+      sealed trait Command
+      case object Down extends Command
+
+      // factory for the initial `Behavior`
+      def apply(countDownFrom: Int, notifyWhenZero: ActorRef[Done]): Behavior[Command] =
+        new CountDown(notifyWhenZero).counter(countDownFrom)
+    }
+
+    private class CountDown(notifyWhenZero: ActorRef[Done]) {
+      import CountDown._
+
+      private def counter(remaining: Int): Behavior[Command] = {
+        Behaviors.receiveMessage {
+          case Down =>
+            if (remaining == 1) {
+              notifyWhenZero.tell(Done)
+              Behaviors.stopped
+            } else
+              counter(remaining - 1)
+        }
+      }
+
+    }
+    //#behavior-factory-method
+
+    object Usage {
+      val context: ActorContext[_] = ???
+      val doneRef: ActorRef[Done] = ???
+
+      //#behavior-factory-method-spawn
+      val countDown = context.spawn(CountDown(100, doneRef), "countDown")
+      //#behavior-factory-method-spawn
+    }
   }
 
 }
