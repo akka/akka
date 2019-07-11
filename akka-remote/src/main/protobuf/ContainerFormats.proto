@@ -62,6 +62,12 @@ message Throwable {
   repeated StackTraceElement stackTrace = 4;
 }
 
+message ThrowableNotSerializable {
+  required string message = 1;
+  required string originalMessage = 2;
+  required string originalClassName = 3;
+}
+
 message ActorInitializationException {
   optional ActorRef actor = 1;
   required string message = 2;
