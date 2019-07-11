@@ -265,3 +265,33 @@ Scala
 
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }
+
+## Public vs. private messages
+
+Often an actor has some messages that are only for it's internal implementation and not part of the public
+message protocol. For example, it can be timer messages or wrapper messages for `ask` or `messageAdapter`.
+
+That can be be achieved by defining those messages with `private` visibility. Then they can't be accessed
+and sent from the outside of the actor. The private messages must still @scala[extend]@java[implement] the
+public `Command` @scala[trait]@java[interface].
+
+Example of a private visibility for internal message:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #public-private-messages-1 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #public-private-messages-1 }
+
+There is another approach, which is valid but more complicated. It's not relying on visibility from the programming
+language but instead only exposing part of the message class hierarchy to the outside, by using `narrow`. The
+former approach is recommended but it can be good to know this "trick", for example it can be useful when
+using shared message protocol classes as described in @ref:[Where to define messages](#where-to-define-messages).
+
+Example of not exposing internal message in public `Behavior` type:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #public-private-messages-2 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #public-private-messages-2 }

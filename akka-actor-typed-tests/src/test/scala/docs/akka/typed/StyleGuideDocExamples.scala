@@ -317,4 +317,91 @@ object StyleGuideDocExamples {
     //#message-protocol
   }
 
+  object PublicVsPrivateMessages1 {
+    //#public-private-messages-1
+    object Counter {
+      sealed trait Command
+      case object Increment extends Command
+      final case class GetValue(replyTo: ActorRef[Value]) extends Command
+      final case class Value(n: Int)
+
+      // Tick is private so can't be sent from the outside
+      private case object Tick extends Command
+
+      def apply(name: String, tickInterval: FiniteDuration): Behavior[Command] =
+        Behaviors.setup { context =>
+          Behaviors.withTimers { timers =>
+            timers.startTimerWithFixedDelay("tick", Tick, tickInterval)
+            new Counter(name, context).counter(0)
+          }
+        }
+    }
+
+    class Counter private (name: String, context: ActorContext[Counter.Command]) {
+      import Counter._
+
+      private def counter(n: Int): Behavior[Command] =
+        Behaviors.receiveMessage {
+          case Increment =>
+            val newValue = n + 1
+            context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+            counter(newValue)
+          case Tick =>
+            val newValue = n + 1
+            context.log.debug("[{}] Incremented counter by background tick to [{}]", name, newValue)
+            counter(newValue)
+          case GetValue(replyTo) =>
+            replyTo ! Value(n)
+            Behaviors.same
+        }
+    }
+  }
+  //#public-private-messages-1
+
+  object PublicVsPrivateMessages2 {
+    //#public-private-messages-2
+    // above example is preferred, but this is possible and not wrong
+    object Counter {
+      sealed trait PrivateCommand
+      sealed trait Command extends PrivateCommand
+      case object Increment extends Command
+      final case class GetValue(replyTo: ActorRef[Value]) extends Command
+      final case class Value(n: Int)
+
+      // Tick is a PrivateCommand so can't be sent to an ActorRef[Command]
+      case object Tick extends PrivateCommand
+
+      def apply(name: String, tickInterval: FiniteDuration): Behavior[Command] = {
+        Behaviors
+          .setup[Counter.PrivateCommand] { context =>
+            Behaviors.withTimers { timers =>
+              timers.startTimerWithFixedDelay("tick", Tick, tickInterval)
+              new Counter(name, context).counter(0)
+            }
+          }
+          .narrow // note narrow here
+      }
+    }
+
+    class Counter private (name: String, context: ActorContext[Counter.PrivateCommand]) {
+      import Counter._
+
+      private def counter(n: Int): Behavior[PrivateCommand] =
+        Behaviors.receiveMessage {
+          case Increment =>
+            val newValue = n + 1
+            context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+            counter(newValue)
+          case Tick =>
+            val newValue = n + 1
+            context.log.debug("[{}] Incremented counter by background tick to [{}]", name, newValue)
+            counter(newValue)
+          case GetValue(replyTo) =>
+            replyTo ! Value(n)
+            Behaviors.same
+        }
+    }
+  }
+  //#public-private-messages-2
+
 }
