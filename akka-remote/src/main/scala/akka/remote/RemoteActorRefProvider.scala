@@ -709,9 +709,6 @@ private[akka] class RemoteActorRef private[akka] (
             provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
           else if (provider.remoteWatcher.isDefined)
             remote.send(message, OptionVal.None, this)
-          else {
-            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Unwatch")
-          }
 
         case _ =>
           remote.send(message, OptionVal.None, this)

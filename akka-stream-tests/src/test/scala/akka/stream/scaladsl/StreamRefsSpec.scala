@@ -155,6 +155,7 @@ object StreamRefsSpec {
       remote {
         artery.canonical.port = 0
         classic.netty.tcp.port = 0
+        use-unsafe-remote-features-without-cluster = on
       }
     }
   """).withFallback(ConfigFactory.load())

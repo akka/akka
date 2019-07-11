@@ -255,6 +255,7 @@ object TestPublisher {
     }
 
     def expectCancellation(): Self = {
+      // if `akka.remote.use-unsafe-remote-features-without-cluster = on or using Cluster`
       subscription.expectCancellation()
       this
     }
