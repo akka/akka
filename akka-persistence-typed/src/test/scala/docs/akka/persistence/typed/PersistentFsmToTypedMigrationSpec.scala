@@ -17,10 +17,7 @@ import akka.persistence.fsm.PersistentFSMSpec.ItemAdded
 import akka.persistence.fsm.PersistentFSMSpec.OrderDiscarded
 import akka.persistence.fsm.PersistentFSMSpec.OrderExecuted
 import akka.persistence.fsm.PersistentFSMSpec.ShoppingCart
-import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.EventSeq
-import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{ EventAdapter, EventSeq, ExpectingReply, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.PersistentFSMMigration
@@ -42,32 +39,35 @@ object ShoppingCartActor {
 
   def apply(pid: PersistenceId) = behavior(pid)
 
+  //#commands
   sealed trait Command
   case class AddItem(item: Item) extends Command
   case object Buy extends Command
   case object Leave extends Command
   case class GetCurrentCart(replyTo: ActorRef[ShoppingCart]) extends Command with ExpectingReply[ShoppingCart]
+  //#commands
 
+  //#state
   sealed trait State
   case class LookingAround(cart: ShoppingCart) extends State
   case class Shopping(cart: ShoppingCart) extends State
   case class Inactive(cart: ShoppingCart) extends State
   case class Paid(cart: ShoppingCart) extends State
+  //#state
 
-  val persistentFSMSnapshotAdapter = PersistentFSMMigration.snapshotAdapter[State] {
+  //#snapshot-adapter
+  val persistentFSMSnapshotAdapter: SnapshotAdapter[State] = PersistentFSMMigration.snapshotAdapter[State] {
     case (stateIdentifier, data, _) =>
-      println(s"PFSM Snapshot: $stateIdentifier $data")
       val cart = data.asInstanceOf[ShoppingCart]
-      val state = stateIdentifier match {
+      stateIdentifier match {
         case "Looking Around" => LookingAround(cart)
         case "Shopping"       => Shopping(cart)
         case "Inactive"       => Inactive(cart)
         case "Paid"           => Paid(cart)
         case id               => throw new IllegalStateException(s"Unexpected state identifier $id")
       }
-      println("Recovered to state: " + state)
-      state
   }
+  //#snapshot-adapter
 
   //#event-adapter
   class PersistentFsmEventAdapter extends EventAdapter[DomainEvent, Any] {
