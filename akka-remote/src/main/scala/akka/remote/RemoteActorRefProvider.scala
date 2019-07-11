@@ -688,21 +688,33 @@ private[akka] class RemoteActorRef private[akka] (
   def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef): Boolean = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-    val intercept = provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
-    if (intercept) provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch/Unwatch")
-    intercept
+    provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
   }
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {
       //send to remote, unless watch message is intercepted by the remoteWatcher
       message match {
-        case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher.foreach(_ ! RemoteWatcher.WatchRemote(watchee, watcher))
+        case Watch(watchee, watcher) =>
+          if (isWatchIntercepted(watchee, watcher))
+            provider.remoteWatcher.foreach(_ ! RemoteWatcher.WatchRemote(watchee, watcher))
+          else if (provider.remoteWatcher.isDefined)
+            remote.send(message, OptionVal.None, this)
+          else
+            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch")
+
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
-        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
-        case _ => remote.send(message, OptionVal.None, this)
+        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) =>
+          if (isWatchIntercepted(watchee, watcher))
+            provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
+          else if (provider.remoteWatcher.isDefined)
+            remote.send(message, OptionVal.None, this)
+          else {
+            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Unwatch")
+          }
+
+        case _ =>
+          remote.send(message, OptionVal.None, this)
       }
     } catch handleException(message, Actor.noSender)
 
