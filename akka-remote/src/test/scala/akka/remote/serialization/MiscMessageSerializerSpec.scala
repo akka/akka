@@ -9,7 +9,6 @@ import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
-
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
 import java.util.Optional
@@ -79,6 +78,14 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "TestException" -> new TestException("err"),
       "TestExceptionNoStack" -> new TestExceptionNoStack("err2"),
       "TestException with cause" -> new TestException("err3", new TestException("cause")),
+      // TODO issue #27330: TimeoutException not enabled for serialization in 2.5.x yet
+      //"TimeoutException" -> new TimeoutException("err"),
+      //"AskTimeoutException" -> new AskTimeoutException("err"),
+      //TODO issue #27330: ThrowableNotSerializableException not enabled for serialization in 2.5.x yet
+      //"ThrowableNotSerializableException" -> new ThrowableNotSerializableException(
+      //  "orgErr",
+      //  classOf[IllegalStateException].getName,
+      //  new IllegalStateException("orgErr")),
       "Status.Success" -> Status.Success("value"),
       "Status.Failure" -> Status.Failure(new TestException("err")),
       "Status.Failure JavaSer" -> Status.Failure(new OtherException("exc")), // exc with JavaSerializer
@@ -145,7 +152,15 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
 
     def verifySerialization(msg: AnyRef): Unit = {
       val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg)) should ===(msg)
+      val result = serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg))
+      msg match {
+        case t: Throwable =>
+          // typically no equals in exceptions
+          result.getClass should ===(t.getClass)
+          result.asInstanceOf[Throwable].getMessage should ===(t.getMessage)
+        case _ =>
+          result should ===(msg)
+      }
     }
 
     // Separate tests due to missing equality on ActorInitializationException
@@ -198,5 +213,24 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       // deserialized.getCause should ===(aiex.getCause)
       deserialized.getCause should be(null)
     }
+
+    "serialize and deserialze ThrowableNotSerializableException" in {
+      //TODO issue #27330: ThrowableNotSerializableException not enabled for serialization in 2.5.x yet
+      pending
+
+      val notExc = new ThrowableNotSerializableException(
+        "test",
+        classOf[IllegalStateException].getName,
+        new IllegalStateException("test"))
+      val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val deserialized = serializer
+        .fromBinary(serializer.toBinary(notExc), serializer.manifest(notExc))
+        .asInstanceOf[ThrowableNotSerializableException]
+
+      deserialized.originalMessage should ===(notExc.originalMessage)
+      deserialized.originalClassName should ===(notExc.originalClassName)
+      deserialized.getCause should ===(null)
+    }
+
   }
 }
