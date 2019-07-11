@@ -18,7 +18,7 @@ Akka persistence query complements @ref:[Persistence](persistence.md) by providi
 query interface that various journal plugins can implement in order to expose their query capabilities.
 
 The most typical use case of persistence query is implementing the so-called query side (also known as "read side")
-in the popular CQRS architecture pattern - in which the writing side of the application (e.g. implemented using akka
+in the popular CQRS architecture pattern - in which the writing side of the application (e.g. implemented using Akka
 persistence) is completely separated from the "query side". Akka Persistence Query itself is *not* directly the query
 side of an application, however it can help to migrate data from the write side to the query side database. In very
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly

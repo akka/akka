@@ -2,7 +2,7 @@
 
 ## Dependency
 
-Mailboxes are part of core akka, which means that they are part of the akka-actor-typed dependency:
+Mailboxes are part of core Akka, which means that they are part of the akka-actor-typed dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
