@@ -83,7 +83,6 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
         actor ! "four"
       }
       latch.open()
-      Thread.sleep(200)
     }
 
     "select an arbitrary mailbox from config" in {

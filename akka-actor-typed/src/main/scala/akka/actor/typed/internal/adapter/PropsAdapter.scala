@@ -6,10 +6,7 @@ package akka.actor.typed.internal.adapter
 
 import akka.actor.Deploy
 import akka.actor.typed.Behavior
-import akka.actor.typed.BoundedMailboxSelector
-import akka.actor.typed.DefaultMailboxSelector
 import akka.actor.typed.DispatcherSelector
-import akka.actor.typed.MailboxFromConfigSelector
 import akka.actor.typed.MailboxSelector
 import akka.actor.typed.Props
 import akka.actor.typed.internal.PropsImpl._
