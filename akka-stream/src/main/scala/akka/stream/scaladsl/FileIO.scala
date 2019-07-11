@@ -20,8 +20,6 @@ import scala.concurrent.Future
  */
 object FileIO {
 
-  import Sink.{ shape => sinkShape }
-
   /**
    * Creates a Source from a files contents.
    * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
@@ -139,5 +137,5 @@ object FileIO {
    * @param startPosition the start position to write to
    */
   def toPath(f: Path, options: Set[OpenOption], startPosition: Long): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph(new FileSink(f, startPosition, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
+    Sink.fromGraph(new FileOutputStage(f, startPosition, options))
 }

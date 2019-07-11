@@ -19,7 +19,7 @@ trait OptionalTests {
     if (flag.value)
       try test
       catch {
-        case ex: Exception =>
+        case _: Exception =>
           throw new AssertionError(
             "Implementation did not pass this spec. " +
             "If your journal will be (by definition) unable to abide the here tested rule, you can disable this test," +

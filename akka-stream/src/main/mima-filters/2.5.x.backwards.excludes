@@ -105,6 +105,13 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamSour
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$Continue$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSinkActor$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSink")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSinkActor")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSink")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSubscriber")
+
 
 # #25045 adding Java/Scala interop to SourceQueue and SinkQueue
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")
@@ -137,3 +144,7 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSin
 # #19980 subscription timeouts for streams
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.subTimeoutHandling")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutOutputs.this")
+
+# #24304 stack overflow in StreamConverters
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.CollectorState")
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.ReducerState")

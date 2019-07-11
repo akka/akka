@@ -25,7 +25,7 @@ works and assumes you know what is meant by `Command`, `Event` and `State`.
 
 ## Example
 
-Let's start with a simple example. The minimum required for a `EventSourcedBehavior` is:
+Let's start with a simple example. The minimum required for a @apidoc[EventSourcedBehavior] is:
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #structure }
@@ -144,7 +144,7 @@ interpreted correctly on replay. Cluster Sharding ensures that there is only one
 
 ## Accessing the ActorContext
 
-If the `EventSourcedBehavior` needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by
+If the @apidoc[EventSourcedBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
 wrapping construction with `Behaviors.setup`:
 
 Scala

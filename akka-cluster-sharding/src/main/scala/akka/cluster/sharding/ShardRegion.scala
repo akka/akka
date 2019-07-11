@@ -226,7 +226,7 @@ object ShardRegion {
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery
+  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
@@ -236,7 +236,7 @@ object ShardRegion {
   /**
    * Reply to `GetCurrentRegions`
    */
-  @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) {
+  @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) extends ClusterShardingSerializable {
 
     /**
      * Java API
@@ -257,13 +257,16 @@ object ShardRegion {
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) case class GetClusterShardingStats(timeout: FiniteDuration) extends ShardRegionQuery
+  @SerialVersionUID(1L) case class GetClusterShardingStats(timeout: FiniteDuration)
+      extends ShardRegionQuery
+      with ClusterShardingSerializable
 
   /**
    * Reply to [[GetClusterShardingStats]], contains statistics about all the sharding regions
    * in the cluster.
    */
-  @SerialVersionUID(1L) final case class ClusterShardingStats(regions: Map[Address, ShardRegionStats]) {
+  @SerialVersionUID(1L) final case class ClusterShardingStats(regions: Map[Address, ShardRegionStats])
+      extends ClusterShardingSerializable {
 
     /**
      * Java API
@@ -761,7 +764,7 @@ private[akka] class ShardRegion(
   }
 
   def askAllShards[T: ClassTag](msg: Any): Future[Seq[(ShardId, T)]] = {
-    implicit val timeout: Timeout = 3.seconds
+    implicit val timeout: Timeout = settings.shardRegionQueryTimeout
     Future.sequence(shards.toSeq.map {
       case (shardId, ref) => (ref ? msg).mapTo[T].map(t => (shardId, t))
     })
@@ -816,17 +819,30 @@ private[akka] class ShardRegion(
     if (entityProps.isDefined) Register(self) else RegisterProxy(self)
 
   def requestShardBufferHomes(): Unit = {
+    // Have to use vars because MessageBufferMap has no map, only foreach
+    var totalBuffered = 0
+    var shards = List.empty[String]
     shardBuffers.foreach {
       case (shard, buf) =>
         coordinator.foreach { c =>
-          val logMsg = "{}: Retry request for shard [{}] homes from coordinator at [{}]. [{}] buffered messages."
-          if (retryCount >= 5)
-            log.warning(logMsg, typeName, shard, c, buf.size)
-          else
-            log.debug(logMsg, typeName, shard, c, buf.size)
-
+          totalBuffered += buf.size
+          shards ::= shard
+          log.debug(
+            "{}: Retry request for shard [{}] homes from coordinator at [{}]. [{}] buffered messages.",
+            typeName,
+            shard,
+            c,
+            buf.size)
           c ! GetShardHome(shard)
         }
+    }
+
+    if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
+      log.warning(
+        "{}: Retry request for shards [{}] homes from coordinator. [{}] total buffered messages.",
+        typeName,
+        shards.sorted.mkString(","),
+        totalBuffered)
     }
   }
 

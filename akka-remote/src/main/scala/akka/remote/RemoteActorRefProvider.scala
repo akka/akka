@@ -331,12 +331,11 @@ private[akka] class RemoteActorRefProvider(
   // Log on `init` similar to `warnIfDirectUse`.
   private[akka] def warnIfUseUnsafeWithoutCluster(): Unit =
     if (!settings.HasCluster) {
-      val msg =
-        if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
-          "`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled."
-        else
-          "Using Akka Cluster is recommended if you need remote watch and deploy."
-      log.warning(s"Cluster not in use - {}", msg)
+      if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
+        log.info(
+          "Akka Cluster not in use - enabling unsafe features anyway because `akka.remote.use-unsafe-remote-features-without-cluster` has been enabled.")
+      else
+        log.warning("Akka Cluster not in use - Using Akka Cluster is recommended if you need remote watch and deploy.")
     }
 
   protected def warnOnUnsafe(message: String): Unit =

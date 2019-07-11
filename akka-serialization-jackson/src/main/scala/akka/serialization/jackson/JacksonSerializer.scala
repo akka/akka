@@ -175,6 +175,12 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       if (bytes.length > compressLargerThan) compress(bytes)
       else bytes
 
+    logToBinaryDuration(obj, startTime, bytes, result)
+
+    result
+  }
+
+  private def logToBinaryDuration(obj: AnyRef, startTime: Long, bytes: Array[Byte], result: Array[Byte]) = {
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
       if (bytes.length == result.length)
@@ -191,8 +197,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           result.length,
           bytes.length)
     }
-
-    result
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
@@ -217,25 +221,50 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     if (className ne manifestClassName)
       checkAllowedClassName(className)
 
-    val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
-      case Success(c) => c
-      case Failure(_) =>
-        throw new NotSerializableException(
-          s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
+    if (isCaseObject(className)) {
+      val result = system.dynamicAccess.getObjectFor[AnyRef](className) match {
+        case Success(obj) => obj
+        case Failure(_) =>
+          throw new NotSerializableException(
+            s"Cannot find manifest case object [$className] for serializer [${getClass.getName}].")
+      }
+      val clazz = result.getClass
+      checkAllowedClass(clazz)
+      // no migrations for case objects, since no json tree
+      logFromBinaryDuration(bytes, bytes, startTime, clazz)
+      result
+    } else {
+      val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
+        case Success(c) => c
+        case Failure(_) =>
+          throw new NotSerializableException(
+            s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
+      }
+      checkAllowedClass(clazz)
+
+      val decompressBytes = if (compressed) decompress(bytes) else bytes
+
+      val result = migration match {
+        case Some(transformer) if fromVersion < transformer.currentVersion =>
+          val jsonTree = objectMapper.readTree(decompressBytes)
+          val newJsonTree = transformer.transform(fromVersion, jsonTree)
+          objectMapper.treeToValue(newJsonTree, clazz)
+        case _ =>
+          objectMapper.readValue(decompressBytes, clazz)
+      }
+
+      logFromBinaryDuration(bytes, decompressBytes, startTime, clazz)
+
+      result
+
     }
-    checkAllowedClass(clazz)
+  }
 
-    val decompressBytes = if (compressed) decompress(bytes) else bytes
-
-    val result = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion =>
-        val jsonTree = objectMapper.readTree(decompressBytes)
-        val newJsonTree = transformer.transform(fromVersion, jsonTree)
-        objectMapper.treeToValue(newJsonTree, clazz)
-      case _ =>
-        objectMapper.readValue(decompressBytes, clazz)
-    }
-
+  private def logFromBinaryDuration(
+      bytes: Array[Byte],
+      decompressBytes: Array[Byte],
+      startTime: Long,
+      clazz: Class[_ <: AnyRef]) = {
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
       if (bytes.length == decompressBytes.length)
@@ -252,9 +281,10 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           bytes.length,
           decompressBytes.length)
     }
-
-    result
   }
+
+  private def isCaseObject(className: String): Boolean =
+    className.length > 0 && className.charAt(className.length - 1) == '$'
 
   private def checkAllowedClassName(className: String): Unit = {
     if (!blacklist.isAllowedClassName(className)) {

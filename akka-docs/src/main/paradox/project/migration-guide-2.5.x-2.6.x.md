@@ -68,6 +68,11 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 * `Logging.getLogger(UntypedActor)` Untyped actor has been removed, use AbstractActor instead.
 * `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
 * `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
+* `AbstractActor.getChild` use `findChild` instead.
+* `Actor.getRef` use `Actor.getActorRef` instead.
+* `CircuitBreaker.onOpen` use `CircuitBreaker.addOnOpenListener`
+* `CircuitBreaker.onHalfOpen` use `CircuitBreaker.addOnHalfOpenListener`
+* `CircuitBreaker.onClose` use `CircuitBreaker.addOnCloseListener`
 
 ### JavaTestKit removed
 
@@ -301,10 +306,10 @@ and then it will behave as in Akka 2.5.x:
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
 
-### IOSources
+### IOSources & FileIO
 
-`StreamConverters.fromInputStream` and `StreamConverters.fromOutputStream` now always fails the materialized value in all failure cases. It is no longer required
-to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
+`FileIO.toPath`, `StreamConverters.fromInputStream`, and `StreamConverters.fromOutputStream` now always fail the materialized value in case of failure. 
+It is no longer required to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
 the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException].
 
 ### Akka now uses Fork Join Pool from JDK
@@ -386,7 +391,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
 * `ActorContext` parameter removed in `javadsl.ReceiveBuilder` for the functional style in Java. Use `Behaviors.setup`
    to retrieve `ActorContext`, and use an enclosing class to hold initialization parameters and `ActorContext`.
-* Java @apidoc[akka.cluster.sharding.typed.javadsl.EntityRef] ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
+* Java @javadoc[EntityRef](akka.cluster.sharding.typed.javadsl.EntityRef) ask timeout now takes a `java.time.Duration` rather than a @apidoc[Timeout]
 * Changed method signature for `EventAdapter.fromJournal` and support for `manifest` in `EventAdapter`.
 * `BehaviorInterceptor`, `Behaviors.monitor`, `Behaviors.withMdc` and @scala[`widen`]@java[`Behaviors.widen`] takes
   a @scala[`ClassTag` parameter (probably source compatible)]@java[`interceptMessageClass` parameter].
