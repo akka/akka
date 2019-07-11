@@ -80,13 +80,11 @@ private[akka] final class GroupRouterImpl[T](
     routeesInitiallyEmpty: Boolean)
     extends AbstractBehavior[T] {
 
-  // casting trix to avoid having to wrap incoming messages - note that this will cause problems if intercepting
-  // messages to a router
-  ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self.unsafeUpcast[Any].narrow[Receptionist.Listing])
   private var routeesEmpty = routeesInitiallyEmpty
 
   def onMessage(msg: T): Behavior[T] = msg match {
     case l @ serviceKey.Listing(update) =>
+      ctx.log.debug("Update from receptionist: [{}]", l)
       val routees =
         if (update.nonEmpty) update
         else
