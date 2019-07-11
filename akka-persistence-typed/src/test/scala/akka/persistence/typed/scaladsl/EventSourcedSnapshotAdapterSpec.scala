@@ -12,6 +12,7 @@ import akka.actor.typed.ActorRef
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.typed.{ PersistenceId, SnapshotAdapter }
+import akka.serialization.jackson.CborSerializable
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.WordSpecLike
@@ -23,10 +24,10 @@ object EventSourcedSnapshotAdapterSpec {
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
   """)
-  case class State(s: String)
-  case class Command(c: String)
-  case class Event(e: String)
-  case class PersistedState(s: String)
+  case class State(s: String) extends CborSerializable
+  case class Command(c: String) extends CborSerializable
+  case class Event(e: String) extends CborSerializable
+  case class PersistedState(s: String) extends CborSerializable
 }
 
 class EventSourcedSnapshotAdapterSpec
