@@ -12,15 +12,17 @@ import akka.cluster.ClusterEvent._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.Done
 import akka.pattern.ask
-import akka.remote.QuarantinedEvent
+import akka.remote.{ QuarantinedEvent => ClassicQuarantinedEvent }
+import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
 import com.typesafe.config.Config
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -402,7 +404,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   override def preStart(): Unit = {
-    context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
+    subscribeQuarantinedEvent()
 
     cluster.downingProvider.downingActorProps.foreach { props =>
       val propsWithDispatcher =
@@ -422,6 +424,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     } else {
       self ! JoinSeedNodes(seedNodes)
     }
+  }
+
+  @silent
+  private def subscribeQuarantinedEvent(): Unit = {
+    context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
+    context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])
   }
 
   private def isClusterBootstrapUsed: Boolean = {
@@ -537,12 +545,13 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case InitJoin(joiningNodeConfig) =>
         logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
         initJoin(joiningNodeConfig)
-      case Join(node, roles)                => joining(node, roles)
-      case ClusterUserAction.Down(address)  => downing(address)
-      case ClusterUserAction.Leave(address) => leaving(address)
-      case SendGossipTo(address)            => sendGossipTo(address)
-      case msg: SubscriptionMessage         => publisher.forward(msg)
-      case QuarantinedEvent(address, uid)   => quarantined(UniqueAddress(address, uid))
+      case Join(node, roles)                     => joining(node, roles)
+      case ClusterUserAction.Down(address)       => downing(address)
+      case ClusterUserAction.Leave(address)      => leaving(address)
+      case SendGossipTo(address)                 => sendGossipTo(address)
+      case msg: SubscriptionMessage              => publisher.forward(msg)
+      case QuarantinedEvent(ua)                  => quarantined(UniqueAddress(ua))
+      case ClassicQuarantinedEvent(address, uid) => quarantined(UniqueAddress(address, uid))
       case ClusterUserAction.JoinTo(address) =>
         logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
       case JoinSeedNodes(nodes) =>

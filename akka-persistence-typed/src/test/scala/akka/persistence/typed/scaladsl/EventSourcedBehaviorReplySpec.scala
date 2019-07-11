@@ -15,6 +15,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -29,16 +30,16 @@ object EventSourcedBehaviorReplySpec {
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     """)
 
-  sealed trait Command[ReplyMessage] extends ExpectingReply[ReplyMessage]
+  sealed trait Command[ReplyMessage] extends ExpectingReply[ReplyMessage] with CborSerializable
   final case class IncrementWithConfirmation(override val replyTo: ActorRef[Done]) extends Command[Done]
   final case class IncrementReplyLater(override val replyTo: ActorRef[Done]) extends Command[Done]
   final case class ReplyNow(override val replyTo: ActorRef[Done]) extends Command[Done]
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
 
-  sealed trait Event
+  sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event
 
-  final case class State(value: Int, history: Vector[Int])
+  final case class State(value: Int, history: Vector[Int]) extends CborSerializable
 
   def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
     Behaviors.setup(ctx => counter(ctx, persistenceId))

@@ -59,13 +59,15 @@ abstract class PersistenceSpec(config: Config)
 }
 
 object PersistenceSpec {
-  def config(plugin: String, test: String, serialization: String = "on", extraConfig: Option[String] = None) =
+  def config(plugin: String, test: String, serialization: String = "off", extraConfig: Option[String] = None) =
     extraConfig
       .map(ConfigFactory.parseString(_))
       .getOrElse(ConfigFactory.empty())
       .withFallback(ConfigFactory.parseString(s"""
       akka.actor.serialize-creators = ${serialization}
       akka.actor.serialize-messages = ${serialization}
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
       akka.actor.warn-about-java-serializer-usage = off
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"

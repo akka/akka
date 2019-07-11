@@ -6,22 +6,22 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.typed.scaladsl.AskPattern._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.internal.ActorTestKitGuardian
+import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.annotation.InternalApi
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.ActorTestKitGuardian
-import akka.actor.testkit.typed.internal.TestKitUtils
+import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.util.Timeout
 
 object ActorTestKit {
 
@@ -112,7 +112,10 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
 
-  private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
     if (config eq ActorTestKit.noConfigSet) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
     else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
 
@@ -184,6 +187,11 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String): TestProbe[M] = TestProbe(name)(system)
+
+  /**
+   * Additional testing utilities for serialization.
+   */
+  val serializationTestKit: SerializationTestKit = new SerializationTestKit(internalSystem)
 
   // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
   @InternalApi

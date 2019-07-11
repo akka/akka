@@ -12,6 +12,7 @@ import akka.util.ByteString
 import akka.protobuf.InvalidProtocolBufferException
 import akka.protobuf.{ ByteString => PByteString }
 import akka.util.OptionVal
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -25,6 +26,7 @@ private[remote] class PduCodecException(msg: String, cause: Throwable) extends A
  * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
  * of decoded Akka Protocol Data Units (PDUs).
  */
+@silent // deprecated
 private[remote] object AkkaPduCodec {
 
   /**
@@ -55,6 +57,7 @@ private[remote] object AkkaPduCodec {
  *
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
+@silent // deprecated
 private[remote] trait AkkaPduCodec {
   import AkkaPduCodec._
 
@@ -114,6 +117,7 @@ private[remote] trait AkkaPduCodec {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   import AkkaPduCodec._
 

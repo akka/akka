@@ -199,4 +199,9 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    */
   def shutdownTestKit(): Unit = delegate.shutdownTestKit()
 
+  /**
+   * Additional testing utilities for serialization.
+   */
+  val serializationTestKit: SerializationTestKit = new SerializationTestKit(delegate.internalSystem)
+
 }

@@ -9,6 +9,7 @@ import java.lang.management.ManagementFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor._
@@ -23,6 +24,7 @@ import akka.routing.ActorRefRoutee
 import akka.routing.Routees
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
+import akka.serialization.jackson.CborSerializable
 import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
@@ -52,7 +54,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
   }
 
   case object AllocateMemory
-  final case class Reply(address: Address)
+  final case class Reply(address: Address) extends CborSerializable
 
   val node1 = role("node-1")
   val node2 = role("node-2")

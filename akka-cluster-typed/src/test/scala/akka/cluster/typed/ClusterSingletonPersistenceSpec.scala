@@ -24,7 +24,6 @@ object ClusterSingletonPersistenceSpec {
 
       akka.actor {
         serialize-messages = off
-        allow-java-serialization = off
       }
 
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"

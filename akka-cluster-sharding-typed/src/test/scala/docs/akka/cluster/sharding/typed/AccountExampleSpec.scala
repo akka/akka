@@ -22,9 +22,10 @@ object AccountExampleSpec {
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
-
+      
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """)
+      akka.persistence.journal.inmem.test-serialization = on
+      """)
 
 }
 
@@ -113,6 +114,31 @@ class AccountExampleSpec extends ScalaTestWithActorTestKit(AccountExampleSpec.co
       ref.ask(Deposit(100, _)).futureValue should ===(Confirmed)
       ref.ask(Withdraw(10, _)).futureValue should ===(Confirmed)
       ref.ask(GetBalance(_)).map(_.balance).futureValue should ===(90)
+    }
+
+    "verifySerialization" in {
+      val opProbe = createTestProbe[OperationResult]()
+      serializationTestKit.verifySerialization(CreateAccount(opProbe.ref))
+      serializationTestKit.verifySerialization(Deposit(100, opProbe.ref))
+      serializationTestKit.verifySerialization(Withdraw(90, opProbe.ref))
+      serializationTestKit.verifySerialization(CloseAccount(opProbe.ref))
+
+      serializationTestKit.verifySerialization(Confirmed)
+      serializationTestKit.verifySerialization(Rejected("overdraft"))
+
+      val getProbe = createTestProbe[CurrentBalance]()
+      serializationTestKit.verifySerialization(GetBalance(getProbe.ref))
+
+      serializationTestKit.verifySerialization(CurrentBalance(100))
+
+      serializationTestKit.verifySerialization(AccountCreated)
+      serializationTestKit.verifySerialization(Deposited(100))
+      serializationTestKit.verifySerialization(Withdrawn(90))
+      serializationTestKit.verifySerialization(AccountClosed)
+
+      serializationTestKit.verifySerialization(EmptyAccount)
+      serializationTestKit.verifySerialization(OpenedAccount(100))
+      serializationTestKit.verifySerialization(ClosedAccount)
     }
 
   }

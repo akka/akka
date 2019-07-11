@@ -4,12 +4,12 @@
 
 package akka.remote.artery
 
-import language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
-import akka.testkit._
 import akka.actor._
 import akka.remote._
+import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
 object RemoteWatcherSpec {
@@ -74,19 +74,14 @@ class RemoteWatcherSpec
         .withFallback(ArterySpecSupport.defaultConfig))
     with ImplicitSender {
 
-  import RemoteWatcherSpec._
   import RemoteWatcher._
+  import RemoteWatcherSpec._
 
   override def expectedTestDuration = 2.minutes
 
   val remoteSystem = newRemoteSystem(name = Some("RemoteSystem"))
   val remoteAddress = address(remoteSystem)
   def remoteAddressUid = AddressUidExtension(remoteSystem).longAddressUid
-
-  Seq(system, remoteSystem).foreach(
-    muteDeadLetters(
-      akka.remote.transport.AssociationHandle.Disassociated.getClass,
-      akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
   override def afterTermination(): Unit = {
     shutdown(remoteSystem)

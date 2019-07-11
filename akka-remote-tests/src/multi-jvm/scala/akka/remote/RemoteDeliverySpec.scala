@@ -5,8 +5,8 @@
 package akka.remote
 
 import scala.language.postfixOps
-
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -15,6 +15,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.actor.ActorIdentity
 import akka.actor.Identify
+import akka.serialization.jackson.CborSerializable
 
 class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -35,7 +36,7 @@ class ArteryRemoteDeliveryMultiJvmNode2 extends RemoteDeliverySpec(new RemoteDel
 class ArteryRemoteDeliveryMultiJvmNode3 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = true))
 
 object RemoteDeliverySpec {
-  final case class Letter(n: Int, route: List[ActorRef])
+  final case class Letter(n: Int, route: List[ActorRef]) extends CborSerializable
 
   class Postman extends Actor {
     def receive = {

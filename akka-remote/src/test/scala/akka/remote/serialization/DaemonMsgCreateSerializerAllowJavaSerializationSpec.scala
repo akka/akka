@@ -4,17 +4,26 @@
 
 package akka.remote.serialization
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
-import akka.actor.{ Actor, ActorRef, Address, Deploy, ExtendedActorSystem, Props, SupervisorStrategy }
-import akka.remote.{ DaemonMsgCreate, RemoteScope }
-import akka.routing.{ FromConfig, RoundRobinPool }
-import akka.serialization.{ Serialization, SerializationExtension }
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Address
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.actor.SupervisorStrategy
+import akka.remote.DaemonMsgCreate
+import akka.remote.RemoteScope
+import akka.remote.serialization.DaemonMsgCreateSerializerAllowJavaSerializationSpec.ActorWithDummyParameter
+import akka.remote.serialization.DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActorWithParam
+import akka.routing.FromConfig
+import akka.routing.RoundRobinPool
+import akka.serialization.Serialization
+import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
+import akka.testkit.JavaSerializable
 import akka.util.unused
 import com.typesafe.config.ConfigFactory
 
-object DaemonMsgCreateSerializerSpec {
+object DaemonMsgCreateSerializerAllowJavaSerializationSpec {
 
   trait EmptyActor extends Actor {
     def receive = Actor.emptyBehavior
@@ -26,7 +35,7 @@ object DaemonMsgCreateSerializerSpec {
       extends EmptyActor
 }
 
-case class DummyParameter(val inner: String) extends Serializable
+case class DummyParameter(val inner: String) extends JavaSerializable
 
 private[akka] trait SerializationVerification { self: AkkaSpec =>
 
@@ -55,9 +64,15 @@ private[akka] trait SerializationVerification { self: AkkaSpec =>
   }
 }
 
-class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerification {
+class DaemonMsgCreateSerializerAllowJavaSerializationSpec
+    extends AkkaSpec("""
+  # test is verifying Java serialization  
+  akka.actor.allow-java-serialization = on
+  akka.actor.warn-about-java-serializer-usage = off
+  """)
+    with SerializationVerification {
 
-  import DaemonMsgCreateSerializerSpec._
+  import DaemonMsgCreateSerializerAllowJavaSerializationSpec._
   val ser = SerializationExtension(system)
   val supervisor = system.actorOf(Props[MyActor], "supervisor")
 
@@ -65,22 +80,6 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
 
     "resolve DaemonMsgCreateSerializer" in {
       ser.serializerFor(classOf[DaemonMsgCreate]).getClass should ===(classOf[DaemonMsgCreateSerializer])
-    }
-
-    "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
-      verifySerialization {
-        DaemonMsgCreate(props = Props[MyActor], deploy = Deploy(), path = "foo", supervisor = supervisor)
-      }
-    }
-
-    "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with null parameters for Props" in {
-      verifySerialization {
-        DaemonMsgCreate(
-          props = Props(classOf[MyActorWithParam], null),
-          deploy = Deploy(),
-          path = "foo",
-          supervisor = supervisor)
-      }
     }
 
     "serialize and de-serialize DaemonMsgCreate with function creator" in {
@@ -96,53 +95,6 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)
-      }
-    }
-
-    "deserialize the old wire format with just class and field for props parameters (if possible)" in {
-      val system = ActorSystem(
-        "DaemonMsgCreateSerializer-old-wire-format",
-        ConfigFactory.parseString("""
-          # old hex bytes contain actor ref with akka.tcp
-          akka.remote.artery.enabled = off
-          # in 2.4 this is off by default, but in 2.5+ its on so we wouldn't
-          # get the right set of serializers (and since the old wire protocol doesn't
-          # contain serializer ids that will go unnoticed with unpleasant consequences)
-          akka.actor.enable-additional-serialization-bindings = off
-        """))
-
-      try {
-        val serializer = new DaemonMsgCreateSerializer(system.asInstanceOf[ExtendedActorSystem])
-
-        // the oldSnapshot was created with the version of DemonMsgCreateSerializer in Akka 2.4.17. See issue #22224.
-        // It was created with:
-        /*
-      import org.apache.commons.codec.binary.Hex.encodeHex
-      val bytes = serializer.toBinary(
-        DaemonMsgCreate(Props(classOf[MyActorWithParam], "a string"), Deploy.local, "/user/test", system.actorFor("/user")))
-      println(String.valueOf(encodeHex(bytes)))
-         */
-
-        val oldBytesHex =
-          "0a7112020a001a48616b6b612e72656d6f74652e73657269616c697a617" +
-          "4696f6e2e4461656d6f6e4d736743726561746553657269616c697a6572" +
-          "53706563244d794163746f7257697468506172616d220faced000574000" +
-          "86120737472696e672a106a6176612e6c616e672e537472696e67122f0a" +
-          "00222baced000573720016616b6b612e6163746f722e4c6f63616c53636" +
-          "f706524000000000000000102000078701a0a2f757365722f7465737422" +
-          "2b0a29616b6b613a2f2f4461656d6f6e4d7367437265617465536572696" +
-          "16c697a6572537065632f75736572"
-
-        import org.apache.commons.codec.binary.Hex.decodeHex
-        val oldBytes = decodeHex(oldBytesHex.toCharArray)
-        val result = serializer.fromBinary(oldBytes, classOf[DaemonMsgCreate])
-
-        result match {
-          case dmc: DaemonMsgCreate =>
-            dmc.props.args should ===(Seq("a string": Any))
-        }
-      } finally {
-        TestKit.shutdownActorSystem(system)
       }
     }
 
@@ -171,17 +123,6 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
       }
     }
 
-    "allows for mixing serializers with and without manifests for props parameters" in {
-      verifySerialization {
-        DaemonMsgCreate(
-          // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
-          props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
-          deploy = Deploy(),
-          path = "foo",
-          supervisor = supervisor)
-      }
-    }
-
   }
 }
 
@@ -191,10 +132,26 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
    akka.actor.serialize-creators=off
   """) with SerializationVerification {
 
-  import DaemonMsgCreateSerializerSpec.MyActor
+  import DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActor
 
   val supervisor = system.actorOf(Props[MyActor], "supervisor")
   val ser = SerializationExtension(system)
+
+  "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
+    verifySerialization {
+      DaemonMsgCreate(props = Props[MyActor], deploy = Deploy(), path = "foo", supervisor = supervisor)
+    }
+  }
+
+  "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with null parameters for Props" in {
+    verifySerialization {
+      DaemonMsgCreate(
+        props = Props(classOf[MyActorWithParam], null),
+        deploy = Deploy(),
+        path = "foo",
+        supervisor = supervisor)
+    }
+  }
 
   "serialize and de-serialize DaemonMsgCreate with Deploy and RouterConfig" in {
     verifySerialization {
@@ -213,6 +170,17 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
       DaemonMsgCreate(
         props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
         deploy = deploy2,
+        path = "foo",
+        supervisor = supervisor)
+    }
+  }
+
+  "allows for mixing serializers with and without manifests for props parameters" in {
+    verifySerialization {
+      DaemonMsgCreate(
+        // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
+        props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
+        deploy = Deploy(),
         path = "foo",
         supervisor = supervisor)
     }

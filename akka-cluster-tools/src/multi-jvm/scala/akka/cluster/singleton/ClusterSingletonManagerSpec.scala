@@ -6,6 +6,7 @@ package akka.cluster.singleton
 
 import language.postfixOps
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -23,6 +24,7 @@ import akka.testkit.TestEvent._
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ActorSelection
+import akka.serialization.jackson.CborSerializable
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -45,15 +47,15 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
   //#singleton-message-classes
   object PointToPointChannel {
-    case object UnregistrationOk
+    case object UnregistrationOk extends CborSerializable
     //#singleton-message-classes
-    case object RegisterConsumer
-    case object UnregisterConsumer
-    case object RegistrationOk
-    case object UnexpectedRegistration
-    case object UnexpectedUnregistration
-    case object Reset
-    case object ResetOk
+    case object RegisterConsumer extends CborSerializable
+    case object UnregisterConsumer extends CborSerializable
+    case object RegistrationOk extends CborSerializable
+    case object UnexpectedRegistration extends CborSerializable
+    case object UnexpectedUnregistration extends CborSerializable
+    case object Reset extends CborSerializable
+    case object ResetOk extends CborSerializable
     //#singleton-message-classes
   }
   //#singleton-message-classes
@@ -105,10 +107,10 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
 
   //#singleton-message-classes
   object Consumer {
-    case object End
-    case object GetCurrent
-    case object Ping
-    case object Pong
+    case object End extends CborSerializable
+    case object GetCurrent extends CborSerializable
+    case object Ping extends CborSerializable
+    case object Pong extends CborSerializable
   }
   //#singleton-message-classes
 

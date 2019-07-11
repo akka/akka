@@ -8,11 +8,12 @@ import akka.remote.EndpointDisassociatedException
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent }
 import scala.concurrent.duration._
 
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.DeadLettersFilter
 import akka.testkit.TestEvent.Mute
 
 object RemoteFailureSpec {
-  final case class Ping(s: String)
+  final case class Ping(s: String) extends CborSerializable
 }
 
 class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {

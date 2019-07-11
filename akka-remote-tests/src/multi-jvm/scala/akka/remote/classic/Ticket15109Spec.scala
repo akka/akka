@@ -12,9 +12,10 @@ import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicit
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 
 object Ticket15109Spec extends MultiNodeConfig {
   val first = role("first")
@@ -45,6 +46,7 @@ object Ticket15109Spec extends MultiNodeConfig {
 class Ticket15109SpecMultiJvmNode1 extends Ticket15109Spec
 class Ticket15109SpecMultiJvmNode2 extends Ticket15109Spec
 
+@silent // deprecated
 abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
 
   import Ticket15109Spec._

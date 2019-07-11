@@ -38,6 +38,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
 import akka.util.OptionVal
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -53,6 +54,7 @@ private[remote] trait InboundMessageDispatcher {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] class DefaultMessageDispatcher(
     private val system: ExtendedActorSystem,
     private val provider: RemoteActorRefProvider,
@@ -243,6 +245,7 @@ private[remote] object ReliableDeliverySupervisor {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] class ReliableDeliverySupervisor(
     handleOrActive: Option[AkkaProtocolHandle],
     val localAddress: Address,
@@ -533,6 +536,7 @@ private[remote] class ReliableDeliverySupervisor(
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] abstract class EndpointActor(
     val localAddress: Address,
     val remoteAddress: Address,
@@ -559,6 +563,7 @@ private[remote] abstract class EndpointActor(
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] object EndpointWriter {
 
   def props(
@@ -615,6 +620,7 @@ private[remote] object EndpointWriter {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] class EndpointWriter(
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
@@ -1029,6 +1035,7 @@ private[remote] class EndpointWriter(
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] object EndpointReader {
 
   def props(
@@ -1060,6 +1067,7 @@ private[remote] object EndpointReader {
 /**
  * INTERNAL API
  */
+@silent // deprecated
 private[remote] class EndpointReader(
     localAddress: Address,
     remoteAddress: Address,

@@ -309,7 +309,6 @@ abstract class JacksonSerializerSpec(serializerName: String)
       "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigration"
     }
     akka.actor {
-      allow-java-serialization = off
       serialization-bindings {
         "akka.serialization.jackson.ScalaTestMessages$$TestMessage" = $serializerName
         "akka.serialization.jackson.JavaTestMessages$$TestMessage" = $serializerName

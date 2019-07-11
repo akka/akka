@@ -226,7 +226,7 @@ object ShardRegion {
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery
+  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
@@ -236,7 +236,7 @@ object ShardRegion {
   /**
    * Reply to `GetCurrentRegions`
    */
-  @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) {
+  @SerialVersionUID(1L) final case class CurrentRegions(regions: Set[Address]) extends ClusterShardingSerializable {
 
     /**
      * Java API
@@ -257,13 +257,16 @@ object ShardRegion {
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) case class GetClusterShardingStats(timeout: FiniteDuration) extends ShardRegionQuery
+  @SerialVersionUID(1L) case class GetClusterShardingStats(timeout: FiniteDuration)
+      extends ShardRegionQuery
+      with ClusterShardingSerializable
 
   /**
    * Reply to [[GetClusterShardingStats]], contains statistics about all the sharding regions
    * in the cluster.
    */
-  @SerialVersionUID(1L) final case class ClusterShardingStats(regions: Map[Address, ShardRegionStats]) {
+  @SerialVersionUID(1L) final case class ClusterShardingStats(regions: Map[Address, ShardRegionStats])
+      extends ClusterShardingSerializable {
 
     /**
      * Java API

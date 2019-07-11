@@ -4,17 +4,21 @@
 
 package akka.serialization
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException, ObjectOutputStream }
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.NotSerializableException
+import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.util.concurrent.Callable
 
-import akka.util.ClassLoaderObjectInputStream
-import akka.actor.ExtendedActorSystem
-import akka.annotation.InternalApi
-import akka.event.{ LogMarker, Logging }
-
 import scala.util.DynamicVariable
 import scala.util.control.NoStackTrace
+
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import akka.event.LogMarker
+import akka.event.Logging
+import akka.util.ClassLoaderObjectInputStream
 
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object.

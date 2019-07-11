@@ -8,6 +8,7 @@ import akka.actor.{ Actor, ActorIdentity, ActorSystem, ExtendedActorSystem, Iden
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 import MessageLoggingSpec._
+import akka.serialization.jackson.CborSerializable
 
 object MessageLoggingSpec {
   def config(artery: Boolean) = ConfigFactory.parseString(s"""
@@ -36,7 +37,7 @@ object MessageLoggingSpec {
      }
     """.stripMargin)
 
-  case class BadMsg(msg: String) {
+  case class BadMsg(msg: String) extends CborSerializable {
     override def toString = throw new RuntimeException("Don't log me")
 
   }

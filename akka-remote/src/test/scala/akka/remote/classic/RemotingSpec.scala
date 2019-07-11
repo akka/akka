@@ -84,6 +84,9 @@ object RemotingSpec {
     akka {
       actor.provider = remote
       actor.serialize-messages = off
+      # test is using Java serialization and not priority to rewrite
+      actor.allow-java-serialization = on
+      actor.warn-about-java-serializer-usage = off
 
       remote {
         use-unsafe-remote-features-without-cluster = on

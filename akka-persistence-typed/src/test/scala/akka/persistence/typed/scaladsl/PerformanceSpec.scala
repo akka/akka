@@ -112,7 +112,6 @@ object PerformanceSpec {
 class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseString(s"""
       akka.actor.serialize-creators = off
       akka.actor.serialize-messages = off
-      akka.actor.warn-about-java-serializer-usage = off
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
       akka.persistence.journal.leveldb.dir = "target/journal-PerformanceSpec"

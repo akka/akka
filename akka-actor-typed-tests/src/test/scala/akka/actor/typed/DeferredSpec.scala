@@ -102,14 +102,14 @@ class DeferredSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(Started)
     }
 
-    "must un-defer underlying when wrapped by widen" in {
+    "must un-defer underlying when wrapped by transformMessages" in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors
         .setup[Command] { _ =>
           probe.ref ! Started
           target(probe.ref)
         }
-        .widen[Command] {
+        .transformMessages[Command] {
           case m => m
         }
       probe.expectNoMessage() // not yet

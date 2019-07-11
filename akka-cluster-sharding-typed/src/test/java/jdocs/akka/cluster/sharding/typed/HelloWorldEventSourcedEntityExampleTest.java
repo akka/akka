@@ -28,7 +28,8 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
               + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
-              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
+              + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -63,5 +64,21 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
     HelloWorld.Greeting greeting2 = probe.receiveMessage();
     assertEquals("Bob", greeting2.whom);
     assertEquals(2, greeting2.numberOfPeople);
+  }
+
+  @Test
+  public void testSerialization() {
+    TestProbe<HelloWorld.Greeting> probe = testKit.createTestProbe(HelloWorld.Greeting.class);
+    testKit
+        .serializationTestKit()
+        .verifySerialization(new HelloWorld.Greet("Alice", probe.getRef()), false);
+
+    testKit.serializationTestKit().verifySerialization(new HelloWorld.Greeted("Alice"), false);
+    testKit.serializationTestKit().verifySerialization(new HelloWorld.Greeted("Alice"), false);
+    HelloWorld.KnownPeople state = new HelloWorld.KnownPeople();
+    state = state.add("Alice").add("Bob");
+    HelloWorld.KnownPeople state2 =
+        testKit.serializationTestKit().verifySerialization(state, false);
+    assertEquals(state.numberOfPeople(), state2.numberOfPeople());
   }
 }

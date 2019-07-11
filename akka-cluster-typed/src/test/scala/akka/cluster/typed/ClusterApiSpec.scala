@@ -27,7 +27,6 @@ object ClusterApiSpec {
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
       akka.actor {
         serialize-messages = off
-        allow-java-serialization = off
       }
       # generous timeout for cluster forming probes
       akka.actor.testkit.typed.default-timeout = 10s

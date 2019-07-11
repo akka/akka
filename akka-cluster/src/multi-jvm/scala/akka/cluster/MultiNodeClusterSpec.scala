@@ -7,6 +7,7 @@ package akka.cluster
 import java.util.UUID
 
 import language.implicitConversions
+
 import org.scalatest.{ Canceled, Outcome, Suite }
 import org.scalatest.exceptions.TestCanceledException
 import com.typesafe.config.Config
@@ -18,7 +19,6 @@ import akka.testkit.TestEvent._
 import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
 import akka.event.Logging.ErrorLevel
 import akka.util.ccompat._
-
 import scala.concurrent.duration._
 import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
@@ -26,8 +26,9 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
 import akka.util.ccompat._
-
 import scala.concurrent.Await
+
+import akka.serialization.jackson.CborSerializable
 
 @ccompatUsedUntil213
 object MultiNodeClusterSpec {
@@ -77,9 +78,9 @@ object MultiNodeClusterSpec {
 
   // sometimes we need to coordinate test shutdown with messages instead of barriers
   object EndActor {
-    case object SendEnd
-    case object End
-    case object EndAck
+    case object SendEnd extends CborSerializable
+    case object End extends CborSerializable
+    case object EndAck extends CborSerializable
   }
 
   class EndActor(testActor: ActorRef, target: Option[Address]) extends Actor {

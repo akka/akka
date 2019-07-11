@@ -11,18 +11,19 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
 
-  sealed trait Command
+  sealed trait Command extends CborSerializable
 
   object AnyCommand extends Command
 
-  final case class State(internal: String = UUID.randomUUID().toString)
+  final case class State(internal: String = UUID.randomUUID().toString) extends CborSerializable
 
-  case class Event(id: Long = System.currentTimeMillis())
+  case class Event(id: Long = System.currentTimeMillis()) extends CborSerializable
 
   def persistentBehavior(probe: TestProbe[State], name: String = UUID.randomUUID().toString) =
     EventSourcedBehavior[Command, Event, State](
@@ -44,9 +45,7 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     akka.loggers = [akka.testkit.TestEventListener]
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
-
-    akka.actor.warn-about-java-serializer-usage = off
+    akka.persistence.journal.inmem.test-serialization = on
 
     # snapshot store plugin is NOT defined, things should still work
     akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"

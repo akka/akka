@@ -11,9 +11,11 @@ import akka.remote.transport.Transport._
 import akka.remote.transport.{ AssociationHandle, TestTransport }
 import akka.testkit._
 import akka.util.ByteString
-
 import scala.concurrent._
 
+import com.github.ghik.silencer.silent
+
+@silent // deprecated
 class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   val addressA: Address = Address("test", "testsytemA", "testhostA", 4321)

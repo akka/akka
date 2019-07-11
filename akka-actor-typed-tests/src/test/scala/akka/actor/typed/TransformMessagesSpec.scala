@@ -4,6 +4,7 @@
 
 package akka.actor.typed
 
+import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorInitializationException
@@ -13,10 +14,25 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
-
 import scala.concurrent.duration._
 
-class WidenSpec extends ScalaTestWithActorTestKit("""
+object TransformMessagesSpec {
+
+  // this is the sample from the Scaladoc
+  val b: Behavior[Number] =
+    Behaviors
+      .receive[String] { (ctx, msg) =>
+        println(msg)
+        Behaviors.same
+      }
+      .transformMessages[Number] {
+        case b: BigDecimal => s"BigDecimal(&dollar;b)"
+        case i: BigInt     => s"BigInteger(&dollar;i)"
+        // all other kinds of Number will be `unhandled`
+      }
+}
+
+class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
     """) with WordSpecLike {
 
@@ -28,12 +44,12 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
         probe ! message
         Behaviors.same
       }
-      .widen[Int] {
+      .transformMessages[Int] {
         case n if n != 13 => n.toString
       }
   }
 
-  "Widen" should {
+  "transformMessages" should {
 
     "transform from an outer type to an inner type" in {
       val probe = TestProbe[String]()
@@ -57,21 +73,21 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "not build up when the same widen is used many times (initially)" in {
+    "not build up when the same transformMessages is used many times (initially)" in {
       val probe = TestProbe[String]()
       val transformCount = new AtomicInteger(0)
 
       // sadly the only "same" we can know is if it is the same PF
-      val transform: PartialFunction[String, String] = {
+      val transformPF: PartialFunction[String, String] = {
         case s =>
           transformCount.incrementAndGet()
           s
       }
-      def widen(behavior: Behavior[String]): Behavior[String] =
-        behavior.widen(transform)
+      def transform(behavior: Behavior[String]): Behavior[String] =
+        behavior.transformMessages(transformPF)
 
       val beh =
-        widen(widen(Behaviors.receiveMessage[String] { message =>
+        transform(transform(Behaviors.receiveMessage[String] { message =>
           probe.ref ! message
           Behaviors.same
         }))
@@ -83,21 +99,21 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
       transformCount.get should ===(1)
     }
 
-    "not build up when the same widen is used many times (recursively)" in {
+    "not build up when the same transformMessages is used many times (recursively)" in {
       val probe = TestProbe[String]()
       val transformCount = new AtomicInteger(0)
 
       // sadly the only "same" we can know is if it is the same PF
-      val transform: PartialFunction[String, String] = {
+      val transformPF: PartialFunction[String, String] = {
         case s =>
           transformCount.incrementAndGet()
           s
       }
-      def widen(behavior: Behavior[String]): Behavior[String] =
-        behavior.widen(transform)
+      def transform(behavior: Behavior[String]): Behavior[String] =
+        behavior.transformMessages(transformPF)
 
       def next: Behavior[String] =
-        widen(Behaviors.receiveMessage[String] { message =>
+        transform(Behaviors.receiveMessage[String] { message =>
           probe.ref ! message
           next
         })
@@ -114,16 +130,16 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
 
     }
 
-    "not allow mixing different widens in the same behavior stack" in {
+    "not allow mixing different transformMessages in the same behavior stack" in {
       val probe = TestProbe[String]()
 
-      def widen(behavior: Behavior[String]): Behavior[String] =
-        behavior.widen[String] {
+      def transform(behavior: Behavior[String]): Behavior[String] =
+        behavior.transformMessages[String] {
           case s => s.toLowerCase
         }
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        val ref = spawn(widen(widen(Behaviors.receiveMessage[String] { _ =>
+        val ref = spawn(transform(transform(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))
 
@@ -142,7 +158,7 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
           }
         }
-        .widen[String] {
+        .transformMessages[String] {
           case msg => msg.toUpperCase()
         }
 
@@ -163,7 +179,7 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
             probe.ref ! msg
             Behaviors.same
           }
-          .widen[String] {
+          .transformMessages[String] {
             case msg => msg.toUpperCase()
           }
       }

@@ -18,11 +18,15 @@ import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.persistence.typed.*;
 import akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec;
+import akka.serialization.jackson.CborSerializable;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.testkit.javadsl.EventFilter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
@@ -31,7 +35,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
@@ -54,7 +57,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private ActorMaterializer materializer =
       ActorMaterializer.create(Adapter.toUntyped(testKit.system()));
 
-  interface Command extends Serializable {}
+  interface Command extends CborSerializable {}
 
   public enum Increment implements Command {
     INSTANCE
@@ -83,6 +86,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public static class IncrementWithConfirmation implements Command, ExpectingReply<Done> {
     private final ActorRef<Done> replyTo;
 
+    @JsonCreator
     public IncrementWithConfirmation(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
     }
@@ -104,6 +108,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public static class GetValue implements Command, ExpectingReply<State> {
     private final ActorRef<State> replyTo;
 
+    @JsonCreator
     public GetValue(ActorRef<State> replyTo) {
       this.replyTo = replyTo;
     }
@@ -114,9 +119,15 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
   }
 
-  public static class Incremented implements Serializable {
+  // need the JsonTypeInfo because of the Wrapper
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+  @JsonSubTypes({@JsonSubTypes.Type(value = Incremented.class, name = "incremented")})
+  interface Event extends CborSerializable {}
+
+  public static class Incremented implements Event {
     final int delta;
 
+    @JsonCreator
     public Incremented(int delta) {
       this.delta = delta;
     }
@@ -141,7 +152,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
   }
 
-  public static class State implements Serializable {
+  public static class State implements CborSerializable {
     final int value;
     final List<Integer> history;
 
@@ -187,7 +198,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   @SuppressWarnings("unused")
-  private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
+  private static class CounterBehavior extends EventSourcedBehavior<Command, Event, State> {
     private final ActorContext<Command> ctx;
 
     CounterBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
@@ -198,7 +209,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public CommandHandler<Command, Incremented, State> commandHandler() {
+    public CommandHandler<Command, Event, State> commandHandler() {
       return newCommandHandlerBuilder()
           .forAnyState()
           .onCommand(Increment.class, this::increment)
@@ -214,20 +225,20 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
           .build();
     }
 
-    private Effect<Incremented, State> increment(State state, Increment command) {
+    private Effect<Event, State> increment(State state, Increment command) {
       return Effect().persist(new Incremented(1));
     }
 
-    private ReplyEffect<Incremented, State> incrementWithConfirmation(
+    private ReplyEffect<Event, State> incrementWithConfirmation(
         State state, IncrementWithConfirmation command) {
       return Effect().persist(new Incremented(1)).thenReply(command, newState -> done());
     }
 
-    private ReplyEffect<Incremented, State> getValue(State state, GetValue command) {
+    private ReplyEffect<Event, State> getValue(State state, GetValue command) {
       return Effect().reply(command, state);
     }
 
-    private Effect<Incremented, State> incrementLater(State state, IncrementLater command) {
+    private Effect<Event, State> incrementLater(State state, IncrementLater command) {
       ActorRef<Object> delay =
           ctx.spawnAnonymous(
               Behaviors.withTimers(
@@ -239,38 +250,36 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       return Effect().none();
     }
 
-    private Effect<Incremented, State> delayFinished(State state, DelayFinished command) {
+    private Effect<Event, State> delayFinished(State state, DelayFinished command) {
       return Effect().persist(new Incremented(10));
     }
 
-    private Effect<Incremented, State> increment100OnTimeout(
-        State state, Increment100OnTimeout command) {
+    private Effect<Event, State> increment100OnTimeout(State state, Increment100OnTimeout command) {
       ctx.setReceiveTimeout(Duration.ofMillis(10), Timeout.INSTANCE);
       return Effect().none();
     }
 
-    private Effect<Incremented, State> timeout(State state, Timeout command) {
+    private Effect<Event, State> timeout(State state, Timeout command) {
       return Effect().persist(new Incremented(100));
     }
 
-    private Effect<Incremented, State> emptyEventsListAndThenLog(
+    private Effect<Event, State> emptyEventsListAndThenLog(
         State state, EmptyEventsListAndThenLog command) {
       return Effect().persist(Collections.emptyList()).thenRun(s -> log());
     }
 
-    private Effect<Incremented, State> stopThenLog(State state, StopThenLog command) {
+    private Effect<Event, State> stopThenLog(State state, StopThenLog command) {
       return Effect().stop().thenRun(s -> log());
     }
 
-    private Effect<Incremented, State> incrementTwiceAndLog(
-        State state, IncrementTwiceAndLog command) {
+    private Effect<Event, State> incrementTwiceAndLog(State state, IncrementTwiceAndLog command) {
       return Effect()
           .persist(Arrays.asList(new Incremented(1), new Incremented(1)))
           .thenRun(s -> log());
     }
 
     @Override
-    public EventHandler<State, Incremented> eventHandler() {
+    public EventHandler<State, Event> eventHandler() {
       return newEventHandlerBuilder()
           .forAnyState()
           .onEvent(Incremented.class, this::applyIncremented)
@@ -407,7 +416,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             ctx ->
                 new CounterBehavior(new PersistenceId("snapshot"), ctx) {
                   @Override
-                  public boolean shouldSnapshot(State state, Incremented event, long sequenceNr) {
+                  public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
                     return state.value % 2 == 0;
                   }
 
@@ -523,7 +532,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             ctx ->
                 new CounterBehavior(new PersistenceId("tagging"), ctx) {
                   @Override
-                  public Set<String> tagsFor(Incremented incremented) {
+                  public Set<String> tagsFor(Event incremented) {
                     return Sets.newHashSet("tag1", "tag2");
                   }
                 });
@@ -552,9 +561,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         Behaviors.setup(
             ctx ->
                 new CounterBehavior(new PersistenceId("transform"), ctx) {
-                  private final EventAdapter<Incremented, ?> adapter = new WrapperEventAdapter();
+                  private final EventAdapter<Event, ?> adapter = new WrapperEventAdapter();
 
-                  public EventAdapter<Incremented, ?> eventAdapter() {
+                  public EventAdapter<Event, ?> eventAdapter() {
                     return adapter;
                   }
                 });
@@ -574,7 +583,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             .get();
     assertEquals(
         Lists.newArrayList(
-            new EventEnvelope(new Sequence(1), "transform", 1, new Wrapper<>(new Incremented(1)))),
+            new EventEnvelope(new Sequence(1), "transform", 1, new Wrapper(new Incremented(1)))),
         events);
 
     ActorRef<Command> c2 = testKit.spawn(transformer);
@@ -583,15 +592,16 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   // event-wrapper
-  public static class Wrapper<T> implements Serializable {
-    private final T t;
+  public static class Wrapper implements CborSerializable {
+    private final Event event;
 
-    public Wrapper(T t) {
-      this.t = t;
+    @JsonCreator
+    public Wrapper(Event event) {
+      this.event = event;
     }
 
-    public T getT() {
-      return t;
+    public Event getEvent() {
+      return event;
     }
 
     @Override
@@ -599,31 +609,36 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
 
-      Wrapper<?> wrapper = (Wrapper<?>) o;
+      Wrapper wrapper = (Wrapper) o;
 
-      return t.equals(wrapper.t);
+      return event.equals(wrapper.event);
     }
 
     @Override
     public int hashCode() {
-      return t.hashCode();
+      return event.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return "Wrapper(" + event + ")";
     }
   }
 
-  class WrapperEventAdapter extends EventAdapter<Incremented, Wrapper<Incremented>> {
+  class WrapperEventAdapter extends EventAdapter<Event, Wrapper> {
     @Override
-    public Wrapper<Incremented> toJournal(Incremented incremented) {
-      return new Wrapper<>(incremented);
+    public Wrapper toJournal(Event event) {
+      return new Wrapper(event);
     }
 
     @Override
-    public String manifest(Incremented event) {
+    public String manifest(Event event) {
       return "";
     }
 
     @Override
-    public EventSeq<Incremented> fromJournal(Wrapper<Incremented> wrapper, String manifest) {
-      return EventSeq.single(wrapper.getT());
+    public EventSeq<Event> fromJournal(Wrapper wrapper, String manifest) {
+      return EventSeq.single(wrapper.getEvent());
     }
   }
   // event-wrapper

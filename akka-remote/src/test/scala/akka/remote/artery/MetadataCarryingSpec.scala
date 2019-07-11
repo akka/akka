@@ -5,6 +5,7 @@
 package akka.remote.artery
 
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.actor._
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
@@ -12,6 +13,8 @@ import akka.testkit.TestProbe
 import akka.util.ByteString
 import java.nio.{ ByteBuffer, CharBuffer }
 import java.nio.charset.Charset
+
+import akka.testkit.JavaSerializable
 
 object MetadataCarryingSpy extends ExtensionId[MetadataCarryingSpy] with ExtensionIdProvider {
   override def get(system: ActorSystem): MetadataCarryingSpy = super.get(system)
@@ -87,7 +90,7 @@ class TestInstrument(system: ExtendedActorSystem) extends RemoteInstrument {
 }
 
 object MetadataCarryingSpec {
-  final case class Ping(payload: ByteString = ByteString.empty)
+  final case class Ping(payload: ByteString = ByteString.empty) extends JavaSerializable
 
   class ProxyActor(local: ActorRef, remotePath: ActorPath) extends Actor {
     val remote = context.system.actorSelection(remotePath)

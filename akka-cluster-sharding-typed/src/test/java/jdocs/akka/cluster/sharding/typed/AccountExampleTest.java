@@ -35,7 +35,8 @@ public class AccountExampleTest extends JUnitSuite {
               + "akka.remote.classic.netty.tcp.port = 0 \n"
               + "akka.remote.artery.canonical.port = 0 \n"
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
-              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
+              + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -141,5 +142,48 @@ public class AccountExampleTest extends JUnitSuite {
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
     assertEquals(BigDecimal.valueOf(90), balance);
+  }
+
+  @Test
+  public void verifySerialization() {
+    TestProbe<OperationResult> opProbe = testKit.createTestProbe();
+    testKit.serializationTestKit().verifySerialization(new CreateAccount(opProbe.getRef()), false);
+    Deposit deposit2 =
+        testKit
+            .serializationTestKit()
+            .verifySerialization(new Deposit(BigDecimal.valueOf(100), opProbe.getRef()), false);
+    assertEquals(BigDecimal.valueOf(100), deposit2.amount);
+    assertEquals(opProbe.getRef(), deposit2.replyTo());
+    testKit
+        .serializationTestKit()
+        .verifySerialization(new Withdraw(BigDecimal.valueOf(90), opProbe.getRef()), false);
+    testKit.serializationTestKit().verifySerialization(new CloseAccount(opProbe.getRef()), false);
+
+    testKit.serializationTestKit().verifySerialization(Confirmed.INSTANCE, false);
+    testKit.serializationTestKit().verifySerialization(new Rejected("overdraft"), false);
+
+    TestProbe<CurrentBalance> getProbe = testKit.createTestProbe();
+    testKit.serializationTestKit().verifySerialization(new GetBalance(getProbe.getRef()), false);
+
+    testKit
+        .serializationTestKit()
+        .verifySerialization(new CurrentBalance(BigDecimal.valueOf(100)), false);
+
+    testKit.serializationTestKit().verifySerialization(new AccountCreated(), false);
+    testKit
+        .serializationTestKit()
+        .verifySerialization(new Deposited(BigDecimal.valueOf(100)), false);
+    testKit
+        .serializationTestKit()
+        .verifySerialization(new Withdrawn(BigDecimal.valueOf(90)), false);
+    testKit.serializationTestKit().verifySerialization(new AccountClosed(), false);
+
+    testKit.serializationTestKit().verifySerialization(new EmptyAccount(), false);
+    OpenedAccount openedAccount2 =
+        testKit
+            .serializationTestKit()
+            .verifySerialization(new OpenedAccount(BigDecimal.valueOf(100)), false);
+    assertEquals(BigDecimal.valueOf(100), openedAccount2.balance);
+    testKit.serializationTestKit().verifySerialization(new ClosedAccount(), false);
   }
 }
