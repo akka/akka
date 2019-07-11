@@ -18,7 +18,8 @@ import akka.util.OptionVal
  *
  * Instances of this behavior should be created via [[Behaviors.setup]] and if
  * the [[ActorContext]] is needed it can be passed as a constructor parameter
- * from the factory function.
+ * from the factory function.  This is important because a new instance
+ * should be created when restart supervision is used.
  *
  * @see [[Behaviors.setup]]
  */

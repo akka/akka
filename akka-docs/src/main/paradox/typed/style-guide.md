@@ -197,12 +197,12 @@ The initial behavior should be created via @scala[a factory method in the compan
 Thereby the usage of the behavior doesn't change when the implementation is changed, for example if
 changing between object-oriented and function style.
 
-The factory method is a good place for retrieving resources like `Behaviors.withTimers` and `Behaviors.withStash`.
+The factory method is a good place for retrieving resources like `Behaviors.withTimers`, `Behaviors.withStash`
+and `ActorContext` with `Behaviors.setup`.
 
-When using the object-oriented style it's a good convention to always create the instance from a `Behaviors.setup`
-block in the this factory method even though the `ActorContext` is not needed. The reason is that it prevents
-mistakes of sharing the same instance of the `Behavior` between different actor instances.
-Typically, the `ActorContext` is needed anyway.
+When using the object-oriented style, `AbstractBehavior`, a new instance should be created from a `Behaviors.setup`
+block in this factory method even though the `ActorContext` is not needed.  This is important because a new
+instance should be created when restart supervision is used. Typically, the `ActorContext` is needed anyway.
 
 The naming convention for the factory method is @scala[`apply` (when using Scala)]@java[`create` (when using Java)].
 Consistent naming makes it easier for readers of the code to find the "starting point" of the behavior.
