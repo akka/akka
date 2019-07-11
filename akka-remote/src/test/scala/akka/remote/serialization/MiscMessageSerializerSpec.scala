@@ -254,7 +254,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       .fromBinary(serializer.toBinary(statusFailure), serializer.manifest(statusFailure))
       .asInstanceOf[Status.Failure]
 
-    val Status.Failure(e: ThrowableNotSerializableException) = deserialized
+    val e = deserialized.cause.asInstanceOf[ThrowableNotSerializableException]
     e.originalClassName should ===(statusFailure.cause.getClass.getName)
     e.getCause should ===(null)
   }
