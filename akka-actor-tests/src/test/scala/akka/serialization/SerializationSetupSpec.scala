@@ -177,7 +177,7 @@ class SerializationSetupSpec
       val serializer = SerializationExtension(system).findSerializerFor(new ProgrammaticJavaDummy)
       serializer.getClass should ===(classOf[JavaSerializer])
 
-      // should not allow deserializatio, it would have been java serialization!
+      // should not allow deserialization, it would have been java serialization!
       val serializer2 =
         SerializationExtension(addedJavaSerializationViaSettingsSystem).findSerializerFor(new ProgrammaticJavaDummy)
       serializer2.getClass should ===(classOf[DisabledJavaSerializer])

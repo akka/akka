@@ -220,9 +220,9 @@ You can replace Java serialization, if you use that, with for example the new
 @ref:[Serialization with Jackson](../serialization-jackson.md) and still be able to perform a rolling updates
 without bringing down the entire cluster.
 
-The procedure to changing from Java serialization to Jackson would look like:
+The procedure for changing from Java serialization to Jackson would look like:
 
-1. Rolling update from 2.5.x to 2.6.0
+1. Rolling update from 2.5.24 (or later) to 2.6.0
     * Use config `allow-java-serialization=on`.
     * Roll out the change.
     * Java serialization will be used as before.

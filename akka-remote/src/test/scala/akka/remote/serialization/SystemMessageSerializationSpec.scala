@@ -63,7 +63,7 @@ class SystemMessageSerializationSpec extends AkkaSpec(PrimitivesSerializationSpe
 
     // ActorInitializationException has no proper equality
     "serialize and de-serialize Create(Some(exc))" in {
-      // JavaSerializable is JavaSerializable
+      // TestException is JavaSerializable
       val aiex = ActorInitializationException(testRef, "test", new TestException("test5"))
       val createMsg = Create(Some(aiex))
       val serializer = new SystemMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
