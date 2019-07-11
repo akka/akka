@@ -228,3 +228,40 @@ Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #behavior-factory-method-spawn }
 
 
+## Where to define messages
+
+When sending messages to another actor or receiving responses the messages should be prefixed with the name
+of the actor/behavior that defines the message to make it clear and avoid ambiguity.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #message-prefix-in-tell }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-prefix-in-tell }
+
+That is preferred over using @scala[importing `Down` and using `countDown ! Down`]
+@java[importing `Down` and using `countDown.tell(Down.INSTANCE);`].
+In the implementation of the `Behavior` that handle these messages the short names can be used.
+
+That is a reason for not defining the messages as top level classes in a package.
+
+An actor typically has a primary `Behavior` or it's only using one `Behavior` and then it's good to define
+the messages @scala[in the companion object]@java[as static inner classes] together with that `Behavior`.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #messages }
+
+Sometimes several actors share the same messages, because they have a tight coupling and using message adapters
+would introduce to much boilerplate and duplication. If there is no "natural home" for such messages they can be
+be defined in a separate @scala[`object`]@java[`interface`] to give them a naming scope.
+
+Example of shared message protocol:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #message-protocol }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }

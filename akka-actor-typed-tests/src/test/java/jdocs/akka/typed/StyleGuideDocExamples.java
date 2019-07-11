@@ -6,18 +6,18 @@ package jdocs.akka.typed;
 
 // #oo-style
 // #fun-style
-import akka.Done;
-import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 // #fun-style
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.Receive;
-import akka.actor.typed.javadsl.TimerScheduler;
-
-import java.time.Duration;
 // #oo-style
+
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.javadsl.TimerScheduler;
+import akka.Done;
+import java.time.Duration;
 
 interface StyleGuideDocExamples {
 
@@ -77,6 +77,8 @@ interface StyleGuideDocExamples {
   interface OOStyle {
 
     // #oo-style
+
+    // #messages
     public class Counter extends AbstractBehavior<Counter.Command> {
 
       public interface Command {}
@@ -100,6 +102,7 @@ interface StyleGuideDocExamples {
           this.value = value;
         }
       }
+      // #messages
 
       public static Behavior<Command> create() {
         return Behaviors.setup(Counter::new);
@@ -131,7 +134,9 @@ interface StyleGuideDocExamples {
         command.replyTo.tell(new Value(n));
         return this;
       }
+      // #messages
     }
+    // #messages
     // #oo-style
 
   }
@@ -454,7 +459,53 @@ interface StyleGuideDocExamples {
         ActorRef<CountDown.Command> countDown =
             context.spawn(CountDown.create(100, doneRef), "countDown");
         // #behavior-factory-method-spawn
+
+        // #message-prefix-in-tell
+        countDown.tell(CountDown.Down.INSTANCE);
+        // #message-prefix-in-tell
       }
     }
+  }
+
+  interface Messages {
+    // #message-protocol
+    interface CounterProtocol {
+      interface Command {}
+
+      public static class Increment implements Command {
+        public final int delta;
+        private final ActorRef<OperationResult> replyTo;
+
+        public Increment(int delta, ActorRef<OperationResult> replyTo) {
+          this.delta = delta;
+          this.replyTo = replyTo;
+        }
+      }
+
+      public static class Decrement implements Command {
+        public final int delta;
+        private final ActorRef<OperationResult> replyTo;
+
+        public Decrement(int delta, ActorRef<OperationResult> replyTo) {
+          this.delta = delta;
+          this.replyTo = replyTo;
+        }
+      }
+
+      interface OperationResult {}
+
+      enum Confirmed implements OperationResult {
+        INSTANCE
+      }
+
+      public static class Rejected implements OperationResult {
+        public final String reason;
+
+        public Rejected(String reason) {
+          this.reason = reason;
+        }
+      }
+    }
+    // #message-protocol
   }
 }

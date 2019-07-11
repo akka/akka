@@ -6,17 +6,16 @@ package docs.akka.typed
 
 //#oo-style
 //#fun-style
-import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.TimerScheduler
 //#fun-style
 import akka.actor.typed.scaladsl.AbstractBehavior
 //#oo-style
 
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.TimerScheduler
+import scala.concurrent.duration.FiniteDuration
 import akka.Done
 
 object StyleGuideDocExamples {
@@ -25,11 +24,13 @@ object StyleGuideDocExamples {
 
     //#fun-style
 
+    //#messages
     object Counter {
       sealed trait Command
       case object Increment extends Command
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
+      //#messages
 
       def apply(): Behavior[Command] =
         counter(0)
@@ -46,7 +47,9 @@ object StyleGuideDocExamples {
               Behaviors.same
           }
         }
+      //#messages
     }
+    //#messages
     //#fun-style
 
   }
@@ -54,6 +57,7 @@ object StyleGuideDocExamples {
   object OOStyle {
 
     //#oo-style
+
     object Counter {
       sealed trait Command
       case object Increment extends Command
@@ -291,7 +295,26 @@ object StyleGuideDocExamples {
       //#behavior-factory-method-spawn
       val countDown = context.spawn(CountDown(100, doneRef), "countDown")
       //#behavior-factory-method-spawn
+
+      //#message-prefix-in-tell
+      countDown ! CountDown.Down
+      //#message-prefix-in-tell
     }
+  }
+
+  object Messages {
+    //#message-protocol
+    object CounterProtocol {
+      sealed trait Command
+
+      final case class Increment(delta: Int, replyTo: ActorRef[OperationResult]) extends Command
+      final case class Decrement(delta: Int, replyTo: ActorRef[OperationResult]) extends Command
+
+      sealed trait OperationResult
+      case object Confirmed extends OperationResult
+      final case class Rejected(reason: String)
+    }
+    //#message-protocol
   }
 
 }
