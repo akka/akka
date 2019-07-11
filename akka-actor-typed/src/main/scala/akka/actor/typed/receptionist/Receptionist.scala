@@ -331,14 +331,17 @@ object Receptionist extends ExtensionId[Receptionist] {
     def getAllServiceInstances[T](key: ServiceKey[T]): java.util.Set[ActorRef[T]]
 
     /**
-     * Returns `true` if this listing is only about reachability changes and `false` if new services were
-     * actually added or removed to the receptionist. Useful for subscribers only concerned with [[#allServiceInstances]]
-     * or [[#getAllServiceInstances]] that can then ignore `Listing`s related to reachability.
+     * Returns `true` only if this `Listing` was sent triggered by new actors added or removed to the receptionist.
+     * When `false` the event is only about reachability changes - meaning that the full set of actors
+     * ([[#allServiceInstances]] or [[#getAllServiceInstances]]) is the same as the previous `Listing`.
      *
-     * In a non-clustered `ActorSystem` this will be `false` for all listings.
-     * For `Find` queries and the initial listing for a `Subscribe` this will always be `false`.
+     * knowing this is useful for subscribers only concerned with [[#allServiceInstances]] or [[#getAllServiceInstances]]
+     * that can then ignore `Listing`s related to reachability.
+     *
+     * In a non-clustered `ActorSystem` this will be `true` for all listings.
+     * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
      */
-    def onlyReachabilityChanged: Boolean
+    def servicesWereAddedOrRemoved: Boolean
 
   }
 
@@ -349,15 +352,15 @@ object Receptionist extends ExtensionId[Receptionist] {
 
     /** Scala API: */
     def apply[T](key: ServiceKey[T], serviceInstances: Set[ActorRef[T]]): Listing =
-      apply(key, serviceInstances, serviceInstances, onlyReachabilityChanged = false)
+      apply(key, serviceInstances, serviceInstances, servicesWereAddedOrRemoved = true)
 
     /** Scala API: */
     def apply[T](
         key: ServiceKey[T],
         serviceInstances: Set[ActorRef[T]],
         allServiceInstances: Set[ActorRef[T]],
-        onlyReachabilityChanged: Boolean): Listing =
-      new ReceptionistMessages.Listing[T](key, serviceInstances, allServiceInstances, onlyReachabilityChanged)
+        servicesWereAddedOrRemoved: Boolean): Listing =
+      new ReceptionistMessages.Listing[T](key, serviceInstances, allServiceInstances, servicesWereAddedOrRemoved)
   }
 
   /**
@@ -373,8 +376,8 @@ object Receptionist extends ExtensionId[Receptionist] {
       key: ServiceKey[T],
       serviceInstances: java.util.Set[ActorRef[T]],
       allServiceInstances: java.util.Set[ActorRef[T]],
-      allServiceInstancesChanged: Boolean): Listing =
-    Listing(key, serviceInstances.asScala.toSet, allServiceInstances.asScala.toSet, allServiceInstancesChanged)
+      servicesWereAddedOrRemoved: Boolean): Listing =
+    Listing(key, serviceInstances.asScala.toSet, allServiceInstances.asScala.toSet, servicesWereAddedOrRemoved)
 
 }
 

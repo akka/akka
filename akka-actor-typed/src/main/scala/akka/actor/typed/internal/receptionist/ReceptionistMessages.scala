@@ -46,7 +46,7 @@ private[akka] object ReceptionistMessages {
       key: ServiceKey[T],
       _serviceInstances: Set[ActorRef[T]],
       _allServiceInstances: Set[ActorRef[T]],
-      onlyReachabilityChanged: Boolean)
+      servicesWereAddedOrRemoved: Boolean)
       extends Receptionist.Listing {
 
     def isForKey(key: ServiceKey[_]): Boolean = key == this.key
