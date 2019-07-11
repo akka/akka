@@ -5,25 +5,26 @@
 package akka.remote.serialization
 
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
+import scala.util.Random
+
+import akka.actor.ExtendedActorSystem
+import akka.serialization.BaseSerializer
+import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializationExtension
+import akka.serialization.Serializer
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 
-import scala.util.Random
-import java.nio.ByteOrder
-import akka.serialization.ByteBufferSerializer
-import akka.serialization.Serializer
-
 object PrimitivesSerializationSpec {
-  val serializationTestOverrides =
-    """
-    """
+  val serializationTestOverrides = ""
 
   val testConfig = ConfigFactory.parseString(serializationTestOverrides).withFallback(AkkaSpec.testConf)
 }
 
+@deprecated("Moved to akka.serialization.* in akka-actor", "2.6.0")
 class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.testConfig) {
 
   val buffer = {
@@ -33,14 +34,26 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
   }
 
   val serialization = SerializationExtension(system)
+  val extSystem = system.asInstanceOf[ExtendedActorSystem]
 
   def verifySerialization(msg: AnyRef): Unit = {
+    val deprecatedSerializer: BaseSerializer with ByteBufferSerializer = serializerFor(msg)
+    deprecatedSerializer.fromBinary(deprecatedSerializer.toBinary(msg), None) should ===(msg)
+  }
+
+  private def serializerFor(msg: AnyRef) = {
     val serializer = serialization.serializerFor(msg.getClass)
-    serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
+    // testing the deprecated here
+    serializer match {
+      case _: akka.serialization.LongSerializer       => new LongSerializer(extSystem)
+      case _: akka.serialization.IntSerializer        => new IntSerializer(extSystem)
+      case _: akka.serialization.StringSerializer     => new StringSerializer(extSystem)
+      case _: akka.serialization.ByteStringSerializer => new ByteStringSerializer(extSystem)
+    }
   }
 
   def verifySerializationByteBuffer(msg: AnyRef): Unit = {
-    val serializer = serialization.serializerFor(msg.getClass).asInstanceOf[Serializer with ByteBufferSerializer]
+    val serializer = serializerFor(msg).asInstanceOf[Serializer with ByteBufferSerializer]
     buffer.clear()
     serializer.toBinary(msg, buffer)
     buffer.flip()
@@ -60,8 +73,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       .map(_.asInstanceOf[AnyRef])
       .foreach { item =>
         s"resolve serializer for value $item" in {
-          val serializer = SerializationExtension(system)
-          serializer.serializerFor(item.getClass).getClass should ===(classOf[LongSerializer])
+          serializerFor(item).getClass should ===(classOf[LongSerializer])
         }
 
         s"serialize and de-serialize value $item" in {
@@ -73,14 +85,18 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
         }
       }
 
+    "have right serializer id" in {
+      // checking because moved to akka-actor
+      serializerFor(1L.asInstanceOf[AnyRef]).identifier === 18
+    }
+
   }
 
   "IntSerializer" must {
     Seq(0, 1, -1, Int.MinValue, Int.MinValue + 1, Int.MaxValue, Int.MaxValue - 1).map(_.asInstanceOf[AnyRef]).foreach {
       item =>
         s"resolve serializer for value $item" in {
-          val serializer = SerializationExtension(system)
-          serializer.serializerFor(item.getClass).getClass should ===(classOf[IntSerializer])
+          serializerFor(item).getClass should ===(classOf[IntSerializer])
         }
 
         s"serialize and de-serialize value $item" in {
@@ -91,6 +107,11 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
           verifySerializationByteBuffer(item)
         }
     }
+
+    "have right serializer id" in {
+      // checking because moved to akka-actor
+      serializerFor(1L.asInstanceOf[AnyRef]).identifier === 19
+    }
   }
 
   "StringSerializer" must {
@@ -99,8 +120,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       .foreach {
         case (scenario, item) =>
           s"resolve serializer for [$scenario]" in {
-            val serializer = SerializationExtension(system)
-            serializer.serializerFor(item.getClass).getClass should ===(classOf[StringSerializer])
+            serializerFor(item).getClass should ===(classOf[StringSerializer])
           }
 
           s"serialize and de-serialize [$scenario]" in {
@@ -111,6 +131,11 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
             verifySerializationByteBuffer(item)
           }
       }
+
+    "have right serializer id" in {
+      // checking because moved to akka-actor
+      serializerFor(1L.asInstanceOf[AnyRef]).identifier === 20
+    }
 
   }
 
@@ -124,8 +149,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       (ByteString(Array.fill[Byte](1000)(1)) ++ ByteString(Array.fill[Byte](1000)(2)))).foreach {
       case (scenario, item) =>
         s"resolve serializer for [$scenario]" in {
-          val serializer = SerializationExtension(system)
-          serializer.serializerFor(item.getClass).getClass should ===(classOf[ByteStringSerializer])
+          serializerFor(item).getClass should ===(classOf[ByteStringSerializer])
         }
 
         s"serialize and de-serialize [$scenario]" in {
@@ -135,6 +159,11 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
         s"serialize and de-serialize value [$scenario] using ByteBuffers" in {
           verifySerializationByteBuffer(item)
         }
+    }
+
+    "have right serializer id" in {
+      // checking because moved to akka-actor
+      serializerFor(1L.asInstanceOf[AnyRef]).identifier === 21
     }
 
   }

@@ -13,7 +13,6 @@ import akka.cluster.TestMember
 class MessageSerializerSpec extends AkkaSpec("""
      akka.actor.provider = cluster
      akka.actor.serialize-messages = off
-     akka.actor.allow-java-serialization = off
   """) {
 
   val serializer = new MessageSerializer(system.asInstanceOf[ExtendedActorSystem])

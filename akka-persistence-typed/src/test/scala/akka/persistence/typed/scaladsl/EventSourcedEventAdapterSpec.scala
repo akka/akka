@@ -18,9 +18,11 @@ import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.EventSeq
 import akka.persistence.typed.PersistenceId
+import akka.serialization.jackson.CborSerializable
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.testkit.EventFilter
+import akka.testkit.JavaSerializable
 import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -33,10 +35,10 @@ object EventSourcedEventAdapterSpec {
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     """)
 
-  case class Wrapper(t: String)
+  case class Wrapper(event: String) extends CborSerializable
   class WrapperEventAdapter extends EventAdapter[String, Wrapper] {
     override def toJournal(e: String): Wrapper = Wrapper("<" + e)
-    override def fromJournal(p: Wrapper, manifest: String): EventSeq[String] = EventSeq.single(p.t + ">")
+    override def fromJournal(p: Wrapper, manifest: String): EventSeq[String] = EventSeq.single(p.event + ">")
     override def manifest(event: String): String = ""
   }
 
@@ -71,10 +73,11 @@ object EventSourcedEventAdapterSpec {
     override def manifest(event: String): String = event.length.toString
   }
 
-  case class GenericWrapper[T](t: T)
+  // generics doesn't work with Jackson, so using Java serialization
+  case class GenericWrapper[T](event: T) extends JavaSerializable
   class GenericWrapperEventAdapter[T] extends EventAdapter[T, GenericWrapper[T]] {
     override def toJournal(e: T): GenericWrapper[T] = GenericWrapper(e)
-    override def fromJournal(p: GenericWrapper[T], manifest: String): EventSeq[T] = EventSeq.single(p.t)
+    override def fromJournal(p: GenericWrapper[T], manifest: String): EventSeq[T] = EventSeq.single(p.event)
     override def manifest(event: T): String = ""
   }
 

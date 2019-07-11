@@ -57,7 +57,7 @@ object ClusterClientSpec extends MultiNodeConfig {
 
   testTransport(on = true)
 
-  case class Reply(msg: Any, node: Address)
+  case class Reply(msg: Any, node: Address) extends JavaSerializable
 
   class TestService(testActor: ActorRef) extends Actor {
     def receive = {

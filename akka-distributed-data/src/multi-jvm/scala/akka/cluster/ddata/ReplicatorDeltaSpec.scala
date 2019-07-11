@@ -13,6 +13,7 @@ import akka.cluster.ddata.Replicator._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
@@ -33,7 +34,8 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
   case class Highest(n: Int, delta: Option[Highest] = None)
       extends DeltaReplicatedData
       with RequiresCausalDeliveryOfDeltas
-      with ReplicatedDelta {
+      with ReplicatedDelta
+      with CborSerializable {
     type T = Highest
     type D = Highest
 

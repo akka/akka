@@ -48,7 +48,6 @@ object RemoteContextAskSpec {
       loglevel = debug
       actor {
         provider = cluster
-        warn-about-java-serializer-usage = off
         serialize-creators = off
         serializers {
           test = "akka.cluster.typed.RemoteContextAskSpecSerializer"

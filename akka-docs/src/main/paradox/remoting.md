@@ -100,6 +100,10 @@ network and/or Akka configuration will have to be changed as described in
 
 @@@
 
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
 ## Types of Remote Interaction
 
 Akka has two ways of using remoting:
@@ -202,6 +206,9 @@ Java
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
+
+When using remote deployment of actors you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
 
 @@@ note
 
@@ -359,15 +366,9 @@ This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 
 ## Serialization
 
-When using remoting for actors you must ensure that the `props` and `messages` used for
-those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
-
-For more information please see @ref:[Serialization](serialization.md).
-
-<a id="disable-java-serializer"></a>
-### Disabling the Java Serializer
-
-It is highly recommended that you @ref[disable Java serialization](serialization.md#disable-java-serializer).
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 ## Routers with Remote Destinations
 
@@ -379,6 +380,9 @@ A pool of remote deployed routees can be configured as:
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
+
+When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
 
 A group of remote actors can be configured as:
 
@@ -454,8 +458,9 @@ Best practice is that Akka remoting nodes should only be accessible from the adj
 enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
 compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
-its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
+That is also security best-practice because of its multiple
+[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
@@ -564,9 +569,10 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with [disabled Java serializer](#disable-java-serializer).
+it should be noted that @ref:[Java serialization](serialization.md#java-serialization)
+should still not be enabled.
 Additional protection can be achieved when running in an untrusted network by
-network security (e.g. firewalls) and/or enabling [TLS with mutual authentication](#remote-tls).
+network security (e.g. firewalls) and/or enabling @ref:[TLS with mutual authentication](#remote-tls).
 
 @@@
 

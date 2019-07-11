@@ -26,7 +26,8 @@ object ClusterSingletonRestart2Spec {
   }
 }
 
-class ClusterSingletonRestart2Spec extends AkkaSpec("""
+class ClusterSingletonRestart2Spec
+    extends AkkaSpec("""
   akka.loglevel = INFO
   akka.cluster.roles = [singleton]
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
@@ -41,6 +42,10 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
       hostname = "127.0.0.1"
       port = 0
     }
+  }
+  akka.actor.serialization-bindings {
+    # there is no serializer for UniqueAddress, not intended to be sent as a standalone message
+    "akka.cluster.UniqueAddress" = jackson-cbor
   }
   """) {
 

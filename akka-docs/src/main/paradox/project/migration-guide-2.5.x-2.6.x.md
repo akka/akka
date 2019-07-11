@@ -193,6 +193,64 @@ Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Arte
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
+## Java Serialization
+
+Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
+of various kinds - it never was designed for high throughput messaging after all.
+One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
+
+From Akka 2.6.0 the Akka serialization with Java serialization is disabled by default and Akka
+itself doesn't use Java serialization for any of its internal messages.
+
+For compatibility with older systems that rely on Java serialization it can be enabled with the following configuration:
+
+```ruby
+akka.actor.allow-java-serialization = on
+```
+
+Akka will still log warning when Java serialization is used and to silent that you may add:
+
+```ruby
+akka.actor.warn-about-java-serializer-usage = off
+```
+
+### Rolling update
+
+You can replace Java serialization, if you use that, with for example the new
+@ref:[Serialization with Jackson](../serialization-jackson.md) and still be able to perform a rolling updates
+without bringing down the entire cluster.
+
+The procedure for changing from Java serialization to Jackson would look like:
+
+1. Rolling update from 2.5.24 (or later) to 2.6.0
+    * Use config `allow-java-serialization=on`.
+    * Roll out the change.
+    * Java serialization will be used as before.
+    * This step is optional and you could combine it with next step if you like, but could be good to
+      make one change at a time.
+1. Rolling update to support deserialization but not enable serialization
+    * Change message classes by adding the marker interface and possibly needed annotations as
+      described in @ref:[Serialization with Jackson](../serialization-jackson.md).
+    * Test the system with the new serialization in a new test cluster (no rolling update).
+    * Remove the binding for the marker interface, so that Jackson is not used for serialization yet.
+    * Roll out the change.
+    * Java serialization is still used, but this version is prepared for next roll out.
+1. Rolling update to enable serialization with Jackson.
+    * Add the binding to the marker interface to the Jackson serializer.
+    * Roll out the change.
+    * Old nodes will still send messages with Java serialization, and that can still be deserialized by new nodes.
+    * New nodes will send messages with Jackson serialization, and old node can deserialize those because they were
+      prepared in previous roll out.
+1. Rolling update to disable Java serialization
+    * Remove `allow-java-serialization` config, to use the default `allow-java-serialization=off`.
+    * Remove `.warn-about-java-serializer-usage` config if you had changed that, to use the default `.warn-about-java-serializer-usage=on`.
+    * Roll out the change.
+
+### Java serialization in consistent hashing
+
+When using a consistent hashing router keys that were not bytes or a String are serialized.
+You might have to add a serializer for you hash keys, unless one of the default serializer are not
+handling that type and it was previously "accidentally" serialized with Java serialization.
 
 ## Configuration and behavior changes
 

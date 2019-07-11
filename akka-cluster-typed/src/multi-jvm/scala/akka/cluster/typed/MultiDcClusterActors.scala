@@ -6,10 +6,11 @@ package akka.cluster.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
+import akka.serialization.jackson.CborSerializable
 
 object MultiDcClusterActors {
-  case class Pong(dc: String)
-  sealed trait PingProtocol
+  case class Pong(dc: String) extends CborSerializable
+  sealed trait PingProtocol extends CborSerializable
   case class Ping(ref: ActorRef[Pong]) extends PingProtocol
   case object NoMore extends PingProtocol
 

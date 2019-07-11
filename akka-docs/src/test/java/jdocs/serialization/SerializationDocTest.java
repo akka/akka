@@ -6,6 +6,7 @@ package jdocs.serialization;
 
 import java.io.UnsupportedEncodingException;
 
+import akka.cluster.Cluster;
 import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -138,106 +139,26 @@ public class SerializationDocTest {
     // #actorref-serializer
     // Serialize
     // (beneath toBinary)
-    String identifier = Serialization.serializedActorPath(theActorRef);
+    String serializedRef = Serialization.serializedActorPath(theActorRef);
 
     // Then just serialize the identifier however you like
 
     // Deserialize
     // (beneath fromBinary)
-    final ActorRef deserializedActorRef = extendedSystem.provider().resolveActorRef(identifier);
+    final ActorRef deserializedRef = extendedSystem.provider().resolveActorRef(serializedRef);
     // Then just use the ActorRef
     // #actorref-serializer
     TestKit.shutdownActorSystem(extendedSystem);
   }
 
-  public
-  // #external-address
-  static class ExternalAddressExt implements Extension {
-    private final ExtendedActorSystem system;
-
-    public ExternalAddressExt(ExtendedActorSystem system) {
-      this.system = system;
-    }
-
-    public Address getAddressFor(Address remoteAddress) {
-      final scala.Option<Address> optAddr = system.provider().getExternalAddressFor(remoteAddress);
-      if (optAddr.isDefined()) {
-        return optAddr.get();
-      } else {
-        throw new UnsupportedOperationException("cannot send to remote address " + remoteAddress);
-      }
-    }
-  }
-
-  // #external-address
-  public
-  // #external-address
-  static class ExternalAddress extends AbstractExtensionId<ExternalAddressExt>
-      implements ExtensionIdProvider {
-    public static final ExternalAddress ID = new ExternalAddress();
-
-    public ExternalAddress lookup() {
-      return ID;
-    }
-
-    public ExternalAddressExt createExtension(ExtendedActorSystem system) {
-      return new ExternalAddressExt(system);
-    }
-  }
-
-  // #external-address
-  public
-  // #external-address
-  static class ExternalAddressExample {
-    // #external-address
-    final ActorSystem system = ActorSystem.create();
-    // #external-address
-    public String serializeTo(ActorRef ref, Address remote) {
-      return ref.path()
-          .toSerializationFormatWithAddress(ExternalAddress.ID.get(system).getAddressFor(remote));
-    }
-  }
-
-  // #external-address
-
-  public
-  // #external-address-default
-  static class DefaultAddressExt implements Extension {
-    private final ExtendedActorSystem system;
-
-    public DefaultAddressExt(ExtendedActorSystem system) {
-      this.system = system;
-    }
-
-    public Address getAddress() {
-      return system.provider().getDefaultAddress();
-    }
-  }
-
-  // #external-address-default
-  public
-  // #external-address-default
-  static class DefaultAddress extends AbstractExtensionId<DefaultAddressExt>
-      implements ExtensionIdProvider {
-    public static final DefaultAddress ID = new DefaultAddress();
-
-    public DefaultAddress lookup() {
-      return ID;
-    }
-
-    public DefaultAddressExt createExtension(ExtendedActorSystem system) {
-      return new DefaultAddressExt(system);
-    }
-  }
-
-  // #external-address-default
-
   public void demonstrateDefaultAddress() {
     // this is not meant to be run, only to be compiled
     final ActorSystem system = ActorSystem.create();
-    final Address remoteAddr = new Address("", "");
+    final ActorRef theActorRef = system.deadLetters();
     // #external-address-default
-    final Address addr = DefaultAddress.ID.get(system).getAddress();
+    Address selfAddress = Cluster.get(system).selfAddress();
+
+    String serializedRef = theActorRef.path().toSerializationFormatWithAddress(selfAddress);
     // #external-address-default
   }
 
@@ -252,20 +173,19 @@ public class SerializationDocTest {
     // Have something to serialize
     String original = "woohoo";
 
-    // Find the Serializer for it
-    Serializer serializer = serialization.findSerializerFor(original);
+    // Turn it into bytes, and retrieve the serializerId and manifest, which are needed for
+    // deserialization
+    byte[] bytes = serialization.serialize(original).get();
+    int serializerId = serialization.findSerializerFor(original).identifier();
+    String manifest = Serializers.manifestFor(serialization.findSerializerFor(original), original);
 
-    // Turn it into bytes
-    byte[] bytes = serializer.toBinary(original);
-
-    // Turn it back into an object,
-    // the nulls are for the class manifest and for the classloader
-    String back = (String) serializer.fromBinary(bytes);
+    // Turn it back into an object
+    String back = (String) serialization.deserialize(bytes, serializerId, manifest).get();
+    // #programmatic
 
     // Voilá!
     assertEquals(original, back);
 
-    // #programmatic
     TestKit.shutdownActorSystem(system);
   }
 }

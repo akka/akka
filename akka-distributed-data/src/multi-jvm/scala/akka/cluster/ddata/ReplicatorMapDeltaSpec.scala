@@ -28,9 +28,7 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
     akka.log-dead-letters-during-shutdown = off
     akka.actor {
       serialize-messages = off
-      allow-java-serialization = off
     }
-    #akka.remote.artery.enabled = on
     """))
 
   testTransport(on = true)

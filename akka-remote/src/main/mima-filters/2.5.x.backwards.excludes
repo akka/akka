@@ -30,3 +30,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.pr
 # #26432 Log of Dropped
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.InboundContext.publishDropped")
 
+# #22333 Disable Java serialization
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ThrowableSupport.stackTraceElementBuilder")

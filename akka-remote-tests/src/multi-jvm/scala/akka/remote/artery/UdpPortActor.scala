@@ -6,10 +6,11 @@ package akka.remote.artery
 
 import akka.actor.Actor
 import akka.remote.RARP
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.SocketUtil
 
 object UdpPortActor {
-  case object GetUdpPort
+  case object GetUdpPort extends CborSerializable
 }
 
 /**

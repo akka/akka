@@ -57,6 +57,9 @@ object Configuration {
         }
       }
     }
+    # test is using Java serialization and not priority to rewrite
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
                      """
 
   final case class CipherConfig(

@@ -45,6 +45,7 @@ object ClusterShardingPersistenceSpec {
       akka.remote.artery.canonical.hostname = 127.0.0.1
 
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
     """)
 
   sealed trait Command

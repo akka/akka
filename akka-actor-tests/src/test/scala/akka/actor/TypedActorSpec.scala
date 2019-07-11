@@ -36,6 +36,9 @@ object TypedActorSpec {
     }
     akka.actor.serializers.sample = "akka.actor.TypedActorSpec$SampleSerializerWithStringManifest$"
     akka.actor.serialization-bindings."akka.actor.TypedActorSpec$WithStringSerializedClass" = sample
+    # test is using Java serialization and not priority to convert
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
     akka.actor.serialize-messages = off
     """
 

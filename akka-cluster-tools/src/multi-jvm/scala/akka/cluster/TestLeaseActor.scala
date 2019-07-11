@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -22,20 +23,21 @@ import akka.event.Logging
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.pattern.ask
+import akka.testkit.JavaSerializable
 import akka.util.Timeout
 
 object TestLeaseActor {
   def props(): Props =
     Props(new TestLeaseActor)
 
-  sealed trait LeaseRequest
+  sealed trait LeaseRequest extends JavaSerializable
   final case class Acquire(owner: String) extends LeaseRequest
   final case class Release(owner: String) extends LeaseRequest
-  final case class Create(leaseName: String, ownerName: String)
+  final case class Create(leaseName: String, ownerName: String) extends JavaSerializable
 
-  final case object GetRequests
-  final case class LeaseRequests(requests: List[LeaseRequest])
-  final case class ActionRequest(request: LeaseRequest, result: Any) // boolean of Failure
+  final case object GetRequests extends JavaSerializable
+  final case class LeaseRequests(requests: List[LeaseRequest]) extends JavaSerializable
+  final case class ActionRequest(request: LeaseRequest, result: Any) extends JavaSerializable // boolean of Failure
 }
 
 class TestLeaseActor extends Actor with ActorLogging {

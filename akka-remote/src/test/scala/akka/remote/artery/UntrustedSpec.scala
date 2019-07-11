@@ -5,6 +5,7 @@
 package akka.remote.artery
 
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorIdentity
@@ -21,12 +22,12 @@ import akka.actor.ActorSelection
 import akka.testkit.TestEvent
 import akka.event.Logging
 import akka.remote.RARP
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.EventFilter
-import akka.testkit.JavaSerializable
 
 object UntrustedSpec {
-  final case class IdentifyReq(path: String) extends JavaSerializable
-  final case class StopChild(name: String) extends JavaSerializable
+  final case class IdentifyReq(path: String) extends CborSerializable
+  final case class StopChild(name: String) extends CborSerializable
 
   class Receptionist(testActor: ActorRef) extends Actor {
     context.actorOf(Props(classOf[Child], testActor), "child1")

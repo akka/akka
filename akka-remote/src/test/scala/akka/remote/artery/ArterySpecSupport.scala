@@ -20,7 +20,6 @@ object ArterySpecSupport {
     akka {
       actor {
         provider = remote
-        warn-about-java-serializer-usage = off
         serialize-creators = off
       }
       akka.remote.warn-about-direct-use = off
@@ -33,7 +32,7 @@ object ArterySpecSupport {
       }
     }""")
 
-  def newFlightRecorderConfig =
+  def newFlightRecorderConfig: Config =
     ConfigFactory.parseString(s"""
       akka {
         remote.artery {
@@ -49,7 +48,7 @@ object ArterySpecSupport {
    * Artery enabled, flight recorder enabled, dynamic selection of port on localhost.
    * Combine with [[FlightRecorderSpecIntegration]] or remember to delete flight recorder file if using manually
    */
-  def defaultConfig =
+  def defaultConfig: Config =
     newFlightRecorderConfig
       .withFallback(staticArteryRemotingConfig)
       .withFallback(tlsConfig) // TLS only used if transport=tls-tcp

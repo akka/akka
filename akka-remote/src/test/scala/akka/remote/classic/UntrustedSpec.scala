@@ -5,6 +5,7 @@
 package akka.remote.classic
 
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorIdentity
@@ -24,10 +25,11 @@ import akka.actor.ActorSelection
 import akka.testkit.TestEvent
 import akka.event.Logging
 import akka.testkit.EventFilter
+import akka.testkit.JavaSerializable
 
 object UntrustedSpec {
-  final case class IdentifyReq(path: String)
-  final case class StopChild(name: String)
+  final case class IdentifyReq(path: String) extends JavaSerializable
+  final case class StopChild(name: String) extends JavaSerializable
 
   class Receptionist(testActor: ActorRef) extends Actor {
     context.actorOf(Props(classOf[Child], testActor), "child1")
@@ -68,6 +70,12 @@ akka.remote.classic.untrusted-mode = on
 akka.remote.classic.trusted-selection-paths = ["/user/receptionist", ]    
 akka.remote.classic.netty.tcp.port = 0
 akka.loglevel = DEBUG # test verifies debug
+# test is using Java serialization and not priority to rewrite
+akka.actor.allow-java-serialization = on
+akka.actor.warn-about-java-serializer-usage = off
+akka.actor.serialization-bindings {
+  "akka.actor.Terminated" = java-test
+}
 """) with ImplicitSender {
 
   import UntrustedSpec._
@@ -80,6 +88,12 @@ akka.loglevel = DEBUG # test verifies debug
       akka.remote.artery.enabled = off
       akka.remote.warn-about-direct-use = off
       akka.remote.classic.netty.tcp.port = 0
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = off
+      akka.actor.warn-about-java-serializer-usage = off
+      akka.actor.serialization-bindings {
+        "akka.actor.Terminated" = java-test
+      }
   """))
   val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 

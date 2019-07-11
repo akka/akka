@@ -32,7 +32,10 @@ object ThrottlerTransportAdapterSpec {
       remote.classic.netty.tcp.applied-adapters = ["trttl"]
       remote.classic.netty.tcp.port = 0
     }
-                                                   """)
+    # test is using Java serialization and not priority to rewrite
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
+    """)
 
   class Echo extends Actor {
     override def receive = {

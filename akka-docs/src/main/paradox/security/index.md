@@ -18,7 +18,7 @@ to ensure that a fix can be provided without delay.
 
 ## Security Related Documentation
 
- * @ref:[Disabling the Java Serializer](../remoting-artery.md#disable-java-serializer)
+ * @ref:[Java Serialization](../serialization.md#java-serialization)
  * @ref:[Remote deployment whitelist](../remoting.md#remote-deployment-whitelist)
  * @ref:[Remote Security](../remoting-artery.md#remote-security)
 

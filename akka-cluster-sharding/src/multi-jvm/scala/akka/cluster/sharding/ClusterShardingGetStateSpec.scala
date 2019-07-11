@@ -11,13 +11,14 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
 
+import akka.serialization.jackson.CborSerializable
+
 object ClusterShardingGetStateSpec {
-  case object Stop
-  case class Ping(id: Long)
-  case object Pong
+  case object Stop extends CborSerializable
+  case class Ping(id: Long) extends CborSerializable
+  case object Pong extends CborSerializable
 
   class ShardedActor extends Actor with ActorLogging {
     log.info(self.path.toString)
@@ -45,7 +46,7 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
@@ -58,6 +59,12 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
     akka.cluster.sharding.distributed-data.durable.lmdb {
       dir = target/ClusterShardingGetStateSpec/sharding-ddata
       map-size = 10 MiB
+    }
+    # using Java serialization for these messages because test is sending them
+    # to other nodes, which isn't normal usage.
+    akka.actor.serialization-bindings {
+      "${ShardRegion.GetShardRegionState.getClass.getName}" = java-test
+      "${classOf[ShardRegion.CurrentShardRegionState].getName}" = java-test
     }
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 

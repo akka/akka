@@ -21,6 +21,7 @@ object HelloWorldEventSourcedEntityExampleSpec {
       akka.remote.artery.canonical.hostname = 127.0.0.1
 
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
     """)
 }
 
@@ -48,6 +49,13 @@ class HelloWorldEventSourcedEntityExampleSpec
       probe.expectMessage(Greeting("Alice", 1))
       ref ! Greet("Bob")(probe.ref)
       probe.expectMessage(Greeting("Bob", 2))
+    }
+
+    "verifySerialization" in {
+      val probe = createTestProbe[Greeting]()
+      serializationTestKit.verifySerialization(Greet("Alice")(probe.ref))
+      serializationTestKit.verifySerialization(Greeting("Alice", 1))
+      serializationTestKit.verifySerialization(KnownPeople(Set.empty).add("Alice").add("Bob"))
     }
 
   }
