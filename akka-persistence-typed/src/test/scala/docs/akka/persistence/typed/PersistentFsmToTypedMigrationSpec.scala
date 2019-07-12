@@ -37,6 +37,7 @@ import scala.concurrent.duration._
 
 object PersistentFsmToTypedMigrationSpec {
   val config = ConfigFactory.parseString(s"""
+    akka.actor.allow-java-serialization = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
