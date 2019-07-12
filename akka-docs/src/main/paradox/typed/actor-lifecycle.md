@@ -75,8 +75,8 @@ is a tool that mimics the old style of starting up actors.
 
 Child actors are spawned with @apidoc[typed.*.ActorContext]'s `spawn`.
 In the example below, when the root actor
-is started, it spawns a child actor described by the behavior `HelloWorld.greeter`. Additionally, when the root actor receives a
-`Start` message, it creates a child actor defined by the behavior `HelloWorldBot.bot`:
+is started, it spawns a child actor described by the `HelloWorld` behavior. Additionally, when the root actor receives a
+`Start` message, it creates a child actor defined by the behavior `HelloWorldBot`:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }

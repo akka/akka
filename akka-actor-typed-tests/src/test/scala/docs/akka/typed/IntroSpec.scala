@@ -6,11 +6,13 @@ package docs.akka.typed
 
 //#fiddle_code
 //#imports
-import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 //#imports
 //#fiddle_code
+
+import akka.NotUsed
+import akka.actor.typed.{ DispatcherSelector, Terminated }
 
 import org.scalatest.WordSpecLike
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -27,7 +29,7 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
-    val greeter: Behavior[Greet] = Behaviors.receive { (context, message) =>
+    def apply(): Behavior[Greet] = Behaviors.receive { (context, message) =>
       //#fiddle_code
       context.log.info("Hello {}!", message.whom)
       //#fiddle_code
@@ -43,14 +45,18 @@ object IntroSpec {
   //#hello-world-bot
   object HelloWorldBot {
 
-    def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
+    def apply(max: Int): Behavior[HelloWorld.Greeted] = {
+      bot(0, max)
+    }
+
+    private def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
       Behaviors.receive { (context, message) =>
         val n = greetingCounter + 1
         //#fiddle_code
         context.log.info("Greeting {} for {}", n, message.whom)
         //#fiddle_code
         //#hello-world-bot
-        println(s"Greeting ${n} for ${message.whom}")
+        println(s"Greeting $n for ${message.whom}")
         //#hello-world-bot
         if (n == max) {
           Behaviors.stopped
@@ -67,12 +73,12 @@ object IntroSpec {
 
     final case class Start(name: String)
 
-    val main: Behavior[Start] =
+    def apply(): Behavior[Start] =
       Behaviors.setup { context =>
-        val greeter = context.spawn(HelloWorld.greeter, "greeter")
+        val greeter = context.spawn(HelloWorld(), "greeter")
 
         Behaviors.receiveMessage { message =>
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), message.name)
+          val replyTo = context.spawn(HelloWorldBot(max = 3), message.name)
           greeter ! HelloWorld.Greet(message.name, replyTo)
           Behaviors.same
         }
@@ -91,10 +97,10 @@ object IntroSpec {
         val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
 
         val props = DispatcherSelector.fromConfig(dispatcherPath)
-        val greeter = context.spawn(HelloWorld.greeter, "greeter", props)
+        val greeter = context.spawn(HelloWorld(), "greeter", props)
 
         Behaviors.receiveMessage { message =>
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), message.name)
+          val replyTo = context.spawn(HelloWorldBot(max = 3), message.name)
 
           greeter ! HelloWorld.Greet(message.name, replyTo)
           Behaviors.same
@@ -199,7 +205,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       //#hello-world
 
       val system: ActorSystem[HelloWorldMain.Start] =
-        ActorSystem(HelloWorldMain.main, "hello")
+        ActorSystem(HelloWorldMain(), "hello")
 
       system ! HelloWorldMain.Start("World")
       system ! HelloWorldMain.Start("Akka")
