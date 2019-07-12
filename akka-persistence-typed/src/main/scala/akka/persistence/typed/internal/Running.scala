@@ -150,7 +150,7 @@ private[akka] object Running {
           val eventToPersist = adaptEvent(event)
           val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
-          val newState2 = internalPersist(newState, eventToPersist, eventAdapterManifest)
+          val newState2 = internalPersist(setup.context, msg, newState, eventToPersist, eventAdapterManifest)
 
           val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 

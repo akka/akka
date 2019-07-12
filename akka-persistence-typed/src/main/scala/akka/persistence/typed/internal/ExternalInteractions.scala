@@ -14,9 +14,13 @@ import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
+
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
+
+import akka.util.unused
 
 /** INTERNAL API */
 @InternalApi
@@ -26,7 +30,10 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
+  @InternalStableApi
   protected def internalPersist(
+      @unused ctx: ActorContext[_],
+      @unused msg: Any,
       state: Running.RunningState[S],
       event: EventOrTagged,
       eventAdapterManifest: String): Running.RunningState[S] = {
