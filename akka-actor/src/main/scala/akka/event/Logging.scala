@@ -12,7 +12,7 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
-import akka.util.{ unused, Helpers, ReentrantGuard }
+import akka.util.{ unused, CachedSystemTimer, Helpers, ReentrantGuard }
 import akka.{ AkkaException, ConfigurationException }
 import com.github.ghik.silencer.silent
 
@@ -703,7 +703,7 @@ object Logging {
     /**
      * When this LogEvent was created according to System.currentTimeMillis
      */
-    val timestamp: Long = System.currentTimeMillis
+    val timestamp: Long = CachedSystemTimer.currentTimeMillis()
 
     /**
      * The LogLevel of this LogEvent
