@@ -62,6 +62,35 @@ message MapFieldEntry {
     optional int32 value = 2;
 }
 
+message GetClusterShardingStats {
+  required int64 timeoutNanos = 1;
+}
+
+message ClusterShardingStats {
+  repeated ClusterShardingStatsEntry stats = 1;
+}
+
+message ClusterShardingStatsEntry {
+    required Address address = 1;
+    required ShardRegionStats stats = 2;
+}
+
+message CurrentRegions {
+  repeated Address regions = 1;
+}
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string protocol = 1;
+  required string system = 2;
+  required string hostname = 3;
+  required uint32 port = 4;
+}
+
+
+
 message StartEntity {
     required string entityId = 1;
 }
