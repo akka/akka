@@ -13,6 +13,7 @@ import org.scalatest.WordSpecLike
 class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import EventStreamSpec._
+  import EventStream._
 
   private final val ShortWait = 100.millis
 
