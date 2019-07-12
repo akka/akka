@@ -355,15 +355,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
     deserialized should ===(obj)
   }
 
-  /**
-   * @return tuple of (blob, serializerId, manifest)
-   */
-  def serializeToBinary(obj: AnyRef, sys: ActorSystem = system): Array[Byte] = {
-    withTransportInformation(sys) { () =>
-      val serializer = serializerFor(obj, sys)
-      serializer.toBinary(obj)
-    }
-  }
+  def serializeToBinary(obj: AnyRef, sys: ActorSystem = system): Array[Byte] =
+    serialization(sys).serialize(obj).get
 
   def deserializeFromBinary(
       blob: Array[Byte],
@@ -617,8 +610,6 @@ abstract class JacksonSerializerSpec(serializerName: String)
         }
       }
     }
-
-    // FIXME test configured modules with `*` and that the Akka modules are found
 
   }
 }

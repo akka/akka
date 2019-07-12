@@ -120,8 +120,8 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     extends SerializerWithStringManifest {
   import JacksonSerializer.GadgetClassBlacklist
 
-  // FIXME it should be possible to implement ByteBufferSerializer as well, using Jackson's
-  //       ByteBufferBackedOutputStream/ByteBufferBackedInputStream
+  // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
+  //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
 
   private val log = Logging.withMarker(system, getClass)
   private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
@@ -218,6 +218,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
       case _ => manifestClassName
     }
+
     if (className ne manifestClassName)
       checkAllowedClassName(className)
 
@@ -336,12 +337,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       // serializizer within the Jackson family, but we don't trust other serializers
       // because they might be bound to open-ended interfaces like java.io.Serializable.
       val boundSerializer = serialization.serializerFor(clazz)
-      boundSerializer.isInstanceOf[JacksonSerializer] ||
-      // FIXME this is probably not needed when we have the more flexible configuration in place and
-      //       can bind use the plain JacksonJsonSerializer for the old serializerId
-      // to support rolling updates in Lagom we also trust the binding to the Lagom 1.5.x JacksonJsonSerializer,
-      // which is named OldJacksonJsonSerializer in Lagom 1.6.x
-      boundSerializer.getClass.getName == "com.lightbend.lagom.internal.jackson.OldJacksonJsonSerializer"
+      boundSerializer.isInstanceOf[JacksonSerializer]
     } catch {
       case NonFatal(_) => false // not bound
     }
@@ -397,7 +393,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   def decompress(bytes: Array[Byte]): Array[Byte] = {
     val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
     val out = new ByteArrayOutputStream()
-    // FIXME pool of recycled buffers?
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
