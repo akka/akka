@@ -166,6 +166,50 @@ Scala
 Java
 :  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/JunitIntegrationExampleTest.java) { #junit-integration }
 
+### Configuration
+
+By default the `ActorTestKit` loads configuration from `application-test.conf` if that exists, otherwise
+it is using default configuration from the reference.conf resources that ship with the Akka libraries. The
+application.conf of your project is not used in this case.
+A specific configuration can be given as parameter when creating the TestKit.
+
+If you prefer to use `application.conf` you can pass that as the configuration parameter to the TestKit.
+It's loaded with:
+
+Scala
+:  @@snip [TestConfigExample.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/TestConfigExample.scala) { #default-application-conf }
+
+Java
+:  @@snip [TestConfigExample.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/TestConfigExample.java) { #default-application-conf }
+
+It's often convenient to define configuration for a specific test as a `String` in the test itself and
+use that as the configuration parameter to the TestKit. `ConfigFactory.parseString` can be used for that:
+
+Scala
+:  @@snip [TestConfigExample.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/TestConfigExample.scala) { #parse-string }
+
+Java
+:  @@snip [TestConfigExample.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/TestConfigExample.java) { #parse-string }
+
+Combining those approaches using `withFallback`:
+
+Scala
+:  @@snip [TestConfigExample.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/TestConfigExample.scala) { #fallback-application-conf }
+
+Java
+:  @@snip [TestConfigExample.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/TestConfigExample.java) { #fallback-application-conf }
+
+
+More information can be found in the [documentation of the configuration library](https://github.com/lightbend/config#using-the-library).
+
+@@@ note
+
+Note that `reference.conf` files are intended for libraries to define default values and shouldn't be used
+in an application. It's not supported to override a config property owned by one library in a `reference.conf`
+of another library.
+
+@@@
+
 ### Controlling the scheduler
 
 It can be hard to reliably unit test specific scenario's when your actor relies on timing:

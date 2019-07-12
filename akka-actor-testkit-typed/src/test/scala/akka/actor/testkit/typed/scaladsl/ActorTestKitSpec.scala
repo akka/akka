@@ -5,9 +5,10 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.Done
-
 import scala.concurrent.Promise
+
 import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
@@ -62,6 +63,29 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       testkit2.shutdownTestKit()
       testkit2.system.whenTerminated.futureValue shouldBe a[Done]
     }
+
+    "load application-test.conf by default" in {
+      testKit.config.getString("test.from-application-test") should ===("yes")
+      testKit.system.settings.config.getString("test.from-application-test") should ===("yes")
+      testKit.system.settings.config.hasPath("test.from-application") should ===(false)
+    }
+
+    "not load application-test.conf if specific Config given" in {
+      val testKit2 = ActorTestKit(ConfigFactory.parseString("test.specific-config = yes"))
+      testKit2.config.getString("test.specific-config") should ===("yes")
+      testKit2.system.settings.config.getString("test.specific-config") should ===("yes")
+      testKit2.config.hasPath("test.from-application-test") should ===(false)
+      testKit2.system.settings.config.hasPath("test.from-application-test") should ===(false)
+      testKit2.system.settings.config.hasPath("test.from-application") should ===(false)
+
+      // same if via ScalaTestWithActorTestKit
+      val scalaTestWithActorTestKit2 = new ScalaTestWithActorTestKit("test.specific-config = yes") {}
+      scalaTestWithActorTestKit2.testKit.config.getString("test.specific-config") should ===("yes")
+      scalaTestWithActorTestKit2.testKit.config.hasPath("test.from-application-test") should ===(false)
+      scalaTestWithActorTestKit2.system.settings.config.hasPath("test.from-application-test") should ===(false)
+      scalaTestWithActorTestKit2.testKit.system.settings.config.hasPath("test.from-application") should ===(false)
+    }
+
   }
 
 }

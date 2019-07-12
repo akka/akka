@@ -19,6 +19,11 @@ import org.scalatest.time.Span
  *
  * Note that ScalaTest is not provided as a transitive dependency of the testkit module but must be added explicitly
  * to your project to use this.
+ *
+ * By default config is loaded from `application-test.conf` if that exists, otherwise
+ * using default configuration from the reference.conf resources that ship with the Akka libraries.
+ * The application.conf of your project is not used in this case.
+ * A specific configuration can be passed as constructor parameter.
  */
 abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit)
     extends ActorTestKitBase(testKit)
@@ -28,6 +33,11 @@ abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit)
     with ScalaFutures
     with Eventually {
 
+  /**
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
+   */
   def this() = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack()))
 
   /**
