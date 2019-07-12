@@ -26,16 +26,11 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
     }
   }
 
-  public static class GetCurrentCart implements Command, ExpectingReply<ShoppingCart> {
-    private final ActorRef<ShoppingCart> replyTo;
+  public static class GetCurrentCart implements Command {
+    public final ActorRef<ShoppingCart> replyTo;
 
     public GetCurrentCart(ActorRef<ShoppingCart> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    @Override
-    public ActorRef<ShoppingCart> replyTo() {
-      return replyTo;
     }
   }
 
@@ -182,7 +177,8 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
     }
 
     private Effect<DomainEvent, State> getCurrentCart(State state, GetCurrentCart command) {
-      return Effect().reply(command, state.cart);
+      command.replyTo.tell(state.cart);
+      return Effect().none();
     }
 
     // #event-handler
