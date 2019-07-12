@@ -103,8 +103,12 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
     @Override
     public EventSeq<DomainEvent> fromJournal(Object event, String manifest) {
       if (event instanceof StateChangeEvent) {
-        // Alternatively this could be converted into a private event if the state
-        // information is required as it can't be inferred from the events
+        // In this example the state transitions can be inferred from the events
+        // Alternatively the StateChangeEvent can be converted to a private event if either the
+        // StateChangeEvent.stateIdentifier
+        // or StateChangeEvent.timeout is required
+        // Many use cases have the same timeout so it can be hard coded, otherwise it cane be stored
+        // in the state
         return EventSeq.empty();
       } else {
         // If using a new domain event model the conversion would happen here
@@ -166,7 +170,7 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
       return Effect()
           .persist(CustomerInactive.INSTANCE)
           .thenRun(
-              () -> timers.startSingleTimer(TIMEOUT_KEY, Timeout.INSTANCE, Duration.ofSeconds(2)));
+              () -> timers.startSingleTimer(TIMEOUT_KEY, Timeout.INSTANCE, Duration.ofSeconds(1)));
     }
 
     private Effect<DomainEvent, State> buy() {
@@ -212,6 +216,21 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
     public EventAdapter<DomainEvent, ?> eventAdapter() {
       return new PersistentFSMEventAdapter();
     }
+
+    // #signal-handler
+    @Override
+    public SignalHandler<State> signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (state, signal) -> {
+                if (state instanceof Shopping || state instanceof Inactive) {
+                  timers.startSingleTimer(TIMEOUT_KEY, Timeout.INSTANCE, Duration.ofSeconds(1));
+                }
+              })
+          .build();
+    }
+    // #signal-handler
 
     // #snapshot-adapter
     @Override

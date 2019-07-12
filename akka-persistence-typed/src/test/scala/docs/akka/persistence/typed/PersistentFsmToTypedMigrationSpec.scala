@@ -7,25 +7,28 @@ package docs.akka.persistence.typed
 import java.util.UUID
 
 import akka.actor.PoisonPill
-import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.TimerScheduler
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.persistence.fsm.PersistentFSM.StateChangeEvent
-import akka.persistence.fsm.PersistentFSMSpec.{
-  CustomerInactive,
-  DomainEvent,
-  EmptyShoppingCart,
-  Item,
-  ItemAdded,
-  OrderDiscarded,
-  OrderExecuted,
-  ShoppingCart
-}
-import akka.persistence.typed.{ EventAdapter, EventSeq, ExpectingReply, PersistenceId, SnapshotAdapter }
+import akka.persistence.fsm.PersistentFSMSpec.CustomerInactive
+import akka.persistence.fsm.PersistentFSMSpec.DomainEvent
+import akka.persistence.fsm.PersistentFSMSpec.EmptyShoppingCart
+import akka.persistence.fsm.PersistentFSMSpec.Item
+import akka.persistence.fsm.PersistentFSMSpec.ItemAdded
+import akka.persistence.fsm.PersistentFSMSpec.OrderDiscarded
+import akka.persistence.fsm.PersistentFSMSpec.OrderExecuted
+import akka.persistence.fsm.PersistentFSMSpec.ShoppingCart
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.PersistentFSMMigration
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.EventSeq
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.SnapshotAdapter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
@@ -42,7 +45,7 @@ object PersistentFsmToTypedMigrationSpec {
 
 }
 
-object ShoppingCartActor {
+object ShoppingCartBehavior {
 
   def apply(pid: PersistenceId) = behavior(pid)
 
@@ -51,7 +54,7 @@ object ShoppingCartActor {
   case class AddItem(item: Item) extends Command
   case object Buy extends Command
   case object Leave extends Command
-  case class GetCurrentCart(replyTo: ActorRef[ShoppingCart]) extends Command with ExpectingReply[ShoppingCart]
+  case class GetCurrentCart(replyTo: ActorRef[ShoppingCart]) extends Command
   private case object Timeout extends Command
   //#commands
 
@@ -84,8 +87,10 @@ object ShoppingCartActor {
     override def fromJournal(journalEvent: Any, manifest: String): EventSeq[DomainEvent] = {
       journalEvent match {
         case _: StateChangeEvent =>
-          // Alternatively this could be converted into a private event if the state
-          // information is required as it can't be inferred from the events
+          // In this example the state transitions can be inferred from the events
+          // Alternatively the StateChangeEvent can be converted to a private event if either the StateChangeEvent.stateIdentifier
+          // or StateChangeEvent.timeout is required
+          // Many use cases have the same timeout so it can be hard coded, otherwise it cane be stored in the state
           EventSeq.empty
         case other =>
           // If using a new domain event model the conversion would happen here
@@ -99,57 +104,58 @@ object ShoppingCartActor {
   val StateTimeout = "state-timeout"
 
   //#command-handler
-  def commandHandler(timers: TimerScheduler[Command]): (State, Command) => Effect[DomainEvent, State] =
-    (state, command) => {
-      state match {
-        case LookingAround(cart) =>
-          command match {
-            case AddItem(item) =>
-              Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
-            case get: GetCurrentCart =>
-              Effect.reply(get)(cart)
-            case _ =>
-              Effect.none
-          }
-        case Shopping(cart) =>
-          command match {
-            case AddItem(item) =>
-              Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
-            case Buy =>
-              Effect.persist(OrderExecuted).thenRun(_ => timers.cancel(StateTimeout))
-            case Leave =>
-              Effect.persist(OrderDiscarded).thenStop()
-            case get: GetCurrentCart =>
-              Effect.reply(get)(cart)
-            case Timeout =>
-              Effect.persist(CustomerInactive)
-            case _ =>
-              Effect.none
-          }
-        case Inactive(_) =>
-          command match {
-            case AddItem(item) =>
-              Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
-            case Timeout =>
-              Effect.persist(OrderDiscarded)
-            case _ =>
-              Effect.none
-          }
-        case Paid(cart) =>
-          command match {
-            case Leave =>
-              Effect.stop()
-            case get: GetCurrentCart =>
-              Effect.reply(get)(cart)
-            case _ =>
-              Effect.none
-          }
-      }
+  def commandHandler(timers: TimerScheduler[Command])(state: State, command: Command): Effect[DomainEvent, State] =
+    state match {
+      case LookingAround(cart) =>
+        command match {
+          case AddItem(item) =>
+            Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
+          case GetCurrentCart(replyTo) =>
+            replyTo ! cart
+            Effect.none
+          case _ =>
+            Effect.none
+        }
+      case Shopping(cart) =>
+        command match {
+          case AddItem(item) =>
+            Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
+          case Buy =>
+            Effect.persist(OrderExecuted).thenRun(_ => timers.cancel(StateTimeout))
+          case Leave =>
+            Effect.persist(OrderDiscarded).thenStop()
+          case GetCurrentCart(replyTo) =>
+            replyTo ! cart
+            Effect.none
+          case Timeout =>
+            Effect.persist(CustomerInactive)
+          case _ =>
+            Effect.none
+        }
+      case Inactive(_) =>
+        command match {
+          case AddItem(item) =>
+            Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
+          case Timeout =>
+            Effect.persist(OrderDiscarded)
+          case _ =>
+            Effect.none
+        }
+      case Paid(cart) =>
+        command match {
+          case Leave =>
+            Effect.stop()
+          case GetCurrentCart(replyTo) =>
+            replyTo ! cart
+            Effect.none
+          case _ =>
+            Effect.none
+        }
     }
   //#command-handler
 
   //#event-handler
-  def eventHandler(): (State, DomainEvent) => State = (state, event) => {
+  def eventHandler(state: State, event: DomainEvent): State = {
     state match {
       case la @ LookingAround(cart) =>
         event match {
@@ -181,7 +187,19 @@ object ShoppingCartActor {
         pid,
         LookingAround(EmptyShoppingCart),
         commandHandler(timers),
-        eventHandler()).snapshotAdapter(persistentFSMSnapshotAdapter).eventAdapter(new PersistentFsmEventAdapter())
+        eventHandler)
+        .snapshotAdapter(persistentFSMSnapshotAdapter)
+        .eventAdapter(new PersistentFsmEventAdapter())
+        //#signal-handler
+        .receiveSignal {
+          case (state, RecoveryCompleted) =>
+            state match {
+              case _: Shopping | _: Inactive =>
+                timers.startSingleTimer(StateTimeout, Timeout, 1.second)
+              case _ =>
+            }
+        }
+    //#signal-handler
     }
 
 }
@@ -219,12 +237,12 @@ class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures {
       try {
         import typedTestKit._
         val typedProbe = akka.actor.testkit.typed.scaladsl.TestProbe[ShoppingCart]()
-        val typedReplacement = spawn(ShoppingCartActor(PersistenceId(pid)))
-        typedReplacement ! ShoppingCartActor.AddItem(coat)
-        typedReplacement ! ShoppingCartActor.GetCurrentCart(typedProbe.ref)
+        val typedReplacement = spawn(ShoppingCartBehavior(PersistenceId(pid)))
+        typedReplacement ! ShoppingCartBehavior.AddItem(coat)
+        typedReplacement ! ShoppingCartBehavior.GetCurrentCart(typedProbe.ref)
         typedProbe.expectMessage(NonEmptyShoppingCart(List(shirt, shoes, coat)))
-        typedReplacement ! ShoppingCartActor.Buy
-        typedReplacement ! ShoppingCartActor.Leave
+        typedReplacement ! ShoppingCartBehavior.Buy
+        typedReplacement ! ShoppingCartBehavior.Leave
         typedProbe.expectTerminated(typedReplacement)
       } finally {
         typedTestKit.shutdownTestKit()
@@ -257,8 +275,8 @@ class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures {
       try {
         import typedTestKit._
         val typedProbe = akka.actor.testkit.typed.scaladsl.TestProbe[ShoppingCart]()
-        val typedReplacement = spawn(ShoppingCartActor(PersistenceId(pid)))
-        typedReplacement ! ShoppingCartActor.GetCurrentCart(typedProbe.ref)
+        val typedReplacement = spawn(ShoppingCartBehavior(PersistenceId(pid)))
+        typedReplacement ! ShoppingCartBehavior.GetCurrentCart(typedProbe.ref)
         typedProbe.expectMessage(NonEmptyShoppingCart(Seq(shirt)))
       } finally {
         typedTestKit.shutdownTestKit()
