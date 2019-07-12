@@ -177,6 +177,8 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
       "${classOf[ClusterShardingSpec.EntityEnvelope].getName}" = java-test
       "${ClusterShardingSpec.Stop.getClass.getName}" = java-test
       "${classOf[ClusterShardingSpec.CounterChanged].getName}" = java-test
+      "${classOf[ShardRegion.Passivate].getName}" = java-test
+      
     }
 
     """)
