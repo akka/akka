@@ -23,6 +23,7 @@ object Dependencies {
   val agronaVersion = "1.0.1"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
+  val jacksonDatabindVersion = "2.9.9.1"
 
   val scala212Version = "2.12.8"
   val scala213Version = "2.13.0"
@@ -87,7 +88,7 @@ object Dependencies {
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
-    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion // ApacheV2
+    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion // ApacheV2
     val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion // ApacheV2
     val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
