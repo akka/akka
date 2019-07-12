@@ -160,7 +160,7 @@ private[cluster] class ClusterRemoteWatcher(
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
 
   override protected def shouldWatch(watchee: InternalActorRef): Boolean =
-    clusterNodes(watchee.path.address)
+    clusterNodes(watchee.path.address) || super.shouldWatch(watchee)
 
   /**
    * When a cluster node is added this class takes over the
