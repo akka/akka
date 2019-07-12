@@ -1250,7 +1250,7 @@ private[stream] object Collect {
               case Supervision.Stop => failStage(ex)
               case _                => pushNextIfPossible()
             }
-        })
+      })
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
 
@@ -1725,43 +1725,50 @@ private[stream] object Collect {
 
       val onPushWhenBufferFull: () => Unit = strategy match {
         case EmitEarly =>
-          () => {
-            if (!isTimerActive(timerName))
-              push(out, buffer.dequeue()._2)
-            else {
-              cancelTimer(timerName)
-              onTimer(timerName)
+          () =>
+            {
+              if (!isTimerActive(timerName))
+                push(out, buffer.dequeue()._2)
+              else {
+                cancelTimer(timerName)
+                onTimer(timerName)
+              }
+              grabAndPull()
             }
-            grabAndPull()
-          }
         case _: DropHead =>
-          () => {
-            buffer.dropHead()
-            grabAndPull()
-          }
+          () =>
+            {
+              buffer.dropHead()
+              grabAndPull()
+            }
         case _: DropTail =>
-          () => {
-            buffer.dropTail()
-            grabAndPull()
-          }
+          () =>
+            {
+              buffer.dropTail()
+              grabAndPull()
+            }
         case _: DropNew =>
-          () => {
-            grab(in)
-            pull(in)
-          }
+          () =>
+            {
+              grab(in)
+              pull(in)
+            }
         case _: DropBuffer =>
-          () => {
-            buffer.clear()
-            grabAndPull()
-          }
+          () =>
+            {
+              buffer.clear()
+              grabAndPull()
+            }
         case _: Fail =>
-          () => {
-            failStage(BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
-          }
+          () =>
+            {
+              failStage(BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
+            }
         case _: Backpressure =>
-          () => {
-            throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
-          }
+          () =>
+            {
+              throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
+            }
       }
 
       def onPush(): Unit = {
@@ -1846,9 +1853,18 @@ private[stream] object Collect {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
-      def onPush(): Unit = push(out, grab(in))
+      private val timeoutNs = System.nanoTime() + timeout.toNanos
 
-      def onPull(): Unit = pull(in)
+      def overdue() = System.nanoTime() >= timeoutNs
+      def onPush(): Unit = {
+        if (overdue()) completeStage()
+        else push(out, grab(in))
+      }
+
+      def onPull(): Unit = {
+        if (overdue()) completeStage()
+        else pull(in)
+      }
 
       setHandlers(in, out, this)
 
