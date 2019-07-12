@@ -6,17 +6,18 @@ package jdocs.akka.typed;
 
 // #oo-style
 // #fun-style
-import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 // #fun-style
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.Receive;
-import akka.actor.typed.javadsl.TimerScheduler;
-
-import java.time.Duration;
 // #oo-style
+
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.javadsl.TimerScheduler;
+import akka.Done;
+import java.time.Duration;
 
 interface StyleGuideDocExamples {
 
@@ -76,13 +77,17 @@ interface StyleGuideDocExamples {
   interface OOStyle {
 
     // #oo-style
+
+    // #messages
     public class Counter extends AbstractBehavior<Counter.Command> {
 
       public interface Command {}
 
+      // #message-enum
       public enum Increment implements Command {
         INSTANCE
       }
+      // #message-enum
 
       public static class GetValue implements Command {
         public final ActorRef<Value> replyTo;
@@ -99,6 +104,7 @@ interface StyleGuideDocExamples {
           this.value = value;
         }
       }
+      // #messages
 
       public static Behavior<Command> create() {
         return Behaviors.setup(Counter::new);
@@ -115,7 +121,9 @@ interface StyleGuideDocExamples {
       @Override
       public Receive<Command> createReceive() {
         return newReceiveBuilder()
+            // #message-enum-match
             .onMessage(Increment.class, notUsed -> onIncrement())
+            // #message-enum-match
             .onMessage(GetValue.class, this::onGetValue)
             .build();
       }
@@ -130,7 +138,9 @@ interface StyleGuideDocExamples {
         command.replyTo.tell(new Value(n));
         return this;
       }
+      // #messages
     }
+    // #messages
     // #oo-style
 
   }
@@ -402,5 +412,317 @@ interface StyleGuideDocExamples {
       }
     }
     // #fun-style-setup-params3
+  }
+
+  interface FactoryMethod {
+    // #behavior-factory-method
+    public class CountDown extends AbstractBehavior<CountDown.Command> {
+
+      public interface Command {}
+
+      public enum Down implements Command {
+        INSTANCE
+      }
+
+      // factory for the initial `Behavior`
+      public static Behavior<Command> create(int countDownFrom, ActorRef<Done> notifyWhenZero) {
+        return Behaviors.setup(context -> new CountDown(countDownFrom, notifyWhenZero));
+      }
+
+      private final ActorRef<Done> notifyWhenZero;
+      private int remaining;
+
+      private CountDown(int countDownFrom, ActorRef<Done> notifyWhenZero) {
+        this.remaining = countDownFrom;
+        this.notifyWhenZero = notifyWhenZero;
+      }
+
+      @Override
+      public Receive<Command> createReceive() {
+        return newReceiveBuilder().onMessage(Down.class, notUsed -> onDown()).build();
+      }
+
+      private Behavior<Command> onDown() {
+        remaining--;
+        if (remaining == 0) {
+          notifyWhenZero.tell(Done.getInstance());
+          return Behaviors.stopped();
+        } else {
+          return this;
+        }
+      }
+    }
+    // #behavior-factory-method
+
+    public class Usage {
+      private ActorContext<?> context = null;
+      private ActorRef<Done> doneRef = null;
+
+      {
+        // #behavior-factory-method-spawn
+        ActorRef<CountDown.Command> countDown =
+            context.spawn(CountDown.create(100, doneRef), "countDown");
+        // #behavior-factory-method-spawn
+
+        // #message-prefix-in-tell
+        countDown.tell(CountDown.Down.INSTANCE);
+        // #message-prefix-in-tell
+      }
+    }
+  }
+
+  interface Messages {
+    // #message-protocol
+    interface CounterProtocol {
+      interface Command {}
+
+      public static class Increment implements Command {
+        public final int delta;
+        private final ActorRef<OperationResult> replyTo;
+
+        public Increment(int delta, ActorRef<OperationResult> replyTo) {
+          this.delta = delta;
+          this.replyTo = replyTo;
+        }
+      }
+
+      public static class Decrement implements Command {
+        public final int delta;
+        private final ActorRef<OperationResult> replyTo;
+
+        public Decrement(int delta, ActorRef<OperationResult> replyTo) {
+          this.delta = delta;
+          this.replyTo = replyTo;
+        }
+      }
+
+      interface OperationResult {}
+
+      enum Confirmed implements OperationResult {
+        INSTANCE
+      }
+
+      public static class Rejected implements OperationResult {
+        public final String reason;
+
+        public Rejected(String reason) {
+          this.reason = reason;
+        }
+      }
+    }
+    // #message-protocol
+  }
+
+  interface PublicVsPrivateMessages1 {
+    // #on-message-lambda-anti
+    // this is an anti-pattern, don't use lambdas with a large block of code
+    // #on-message-lambda-anti
+    // #public-private-messages-1
+    public class Counter extends AbstractBehavior<Counter.Command> {
+
+      public interface Command {}
+
+      public enum Increment implements Command {
+        INSTANCE
+      }
+
+      public static class GetValue implements Command {
+        public final ActorRef<Value> replyTo;
+
+        public GetValue(ActorRef<Value> replyTo) {
+          this.replyTo = replyTo;
+        }
+      }
+
+      public static class Value {
+        public final int value;
+
+        public Value(int value) {
+          this.value = value;
+        }
+      }
+
+      // Tick is private so can't be sent from the outside
+      private enum Tick implements Command {
+        INSTANCE
+      }
+
+      public static Behavior<Command> create(String name, Duration tickInterval) {
+        return Behaviors.setup(
+            context ->
+                Behaviors.withTimers(
+                    timers -> {
+                      timers.startTimerWithFixedDelay("tick", Tick.INSTANCE, tickInterval);
+                      return new Counter(name, context);
+                    }));
+      }
+
+      private final String name;
+      private final ActorContext<Command> context;
+      private int count;
+
+      private Counter(String name, ActorContext<Command> context) {
+        this.name = name;
+        this.context = context;
+      }
+
+      // #on-message-lambda
+      // #on-message-method-ref
+      @Override
+      // #on-message-lambda-anti
+      public Receive<Command> createReceive() {
+        // #on-message-lambda-anti
+        return newReceiveBuilder()
+            // #on-message-method-ref
+            .onMessage(Increment.class, notUsed -> onIncrement())
+            // #on-message-lambda
+            .onMessage(Tick.class, notUsed -> onTick())
+            // #on-message-method-ref
+            .onMessage(GetValue.class, this::onGetValue)
+            // #on-message-lambda
+            .build();
+      }
+
+      // #on-message-lambda
+      // #on-message-method-ref
+
+      // #on-message-lambda
+      private Behavior<Command> onIncrement() {
+        count++;
+        context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+        return this;
+      }
+      // #on-message-lambda
+
+      private Behavior<Command> onTick() {
+        count++;
+        context.getLog().debug("[{}] Incremented counter by background tick to [{}]", name, count);
+        return this;
+      }
+
+      // #on-message-method-ref
+      private Behavior<Command> onGetValue(GetValue command) {
+        command.replyTo.tell(new Value(count));
+        return this;
+      }
+      // #on-message-method-ref
+
+      // #public-private-messages-1
+      // anti-pattern, don't do like this
+      public Receive<Command> createReceiveAnti() {
+        // #on-message-lambda-anti
+        return newReceiveBuilder()
+            .onMessage(
+                Increment.class,
+                notUsed -> {
+                  count++;
+                  context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+                  return this;
+                })
+            .onMessage(
+                Tick.class,
+                notUsed -> {
+                  count++;
+                  context
+                      .getLog()
+                      .debug("[{}] Incremented counter by background tick to [{}]", name, count);
+                  return this;
+                })
+            .onMessage(
+                GetValue.class,
+                command -> {
+                  command.replyTo.tell(new Value(count));
+                  return this;
+                })
+            .build();
+      }
+      // #on-message-lambda-anti
+      // #public-private-messages-1
+    }
+    // #public-private-messages-1
+
+  }
+
+  interface PublicVsPrivateMessages2 {
+    // #public-private-messages-2
+    // above example is preferred, but this is possible and not wrong
+    public class Counter extends AbstractBehavior<Counter.PrivateCommand> {
+
+      public interface PrivateCommand {}
+
+      public interface Command extends PrivateCommand {}
+
+      public enum Increment implements Command {
+        INSTANCE
+      }
+
+      public static class GetValue implements Command {
+        public final ActorRef<Value> replyTo;
+
+        public GetValue(ActorRef<Value> replyTo) {
+          this.replyTo = replyTo;
+        }
+      }
+
+      public static class Value {
+        public final int value;
+
+        public Value(int value) {
+          this.value = value;
+        }
+      }
+
+      // Tick is a PrivateCommand so can't be sent to an ActorRef<Command>
+      enum Tick implements PrivateCommand {
+        INSTANCE
+      }
+
+      public static Behavior<Command> create(String name, Duration tickInterval) {
+        return Behaviors.setup(
+                (ActorContext<PrivateCommand> context) ->
+                    Behaviors.withTimers(
+                        timers -> {
+                          timers.startTimerWithFixedDelay("tick", Tick.INSTANCE, tickInterval);
+                          return new Counter(name, context);
+                        }))
+            .narrow(); // note narrow here
+      }
+
+      private final String name;
+      private final ActorContext<PrivateCommand> context;
+      private int count;
+
+      private Counter(String name, ActorContext<PrivateCommand> context) {
+        this.name = name;
+        this.context = context;
+      }
+
+      @Override
+      public Receive<PrivateCommand> createReceive() {
+        return newReceiveBuilder()
+            .onMessage(Increment.class, notUsed -> onIncrement())
+            .onMessage(Tick.class, notUsed -> onTick())
+            .onMessage(GetValue.class, this::onGetValue)
+            .build();
+      }
+
+      private Behavior<PrivateCommand> onIncrement() {
+        count++;
+        context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+        return this;
+      }
+
+      private Behavior<PrivateCommand> onTick() {
+        count++;
+        context.getLog().debug("[{}] Incremented counter by background tick to [{}]", name, count);
+        return this;
+      }
+
+      private Behavior<PrivateCommand> onGetValue(GetValue command) {
+        command.replyTo.tell(new Value(count));
+        return this;
+      }
+    }
+    // #public-private-messages-2
   }
 }

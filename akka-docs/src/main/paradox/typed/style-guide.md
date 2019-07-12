@@ -1,6 +1,11 @@
 # Style guide
 
-## Functional vs object-oriented style
+This is a style guide with recommendations of idioms and pattern for writing Akka Typed actors.
+
+As with all style guides, treat this as a list of rules to be broken. There are certainly times
+when alternative styles should be preferred over the ones given here.
+
+## Functional versus object-oriented style
 
 There are two flavors of the Actor APIs.
 
@@ -51,7 +56,7 @@ A few differences to note:
   the message. That said, `Behaviors.setup` is often used in the functional style as well, and then
   often together with `Behaviors.receiveMessage` that doesn't pass in the context with the message.]
   @java[The `ActorContext` is accessed with `Behaviors.setup` but then kept in different ways.
-  As an instance field vs. a method parameter.]
+  As an instance field versus a method parameter.]
 
 Which style you choose to use is a matter of taste and both styles can be mixed depending on which is best
 for a specific actor. An actor can switch between behaviors implemented in different styles.
@@ -169,7 +174,7 @@ That's nice. One thing to be cautious with here is that it's important that you 
 each spawned actor, since those parameters must not be shared between different actor instances. That comes natural
 when creating the instance from `Behaviors.setup` as in the above example. Having a
 @scala[`apply` factory method in the companion object and making the constructor private is recommended.]
-@java[static `create` factory method and making the constructor private is highly recommended.]
+@java[static `create` factory method and making the constructor private is recommended.]
 
 This can also be useful when testing the behavior by creating a test subclass that overrides certain methods in the
 class. The test would create the instance without the @scala[`apply` factory method]@java[static `create` factory method].
@@ -190,3 +195,256 @@ Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #fun-style-setup-params4 }
 
 @@@
+
+## Behavior factory method
+
+The initial behavior should be created via @scala[a factory method in the companion object]@java[a static factory method].
+Thereby the usage of the behavior doesn't change when the implementation is changed, for example if
+changing between object-oriented and function style.
+
+The factory method is a good place for retrieving resources like `Behaviors.withTimers`, `Behaviors.withStash`
+and `ActorContext` with `Behaviors.setup`.
+
+When using the object-oriented style, `AbstractBehavior`, a new instance should be created from a `Behaviors.setup`
+block in this factory method even though the `ActorContext` is not needed.  This is important because a new
+instance should be created when restart supervision is used. Typically, the `ActorContext` is needed anyway.
+
+The naming convention for the factory method is @scala[`apply` (when using Scala)]@java[`create` (when using Java)].
+Consistent naming makes it easier for readers of the code to find the "starting point" of the behavior.
+
+In the functional style the factory could even have been defined as a @scala[`val`]@java[`static field`]
+if all state is immutable and captured by the function, but since most behaviors need some initialization
+parameters it is preferred to consistently use a method @scala[(`def`)] for the factory.
+
+Example:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #behavior-factory-method }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #behavior-factory-method }
+
+When spawning an actor from this initial behavior it looks like:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #behavior-factory-method-spawn }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #behavior-factory-method-spawn }
+
+
+## Where to define messages
+
+When sending messages to another actor or receiving responses the messages should be prefixed with the name
+of the actor/behavior that defines the message to make it clear and avoid ambiguity.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #message-prefix-in-tell }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-prefix-in-tell }
+
+That is preferred over using @scala[importing `Down` and using `countDown ! Down`]
+@java[importing `Down` and using `countDown.tell(Down.INSTANCE);`].
+In the implementation of the `Behavior` that handle these messages the short names can be used.
+
+That is a reason for not defining the messages as top level classes in a package.
+
+An actor typically has a primary `Behavior` or it's only using one `Behavior` and then it's good to define
+the messages @scala[in the companion object]@java[as static inner classes] together with that `Behavior`.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #messages }
+
+Sometimes several actors share the same messages, because they have a tight coupling and using message adapters
+would introduce to much boilerplate and duplication. If there is no "natural home" for such messages they can be
+be defined in a separate @scala[`object`]@java[`interface`] to give them a naming scope.
+
+Example of shared message protocol:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #message-protocol }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }
+
+## Public versus private messages
+
+Often an actor has some messages that are only for it's internal implementation and not part of the public
+message protocol. For example, it can be timer messages or wrapper messages for `ask` or `messageAdapter`.
+
+That can be be achieved by defining those messages with `private` visibility. Then they can't be accessed
+and sent from the outside of the actor. The private messages must still @scala[extend]@java[implement] the
+public `Command` @scala[trait]@java[interface].
+
+Example of a private visibility for internal message:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #public-private-messages-1 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #public-private-messages-1 }
+
+There is another approach, which is valid but more complicated. It's not relying on visibility from the programming
+language but instead only exposing part of the message class hierarchy to the outside, by using `narrow`. The
+former approach is recommended but it can be good to know this "trick", for example it can be useful when
+using shared message protocol classes as described in @ref:[Where to define messages](#where-to-define-messages).
+
+Example of not exposing internal message in public `Behavior` type:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #public-private-messages-2 }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #public-private-messages-2 }
+
+@@@ div {.group-java}
+
+### Singleton messages
+
+For messages without parameters the `enum` singleton pattern is recommended:
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-enum }
+
+In the `ReceiveBuilder` it can be matched in same way as other messages:
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-enum-match }
+
+@@@
+
+@@@ div {.group-java}
+
+## Lamdas versus method references
+
+It's recommended to keep the message matching with the `ReceiveBuilder` as short and clean as possible
+and delegate to methods. This improves readability and ease of method navigation with an IDE.
+
+The delegation can be with lambdas or [method references](https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html).
+
+Example of delegation using a lambda:
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #on-message-lambda }
+
+When possible it's preferred to use method references instead of lambdas. The benefit is less verbosity and
+in some cases it can actually give better type inference.
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #on-message-method-ref }
+
+`this::onGetValue` is a method reference in above example. It corresponds to `command -> onGetValue(command)`.
+
+If you are using IntelliJ IDEA it has support for converting lambdas to method references.
+
+More important than the choice between lambdas or method references is to avoid lambdas with a large block of code.
+An anti-pattern would be to inline all message handling inside the lambdas like this:
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #on-message-lambda-anti }
+
+In a real application it would often be more than 3 lines for each message.
+It's not only making it more difficult to get an overview of the message matching, but compiler errors related
+to lambdas can sometimes be difficult to understand.
+
+Ideally, lambdas should be written in one line of code. Two lines can be ok, but three is probably too much.
+Also, don't use braces and return statements in one-line lambda bodies.
+
+@@@
+
+@@@ div {.group-scala}
+
+## Partial versus total Function
+
+It's recommended to use a `sealed` trait as the super type of the commands (incoming messages) of a an actor
+because then the Scala compiler will emit a warning if a message type is forgotten in the pattern match.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages-sealed }
+
+That is the main reason for why `Behaviors.receive`, `Behaviors.receiveMessage` takes a total `Function` and
+not a `PartialFunction`.
+
+The compiler warning if `GetValue` is not handled:
+
+```
+[warn] ... Counter.scala:45:34: match may not be exhaustive.
+[warn] It would fail on the following input: GetValue(_)
+[warn]         Behaviors.receiveMessage {
+[warn]                                  ^
+```
+
+Note that a `MatchError` will be thrown at runtime if a message is not handled, so it's important to pay
+attention to those. If a `Behavior` should not handle certain messages you can still include them
+in the pattern match and return `Behaviors.unhandled`.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-unhandled }
+
+One thing to be aware of is the exhaustiveness check is not enabled when there is a guard condition in the
+pattern match cases.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-guard }
+
+Therefore it can be better to not use the guard and instead move the `if` after the `=>`.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-without-guard }
+
+It's recommended to use the `sealed` trait and total functions with exhaustiveness check to detect mistakes
+of forgetting to handle some messages. Sometimes that can be inconvenient and then you can use a `PartialFunction`
+with `Behaviors.receivePartial` or `Behaviors.receiveMessagePartial`
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-partial }
+
+@@@
+
+@@@ div {.group-scala}
+
+## ask versus ?
+
+When using the `AskPattern` it's recommended to use the `ask` method rather than the `?` operator.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-1 }
+
+Instead of the `replyTo` you can use `_` for less verbosity.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-2 }
+
+When using `?` the following doesn't compile because of type inference problem:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-3 }
+
+By adding parentheses it works but is rather ugly, and therefore better to stick with `ask`.
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-4 }
+
+Note that `AskPattern` is only intended for request-response interaction from outside an actor. If the requester is
+inside an actor, prefer `ActorContext.ask` as it provides better thread-safety by not involving
+@scala[`Future`]@java[`CompletionStage`] inside the actor.
+
+@@@
+
+## Additional naming conventions
+
+Some naming conventions have already been mentioned in the context of other recommendations, but here
+is a list of additional conventions:
+
+* `replyTo` is the typical name for the @scala[`ActorRef[Reply]`]@java[`ActorRef<Reply>`] parameter in
+  messages to which a reply or acknowledgement should be sent.
+
+* Incoming messages to an actor are typically called commands, and therefore the super type of all
+  messages that an actor can handle is typically @scala[`sealed trait Command`]@java[`interface Command {}`].
+
+* Use past tense for the events persisted by an `EventSourcedBehavior` since those represent facts that has happened,
+  e.g. `Incremented`.
