@@ -48,8 +48,7 @@ object SystemMessageDeliverySpec {
     """).withFallback(ArterySpecSupport.defaultConfig)
 
   val config =
-    ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on")
-      .withFallback(safe)
+    ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on").withFallback(safe)
 }
 
 abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiNodeSpec(c) with ImplicitSender {
@@ -68,9 +67,10 @@ abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiN
   system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
   systemB.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
 
-  protected def send(sendCount: Int,
-                     resendInterval: FiniteDuration,
-                     outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
+  protected def send(
+      sendCount: Int,
+      resendInterval: FiniteDuration,
+      outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
     Source(1 to sendCount)
       .map(n => outboundEnvelopePool.acquire().init(OptionVal.None, TestSysMsg("msg-" + n), OptionVal.None))

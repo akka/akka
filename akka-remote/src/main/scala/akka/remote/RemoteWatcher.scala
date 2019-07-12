@@ -208,7 +208,7 @@ private[akka] class RemoteWatcher(
   @InternalApi protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
     // In this it is unnecessary if only created by RARP, but cluster needs it.
     // Cleaner than overriding Cluster watcher addWatch/removeWatch just for one boolean test
-    remoteProvider.hasClusterOrUseUnsafe
+    remoteProvider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
   }
 
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
