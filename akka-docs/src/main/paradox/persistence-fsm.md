@@ -169,7 +169,10 @@ Scala
 Java
 :  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #command-handler }
 
-As does the event handler:
+Note that there is no explicit support for state timeout as with PersistentFSM but the same beahvaior can be achieved
+using `Behaviors.withTimers`.
+
+Then the event handler:
 
 Scala
 :  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #event-handler }

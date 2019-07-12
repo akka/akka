@@ -5,14 +5,17 @@
 package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.javadsl.TimerScheduler;
 import akka.persistence.typed.*;
 import akka.persistence.typed.javadsl.*;
+
+import java.time.Duration;
 
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.*;
 
 public class PersistentFsmToTypedMigrationCompileOnlyTest {
 
-  //#commands
+  // #commands
   interface Command {}
 
   public static class AddItem implements Command {
@@ -43,9 +46,13 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
   public enum Leave implements Command {
     INSTANCE
   }
-  //#commands
 
-  //#state
+  private enum Timeout implements Command {
+    INSTANCE
+  }
+  // #commands
+
+  // #state
   abstract static class State {
     public final ShoppingCart cart;
 
@@ -77,7 +84,7 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
       super(cart);
     }
   }
-  //#state
+  // #state
 
   // #event-adapter
   public static class PersistentFSMEventAdapter extends EventAdapter<DomainEvent, Object> {
@@ -109,8 +116,12 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
 
   public static class ShoppingCartActor extends EventSourcedBehavior<Command, DomainEvent, State> {
 
-    public ShoppingCartActor(PersistenceId persistenceId) {
+    private static final String TIMEOUT_KEY = "state-timeout";
+    private final TimerScheduler<Command> timers;
+
+    public ShoppingCartActor(PersistenceId persistenceId, TimerScheduler<Command> timers) {
       super(persistenceId);
+      this.timers = timers;
     }
 
     @Override
@@ -129,9 +140,13 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
           .forStateType(Shopping.class)
           .onCommand(AddItem.class, this::addItem)
           .onCommand(Buy.class, this::buy)
-          .onCommand(Leave.class, this::discardShoppingCart);
+          .onCommand(Leave.class, this::discardShoppingCart)
+          .onCommand(Timeout.class, this::timeoutShopping);
 
-      builder.forStateType(Inactive.class).onCommand(AddItem.class, this::addItem);
+      builder
+          .forStateType(Inactive.class)
+          .onCommand(AddItem.class, this::addItem)
+          .onCommand(Timeout.class, () -> Effect().persist(OrderDiscarded.INSTANCE).thenStop());
 
       builder.forStateType(Paid.class).onCommand(Leave.class, () -> Effect().stop());
 
@@ -141,15 +156,25 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
     // #command-handler
 
     private Effect<DomainEvent, State> addItem(AddItem item) {
-      return Effect().persist(new ItemAdded(item.item));
+      return Effect()
+          .persist(new ItemAdded(item.item))
+          .thenRun(
+              () -> timers.startSingleTimer(TIMEOUT_KEY, Timeout.INSTANCE, Duration.ofSeconds(1)));
+    }
+
+    private Effect<DomainEvent, State> timeoutShopping() {
+      return Effect()
+          .persist(CustomerInactive.INSTANCE)
+          .thenRun(
+              () -> timers.startSingleTimer(TIMEOUT_KEY, Timeout.INSTANCE, Duration.ofSeconds(2)));
     }
 
     private Effect<DomainEvent, State> buy() {
-      return Effect().persist(OrderExecuted.INSTANCE);
+      return Effect().persist(OrderExecuted.INSTANCE).thenRun(() -> timers.cancel(TIMEOUT_KEY));
     }
 
     private Effect<DomainEvent, State> discardShoppingCart() {
-      return Effect().persist(OrderDiscarded.INSTANCE);
+      return Effect().persist(OrderDiscarded.INSTANCE).thenRun(() -> timers.cancel(TIMEOUT_KEY));
     }
 
     private Effect<DomainEvent, State> getCurrentCart(State state, GetCurrentCart command) {
@@ -170,12 +195,14 @@ public class PersistentFsmToTypedMigrationCompileOnlyTest {
           .onEvent(
               ItemAdded.class, (state, item) -> new Shopping(state.cart.addItem(item.getItem())))
           .onEvent(OrderExecuted.class, (state, item) -> new Paid(state.cart))
-          .onEvent(OrderDiscarded.class, (state, item) -> state); // will be stopped
+          .onEvent(OrderDiscarded.class, (state, item) -> state) // will be stopped
+          .onEvent(CustomerInactive.class, (state, event) -> new Inactive(state.cart));
 
       eventHandlerBuilder
           .forStateType(Inactive.class)
           .onEvent(
-              ItemAdded.class, (state, item) -> new Shopping(state.cart.addItem(item.getItem())));
+              ItemAdded.class, (state, item) -> new Shopping(state.cart.addItem(item.getItem())))
+          .onEvent(OrderDiscarded.class, (state, item) -> state); // will be stopped
 
       return eventHandlerBuilder.build();
     }

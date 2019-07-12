@@ -7,16 +7,21 @@ package docs.akka.persistence.typed
 import java.util.UUID
 
 import akka.actor.PoisonPill
+import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.fsm.PersistentFSM.StateChangeEvent
-import akka.persistence.fsm.PersistentFSMSpec.DomainEvent
-import akka.persistence.fsm.PersistentFSMSpec.EmptyShoppingCart
-import akka.persistence.fsm.PersistentFSMSpec.Item
-import akka.persistence.fsm.PersistentFSMSpec.ItemAdded
-import akka.persistence.fsm.PersistentFSMSpec.OrderDiscarded
-import akka.persistence.fsm.PersistentFSMSpec.OrderExecuted
-import akka.persistence.fsm.PersistentFSMSpec.ShoppingCart
+import akka.persistence.fsm.PersistentFSMSpec.{
+  CustomerInactive,
+  DomainEvent,
+  EmptyShoppingCart,
+  Item,
+  ItemAdded,
+  OrderDiscarded,
+  OrderExecuted,
+  ShoppingCart
+}
 import akka.persistence.typed.{ EventAdapter, EventSeq, ExpectingReply, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -24,6 +29,8 @@ import akka.persistence.typed.scaladsl.PersistentFSMMigration
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
+
+import scala.concurrent.duration._
 
 object PersistentFsmToTypedMigrationSpec {
   val config = ConfigFactory.parseString(s"""
@@ -45,6 +52,7 @@ object ShoppingCartActor {
   case object Buy extends Command
   case object Leave extends Command
   case class GetCurrentCart(replyTo: ActorRef[ShoppingCart]) extends Command with ExpectingReply[ShoppingCart]
+  private case object Timeout extends Command
   //#commands
 
   //#state
@@ -88,56 +96,60 @@ object ShoppingCartActor {
   }
   //#event-adapter
 
+  val StateTimeout = "state-timeout"
+
   //#command-handler
-  val commandHandler: (State, Command) => Effect[DomainEvent, State] = (state, command) => {
-    println(s"Command Handler $state $command")
-    state match {
-      case LookingAround(cart) =>
-        command match {
-          case AddItem(item) =>
-            Effect.persist(ItemAdded(item))
-          case get: GetCurrentCart =>
-            Effect.reply(get)(cart)
-          case _ =>
-            Effect.none
-        }
-      case Shopping(cart) =>
-        // TODO timeout
-        command match {
-          case AddItem(item) =>
-            Effect.persist(ItemAdded(item))
-          case Buy =>
-            Effect.persist(OrderExecuted)
-          case Leave =>
-            Effect.persist(OrderDiscarded).thenStop()
-          case get: GetCurrentCart =>
-            Effect.reply(get)(cart)
-          case _ =>
-            Effect.none
-        }
-      case Inactive(_) =>
-        // TODO timeout
-        command match {
-          case AddItem(item) =>
-            Effect.persist(ItemAdded(item))
-          case _ =>
-            Effect.none
-        }
-      case Paid(cart) =>
-        command match {
-          case Leave =>
-            Effect.stop()
-          case get: GetCurrentCart =>
-            Effect.reply(get)(cart)
-          case _ =>
-            Effect.none
-        }
+  def commandHandler(timers: TimerScheduler[Command]): (State, Command) => Effect[DomainEvent, State] =
+    (state, command) => {
+      state match {
+        case LookingAround(cart) =>
+          command match {
+            case AddItem(item) =>
+              Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
+            case get: GetCurrentCart =>
+              Effect.reply(get)(cart)
+            case _ =>
+              Effect.none
+          }
+        case Shopping(cart) =>
+          command match {
+            case AddItem(item) =>
+              Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
+            case Buy =>
+              Effect.persist(OrderExecuted).thenRun(_ => timers.cancel(StateTimeout))
+            case Leave =>
+              Effect.persist(OrderDiscarded).thenStop()
+            case get: GetCurrentCart =>
+              Effect.reply(get)(cart)
+            case Timeout =>
+              Effect.persist(CustomerInactive)
+            case _ =>
+              Effect.none
+          }
+        case Inactive(_) =>
+          command match {
+            case AddItem(item) =>
+              Effect.persist(ItemAdded(item)).thenRun(_ => timers.startSingleTimer(StateTimeout, Timeout, 1.second))
+            case Timeout =>
+              Effect.persist(OrderDiscarded)
+            case _ =>
+              Effect.none
+          }
+        case Paid(cart) =>
+          command match {
+            case Leave =>
+              Effect.stop()
+            case get: GetCurrentCart =>
+              Effect.reply(get)(cart)
+            case _ =>
+              Effect.none
+          }
+      }
     }
-  }
   //#command-handler
 
   //#event-handler
-  val eventHandler: (State, DomainEvent) => State = (state, event) => {
+  def eventHandler(): (State, DomainEvent) => State = (state, event) => {
     state match {
       case la @ LookingAround(cart) =>
         event match {
@@ -146,14 +158,16 @@ object ShoppingCartActor {
         }
       case s @ Shopping(cart) =>
         event match {
-          case ItemAdded(item) => Shopping(cart.addItem(item))
-          case OrderExecuted   => Paid(cart)
-          case OrderDiscarded  => state // will be stopped
-          case _               => s
+          case ItemAdded(item)  => Shopping(cart.addItem(item))
+          case OrderExecuted    => Paid(cart)
+          case OrderDiscarded   => state // will be stopped
+          case CustomerInactive => Inactive(cart)
+          case _                => s
         }
       case i @ Inactive(cart) =>
         event match {
           case ItemAdded(item) => Shopping(cart.addItem(item))
+          case OrderDiscarded  => i // will be stopped
           case _               => i
         }
       case Paid(_) => state // no events after paid
@@ -161,12 +175,14 @@ object ShoppingCartActor {
   }
   //#event-handler
 
-  private def behavior(pid: PersistenceId): EventSourcedBehavior[Command, DomainEvent, State] =
-    EventSourcedBehavior[Command, DomainEvent, State](
-      pid,
-      LookingAround(EmptyShoppingCart),
-      commandHandler,
-      eventHandler).snapshotAdapter(persistentFSMSnapshotAdapter).eventAdapter(new PersistentFsmEventAdapter())
+  private def behavior(pid: PersistenceId): Behavior[Command] =
+    Behaviors.withTimers[Command] { timers =>
+      EventSourcedBehavior[Command, DomainEvent, State](
+        pid,
+        LookingAround(EmptyShoppingCart),
+        commandHandler(timers),
+        eventHandler()).snapshotAdapter(persistentFSMSnapshotAdapter).eventAdapter(new PersistentFsmEventAdapter())
+    }
 
 }
 

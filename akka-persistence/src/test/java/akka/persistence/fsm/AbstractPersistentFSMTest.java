@@ -522,6 +522,10 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
     }
     // #customer-domain-events
 
+    public enum CustomerInactive implements DomainEvent {
+      INSTANCE
+    }
+
     // Side effects - report events to be sent to some "Report Actor"
     public interface ReportEvent {}
 
