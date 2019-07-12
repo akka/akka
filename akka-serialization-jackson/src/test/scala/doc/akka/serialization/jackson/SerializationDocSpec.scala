@@ -4,8 +4,16 @@
 
 package doc.akka.serialization.jackson
 
+import akka.actor.ActorSystem
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
+import akka.testkit.TestKit
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Matchers
+import org.scalatest.WordSpecLike
 
 //#marker-interface
 /**
@@ -121,3 +129,47 @@ object SerializationDocSpec {
 
 }
 // FIXME add real tests for the migrations, see EventMigrationTest.java in Lagom
+
+class SerializationDocSpec
+    extends TestKit(
+      ActorSystem(
+        "JacksonJsonSerializerSpec",
+        ConfigFactory.parseString(s"""
+          akka.actor {
+            allow-java-serialization = off
+            serialization-bindings {
+              "${classOf[MySerializable].getName}" = jackson-json
+            }
+          }
+          """)))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
+
+  override def afterAll(): Unit = {
+    shutdown()
+  }
+
+  private val serialization = SerializationExtension(system)
+
+  def roundTrip(obj: AnyRef): AnyRef = {
+    // toBinary
+    val bytes = serialization.serialize(obj).get
+    val manifest = Serializers.manifestFor(serialization.findSerializerFor(obj), obj)
+    val id = serialization.findSerializerFor(obj).identifier
+
+    // fromBinary
+    serialization.deserialize(bytes, id, manifest).get
+  }
+
+  "serialize trait + object ADT" in {
+    import CustomAdtSerializer.Compass
+    import CustomAdtSerializer.Direction._
+
+    roundTrip(Compass(North)) should ===(Compass(North))
+    roundTrip(Compass(East)) should ===(Compass(East))
+    roundTrip(Compass(South)) should ===(Compass(South))
+    roundTrip(Compass(West)) should ===(Compass(West))
+  }
+
+}
