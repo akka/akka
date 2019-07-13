@@ -34,21 +34,45 @@ class QueueSinkSpec extends StreamSpec {
       }
     }
 
-    "allow to have only one future waiting for result in each point of time" in assertAllStagesStopped {
-      val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source.fromPublisher(probe).runWith(Sink.queue())
-      val sub = probe.expectSubscription()
-      val future = queue.pull()
-      val future2 = queue.pull()
-      an[IllegalStateException] shouldBe thrownBy { Await.result(future2, remainingOrDefault) }
+    "allow to have only one future waiting for result in each point of time with default request buffer size" in
+        assertAllStagesStopped {
+          val probe = TestPublisher.manualProbe[Int]()
+          val queue = Source.fromPublisher(probe).runWith(Sink.queue())
+          val sub = probe.expectSubscription()
+          val future = queue.pull()
+          val future2 = queue.pull()
+          an[IllegalStateException] shouldBe thrownBy { Await.result(future2, remainingOrDefault) }
 
-      sub.sendNext(1)
-      future.pipeTo(testActor)
-      expectMsg(Some(1))
+          sub.sendNext(1)
+          future.pipeTo(testActor)
+          expectMsg(Some(1))
 
-      sub.sendComplete()
-      queue.pull()
-    }
+          sub.sendComplete()
+          queue.pull()
+        }
+
+    "allow to have `n` futures waiting for result in each point of time with `n` request buffer size" in
+        assertAllStagesStopped {
+          val n = 2
+          val probe = TestPublisher.manualProbe[Int]()
+          val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
+          val sub = probe.expectSubscription()
+          val future1 = queue.pull()
+          val future2 = queue.pull()
+          val future3 = queue.pull()
+          an[IllegalStateException] shouldBe thrownBy { Await.result(future3, remainingOrDefault) }
+
+          sub.sendNext(1)
+          future1.pipeTo(testActor)
+          expectMsg(Some(1))
+
+          sub.sendNext(2)
+          future2.pipeTo(testActor)
+          expectMsg(Some(2))
+
+          sub.sendComplete()
+          queue.pull()
+        }
 
     "wait for next element from upstream" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()

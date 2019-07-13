@@ -333,8 +333,10 @@ import org.reactivestreams.Subscriber
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSink[T]()
+@InternalApi private[akka] final class QueueSink[T](requestBufferSize: Int = 1)
     extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
+  require(requestBufferSize > 0, "Request buffer size must be greater than 0")
+
   type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
@@ -351,7 +353,7 @@ import org.reactivestreams.Subscriber
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       var buffer: Buffer[Received[T]] = _
-      var currentRequest: Option[Requested[T]] = None
+      var currentRequests: mutable.Queue[Requested[T]] = mutable.Queue.empty
 
       override def preStart(): Unit = {
         // Allocates one additional element to hold stream
@@ -362,20 +364,16 @@ import org.reactivestreams.Subscriber
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) =>
-          currentRequest match {
-            case Some(_) =>
-              pullPromise.failure(
-                new IllegalStateException(
-                  "You have to wait for previous future to be resolved to send another request"))
-            case None =>
-              if (buffer.isEmpty) currentRequest = Some(pullPromise)
-              else {
-                if (buffer.used == maxBuffer) tryPull(in)
-                sendDownstream(pullPromise)
-              }
+        case QueueSink.Pull(pullPromise) ⇒
+          if (currentRequests.size >= requestBufferSize) pullPromise.failure(new IllegalStateException(
+            "Request buffer is full. You have to wait for one previous future to be resolved to send another request"
+          ))
+          else if (buffer.isEmpty) currentRequests.enqueue(pullPromise)
+          else {
+            if (buffer.used == maxBuffer) tryPull(in)
+            sendDownstream(pullPromise)
           }
-        case QueueSink.Cancel => completeStage()
+        case QueueSink.Cancel ⇒ completeStage()
       }
 
       def sendDownstream(promise: Requested[T]): Unit = {
@@ -390,12 +388,7 @@ import org.reactivestreams.Subscriber
 
       def enqueueAndNotify(requested: Received[T]): Unit = {
         buffer.enqueue(requested)
-        currentRequest match {
-          case Some(p) =>
-            sendDownstream(p)
-            currentRequest = None
-          case None => //do nothing
-        }
+        if (currentRequests.nonEmpty) sendDownstream(currentRequests.dequeue)
       }
 
       def onPush(): Unit = {
