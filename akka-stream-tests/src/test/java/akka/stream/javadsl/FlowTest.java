@@ -127,6 +127,20 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToFlattenOptional() {
+    final Flow<Optional<Integer>, NotUsed> sample = Flow.range(1, 3).map(i -> Optional.of(i));
+    CompletionStage<Integer> future = sample.<Integer>flattenOptional()
+            .runWith(Sink.fold(0, (agg, next) -> agg + next), materializer);
+    try {
+        assertEquals(future.toCompletableFuture().get(),(Integer)6);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    } catch (ExecutionException e) {
+        e.printStackTrace();
+    }
+  }
+
+  @Test
   public void mustBeAbleToUseStatefulMaponcat() throws Exception {
     final TestKit probe = new TestKit(system);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);

@@ -42,6 +42,7 @@ import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -852,6 +853,22 @@ public class SourceTest extends StreamTest {
     // elements from source1 (i.e. first of combined source) come first, then source2 elements, due
     // to `Concat`
     probe.expectMsgAllOf(0, 1, 2, 3);
+  }
+
+  @Test
+  public void mustBeAbleToFlattenOptional() {
+    final Source<Optional<Integer>, NotUsed> sample = Source.range(1, 3).map(i -> Optional.of(i));
+    CompletionStage<Integer> future =
+        sample
+            .<Integer>flattenOptional()
+            .runWith(Sink.fold(0, (agg, next) -> agg + next), materializer);
+    try {
+      assertEquals(future.toCompletableFuture().get(), (Integer) 6);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    }
   }
 
   @Test

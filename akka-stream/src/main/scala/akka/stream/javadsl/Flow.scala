@@ -521,6 +521,25 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def map[T](f: function.Function[Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.map(f.apply))
 
+
+  /**
+    * Filters and flattens, stream elements of type java.util.Optional and returns non empty elements
+    * as they pass through this processing step.
+    *
+    * '''Emits when''' the mapping function returns an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def flattenOptional[T](): javadsl.Flow[In, T, Mat] =
+    new Flow(
+      delegate.filter(e=>e.isInstanceOf[Optional[_]] && (e.asInstanceOf[Optional[_]]).isPresent)
+        .map(e=>e.asInstanceOf[Optional[T]].get())
+    )
+
   /**
    * This is a simplified version of `wireTap(Sink)` that takes only a simple procedure.
    * Elements will be passed into this "side channel" function, and any of its results will be ignored.
