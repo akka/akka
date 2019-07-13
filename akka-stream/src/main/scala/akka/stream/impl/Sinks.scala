@@ -333,8 +333,11 @@ import org.reactivestreams.Subscriber
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSink[T](requestBufferSize: Int = 1)
+@InternalApi private[akka] final class QueueSink[T](requestBufferSize: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
+
+  def this() = this(1)
+
   require(requestBufferSize > 0, "Request buffer size must be greater than 0")
 
   type Requested[E] = Promise[Option[E]]

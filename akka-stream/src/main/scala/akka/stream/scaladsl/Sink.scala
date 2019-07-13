@@ -550,8 +550,10 @@ object Sink {
    *
    * See also [[akka.stream.scaladsl.SinkQueueWithCancel]]
    */
-  def queue[T](requestBufferSize: Int = 1): Sink[T, SinkQueueWithCancel[T]] =
+  def queue[T](requestBufferSize: Int): Sink[T, SinkQueueWithCancel[T]] =
     Sink.fromGraph(new QueueSink(requestBufferSize))
+
+  def queue[T](): Sink[T, SinkQueueWithCancel[T]] = Sink.fromGraph(new QueueSink(1))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
