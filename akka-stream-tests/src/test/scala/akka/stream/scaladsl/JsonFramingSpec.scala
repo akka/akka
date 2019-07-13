@@ -63,10 +63,7 @@ class JsonFramingSpec extends AkkaSpec {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
 
-      result.futureValue shouldBe Seq(
-        """{ "name" : "john" }""",
-        """{ "name" : "jack" }"""
-      )
+      result.futureValue shouldBe Seq("""{ "name" : "john" }""", """{ "name" : "jack" }""")
     }
 
     "emit single json element from string" in {
