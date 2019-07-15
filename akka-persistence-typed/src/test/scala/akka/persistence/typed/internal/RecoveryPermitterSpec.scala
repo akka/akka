@@ -71,7 +71,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      akka.actor.warn-about-java-serializer-usage = off
+      akka.persistence.journal.inmem.test-serialization = on
       akka.loggers = ["akka.testkit.TestEventListener"]
       """) with WordSpecLike {
 

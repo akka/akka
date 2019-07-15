@@ -5,17 +5,19 @@
 package jdocs.akka.typed;
 
 // #imports
-
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
+
+// #imports
+
 import akka.actor.typed.Terminated;
 import akka.actor.typed.Props;
 import akka.actor.typed.DispatcherSelector;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
-
-// #imports
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -23,13 +25,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IntroTest {
+public interface IntroTest {
 
   // #hello-world-actor
-  public abstract static class HelloWorld {
-    // no instances of this class, it's only a name space for messages
-    // and static methods
-    private HelloWorld() {}
+  public class HelloWorld extends AbstractBehavior<HelloWorld.Greet> {
 
     public static final class Greet {
       public final String whom;
@@ -51,39 +50,65 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Greet> greeter =
-        Behaviors.receive(
-            (context, message) -> {
-              context.getLog().info("Hello {}!", message.whom);
-              message.replyTo.tell(new Greeted(message.whom, context.getSelf()));
-              return Behaviors.same();
-            });
+    public static Behavior<Greet> create() {
+      return Behaviors.setup(HelloWorld::new);
+    }
+
+    private final ActorContext<Greet> context;
+
+    private HelloWorld(ActorContext<Greet> context) {
+      this.context = context;
+    }
+
+    @Override
+    public Receive<Greet> createReceive() {
+      return newReceiveBuilder().onMessage(Greet.class, this::onGreet).build();
+    }
+
+    private Behavior<Greet> onGreet(Greet command) {
+      context.getLog().info("Hello {}!", command.whom);
+      command.replyTo.tell(new Greeted(command.whom, context.getSelf()));
+      return this;
+    }
   }
   // #hello-world-actor
 
   // #hello-world-bot
-  public abstract static class HelloWorldBot {
-    private HelloWorldBot() {}
+  public class HelloWorldBot extends AbstractBehavior<HelloWorld.Greeted> {
 
-    public static final Behavior<HelloWorld.Greeted> bot(int greetingCounter, int max) {
-      return Behaviors.receive(
-          (context, message) -> {
-            int n = greetingCounter + 1;
-            context.getLog().info("Greeting {} for {}", n, message.whom);
-            if (n == max) {
-              return Behaviors.stopped();
-            } else {
-              message.from.tell(new HelloWorld.Greet(message.whom, context.getSelf()));
-              return bot(n, max);
-            }
-          });
+    public static Behavior<HelloWorld.Greeted> create(int max) {
+      return Behaviors.setup(context -> new HelloWorldBot(context, max));
+    }
+
+    private final ActorContext<HelloWorld.Greeted> context;
+    private final int max;
+    private int greetingCounter;
+
+    private HelloWorldBot(ActorContext<HelloWorld.Greeted> context, int max) {
+      this.context = context;
+      this.max = max;
+    }
+
+    @Override
+    public Receive<HelloWorld.Greeted> createReceive() {
+      return newReceiveBuilder().onMessage(HelloWorld.Greeted.class, this::onGreeted).build();
+    }
+
+    private Behavior<HelloWorld.Greeted> onGreeted(HelloWorld.Greeted message) {
+      greetingCounter++;
+      context.getLog().info("Greeting {} for {}", greetingCounter, message.whom);
+      if (greetingCounter == max) {
+        return Behaviors.stopped();
+      } else {
+        message.from.tell(new HelloWorld.Greet(message.whom, context.getSelf()));
+        return this;
+      }
     }
   }
   // #hello-world-bot
 
   // #hello-world-main
-  public abstract static class HelloWorldMain {
-    private HelloWorldMain() {}
+  public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.Start> {
 
     public static class Start {
       public final String name;
@@ -93,25 +118,32 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Start> main =
-        Behaviors.setup(
-            context -> {
-              final ActorRef<HelloWorld.Greet> greeter =
-                  context.spawn(HelloWorld.greeter, "greeter");
+    public static Behavior<Start> create() {
+      return Behaviors.setup(HelloWorldMain::new);
+    }
 
-              return Behaviors.receiveMessage(
-                  message -> {
-                    ActorRef<HelloWorld.Greeted> replyTo =
-                        context.spawn(HelloWorldBot.bot(0, 3), message.name);
-                    greeter.tell(new HelloWorld.Greet(message.name, replyTo));
-                    return Behaviors.same();
-                  });
-            });
+    private final ActorContext<Start> context;
+    private final ActorRef<HelloWorld.Greet> greeter;
+
+    private HelloWorldMain(ActorContext<Start> context) {
+      this.context = context;
+      greeter = context.spawn(HelloWorld.create(), "greeter");
+    }
+
+    @Override
+    public Receive<Start> createReceive() {
+      return newReceiveBuilder().onMessage(Start.class, this::onStart).build();
+    }
+
+    private Behavior<Start> onStart(Start command) {
+      ActorRef<HelloWorld.Greeted> replyTo = context.spawn(HelloWorldBot.create(3), command.name);
+      greeter.tell(new HelloWorld.Greet(command.name, replyTo));
+      return this;
+    }
   }
   // #hello-world-main
 
-  public abstract static class CustomDispatchersExample {
-    private CustomDispatchersExample() {}
+  interface CustomDispatchersExample {
 
     public static class Start {
       public final String name;
@@ -122,30 +154,49 @@ public class IntroTest {
     }
 
     // #hello-world-main-with-dispatchers
-    public static final Behavior<Start> main =
-        Behaviors.setup(
-            context -> {
-              final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
+    public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.Start> {
 
-              Props props = DispatcherSelector.fromConfig(dispatcherPath);
-              final ActorRef<HelloWorld.Greet> greeter =
-                  context.spawn(HelloWorld.greeter, "greeter", props);
+      // Start message...
+      // #hello-world-main-with-dispatchers
+      public static class Start {
+        public final String name;
 
-              return Behaviors.receiveMessage(
-                  message -> {
-                    ActorRef<HelloWorld.Greeted> replyTo =
-                        context.spawn(HelloWorldBot.bot(0, 3), message.name);
-                    greeter.tell(new HelloWorld.Greet(message.name, replyTo));
-                    return Behaviors.same();
-                  });
-            });
+        public Start(String name) {
+          this.name = name;
+        }
+      }
+      // #hello-world-main-with-dispatchers
+
+      public static Behavior<Start> create() {
+        return Behaviors.setup(HelloWorldMain::new);
+      }
+
+      private final ActorContext<Start> context;
+      private final ActorRef<HelloWorld.Greet> greeter;
+
+      private HelloWorldMain(ActorContext<Start> context) {
+        this.context = context;
+
+        final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
+        Props greeterProps = DispatcherSelector.fromConfig(dispatcherPath);
+        greeter = context.spawn(HelloWorld.create(), "greeter", greeterProps);
+      }
+
+      // createReceive ...
+      // #hello-world-main-with-dispatchers
+      @Override
+      public Receive<HelloWorldMain.Start> createReceive() {
+        return null;
+      }
+      // #hello-world-main-with-dispatchers
+    }
     // #hello-world-main-with-dispatchers
   }
 
   public static void main(String[] args) throws Exception {
     // #hello-world
     final ActorSystem<HelloWorldMain.Start> system =
-        ActorSystem.create(HelloWorldMain.main, "hello");
+        ActorSystem.create(HelloWorldMain.create(), "hello");
 
     system.tell(new HelloWorldMain.Start("World"));
     system.tell(new HelloWorldMain.Start("Akka"));
@@ -156,7 +207,7 @@ public class IntroTest {
   }
 
   // #chatroom-behavior
-  public static class ChatRoom {
+  public class ChatRoom {
     // #chatroom-behavior
 
     // #chatroom-protocol
@@ -185,7 +236,7 @@ public class IntroTest {
     // #chatroom-behavior
     // #chatroom-protocol
 
-    static interface SessionEvent {}
+    interface SessionEvent {}
 
     public static final class SessionGranted implements SessionEvent {
       public final ActorRef<PostMessage> handle;
@@ -213,7 +264,7 @@ public class IntroTest {
       }
     }
 
-    static interface SessionCommand {}
+    interface SessionCommand {}
 
     public static final class PostMessage implements SessionCommand {
       public final String message;
@@ -301,7 +352,7 @@ public class IntroTest {
   // #chatroom-behavior
 
   // #chatroom-gabbler
-  public static class Gabbler {
+  public class Gabbler {
     public static Behavior<ChatRoom.SessionEvent> create() {
       return Behaviors.setup(ctx -> new Gabbler(ctx).behavior());
     }

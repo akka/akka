@@ -86,10 +86,8 @@ underlying module that allows for Cluster, it is still useful to understand deta
 
 @@@ note
 
-This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
-@ref:[classic remoting implementation](remoting.md). Artery is ready to use in production, but the
-module is still marked @ref:[may change](common/may-change.md) because some configuration will be
-changed when the API becomes stable in Akka 2.6.0.
+This page describes the remoting subsystem, codenamed *Artery* that has replaced the
+@ref:[classic remoting implementation](remoting.md).
 
 @@@
 
@@ -100,6 +98,10 @@ systems, `ActorRef` instances that point to remote systems look exactly the same
 sent messages to, watched, etc.
 Every `ActorRef` contains hostname and port information and can be passed around even on the network. This means
 that on a network every `ActorRef` is a unique identifier of an actor on that network.
+
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 Remoting is not a server-client technology. All systems using remoting can contact any other system on the network
 if they possess an `ActorRef` pointing to those system. This means that every system that is remoting enabled
@@ -254,8 +256,9 @@ Best practice is that Akka remoting nodes should only be accessible from the adj
 enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
 compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best-practice to @ref[disable the Java serializer](serialization.md#disable-java-serializer) because of
-its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
+That is also security best-practice because of its multiple
+[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
@@ -388,9 +391,10 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with @ref:[disabled Java serializer](#disabling-the-java-serializer)
+it should be noted that @ref:[Java serialization](serialization.md#java-serialization)
+should still not be enabled.
 Additional protection can be achieved when running in an untrusted network by
-network security (e.g. firewalls).
+network security (e.g. firewalls) and/or enabling @ref:[TLS with mutual authentication](#remote-tls).
 
 @@@
 
@@ -546,10 +550,9 @@ This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 
 ## Serialization
 
-When using remoting for actors you must ensure that the `props` and `messages` used for
-those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
-
-For more information please see @ref:[Serialization](serialization.md).
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 <a id="remote-bytebuffer-serialization"></a>
 ### ByteBuffer based serialization
@@ -588,11 +591,6 @@ Scala
 Java
 :  @@snip [ByteBufferSerializerDocTest.java](/akka-docs/src/test/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
 
-<a id="disable-java-serializer"></a>
-### Disabling the Java Serializer
-
-It is highly recommended that you @ref[disable Java serialization](serialization.md#disable-java-serializer).
-
 ## Routers with Remote Destinations
 
 It is absolutely feasible to combine remoting with @ref:[Routing](routing.md).
@@ -603,6 +601,9 @@ A pool of remote deployed routees can be configured as:
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
+
+When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
 
 A group of remote actors can be configured as:
 

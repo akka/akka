@@ -11,7 +11,6 @@ import akka.actor.RootActorPath
 
 import scala.concurrent.duration._
 import akka.testkit.SocketUtil
-import akka.remote.QuarantinedEvent
 import akka.remote.RARP
 import com.github.ghik.silencer.silent
 
@@ -37,6 +36,9 @@ object RemoteDeathWatchSpec {
           aeron.image-liveness-timeout = 9 seconds
         }
     }
+    # test is using Java serialization and not priority to rewrite
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
     """).withFallback(ArterySpecSupport.defaultConfig)
 }
 
@@ -101,8 +103,8 @@ class RemoteDeathWatchSpec
     // this immediately. With TCP it will trigger after handshake timeout. Can we see the UnknownHostException
     // reason somehow and fail the stream immediately for that case?
     val path = RootActorPath(Address("akka", system.name, "unknownhost2", 2552)) / "user" / "subject"
-    system.actorSelection(path) ! Identify(path)
-    expectMsg(60.seconds, ActorIdentity(path, None))
+    system.actorSelection(path) ! Identify(path.toString)
+    expectMsg(60.seconds, ActorIdentity(path.toString, None))
   }
 
 }

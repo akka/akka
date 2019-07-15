@@ -270,24 +270,23 @@ object Behaviors {
   }
 
   /**
-   * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+   * Transform the incoming messages by placing a funnel in front of the wrapped `Behavior`: the supplied
    * PartialFunction decides which message to pull in (those that it is defined
    * at) and may transform the incoming message to place them into the wrapped
    * Behavior’s type hierarchy. Signals are not transformed.
    *
    * Example:
    * {{{
-   * Behavior<String> s = Behaviors.receive((ctx, msg) -> {
-   *     System.out.println(msg);
-   *     return Behaviors.same();
-   *   });
-   * Behavior<Number> n = Behaviors.widened(s, pf -> pf.
-   *         match(BigInteger.class, i -> "BigInteger(" + i + ")").
-   *         match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
+   *   Behavior<String> s = Behaviors.receive((ctx, msg) -> {
+   *      return Behaviors.same();
+   *    });
+   *   Behavior<Number> n = Behaviors.transformMessages(Number.class, s, pf ->
+   *     pf
+   *         .match(BigInteger.class, i -> "BigInteger(" + i + ")")
+   *         .match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
    *         // drop all other kinds of Number
-   *     );
+   *       );
    * }}}
-   *
    *
    * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
    *                              intercepted. Other message types (e.g. a private protocol) will bypass
@@ -297,13 +296,13 @@ object Behaviors {
    * @param selector
    *          a partial function builder for describing the selection and
    *          transformation
-   * @return a behavior of the widened type
+   * @return a behavior of the `Outer` type
    */
-  def widened[Outer, Inner](
+  def transformMessages[Outer, Inner](
       interceptMessageClass: Class[Outer],
-      behavior: Behavior[Outer],
-      selector: JFunction[PFBuilder[Inner, Outer], PFBuilder[Inner, Outer]]): Behavior[Inner] =
-    BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())(ClassTag(interceptMessageClass))
+      behavior: Behavior[Inner],
+      selector: JFunction[PFBuilder[Outer, Inner], PFBuilder[Outer, Inner]]): Behavior[Outer] =
+    BehaviorImpl.transformMessages(behavior, selector.apply(new PFBuilder).build())(ClassTag(interceptMessageClass))
 
   /**
    * Support for scheduled `self` messages in an actor.

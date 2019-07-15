@@ -61,7 +61,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
-        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty))
+        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty))
 
       val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
         context.log.info("Greeting for {} from {}", Array(message.whom, message.from):_*)

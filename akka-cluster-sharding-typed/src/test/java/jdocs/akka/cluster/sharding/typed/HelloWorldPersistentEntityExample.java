@@ -25,7 +25,9 @@ import akka.persistence.typed.javadsl.EventHandler;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
+import akka.serialization.jackson.CborSerializable;
 import akka.util.Timeout;
+import com.fasterxml.jackson.annotation.JsonCreator;
 // #persistent-entity-usage-import
 
 public class HelloWorldPersistentEntityExample {
@@ -65,7 +67,7 @@ public class HelloWorldPersistentEntityExample {
       extends EventSourcedEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
 
     // Command
-    interface Command {}
+    interface Command extends CborSerializable {}
 
     public static final class Greet implements Command {
       public final String whom;
@@ -78,7 +80,7 @@ public class HelloWorldPersistentEntityExample {
     }
 
     // Response
-    public static final class Greeting {
+    public static final class Greeting implements CborSerializable {
       public final String whom;
       public final int numberOfPeople;
 
@@ -89,16 +91,17 @@ public class HelloWorldPersistentEntityExample {
     }
 
     // Event
-    public static final class Greeted {
+    public static final class Greeted implements CborSerializable {
       public final String whom;
 
+      @JsonCreator
       public Greeted(String whom) {
         this.whom = whom;
       }
     }
 
     // State
-    static final class KnownPeople {
+    static final class KnownPeople implements CborSerializable {
       private Set<String> names = Collections.emptySet();
 
       KnownPeople() {}

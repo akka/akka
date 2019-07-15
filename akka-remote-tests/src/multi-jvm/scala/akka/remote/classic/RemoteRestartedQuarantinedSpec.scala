@@ -33,7 +33,10 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       # TODO should not be needed, but see TODO at the end of the test
       akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 10 s
-                              """)))
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
+      """)))
 
   testTransport(on = true)
 

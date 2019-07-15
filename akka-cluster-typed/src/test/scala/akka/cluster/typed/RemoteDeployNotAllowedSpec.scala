@@ -20,7 +20,6 @@ object RemoteDeployNotAllowedSpec {
       loglevel = warning
       actor {
         provider = cluster
-        warn-about-java-serializer-usage = off
         serialize-creators = off
       }
       remote.classic.netty.tcp.port = 0

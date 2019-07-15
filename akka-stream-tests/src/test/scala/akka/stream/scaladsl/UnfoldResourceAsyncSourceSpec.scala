@@ -14,7 +14,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.{ ActorMaterializer, _ }
-import akka.testkit.TestLatch
+import akka.testkit.{ TestLatch, TestProbe }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
@@ -380,6 +380,36 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .runWith(Sink.cancelled)
 
       closed.future.futureValue // will timeout if bug is still here
+    }
+
+    "close the resource when reading an element returns a failed future" in assertAllStagesStopped {
+      val closeProbe = TestProbe()
+      val probe = TestSubscriber.probe[Unit]()
+      Source
+        .unfoldResourceAsync[Unit, Unit](() => Future.successful(()), _ => Future.failed(TE("read failed")), { _ =>
+          closeProbe.ref ! "closed"
+          Future.successful(Done)
+        })
+        .runWith(Sink.fromSubscriber(probe))
+      probe.ensureSubscription()
+      probe.request(1L)
+      probe.expectError()
+      closeProbe.expectMsg("closed")
+    }
+
+    "close the resource when reading an element throws" in assertAllStagesStopped {
+      val closeProbe = TestProbe()
+      val probe = TestSubscriber.probe[Unit]()
+      Source
+        .unfoldResourceAsync[Unit, Unit](() => Future.successful(()), _ => throw TE("read failed"), { _ =>
+          closeProbe.ref ! "closed"
+          Future.successful(Done)
+        })
+        .runWith(Sink.fromSubscriber(probe))
+      probe.ensureSubscription()
+      probe.request(1L)
+      probe.expectError()
+      closeProbe.expectMsg("closed")
     }
   }
 

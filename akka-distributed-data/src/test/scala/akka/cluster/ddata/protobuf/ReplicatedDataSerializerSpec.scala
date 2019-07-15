@@ -37,7 +37,6 @@ class ReplicatedDataSerializerSpec
     akka.remote.artery.canonical.port = 0
     akka.actor {
       serialize-messages = off
-      allow-java-serialization = off
     }
     """)))
     with WordSpecLike

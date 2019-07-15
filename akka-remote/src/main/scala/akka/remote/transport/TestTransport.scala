@@ -25,6 +25,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * requested to do. This class is not optimized for performance and MUST not be used as an in-memory transport in
  * production systems.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class TestTransport(
     val localAddress: Address,
     final val registry: AssociationRegistry,
@@ -170,6 +171,7 @@ class TestTransport(
 
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object TestTransport {
 
   type Behavior[A, B] = (A) => Future[B]
@@ -440,6 +442,7 @@ object TestTransport {
  up via a string key. Until we find a better way to inject an AssociationRegistry to multiple actor systems it is
  strongly recommended to use long, randomly generated strings to key the registry to avoid interference between tests.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object AssociationRegistry {
   private final val registries = scala.collection.mutable.Map[String, AssociationRegistry]()
 
@@ -450,6 +453,7 @@ object AssociationRegistry {
   def clear(): Unit = this.synchronized { registries.clear() }
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class TestAssociationHandle(
     localAddress: Address,
     remoteAddress: Address,

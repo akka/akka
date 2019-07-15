@@ -27,7 +27,7 @@ We recommend using Akka TestKit Typed with ScalaTest:
 ## Introduction
 
 Testing can either be done asynchronously using a real @apidoc[akka.actor.typed.ActorSystem] or synchronously on the testing thread using the
-@scala[@apidoc[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]]@java[@apidoc[akka.actor.testkit.typed.javadsl.BehaviorTestKit]].
+@apidoc[typed.*.BehaviorTestKit].
 
 For testing logic in a @apidoc[Behavior] in isolation synchronous testing is preferred, but the features that can be
 tested are limited. For testing interactions between multiple actors a more realistic asynchronous test is preferred.
@@ -140,7 +140,7 @@ Java
 
 @@@ div { .group-java }
 
-If you are using JUnit you can use @apidoc[akka.actor.testkit.typed.javadsl.TestKitJunitResource] to have the async test kit automatically
+If you are using JUnit you can use @javadoc[TestKitJunitResource](akka.actor.testkit.typed.javadsl.TestKitJunitResource) to have the async test kit automatically
 shutdown when the test is complete.
 
 Note that the dependency on JUnit is marked as optional from the test kit module, so your project must explicitly include
@@ -150,7 +150,7 @@ a dependency on JUnit to use this.
 
 @@@ div { .group-scala }
 
-If you are using ScalaTest you can extend @apidoc[akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit] to
+If you are using ScalaTest you can extend @scaladoc[ScalaTestWithActorTestKit](akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit) to
 have the async test kit automatically shutdown when the test is complete. This is done in `afterAll` from
 the `BeforeAndAfterAll` trait. If you override that method you should call `super.afterAll` to shutdown the
 test kit.
@@ -165,6 +165,50 @@ Scala
 
 Java
 :  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/JunitIntegrationExampleTest.java) { #junit-integration }
+
+### Configuration
+
+By default the `ActorTestKit` loads configuration from `application-test.conf` if that exists, otherwise
+it is using default configuration from the reference.conf resources that ship with the Akka libraries. The
+application.conf of your project is not used in this case.
+A specific configuration can be given as parameter when creating the TestKit.
+
+If you prefer to use `application.conf` you can pass that as the configuration parameter to the TestKit.
+It's loaded with:
+
+Scala
+:  @@snip [TestConfigExample.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/TestConfigExample.scala) { #default-application-conf }
+
+Java
+:  @@snip [TestConfigExample.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/TestConfigExample.java) { #default-application-conf }
+
+It's often convenient to define configuration for a specific test as a `String` in the test itself and
+use that as the configuration parameter to the TestKit. `ConfigFactory.parseString` can be used for that:
+
+Scala
+:  @@snip [TestConfigExample.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/TestConfigExample.scala) { #parse-string }
+
+Java
+:  @@snip [TestConfigExample.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/TestConfigExample.java) { #parse-string }
+
+Combining those approaches using `withFallback`:
+
+Scala
+:  @@snip [TestConfigExample.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/TestConfigExample.scala) { #fallback-application-conf }
+
+Java
+:  @@snip [TestConfigExample.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/TestConfigExample.java) { #fallback-application-conf }
+
+
+More information can be found in the [documentation of the configuration library](https://github.com/lightbend/config#using-the-library).
+
+@@@ note
+
+Note that `reference.conf` files are intended for libraries to define default values and shouldn't be used
+in an application. It's not supported to override a config property owned by one library in a `reference.conf`
+of another library.
+
+@@@
 
 ### Controlling the scheduler
 

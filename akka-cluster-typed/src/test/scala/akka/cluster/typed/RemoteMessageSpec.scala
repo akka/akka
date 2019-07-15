@@ -13,8 +13,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.{ ExtendedActorSystem, ActorSystem => UntypedActorSystem }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Promise
+
 import akka.actor.typed.scaladsl.adapter._
 
 class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -37,7 +37,6 @@ object RemoteMessageSpec {
       loglevel = debug
       actor {
         provider = cluster
-        warn-about-java-serializer-usage = off
         serialize-creators = off
         serializers {
           test = "akka.cluster.typed.PingSerializer"

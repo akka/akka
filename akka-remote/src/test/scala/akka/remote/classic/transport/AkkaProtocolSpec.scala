@@ -24,9 +24,10 @@ import akka.remote.{ FailureDetector, WireFormats }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.{ ByteString, OptionVal }
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
+
+import com.github.ghik.silencer.silent
 
 object AkkaProtocolSpec {
 
@@ -42,6 +43,7 @@ object AkkaProtocolSpec {
 
 }
 
+@silent // deprecated
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString("""
@@ -66,6 +68,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
         }
 
       }
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
   """).withFallback(system.settings.config)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)

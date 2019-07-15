@@ -193,7 +193,7 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
  * INTERNAL API
  */
 @InternalApi
-private[akka] object WidenedInterceptor {
+private[akka] object TransformMessagesInterceptor {
 
   private final val _any2null = (_: Any) => null
   private final def any2null[T] = _any2null.asInstanceOf[Any => T]
@@ -203,19 +203,19 @@ private[akka] object WidenedInterceptor {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class WidenedInterceptor[O: ClassTag, I](matcher: PartialFunction[O, I])
+private[akka] final case class TransformMessagesInterceptor[O: ClassTag, I](matcher: PartialFunction[O, I])
     extends BehaviorInterceptor[O, I] {
   import BehaviorInterceptor._
-  import WidenedInterceptor._
+  import TransformMessagesInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     // If they use the same pf instance we can allow it, to have one way to workaround defining
     // "recursive" narrowed behaviors.
-    case WidenedInterceptor(`matcher`)    => true
-    case WidenedInterceptor(otherMatcher) =>
+    case TransformMessagesInterceptor(`matcher`)    => true
+    case TransformMessagesInterceptor(otherMatcher) =>
       // there is no safe way to allow this
       throw new IllegalStateException(
-        "Widen can only be used one time in the same behavior stack. " +
+        "transformMessages can only be used one time in the same behavior stack. " +
         s"One defined in ${LineNumbers(matcher)}, and another in ${LineNumbers(otherMatcher)}")
     case _ => false
   }
@@ -227,5 +227,5 @@ private[akka] final case class WidenedInterceptor[O: ClassTag, I](matcher: Parti
     }
   }
 
-  override def toString: String = s"Widen(${LineNumbers(matcher)})"
+  override def toString: String = s"TransformMessages(${LineNumbers(matcher)})"
 }

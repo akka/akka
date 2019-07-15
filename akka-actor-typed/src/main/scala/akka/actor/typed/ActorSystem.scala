@@ -8,6 +8,7 @@ import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
@@ -17,7 +18,6 @@ import akka.util.Timeout
 import akka.{ Done, actor => untyped }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
@@ -161,9 +161,9 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
 
   /**
    * Main event bus of this actor system, used for example for logging.
-   * Accepts [[akka.actor.typed.eventstream.Command]].
+   * Accepts [[akka.actor.typed.eventstream.EventStream.Command]].
    */
-  def eventStream: ActorRef[eventstream.Command] =
+  def eventStream: ActorRef[EventStream.Command] =
     EventStreamExtension(this).ref
 
 }

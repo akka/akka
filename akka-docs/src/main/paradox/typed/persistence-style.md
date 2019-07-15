@@ -4,8 +4,8 @@
 
 The section about @ref:[Changing Behavior](persistence.md#changing-behavior) described how commands and events
 can be handled differently depending on the state. One can take that one step further and define the event
-handler inside the state classes. In @ref:[next section the command handlers](#command-handlers-in-the-state) are
-also defined in the state.
+handler inside the state classes. @scala[In @ref:[next section the command handlers](#command-handlers-in-the-state) are
+also defined in the state.]
 
 The state can be seen as your domain object and it should contain the core business logic. Then it's a matter
 of taste if event handlers and command handlers should be defined in the state or be kept outside it.
@@ -24,6 +24,7 @@ in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
 @java[Notice how the `eventHandler` delegates to methods in the concrete `Account` (state) classes;
 `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
 
+@@@ div { .group-scala }
 ## Command handlers in the state
 
 We can take the previous bank account example one step further by handling the commands in the state too.
@@ -31,13 +32,10 @@ We can take the previous bank account example one step further by handling the c
 Scala
 :  @@snip [AccountExampleWithCommandHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithCommandHandlersInState.scala) { #account-entity }
 
-Java
-:  @@snip [AccountExampleWithCommandHandlersInState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithCommandHandlersInState.java) { #account-entity }
+Notice how the command handler is delegating to `applyCommand` in the `Account` (state), which is implemented
+in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.
 
-@scala[Notice how the command handler is delegating to `applyCommand` in the `Account` (state), which is implemented
-in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
-@java[Notice how the command handler delegates to methods in the concrete `Account` (state) classes;
-`EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
+@@@
 
 ## Optional initial state
 

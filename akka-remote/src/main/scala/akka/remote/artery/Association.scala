@@ -5,8 +5,6 @@
 package akka.remote.artery
 
 import java.net.ConnectException
-
-import akka.util.PrettyDuration._
 import java.util.Queue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -18,40 +16,45 @@ import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
-import akka.{ Done, NotUsed }
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
 import akka.actor.Address
+import akka.actor.Cancellable
+import akka.actor.Dropped
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
-import akka.remote._
 import akka.remote.DaemonMsgCreate
-import akka.remote.QuarantinedEvent
-import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
-import akka.remote.artery.ArteryTransport.{ AeronTerminated, ShuttingDown }
+import akka.remote.PriorityMessage
+import akka.remote.RemoteActorRef
+import akka.remote.UniqueAddress
+import akka.remote.artery.ArteryTransport.AeronTerminated
+import akka.remote.artery.ArteryTransport.ShuttingDown
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
 import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
+import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
 import akka.remote.artery.compress.CompressionTable
 import akka.stream.AbruptTerminationException
 import akka.stream.KillSwitches
 import akka.stream.Materializer
+import akka.stream.SharedKillSwitch
+import akka.stream.StreamTcpException
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.MergeHub
 import akka.stream.scaladsl.Source
-import akka.util.{ OptionVal, Unsafe, WildcardIndex }
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
-import akka.stream.SharedKillSwitch
-import scala.util.control.NoStackTrace
-
-import akka.actor.Cancellable
-import akka.actor.Dropped
-import akka.stream.StreamTcpException
+import akka.util.OptionVal
+import akka.util.PrettyDuration._
+import akka.util.Unsafe
+import akka.util.WildcardIndex
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 /**
  * INTERNAL API
@@ -496,7 +499,7 @@ private[remote] class Association(
                     remoteAddress,
                     u,
                     reason)
-                  transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
+                  transport.system.eventStream.publish(QuarantinedEvent(UniqueAddress(remoteAddress, u)))
                 }
                 flightRecorder.loFreq(Transport_Quarantined, s"$remoteAddress - $u")
                 clearOutboundCompression()

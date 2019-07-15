@@ -123,7 +123,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
         val seqNr: Long = sso match {
           case Some(SelectedSnapshot(metadata, snapshot)) =>
-            state = snapshot.asInstanceOf[S]
+            state = setup.snapshotAdapter.fromJournal(snapshot)
             metadata.sequenceNr
           case None => 0 // from the beginning please
         }

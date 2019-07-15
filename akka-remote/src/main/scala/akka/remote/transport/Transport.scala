@@ -14,6 +14,7 @@ import akka.actor.DeadLetterSuppression
 import akka.event.LoggingAdapter
 import com.github.ghik.silencer.silent
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object Transport {
 
   trait AssociationEvent extends NoSerializationVerificationNeeded
@@ -66,6 +67,7 @@ object Transport {
  * Transport implementations that are loaded dynamically by the remoting must have a constructor that accepts a
  * [[com.typesafe.config.Config]] and an [[akka.actor.ExtendedActorSystem]] as parameters.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait Transport {
   import akka.remote.transport.Transport._
 
@@ -149,6 +151,7 @@ trait Transport {
 
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object AssociationHandle {
 
   /**
@@ -215,6 +218,7 @@ object AssociationHandle {
  * returned by [[akka.remote.transport.AssociationHandle#readHandlerPromise]]. Incoming data is not processed until
  * this registration takes place.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait AssociationHandle {
 
   /**

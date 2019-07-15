@@ -25,7 +25,7 @@ works and assumes you know what is meant by `Command`, `Event` and `State`.
 
 ## Example
 
-Let's start with a simple example. The minimum required for a `EventSourcedBehavior` is:
+Let's start with a simple example. The minimum required for a @apidoc[EventSourcedBehavior] is:
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #structure }
@@ -144,7 +144,7 @@ interpreted correctly on replay. Cluster Sharding ensures that there is only one
 
 ## Accessing the ActorContext
 
-If the `EventSourcedBehavior` needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by
+If the @apidoc[EventSourcedBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
 wrapping construction with `Behaviors.setup`:
 
 Scala
@@ -323,6 +323,10 @@ The same @ref:[serialization](../serialization.md) mechanism as for untyped
 actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events
 you should also consider that it must be possible read old events when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
+
+You need to enable @ref:[serialization](../serialization.md) for your commands (messages), events, and state (snapshot).
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 ## Recovery
 

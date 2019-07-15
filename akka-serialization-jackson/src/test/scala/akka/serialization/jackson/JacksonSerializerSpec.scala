@@ -309,7 +309,6 @@ abstract class JacksonSerializerSpec(serializerName: String)
       "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigration"
     }
     akka.actor {
-      allow-java-serialization = off
       serialization-bindings {
         "akka.serialization.jackson.ScalaTestMessages$$TestMessage" = $serializerName
         "akka.serialization.jackson.JavaTestMessages$$TestMessage" = $serializerName
@@ -356,15 +355,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
     deserialized should ===(obj)
   }
 
-  /**
-   * @return tuple of (blob, serializerId, manifest)
-   */
-  def serializeToBinary(obj: AnyRef, sys: ActorSystem = system): Array[Byte] = {
-    withTransportInformation(sys) { () =>
-      val serializer = serializerFor(obj, sys)
-      serializer.toBinary(obj)
-    }
-  }
+  def serializeToBinary(obj: AnyRef, sys: ActorSystem = system): Array[Byte] =
+    serialization(sys).serialize(obj).get
 
   def deserializeFromBinary(
       blob: Array[Byte],
@@ -618,8 +610,6 @@ abstract class JacksonSerializerSpec(serializerName: String)
         }
       }
     }
-
-    // FIXME test configured modules with `*` and that the Akka modules are found
 
   }
 }

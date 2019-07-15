@@ -27,6 +27,10 @@ object ActorTestKit {
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
    */
   def create(): ActorTestKit =
     new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])))
@@ -38,9 +42,25 @@ object ActorTestKit {
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
    */
   def create(name: String): ActorTestKit =
     new ActorTestKit(scaladsl.ActorTestKit(name))
+
+  /**
+   * Create a testkit named from the class that is calling this method,
+   * and use a custom config for the actor system.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def create(customConfig: Config): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), customConfig))
 
   /**
    * Create a named testkit, and use a custom config for the actor system.
@@ -94,6 +114,11 @@ object ActorTestKit {
     val settings = TestKitSettings.create(system)
     shutdown(system, settings.DefaultActorSystemShutdownTimeout.asJava, settings.ThrowOnShutdownTimeout)
   }
+
+  /**
+   * Config loaded from `application-test.conf`, which is used if no specific config is given.
+   */
+  def applicationTestConfig: Config = scaladsl.ActorTestKit.ApplicationTestConfig
 
 }
 
@@ -198,5 +223,10 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * Terminate the actor system and the testkit
    */
   def shutdownTestKit(): Unit = delegate.shutdownTestKit()
+
+  /**
+   * Additional testing utilities for serialization.
+   */
+  val serializationTestKit: SerializationTestKit = new SerializationTestKit(delegate.internalSystem)
 
 }

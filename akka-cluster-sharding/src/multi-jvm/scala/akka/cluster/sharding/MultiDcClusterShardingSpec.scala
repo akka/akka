@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -16,13 +17,14 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
 object MultiDcClusterShardingSpec {
-  sealed trait EntityMsg {
+  sealed trait EntityMsg extends CborSerializable {
     def id: String
   }
   final case class Ping(id: String) extends EntityMsg

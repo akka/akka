@@ -58,6 +58,7 @@ object IOResult {
     new IOResult(count, Success(Done))
 
   /** JAVA API: Creates failed IOResult, `count` should be the number of bytes (or other unit, please document in your APIs) processed before failing */
+  @deprecated("use IOOperationIncompleteException", "2.6.0")
   def createFailed(count: Long, ex: Throwable): IOResult =
     new IOResult(count, Failure(ex))
 }

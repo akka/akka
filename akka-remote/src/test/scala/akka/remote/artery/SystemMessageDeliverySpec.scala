@@ -14,7 +14,9 @@ import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
-import akka.remote.{ AddressUidExtension, RARP, UniqueAddress }
+import akka.remote.AddressUidExtension
+import akka.remote.RARP
+import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -28,25 +30,29 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestEvent
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 import akka.util.OptionVal
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 object SystemMessageDeliverySpec {
 
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
-  val config = ConfigFactory.parseString(s"""
+  val safe = ConfigFactory.parseString(s"""
        akka.loglevel = INFO
        akka.remote.artery.advanced.stop-idle-outbound-after = 1000 ms
        akka.remote.artery.advanced.inject-handshake-interval = 500 ms
        akka.remote.watch-failure-detector.heartbeat-interval = 2 s
        akka.remote.artery.log-received-messages = on
        akka.remote.artery.log-sent-messages = on
-    """.stripMargin).withFallback(ArterySpecSupport.defaultConfig)
+    """).withFallback(ArterySpecSupport.defaultConfig)
 
+  val config =
+    ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on").withFallback(safe)
 }
 
-class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
+abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiNodeSpec(c) with ImplicitSender {
+
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(address(system), AddressUidExtension(system).longAddressUid)
@@ -61,7 +67,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
   system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
   systemB.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
 
-  private def send(
+  protected def send(
       sendCount: Int,
       resendInterval: FiniteDuration,
       outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
@@ -71,7 +77,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
       .via(new SystemMessageDelivery(outboundContext, deadLetters, resendInterval, maxBufferSize = 1000))
   }
 
-  private def inbound(inboundContext: InboundContext): Flow[OutboundEnvelope, InboundEnvelope, NotUsed] = {
+  protected def inbound(inboundContext: InboundContext): Flow[OutboundEnvelope, InboundEnvelope, NotUsed] = {
     val recipient = OptionVal.None // not used
     Flow[OutboundEnvelope]
       .map(outboundEnvelope =>
@@ -83,7 +89,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
       .via(new SystemMessageAcker(inboundContext))
   }
 
-  private def drop(dropSeqNumbers: Vector[Long]): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] = {
+  protected def drop(dropSeqNumbers: Vector[Long]): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] = {
     Flow[OutboundEnvelope].statefulMapConcat(() => {
       var dropping = dropSeqNumbers
 
@@ -102,10 +108,14 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
     })
   }
 
-  private def randomDrop[T](dropRate: Double): Flow[T, T, NotUsed] = Flow[T].mapConcat { elem =>
+  protected def randomDrop[T](dropRate: Double): Flow[T, T, NotUsed] = Flow[T].mapConcat { elem =>
     if (ThreadLocalRandom.current().nextDouble() < dropRate) Nil
     else List(elem)
   }
+}
+
+class SystemMessageDeliverySpec extends AbstractSystemMessageDeliverySpec(SystemMessageDeliverySpec.config) {
+  import SystemMessageDeliverySpec._
 
   "System messages" must {
 
@@ -306,6 +316,38 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
           .runWith(Sink.seq)
 
       Await.result(output, 30.seconds) should ===((1 to N).map(n => TestSysMsg("msg-" + n)).toVector)
+    }
+  }
+}
+
+class SystemMessageDeliverySafeSpec extends AbstractSystemMessageDeliverySpec(SystemMessageDeliverySpec.safe) {
+  "System messages without cluster" must {
+
+    "not be delivered when concurrent idle stopping" in {
+      val systemBRef = systemB.actorOf(TestActors.echoActorProps, "echo")
+
+      val remoteRef = {
+        system.actorSelection(rootB / "user" / "echo") ! Identify(None)
+        expectMsgType[ActorIdentity].ref.get
+      }
+
+      val idleTimeout =
+        RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Advanced.StopIdleOutboundAfter
+      val rnd = ThreadLocalRandom.current()
+
+      (1 to 5).foreach { _ =>
+        (1 to 1).foreach { _ =>
+          watch(remoteRef)
+          unwatch(remoteRef)
+        }
+        Thread.sleep((idleTimeout - 10.millis).toMillis + rnd.nextInt(20))
+      }
+
+      watch(remoteRef)
+      remoteRef ! "ping"
+      expectMsg("ping")
+      systemB.stop(systemBRef)
+      expectNoMessage(2.seconds)
     }
   }
 }

@@ -109,7 +109,10 @@ object ActorRefSpec {
   }
 }
 
-class ActorRefSpec extends AkkaSpec with DefaultTimeout {
+class ActorRefSpec extends AkkaSpec("""
+  # testing Java serialization of ActorRef
+  akka.actor.allow-java-serialization = on
+  """) with DefaultTimeout {
   import akka.actor.ActorRefSpec._
 
   def promiseIntercept(f: => Actor)(to: Promise[Actor]): Actor =

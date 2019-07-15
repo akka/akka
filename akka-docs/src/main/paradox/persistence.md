@@ -1091,7 +1091,7 @@ it must add
 
 @@snip [PersistenceSerializerDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSerializerDocSpec.scala) { #custom-serializer-config }
 
-to the application configuration. If not specified, a default serializer is used.
+to the application configuration. If not specified, an exception will be throw when trying to persist events or snapshots.
 
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 

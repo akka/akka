@@ -1,4 +1,4 @@
-# Akka Cluster
+# Cluster
 
 @@toc { depth=2 }
 

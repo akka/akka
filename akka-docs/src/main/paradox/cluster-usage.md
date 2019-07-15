@@ -6,6 +6,10 @@ The core of Akka Cluster is the cluster membership, to keep track of what nodes 
 their health. There are several @ref:[Higher level Cluster tools](cluster-usage.md#higher-level-cluster-tools) that are built
 on top of the cluster membership.
 
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
 ## Dependency
 
 To use Akka Cluster, you must add the following dependency in your project:

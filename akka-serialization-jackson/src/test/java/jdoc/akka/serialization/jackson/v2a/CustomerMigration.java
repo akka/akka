@@ -7,7 +7,6 @@ package jdoc.akka.serialization.jackson.v2a;
 // #structural
 import akka.serialization.jackson.JacksonMigration;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.DoubleNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class CustomerMigration extends JacksonMigration {

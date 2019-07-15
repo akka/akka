@@ -12,9 +12,10 @@ import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicit
 import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 
 object RemoteGatePiercingSpec extends MultiNodeConfig {
   val first = role("first")
@@ -46,6 +47,7 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
 class RemoteGatePiercingSpecMultiJvmNode1 extends RemoteGatePiercingSpec
 class RemoteGatePiercingSpecMultiJvmNode2 extends RemoteGatePiercingSpec
 
+@silent // deprecated
 abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
 
   import RemoteGatePiercingSpec._

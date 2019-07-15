@@ -7,20 +7,45 @@ package akka.persistence.journal.inmem
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
+import scala.util.control.NonFatal
+
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.PersistentRepr
 import akka.persistence.AtomicWrite
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
  * INTERNAL API.
  *
  * In-memory journal for testing purposes only.
  */
-private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMessages {
+private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal with InmemMessages {
+
+  def this() = this(ConfigFactory.empty())
+
+  private val testSerialization = {
+    val key = "test-serialization"
+    if (cfg.hasPath(key)) cfg.getBoolean("test-serialization")
+    else false
+  }
+
+  private val serialization = SerializationExtension(context.system)
+
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
-    for (w <- messages; p <- w.payload)
-      add(p)
-    Future.successful(Nil) // all good
+    try {
+      for (w <- messages; p <- w.payload) {
+        verifySerialization(p.payload)
+        add(p)
+      }
+      Future.successful(Nil) // all good
+    } catch {
+      case NonFatal(e) =>
+        // serialization problem
+        Future.failed(e)
+    }
   }
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
@@ -43,6 +68,16 @@ private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMess
       snr += 1
     }
     Future.successful(())
+  }
+
+  private def verifySerialization(event: Any): Unit = {
+    if (testSerialization) {
+      val eventAnyRef = event.asInstanceOf[AnyRef]
+      val bytes = serialization.serialize(eventAnyRef).get
+      val serializer = serialization.findSerializerFor(eventAnyRef)
+      val manifest = Serializers.manifestFor(serializer, eventAnyRef)
+      serialization.deserialize(bytes, serializer.identifier, manifest).get
+    }
   }
 }
 

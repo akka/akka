@@ -16,7 +16,9 @@ object ActorRefSerializationSpec {
   def config = ConfigFactory.parseString("""
       akka.actor {
         serialize-messages = off
-        allow-java-serialization = true
+        # test is verifying Java serialization of ActorRef
+        allow-java-serialization = on
+        warn-about-java-serializer-usage = off
       }
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0

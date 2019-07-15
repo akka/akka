@@ -27,6 +27,7 @@ import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotCompleted
@@ -66,6 +67,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     snapshotPluginId: Option[String] = None,
     tagger: Event => Set[String] = (_: Event) => Set.empty[String],
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
+    snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
     snapshotWhen: (State, Event, Long) => Boolean = ConstantFun.scalaAnyThreeToFalse,
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
@@ -122,6 +124,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             actualSignalHandler,
             tagger,
             eventAdapter,
+            snapshotAdapter,
             snapshotWhen,
             recovery,
             retention,
@@ -203,6 +206,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def eventAdapter(adapter: EventAdapter[Event, _]): EventSourcedBehavior[Command, Event, State] =
     copy(eventAdapter = adapter.asInstanceOf[EventAdapter[Event, Any]])
+
+  override def snapshotAdapter(adapter: SnapshotAdapter[State]): EventSourcedBehavior[Command, Event, State] =
+    copy(snapshotAdapter = adapter)
 
   override def onPersistFailure(
       backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State] =

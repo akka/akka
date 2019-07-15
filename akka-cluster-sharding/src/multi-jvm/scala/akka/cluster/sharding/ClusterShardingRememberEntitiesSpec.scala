@@ -51,7 +51,9 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String) exten
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.cluster.auto-down-unreachable-after = 0s
@@ -71,7 +73,9 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String) exten
       dir = target/ShardingRememberEntitiesSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(third)(ConfigFactory.parseString(s"""
     akka.cluster.sharding.distributed-data.durable.lmdb {

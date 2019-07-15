@@ -27,6 +27,7 @@ object EventSourcedBehaviorInterceptorSpec {
         akka.loglevel = INFO
         akka.loggers = [akka.testkit.TestEventListener]
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+        akka.persistence.journal.inmem.test-serialization = on
         """)
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
@@ -83,10 +84,10 @@ class EventSourcedBehaviorInterceptorSpec
       probe.expectMessage("ABC")
     }
 
-    "be possible to combine with widen" in {
+    "be possible to combine with transformMessages" in {
       val probe = createTestProbe[String]()
       val pid = nextPid()
-      val ref = spawn(testBehavior(pid, probe.ref).widen[String] {
+      val ref = spawn(testBehavior(pid, probe.ref).transformMessages[String] {
         case s => s.toUpperCase()
       })
 

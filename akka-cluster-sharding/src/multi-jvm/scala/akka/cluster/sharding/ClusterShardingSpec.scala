@@ -9,9 +9,9 @@ import akka.cluster.sharding.ShardCoordinator.Internal.{ HandOff, ShardStopped }
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.cluster.sharding.ShardRegion.GetCurrentRegions
 import akka.cluster.sharding.ShardRegion.CurrentRegions
-
 import language.postfixOps
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.cluster.{ Cluster, MultiNodeClusterSpec }
@@ -129,7 +129,9 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
   val fifth = role("fifth")
   val sixth = role("sixth")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
@@ -165,7 +167,23 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
       }
     }
     akka.testconductor.barrier-timeout = 70s
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+
+    # using Java serialization for the messages here because would be to much (unrelated)
+    # to show full Jackson serialization in docs (requires annotations because of envelope and such)
+    akka.actor.serialization-bindings {
+      "${ClusterShardingSpec.Increment.getClass.getName}" = java-test
+      "${ClusterShardingSpec.Decrement.getClass.getName}" = java-test
+      "${classOf[ClusterShardingSpec.Get].getName}" = java-test
+      "${classOf[ClusterShardingSpec.EntityEnvelope].getName}" = java-test
+      "${ClusterShardingSpec.Stop.getClass.getName}" = java-test
+      "${classOf[ClusterShardingSpec.CounterChanged].getName}" = java-test
+      "${classOf[ShardRegion.Passivate].getName}" = java-test
+      
+    }
+
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
   nodeConfig(sixth) {
     ConfigFactory.parseString("""akka.cluster.roles = ["frontend"]""")
   }

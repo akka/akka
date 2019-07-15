@@ -63,6 +63,7 @@ private[remote] class AkkaProtocolSettings(config: Config) {
   }
 }
 
+@silent // deprecated
 private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remoting Extension/ RemoteSettings instead?
   val AkkaScheme: String = "akka"
   val AkkaOverhead: Int = 0 //Don't know yet
@@ -100,6 +101,7 @@ final case class HandshakeInfo(origin: Address, uid: Int, cookie: Option[String]
  * @param codec
  *   the codec that will be used to encode/decode Akka PDUs
  */
+@silent // deprecated
 private[remote] class AkkaProtocolTransport(
     wrappedTransport: Transport,
     private val system: ActorSystem,
@@ -129,6 +131,7 @@ private[remote] class AkkaProtocolTransport(
   }
 }
 
+@silent // deprecated
 private[transport] class AkkaProtocolManager(
     private val wrappedTransport: Transport,
     private val settings: AkkaProtocolSettings)
@@ -205,6 +208,7 @@ private[transport] class AkkaProtocolManager(
 
 }
 
+@silent // deprecated
 private[remote] class AkkaProtocolHandle(
     _localAddress: Address,
     _remoteAddress: Address,
@@ -222,6 +226,7 @@ private[remote] class AkkaProtocolHandle(
   def disassociate(info: DisassociateInfo): Unit = stateActor ! DisassociateUnderlying(info)
 }
 
+@silent // deprecated
 private[remote] object ProtocolStateActor {
   sealed trait AssociationState
 
@@ -324,6 +329,7 @@ private[remote] object ProtocolStateActor {
       failureDetector).withDeploy(Deploy.local)
 }
 
+@silent // deprecated
 private[remote] class ProtocolStateActor(
     initialData: InitialProtocolStateData,
     private val localHandshakeInfo: HandshakeInfo,

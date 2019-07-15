@@ -6,15 +6,26 @@ package akka.cluster.singleton
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ExtendedActorSystem, PoisonPill, Props }
-import akka.cluster.TestLease.{ AcquireReq, ReleaseReq }
-import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
-import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.cluster.Cluster
+import akka.cluster.MemberStatus
+import akka.cluster.TestLease
+import akka.cluster.TestLease.AcquireReq
+import akka.cluster.TestLease.ReleaseReq
+import akka.cluster.TestLeaseExt
+import akka.testkit.AkkaSpec
+import akka.testkit.TestException
+import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
 
 class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLogging {
 
@@ -129,7 +140,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
         testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       probe.expectNoMessage(shortDuration)
-      testLease.initialPromise.failure(new RuntimeException("no lease for you"))
+      testLease.initialPromise.failure(TestException("no lease for you"))
       probe.expectNoMessage(shortDuration)
     }
 
@@ -146,7 +157,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       singletonProbe.expectNoMessage(shortDuration)
       val nextResponse = Promise[Boolean]
       testLease.setNextAcquireResult(nextResponse.future)
-      testLease.initialPromise.failure(new RuntimeException("no lease for you"))
+      testLease.initialPromise.failure(TestException("no lease for you"))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
       nextResponse.complete(Success(true))

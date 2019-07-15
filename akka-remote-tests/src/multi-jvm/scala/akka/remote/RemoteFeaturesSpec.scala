@@ -16,6 +16,7 @@ import akka.actor.Nobody
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.remote.RemoteNodeDeathWatchSpec.UnwatchIt
+import akka.remote.RemoteNodeDeathWatchSpec.WatchIt
 import akka.remote.RemoteWatcher.Stats
 import akka.remote.routing.RemoteRouterConfig
 import akka.remote.testconductor.RoleName
@@ -118,6 +119,28 @@ abstract class RemotingFeaturesSafeSpec
         val actor = system.actorOf(Props(classOf[ProbeActor], probe.ref), "sampleActor")
         actor ! Identify(1)
         expectMsgType[ActorIdentity].ref.get.path.address.hasGlobalScope shouldBe false
+      }
+    }
+
+    "not receive Terminated on stop with watch attempt" in {
+      runOn(second) {
+        system.actorOf(Props(classOf[ProbeActor], probe.ref), "terminating")
+      }
+      runOn(first) {
+        val watcher = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watch-terminating")
+        val terminating = identify(second, "terminating")
+        watcher ! WatchIt(terminating)
+      }
+      enterBarrier("watch-t-attempted")
+
+      runOn(second) {
+        val terminating = identify(second, "terminating")
+        system.stop(terminating)
+      }
+      enterBarrier("t-stopped")
+
+      runOn(first) {
+        probe.expectNoMessage(2.seconds)
       }
     }
   }

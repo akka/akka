@@ -29,7 +29,7 @@ case object CompletionStrategy {
   def immediately: CompletionStrategy = Immediately
 
   /**
-   * Already buffered elements will be signaled before siganling completion.
+   * Already buffered elements will be signaled before signaling completion.
    */
   def draining: CompletionStrategy = Draining
 }

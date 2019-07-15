@@ -1,4 +1,4 @@
-# Cluster
+# Cluster Membership
 
 ## Dependency
 
@@ -14,6 +14,10 @@ To use Akka Cluster Typed, you must add the following dependency in your project
 
 For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](../common/cluster.md). This documentation shows how to use the typed
 Cluster API.
+
+You need to enable @ref:[serialization](../serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 ## Examples
 

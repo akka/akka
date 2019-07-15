@@ -31,7 +31,6 @@ object ClusterReceptionistSpec {
       akka.actor {
         provider = cluster
         serialize-messages = off
-        allow-java-serialization = true
         serializers {
           test = "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$PingSerializer"
         }

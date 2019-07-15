@@ -57,7 +57,9 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
     akka.actor.provider = "cluster"
     akka.cluster.auto-down-unreachable-after = 0s
     akka.remote.classic.log-remote-lifecycle-events = off
@@ -76,7 +78,9 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
       dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   val roleConfig = ConfigFactory.parseString("""
       akka.cluster.roles = [sharding]
