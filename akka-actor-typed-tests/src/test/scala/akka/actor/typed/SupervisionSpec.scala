@@ -7,15 +7,15 @@ package akka.actor.typed
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 import akka.actor.ActorInitializationException
-import akka.actor.typed.scaladsl.{AbstractBehavior, Behaviors}
+import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors }
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
-import org.scalatest.{Matchers, WordSpec, WordSpecLike}
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._

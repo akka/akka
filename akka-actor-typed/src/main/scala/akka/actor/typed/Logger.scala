@@ -6,7 +6,7 @@ package akka.actor.typed
 
 import java.util.Optional
 
-import akka.annotation.{DoNotInherit, InternalApi}
+import akka.annotation.{ DoNotInherit, InternalApi }
 import org.slf4j.Logger
 import org.slf4j.event.Level
 
@@ -109,7 +109,7 @@ object LogOptions {
   /**
    * Scala API: Create a new log options with defaults.
    */
-  def apply(): LogOptions = LogOptionsImpl(enabled = true, Level.DEBUG , None)
+  def apply(): LogOptions = LogOptionsImpl(enabled = true, Level.DEBUG, None)
 
   /**
    * Java API: Create a new log options.

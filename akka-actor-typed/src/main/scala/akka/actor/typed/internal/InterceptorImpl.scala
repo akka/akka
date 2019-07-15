@@ -160,8 +160,8 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
     if (opts.enabled)
       opts.level match {
         case Level.ERROR => log.error("received message {}", msg)
-        case Level.WARN => log.warn("received message {}", msg)
-        case Level.INFO => log.info("received message {}", msg)
+        case Level.WARN  => log.warn("received message {}", msg)
+        case Level.INFO  => log.info("received message {}", msg)
         case Level.DEBUG => log.debug("received message {}", msg)
         //TODO check this debug case is actually best option
         case _ => log.debug("received message {}", msg)
@@ -173,8 +173,8 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
     if (opts.enabled)
       opts.level match {
         case Level.ERROR => log.error("received signal {}", signal)
-        case Level.WARN => log.warn("received signal {}", signal)
-        case Level.INFO => log.info("received signal {}", signal)
+        case Level.WARN  => log.warn("received signal {}", signal)
+        case Level.INFO  => log.info("received signal {}", signal)
         case Level.DEBUG => log.debug("received signal {}", signal)
         //TODO check this debug case is actually best option
         case _ => log.debug("received signal {}", signal)
