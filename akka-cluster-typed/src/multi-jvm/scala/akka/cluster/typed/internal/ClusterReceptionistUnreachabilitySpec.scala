@@ -7,6 +7,7 @@ package akka.cluster.typed.internal
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
@@ -54,11 +55,11 @@ abstract class ClusterReceptionistUnreachabilitySpec
 
   import ClusterReceptionistUnreachabilitySpec._
 
-  val spawnActor = system.actorOf(PropsAdapter(SpawnProtocol.behavior)).toTyped[SpawnProtocol]
+  val spawnActor = system.actorOf(PropsAdapter(SpawnProtocol())).toTyped[SpawnProtocol.Command]
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
     implicit val timeout: Timeout = 3.seconds
     implicit val scheduler = typedSystem.scheduler
-    val f: Future[ActorRef[T]] = spawnActor.ask(ref => SpawnProtocol.Spawn(behavior, name)(ref))
+    val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
 
     Await.result(f, 3.seconds)
   }
