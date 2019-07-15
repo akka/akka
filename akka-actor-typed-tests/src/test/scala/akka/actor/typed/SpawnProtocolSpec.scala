@@ -11,6 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
+import scala.concurrent.Future
+
 object SpawnProtocolSpec {
   sealed trait Message
   final case class Ping(replyTo: ActorRef[Pong.type]) extends Message
@@ -46,7 +48,8 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val parent = spawn(SpawnProtocol(), "parent2")
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout = Timeout(5.seconds)
-      val parentReply = parent.ask(SpawnProtocol.Spawn(target, "child", Props.empty, _))
+      val parentReply: Future[ActorRef[Ping]] =
+        parent.ask(SpawnProtocol.Spawn(target, "child", Props.empty, _))
       val child = parentReply.futureValue
       val childReply = TestProbe[Pong.type]()
       child ! Ping(childReply.ref)

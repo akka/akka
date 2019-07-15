@@ -44,7 +44,8 @@ public class SpawnProtocolDocTest {
 
   public static void main(String[] args) throws Exception {
     // #system-spawn
-    final ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(HelloWorldMain.main, "hello");
+    final ActorSystem<SpawnProtocol.Command> system =
+        ActorSystem.create(HelloWorldMain.main, "hello");
     final Duration timeout = Duration.ofSeconds(3);
 
     CompletionStage<ActorRef<HelloWorld.Greet>> greeter =
