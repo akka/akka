@@ -73,7 +73,7 @@ abstract class ClusterReceptionistUnreachabilitySpec
       val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
       listing.serviceInstances(MyServiceKey) should ===(Set.empty)
       listing.allServiceInstances(MyServiceKey) should ===(Set.empty)
-      listing.onlyReachabilityChanged should ===(false)
+      listing.servicesWereAddedOrRemoved should ===(true)
       enterBarrier("all subscribed")
     }
 
@@ -97,7 +97,7 @@ abstract class ClusterReceptionistUnreachabilitySpec
         val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
         listing.serviceInstances(MyServiceKey) should have size (3)
         listing.allServiceInstances(MyServiceKey) should have size (3)
-        listing.onlyReachabilityChanged should ===(false)
+        listing.servicesWereAddedOrRemoved should ===(true)
       }, 20.seconds)
 
       enterBarrier("all seen registered")
@@ -116,7 +116,7 @@ abstract class ClusterReceptionistUnreachabilitySpec
           val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
           listing.serviceInstances(MyServiceKey) should have size (2)
           listing.allServiceInstances(MyServiceKey) should have size (3)
-          listing.onlyReachabilityChanged should ===(true)
+          listing.servicesWereAddedOrRemoved should ===(false)
         }, 20.seconds)
       }
       runOn(second) {
@@ -125,7 +125,7 @@ abstract class ClusterReceptionistUnreachabilitySpec
           val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
           listing.serviceInstances(MyServiceKey) should have size (1)
           listing.allServiceInstances(MyServiceKey) should have size (3)
-          listing.onlyReachabilityChanged should ===(true)
+          listing.servicesWereAddedOrRemoved should ===(false)
         }, 20.seconds)
       }
       enterBarrier("all seen unreachable")
@@ -142,7 +142,7 @@ abstract class ClusterReceptionistUnreachabilitySpec
         val listing = receptionistProbe.expectMessageType[Receptionist.Listing]
         listing.serviceInstances(MyServiceKey) should have size (3)
         listing.allServiceInstances(MyServiceKey) should have size (3)
-        listing.onlyReachabilityChanged should ===(true)
+        listing.servicesWereAddedOrRemoved should ===(false)
       })
       enterBarrier("all seen reachable-again")
     }

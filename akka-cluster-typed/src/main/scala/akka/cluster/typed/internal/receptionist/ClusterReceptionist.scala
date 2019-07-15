@@ -227,7 +227,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           if (subscribers.nonEmpty) {
             val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
             val listing =
-              ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = true)
+              ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = false)
             subscribers.foreach(_ ! listing)
           }
         }
@@ -254,7 +254,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         case ReceptionistMessages.Find(key, replyTo) =>
           val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
-          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, onlyReachabilityChanged = false)
+          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
           Behaviors.same
 
         case ReceptionistMessages.Subscribe(key, subscriber) =>
@@ -263,7 +263,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           // immediately reply with initial listings to the new subscriber
           val listing = {
             val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
-            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, onlyReachabilityChanged = false)
+            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
           }
           subscriber ! listing
 
@@ -313,7 +313,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               val subscribers = subscriptions.get(changedKey)
               if (subscribers.nonEmpty) {
                 val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
-                val listing = ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = false)
+                val listing =
+                  ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = true)
                 subscribers.foreach(_ ! listing)
               }
 
