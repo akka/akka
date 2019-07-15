@@ -31,20 +31,20 @@ public class SpawnProtocolDocTest {
   public abstract static class HelloWorldMain {
     private HelloWorldMain() {}
 
-    public static final Behavior<SpawnProtocol> main =
+    public static final Behavior<SpawnProtocol.Command> main =
         Behaviors.setup(
             context -> {
               // Start initial tasks
               // context.spawn(...)
 
-              return SpawnProtocol.behavior();
+              return SpawnProtocol.create();
             });
   }
   // #main
 
   public static void main(String[] args) throws Exception {
     // #system-spawn
-    final ActorSystem<SpawnProtocol> system = ActorSystem.create(HelloWorldMain.main, "hello");
+    final ActorSystem<SpawnProtocol.Command> system = ActorSystem.create(HelloWorldMain.main, "hello");
     final Duration timeout = Duration.ofSeconds(3);
 
     CompletionStage<ActorRef<HelloWorld.Greet>> greeter =
