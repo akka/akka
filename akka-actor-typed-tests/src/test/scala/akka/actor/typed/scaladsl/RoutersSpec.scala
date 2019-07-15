@@ -8,7 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.routing.GroupRouterImpl
+import akka.actor.typed.internal.routing.RoutingLogics
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
@@ -212,6 +215,37 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     }
 
+    "not route to unreachable when there are reachable" in {
+      val serviceKey = ServiceKey[String]("group-routing-4")
+      val router = spawn(Behaviors.setup[String](context =>
+        new GroupRouterImpl(context, serviceKey, new RoutingLogics.RoundRobinLogic[String], true)))
+
+      val reachableProbe = createTestProbe[String]
+      val unreachableProbe = createTestProbe[String]
+      router
+        .unsafeUpcast[Any] ! Receptionist.Listing(serviceKey, Set(reachableProbe.ref), Set(unreachableProbe.ref), false)
+      router ! "one"
+      router ! "two"
+      reachableProbe.expectMessage("one")
+      reachableProbe.expectMessage("two")
+    }
+
+    "route to unreachable when there are no reachable" in {
+      val serviceKey = ServiceKey[String]("group-routing-4")
+      val router = spawn(Behaviors.setup[String](context =>
+        new GroupRouterImpl(context, serviceKey, new RoutingLogics.RoundRobinLogic[String], true)))
+
+      val unreachableProbe = createTestProbe[String]
+      router.unsafeUpcast[Any] ! Receptionist.Listing(
+        serviceKey,
+        Set.empty[ActorRef[String]],
+        Set(unreachableProbe.ref),
+        true)
+      router ! "one"
+      router ! "two"
+      unreachableProbe.expectMessage("one")
+      unreachableProbe.expectMessage("two")
+    }
   }
 
 }

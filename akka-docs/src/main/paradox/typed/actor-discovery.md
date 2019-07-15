@@ -73,8 +73,15 @@ sends a `Ping` message and when receiving the `Pong` reply it stops.
 
 ## Cluster Receptionist
 
-The `Receptionist` also works in a cluster, an actor registered to the receptionist will appear in the receptionist of the other nodes of the cluster.
+The `Receptionist` also works in a cluster, an actor registered to the receptionist will appear in the receptionist 
+of the other nodes of the cluster.
 
-The state for the receptionist is propagated via @ref:[distributed data](../distributed-data.md) which means that each node will eventually reach the same set of actors per `ServiceKey`.
+The state for the receptionist is propagated via @ref:[distributed data](../distributed-data.md) which means that each node 
+will eventually reach the same set of actors per `ServiceKey`.
 
-One important difference from a local only receptions is the serialisation concerns, all messages sent to and back from an actor on another node must be serializable, see @ref:[clustering](cluster.md#serialization).
+`Subscription`s and `Find` queries to a clustered receptionist will keep track of cluster reachability and only list 
+registered actors that are reachable. The full set of actors, including unreachable ones, is available through 
+@scala[`Listing.allServiceInstances`]@java[`Listing.getAllServiceInstances`].
+
+One important difference from local only receptions are the serialization concerns, all messages sent to and back from 
+an actor on another node must be serializable, see @ref:[clustering](cluster.md#serialization).
