@@ -253,7 +253,6 @@ All wire protocol changes that may concern rolling upgrades should be documented
 [Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
 (found in akka-docs/src/main/paradox/project/rolling-update.md)
 
-
 ## Pull request requirements
 
 For a pull request to be considered at all it has to meet these requirements:

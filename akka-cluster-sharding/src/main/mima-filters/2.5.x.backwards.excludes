@@ -3,3 +3,9 @@ ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
 
 # #25191
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")
+
+# #27299 Separate cluster sharding readiness from stats query
+ProblemFilters.exclude[FinalClassProblem]("akka.cluster.sharding.ShardRegion$GetClusterShardingStats")
+ProblemFilters.exclude[FinalClassProblem]("akka.cluster.sharding.ShardRegion$GetShardRegionStats$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.askAllShards")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.receiveQuery")
