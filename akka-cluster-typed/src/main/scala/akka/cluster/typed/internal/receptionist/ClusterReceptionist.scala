@@ -219,6 +219,20 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         }
       }
 
+      def reachabilityChanged(keysForNode: Set[AbstractServiceKey], newRegistry: ShardedServiceRegistry): Unit = {
+        keysForNode.foreach { changedKey =>
+          val serviceKey = changedKey.asServiceKey
+
+          val subscribers = subscriptions.get(changedKey)
+          if (subscribers.nonEmpty) {
+            val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
+            val listing =
+              ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = true)
+            subscribers.foreach(_ ! listing)
+          }
+        }
+      }
+
       def onCommand(cmd: Command): Behavior[Command] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
@@ -358,17 +372,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               "ClusterReceptionist [{}] - Node with registered services unreachable [{}]",
               cluster.selfAddress,
               uniqueAddress)
-            keysForNode.foreach { changedKey =>
-              val serviceKey = changedKey.asServiceKey
-
-              val subscribers = subscriptions.get(changedKey)
-              if (subscribers.nonEmpty) {
-                val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
-                val listing =
-                  ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = true)
-                subscribers.foreach(_ ! listing)
-              }
-            }
+            reachabilityChanged(keysForNode, newRegistry)
           }
           next(newRegistry)
 
@@ -380,17 +384,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               "ClusterReceptionist [{}] - Node with registered services reachable again [{}]",
               cluster.selfAddress,
               uniqueAddress)
-            keysForNode.foreach { changedKey =>
-              val serviceKey = changedKey.asServiceKey
-
-              val subscribers = subscriptions.get(changedKey)
-              if (subscribers.nonEmpty) {
-                val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
-                val listing =
-                  ReceptionistMessages.Listing(serviceKey, reachable, all, onlyReachabilityChanged = true)
-                subscribers.foreach(_ ! listing)
-              }
-            }
+            reachabilityChanged(keysForNode, newRegistry)
           }
           next(newRegistry)
 

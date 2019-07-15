@@ -10,18 +10,16 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.MemberStatus
-import akka.cluster.typed.Join
+import akka.actor.typed.scaladsl.adapter._
+import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.typed.MultiDcClusterSingletonSpecConfig.first
 import akka.cluster.typed.MultiDcClusterSingletonSpecConfig.second
 import akka.cluster.typed.MultiDcClusterSingletonSpecConfig.third
 import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.cluster.MultiNodeClusterSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -80,18 +78,7 @@ abstract class ClusterReceptionistUnreachabilitySpec
     }
 
     "form a cluster" in {
-      runOn(first) {
-        cluster.manager ! Join(cluster.selfMember.address)
-      }
-      runOn(second, third) {
-        cluster.manager ! Join(first)
-      }
-      enterBarrier("form-cluster-join-attempt")
-      runOn(first, second, third) {
-        within(20.seconds) {
-          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size 3)
-        }
-      }
+      formCluster(first, second, third)
       enterBarrier("cluster started")
     }
 
