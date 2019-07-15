@@ -1842,10 +1842,17 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
+@InternalApi private[akka] object TakeWithin {
+  val Threshold = 1.second
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
   // avoid excessive system calls for longer timeouts
-  private val shortTimeout = timeout < 1.second
+  private val shortTimeout = timeout < TakeWithin.Threshold
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
