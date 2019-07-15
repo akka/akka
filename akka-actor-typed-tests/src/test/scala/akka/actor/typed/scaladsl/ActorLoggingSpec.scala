@@ -1,5 +1,5 @@
 /*
- * Copyright (C,cause) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -14,7 +14,7 @@ import akka.event.Logging
 import akka.event.Logging.{ LogEvent, LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
-import org.slf4j.helpers.{ BasicMarker, BasicMarkerFactory }
+import org.slf4j.helpers.BasicMarkerFactory
 
 class SomeClass
 
@@ -172,55 +172,41 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           spawn(Behaviors.setup[String] { context =>
             context.log.debug("message")
             context.log.debug("{}", "arg1")
-            context.log.debug("{} {}", Array("arg1", "arg2"))
-            context.log.debug("{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.debug("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.debug("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.debug("{} {}", 1, 2) //using Int to avoid ambiguous reference to overloaded definition
+            context.log.debug("{} {} {}", "arg1", "arg2", "arg3")
             context.log.debug(marker, "message")
             context.log.debug(marker, "{}", "arg1")
-            context.log.debug(marker, "{} {}", Array("arg1", "arg2"))
-            context.log.debug(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.debug(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.debug(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.debug(marker, "{} {}", 1, 2) //using Int to avoid ambiguous reference to overloaded definition
+            context.log.debug(marker, "{} {} {}", Array("arg1", "arg2", "arg3"):_*)
 
             context.log.info("message")
             context.log.info("{}", "arg1")
-            context.log.info("{} {}", Array("arg1", "arg2"))
-            context.log.info("{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.info("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.info("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.info("{} {}", 1, 2)
+            context.log.info("{} {} {}", Array("arg1", "arg2", "arg3"):_*)
             context.log.info(marker, "message")
             context.log.info(marker, "{}", "arg1")
-            context.log.info(marker, "{} {}", Array("arg1", "arg2"))
-            context.log.info(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.info(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.info(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.info(marker, "{} {}", 1, 2)
+            context.log.info(marker, "{} {} {}", Array("arg1", "arg2", "arg3"):_*)
 
             context.log.warn("message")
             context.log.warn("{}", "arg1")
-            context.log.warn("{} {}", Array("arg1", "arg2"))
-            context.log.warn("{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.warn("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.warn("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.warn("{} {}", 1,2)
+            context.log.warn("{} {} {}", Array("arg1", "arg2", "arg3"):_*)
             context.log.warn(marker, "message")
             context.log.warn(marker, "{}", "arg1")
-            context.log.warn(marker, "{} {}", Array("arg1", "arg2"))
-            context.log.warn(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.warn(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.warn(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.warn(marker, "{} {}", 1, 2)
+            context.log.warn(marker, "{} {} {}", Array("arg1", "arg2", "arg3"):_*)
+            context.log.warn("message",cause)
 
             context.log.error("message")
             context.log.error("{}", "arg1")
-            context.log.error("{} {}", Array("arg1", "arg2"))
-            context.log.error("{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.error("{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.error("{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.error("{} {}", 1,2)
+            context.log.error("{} {} {}", Array("arg1", "arg2", "arg3"):_*)
             context.log.error(marker, "message")
             context.log.error(marker, "{}", "arg1")
-            context.log.error(marker, "{} {}", Array("arg1", "arg2"))
-            context.log.error(marker, "{} {} {}", Array("arg1", "arg2", "arg3"))
-            context.log.error(marker, "{} {} {} {}", Array("arg1", "arg2", "arg3", "arg4"))
-            context.log.error(marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+            context.log.error(marker, "{} {}", 1, 2)
+            context.log.error(marker, "{} {} {}", Array("arg1", "arg2", "arg3"):_*)
+            context.log.error("message",cause)
 
             Behaviors.stopped
           })

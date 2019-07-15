@@ -50,8 +50,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
           case Failure(problem) =>
             if (!throwOnLoadFail)
               log.error(
-                "Has been problem with {}, While trying to load extension [{}], skipping...",
-                Array(problem, extensionIdFQCN))
+                s"While trying to load extension $extensionIdFQCN, skipping...", problem)
             else throw new RuntimeException(s"While trying to load extension [$extensionIdFQCN]", problem)
         }
       }

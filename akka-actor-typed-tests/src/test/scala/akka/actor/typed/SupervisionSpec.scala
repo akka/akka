@@ -7,22 +7,22 @@ package akka.actor.typed
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 import akka.actor.ActorInitializationException
-import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors }
+import akka.actor.typed.scaladsl.{AbstractBehavior, Behaviors}
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
-import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
+import org.scalatest.{Matchers, WordSpec, WordSpecLike}
 
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
-
 import akka.actor.Dropped
 import akka.actor.typed.SupervisorStrategy.Resume
 import akka.event.Logging
+import org.slf4j.event.Level
 
 object SupervisionSpec {
 
@@ -1221,7 +1221,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors
         .supervise(targetBehavior(probe.ref))
-        .onFailure[Exc1](SupervisorStrategy.restart.withLoggingEnabled(true).withLogLevel(Logging.InfoLevel))
+        .onFailure[Exc1](SupervisorStrategy.restart.withLoggingEnabled(true).withLogLevel(Level.INFO))
       val ref = spawn(behv)
       EventFilter.info(pattern = "exc-1", source = ref.path.toString, occurrences = 1).intercept {
         ref ! Throw(new Exc1)
@@ -1233,7 +1233,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors
         .supervise(targetBehavior(probe.ref))
-        .onFailure[Exc1](SupervisorStrategy.restart.withLoggingEnabled(true).withLogLevel(Logging.DebugLevel))
+        .onFailure[Exc1](SupervisorStrategy.restart.withLoggingEnabled(true).withLogLevel(Level.DEBUG))
       val ref = spawn(behv)
       EventFilter.info(pattern = "exc-1", source = ref.path.toString, occurrences = 0).intercept {
         ref ! Throw(new Exc1)

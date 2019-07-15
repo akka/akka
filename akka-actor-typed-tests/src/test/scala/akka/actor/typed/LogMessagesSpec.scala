@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
+import org.slf4j.event.Level
 
 class LogMessagesSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
@@ -36,7 +37,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
     }
 
     "log messages with provided log level" in {
-      val opts = LogOptions().withLevel(Logging.InfoLevel)
+      val opts = LogOptions().withLevel(Level.INFO)
       val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
 
       val ref: ActorRef[String] = spawn(behavior)

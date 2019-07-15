@@ -6,10 +6,9 @@ package akka.actor.typed
 
 import java.util.Optional
 
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.event.Logging
-import akka.event.Logging._
+import akka.annotation.{DoNotInherit, InternalApi}
 import org.slf4j.Logger
+import org.slf4j.event.Level
 
 /**
  * A log marker is an additional metadata tag supported by some logging backends to identify "special" log events.
@@ -60,7 +59,7 @@ abstract sealed class LogOptions {
   /**
    * The [[akka.event.Logging.LogLevel]] to use when logging messages.
    */
-  def withLevel(level: LogLevel): LogOptions
+  def withLevel(level: Level): LogOptions
 
   /**
    * A [[org.slf4j.Logger]] to use when logging messages.
@@ -68,7 +67,7 @@ abstract sealed class LogOptions {
   def withLogger(logger: Logger): LogOptions
 
   def enabled: Boolean
-  def level: LogLevel
+  def level: Level
   def logger: Option[Logger]
 
   /** Java API */
@@ -84,7 +83,7 @@ object LogOptions {
    * INTERNAL API
    */
   @InternalApi
-  private[akka] final case class LogOptionsImpl(enabled: Boolean, level: LogLevel, logger: Option[Logger])
+  private[akka] final case class LogOptionsImpl(enabled: Boolean, level: Level, logger: Option[Logger])
       extends LogOptions {
 
     /**
@@ -96,7 +95,7 @@ object LogOptions {
     /**
      * The [[akka.event.Logging.LogLevel]] to use when logging messages.
      */
-    override def withLevel(level: LogLevel): LogOptions = this.copy(level = level)
+    override def withLevel(level: Level): LogOptions = this.copy(level = level)
 
     /**
      * A [[org.slf4j.Logger]] to use when logging messages.
@@ -110,7 +109,7 @@ object LogOptions {
   /**
    * Scala API: Create a new log options with defaults.
    */
-  def apply(): LogOptions = LogOptionsImpl(enabled = true, Logging.DebugLevel, None)
+  def apply(): LogOptions = LogOptionsImpl(enabled = true, Level.DEBUG , None)
 
   /**
    * Java API: Create a new log options.

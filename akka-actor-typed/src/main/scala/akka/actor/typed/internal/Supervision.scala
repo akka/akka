@@ -7,15 +7,16 @@ package internal
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.actor.{ DeadLetterSuppression, Dropped }
-import akka.actor.typed.BehaviorInterceptor.{ PreStartTarget, ReceiveTarget, SignalTarget }
+import akka.actor.{DeadLetterSuppression, Dropped}
+import akka.actor.typed.BehaviorInterceptor.{PreStartTarget, ReceiveTarget, SignalTarget}
 import akka.actor.typed.SupervisorStrategy._
-import akka.actor.typed.scaladsl.{ Behaviors, StashBuffer }
+import akka.actor.typed.scaladsl.{Behaviors, StashBuffer}
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.util.{ unused, OptionVal }
+import akka.util.{OptionVal, unused}
+import org.slf4j.event.Level
 
-import scala.concurrent.duration.{ Deadline, FiniteDuration }
+import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
@@ -71,16 +72,16 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
       strategy.logLevel match {
-        case Logging.ErrorLevel =>
-          ctx.asScala.log.error("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
-        case Logging.WarningLevel =>
-          ctx.asScala.log.warn("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
-        case Logging.InfoLevel =>
-          ctx.asScala.log.info("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
-        case Logging.DebugLevel =>
-          ctx.asScala.log.debug("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+        case Level.ERROR =>
+          ctx.asScala.log.error(s"Supervisor $this saw failure:", unwrapped)
+        case Level.WARN=>
+          ctx.asScala.log.warn(s"Supervisor $this saw failure:", unwrapped)
+        case Level.INFO =>
+          ctx.asScala.log.info(s"Supervisor $this saw failure:", unwrapped)
+        case Level.DEBUG =>
+          ctx.asScala.log.debug(s"Supervisor $this saw failure:", unwrapped)
         //TODO check this debug case is actually best option when other level is found
-        case _ => ctx.asScala.log.debug("Supervisor {} saw failure: {}", Array(this, unwrapped.getMessage))
+        case _ => ctx.asScala.log.debug(s"Supervisor $this saw failure:", unwrapped)
       }
     }
   }
@@ -315,7 +316,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart", ex)
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart",ex)
         }
 
         prepareRestart(ctx, t)

@@ -5,12 +5,11 @@
 package akka.actor.typed
 
 import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.event.Logging.LogLevel
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration
 import akka.util.JavaDurationConverters._
+import org.slf4j.event.Level
 
 object SupervisorStrategy {
 
@@ -21,7 +20,7 @@ object SupervisorStrategy {
    * If the actor behavior is deferred and throws an exception on startup the actor is stopped
    * (restarting would be dangerous as it could lead to an infinite restart-loop)
    */
-  val resume: SupervisorStrategy = Resume(loggingEnabled = true, logLevel = Logging.ErrorLevel)
+  val resume: SupervisorStrategy = Resume(loggingEnabled = true, logLevel = Level.ERROR)
 
   /**
    * Restart immediately without any limit on number of restart retries. A limit can be
@@ -36,7 +35,7 @@ object SupervisorStrategy {
   /**
    * Stop the actor
    */
-  val stop: SupervisorStrategy = Stop(loggingEnabled = true, logLevel = Logging.ErrorLevel)
+  val stop: SupervisorStrategy = Stop(loggingEnabled = true, logLevel = Level.ERROR)
 
   /**
    * Scala API: It supports exponential back-off between the given `minBackoff` and
@@ -109,20 +108,20 @@ object SupervisorStrategy {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] case class Resume(loggingEnabled: Boolean, logLevel: LogLevel) extends SupervisorStrategy {
+  @InternalApi private[akka] case class Resume(loggingEnabled: Boolean, logLevel: Level) extends SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)
-    override def withLogLevel(level: LogLevel): SupervisorStrategy =
+    override def withLogLevel(level: Level): SupervisorStrategy =
       copy(logLevel = level)
   }
 
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] case class Stop(loggingEnabled: Boolean, logLevel: LogLevel) extends SupervisorStrategy {
+  @InternalApi private[akka] case class Stop(loggingEnabled: Boolean, logLevel: Level) extends SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean) =
       copy(loggingEnabled = enabled)
-    override def withLogLevel(level: LogLevel): SupervisorStrategy =
+    override def withLogLevel(level: Level): SupervisorStrategy =
       copy(logLevel = level)
   }
 
@@ -145,7 +144,7 @@ object SupervisorStrategy {
       maxRestarts: Int,
       withinTimeRange: FiniteDuration,
       loggingEnabled: Boolean = true,
-      logLevel: LogLevel = Logging.ErrorLevel,
+      logLevel: Level = Level.ERROR,
       stopChildren: Boolean = true,
       stashCapacity: Int = -1)
       extends RestartSupervisorStrategy
@@ -166,7 +165,7 @@ object SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean): RestartSupervisorStrategy =
       copy(loggingEnabled = enabled)
 
-    override def withLogLevel(level: LogLevel): RestartSupervisorStrategy =
+    override def withLogLevel(level: Level): RestartSupervisorStrategy =
       copy(logLevel = level)
   }
 
@@ -179,7 +178,7 @@ object SupervisorStrategy {
       randomFactor: Double,
       resetBackoffAfter: FiniteDuration,
       loggingEnabled: Boolean = true,
-      logLevel: LogLevel = Logging.ErrorLevel,
+      logLevel: Level = Level.ERROR,
       maxRestarts: Int = -1,
       stopChildren: Boolean = true,
       stashCapacity: Int = -1)
@@ -206,7 +205,7 @@ object SupervisorStrategy {
     override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy =
       copy(loggingEnabled = enabled)
 
-    override def withLogLevel(level: LogLevel): BackoffSupervisorStrategy =
+    override def withLogLevel(level: Level): BackoffSupervisorStrategy =
       copy(logLevel = logLevel)
 
   }
@@ -214,11 +213,11 @@ object SupervisorStrategy {
 
 sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
-  def logLevel: LogLevel
+  def logLevel: Level
 
   def withLoggingEnabled(enabled: Boolean): SupervisorStrategy
 
-  def withLogLevel(level: LogLevel): SupervisorStrategy
+  def withLogLevel(level: Level): SupervisorStrategy
 
 }
 
@@ -273,7 +272,7 @@ sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
   override def withLoggingEnabled(enabled: Boolean): RestartSupervisorStrategy
 
-  override def withLogLevel(level: LogLevel): RestartSupervisorStrategy
+  override def withLogLevel(level: Level): RestartSupervisorStrategy
 
 }
 
@@ -321,6 +320,6 @@ sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
 
   override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy
 
-  override def withLogLevel(level: LogLevel): BackoffSupervisorStrategy
+  override def withLogLevel(level: Level): BackoffSupervisorStrategy
 
 }
