@@ -11,6 +11,8 @@ import akka.pattern._
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
 import akka.stream._
+import akka.stream.impl.streamref.SinkRefImpl
+import akka.stream.impl.streamref.SourceRefImpl
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
@@ -160,14 +162,19 @@ object StreamRefsSpec {
     }
   """).withFallback(ConfigFactory.load())
   }
+
+  object SnitchActor {
+    def props(probe: ActorRef) = Props(new SnitchActor(probe))
+  }
+  class SnitchActor(probe: ActorRef) extends Actor {
+    def receive = {
+      case msg => probe ! msg
+    }
+  }
 }
 
-class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSender {
   import StreamRefsSpec._
-
-  def this() {
-    this(StreamRefsSpec.config())
-  }
 
   val remoteSystem = ActorSystem("RemoteSystem", StreamRefsSpec.config())
   implicit val mat = ActorMaterializer()
@@ -404,6 +411,30 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       // will be cancelled immediately, since it's 2nd:
       p2.ensureSubscription()
       p2.expectCancellation()
+    }
+
+  }
+
+  "The StreamRefResolver" must {
+
+    "serialize and deserialize SourceRefs" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(StreamRefsSpec.SnitchActor.props(probe.ref))
+      val sourceRef = SourceRefImpl[String](ref)
+      val resolver = StreamRefResolver(system)
+      val result = resolver.resolveSourceRef(resolver.toSerializationFormat(sourceRef))
+      result.asInstanceOf[SourceRefImpl[String]].initialPartnerRef ! "ping"
+      probe.expectMsg("ping")
+    }
+
+    "serialize and deserialize SinkRefs" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(StreamRefsSpec.SnitchActor.props(probe.ref))
+      val sinkRef = SinkRefImpl[String](ref)
+      val resolver = StreamRefResolver(system)
+      val result = resolver.resolveSinkRef(resolver.toSerializationFormat(sinkRef))
+      result.asInstanceOf[SinkRefImpl[String]].initialPartnerRef ! "ping"
+      probe.expectMsg("ping")
     }
 
   }
