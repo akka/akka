@@ -7,6 +7,8 @@ package akka.actor
 import scala.collection.immutable
 import java.lang.reflect.InvocationTargetException
 
+import akka.annotation.DoNotInherit
+
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Try
@@ -16,7 +18,10 @@ import scala.util.Try
  * unless overridden. It uses reflection to turn fully-qualified class names into `Class[_]` objects
  * and creates instances from there using `getDeclaredConstructor()` and invoking that. The class loader
  * to be used for all this is determined by the actor system’s class loader by default.
+ *
+ * Not for user extension or construction
  */
+@DoNotInherit
 class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAccess {
 
   override def getClassFor[T: ClassTag](fqcn: String): Try[Class[_ <: T]] =
