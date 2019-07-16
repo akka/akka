@@ -5,14 +5,13 @@
 package akka.actor.typed
 
 import scala.annotation.tailrec
-
 import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.DoNotInherit
 
 /**
  * A message protocol for actors that support spawning a child actor when receiving a [[SpawnProtocol#Spawn]]
- * message and sending back the [[ActorRef]] of the child actor. An implementation of a behavior for this
- * protocol is defined in [[SpawnProtocol#behavior]]. That can be used as is or composed with other behavior
- * using [[Behavior#orElse]].
+ * message and sending back the [[ActorRef]] of the child actor. Create instances through the [[SpawnProtocol#apply]]
+ * or [[SpawnProtocol.create()]] factory methods.
  *
  * The typical usage of this is to use it as the guardian actor of the [[ActorSystem]], possibly combined with
  * `Behaviors.setup` to starts some initial tasks or actors. Child actors can then be started from the outside
@@ -25,7 +24,10 @@ import akka.actor.typed.scaladsl.Behaviors
  */
 object SpawnProtocol {
 
-  sealed trait Command
+  /**
+   * Not for user extension
+   */
+  @DoNotInherit sealed trait Command
 
   /**
    * Spawn a child actor with the given `behavior` and send back the `ActorRef` of that child to the given
