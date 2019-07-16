@@ -121,6 +121,8 @@ private[akka] object ActorContextAdapter {
 
   private def initLoggerWithClass(logClass: Class[_]): Logger = {
     val logger = LoggerFactory.getLogger(logClass)
+    //TODO remove it from MDC. Under discussion
+    org.slf4j.MDC.put("actorPath",self.path.name)
     actorLogger = OptionVal.Some(logger)
     logger
   }

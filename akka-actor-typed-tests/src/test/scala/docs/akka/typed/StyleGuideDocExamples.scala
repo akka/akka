@@ -120,8 +120,8 @@ object StyleGuideDocExamples {
               context.log.debug(
                 "[{}] Starting repeated increments with interval [{}], current count is [{}]",
                 name,
-                interval,
-                n)
+                interval.toString,
+                n.toString)
               timers.startTimerWithFixedDelay("repeat", Increment, interval)
               Behaviors.same
             case Increment =>
@@ -163,8 +163,8 @@ object StyleGuideDocExamples {
             setup.context.log.debug(
               "[{}] Starting repeated increments with interval [{}], current count is [{}]",
               setup.name,
-              interval,
-              n)
+              interval.toString,
+              n.toString)
             setup.timers.startTimerWithFixedDelay("repeat", Increment, interval)
             Behaviors.same
           case Increment =>
@@ -210,8 +210,8 @@ object StyleGuideDocExamples {
             context.log.debug(
               "[{}] Starting repeated increments with interval [{}], current count is [{}]",
               name,
-              interval,
-              n)
+              interval.toString,
+              n.toString)
             timers.startTimerWithFixedDelay("repeat", Increment, interval)
             Behaviors.same
           case Increment =>
@@ -246,8 +246,8 @@ object StyleGuideDocExamples {
                   context.log.debug(
                     "[{}] Starting repeated increments with interval [{}], current count is [{}]",
                     name,
-                    interval,
-                    n)
+                    interval.toString,
+                    n.toString)
                   timers.startTimerWithFixedDelay("repeat", Increment, interval)
                   Behaviors.same
                 case Increment =>

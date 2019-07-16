@@ -167,7 +167,7 @@ object Dependencies {
 
   val coordination = l ++= Seq(Test.junit, Test.scalatest.value)
 
-  val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
+  val testkit = l ++= Seq(Test.logback, Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
   val actorTests = l ++= Seq(
         Test.junit,
