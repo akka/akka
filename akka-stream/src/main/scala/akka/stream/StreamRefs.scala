@@ -116,8 +116,14 @@ final case class InvalidPartnerActorException(expectedRef: ActorRef, gotRef: Act
       s"Do note that stream refs are one-shot references and have to be paired up in 1:1 pairs. " +
       s"Multi-cast such as broadcast etc can be implemented by sharing multiple new stream references. ")
 
+/**
+ * The stream ref resolver extension provides a way to serialize and deserialize streamrefs in user serializers.
+ */
 object StreamRefResolver extends ExtensionId[StreamRefResolver] {
 
+  /**
+   * Java API
+   */
   override def get(system: ActorSystem): StreamRefResolver = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem): StreamRefResolver =
@@ -125,7 +131,7 @@ object StreamRefResolver extends ExtensionId[StreamRefResolver] {
 }
 
 /**
- *
+ * The stream ref resolver provides a way to serialize and deserialize streamrefs in user serializers.
  *
  * Not for user extension
  */

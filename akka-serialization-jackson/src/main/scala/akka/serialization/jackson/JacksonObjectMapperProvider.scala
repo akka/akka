@@ -132,18 +132,16 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     mapper
   }
 
-  private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean = {
-    // akka-actor-typed dependency is "provided" and may not be included
-    if (fqcn == "akka.serialization.jackson.AkkaTypedJacksonModule") {
-      dynamicAccess.getClassFor("akka.actor.typed.ActorRef") match {
-        case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
-          false // akka-actor-typed not in classpath
-        case _ =>
-          true
-      }
-    } else
-      true
-  }
+  private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean =
+    fqcn match {
+      case "akka.serialization.jackson.AkkaTypedJacksonModule" =>
+        // akka-actor-typed dependency is "provided" and may not be included
+        dynamicAccess.classIsOnClasspath("akka.actor.typed.ActorRef")
+      case "akka.serialization.jackson.AkkaStreamJacksonModule" =>
+        // akka-stream dependency is "provided" and may not be included
+        dynamicAccess.classIsOnClasspath("akka.stream.Graph")
+      case _ => true
+    }
 
   private def features(config: Config, section: String): immutable.Seq[(String, Boolean)] = {
     import akka.util.ccompat.JavaConverters._

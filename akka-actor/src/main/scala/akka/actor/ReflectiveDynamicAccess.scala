@@ -6,7 +6,9 @@ package akka.actor
 
 import scala.collection.immutable
 import java.lang.reflect.InvocationTargetException
+
 import scala.reflect.ClassTag
+import scala.util.Failure
 import scala.util.Try
 
 /**
@@ -40,6 +42,15 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     getClassFor(fqcn).flatMap { c =>
       createInstanceFor(c, args)
     }
+
+  override def classIsOnClasspath(fqcn: String): Boolean = {
+    getClassFor(fqcn) match {
+      case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
+        false
+      case _ =>
+        true
+    }
+  }
 
   override def getObjectFor[T: ClassTag](fqcn: String): Try[T] = {
     val classTry =

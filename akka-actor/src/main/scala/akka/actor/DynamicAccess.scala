@@ -34,6 +34,8 @@ abstract class DynamicAccess {
    */
   def getClassFor[T: ClassTag](fqcn: String): Try[Class[_ <: T]]
 
+  def classIsOnClasspath(fqcn: String): Boolean
+
   /**
    * Obtain an object conforming to the type T, which is expected to be
    * instantiated from a class designated by the fully-qualified class name
