@@ -18,3 +18,9 @@ class AkkaTypedJacksonModule extends JacksonModule with TypedActorRefModule {
 }
 
 object AkkaTypedJacksonModule extends AkkaJacksonModule
+
+class AkkaStreamJacksonModule extends JacksonModule with StreamRefModule {
+  override def getModuleName = "AkkaStreamJacksonModule"
+}
+
+object AkkaStreamJacksonModule extends AkkaJacksonModule
