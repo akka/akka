@@ -354,6 +354,19 @@ akka.cluster.sharding.passivate-idle-entity-after = off
 
 It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
 
+### Distributed Data
+
+Configuration properties for controlling sizes of `Gossip` and `DeltaPropagation` messages in Distributed Data
+have been reduced. Previous defaults sometimes resulted in messages exceeding max payload size for remote
+actor messages.
+
+The new configuration properties are:
+
+```
+akka.cluster.distributed-data.max-delta-elements = 500
+akka.cluster.distributed-data.delta-crdt.max-delta-size = 50
+```
+
 ### CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
