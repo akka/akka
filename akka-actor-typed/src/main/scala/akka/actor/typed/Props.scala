@@ -179,3 +179,35 @@ object DispatcherSelector {
    */
   def sameAsParent(): DispatcherSelector = DispatcherSameAsParent.empty
 }
+
+/**
+ * Not for user extension.
+ */
+@DoNotInherit
+abstract class MailboxSelector extends Props
+
+object MailboxSelector {
+
+  /**
+   * Scala API: The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   */
+  def default(): MailboxSelector = DefaultMailboxSelector.empty
+
+  /**
+   * Java API: The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   */
+  def defaultMailbox(): MailboxSelector = default()
+
+  /**
+   * A mailbox with a max capacity after which new messages are dropped (passed to deadletters).
+   * @param capacity The maximum number of messages in the mailbox before new messages are dropped
+   */
+  def bounded(capacity: Int): MailboxSelector = BoundedMailboxSelector(capacity)
+
+  /**
+   * Select a mailbox from the config file using an absolute config path.
+   *
+   * This is a power user settings default or bounded should be preferred unless you know what you are doing.
+   */
+  def fromConfig(path: String): MailboxSelector = MailboxFromConfigSelector(path)
+}

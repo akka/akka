@@ -532,7 +532,7 @@ trigger emails and other notifications immediately.
 Markers are available through the LoggingAdapters, when obtained via `Logging.withMarker`.
 The first argument passed into all log calls then should be a `akka.event.LogMarker`.
 
-The slf4j bridge provided by akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
+The slf4j bridge provided by Akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
 For example you could use it like this:
 
 ```
