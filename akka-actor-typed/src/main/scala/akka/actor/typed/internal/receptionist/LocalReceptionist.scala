@@ -80,15 +80,21 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
       def notifySubscribersFor[T](key: AbstractServiceKey): Unit = {
         val newListing = newRegistry.get(key)
-        subscriptions.get(key).foreach(_ ! ReceptionistMessages.Listing(key.asServiceKey, newListing))
+        subscriptions
+          .get(key)
+          .foreach(
+            _ ! ReceptionistMessages
+              .Listing(key.asServiceKey, newListing, newListing, servicesWereAddedOrRemoved = true))
       }
 
       changedKeysHint.foreach(notifySubscribersFor)
       next(newRegistry = newRegistry)
     }
 
-    def replyWithListing[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Unit =
-      replyTo ! ReceptionistMessages.Listing(key, serviceRegistry.get(key))
+    def replyWithListing[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Unit = {
+      val listing = serviceRegistry.get(key)
+      replyTo ! ReceptionistMessages.Listing(key, listing, listing, servicesWereAddedOrRemoved = true)
+    }
 
     def onCommand(ctx: ActorContext[Any], cmd: Command): Behavior[Any] = cmd match {
       case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>

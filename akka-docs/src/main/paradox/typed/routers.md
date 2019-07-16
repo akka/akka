@@ -43,12 +43,16 @@ Java
 The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
-Since the receptionist is used this means the group router is cluster aware out of the box and will pick up routees
-registered on any node in the cluster (there is currently no logic to avoid routing to unreachable nodes, see [#26355](https://github.com/akka/akka/issues/26355)).
+Since the receptionist is used this means the group router is cluster aware out of the box. The router route
+messages to registered actors on any node in the cluster that is reachable. If no reachable actor exists the router
+will fallback and route messages to actors on nodes marked as unreachable.
 
-It also means that the set of routees is eventually consistent, and that immediately when the group router is started
-the set of routees it knows about is empty. When the set of routees is empty messages sent to the router is forwarded
-to dead letters.
+That the receptionist is used also means that the set of routees is eventually consistent, and that immediately when 
+the group router is started the set of routees it knows about is empty, until it has seen a listing from the receptionist
+it stashes incoming messages and forwards them as soon as it gets a listing from the receptionist.  
+
+When the router has received a listing from the receptionist and the set of registered actors is empty the router will
+drop them (published them to the event stream as `akka.actor.Dropped`).
 
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #group }

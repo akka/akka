@@ -164,7 +164,7 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
 
     val engine = sslContext.createSSLEngine(hostname, port)
 
-    if (HostnameVerification) {
+    if (HostnameVerification && role == akka.stream.Client) {
       val sslParams = sslContext.getDefaultSSLParameters
       sslParams.setEndpointIdentificationAlgorithm("HTTPS")
       engine.setSSLParameters(sslParams)

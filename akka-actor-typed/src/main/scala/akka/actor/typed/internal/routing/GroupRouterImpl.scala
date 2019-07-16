@@ -73,23 +73,26 @@ private final class InitialGroupRouterImpl[T](
  * INTERNAL API
  */
 @InternalApi
-private final class GroupRouterImpl[T](
+private[akka] final class GroupRouterImpl[T](
     ctx: ActorContext[T],
     serviceKey: ServiceKey[T],
     routingLogic: RoutingLogic[T],
     routeesInitiallyEmpty: Boolean)
     extends AbstractBehavior[T] {
 
-  // casting trix to avoid having to wrap incoming messages - note that this will cause problems if intercepting
-  // messages to a router
-  ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self.unsafeUpcast[Any].narrow[Receptionist.Listing])
   private var routeesEmpty = routeesInitiallyEmpty
 
   def onMessage(msg: T): Behavior[T] = msg match {
-    case serviceKey.Listing(update) =>
-      // we don't need to watch, because receptionist already does that
-      routingLogic.routeesUpdated(update)
-      routeesEmpty = update.isEmpty
+    case l @ serviceKey.Listing(update) =>
+      ctx.log.debug("Update from receptionist: [{}]", l)
+      val routees =
+        if (update.nonEmpty) update
+        else
+          // empty listing in a cluster context can mean all nodes with registered services
+          // are unreachable, in that case trying the unreachable ones is better than dropping messages
+          l.allServiceInstances(serviceKey)
+      routeesEmpty = routees.isEmpty
+      routingLogic.routeesUpdated(routees)
       this
     case msg: T @unchecked =>
       import akka.actor.typed.scaladsl.adapter._
