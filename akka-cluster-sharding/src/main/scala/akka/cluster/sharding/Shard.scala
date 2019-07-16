@@ -252,7 +252,7 @@ private[akka] class Shard(
   def processChange[E <: StateChange](event: E)(handler: E => Unit): Unit =
     handler(event)
 
-  def receive = receiveCommand
+  def receive: Receive = receiveCommand
 
   // Don't send back ShardInitialized so that messages are buffered in the ShardRegion
   // while awaiting the lease
