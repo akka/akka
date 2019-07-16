@@ -176,7 +176,7 @@ StreamRefs require serialization, since the whole point is to send them between 
 is provided when `SourceRef` and `SinkRef` are sent directly as messages however the recommended use is to wrap them
 into your own actor message classes. 
 
-When @ref[Akka Jackson](../serialization-jackson.md) is used serialization of wrapped `SourceRef` and `SinkRef` 
+When @ref[Akka Jackson](../serialization-jackson.md) is used, serialization of wrapped `SourceRef` and `SinkRef` 
 will work out of the box.
  
 If you are using some other form of serialization you will need to use the @apidoc[akka.stream.StreamRefResolver] extension 

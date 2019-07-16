@@ -48,14 +48,13 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       createInstanceFor(c, args)
     }
 
-  override def classIsOnClasspath(fqcn: String): Boolean = {
+  override def classIsOnClasspath(fqcn: String): Boolean =
     getClassFor(fqcn) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
         false
       case _ =>
         true
     }
-  }
 
   override def getObjectFor[T: ClassTag](fqcn: String): Try[T] = {
     val classTry =
