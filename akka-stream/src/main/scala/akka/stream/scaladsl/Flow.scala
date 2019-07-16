@@ -2632,6 +2632,80 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[immutable.Seq[U]] =
+    via(mergeLatestGraph(that, eagerComplete))
+
+  protected def mergeLatestGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, immutable.Seq[U]], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergeLatest[U](2, eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
+    }
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * '''emits''' when one of the inputs has an element available. If multiple have elements available, prefer the 'right' one when 'preferred' is 'true', or the 'left' one when 'preferred' is 'false'.
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePreferred[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      priority: Boolean,
+      eagerComplete: Boolean = false): Repr[U] =
+    via(mergePreferredGraph(that, priority, eagerComplete))
+
+  protected def mergePreferredGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      priority: Boolean,
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergePreferred[U](1, eagerComplete))
+      r ~> merge.in(if (priority) 0 else 1)
+      FlowShape(merge.in(if (priority) 1 else 0), merge.out)
+    }
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePrioritized[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean = false): Repr[U] =
+    via(mergePrioritizedGraph(that, leftPriority, rightPriority, eagerComplete))
+
+  protected def mergePrioritizedGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergePrioritized[U](Seq(leftPriority, rightPriority), eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
+    }
+
+  /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side
    * to be available). This means that possible contiguity of the input streams is not exploited to avoid
@@ -3054,6 +3128,48 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean)(
       matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
     viaMat(interleaveGraph(that, request, eagerClose))(matF)
+
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * @see [[#mergeLatest]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergeLatestMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerClose: Boolean)(
+      matF: (Mat, Mat2) => Mat3): ReprMat[immutable.Seq[U], Mat3] =
+    viaMat(mergeLatestGraph(that, eagerClose))(matF)
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * @see [[#mergePreferred]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePreferredMat[U >: Out, Mat2, Mat3](
+      that: Graph[SourceShape[U], Mat2],
+      preferred: Boolean,
+      eagerClose: Boolean)(matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
+    viaMat(mergePreferredGraph(that, preferred, eagerClose))(matF)
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePrioritizedMat[U >: Out, Mat2, Mat3](
+      that: Graph[SourceShape[U], Mat2],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerClose: Boolean)(matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
+    viaMat(mergePrioritizedGraph(that, leftPriority, rightPriority, eagerClose))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
