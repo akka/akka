@@ -157,22 +157,37 @@ object Behavior {
       case _ => behavior
     }
 
+  @tailrec
+  private def startTail(behavior: Behavior[Any],stack: Seq[InterceptorImpl[Any,Any]],ctx:TypedActorContext[Any], isReducing: Boolean): Behavior[Any] = {
+    if(isReducing){
+      if(stack.nonEmpty) {
+        val wrapped = stack.head
+        startTail(wrapped.replaceNested(behavior), stack.tail, ctx, isReducing = true)
+      }else{
+        behavior
+      }
+    }else{
+      behavior match {
+        case innerDeferred: DeferredBehavior[Any] @unchecked =>
+          startTail(innerDeferred(ctx),stack, ctx,isReducing = false)
+        case wrapped: InterceptorImpl[Any,Any] @unchecked =>
+          startTail(wrapped.nestedBehavior,wrapped +: stack,ctx,isReducing = false)
+        case _ =>
+          if(stack.nonEmpty){
+            startTail(behavior,stack,ctx,isReducing = true)
+          }else{
+            behavior
+          }
+      }
+    }
+  }
+
   /**
    * Starts deferred behavior and nested deferred behaviors until all deferred behaviors in the stack are started
    * and then the resulting behavior is returned.
    */
-  def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
-    // TODO can this be made @tailrec?
-    behavior match {
-      case innerDeferred: DeferredBehavior[T]          => start(innerDeferred(ctx), ctx)
-      case wrapped: InterceptorImpl[T, Any] @unchecked =>
-        // make sure that a deferred behavior wrapped inside some other behavior is also started
-        val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[TypedActorContext[Any]])
-        if (startedInner eq wrapped.nestedBehavior) wrapped
-        else wrapped.replaceNested(startedInner)
-      case _ => behavior
-    }
-  }
+  def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = startTail(behavior.asInstanceOf[Behavior[Any]],Nil,ctx.asInstanceOf[TypedActorContext[Any]],isReducing = false).asInstanceOf[Behavior[T]]
+
 
   /**
    * Go through the behavior stack and apply a predicate to see if any nested behavior
