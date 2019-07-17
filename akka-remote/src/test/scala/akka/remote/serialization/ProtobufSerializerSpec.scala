@@ -26,7 +26,8 @@ class ProtobufSerializerSpec extends AkkaSpec {
 
     "work for SerializedMessage (just an akka.protobuf message)" in {
       // create a protobuf message
-      val protobufMessage: SerializedMessage = MessageSerializer.serialize(system.asInstanceOf[ExtendedActorSystem], "hello")
+      val protobufMessage: SerializedMessage =
+        MessageSerializer.serialize(system.asInstanceOf[ExtendedActorSystem], "hello")
       // serialize it with ProtobufSerializer
       val bytes = ser.serialize(protobufMessage).get
       // deserialize the bytes with ProtobufSerializer
@@ -36,7 +37,8 @@ class ProtobufSerializerSpec extends AkkaSpec {
     }
 
     "work for a serialized protobuf v3 message" in {
-      val protobufV3Message: MyMessageV3 = MyMessageV3.newBuilder().setQuery("query1").setPageNumber(1).setResultPerPage(2).build()
+      val protobufV3Message: MyMessageV3 =
+        MyMessageV3.newBuilder().setQuery("query1").setPageNumber(1).setResultPerPage(2).build()
       val bytes = ser.serialize(protobufV3Message).get
       val deserialized: MyMessageV3 = ser.deserialize(bytes, protobufV3Message.getClass).get
       protobufV3Message should ===(deserialized)
