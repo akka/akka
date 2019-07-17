@@ -55,6 +55,7 @@ import akka.stream.snapshot._
    */
   case object Empty
   final case class Failed(ex: Throwable, previousElem: Any)
+  final case class Cancelled(cause: Throwable)
 
   abstract class UpstreamBoundaryStageLogic[T] extends GraphStageLogic(inCount = 0, outCount = 1) {
     def out: Outlet[T]
@@ -493,7 +494,7 @@ import akka.stream.snapshot._
           s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
       completeConnection(connection.outOwner.stageId)
-      val cause = connection.slot.asInstanceOf[Throwable]
+      val cause = connection.slot.asInstanceOf[Cancelled].cause
       connection.slot = Empty
       connection.outHandler.onDownstreamFinish(cause)
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
@@ -644,7 +645,8 @@ import akka.stream.snapshot._
     if (Debug) println(s"$Name   cancel($connection) [$currentState]")
     connection.portState = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
-      connection.slot = cause
+      require(connection.slot != null)
+      connection.slot = Cancelled(cause)
       if ((currentState & (Pulling | Pushing | InClosed)) == 0) enqueue(connection)
       else if (chasedPull eq connection) {
         // Abort chasing so Cancel is not lost (chasing does NOT decode the event but assumes it to be a PULL

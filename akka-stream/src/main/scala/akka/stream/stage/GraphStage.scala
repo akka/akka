@@ -567,10 +567,17 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       // Slow path
       if (!isAvailable(in))
         throw new IllegalArgumentException(s"Cannot get element from already empty input port ($in)")
-      val failed = connection.slot.asInstanceOf[Failed]
-      val elem = failed.previousElem.asInstanceOf[T]
-      connection.slot = Failed(failed.ex, Empty)
-      elem
+
+      if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
+        val failed = connection.slot.asInstanceOf[Failed]
+        val elem = failed.previousElem.asInstanceOf[T]
+        connection.slot = Failed(failed.ex, Empty)
+        elem
+      } else {
+        val elem = connection.slot.asInstanceOf[T]
+        connection.slot = Empty
+        elem
+      }
     }
   }
 
@@ -594,13 +601,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // Fast path
     if (normalArrived) connection.slot.asInstanceOf[AnyRef] ne Empty
     else {
-      // Slow path on failure
-      if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
+      if ((connection.portState & (InReady | InClosed | InFailed)) == (InReady | InClosed))
+        connection.slot match {
+          case Empty | _ @(_: Cancelled) => false
+          case _                         => true
+        } else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
         connection.slot match {
           case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty
           case _               => false // This can only be Empty actually (if a cancel was concurrent with a failure)
-        }
-      } else false
+        } else false
     }
   }
 
