@@ -765,7 +765,7 @@ private[akka] class ShardRegion(
       .recover {
         case _: AskTimeoutException =>
           log.warning("{} shards queried but timed out after {}.", shards.size, settings.shardRegionQueryTimeout)
-          ShardRegion.ShardRegionStats(shards.keySet.map(_ -> 0).toMap)
+          ShardRegionStats(Map.empty)
       }
       .pipeTo(ref)
   }
