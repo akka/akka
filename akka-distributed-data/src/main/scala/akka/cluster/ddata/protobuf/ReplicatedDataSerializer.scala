@@ -21,7 +21,7 @@ import akka.cluster.ddata.protobuf.msg.{ ReplicatedDataMessages => rd }
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.BaseSerializer
-import akka.protobuf.{ ByteString, GeneratedMessage }
+import akka.protobufv3.internal.{ ByteString, GeneratedMessage }
 import akka.util.ByteString.UTF_8
 import java.io.NotSerializableException
 

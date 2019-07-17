@@ -2,6 +2,8 @@
  * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
+syntax = "proto2";
+
 package akka.cluster.typed;
 
 option java_package = "akka.cluster.typed.internal.protobuf";

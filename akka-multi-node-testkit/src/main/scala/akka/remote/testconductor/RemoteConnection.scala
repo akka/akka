@@ -20,7 +20,7 @@ import akka.event.Logging
 import akka.util.Helpers
 import org.jboss.netty.handler.codec.oneone.{ OneToOneDecoder, OneToOneEncoder }
 import org.jboss.netty.channel.ChannelHandlerContext
-import akka.protobuf.Message
+import akka.protobufv3.internal.Message
 import org.jboss.netty.buffer.ChannelBuffer
 
 /**

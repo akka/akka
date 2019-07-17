@@ -10,7 +10,7 @@ import akka.persistence._
 import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
 import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.serialization._
-import akka.protobuf._
+import akka.protobufv3.internal.ByteString
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration

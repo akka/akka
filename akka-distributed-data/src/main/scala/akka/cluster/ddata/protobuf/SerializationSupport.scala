@@ -17,8 +17,8 @@ import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.serialization._
-import akka.protobuf.ByteString
-import akka.protobuf.MessageLite
+import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.MessageLite
 import akka.cluster.ddata.VersionVector
 import akka.util.ccompat._
 

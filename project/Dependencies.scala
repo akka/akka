@@ -95,6 +95,8 @@ object Dependencies {
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
 
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0"
+
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
