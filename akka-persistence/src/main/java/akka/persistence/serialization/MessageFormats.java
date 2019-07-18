@@ -163,7 +163,7 @@ public final class MessageFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new PersistentMessage();
     }
 
@@ -1665,7 +1665,7 @@ public final class MessageFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new PersistentPayload();
     }
 
@@ -2365,7 +2365,7 @@ public final class MessageFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new AtomicWrite();
     }
 
@@ -3173,7 +3173,7 @@ public final class MessageFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new AtLeastOnceDeliverySnapshot();
     }
 
@@ -3309,7 +3309,7 @@ public final class MessageFormats {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new UnconfirmedDelivery();
       }
 
@@ -4989,7 +4989,7 @@ public final class MessageFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new PersistentStateChangeEvent();
     }
 
@@ -5871,7 +5871,7 @@ public final class MessageFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new PersistentFSMSnapshot();
     }
 

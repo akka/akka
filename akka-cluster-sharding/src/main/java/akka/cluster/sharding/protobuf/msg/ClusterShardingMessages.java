@@ -125,7 +125,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new CoordinatorState();
     }
 
@@ -285,7 +285,7 @@ public final class ClusterShardingMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new ShardEntry();
       }
 
@@ -2186,7 +2186,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ActorRefMessage();
     }
 
@@ -2782,7 +2782,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ShardIdMessage();
     }
 
@@ -3393,7 +3393,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ShardHomeAllocated();
     }
 
@@ -4161,7 +4161,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ShardHome();
     }
 
@@ -4919,7 +4919,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new EntityState();
     }
 
@@ -5523,7 +5523,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new EntityStarted();
     }
 
@@ -6119,7 +6119,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new EntityStopped();
     }
 
@@ -6724,7 +6724,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ShardStats();
     }
 
@@ -7434,7 +7434,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ShardRegionStats();
     }
 
@@ -8389,7 +8389,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new MapFieldEntry();
     }
 
@@ -9049,7 +9049,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new GetClusterShardingStats();
     }
 
@@ -9583,7 +9583,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ClusterShardingStats();
     }
 
@@ -10383,7 +10383,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ClusterShardingStatsEntry();
     }
 
@@ -11225,7 +11225,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new CurrentRegions();
     }
 
@@ -12058,7 +12058,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Address();
     }
 
@@ -13057,7 +13057,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new StartEntity();
     }
 
@@ -13668,7 +13668,7 @@ public final class ClusterShardingMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new StartEntityAck();
     }
 

@@ -91,7 +91,7 @@ public final class FlightAppModels {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new SeatReserved();
     }
 

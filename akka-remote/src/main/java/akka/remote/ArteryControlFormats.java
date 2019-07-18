@@ -66,7 +66,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Quarantined();
     }
 
@@ -911,7 +911,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new MessageWithAddress();
     }
 
@@ -1569,7 +1569,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new HandshakeReq();
     }
 
@@ -2487,7 +2487,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new CompressionTableAdvertisement();
     }
 
@@ -3706,7 +3706,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new CompressionTableAdvertisementAck();
     }
 
@@ -4474,7 +4474,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new SystemMessageEnvelope();
     }
 
@@ -5465,7 +5465,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new SystemMessageDeliveryAck();
     }
 
@@ -6238,7 +6238,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Address();
     }
 
@@ -7249,7 +7249,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new UniqueAddress();
     }
 
@@ -7977,7 +7977,7 @@ public final class ArteryControlFormats {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ArteryHeartbeatRsp();
     }
 

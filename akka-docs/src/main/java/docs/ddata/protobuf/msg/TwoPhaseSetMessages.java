@@ -80,7 +80,7 @@ public final class TwoPhaseSetMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new TwoPhaseSet();
     }
 
@@ -861,7 +861,7 @@ public final class TwoPhaseSetMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new TwoPhaseSet2();
     }
 

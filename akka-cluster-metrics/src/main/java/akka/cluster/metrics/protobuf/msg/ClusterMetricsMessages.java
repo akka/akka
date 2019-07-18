@@ -80,7 +80,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new MetricsGossipEnvelope();
     }
 
@@ -1069,7 +1069,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new MetricsGossip();
     }
 
@@ -2417,7 +2417,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new NodeMetrics();
     }
 
@@ -2676,7 +2676,7 @@ public final class ClusterMetricsMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Number();
       }
 
@@ -3450,7 +3450,7 @@ public final class ClusterMetricsMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new EWMA();
       }
 
@@ -4081,7 +4081,7 @@ public final class ClusterMetricsMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Metric();
       }
 
@@ -5892,7 +5892,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Address();
     }
 
@@ -6939,7 +6939,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new AdaptiveLoadBalancingPool();
     }
 
@@ -8001,7 +8001,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new MetricsSelector();
     }
 
@@ -8782,7 +8782,7 @@ public final class ClusterMetricsMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new MixMetricsSelector();
     }
 

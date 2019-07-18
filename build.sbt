@@ -13,7 +13,6 @@ addCommandAlias(
   name = "fixall",
   value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
 
-import Keys.unmanagedJars
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
@@ -259,7 +258,12 @@ lazy val docs = akkaModule("akka-docs")
   .disablePlugins(ScalafixPlugin)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
-  .dependsOn(actor, actorTyped % "optional->compile", stream % "optional->compile" ,actorTests % "test->test", testkit % "test->test")
+  .dependsOn(
+    actor,
+    actorTyped % "optional->compile",
+    stream % "optional->compile",
+    actorTests % "test->test",
+    testkit % "test->test")
   .settings(Dependencies.jackson)
   .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
   .settings(OSGi.jackson)
@@ -324,16 +328,14 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
   .settings(
-    libraryDependencies += Dependencies.Compile.protobufRuntime % "runtime",
+    libraryDependencies += Dependencies.Compile.protobufRuntime,
     assemblyShadeRules in assembly := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
-          .inLibrary(Dependencies.Compile.protobufRuntime % "runtime")),
+          .inLibrary(Dependencies.Compile.protobufRuntime)),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
-    publishArtifact in (Compile, packageDoc) := false, // no source files, no docs
-    publishArtifact in (Compile, packageSrc) := false,
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
     packageBin in Compile := (assembly in Compile).value, // package by running assembly
@@ -357,7 +359,6 @@ lazy val remote =
     .settings(OSGi.remote)
     .settings(Protobuf.settings)
     .settings(parallelExecution in Test := false)
-    .settings() // for intellij
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(

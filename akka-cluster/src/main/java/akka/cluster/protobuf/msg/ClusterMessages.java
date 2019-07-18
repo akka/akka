@@ -322,7 +322,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Join();
     }
 
@@ -1150,7 +1150,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Welcome();
     }
 
@@ -1999,7 +1999,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new InitJoin();
     }
 
@@ -2609,7 +2609,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new InitJoinAck();
     }
 
@@ -3463,7 +3463,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ConfigCheck();
     }
 
@@ -4271,7 +4271,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Heartbeat();
     }
 
@@ -5096,7 +5096,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new HeartBeatResponse();
     }
 
@@ -5924,7 +5924,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new GossipEnvelope();
     }
 
@@ -6891,7 +6891,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new GossipStatus();
     }
 
@@ -8034,7 +8034,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Gossip();
     }
 
@@ -10314,7 +10314,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new GossipOverview();
     }
 
@@ -11329,7 +11329,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ObserverReachability();
     }
 
@@ -12308,7 +12308,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new SubjectReachability();
     }
 
@@ -13016,7 +13016,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Tombstone();
     }
 
@@ -13656,7 +13656,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Member();
     }
 
@@ -14556,7 +14556,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new VectorClock();
     }
 
@@ -14673,7 +14673,7 @@ public final class ClusterMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Version();
       }
 
@@ -16056,7 +16056,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Empty();
     }
 
@@ -16538,7 +16538,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Address();
     }
 
@@ -17559,7 +17559,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new UniqueAddress();
     }
 
@@ -18399,7 +18399,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ClusterRouterPool();
     }
 
@@ -19257,7 +19257,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Pool();
     }
 
@@ -20071,7 +20071,7 @@ public final class ClusterMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new ClusterRouterPoolSettings();
     }
 

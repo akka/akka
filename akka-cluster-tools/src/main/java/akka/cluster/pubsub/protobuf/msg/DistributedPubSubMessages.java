@@ -74,7 +74,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Status();
     }
 
@@ -195,7 +195,7 @@ public final class DistributedPubSubMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Version();
       }
 
@@ -1685,7 +1685,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Delta();
     }
 
@@ -1818,7 +1818,7 @@ public final class DistributedPubSubMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Entry();
       }
 
@@ -2681,7 +2681,7 @@ public final class DistributedPubSubMessages {
       @java.lang.Override
       @SuppressWarnings({"unused"})
       protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
         return new Bucket();
       }
 
@@ -4482,7 +4482,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Address();
     }
 
@@ -5501,7 +5501,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Send();
     }
 
@@ -6414,7 +6414,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new SendToAll();
     }
 
@@ -7318,7 +7318,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Publish();
     }
 
@@ -8122,7 +8122,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new SendToOneSubscriber();
     }
 
@@ -8780,7 +8780,7 @@ public final class DistributedPubSubMessages {
     @java.lang.Override
     @SuppressWarnings({"unused"})
     protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
       return new Payload();
     }
 

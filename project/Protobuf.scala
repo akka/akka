@@ -65,7 +65,13 @@ object Protobuf {
               tmp,
               dst,
               _ => true,
-              transformFile(_.replace("com.google.protobuf", "akka.protobufv3.internal")),
+              transformFile(
+                _.replace("com.google.protobuf", "akka.protobufv3.internal")
+                // this is the one thing that protobufGenerate doesn't fully qualify and causes
+                // api doc generation to fail
+                  .replace(
+                    "UnusedPrivateParameter",
+                    "akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter")),
               cache,
               log)
         }
