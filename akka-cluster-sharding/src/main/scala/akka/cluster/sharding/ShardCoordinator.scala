@@ -439,10 +439,10 @@ object ShardCoordinator {
 
     def receive = {
       case BeginHandOffAck(`shard`) =>
-        log.debug("BeginHandOffAck for shard [{}] received from {}", shard, sender())
+        log.debug("BeginHandOffAck for shard [{}] received from {}.", shard, sender())
         acked(sender())
       case Terminated(shardRegion) =>
-        log.debug("ShardRegion {} terminated while waiting for BeginHandOffAck for shard [{}]", shardRegion, shard)
+        log.debug("ShardRegion {} terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
         acked(shardRegion)
       case ReceiveTimeout => done(ok = false)
     }
@@ -451,7 +451,7 @@ object ShardCoordinator {
       context.unwatch(shardRegion)
       remaining -= shardRegion
       if (remaining.isEmpty) {
-        log.debug("All shard regions acked, handing off shard [{}]", shard)
+        log.debug("All shard regions acked, handing off shard [{}].", shard)
         from ! HandOff(shard)
         context.become(stoppingShard, discardOld = true)
       }
@@ -474,9 +474,10 @@ object ShardCoordinator {
       handOffTimeout: FiniteDuration,
       regions: Set[ActorRef],
       // Note: must be a subset of regions
-      shuttingDownRegions: Set[ActorRef]): Props =
+      shuttingDownRegions: Set[ActorRef]): Props = {
+    require(shuttingDownRegions.size <= regions.size, "'shuttingDownRegions' must be a subset of 'regions'.")
     Props(new RebalanceWorker(shard, from, handOffTimeout, regions, shuttingDownRegions))
-
+  }
 }
 
 /**
