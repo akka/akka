@@ -35,7 +35,7 @@ Scala
 Java
 :   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #other-imports }
 
-And an @scala[object]@java[class] to hold your code, for example:
+And @scala[an object]@java[a class] to hold your code, for example:
 
 Scala
 :   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #main-app }
