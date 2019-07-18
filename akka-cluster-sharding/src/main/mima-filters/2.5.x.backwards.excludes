@@ -12,3 +12,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.prot
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailed")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedBytes")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedCount")
+
+# Upgrade to protobuf 3
+ProblemFilters.exclude[Problem]("akka.cluster.sharding.protobuf.msg.*")

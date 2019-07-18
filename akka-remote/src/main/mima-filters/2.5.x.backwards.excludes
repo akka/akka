@@ -32,3 +32,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.Inbound
 
 # #22333 Disable Java serialization
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ThrowableSupport.stackTraceElementBuilder")
+
+# Upgrade to protobuf 3
+ProblemFilters.exclude[Problem]("akka.remote.serialization.ArteryMessageSerializer*")
+ProblemFilters.exclude[Problem]("akka.remote.*Formats*")
