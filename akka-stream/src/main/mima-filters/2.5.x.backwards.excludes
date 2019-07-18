@@ -154,3 +154,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutOutpu
 # #24304 stack overflow in StreamConverters
 ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.CollectorState")
 ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.ReducerState")
+
+# Protobuf 3
+ProblemFilters.exclude[Problem]("akka.stream.StreamRefMessages*")
