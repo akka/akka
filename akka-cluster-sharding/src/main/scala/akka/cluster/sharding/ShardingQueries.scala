@@ -59,11 +59,9 @@ private[sharding] object ShardingQueries {
      * @tparam B
      */
     def apply[A: ClassTag, B: ClassTag](ps: Seq[Either[A, B]], total: Int): ShardsQueryResult[A, B] = {
-      val (t, r) = partition(ps)(func)
+      val (t, r) = partition(ps)(identity)
       ShardsQueryResult(t, r, total, ps.size)
     }
-
-    def func[T] = (t: T) => t
 
     def partition[T, A, B](ps: Seq[T])(f: T => Either[A, B]): (Seq[A], Seq[B]) = {
       val (a, b) = ps.foldLeft((Nil: Seq[A], Nil: Seq[B]))((xs, y) => prepend(xs, f(y)))

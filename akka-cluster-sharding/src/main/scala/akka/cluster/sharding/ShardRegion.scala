@@ -24,7 +24,6 @@ import akka.cluster.MemberStatus
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.Shard.ShardStats
-import akka.pattern.AskTimeoutException
 import akka.pattern.{ ask, pipe }
 import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 
@@ -749,9 +748,6 @@ private[akka] class ShardRegion(
           qr.timedout.map(ShardRegion.ShardState(_, Set.empty))
         CurrentShardRegionState(state.toSet)
       }
-      .recover {
-        case _: AskTimeoutException => CurrentShardRegionState(Set.empty)
-      }
       .pipeTo(ref)
   }
 
@@ -761,11 +757,6 @@ private[akka] class ShardRegion(
         // TODO add ShardRegionStats field for timeouts (proto): ShardRegion.ShardRegionStats(stats, timeouts.tosSet)
         // Until then
         ShardRegionStats(qr.responses.map(stats => (stats.shardId, stats.entityCount)).toMap ++ qr.timedout.map((_, 0)))
-      }
-      .recover {
-        case _: AskTimeoutException =>
-          log.warning("{} shards queried but timed out after {}.", shards.size, settings.shardRegionQueryTimeout)
-          ShardRegionStats(Map.empty)
       }
       .pipeTo(ref)
   }
@@ -778,7 +769,7 @@ private[akka] class ShardRegion(
    *
    * Logs a warning if any of the group timed out.
    *
-   * To check subset unresponsive: {{{ queryShards[T](shards.filterKeys(u.contains), T) }}}
+   * To check subset unresponsive: {{{ queryShards[T](shards.filterKeys(u.contains), shardQuery) }}}
    */
   def queryShards[T: ClassTag](shards: Map[ShardId, ActorRef], msg: Any): Future[ShardsQueryResult[ShardId, T]] = {
     implicit val timeout: Timeout = settings.shardRegionQueryTimeout
