@@ -765,7 +765,7 @@ private[akka] class ShardRegion(
    * Query all or a subset of shards, e.g. unresponsive shards that initially timed out.
    * If the number of `shards` are less than this.shards.size, this could be a retry.
    * Returns a partitioned set of any shards that may have not replied within the
-   * timeout and shards did reply, to provide retry on only that subset.
+   * timeout and shards that did reply, to provide retry on only that subset.
    *
    * Logs a warning if any of the group timed out.
    *
