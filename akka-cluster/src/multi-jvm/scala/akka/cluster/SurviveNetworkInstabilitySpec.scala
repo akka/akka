@@ -287,7 +287,7 @@ abstract class SurviveNetworkInstabilitySpec
         system.actorOf(Props[Watcher], "watcher")
 
         // undelivered system messages in RemoteChild on third should trigger QuarantinedEvent
-        system.eventStream.subscribe(testActor, classOf[QuarantinedEvent])
+        system.eventStream.subscribe(testActor, quarantinedEventClass)
       }
       enterBarrier("watcher-created")
 
@@ -312,7 +312,7 @@ abstract class SurviveNetworkInstabilitySpec
         within(10.seconds) {
           quarantinedEventFrom(expectMsgClass(quarantinedEventClass)) should ===(address(second))
         }
-        system.eventStream.unsubscribe(testActor, classOf[QuarantinedEvent])
+        system.eventStream.unsubscribe(testActor, quarantinedEventClass)
       }
       enterBarrier("quarantined")
 
