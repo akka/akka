@@ -40,7 +40,7 @@ class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends Mu
   val iterationCount = 10
 
   protected val baseConfig = ConfigFactory.parseString(s"""
-      akka.remote.use-unsafe-remote-features-without-cluster = $useUnsafe
+      akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
       akka.remote.artery.advanced.flight-recorder.enabled = off
@@ -351,7 +351,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     }
   }
 
-  s"Deploy routers with expected behavior if 'akka.remote.use-unsafe-remote-features-without-cluster=$useUnsafe'" must {
+  s"Deploy routers with expected behavior if 'akka.remote.use-unsafe-remote-features-outside-cluster=$useUnsafe'" must {
     "deployments" in {
       runOn(first, second, third, fourth) {
         val deployment1 = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(List("service-hello"))

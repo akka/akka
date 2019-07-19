@@ -333,7 +333,7 @@ private[akka] class RemoteActorRefProvider(
     if (!settings.HasCluster) {
       if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
         log.info(
-          "Akka Cluster not in use - enabling unsafe features anyway because `akka.remote.use-unsafe-remote-features-without-cluster` has been enabled.")
+          "Akka Cluster not in use - enabling unsafe features anyway because `akka.remote.use-unsafe-remote-features-outside-cluster` has been enabled.")
       else
         log.warning("Akka Cluster not in use - Using Akka Cluster is recommended if you need remote watch and deploy.")
     }

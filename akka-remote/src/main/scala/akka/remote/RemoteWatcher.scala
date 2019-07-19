@@ -202,7 +202,7 @@ private[akka] class RemoteWatcher(
     }
   }
 
-  /** Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-without-cluster`
+  /** Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-outside-cluster`
    * is enabled. Can be overridden when using RemoteWatcher as a superclass.
    */
   @InternalApi protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {

@@ -24,7 +24,7 @@ class RemoteDeploymentDeathWatchMultiJvmSpec(artery: Boolean) extends MultiNodeC
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      akka.remote.use-unsafe-remote-features-without-cluster = on
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOn(second, """/hello.remote = "@third@" """)

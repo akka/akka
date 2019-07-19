@@ -271,15 +271,20 @@ By default, these remoting features are disabled when not using Akka Cluster:
 * Remote Deployment: falls back to creating a local actor
 * Remote Watch: ignores the watch and unwatch request, and `Terminated` will not be delivered when the remote actor is stopped or if a remote node crashes
 
-When used with Cluster, all previous behavior is the same except a remote watch of an actor is no longer possible before a node joins a cluster, only after.
+When used within a Cluster, all previous behavior is the same except a remote watch of an actor is no longer possible before a node joins a cluster, only after.
 
-To optionally enable them without Cluster, if you understand
-the @ref[consequences](../remoting-artery.md#quarantine), set
+DeathWatch of a node outside a Cluster may have unexpected @ref[consequences](../remoting-artery.md#quarantine), such as quarantining.
+Typically this is when using plain Remoting without the Cluster provider.
+Failure detection between nodes, that are members of the same Cluster, do not have that shortcoming.
+Some designs use the Cluster provider and want to watch a node that is not a member. 
+
+To optionally enable a watch without Akka Cluster or across a Cluster boundary between Cluster and non Cluster, 
+knowing the consequences, all watchers (cluster as well as remote) need to set
 ```
-akka.remote.use-unsafe-remote-features-without-cluster = on`.
+akka.remote.use-unsafe-remote-features-outside-cluster = on`.
 ```
 
-When used without Cluster
+When enabled
 
 * An initial warning is logged on startup of `RemoteActorRefProvider`
 * A warning will be logged on remote watch attempts, which you can suppress by setting
