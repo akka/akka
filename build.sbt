@@ -350,6 +350,7 @@ lazy val remote =
       actor,
       stream,
       protobufV3,
+      protobuf % "test",
       actorTests % "test->test",
       testkit % "test->test",
       streamTestkit % "test",
