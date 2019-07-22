@@ -4,6 +4,7 @@
 
 package akka.actor.typed
 
+import akka.actor.ActorRefWithCell
 import akka.actor.ExtendedActorSystem
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -49,8 +50,16 @@ abstract class ActorRefResolver extends Extension {
 
   private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
 
-  override def toSerializationFormat[T](ref: ActorRef[T]): String =
-    ref.path.toSerializationFormatWithAddress(untypedSystem.provider.getDefaultAddress)
+  override def toSerializationFormat[T](ref: ActorRef[T]): String = {
+    val originalSystem: ExtendedActorSystem = ref.toUntyped match {
+      case a: ActorRefWithCell => a.underlying.system.asInstanceOf[ExtendedActorSystem]
+      case _                   => null
+    }
+    originalSystem match {
+      case null     => ref.path.toSerializationFormatWithAddress(untypedSystem.provider.getDefaultAddress)
+      case original => ref.path.toSerializationFormatWithAddress(original.provider.getDefaultAddress)
+    }
+  }
 
   override def resolveActorRef[T](serializedActorRef: String): ActorRef[T] =
     untypedSystem.provider.resolveActorRef(serializedActorRef)
