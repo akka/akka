@@ -3,3 +3,7 @@ ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
 
 # #25191
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")
+
+# #27299 Prepare to separate cluster sharding readiness from shards queries #27360
+# askAllShards was an internal function, renamed and changed to query all or a subset of shards
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.askAllShards")

@@ -8,10 +8,11 @@ import java.net.URLEncoder
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
+
+import akka.util.ccompat.JavaConverters._
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem

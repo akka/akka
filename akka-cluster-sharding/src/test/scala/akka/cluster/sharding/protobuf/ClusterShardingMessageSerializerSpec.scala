@@ -5,13 +5,16 @@
 package akka.cluster.sharding.protobuf
 
 import scala.concurrent.duration._
+
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
 import akka.actor.Props
+import akka.cluster.sharding.Shard
+import akka.cluster.sharding.ShardCoordinator
+import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.{ Shard, ShardCoordinator, ShardRegion }
 import akka.serialization.SerializationExtension
+import akka.testkit.AkkaSpec
 
 class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   import ShardCoordinator.Internal._
