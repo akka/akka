@@ -446,5 +446,5 @@ is a list of additional conventions:
 * Incoming messages to an actor are typically called commands, and therefore the super type of all
   messages that an actor can handle is typically @scala[`sealed trait Command`]@java[`interface Command {}`].
 
-* Use past tense for the events persisted by an `EventSourcedBehavior` since those represent facts that has happened,
-  e.g. `Incremented`.
+* Use past tense for the events persisted by an `EventSourcedBehavior` since those represent facts that have happened,
+  for example `Incremented`.
