@@ -207,11 +207,14 @@ class TlsTcpWithHostnameVerificationSpec
       val rootB = RootActorPath(addressB)
 
       systemB.actorOf(TestActors.echoActorProps, "echo")
+      // The detailed warning message is either 'General SSLEngine problem'
+      // or 'No subject alternative names matching IP address 127.0.0.1 found'
+      // depending on JRE version.
       EventFilter
         .warning(
           pattern =
             "outbound connection to \\[akka://systemB@127.0.0.1:.*" +
-            "Upstream failed, cause: SSLHandshakeException: General SSLEngine problem",
+            "Upstream failed, cause: SSLHandshakeException: .*",
           occurrences = 3)
         .intercept {
           system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
