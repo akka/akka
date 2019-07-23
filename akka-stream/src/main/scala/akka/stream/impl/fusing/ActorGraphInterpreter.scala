@@ -19,7 +19,6 @@ import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
 import akka.stream.snapshot._
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
-import com.github.ghik.silencer.silent
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
@@ -219,7 +218,7 @@ import scala.util.control.NonFatal
         upstreamCompleted = true
         tryCancel(subscription, downstreamCanceled.get)
       } else if (upstream != null) { // reactive streams spec 2.5
-        tryCancel(subscription, new IllegalStateException("Publisher was already subscribed.")) // FIXME: add exception subtype?
+        tryCancel(subscription, new IllegalStateException("Publisher can only be subscribed once."))
       } else {
         upstream = subscription
         // Prefetch
@@ -363,7 +362,9 @@ import scala.util.control.NonFatal
     private var downstreamDemand: Long = 0L
     // This flag is only used if complete/fail is called externally since this op turns into a Finished one inside the
     // interpreter (i.e. inside this op this flag has no effects since if it is completed the op will not be invoked)
-    private var downstreamCompleted = false
+    private[this] var downstreamCompletionCause: Option[Throwable] = None
+    def downstreamCompleted: Boolean = downstreamCompletionCause.isDefined
+
     // when upstream failed before we got the exposed publisher
     private var upstreamCompleted: Boolean = false
 
@@ -392,11 +393,10 @@ import scala.util.control.NonFatal
 
     setHandler(in, this)
 
-    @silent // FIXME: propagate downstreamCompleted if needed
     override def onPush(): Unit = {
       try {
         onNext(grab(in))
-        if (downstreamCompleted) cancel(in)
+        if (downstreamCompleted) cancel(in, downstreamCompletionCause.get)
         else if (downstreamDemand > 0) pull(in)
       } catch {
         case s: SpecViolation => shell.tryAbort(s)
@@ -446,7 +446,7 @@ import scala.util.control.NonFatal
     }
 
     def cancel(cause: Throwable): Unit = {
-      downstreamCompleted = true
+      downstreamCompletionCause = Some(cause)
       subscriber = null
       publisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
       cancel(in, cause)
