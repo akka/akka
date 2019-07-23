@@ -1805,7 +1805,7 @@ trait OutHandler {
   def onPull(): Unit
 
   // Hack to make sure that old `onDownstreamFinish` can be called without losing the cause in the default implementation
-  private[this] var lastCancellationCause: Throwable = _
+  private[this] var _lastCancellationCause: Throwable = _
 
   /**
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
@@ -1814,7 +1814,7 @@ trait OutHandler {
   @throws(classOf[Exception])
   //@deprecated("Override method that provides cause.", since = "2.6.0")
   def onDownstreamFinish(): Unit =
-    GraphInterpreter.currentInterpreter.activeStage.cancelStage(lastCancellationCause)
+    GraphInterpreter.currentInterpreter.activeStage.cancelStage(_lastCancellationCause)
 
   /**
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
@@ -1824,9 +1824,9 @@ trait OutHandler {
   @throws(classOf[Exception])
   def onDownstreamFinish(cause: Throwable): Unit =
     try {
-      lastCancellationCause = cause
+      _lastCancellationCause = cause
       onDownstreamFinish()
-    } finally lastCancellationCause = null
+    } finally _lastCancellationCause = null
 }
 
 /**
