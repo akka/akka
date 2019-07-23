@@ -179,7 +179,7 @@ class StashBufferSpec extends WordSpec with Matchers {
             behavior(state + message)
           }
         }
-      
+
       // unstash will only process at most the number of messages in the buffer when
       // the call is made, any newly added messages have to be processed by another
       // unstash call.
