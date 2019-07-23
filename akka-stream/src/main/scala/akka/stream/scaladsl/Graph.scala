@@ -22,7 +22,6 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.stream.ActorAttributes.SupervisionStrategy
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -144,7 +143,6 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
               } else pendingQueue.enqueue(i)
             }
 
-            @silent // FIXME
             override def onUpstreamFinish() =
               if (eagerComplete) {
                 var ix2 = 0
@@ -359,7 +357,6 @@ final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComp
                 }
               }
 
-              @silent // FIXME
               override def onUpstreamFinish(): Unit = {
                 if (eagerComplete) {
                   in.foreach(cancel(_))
@@ -1361,7 +1358,6 @@ private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]
       }
 
       // for the primary inHandler
-      @silent // FIXME
       override def onPush(): Unit = {
         if (!primaryPushed) {
           primaryPushed = true
