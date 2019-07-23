@@ -661,8 +661,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   case object RequestOneScheduledBeforeMaterialization extends CommandScheduledBeforeMaterialization(RequestOne)
 
   /** A Cancel command was scheduled before materialization */
-  case object CancelScheduledBeforeMaterialization
-      extends CommandScheduledBeforeMaterialization(Cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)) // FIXME?
+  case class CancelScheduledBeforeMaterialization(cause: Throwable)
+      extends CommandScheduledBeforeMaterialization(Cancel(cause))
 
   /** Steady state: sink has been materialized, commands can be delivered through the callback */
   // Represented in unwrapped form as AsyncCallback[Command] directly to prevent a level of indirection
@@ -688,7 +688,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   private val status = new AtomicReference[ /* State */ AnyRef](Uninitialized)
 
   def pullSubstream(): Unit = dispatchCommand(RequestOneScheduledBeforeMaterialization)
-  def cancelSubstream(): Unit = dispatchCommand(CancelScheduledBeforeMaterialization) // FIXME
+  def cancelSubstream(): Unit = cancelSubstream(SubscriptionWithCancelException.NoMoreElementsNeeded)
+  def cancelSubstream(cause: Throwable): Unit = dispatchCommand(CancelScheduledBeforeMaterialization(cause))
 
   @tailrec
   private def dispatchCommand(newState: CommandScheduledBeforeMaterialization): Unit =
@@ -698,7 +699,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         if (!status.compareAndSet(Uninitialized, newState))
           dispatchCommand(newState) // changed to materialized in the meantime
 
-      case RequestOneScheduledBeforeMaterialization if newState == CancelScheduledBeforeMaterialization =>
+      case RequestOneScheduledBeforeMaterialization if newState.isInstanceOf[CancelScheduledBeforeMaterialization] =>
         // cancellation is allowed to replace pull
         if (!status.compareAndSet(RequestOneScheduledBeforeMaterialization, newState))
           dispatchCommand(RequestOneScheduledBeforeMaterialization)

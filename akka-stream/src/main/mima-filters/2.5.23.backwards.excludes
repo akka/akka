@@ -14,6 +14,13 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubS
 ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.toString")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#ActorOutputBoundary.cancel")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#BatchingActorInputBoundary.cancel")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.SubSink$CancelScheduledBeforeMaterialization$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#CancelScheduledBeforeMaterialization.productElement")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#CancelScheduledBeforeMaterialization.productArity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#CancelScheduledBeforeMaterialization.canEqual")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#CancelScheduledBeforeMaterialization.productIterator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#CancelScheduledBeforeMaterialization.productPrefix")
+ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.fusing.SubSink#CancelScheduledBeforeMaterialization.toString")
 
 # added private[this] field to public class, shouldn't have more impact than a potential naming clash
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.OutHandler.akka$stream$stage$OutHandler$$_lastCancellationCause")
