@@ -523,10 +523,6 @@ private[akka] object Running {
       @unused event: Any,
       @unused sequenceNr: Long): Unit = ()
   @InternalStableApi
-  private[akka] def onWriteSuccess(
-    @unused ctx: ActorContext[_],
-    @unused event: PersistentRepr): Unit = ()
-  private[akka] def onWriteDone(
-    @unused ctx: ActorContext[_],
-    @unused event: PersistentRepr): Unit = ()
+  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
 }

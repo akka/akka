@@ -58,9 +58,9 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   @InternalStableApi
   private[akka] def onWriteInitiated(
-    @unused ctx: ActorContext[_],
-    @unused cmd: Any,
-    @unused repr: PersistentRepr): Unit = ()
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
       state: Running.RunningState[S],
