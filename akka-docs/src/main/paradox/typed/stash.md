@@ -15,7 +15,7 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 Stashing enables an actor to temporarily buffer all or some messages that cannot or should not
 be handled using the actor's current behavior.
 
-A typical example when this is useful is if the actor has too load some initial state or initialize
+A typical example when this is useful is if the actor has to load some initial state or initialize
 some resources before it can accept the first real message. Another example is when the actor
 is waiting for something to complete before processing next message.
 
