@@ -393,7 +393,6 @@ abstract class MultiNodeSpec(
   /**
    * Enter the named barriers in the order given. Use the remaining duration from
    * the innermost enclosing `within` block or the default `BarrierTimeout`.
-   *
    */
   def enterBarrier(name: String*): Unit =
     testConductor.enter(
