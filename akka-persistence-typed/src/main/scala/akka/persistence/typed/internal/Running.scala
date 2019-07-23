@@ -272,7 +272,11 @@ private[akka] object Running {
         else {
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
-            tryUnstashOne(applySideEffects(sideEffects, state))
+            val newState = applySideEffects(sideEffects, state)
+
+            onWriteDone(setup.context, p)
+
+            tryUnstashOne(newState)
           } else {
             internalSaveSnapshot(state)
             storingSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
@@ -522,5 +526,7 @@ private[akka] object Running {
   private[akka] def onWriteSuccess(
     @unused ctx: ActorContext[_],
     @unused event: PersistentRepr): Unit = ()
-
+  private[akka] def onWriteDone(
+    @unused ctx: ActorContext[_],
+    @unused event: PersistentRepr): Unit = ()
 }
