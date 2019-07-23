@@ -55,6 +55,7 @@ message InitJoinAck {
 }
 
 message ConfigCheck {
+  // Don't use extensions, removed in proto3
   extensions 100 to 102;
 
   enum Type {
@@ -65,25 +66,6 @@ message ConfigCheck {
   required Type type = 1;
 
   optional string clusterConfig = 2;
-}
-
-message UncheckedConfig {
-  extend ConfigCheck {
-    required UncheckedConfig checkConfig = 100;
-  }
-}
-
-message IncompatibleConfig {
-  extend ConfigCheck {
-    required IncompatibleConfig checkConfig = 101;
-  }
-}
-
-message CompatibleConfig {
-  extend ConfigCheck {
-    required CompatibleConfig checkConfig = 102;
-  }
-  required string clusterConfig = 2;
 }
 
 /**

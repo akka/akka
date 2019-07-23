@@ -11,9 +11,6 @@ public final class ClusterMessages {
   private ClusterMessages() {}
   public static void registerAllExtensions(
       akka.protobuf.ExtensionRegistry registry) {
-    registry.add(akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.checkConfig);
-    registry.add(akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.checkConfig);
-    registry.add(akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.checkConfig);
   }
   /**
    * Protobuf enum {@code ReachabilityStatus}
@@ -3597,1142 +3594,6 @@ public final class ClusterMessages {
     }
 
     // @@protoc_insertion_point(class_scope:ConfigCheck)
-  }
-
-  public interface UncheckedConfigOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
-  }
-  /**
-   * Protobuf type {@code UncheckedConfig}
-   */
-  public static final class UncheckedConfig extends
-      akka.protobuf.GeneratedMessage
-      implements UncheckedConfigOrBuilder {
-    // Use UncheckedConfig.newBuilder() to construct.
-    private UncheckedConfig(akka.protobuf.GeneratedMessage.Builder<?> builder) {
-      super(builder);
-      this.unknownFields = builder.getUnknownFields();
-    }
-    private UncheckedConfig(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final UncheckedConfig defaultInstance;
-    public static UncheckedConfig getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public UncheckedConfig getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
-    @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
-      return this.unknownFields;
-    }
-    private UncheckedConfig(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_UncheckedConfig_descriptor;
-    }
-
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_UncheckedConfig_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.class, akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.Builder.class);
-    }
-
-    public static akka.protobuf.Parser<UncheckedConfig> PARSER =
-        new akka.protobuf.AbstractParser<UncheckedConfig>() {
-      public UncheckedConfig parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new UncheckedConfig(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<UncheckedConfig> getParserForType() {
-      return PARSER;
-    }
-
-    private void initFields() {
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code UncheckedConfig}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfigOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_UncheckedConfig_descriptor;
-      }
-
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_UncheckedConfig_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.class, akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.Builder.class);
-      }
-
-      // Construct using akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-
-      public Builder clear() {
-        super.clear();
-        return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_UncheckedConfig_descriptor;
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig getDefaultInstanceForType() {
-        return akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.getDefaultInstance();
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig build() {
-        akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig buildPartial() {
-        akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig result = new akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig(this);
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(akka.protobuf.Message other) {
-        if (other instanceof akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig) {
-          return mergeFrom((akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig other) {
-        if (other == akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.getDefaultInstance()) return this;
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-
-      // @@protoc_insertion_point(builder_scope:UncheckedConfig)
-    }
-
-    static {
-      defaultInstance = new UncheckedConfig(true);
-      defaultInstance.initFields();
-    }
-
-    // @@protoc_insertion_point(class_scope:UncheckedConfig)
-    public static final int CHECKCONFIG_FIELD_NUMBER = 100;
-    /**
-     * <code>extend .ConfigCheck { ... }</code>
-     */
-    public static final
-      akka.protobuf.GeneratedMessage.GeneratedExtension<
-        akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck,
-        akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig> checkConfig = akka.protobuf.GeneratedMessage
-            .newMessageScopedGeneratedExtension(
-          akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.getDefaultInstance(),
-          0,
-          akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.class,
-          akka.cluster.protobuf.msg.ClusterMessages.UncheckedConfig.getDefaultInstance());
-  }
-
-  public interface IncompatibleConfigOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
-  }
-  /**
-   * Protobuf type {@code IncompatibleConfig}
-   */
-  public static final class IncompatibleConfig extends
-      akka.protobuf.GeneratedMessage
-      implements IncompatibleConfigOrBuilder {
-    // Use IncompatibleConfig.newBuilder() to construct.
-    private IncompatibleConfig(akka.protobuf.GeneratedMessage.Builder<?> builder) {
-      super(builder);
-      this.unknownFields = builder.getUnknownFields();
-    }
-    private IncompatibleConfig(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final IncompatibleConfig defaultInstance;
-    public static IncompatibleConfig getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public IncompatibleConfig getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
-    @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
-      return this.unknownFields;
-    }
-    private IncompatibleConfig(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_IncompatibleConfig_descriptor;
-    }
-
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_IncompatibleConfig_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.class, akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.Builder.class);
-    }
-
-    public static akka.protobuf.Parser<IncompatibleConfig> PARSER =
-        new akka.protobuf.AbstractParser<IncompatibleConfig>() {
-      public IncompatibleConfig parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new IncompatibleConfig(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<IncompatibleConfig> getParserForType() {
-      return PARSER;
-    }
-
-    private void initFields() {
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code IncompatibleConfig}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfigOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_IncompatibleConfig_descriptor;
-      }
-
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_IncompatibleConfig_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.class, akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.Builder.class);
-      }
-
-      // Construct using akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-
-      public Builder clear() {
-        super.clear();
-        return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_IncompatibleConfig_descriptor;
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig getDefaultInstanceForType() {
-        return akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.getDefaultInstance();
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig build() {
-        akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig buildPartial() {
-        akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig result = new akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig(this);
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(akka.protobuf.Message other) {
-        if (other instanceof akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig) {
-          return mergeFrom((akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig other) {
-        if (other == akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.getDefaultInstance()) return this;
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-
-      // @@protoc_insertion_point(builder_scope:IncompatibleConfig)
-    }
-
-    static {
-      defaultInstance = new IncompatibleConfig(true);
-      defaultInstance.initFields();
-    }
-
-    // @@protoc_insertion_point(class_scope:IncompatibleConfig)
-    public static final int CHECKCONFIG_FIELD_NUMBER = 101;
-    /**
-     * <code>extend .ConfigCheck { ... }</code>
-     */
-    public static final
-      akka.protobuf.GeneratedMessage.GeneratedExtension<
-        akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck,
-        akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig> checkConfig = akka.protobuf.GeneratedMessage
-            .newMessageScopedGeneratedExtension(
-          akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.getDefaultInstance(),
-          0,
-          akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.class,
-          akka.cluster.protobuf.msg.ClusterMessages.IncompatibleConfig.getDefaultInstance());
-  }
-
-  public interface CompatibleConfigOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
-
-    // required string clusterConfig = 2;
-    /**
-     * <code>required string clusterConfig = 2;</code>
-     */
-    boolean hasClusterConfig();
-    /**
-     * <code>required string clusterConfig = 2;</code>
-     */
-    java.lang.String getClusterConfig();
-    /**
-     * <code>required string clusterConfig = 2;</code>
-     */
-    akka.protobuf.ByteString
-        getClusterConfigBytes();
-  }
-  /**
-   * Protobuf type {@code CompatibleConfig}
-   */
-  public static final class CompatibleConfig extends
-      akka.protobuf.GeneratedMessage
-      implements CompatibleConfigOrBuilder {
-    // Use CompatibleConfig.newBuilder() to construct.
-    private CompatibleConfig(akka.protobuf.GeneratedMessage.Builder<?> builder) {
-      super(builder);
-      this.unknownFields = builder.getUnknownFields();
-    }
-    private CompatibleConfig(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final CompatibleConfig defaultInstance;
-    public static CompatibleConfig getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public CompatibleConfig getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
-    @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
-      return this.unknownFields;
-    }
-    private CompatibleConfig(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
-      int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000001;
-              clusterConfig_ = input.readBytes();
-              break;
-            }
-          }
-        }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_CompatibleConfig_descriptor;
-    }
-
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return akka.cluster.protobuf.msg.ClusterMessages.internal_static_CompatibleConfig_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.class, akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.Builder.class);
-    }
-
-    public static akka.protobuf.Parser<CompatibleConfig> PARSER =
-        new akka.protobuf.AbstractParser<CompatibleConfig>() {
-      public CompatibleConfig parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new CompatibleConfig(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<CompatibleConfig> getParserForType() {
-      return PARSER;
-    }
-
-    private int bitField0_;
-    // required string clusterConfig = 2;
-    public static final int CLUSTERCONFIG_FIELD_NUMBER = 2;
-    private java.lang.Object clusterConfig_;
-    /**
-     * <code>required string clusterConfig = 2;</code>
-     */
-    public boolean hasClusterConfig() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <code>required string clusterConfig = 2;</code>
-     */
-    public java.lang.String getClusterConfig() {
-      java.lang.Object ref = clusterConfig_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          clusterConfig_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string clusterConfig = 2;</code>
-     */
-    public akka.protobuf.ByteString
-        getClusterConfigBytes() {
-      java.lang.Object ref = clusterConfig_;
-      if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        clusterConfig_ = b;
-        return b;
-      } else {
-        return (akka.protobuf.ByteString) ref;
-      }
-    }
-
-    private void initFields() {
-      clusterConfig_ = "";
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      if (!hasClusterConfig()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(2, getClusterConfigBytes());
-      }
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getClusterConfigBytes());
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code CompatibleConfig}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfigOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_CompatibleConfig_descriptor;
-      }
-
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_CompatibleConfig_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.class, akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.Builder.class);
-      }
-
-      // Construct using akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-
-      public Builder clear() {
-        super.clear();
-        clusterConfig_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
-        return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return akka.cluster.protobuf.msg.ClusterMessages.internal_static_CompatibleConfig_descriptor;
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig getDefaultInstanceForType() {
-        return akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.getDefaultInstance();
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig build() {
-        akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig buildPartial() {
-        akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig result = new akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.clusterConfig_ = clusterConfig_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(akka.protobuf.Message other) {
-        if (other instanceof akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig) {
-          return mergeFrom((akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig other) {
-        if (other == akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.getDefaultInstance()) return this;
-        if (other.hasClusterConfig()) {
-          bitField0_ |= 0x00000001;
-          clusterConfig_ = other.clusterConfig_;
-          onChanged();
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        if (!hasClusterConfig()) {
-          
-          return false;
-        }
-        return true;
-      }
-
-      public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      // required string clusterConfig = 2;
-      private java.lang.Object clusterConfig_ = "";
-      /**
-       * <code>required string clusterConfig = 2;</code>
-       */
-      public boolean hasClusterConfig() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <code>required string clusterConfig = 2;</code>
-       */
-      public java.lang.String getClusterConfig() {
-        java.lang.Object ref = clusterConfig_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          clusterConfig_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>required string clusterConfig = 2;</code>
-       */
-      public akka.protobuf.ByteString
-          getClusterConfigBytes() {
-        java.lang.Object ref = clusterConfig_;
-        if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          clusterConfig_ = b;
-          return b;
-        } else {
-          return (akka.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string clusterConfig = 2;</code>
-       */
-      public Builder setClusterConfig(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        clusterConfig_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string clusterConfig = 2;</code>
-       */
-      public Builder clearClusterConfig() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        clusterConfig_ = getDefaultInstance().getClusterConfig();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string clusterConfig = 2;</code>
-       */
-      public Builder setClusterConfigBytes(
-          akka.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        clusterConfig_ = value;
-        onChanged();
-        return this;
-      }
-
-      // @@protoc_insertion_point(builder_scope:CompatibleConfig)
-    }
-
-    static {
-      defaultInstance = new CompatibleConfig(true);
-      defaultInstance.initFields();
-    }
-
-    // @@protoc_insertion_point(class_scope:CompatibleConfig)
-    public static final int CHECKCONFIG_FIELD_NUMBER = 102;
-    /**
-     * <code>extend .ConfigCheck { ... }</code>
-     */
-    public static final
-      akka.protobuf.GeneratedMessage.GeneratedExtension<
-        akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck,
-        akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig> checkConfig = akka.protobuf.GeneratedMessage
-            .newMessageScopedGeneratedExtension(
-          akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.getDefaultInstance(),
-          0,
-          akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.class,
-          akka.cluster.protobuf.msg.ClusterMessages.CompatibleConfig.getDefaultInstance());
   }
 
   public interface HeartbeatOrBuilder
@@ -19356,21 +18217,6 @@ public final class ClusterMessages {
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ConfigCheck_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_UncheckedConfig_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_UncheckedConfig_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_IncompatibleConfig_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_IncompatibleConfig_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_CompatibleConfig_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_CompatibleConfig_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Heartbeat_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
@@ -19479,58 +18325,52 @@ public final class ClusterMessages {
       " \002(\0162\021.ConfigCheck.Type\022\025\n\rclusterConfig" +
       "\030\002 \001(\t\"I\n\004Type\022\023\n\017UncheckedConfig\020\001\022\026\n\022I" +
       "ncompatibleConfig\020\002\022\024\n\020CompatibleConfig\020",
-      "\003*\004\010d\020g\"F\n\017UncheckedConfig23\n\013checkConfi" +
-      "g\022\014.ConfigCheck\030d \002(\0132\020.UncheckedConfig\"" +
-      "L\n\022IncompatibleConfig26\n\013checkConfig\022\014.C" +
-      "onfigCheck\030e \002(\0132\023.IncompatibleConfig\"_\n" +
-      "\020CompatibleConfig\022\025\n\rclusterConfig\030\002 \002(\t" +
-      "24\n\013checkConfig\022\014.ConfigCheck\030f \002(\0132\021.Co" +
-      "mpatibleConfig\"M\n\tHeartbeat\022\026\n\004from\030\001 \002(" +
-      "\0132\010.Address\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creat" +
-      "ionTime\030\003 \001(\022\"[\n\021HeartBeatResponse\022\034\n\004fr" +
-      "om\030\001 \002(\0132\016.UniqueAddress\022\022\n\nsequenceNr\030\002",
-      " \001(\003\022\024\n\014creationTime\030\003 \001(\003\"d\n\016GossipEnve" +
-      "lope\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to" +
-      "\030\002 \002(\0132\016.UniqueAddress\022\030\n\020serializedGoss" +
-      "ip\030\003 \002(\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016" +
-      ".UniqueAddress\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007ver" +
-      "sion\030\003 \002(\0132\014.VectorClock\"\317\001\n\006Gossip\022$\n\014a" +
-      "llAddresses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010all" +
-      "Roles\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007member" +
-      "s\030\004 \003(\0132\007.Member\022!\n\010overview\030\005 \002(\0132\017.Gos" +
-      "sipOverview\022\035\n\007version\030\006 \002(\0132\014.VectorClo",
-      "ck\022\036\n\ntombstones\030\007 \003(\0132\n.Tombstone\"S\n\016Go" +
-      "ssipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024observerRe" +
-      "achability\030\002 \003(\0132\025.ObserverReachability\"" +
-      "p\n\024ObserverReachability\022\024\n\014addressIndex\030" +
-      "\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subjectReachab" +
-      "ility\030\002 \003(\0132\024.SubjectReachability\"a\n\023Sub" +
-      "jectReachability\022\024\n\014addressIndex\030\001 \002(\005\022#" +
-      "\n\006status\030\003 \002(\0162\023.ReachabilityStatus\022\017\n\007v" +
-      "ersion\030\004 \002(\003\"4\n\tTombstone\022\024\n\014addressInde" +
-      "x\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014",
-      "addressIndex\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006" +
-      "status\030\003 \002(\0162\r.MemberStatus\022\030\n\014rolesInde" +
-      "xes\030\004 \003(\005B\002\020\001\"y\n\013VectorClock\022\021\n\ttimestam" +
-      "p\030\001 \001(\003\022&\n\010versions\030\002 \003(\0132\024.VectorClock." +
-      "Version\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n" +
-      "\ttimestamp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006" +
-      "system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003" +
-      " \002(\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueAddress\022" +
-      "\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022" +
-      "\014\n\004uid2\030\003 \001(\r\"V\n\021ClusterRouterPool\022\023\n\004po",
-      "ol\030\001 \002(\0132\005.Pool\022,\n\010settings\030\002 \002(\0132\032.Clus" +
-      "terRouterPoolSettings\"<\n\004Pool\022\024\n\014seriali" +
-      "zerId\030\001 \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 " +
-      "\002(\014\"\216\001\n\031ClusterRouterPoolSettings\022\026\n\016tot" +
-      "alInstances\030\001 \002(\r\022\033\n\023maxInstancesPerNode" +
-      "\030\002 \002(\r\022\031\n\021allowLocalRoutees\030\003 \002(\010\022\017\n\007use" +
-      "Role\030\004 \001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022Reachabi" +
-      "lityStatus\022\r\n\tReachable\020\000\022\017\n\013Unreachable" +
-      "\020\001\022\016\n\nTerminated\020\002*b\n\014MemberStatus\022\013\n\007Jo" +
-      "ining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020",
-      "\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035" +
-      "\n\031akka.cluster.protobuf.msgH\001"
+      "\003*\004\010d\020g\"M\n\tHeartbeat\022\026\n\004from\030\001 \002(\0132\010.Add" +
+      "ress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creationTime" +
+      "\030\003 \001(\022\"[\n\021HeartBeatResponse\022\034\n\004from\030\001 \002(" +
+      "\0132\016.UniqueAddress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n" +
+      "\014creationTime\030\003 \001(\003\"d\n\016GossipEnvelope\022\034\n" +
+      "\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030\002 \002(\0132" +
+      "\016.UniqueAddress\022\030\n\020serializedGossip\030\003 \002(" +
+      "\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016.Unique" +
+      "Address\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version\030\003 " +
+      "\002(\0132\014.VectorClock\"\317\001\n\006Gossip\022$\n\014allAddre",
+      "sses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010allRoles\030\002" +
+      " \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 \003(\013" +
+      "2\007.Member\022!\n\010overview\030\005 \002(\0132\017.GossipOver" +
+      "view\022\035\n\007version\030\006 \002(\0132\014.VectorClock\022\036\n\nt" +
+      "ombstones\030\007 \003(\0132\n.Tombstone\"S\n\016GossipOve" +
+      "rview\022\014\n\004seen\030\001 \003(\005\0223\n\024observerReachabil" +
+      "ity\030\002 \003(\0132\025.ObserverReachability\"p\n\024Obse" +
+      "rverReachability\022\024\n\014addressIndex\030\001 \002(\005\022\017" +
+      "\n\007version\030\004 \002(\003\0221\n\023subjectReachability\030\002" +
+      " \003(\0132\024.SubjectReachability\"a\n\023SubjectRea",
+      "chability\022\024\n\014addressIndex\030\001 \002(\005\022#\n\006statu" +
+      "s\030\003 \002(\0162\023.ReachabilityStatus\022\017\n\007version\030" +
+      "\004 \002(\003\"4\n\tTombstone\022\024\n\014addressIndex\030\001 \002(\005" +
+      "\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014address" +
+      "Index\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030" +
+      "\003 \002(\0162\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003" +
+      "(\005B\002\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003" +
+      "\022&\n\010versions\030\002 \003(\0132\024.VectorClock.Version" +
+      "\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimest" +
+      "amp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006system\030",
+      "\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n" +
+      "\010protocol\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007addr" +
+      "ess\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004uid2" +
+      "\030\003 \001(\r\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(" +
+      "\0132\005.Pool\022,\n\010settings\030\002 \002(\0132\032.ClusterRout" +
+      "erPoolSettings\"<\n\004Pool\022\024\n\014serializerId\030\001" +
+      " \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"\216\001\n" +
+      "\031ClusterRouterPoolSettings\022\026\n\016totalInsta" +
+      "nces\030\001 \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022" +
+      "\031\n\021allowLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 ",
+      "\001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022ReachabilitySta" +
+      "tus\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nT" +
+      "erminated\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000" +
+      "\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Do" +
+      "wn\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka." +
+      "cluster.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -19567,86 +18407,68 @@ public final class ClusterMessages {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ConfigCheck_descriptor,
               new java.lang.String[] { "Type", "ClusterConfig", });
-          internal_static_UncheckedConfig_descriptor =
-            getDescriptor().getMessageTypes().get(5);
-          internal_static_UncheckedConfig_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_UncheckedConfig_descriptor,
-              new java.lang.String[] { });
-          internal_static_IncompatibleConfig_descriptor =
-            getDescriptor().getMessageTypes().get(6);
-          internal_static_IncompatibleConfig_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_IncompatibleConfig_descriptor,
-              new java.lang.String[] { });
-          internal_static_CompatibleConfig_descriptor =
-            getDescriptor().getMessageTypes().get(7);
-          internal_static_CompatibleConfig_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_CompatibleConfig_descriptor,
-              new java.lang.String[] { "ClusterConfig", });
           internal_static_Heartbeat_descriptor =
-            getDescriptor().getMessageTypes().get(8);
+            getDescriptor().getMessageTypes().get(5);
           internal_static_Heartbeat_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Heartbeat_descriptor,
               new java.lang.String[] { "From", "SequenceNr", "CreationTime", });
           internal_static_HeartBeatResponse_descriptor =
-            getDescriptor().getMessageTypes().get(9);
+            getDescriptor().getMessageTypes().get(6);
           internal_static_HeartBeatResponse_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_HeartBeatResponse_descriptor,
               new java.lang.String[] { "From", "SequenceNr", "CreationTime", });
           internal_static_GossipEnvelope_descriptor =
-            getDescriptor().getMessageTypes().get(10);
+            getDescriptor().getMessageTypes().get(7);
           internal_static_GossipEnvelope_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_GossipEnvelope_descriptor,
               new java.lang.String[] { "From", "To", "SerializedGossip", });
           internal_static_GossipStatus_descriptor =
-            getDescriptor().getMessageTypes().get(11);
+            getDescriptor().getMessageTypes().get(8);
           internal_static_GossipStatus_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_GossipStatus_descriptor,
               new java.lang.String[] { "From", "AllHashes", "Version", });
           internal_static_Gossip_descriptor =
-            getDescriptor().getMessageTypes().get(12);
+            getDescriptor().getMessageTypes().get(9);
           internal_static_Gossip_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Gossip_descriptor,
               new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", "Tombstones", });
           internal_static_GossipOverview_descriptor =
-            getDescriptor().getMessageTypes().get(13);
+            getDescriptor().getMessageTypes().get(10);
           internal_static_GossipOverview_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_GossipOverview_descriptor,
               new java.lang.String[] { "Seen", "ObserverReachability", });
           internal_static_ObserverReachability_descriptor =
-            getDescriptor().getMessageTypes().get(14);
+            getDescriptor().getMessageTypes().get(11);
           internal_static_ObserverReachability_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ObserverReachability_descriptor,
               new java.lang.String[] { "AddressIndex", "Version", "SubjectReachability", });
           internal_static_SubjectReachability_descriptor =
-            getDescriptor().getMessageTypes().get(15);
+            getDescriptor().getMessageTypes().get(12);
           internal_static_SubjectReachability_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SubjectReachability_descriptor,
               new java.lang.String[] { "AddressIndex", "Status", "Version", });
           internal_static_Tombstone_descriptor =
-            getDescriptor().getMessageTypes().get(16);
+            getDescriptor().getMessageTypes().get(13);
           internal_static_Tombstone_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Tombstone_descriptor,
               new java.lang.String[] { "AddressIndex", "Timestamp", });
           internal_static_Member_descriptor =
-            getDescriptor().getMessageTypes().get(17);
+            getDescriptor().getMessageTypes().get(14);
           internal_static_Member_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Member_descriptor,
               new java.lang.String[] { "AddressIndex", "UpNumber", "Status", "RolesIndexes", });
           internal_static_VectorClock_descriptor =
-            getDescriptor().getMessageTypes().get(18);
+            getDescriptor().getMessageTypes().get(15);
           internal_static_VectorClock_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_VectorClock_descriptor,
@@ -19658,37 +18480,37 @@ public final class ClusterMessages {
               internal_static_VectorClock_Version_descriptor,
               new java.lang.String[] { "HashIndex", "Timestamp", });
           internal_static_Empty_descriptor =
-            getDescriptor().getMessageTypes().get(19);
+            getDescriptor().getMessageTypes().get(16);
           internal_static_Empty_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Empty_descriptor,
               new java.lang.String[] { });
           internal_static_Address_descriptor =
-            getDescriptor().getMessageTypes().get(20);
+            getDescriptor().getMessageTypes().get(17);
           internal_static_Address_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Address_descriptor,
               new java.lang.String[] { "System", "Hostname", "Port", "Protocol", });
           internal_static_UniqueAddress_descriptor =
-            getDescriptor().getMessageTypes().get(21);
+            getDescriptor().getMessageTypes().get(18);
           internal_static_UniqueAddress_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_UniqueAddress_descriptor,
               new java.lang.String[] { "Address", "Uid", "Uid2", });
           internal_static_ClusterRouterPool_descriptor =
-            getDescriptor().getMessageTypes().get(22);
+            getDescriptor().getMessageTypes().get(19);
           internal_static_ClusterRouterPool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ClusterRouterPool_descriptor,
               new java.lang.String[] { "Pool", "Settings", });
           internal_static_Pool_descriptor =
-            getDescriptor().getMessageTypes().get(23);
+            getDescriptor().getMessageTypes().get(20);
           internal_static_Pool_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Pool_descriptor,
               new java.lang.String[] { "SerializerId", "Manifest", "Data", });
           internal_static_ClusterRouterPoolSettings_descriptor =
-            getDescriptor().getMessageTypes().get(24);
+            getDescriptor().getMessageTypes().get(21);
           internal_static_ClusterRouterPoolSettings_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ClusterRouterPoolSettings_descriptor,
