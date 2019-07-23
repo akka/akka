@@ -31,7 +31,6 @@ trait RetrySupport {
    *   attempt = () => sendAndReceive(req),
    *   attempts = 10,
    *   delay = 2 seconds,
-   *   scheduler = context.system.scheduler
    * )
    * }}}
    */
