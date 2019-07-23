@@ -176,7 +176,7 @@ import scala.util.control.NonFatal
                 case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case state @ _ ⇒
+        case state @ _ =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(_).onSubscribe.rec($s) spec violation")
           // spec violation
           tryCancel(s, new IllegalStateException(s"VirtualProcessor in wrong state [$state]. Spec violation"))
