@@ -265,6 +265,8 @@ private[akka] object Running {
         state = state.updateLastSequenceNr(p)
         eventCounter += 1
 
+        onWriteSuccess(setup.context, p)
+
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) this
         else {
@@ -516,5 +518,9 @@ private[akka] object Running {
       @unused reason: Throwable,
       @unused event: Any,
       @unused sequenceNr: Long): Unit = ()
+  @InternalStableApi
+  private[akka] def onWriteSuccess(
+    @unused ctx: ActorContext[_],
+    @unused event: PersistentRepr): Unit = ()
 
 }

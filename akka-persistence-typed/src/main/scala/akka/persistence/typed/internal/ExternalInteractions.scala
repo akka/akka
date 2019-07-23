@@ -30,10 +30,9 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
-  @InternalStableApi
   protected def internalPersist(
-      @unused ctx: ActorContext[_],
-      @unused msg: Any,
+      ctx: ActorContext[_],
+      cmd: Any,
       state: Running.RunningState[S],
       event: EventOrTagged,
       eventAdapterManifest: String): Running.RunningState[S] = {
@@ -48,12 +47,20 @@ private[akka] trait JournalInteractions[C, E, S] {
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
+    onWriteInitiated(ctx, cmd, repr)
+
     val write = AtomicWrite(repr) :: Nil
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfUntyped, setup.writerIdentity.instanceId), setup.selfUntyped)
 
     newState
   }
+
+  @InternalStableApi
+  private[akka] def onWriteInitiated(
+    @unused ctx: ActorContext[_],
+    @unused cmd: Any,
+    @unused repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
       state: Running.RunningState[S],
