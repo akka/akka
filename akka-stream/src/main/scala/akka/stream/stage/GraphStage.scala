@@ -25,7 +25,6 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future, Promise }
 import akka.stream.impl.StreamSupervisor
-import com.github.ghik.silencer.silent
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -538,9 +537,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * It is recommended to provide a cause.
    */
-  /*@deprecated(
+  /* FIXME: Should we deprecate, cancelling without a cause? Seems like a massive change even just for our code.
+   @deprecated(
     "Use other overload to provide a cause for cancellation or use SubscriptionWithCancelException.NoCause",
-    since = "2.6.0")*/
+    since = "2.6.0") */
   final protected def cancel[T](in: Inlet[T]): Unit = cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
 
   /**
@@ -601,6 +601,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // Fast path
     if (normalArrived) connection.slot.asInstanceOf[AnyRef] ne Empty
     else {
+      // slow path on failure or cancellation
       if ((connection.portState & (InReady | InClosed | InFailed)) == (InReady | InClosed))
         connection.slot match {
           case Empty | _ @(_: Cancelled) => false
@@ -1435,7 +1436,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private var available = false
     private var closed = false
 
-    @silent // FIXME: SubSink.Cancel should transport cause as well
     private val callback = getAsyncCallback[SubSink.Command] {
       case SubSink.RequestOne =>
         if (!closed) {
@@ -1812,7 +1812,8 @@ trait OutHandler {
    * be called for this port.
    */
   @throws(classOf[Exception])
-  //@deprecated("Override method that provides cause.", since = "2.6.0")
+  // FIXME: we should add this deprecation but first we need to fix all our own usages
+  // @deprecatedOverride("Override method that provides cause.", since = "2.6.0")
   def onDownstreamFinish(): Unit =
     GraphInterpreter.currentInterpreter.activeStage.cancelStage(_lastCancellationCause)
 
@@ -1820,7 +1821,6 @@ trait OutHandler {
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
-  @silent // need to call the deprecated one, but maybe FIXME by not deprecating the other one as override doesn't show the warning anyway?
   @throws(classOf[Exception])
   def onDownstreamFinish(cause: Throwable): Unit =
     try {
