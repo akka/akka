@@ -645,7 +645,6 @@ import akka.stream.snapshot._
     if (Debug) println(s"$Name   cancel($connection) [$currentState]")
     connection.portState = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
-      require(connection.slot != null)
       connection.slot = Cancelled(cause)
       if ((currentState & (Pulling | Pushing | InClosed)) == 0) enqueue(connection)
       else if (chasedPull eq connection) {
