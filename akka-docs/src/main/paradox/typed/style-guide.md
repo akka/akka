@@ -409,29 +409,28 @@ Scala
 
 ## ask versus ?
 
-When using the `AskPattern` it's recommended to use the `ask` method rather than the `?` operator.
+When using the `AskPattern` it's recommended to use the `ask` method rather than the infix `?` operator, like so:
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-1 }
 
-Instead of the `replyTo` you can use `_` for less verbosity.
+You may also use the more terse placeholder syntax `_` instead of `replyTo`:
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-2 }
 
-When using `?` the following doesn't compile because of type inference problem:
+However, using the infix operator `?` with the placeholder syntax `_`, like is done in the following example, won't typecheck because of the binding scope rules for wildcard parameters:
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-3 }
 
-By adding parentheses it works but is rather ugly, and therefore better to stick with `ask`.
+Adding the necessary parentheses (as shown below) makes it typecheck, but, subjectively, it's rather ugly so the recommendation is to use `ask`.
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #ask-4 }
 
 Note that `AskPattern` is only intended for request-response interaction from outside an actor. If the requester is
-inside an actor, prefer `ActorContext.ask` as it provides better thread-safety by not involving
-@scala[`Future`]@java[`CompletionStage`] inside the actor.
+inside an actor, prefer `ActorContext.ask` as it provides better thread-safety by not requiring the use of a @scala[`Future`]@java[`CompletionStage`] inside the actor.
 
 @@@
 
