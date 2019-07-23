@@ -1,0 +1,20 @@
+# internal changes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ReactiveStreamsCompliance.tryCancel")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.cancel")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#Cancel.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#Cancel.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.ActorGraphInterpreter$Cancel$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#Cancel.apply")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.SubSink$Cancel$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.productElement")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.productArity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.canEqual")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.productIterator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.productPrefix")
+ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.fusing.SubSink#Cancel.toString")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#ActorOutputBoundary.cancel")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.ActorGraphInterpreter#BatchingActorInputBoundary.cancel")
+
+# added private[this] field to public class, shouldn't have more impact than a potential naming clash
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.OutHandler.akka$stream$stage$OutHandler$$_lastCancellationCause")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.OutHandler.akka$stream$stage$OutHandler$$_lastCancellationCause_=")
