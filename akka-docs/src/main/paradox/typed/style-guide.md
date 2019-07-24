@@ -235,8 +235,8 @@ Java
 
 ## Where to define messages
 
-When sending messages to another actor or receiving responses the messages should be prefixed with the name
-of the actor/behavior that defines the message to make it clear and avoid ambiguity.
+When sending or receiving actor messages they should be prefixed with the name
+of the actor/behavior that defines them to avoid ambiguities.
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #message-prefix-in-tell }
@@ -244,14 +244,14 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-prefix-in-tell }
 
-That is preferred over using @scala[importing `Down` and using `countDown ! Down`]
+Such a style is preferred over using @scala[importing `Down` and using `countDown ! Down`]
 @java[importing `Down` and using `countDown.tell(Down.INSTANCE);`].
-In the implementation of the `Behavior` that handle these messages the short names can be used.
+However, within the `Behavior` that handle these messages the short names can be used.
 
-That is a reason for not defining the messages as top level classes in a package.
+Therefore it is not recommended to define messages as top-level classes.
 
-An actor typically has a primary `Behavior` or it's only using one `Behavior` and then it's good to define
-the messages @scala[in the companion object]@java[as static inner classes] together with that `Behavior`.
+For the majority of cases it's good style to define
+the messages @scala[in the companion object]@java[as static inner classes] together with the `Behavior`.
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages }
@@ -259,11 +259,10 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #messages }
 
-Sometimes several actors share the same messages, because they have a tight coupling and using message adapters
-would introduce to much boilerplate and duplication. If there is no "natural home" for such messages they can be
-be defined in a separate @scala[`object`]@java[`interface`] to give them a naming scope.
+If several actors share the same message protocol, it's recommended to define
+those messages in a separate @scala[`object`]@java[`interface`] for that protocol.
 
-Example of shared message protocol:
+Here's an example of a shared message protocol setup:
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #message-protocol }
