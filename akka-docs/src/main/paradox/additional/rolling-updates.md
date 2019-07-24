@@ -18,7 +18,7 @@ There are two parts of Akka that need careful consideration when performing an r
    during the update old nodes must be able to read data stored by new nodes.
 
 There are many more application specific aspects for serialization changes during rolling upgrades to consider. 
-For example, whether to allow dropped messages or tear down the TCP connection when the manifest is unknown.
+For example based on the use case and requirements, whether to allow dropped messages or tear down the TCP connection when the manifest is unknown.
 
 * When some message loss during a rolling upgrade is acceptable versus a full shutdown and restart, assuming the application recovers afterwards 
     - If a `java.io.NotSerializableException` is thrown in `fromBinary` this is treated as a transient problem, the issue logged and the message is dropped
@@ -48,18 +48,21 @@ overhead several times.
 
 ## Cluster Shutdown
  
-@ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically run on SIGTERM when the cluster node sees itself as Exiting.
-Thus running shutdown tasks in a JVM shutdown hook is not recommended over Coordinated Shutdown.
-@ref:[Graceful shutdown](../cluster-sharding.md#graceful-shutdown) of Cluster Singletons and Cluster Sharding similarly happen automatically.
- 
-In case of network failures it may still be necessary to set the node's status to Down in order to complete the removal. 
-@ref:[Cluster Downing](../cluster-usage.md#downing) details downing nodes and downing providers, and how using
-[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) can help resolve
-split brain during network partitions.
+### Graceful shutdown 
 
-Additionally, [Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html#rolling-updates)
-can be leveraged during rolling updates for joining and downing nodes in the cluster.
- 
+For rolling updates it is best to leave the Cluster gracefully via @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown),
+which will run automatically on SIGTERM, when the Cluster node sees itself as `Exiting`.
+Environments such as Kubernetes send a SIGTERM, however if the JVM is wrapped with a script ensure that it forwards the signal.
+@ref:[Graceful shutdown](../cluster-sharding.md#graceful-shutdown) of Cluster Singletons and Cluster Sharding similarly happen automatically.
+
+### Ungraceful shutdown 
+
+In case of network failures it may still be necessary to set the node's status to Down in order to complete the removal. 
+@ref:[Cluster Downing](../cluster-usage.md#downing) details downing nodes and downing providers. 
+[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) can be used to ensure 
+the cluster continues to function during network partitions and node failures. For example
+if there is an unreachability problem Split Brain Resolver would make a decision based on the configured downing strategy. 
+  
 ## Cluster Configuration Compatibility Checks
 
 During rolling updates the configuration from existing nodes should pass the Cluster configuration compatibility checks.
