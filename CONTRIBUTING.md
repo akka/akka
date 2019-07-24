@@ -260,7 +260,7 @@ run `protobufGenerate`. The generated files are put in the `src/main/java` of ea
 The generated files are automatically transformed to use the shaded version of protobuf.
 
 Generation depends on protoc `2.5.0` being on the path. Old versions of
-protoc can be downeded from the [protobuf release page](https://github.com/protocolbuffers/protobuf/releases) and built from
+protoc can be downloaded from the [protobuf release page](https://github.com/protocolbuffers/protobuf/releases) and built from
 source or downloaded from [maven central](http://repo1.maven.org/maven2/com/google/protobuf/protoc/2.5.0/). See
 [Protobuf.scala](https://github.com/akka/akka/blob/master/project/Protobuf.scala) for details of how to override 
 the settings for generation.
