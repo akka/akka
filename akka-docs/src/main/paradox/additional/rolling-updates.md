@@ -34,7 +34,8 @@ One approach to retiring a serializer without downtime is carried out in @ref:[t
 During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../cluster-sharding.md#shard-rebalancing), 
 to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
 When an old node is stopped the shards that were running on it are moved to one of the
-other old nodes remaining in the cluster. See @ref[ClusterSingleton](#cluster-singleton) for a useful `ShardCoordinator` optimization.
+other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 
+To minimize downtime of the shard coordinator, see the strategies about  @ref[ClusterSingleton](#cluster-singleton) rolling upgrades below.
 
 Some changes to sharding configuration require @ref:[a full cluster restart](../cluster-sharding.md#rolling-upgrades).
 
@@ -62,11 +63,12 @@ can be leveraged during rolling updates for joining and downing nodes in the clu
 ## Cluster Configuration Compatibility Checks
 
 During rolling updates the configuration from existing nodes should pass the Cluster configuration compatibility checks.
-For example, when migrating from Classic to Typed Clusters, a two step approach is possible:
+For example, it is possible to migrate Cluster Sharding from Classic to Typed Actors in a rolling update using a two step approach
+as of Akka version `2.5.23`:
 
 * Deploy with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = off`
 and ensure all nodes are in this state
 * Deploy again and with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`. 
- 
-Full documentation about enforcing these checks on joining nodes and optionally adding custom checks are in  
+  
+Full documentation about enforcing these checks on joining nodes and optionally adding custom checks can be found in  
 @ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check).
