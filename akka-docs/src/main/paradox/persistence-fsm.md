@@ -7,8 +7,6 @@ known as Akka Typed. Akka Classic is still fully supported and existing applicat
 the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
 ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
 
-For the new API see FIXME https://github.com/akka/akka/issues/26490
-
 @@@
 
 ## Dependency
@@ -134,16 +132,18 @@ Persistent FSMs can be represented using @ref[Persistence Typed](typed/persisten
 using a snapshot adapter and an event adapter. The adapters are required as Persistent FSM doesn't store snapshots and user data directly, it wraps them in 
 internal types that include state transition information.
 
-Before reading the migration guide it is advised to understand [Persistence Typed](typed/persistence.md). The steps to migrate are:
+Before reading the migration guide it is advised to understand [Persistence Typed](typed/persistence.md). 
 
-1. Modify or create new commands to include replyTo @apidoc[akka.actor.typed.ActorRef]
+### Migration steps
+
+1. Modify or create new commands to include `replyTo` @apidoc[akka.actor.typed.ActorRef]
 1. Typically persisted events will remain the same
 1. Create an `EventSourcedBehavior` that mimics the old `PersistentFSM`
 1. Replace any state timeouts with `Behaviors.withTimers` either hard coded or stored in the state
 1. Add an @apidoc[akka.persistence.typed.EventAdapter] to convert state transition events added by `PersistentFSM` into private events or filter them
 1. If snapshots are used add a @apidoc[akka.persistence.typed.SnapshotAdapter] to convert PersistentFSM snapshots into the `EventSourcedBehavior`s `State`
 
-Follows is the shopping cart example above converted to an `EventSourcedBehavior`. 
+The following is the shopping cart example above converted to an `EventSourcedBehavior`. 
 
 The new commands, note the replyTo field for getting the current cart.
 
@@ -172,7 +172,7 @@ Java
 Note that there is no explicit support for state timeout as with PersistentFSM but the same behavior can be achieved
 using `Behaviors.withTimers`. If the timer is the same for all events then it can be hard coded, otherwise the
 old PersistentFSM timeout can be taken from the `StateChangeEvent` in the event adapter and is also available when
-constructing a `SnapshotAdapter`. This can be added to an internal event and then be stored in the `State`. Care
+constructing a `SnapshotAdapter`. This can be added to an internal event and then stored in the `State`. Care
 must also be taken to restart timers on recovery in the signal handler:
 
 Scala
