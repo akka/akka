@@ -47,6 +47,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonGenerator
 
 object ScalaTestMessages {
   trait TestMessage
@@ -157,6 +158,9 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
           # off is Jackson's default
           json-parser-features.ALLOW_COMMENTS = on
+
+          # on is Jackson's default
+          json-generator-features.AUTO_CLOSE_TARGET = off
         }
       """) { sys =>
 
@@ -200,6 +204,14 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
           defaultObjectMapper.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(false)
         }
 
+        "support json generator features" in {
+          identifiedObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(false)
+          namedObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(false)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(true)
+        }
+
         "fallback to defaults when object mapper is not configured" in {
           val notConfigured = JacksonObjectMapperProvider(sys).getOrCreate("jackson-not-configured", None)
           // Use Jacksons and Akka defaults
@@ -207,6 +219,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
           notConfigured.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(true)
           notConfigured.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(false)
           notConfigured.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(false)
+          notConfigured.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(true)
         }
       }
     }

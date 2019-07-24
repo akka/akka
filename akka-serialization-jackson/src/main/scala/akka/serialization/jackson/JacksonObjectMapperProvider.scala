@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
 import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonGenerator
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
@@ -109,6 +110,14 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     }
     val jsonParserFeatures = objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
     jsonParserFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredJsonGeneratorFeatures = features(config, "json-generator-features").map {
+      case (enumName, value) => JsonGenerator.Feature.valueOf(enumName) -> value
+    }
+    val jsonGeneratorFeatures = objectMapperFactory.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredJsonGeneratorFeatures)
+    jsonGeneratorFeatures.foreach {
       case (feature, value) => mapper.configure(feature, value)
     }
 
@@ -371,5 +380,19 @@ class JacksonObjectMapperFactory {
       @unused bindingName: String,
       configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)])
       : immutable.Seq[(JsonParser.Feature, Boolean)] =
+    configuredFeatures
+
+  /**
+   * After construction of the `ObjectMapper` the configured JSON generator features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `JsonGenerator.Feature` that were configured in `akka.serialization.jackson.json-generator-features`
+   */
+  def overrideConfiguredJsonGeneratorFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(JsonGenerator.Feature, Boolean)])
+      : immutable.Seq[(JsonGenerator.Feature, Boolean)] =
     configuredFeatures
 }
