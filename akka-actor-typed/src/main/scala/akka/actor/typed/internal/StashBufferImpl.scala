@@ -126,7 +126,7 @@ import akka.util.{ unused, ConstantFun }
           unstashed(ctx, next)
           wrap(next.message)
         }
-      }.take(numberOfMessages)
+      }.take(math.min(numberOfMessages, size))
       interpretUnstashedMessages(behavior, ctx, iter)
     }
   }
