@@ -9,14 +9,6 @@ parallel during the update, for example in blue green deployments.
 For rolling updates related to Akka dependency version upgrades and the migration guides, please see
 @ref:[Rolling Updates and Akka versions](../project/rolling-update.md)
 
-#### This document covers: 
-* [Serialization Compatibility](#serialization-compatibility)
-* [Cluster Sharding](#cluster-sharding)
-* [Cluster Singleton](#cluster-singleton)
-* [Migrating Untyped to Typed](#migrating-untyped-to-typed)
-* [Cluster Shutdown](#cluster-shutdown)
-* [Cluster Configuration Compatibility Check](#cluster-configuration-compatibility-check)
- 
 ## Serialization Compatibility
 
 There are two parts of Akka that need careful consideration when performing an rolling update.
@@ -31,7 +23,7 @@ For example, whether to allow dropped messages or tear down the TCP connection w
 * When some message loss during a rolling upgrade is acceptable versus a full shutdown and restart, assuming the application recovers afterwards 
     - If a `java.io.NotSerializableException` is thrown in `fromBinary` this is treated as a transient problem, the issue logged and the message is dropped
     - If other exceptions are thrown it can be an indication of corrupt bytes from the underlying transport, and the connection is broken
-* For more zero-impact rolling upgrades, it is important to consider a strategy for serialization format that can be evolved. You can find advice in
+* For more zero-impact rolling upgrades, it is important to consider a strategy for serialization that can be evolved. You can find advice in
 @ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md), which also applies to
 remote messages when deploying with rolling updates.
 
@@ -41,10 +33,10 @@ One approach to retiring a serializer without downtime is carried out in @ref:[t
 
 During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../cluster-sharding.md#shard-rebalancing), 
 to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
-When an old node is stopped the shards that were running on it may be allocated to one of the
+When an old node is stopped the shards that were running on it are moved to one of the
 other old nodes remaining in the cluster. See @ref[ClusterSingleton](#cluster-singleton) for a useful `ShardCoordinator` optimization.
 
-There are some cases when @ref:[a full cluster restart is needed](../cluster-sharding.md#rolling-upgrades).
+Some changes to sharding configuration require @ref:[a full cluster restart](../cluster-sharding.md#rolling-upgrades).
 
 ## Cluster Singleton
 
@@ -62,7 +54,6 @@ It is recommended with a two step approach:
 and ensure all nodes are in this state
 * Deploy again and with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`. 
 
-The configuration from existing nodes should pass the @ref:[Cluster Configuration Compatibility Checks](#cluster-configuration-compatibility-check).
 Find out more about coexisting and @ref:[untyped to typed](../typed/coexisting.md#untyped-to-typed). 
 
 ### With Cluster Sharding and Persistence
@@ -74,17 +65,19 @@ Samples coming soon.
 ## Cluster Shutdown
  
 @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically run on SIGTERM when the cluster node sees itself as Exiting.
-Thus running shutdown tasks in a JVM shutdown hook is not recommended.
+Thus running shutdown tasks in a JVM shutdown hook is not recommended over Coordinated Shutdown.
 @ref:[Graceful shutdown](../cluster-sharding.md#graceful-shutdown) of Cluster Singletons and Cluster Sharding similarly happen automatically.
  
-In case of network failures it may still be necessary to set the node’s status to Down in order to complete the removal. 
+In case of network failures it may still be necessary to set the node's status to Down in order to complete the removal. 
+@ref:[Cluster Downing](../cluster-usage.md#downing) details downing nodes and downing providers, and how using
+[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) can help resolve
+split brain during network partitions.
 
-Find out more about
-* @ref:[Cluster Downing](../cluster-usage.md#downing) and providers
-* [Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html#rolling-updates) and Rolling updates
-* [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
-
+Additionally, [Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html#rolling-updates)
+can be leveraged during rolling updates for joining and downings.
+ 
 ## Cluster Configuration Compatibility Checks
 
-Relevant information on rolling updates and enforcing @ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check)
-on joining nodes.
+During rolling updates the configuration from existing nodes should pass the Cluster configuration compatibility checks.
+Find out more about enforcing these checks on joining nodes and optionally adding custom checks in the 
+@ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check) documentation.
