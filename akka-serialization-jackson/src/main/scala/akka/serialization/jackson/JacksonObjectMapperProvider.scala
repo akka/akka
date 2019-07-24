@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -91,6 +92,14 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val deserializationFeatures =
       objectMapperFactory.overrideConfiguredDeserializationFeatures(bindingName, configuredDeserializationFeatures)
     deserializationFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredMapperFeatures = features(config, "mapper-features").map {
+      case (enumName, value) => MapperFeature.valueOf(enumName) -> value
+    }
+    val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
+    mapperFeatures.foreach {
       case (feature, value) => mapper.configure(feature, value)
     }
 
@@ -327,4 +336,17 @@ class JacksonObjectMapperFactory {
       configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
     configuredModules
 
+  /**
+   * After construction of the `ObjectMapper` the configured mapper features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `MapperFeatures` that were configured in `akka.serialization.jackson.mapper-features`
+   */
+  def overrideConfiguredMapperFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(MapperFeature, Boolean)])
+      : immutable.Seq[(MapperFeature, Boolean)] =
+    configuredFeatures
 }

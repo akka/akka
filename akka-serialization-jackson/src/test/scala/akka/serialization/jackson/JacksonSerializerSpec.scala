@@ -32,6 +32,7 @@ import akka.testkit.TestKit
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.Module
@@ -137,23 +138,63 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       JacksonObjectMapperProvider(system).getOrCreate(anotherBindingName, None) shouldBe theSameInstanceAs(mapper2)
     }
 
-    "support several different configurations" in {
+    "JacksonSerializer configuration" must {
+
       withSystem("""
         akka.actor.serializers.jackson-json2 = "akka.serialization.jackson.JacksonJsonSerializer"
         akka.actor.serialization-identifiers.jackson-json2 = 999
         akka.serialization.jackson.jackson-json2 {
-          deserialization-features.FAIL_ON_UNKNOWN_PROPERTIES = on
-        }
-        """) { sys =>
-        val objMapper2 = serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
-        objMapper2.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
-        val objMapper3 = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
-        objMapper3.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
 
-        // default has different config, different instance but same JacksonJsonSerializer class
-        val objMapper =
-          serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
-        objMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(false)
+          # on is Jackson's default
+          serialization-features.WRITE_DURATIONS_AS_TIMESTAMPS = off
+
+          # on is Jackson's default
+          deserialization-features.EAGER_DESERIALIZER_FETCH = off
+
+          # off is Jackson's default
+          mapper-features.SORT_PROPERTIES_ALPHABETICALLY = on
+        }
+      """) { sys =>
+
+        val identifiedObjectMapper = serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
+        val namedObjectMapper = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
+        val defaultObjectMapper = serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
+
+        println(s"identifiedObjectMapper => $identifiedObjectMapper")
+        println(s"namedObjectMapper => $namedObjectMapper")
+        println(s"defaultObjectMapper => $defaultObjectMapper")
+
+        "support serialization features" in {
+          identifiedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
+          namedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(true)
+        }
+
+        "support deserialization features" in {
+          identifiedObjectMapper.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(false)
+          namedObjectMapper.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(false)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(true)
+        }
+
+        "support mapper features" in {
+          identifiedObjectMapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
+          namedObjectMapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(false)
+        }
+
+        "fallback to defaults when object mapper is not configured" in {
+          val notConfigured = JacksonObjectMapperProvider(sys).getOrCreate("jackson-not-configured", None)
+          // Use Jacksons and Akka defaults
+          notConfigured.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(true)
+          notConfigured.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(true)
+          notConfigured.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(false)
+        }
       }
     }
   }
