@@ -148,8 +148,8 @@ possible, however these markers allow to experiment, gather feedback and stabili
 
 ## Binary Compatibility Checking Toolchain
 
-Akka uses the Lightbend maintained [Migration Manager](https://github.com/typesafehub/migration-manager), 
-called `MiMa` for short, for enforcing binary compatibility is kept where it was promised.
+Akka uses the Lightbend maintained [MiMa](https://github.com/lightbend/mima),
+for enforcing binary compatibility is kept where it was promised.
 
 All Pull Requests must pass MiMa validation (which happens automatically), and if failures are detected,
 manual exception overrides may be put in place if the change happened to be in an Internal API for example.
