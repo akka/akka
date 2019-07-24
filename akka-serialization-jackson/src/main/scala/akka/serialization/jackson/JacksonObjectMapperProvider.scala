@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
+import com.fasterxml.jackson.core.JsonParser
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
@@ -100,6 +101,14 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     }
     val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
     mapperFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredJsonParserFeatures = features(config, "json-parser-features").map {
+      case (enumName, value) => JsonParser.Feature.valueOf(enumName) -> value
+    }
+    val jsonParserFeatures = objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
+    jsonParserFeatures.foreach {
       case (feature, value) => mapper.configure(feature, value)
     }
 
@@ -348,5 +357,19 @@ class JacksonObjectMapperFactory {
       @unused bindingName: String,
       configuredFeatures: immutable.Seq[(MapperFeature, Boolean)])
       : immutable.Seq[(MapperFeature, Boolean)] =
+    configuredFeatures
+
+  /**
+   * After construction of the `ObjectMapper` the configured JSON parser features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `JsonParser.Feature` that were configured in `akka.serialization.jackson.json-parser-features`
+   */
+  def overrideConfiguredJsonParserFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)])
+      : immutable.Seq[(JsonParser.Feature, Boolean)] =
     configuredFeatures
 }
