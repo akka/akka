@@ -40,27 +40,10 @@ Some changes to sharding configuration require @ref:[a full cluster restart](../
 
 ## Cluster Singleton
 
-It's more efficient to avoid moving a `ClusterSingleton` more than necessary because they typically have to recover their state
-and it might introduce unnecessary delays.
-
-An optional optimization is to leave the oldest node running a `ClusterSingleton` until last
-to avoid it having to move more than once. 
-
-## Migrating Untyped to Typed
-
-It is recommended with a two step approach:
-
-* Deploy with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = off`
-and ensure all nodes are in this state
-* Deploy again and with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`. 
-
-Find out more about coexisting and @ref:[untyped to typed](../typed/coexisting.md#untyped-to-typed). 
-
-### With Cluster Sharding and Persistence
-
-Rolling upgrades where shards on old nodes are running untyped persistent actors 
-and new ones are running typed persistent behaviors have been tested successfully by the team and users.
-Samples coming soon.
+Cluster singletons are always running on the oldest node. To avoid moving cluster singletons more than necessary during a rolling upgrade, 
+it is recommended to upgrade the oldest node last. This way cluster singletons are only moved once during a full rolling upgrade. 
+Otherwise, in the worst case cluster singletons may be migrated from node to node which requires coordination and initialization 
+overhead several times.
 
 ## Cluster Shutdown
  
@@ -74,10 +57,16 @@ In case of network failures it may still be necessary to set the node's status t
 split brain during network partitions.
 
 Additionally, [Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html#rolling-updates)
-can be leveraged during rolling updates for joining and downings.
+can be leveraged during rolling updates for joining and downing nodes in the cluster.
  
 ## Cluster Configuration Compatibility Checks
 
 During rolling updates the configuration from existing nodes should pass the Cluster configuration compatibility checks.
-Find out more about enforcing these checks on joining nodes and optionally adding custom checks in the 
-@ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check) documentation.
+For example, when migrating from Classic to Typed Clusters, a two step approach is possible:
+
+* Deploy with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = off`
+and ensure all nodes are in this state
+* Deploy again and with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`. 
+ 
+Full documentation about enforcing these checks on joining nodes and optionally adding custom checks are in  
+@ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check).
