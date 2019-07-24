@@ -163,10 +163,11 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
           json-generator-features.AUTO_CLOSE_TARGET = off
         }
       """) { sys =>
-
-        val identifiedObjectMapper = serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
+        val identifiedObjectMapper =
+          serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
         val namedObjectMapper = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
-        val defaultObjectMapper = serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
+        val defaultObjectMapper =
+          serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
 
         println(s"identifiedObjectMapper => $identifiedObjectMapper")
         println(s"namedObjectMapper => $namedObjectMapper")

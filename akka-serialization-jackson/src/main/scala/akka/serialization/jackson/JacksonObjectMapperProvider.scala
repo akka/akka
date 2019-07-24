@@ -108,7 +108,8 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val configuredJsonParserFeatures = features(config, "json-parser-features").map {
       case (enumName, value) => JsonParser.Feature.valueOf(enumName) -> value
     }
-    val jsonParserFeatures = objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
+    val jsonParserFeatures =
+      objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
     jsonParserFeatures.foreach {
       case (feature, value) => mapper.configure(feature, value)
     }
@@ -116,7 +117,8 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val configuredJsonGeneratorFeatures = features(config, "json-generator-features").map {
       case (enumName, value) => JsonGenerator.Feature.valueOf(enumName) -> value
     }
-    val jsonGeneratorFeatures = objectMapperFactory.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredJsonGeneratorFeatures)
+    val jsonGeneratorFeatures =
+      objectMapperFactory.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredJsonGeneratorFeatures)
     jsonGeneratorFeatures.foreach {
       case (feature, value) => mapper.configure(feature, value)
     }
@@ -364,8 +366,7 @@ class JacksonObjectMapperFactory {
    */
   def overrideConfiguredMapperFeatures(
       @unused bindingName: String,
-      configuredFeatures: immutable.Seq[(MapperFeature, Boolean)])
-      : immutable.Seq[(MapperFeature, Boolean)] =
+      configuredFeatures: immutable.Seq[(MapperFeature, Boolean)]): immutable.Seq[(MapperFeature, Boolean)] =
     configuredFeatures
 
   /**
@@ -378,8 +379,7 @@ class JacksonObjectMapperFactory {
    */
   def overrideConfiguredJsonParserFeatures(
       @unused bindingName: String,
-      configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)])
-      : immutable.Seq[(JsonParser.Feature, Boolean)] =
+      configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)]): immutable.Seq[(JsonParser.Feature, Boolean)] =
     configuredFeatures
 
   /**
