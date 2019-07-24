@@ -83,6 +83,18 @@ This is because modules may assume internals changes across module boundaries, f
 in Clustering may have required an internals change in Actor, however it is not public API, 
 thus such change is considered safe.
 
+If you accidentally mix Akka versions, for example through transitive
+dependencies, you might get a warning at run time such as:
+
+```
+Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same across all modules of Akka that you are using, e.g. if you use [2.5.17] all other modules that are released together MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions [2.5.4, 2.5.17] in libraries [akka-protobuf:2.5.4, akka-actor:2.5.17, akka-stream:2.5.4]
+```
+
+The fix is typically to pick the highest Akka version, and add explicit
+dependencies to your project as needed. For example, in the example above
+you might want to add dependencies on akka-protobuf:2.5.17 and
+akka-stream:2.5.17.
+
 @@@ note
 
 We recommend keeping an `akkaVersion` variable in your build file, and re-use it for all
