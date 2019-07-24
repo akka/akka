@@ -30,7 +30,7 @@ private[sharding] object ShardingQueries {
   final case class ShardsQueryResult[A, B](failed: Set[A], responses: Seq[B], total: Int, queried: Int) {
 
     /** Returns true if there was anything to query. */
-    def nonEmpty: Boolean = total > 0 && queried > 0
+    private val nonEmpty: Boolean = total > 0 && queried > 0
 
     /** Returns true if there was anything to query, all were queried and all were unresponsive within the timeout. */
     def isTotalFailed: Boolean = nonEmpty && failed.size == total

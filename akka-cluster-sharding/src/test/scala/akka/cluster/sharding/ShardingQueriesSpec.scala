@@ -19,7 +19,6 @@ class ShardingQueriesSpec extends AkkaSpec {
 
     "reflect nothing to acquire metadata from - 0 shards" in {
       val qr = ShardsQueryResult[ShardId, ShardState](Seq.empty, 0)
-      qr.nonEmpty shouldBe false // 0 shards
       qr.total shouldEqual qr.queried
       qr.isTotalFailed shouldBe false // you'd have to make > 0 attempts in order to fail
       qr.isAllSubsetFailed shouldBe false // same
@@ -29,7 +28,6 @@ class ShardingQueriesSpec extends AkkaSpec {
       val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
       val results = responses.map(Right(_)) ++ timeouts.map(Left(_))
       val qr = ShardsQueryResult[ShardId, ShardStats](results, shards.size)
-      qr.nonEmpty shouldBe true
       qr.failed shouldEqual timeouts
       qr.responses shouldEqual responses
       qr.isTotalFailed shouldBe false
@@ -40,7 +38,6 @@ class ShardingQueriesSpec extends AkkaSpec {
       val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
       val results = responses.map(Right(_)) ++ timeouts.map(Left(_))
       val qr = ShardsQueryResult[ShardId, ShardStats](results, shards.size + 1)
-      qr.nonEmpty shouldBe true
       qr.isAllSubsetFailed shouldBe false // is subset, not all failed
       qr.total > qr.queried shouldBe true
       qr.queried < shards.size

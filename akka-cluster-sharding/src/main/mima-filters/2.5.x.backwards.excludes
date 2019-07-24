@@ -7,11 +7,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardR
 # #27100 Productionize: GetShardRegionStats returns empty shard set on ask timeout
 # askAllShards, an internal function, was renamed and changed to query all or a subset of shards to try failures only
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.askAllShards")
-# Added new field for failed shard queries to akka.cluster.sharding.ShardRegion#ShardRegionStats, and updated in proto
+# Added new field for failed shard queries to ShardRegion#ShardRegionStats, converted to class and updated in proto
 ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.ShardRegion$ShardRegionStats$")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion#ShardRegionStats.apply")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion#ShardRegionStats.copy")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion#ShardRegionStats.this")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedList")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailed")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedBytes")

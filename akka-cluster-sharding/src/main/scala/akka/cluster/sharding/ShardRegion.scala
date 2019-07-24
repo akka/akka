@@ -300,8 +300,9 @@ object ShardRegion {
    * @param stats the region stats mapping of `ShardId` to number of entities
    * @param failed set of shards if any failed to respond within the timeout
    */
-  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int], failed: Set[ShardId])
-      extends ClusterShardingSerializable {
+  @SerialVersionUID(1L) final class ShardRegionStats(val stats: Map[ShardId, Int], val failed: Set[ShardId])
+      extends ClusterShardingSerializable
+      with Product {
 
     /**
      * Java API
@@ -317,6 +318,31 @@ object ShardRegion {
       failed.asJava
     }
 
+    // For binary compatibility
+    def this(stats: Map[ShardId, Int]) = this(stats, Set.empty[ShardId])
+    def copy(stats: Map[ShardId, Int] = stats): ShardRegionStats =
+      new ShardRegionStats(stats, this.failed)
+
+    // For binary compatibility: class conversion from case class
+    override def equals(other: Any): Boolean = other match {
+      case o: ShardRegionStats => o.stats == stats && o.failed == failed
+      case _                   => false
+    }
+    override def hashCode: Int = stats.## + failed.##
+    override def toString: String = s"ShardRegionStats[stats=$stats, failed=$failed]"
+    override def productArity: Int = 0
+    override def productElement(n: Int) = throw new NoSuchElementException
+    override def canEqual(o: Any): Boolean = o.isInstanceOf[ShardRegionStats]
+
+  }
+  // For binary compatibility
+  object ShardRegionStats {
+    def apply(stats: Map[ShardId, Int]): ShardRegionStats =
+      apply(stats, Set.empty[ShardId])
+    def apply(stats: Map[ShardId, Int], failed: Set[ShardId]): ShardRegionStats =
+      new ShardRegionStats(stats, failed)
+    def unapply(stats: ShardRegionStats): Option[(Map[ShardId, Int], Set[ShardId])] =
+      Option((stats.stats, stats.failed))
   }
 
   /**
