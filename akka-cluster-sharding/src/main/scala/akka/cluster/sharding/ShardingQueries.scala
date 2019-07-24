@@ -16,36 +16,35 @@ private[sharding] object ShardingQueries {
    * INTERNAL API
    * The result of a group query and metadata.
    *
-   * @param timedout the number of non-responses within the configured timeout, which
+   * @param failed the queries to shards that failed within the configured timeout. This
    *                     could be indicative of several states, e.g. still in initialization,
-   *                     restart, heavily loaded and busy, where returning a simple zero is
+   *                     restart, heavily loaded and busy, where returning zero entities is
    *                     not indicative of the reason
-   * @param responses the number of responses received from the query
+   * @param responses the responses received from the query
    * @param total the total number of shards tracked versus a possible subset
    * @param queried the number of shards queried, which could equal the total or be a
    *                subset if this was a retry of those that timed out
    * @tparam A
    * @tparam B
    */
-  @InternalApi
-  private[sharding] final case class ShardsQueryResult[A, B](
-      timedout: Seq[A],
-      responses: Seq[B],
-      total: Int,
-      queried: Int) {
+  final case class ShardsQueryResult[A, B](failed: Set[A], responses: Seq[B], total: Int, queried: Int) {
 
-    /** Returns true if all in context were queried and all were unresponsive within the timeout. */
-    def isTotalFailed: Boolean = timedout.size == total
+    /** Returns true if there was anything to query. */
+    def nonEmpty: Boolean = total > 0 && queried > 0
 
-    /** Returns true if this was from a subset query and all were unresponsive within the timeout. */
-    def isAllSubsetFailed: Boolean = queried < total && timedout.size == queried
+    /** Returns true if there was anything to query, all were queried and all were unresponsive within the timeout. */
+    def isTotalFailed: Boolean = nonEmpty && failed.size == total
+
+    /** Returns true if there was a subset to query and all in that subset were unresponsive within the timeout. */
+    def isAllSubsetFailed: Boolean = nonEmpty && queried < total && failed.size == queried
 
     override val toString: String = {
-      val unresponsive = timedout.size
-      if (isTotalFailed || isAllSubsetFailed) {
-        s"All $unresponsive ${if (isAllSubsetFailed) "of subset" else ""} queried were unresponsive."
+      if (total == 0)
+        s"Shard region had zero shards to gather metadata from."
+      else if (isTotalFailed || isAllSubsetFailed) {
+        s"All [${failed.size}] shards ${if (isAllSubsetFailed) "of subset" else ""} queried were unresponsive."
       } else {
-        s"Queried $queried: ${responses.size} responsive, $unresponsive unresponsive within the timeout."
+        s"Queried [$queried] shards of [$total]: responsive [${responses.size}], unresponsive [${failed.size}] within the timeout."
       }
     }
   }
@@ -60,7 +59,7 @@ private[sharding] object ShardingQueries {
      */
     def apply[A: ClassTag, B: ClassTag](ps: Seq[Either[A, B]], total: Int): ShardsQueryResult[A, B] = {
       val (t, r) = partition(ps)(identity)
-      ShardsQueryResult(t, r, total, ps.size)
+      ShardsQueryResult(t.toSet, r, total, ps.size)
     }
 
     def partition[T, A, B](ps: Seq[T])(f: T => Either[A, B]): (Seq[A], Seq[B]) = {

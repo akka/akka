@@ -295,7 +295,12 @@ object ShardRegion {
    */
   def getRegionStatsInstance = GetShardRegionStats
 
-  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int])
+  /**
+   *
+   * @param stats the region stats mapping of `ShardId` to number of entities
+   * @param failed set of shards if any failed to respond within the timeout
+   */
+  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int], failed: Set[ShardId])
       extends ClusterShardingSerializable {
 
     /**
@@ -304,6 +309,12 @@ object ShardRegion {
     def getStats(): java.util.Map[ShardId, Int] = {
       import akka.util.ccompat.JavaConverters._
       stats.asJava
+    }
+
+    /** Java API */
+    def getFailed(): java.util.Set[ShardId] = {
+      import akka.util.ccompat.JavaConverters._
+      failed.asJava
     }
 
   }
@@ -743,9 +754,10 @@ private[akka] class ShardRegion(
   def replyToRegionStateQuery(ref: ActorRef): Unit = {
     queryShards[Shard.CurrentShardState](shards, Shard.GetCurrentShardState)
       .map { qr =>
-        // TODO add CurrentShardRegionState field for timeouts (proto). Until then
-        val state = qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)) ++
-          qr.timedout.map(ShardRegion.ShardState(_, Set.empty))
+        // Productionize CurrentShardRegionState #27406
+        val state =
+          qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)) ++
+          qr.failed.map(sid => ShardRegion.ShardState(sid, Set.empty))
         CurrentShardRegionState(state.toSet)
       }
       .pipeTo(ref)
@@ -754,9 +766,7 @@ private[akka] class ShardRegion(
   def replyToRegionStatsQuery(ref: ActorRef): Unit = {
     queryShards[ShardStats](shards, Shard.GetShardStats)
       .map { qr =>
-        // TODO add ShardRegionStats field for timeouts (proto): ShardRegion.ShardRegionStats(stats, timeouts.tosSet)
-        // Until then
-        ShardRegionStats(qr.responses.map(stats => (stats.shardId, stats.entityCount)).toMap ++ qr.timedout.map((_, 0)))
+        ShardRegionStats(qr.responses.map(stats => (stats.shardId, stats.entityCount)).toMap, qr.failed)
       }
       .pipeTo(ref)
   }
@@ -773,13 +783,14 @@ private[akka] class ShardRegion(
    */
   def queryShards[T: ClassTag](shards: Map[ShardId, ActorRef], msg: Any): Future[ShardsQueryResult[ShardId, T]] = {
     implicit val timeout: Timeout = settings.shardRegionQueryTimeout
+
     Future
       .sequence(shards.toSeq.map {
         case (shardId, shard) => askOne(shard, msg, shardId)
       })
       .map { ps =>
-        val qr = ShardsQueryResult[ShardId, T](ps, shards.size)
-        if (qr.timedout.nonEmpty) log.warning(qr.toString)
+        val qr = ShardsQueryResult[ShardId, T](ps, this.shards.size)
+        if (qr.failed.nonEmpty) log.warning(qr.toString)
         qr
       }
   }

@@ -365,6 +365,9 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
       case (sid, no) =>
         b.addStats(sm.MapFieldEntry.newBuilder().setKey(sid).setValue(no).build())
     }
+    evt.failed.foreach { sid =>
+      b.addFailed(sid).build()
+    }
     b.build()
   }
 
@@ -373,9 +376,10 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     shardRegionStatsFromProto(parsed)
   }
 
-  private def shardRegionStatsFromProto(parsed: ClusterShardingMessages.ShardRegionStats) = {
+  private def shardRegionStatsFromProto(parsed: ClusterShardingMessages.ShardRegionStats): ShardRegionStats = {
     val stats: Map[String, Int] = parsed.getStatsList.asScala.iterator.map(e => e.getKey -> e.getValue).toMap
-    ShardRegionStats(stats)
+    val failed: Set[String] = parsed.getFailedList.asScala.toSet
+    ShardRegionStats(stats, failed)
   }
 
   private def clusterShardingStatsToProto(evt: ClusterShardingStats): sm.ClusterShardingStats = {

@@ -91,8 +91,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize ShardRegionStats" in {
-      checkSerialization(ShardRegion.ShardRegionStats(Map.empty[ShardId, Int]))
-      checkSerialization(ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)))
+      checkSerialization(ShardRegion.ShardRegionStats(Map.empty[ShardId, Int], Set.empty[ShardId]))
+      checkSerialization(ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))
     }
 
     "be able to serialize StartEntity" in {
@@ -110,8 +110,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(ShardRegion.GetClusterShardingStats(3.seconds))
       checkSerialization(
         ShardRegion.ClusterShardingStats(Map(
-          Address("akka", "sys", "a", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)),
-          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)))))
+          Address("akka", "sys", "a", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")),
+          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))))
     }
   }
 }
