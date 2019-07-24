@@ -1,0 +1,16 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+// Generated with protoc 3 compiler and copied do test src
+// doesen't use protobufGenerate yet as that replaces google packages
+// with akka
+syntax = "proto3";
+
+option java_package = "akka.remote.protobuf.v3";
+
+message MyMessageV3 {
+  string query = 1;
+  int32 page_number = 2;
+  int32 result_per_page = 3;
+}

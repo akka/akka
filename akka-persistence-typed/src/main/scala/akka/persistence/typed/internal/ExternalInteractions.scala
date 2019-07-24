@@ -14,9 +14,13 @@ import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
+
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
+
+import akka.util.unused
 
 /** INTERNAL API */
 @InternalApi
@@ -27,6 +31,8 @@ private[akka] trait JournalInteractions[C, E, S] {
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
   protected def internalPersist(
+      ctx: ActorContext[_],
+      cmd: Any,
       state: Running.RunningState[S],
       event: EventOrTagged,
       eventAdapterManifest: String): Running.RunningState[S] = {
@@ -41,12 +47,20 @@ private[akka] trait JournalInteractions[C, E, S] {
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
+    onWriteInitiated(ctx, cmd, repr)
+
     val write = AtomicWrite(repr) :: Nil
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfUntyped, setup.writerIdentity.instanceId), setup.selfUntyped)
 
     newState
   }
+
+  @InternalStableApi
+  private[akka] def onWriteInitiated(
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
       state: Running.RunningState[S],
