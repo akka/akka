@@ -19,15 +19,14 @@ There are two parts of Akka that need careful consideration when performing an r
 
 There are many more application specific aspects for serialization changes during rolling upgrades to consider. 
 For example based on the use case and requirements, whether to allow dropped messages or tear down the TCP connection when the manifest is unknown.
+When some message loss during a rolling upgrade is acceptable versus a full shutdown and restart, assuming the application recovers afterwards 
+* If a `java.io.NotSerializableException` is thrown in `fromBinary` this is treated as a transient problem, the issue logged and the message is dropped
+* If other exceptions are thrown it can be an indication of corrupt bytes from the underlying transport, and the connection is broken
 
-* When some message loss during a rolling upgrade is acceptable versus a full shutdown and restart, assuming the application recovers afterwards 
-    - If a `java.io.NotSerializableException` is thrown in `fromBinary` this is treated as a transient problem, the issue logged and the message is dropped
-    - If other exceptions are thrown it can be an indication of corrupt bytes from the underlying transport, and the connection is broken
-* For more zero-impact rolling upgrades, it is important to consider a strategy for serialization that can be evolved. You can find advice in
-@ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md), which also applies to
-remote messages when deploying with rolling updates.
+For more zero-impact rolling upgrades, it is important to consider a strategy for serialization that can be evolved. 
+One approach to retiring a serializer without downtime is described in @ref:[two rolling upgrade steps to switch to the new serializer](../serialization.md#rolling-upgrades). 
+Additionally you can find advice on @ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md) which also applies to remote messages when deploying with rolling updates.
 
-One approach to retiring a serializer without downtime is carried out in @ref:[two rolling upgrade steps to switch to the new serializer](../serialization.md#rolling-upgrades). 
 
 ## Cluster Sharding
 
