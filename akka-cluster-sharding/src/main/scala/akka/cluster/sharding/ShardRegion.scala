@@ -807,18 +807,14 @@ private[akka] class ShardRegion(
    *
    * To check subset unresponsive: {{{ queryShards[T](shards.filterKeys(u.contains), shardQuery) }}}
    */
-  def queryShards[T: ClassTag](shards: Map[ShardId, ActorRef], msg: Any): Future[ShardsQueryResult[ShardId, T]] = {
+  def queryShards[T: ClassTag](shards: Map[ShardId, ActorRef], msg: Any): Future[ShardsQueryResult[T]] = {
     implicit val timeout: Timeout = settings.shardRegionQueryTimeout
 
-    Future
-      .sequence(shards.toSeq.map {
-        case (shardId, shard) => askOne(shard, msg, shardId)
-      })
-      .map { ps =>
-        val qr = ShardsQueryResult[ShardId, T](ps, this.shards.size)
-        if (qr.failed.nonEmpty) log.warning(qr.toString)
-        qr
-      }
+    Future.traverse(shards.toSeq) { case (shardId, shard) => askOne(shard, msg, shardId) }.map { ps =>
+      val qr = ShardsQueryResult[T](ps, this.shards.size)
+      if (qr.failed.nonEmpty) log.warning(qr.toString)
+      qr
+    }
   }
 
   private def askOne[T: ClassTag](shard: ActorRef, msg: Any, shardId: ShardId)(

@@ -5,7 +5,6 @@
 package akka.cluster.sharding
 
 import akka.cluster.sharding.Shard.ShardStats
-import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.ShardRegion.ShardState
 import akka.cluster.sharding.ShardingQueries.ShardsQueryResult
 import akka.testkit.AkkaSpec
@@ -18,7 +17,7 @@ class ShardingQueriesSpec extends AkkaSpec {
   "ShardsQueryResult" must {
 
     "reflect nothing to acquire metadata from - 0 shards" in {
-      val qr = ShardsQueryResult[ShardId, ShardState](Seq.empty, 0)
+      val qr = ShardsQueryResult[ShardState](Seq.empty, 0)
       qr.total shouldEqual qr.queried
       qr.isTotalFailed shouldBe false // you'd have to make > 0 attempts in order to fail
       qr.isAllSubsetFailed shouldBe false // same
@@ -27,7 +26,7 @@ class ShardingQueriesSpec extends AkkaSpec {
     "partition failures and responses by type and by convention (failed Left T Right)" in {
       val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
       val results = responses.map(Right(_)) ++ timeouts.map(Left(_))
-      val qr = ShardsQueryResult[ShardId, ShardStats](results, shards.size)
+      val qr = ShardsQueryResult[ShardStats](results, shards.size)
       qr.failed shouldEqual timeouts
       qr.responses shouldEqual responses
       qr.isTotalFailed shouldBe false
@@ -37,7 +36,7 @@ class ShardingQueriesSpec extends AkkaSpec {
     "detect a subset query - not all queried" in {
       val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
       val results = responses.map(Right(_)) ++ timeouts.map(Left(_))
-      val qr = ShardsQueryResult[ShardId, ShardStats](results, shards.size + 1)
+      val qr = ShardsQueryResult[ShardStats](results, shards.size + 1)
       qr.isAllSubsetFailed shouldBe false // is subset, not all failed
       qr.total > qr.queried shouldBe true
       qr.queried < shards.size
@@ -45,7 +44,7 @@ class ShardingQueriesSpec extends AkkaSpec {
 
     "partition when all failed" in {
       val results = Seq(Left("c"), Left("d"))
-      val qr = ShardsQueryResult[ShardId, ShardState](results, results.size)
+      val qr = ShardsQueryResult[ShardState](results, results.size)
       qr.total shouldEqual qr.queried
       qr.isTotalFailed shouldBe true
       qr.isAllSubsetFailed shouldBe false // not a subset

@@ -24,10 +24,9 @@ private[sharding] object ShardingQueries {
    * @param total the total number of shards tracked versus a possible subset
    * @param queried the number of shards queried, which could equal the total or be a
    *                subset if this was a retry of those that timed out
-   * @tparam A
    * @tparam B
    */
-  final case class ShardsQueryResult[A, B](failed: Set[A], responses: Seq[B], total: Int, queried: Int) {
+  final case class ShardsQueryResult[B](failed: Set[ShardRegion.ShardId], responses: Seq[B], total: Int, queried: Int) {
 
     /** Returns true if there was anything to query. */
     private val nonEmpty: Boolean = total > 0 && queried > 0
@@ -54,10 +53,9 @@ private[sharding] object ShardingQueries {
      * @param ps the partitioned results of actors queried that did not reply by
      *           the timeout and those that did
      * @param total the total number of actors tracked versus a possible subset
-     * @tparam A
      * @tparam B
      */
-    def apply[A: ClassTag, B: ClassTag](ps: Seq[Either[A, B]], total: Int): ShardsQueryResult[A, B] = {
+    def apply[B: ClassTag](ps: Seq[Either[ShardRegion.ShardId, B]], total: Int): ShardsQueryResult[B] = {
       val (t, r) = partition(ps)(identity)
       ShardsQueryResult(t.toSet, r, total, ps.size)
     }
