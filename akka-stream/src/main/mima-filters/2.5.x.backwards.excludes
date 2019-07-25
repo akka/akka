@@ -112,12 +112,6 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSubscriber$
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSink")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSubscriber")
 
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.actorPublisher")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Sink.actorSubscriber")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.actorPublisher")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Sink.actorSubscriber")
-
-
 
 # #25045 adding Java/Scala interop to SourceQueue and SinkQueue
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")

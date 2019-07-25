@@ -7,7 +7,7 @@ package akka.stream.javadsl
 import java.util
 import java.util.Optional
 
-import akka.actor.{ ActorRef, Cancellable }
+import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
@@ -285,6 +285,19 @@ object Source {
    */
   def asSubscriber[T](): Source[T, Subscriber[T]] =
     new Source(scaladsl.Source.asSubscriber)
+
+  /**
+   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorPublisher]].
+   *
+   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
+   */
+  @deprecated(
+    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+    since = "2.5.0")
+  def actorPublisher[T](props: Props): Source[T, ActorRef] =
+    new Source(scaladsl.Source.actorPublisher(props))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].

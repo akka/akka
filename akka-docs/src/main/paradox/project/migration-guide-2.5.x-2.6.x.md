@@ -73,8 +73,6 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 * `CircuitBreaker.onOpen` use `CircuitBreaker.addOnOpenListener`
 * `CircuitBreaker.onHalfOpen` use `CircuitBreaker.addOnHalfOpenListener`
 * `CircuitBreaker.onClose` use `CircuitBreaker.addOnCloseListener`
-* `Source.actorSubscriber`, use `Source.fromGraph` instead.
-* `Source.actorActorPublisher`, use `Source.fromGraph` instead.
 
 ### JavaTestKit removed
 
