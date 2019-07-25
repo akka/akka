@@ -152,7 +152,7 @@ There are 3 different types of message dispatchers:
 
     * Sharability: Unlimited
     * Mailboxes: Any, creates one per Actor per Thread (on demand)
-    * Use cases: Testing
+    * Use cases: Debugging and testing
     * Driven by: The calling thread (duh)
 
 ### More dispatcher configuration examples
