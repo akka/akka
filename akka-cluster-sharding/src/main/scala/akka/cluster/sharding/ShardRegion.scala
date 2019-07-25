@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
+import scala.runtime.AbstractFunction1
 import scala.util.Success
 import scala.util.Failure
 
@@ -337,7 +338,7 @@ object ShardRegion {
 
   }
   // For binary compatibility
-  object ShardRegionStats {
+  object ShardRegionStats extends AbstractFunction1[Map[ShardId, Int], ShardRegionStats] {
     def apply(stats: Map[ShardId, Int]): ShardRegionStats =
       apply(stats, Set.empty[ShardId])
     def apply(stats: Map[ShardId, Int], failed: Set[ShardId]): ShardRegionStats =

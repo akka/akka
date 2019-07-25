@@ -12,10 +12,11 @@ object ShardingQueries {
    * INTERNAL API
    * The result of a group query and metadata.
    *
-   * @param failed the queries to shards that failed within the configured timeout. This
-   *                     could be indicative of several states, e.g. still in initialization,
-   *                     restart, heavily loaded and busy, where returning zero entities is
-   *                     not indicative of the reason
+   * @param failed the queries to shards that failed or did not reply within the
+   *               configured timeout. This could be indicative of several states,
+   *               for example still in initialization, restart, heavily loaded
+   *               and busy, where returning zero entities is
+   *                not indicative of the reason
    * @param responses the responses received from the query
    * @param total the total number of shards tracked versus a possible subset
    * @param queried the number of shards queried, which could equal the total or be a
@@ -32,19 +33,19 @@ object ShardingQueries {
     /** Returns true if there was anything to query. */
     private val nonEmpty: Boolean = total > 0 && queried > 0
 
-    /** Returns true if there was anything to query, all were queried and all were unresponsive within the timeout. */
+    /** Returns true if there was anything to query, all were queried and all failed within the timeout. */
     def isTotalFailed: Boolean = nonEmpty && failed.size == total
 
-    /** Returns true if there was a subset to query and all in that subset were unresponsive within the timeout. */
+    /** Returns true if there was a subset to query and all in that subset failed within the timeout. */
     def isAllSubsetFailed: Boolean = nonEmpty && queried < total && failed.size == queried
 
     override val toString: String = {
       if (total == 0)
         s"Shard region had zero shards to gather metadata from."
       else if (isTotalFailed || isAllSubsetFailed) {
-        s"All [${failed.size}] shards ${if (isAllSubsetFailed) "of subset" else ""} queried were unresponsive."
+        s"All [${failed.size}] shards ${if (isAllSubsetFailed) "of subset" else ""} queried failed within the timeout."
       } else {
-        s"Queried [$queried] shards of [$total]: responsive [${responses.size}], unresponsive [${failed.size}] within the timeout."
+        s"Queried [$queried] shards of [$total]: responsive [${responses.size}], failed [${failed.size}] within the timeout."
       }
     }
   }
@@ -52,7 +53,7 @@ object ShardingQueries {
 
     /**
      * @param ps the partitioned results of actors queried that did not reply by
-     *           the timeout and those that did
+     *           the timeout or returned another failure and those that did
      * @param total the total number of actors tracked versus a possible subset
      * @tparam B
      */
