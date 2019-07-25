@@ -6,7 +6,6 @@ package akka.stream.impl.io
 
 import java.io.OutputStream
 
-import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
@@ -14,7 +13,6 @@ import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }
-import scala.util.Success
 import scala.util.control.NonFatal
 
 /**
@@ -34,7 +32,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
     val mat = Promise[IOResult]
     val logic = new GraphStageLogicWithLogging(shape) with InHandler {
       var outputStream: OutputStream = _
-      var bytesWritten = 0
+      var bytesWritten: Long = 0L
       override def preStart(): Unit = {
         try {
           outputStream = factory()
@@ -80,7 +78,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
             outputStream.flush()
             outputStream.close()
           }
-          mat.trySuccess(IOResult(bytesWritten, Success(Done)))
+          mat.trySuccess(IOResult(bytesWritten))
         } catch {
           case NonFatal(t) =>
             mat.tryFailure(new IOOperationIncompleteException(bytesWritten, t))
