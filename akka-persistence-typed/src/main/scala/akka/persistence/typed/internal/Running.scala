@@ -342,7 +342,7 @@ private[akka] object Running {
           setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
         Behaviors.unhandled
       } else {
-        stashUser(cmd)
+        stashInternal(cmd)
         Behaviors.same
       }
     }
