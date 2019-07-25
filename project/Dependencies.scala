@@ -96,57 +96,57 @@ object Dependencies {
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
     object Docs {
-      val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.6" % "test"
+      val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % Test
+      val gson = "com.google.code.gson" % "gson" % "2.8.6" % Test
     }
 
-    object Test {
-      val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % "test" // ApacheV2
-      val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
-      val logback = Compile.logback % "test" // EPL 1.0
+    object TestDependencies {
+      val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % Test // ApacheV2
+      val commonsIo = "commons-io" % "commons-io" % "2.6" % Test // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % Test // ApacheV2
+      val junit = "junit" % "junit" % junitVersion % Test // Common Public License 1.0
+      val logback = Compile.logback % Test // EPL 1.0
 
-      val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test" // ApacheV2
-      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
+      val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % Test // ApacheV2
+      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % Test // New BSD
 
       // The 'scalaTestPlus' projects are independently versioned,
       // but the version of each module starts with the scalatest
       // version it was intended to work with
-      val scalatestJUnit = "org.scalatestplus" %% "junit-4-12" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestMockito = "org.scalatestplus" %% "mockito-3-2" % (scalaTestVersion + ".0") % "test" // ApacheV2
+      val scalatestJUnit = "org.scalatestplus" %% "junit-4-12" % (scalaTestVersion + ".0") % Test // ApacheV2
+      val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % Test // ApacheV2
+      val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % Test // ApacheV2
+      val scalatestMockito = "org.scalatestplus" %% "mockito-3-2" % (scalaTestVersion + ".0") % Test // ApacheV2
 
-      val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
-      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % "test" // ApacheV2
-      val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
+      val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % Test // ApacheV2
+      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % Test // ApacheV2
+      val log4j = "log4j" % "log4j" % "1.2.17" % Test // ApacheV2
 
       // in-memory filesystem for file related tests
-      val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2
+      val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % Test // ApacheV2
 
       // docker utils
-      val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
+      val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % Test // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.5" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.5" % "test" // ApacheV2
-      val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
-      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.5" % Test // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.5" % Test // ApacheV2
+      val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % Test // Free BSD
+      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % Test // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
-      val slf4jJul = "org.slf4j" % "jul-to-slf4j" % slf4jVersion % "test" // MIT
-      val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % "test" // MIT
+      val slf4jJul = "org.slf4j" % "jul-to-slf4j" % slf4jVersion % Test // MIT
+      val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % Test // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % Test // CC0
 
-      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "test"
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
     }
 
     object Provided {
-      // TODO remove from "test" config
+      // TODO remove from Test config
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
       val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
@@ -165,7 +165,8 @@ object Dependencies {
 
   }
 
-  import Compile._
+  import Compile.{ TestDependencies => Test, _ }
+
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
