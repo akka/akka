@@ -1081,6 +1081,16 @@ If tasks are not completed within a configured timeout (see @ref:[reference.conf
 the next phase will be started anyway. It is possible to configure `recover=off` for a phase
 to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
 
+In the above example, it may be more convenient to simply stop the actor when it's done shutting down, rather than send back a done message,
+and for the shutdown task to not complete until the actor is terminated. A convenience method is provided that adds a task that sends
+a message to the actor and then watches its termination:
+
+Scala
+:  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-addActorTerminationTask }
+
+Java
+:  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addActorTerminationTask }
+
 Tasks should typically be registered as early as possible after system startup. When running
 the coordinated shutdown tasks that have been registered will be performed but tasks that are
 added too late will not be run.

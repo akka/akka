@@ -217,7 +217,7 @@ e.g. `allCluster`, `allTyped`.
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
-Akka uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/typesafehub/migration-manager)) to
+Akka uses [MiMa](https://github.com/lightbend/mima) to
 validate binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see 
 an error like this:
 
@@ -253,6 +253,17 @@ All wire protocol changes that may concern rolling upgrades should be documented
 [Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
 (found in akka-docs/src/main/paradox/project/rolling-update.md)
 
+## Protobuf
+
+Akka includes a shaded version of protobuf `2.5.0` that is used for internal communication. To generate files
+run `protobufGenerate`. The generated files are put in the `src/main/java` of each project and need to be commited. 
+The generated files are automatically transformed to use the shaded version of protobuf.
+
+Generation depends on protoc `2.5.0` being on the path. Old versions of
+protoc can be downloaded from the [protobuf release page](https://github.com/protocolbuffers/protobuf/releases) and built from
+source or downloaded from [maven central](http://repo1.maven.org/maven2/com/google/protobuf/protoc/2.5.0/). See
+[Protobuf.scala](https://github.com/akka/akka/blob/master/project/Protobuf.scala) for details of how to override 
+the settings for generation.
 
 ## Pull request requirements
 

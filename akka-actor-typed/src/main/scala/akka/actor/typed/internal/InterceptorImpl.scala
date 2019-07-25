@@ -200,8 +200,9 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
 @InternalApi
 private[akka] object TransformMessagesInterceptor {
 
-  private final val _any2null = (_: Any) => null
-  private final def any2null[T] = _any2null.asInstanceOf[Any => T]
+  private final val _notMatchIndicator: Any = new AnyRef
+  private final val _any2NotMatchIndicator = (_: Any) => _notMatchIndicator
+  private final def any2NotMatchIndicator[T] = _any2NotMatchIndicator.asInstanceOf[Any => T]
 }
 
 /**
@@ -226,9 +227,9 @@ private[akka] final case class TransformMessagesInterceptor[O: ClassTag, I](matc
   }
 
   def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
-    matcher.applyOrElse(msg, any2null) match {
-      case null        => Behaviors.unhandled
-      case transformed => target(ctx, transformed)
+    matcher.applyOrElse(msg, any2NotMatchIndicator) match {
+      case result if _notMatchIndicator == result => Behaviors.unhandled
+      case transformed                            => target(ctx, transformed)
     }
   }
 

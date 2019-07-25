@@ -150,7 +150,7 @@ private[akka] object Running {
           val eventToPersist = adaptEvent(event)
           val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
-          val newState2 = internalPersist(newState, eventToPersist, eventAdapterManifest)
+          val newState2 = internalPersist(setup.context, msg, newState, eventToPersist, eventAdapterManifest)
 
           val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 
@@ -265,12 +265,18 @@ private[akka] object Running {
         state = state.updateLastSequenceNr(p)
         eventCounter += 1
 
+        onWriteSuccess(setup.context, p)
+
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) this
         else {
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
-            tryUnstashOne(applySideEffects(sideEffects, state))
+            val newState = applySideEffects(sideEffects, state)
+
+            onWriteDone(setup.context, p)
+
+            tryUnstashOne(newState)
           } else {
             internalSaveSnapshot(state)
             storingSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
@@ -516,5 +522,7 @@ private[akka] object Running {
       @unused reason: Throwable,
       @unused event: Any,
       @unused sequenceNr: Long): Unit = ()
-
+  @InternalStableApi
+  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
 }

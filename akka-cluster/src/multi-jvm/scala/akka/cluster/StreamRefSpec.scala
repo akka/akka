@@ -45,8 +45,7 @@ object StreamRefSpec extends MultiNodeConfig {
   testTransport(on = true)
 
   case class RequestLogs(streamId: Int) extends CborSerializable
-  // Using Java serialization until issue #27304 is fixed
-  case class LogsOffer(streamId: Int, sourceRef: SourceRef[String]) extends JavaSerializable
+  case class LogsOffer(streamId: Int, sourceRef: SourceRef[String]) extends CborSerializable
 
   object DataSource {
     def props(streamLifecycleProbe: ActorRef): Props =

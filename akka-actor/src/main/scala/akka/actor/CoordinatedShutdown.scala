@@ -31,7 +31,7 @@ import java.util.function.Supplier
 import java.util.Optional
 
 import akka.annotation.InternalApi
-import akka.util.OptionVal
+import akka.util.{ OptionVal, Timeout }
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
 
@@ -373,6 +373,12 @@ final class CoordinatedShutdown private[akka] (
   /**
    * INTERNAL API
    */
+  private[akka] lazy val terminationWatcher =
+    system.systemActorOf(CoordinatedShutdownTerminationWatcher.props, "coordinatedShutdownTerminationWatcher")
+
+  /**
+   * INTERNAL API
+   */
   private[akka] def jvmHooksLatch: CountDownLatch = _jvmHooksLatch.get
 
   /**
@@ -420,6 +426,50 @@ final class CoordinatedShutdown private[akka] (
    */
   def addTask(phase: String, taskName: String, task: Supplier[CompletionStage[Done]]): Unit =
     addTask(phase, taskName)(() => task.get().toScala)
+
+  /**
+   * Scala API: Add an actor termination task to a phase. It doesn't remove
+   * previously added tasks. Tasks added to the same phase are executed in
+   * parallel without any ordering assumptions. Next phase will not start until
+   * all tasks of previous phase have been completed.
+   *
+   * When executed, this task will first send the given stop message, if defined,
+   * to the actor, then it will watch the actor, and complete when the actor
+   * terminates.
+   *
+   * Tasks should typically be registered as early as possible after system
+   * startup. When running the coordinated shutdown tasks that have been registered
+   * will be performed but tasks that are added too late will not be run.
+   * It is possible to add a task to a later phase by a task in an earlier phase
+   * and it will be performed.
+   */
+  def addActorTerminationTask(phase: String, taskName: String, actor: ActorRef, stopMsg: Option[Any]): Unit =
+    addTask(phase, taskName) { () =>
+      stopMsg.foreach(msg => actor ! msg)
+      import akka.pattern.ask
+      // addTask will verify that phases(phase) exists, so this should be safe
+      implicit val timeout = Timeout(phases(phase).timeout)
+      (terminationWatcher ? CoordinatedShutdownTerminationWatcher.Watch(actor)).mapTo[Done]
+    }
+
+  /**
+   * Java API: Add an actor termination task to a phase. It doesn't remove
+   * previously added tasks. Tasks added to the same phase are executed in
+   * parallel without any ordering assumptions. Next phase will not start until
+   * all tasks of previous phase have been completed.
+   *
+   * When executed, this task will first send the given stop message, if defined,
+   * to the actor, then it will watch the actor, and complete when the actor
+   * terminates.
+   *
+   * Tasks should typically be registered as early as possible after system
+   * startup. When running the coordinated shutdown tasks that have been registered
+   * will be performed but tasks that are added too late will not be run.
+   * It is possible to add a task to a later phase by a task in an earlier phase
+   * and it will be performed.
+   */
+  def addActorTerminationTask(phase: String, taskName: String, actor: ActorRef, stopMsg: Optional[Any]): Unit =
+    addActorTerminationTask(phase, taskName, actor, stopMsg.asScala)
 
   /**
    * The `Reason` for the shutdown as passed to the `run` method. `None` if the shutdown
@@ -684,5 +734,34 @@ final class CoordinatedShutdown private[akka] (
    */
   def addCancellableJvmShutdownHook(hook: Runnable): Cancellable =
     addCancellableJvmShutdownHook(hook.run())
+
+}
+
+/** INTERNAL API */
+@InternalApi
+private[akka] object CoordinatedShutdownTerminationWatcher {
+  final case class Watch(actor: ActorRef)
+
+  def props: Props = Props(new CoordinatedShutdownTerminationWatcher)
+}
+
+/** INTERNAL API */
+@InternalApi
+private[akka] class CoordinatedShutdownTerminationWatcher extends Actor {
+
+  import CoordinatedShutdownTerminationWatcher._
+
+  private var watching = Map.empty[ActorRef, List[ActorRef]].withDefaultValue(Nil)
+
+  override def receive: Receive = {
+
+    case Watch(actor: ActorRef) =>
+      watching += (actor -> (sender() :: watching(actor)))
+      context.watch(actor)
+
+    case Terminated(actor) =>
+      watching(actor).foreach(_ ! Done)
+      watching -= actor
+  }
 
 }

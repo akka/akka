@@ -13,7 +13,7 @@ For the new API see @ref[dispatchers](typed/dispatchers.md).
 
 ## Dependency
 
-Dispatchers are part of core akka, which means that they are part of the akka-actor dependency:
+Dispatchers are part of core Akka, which means that they are part of the akka-actor dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

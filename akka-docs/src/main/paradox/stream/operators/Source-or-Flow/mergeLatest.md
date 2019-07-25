@@ -4,7 +4,13 @@ Merge multiple sources.
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
+@@@div { .group-scala }
+
 ## Signature
+
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mergeLatest }
+
+@@@
 
 ## Description
 

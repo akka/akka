@@ -539,17 +539,18 @@ object Source {
    * this Source; as such, it is never safe to assume the downstream will always generate demand.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
-   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately,
-   * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
-   * already buffered elements will be signaled before signaling completion.
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately.
+   * Otherwise, if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
+   * already buffered elements will be sent out before signaling completion.
    * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
+   * Using [[akka.actor.ActorSystem.stop]] to stop the actor and complete the stream is *not supported*.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
    * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
    * the failure will be signaled downstream immediately (instead of the completion signal).
    *
-   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * The actor will be stopped when the stream is canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    *
    * See also [[akka.stream.scaladsl.Source.queue]].

@@ -5,25 +5,29 @@
 package akka.actor.typed
 
 import scala.annotation.tailrec
-
 import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.DoNotInherit
 
+/**
+ * A message protocol for actors that support spawning a child actor when receiving a [[SpawnProtocol#Spawn]]
+ * message and sending back the [[ActorRef]] of the child actor. Create instances through the [[SpawnProtocol#apply]]
+ * or [[SpawnProtocol.create()]] factory methods.
+ *
+ * The typical usage of this is to use it as the guardian actor of the [[ActorSystem]], possibly combined with
+ * `Behaviors.setup` to starts some initial tasks or actors. Child actors can then be started from the outside
+ * by telling or asking [[SpawnProtocol#Spawn]] to the actor reference of the system. When using `ask` this is
+ * similar to how [[akka.actor.ActorSystem#actorOf]] can be used in untyped actors with the difference that
+ * a `Future` / `CompletionStage` of the `ActorRef` is returned.
+ *
+ * Stopping children is done through specific support in the protocol of the children, or stopping the entire
+ * spawn protocol actor.
+ */
 object SpawnProtocol {
 
-  object Spawn {
-
-    /**
-     * Special factory to make using Spawn with ask easier
-     */
-    def apply[T](behavior: Behavior[T], name: String, props: Props): ActorRef[ActorRef[T]] => Spawn[T] =
-      replyTo => new Spawn(behavior, name, props, replyTo)
-
-    /**
-     * Special factory to make using Spawn with ask easier. Props defaults to Props.empty
-     */
-    def apply[T](behavior: Behavior[T], name: String): ActorRef[ActorRef[T]] => Spawn[T] =
-      replyTo => new Spawn(behavior, name, Props.empty, replyTo)
-  }
+  /**
+   * Not for user extension
+   */
+  @DoNotInherit sealed trait Command
 
   /**
    * Spawn a child actor with the given `behavior` and send back the `ActorRef` of that child to the given
@@ -37,12 +41,17 @@ object SpawnProtocol {
    * `InvalidActorNameException`, but it's better to use unique names to begin with.
    */
   final case class Spawn[T](behavior: Behavior[T], name: String, props: Props, replyTo: ActorRef[ActorRef[T]])
-      extends SpawnProtocol
+      extends Command
 
   /**
-   * Behavior implementing the [[SpawnProtocol]].
+   * Java API: returns a behavior that can be commanded to spawn arbitrary children.
    */
-  val behavior: Behavior[SpawnProtocol] =
+  def create(): Behavior[Command] = apply()
+
+  /**
+   * Scala API: returns a behavior that can be commanded to spawn arbitrary children.
+   */
+  def apply(): Behavior[Command] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case Spawn(bhvr, name, props, replyTo) =>
@@ -67,17 +76,3 @@ object SpawnProtocol {
     }
 
 }
-
-/**
- * A message protocol for actors that support spawning a child actor when receiving a [[SpawnProtocol#Spawn]]
- * message and sending back the [[ActorRef]] of the child actor. An implementation of a behavior for this
- * protocol is defined in [[SpawnProtocol#behavior]]. That can be used as is or composed with other behavior
- * using [[Behavior#orElse]].
- *
- * The typical usage of this is to use it as the guardian actor of the [[ActorSystem]], possibly combined with
- * `Behaviors.setup` to starts some initial tasks or actors. Child actors can then be started from the outside
- * by telling or asking [[SpawnProtocol#Spawn]] to the actor reference of the system. When using `ask` this is
- * similar to how [[akka.actor.ActorSystem#actorOf]] can be used in untyped actors with the difference that
- * a `Future` / `CompletionStage` of the `ActorRef` is returned.
- */
-sealed abstract class SpawnProtocol

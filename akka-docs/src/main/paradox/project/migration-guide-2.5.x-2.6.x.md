@@ -354,6 +354,19 @@ akka.cluster.sharding.passivate-idle-entity-after = off
 
 It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
 
+### Distributed Data
+
+Configuration properties for controlling sizes of `Gossip` and `DeltaPropagation` messages in Distributed Data
+have been reduced. Previous defaults sometimes resulted in messages exceeding max payload size for remote
+actor messages.
+
+The new configuration properties are:
+
+```
+akka.cluster.distributed-data.max-delta-elements = 500
+akka.cluster.distributed-data.delta-crdt.max-delta-size = 50
+```
+
 ### CoordinatedShutdown is run from ActorSystem.terminate
 
 No migration is needed but it is mentioned here because it is a change in behavior.
@@ -462,6 +475,8 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   `interceptMessageType` method in `BehaviorInterceptor` is replaced with this @scala[`ClassTag`]@java[`Class`] parameter.
 * `Behavior.orElse` has been removed because it wasn't safe together with `narrow`.
 * `StashBuffer`s are now created with `Behaviors.withStash` rather than instantiating directly
+* To align with the Akka Typed style guide `SpawnProtocol` is now created through @scala[`SpawnProtocol()`]@java[`SpawnProtocol.create()`], the special `Spawn` message
+  factories has been removed and the top level of the actor protocol is now `SpawnProtocol.Command`
 
 #### Akka Typed Stream API changes
 

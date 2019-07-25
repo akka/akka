@@ -32,12 +32,12 @@ object SpawnProtocolDocSpec {
 
   //#main
   object HelloWorldMain {
-    val main: Behavior[SpawnProtocol] =
+    val main: Behavior[SpawnProtocol.Command] =
       Behaviors.setup { context =>
         // Start initial tasks
         // context.spawn(...)
 
-        SpawnProtocol.behavior
+        SpawnProtocol()
       }
   }
   //#main
@@ -51,7 +51,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "be able to spawn actors" in {
       //#system-spawn
 
-      val system: ActorSystem[SpawnProtocol] =
+      val system: ActorSystem[SpawnProtocol.Command] =
         ActorSystem(HelloWorldMain.main, "hello")
 
       // needed in implicit scope for ask (?)
@@ -61,7 +61,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
-        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty))
+        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty, _))
 
       val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
         context.log.info("Greeting for {} from {}", Array(message.whom, message.from): _*)
@@ -69,7 +69,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
 
       val greetedReplyTo: Future[ActorRef[HelloWorld.Greeted]] =
-        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty))
+        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty, _))
 
       for (greeterRef <- greeter; replyToRef <- greetedReplyTo) {
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)

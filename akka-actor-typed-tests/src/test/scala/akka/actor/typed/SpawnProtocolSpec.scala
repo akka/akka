@@ -11,6 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
+import scala.concurrent.Future
+
 object SpawnProtocolSpec {
   sealed trait Message
   final case class Ping(replyTo: ActorRef[Pong.type]) extends Message
@@ -32,7 +34,7 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "Spawn behavior" must {
     "spawn child actor" in {
       val parentReply = TestProbe[ActorRef[Message]]()
-      val parent = spawn(SpawnProtocol.behavior, "parent")
+      val parent = spawn(SpawnProtocol(), "parent")
       parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
       val child = parentReply.receiveMessage()
       child.path.name should ===("child")
@@ -43,17 +45,18 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "have nice API for ask" in {
-      val parent = spawn(SpawnProtocol.behavior, "parent2")
+      val parent = spawn(SpawnProtocol(), "parent2")
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout = Timeout(5.seconds)
-      val parentReply = parent.ask(SpawnProtocol.Spawn(target, "child", Props.empty))
+      val parentReply: Future[ActorRef[Ping]] =
+        parent.ask(SpawnProtocol.Spawn(target, "child", Props.empty, _))
       val child = parentReply.futureValue
       val childReply = TestProbe[Pong.type]()
       child ! Ping(childReply.ref)
     }
 
     "be possible to use as guardian behavior" in {
-      val sys = ActorSystem(SpawnProtocol.behavior, "SpawnProtocolSpec2")
+      val sys = ActorSystem(SpawnProtocol(), "SpawnProtocolSpec2")
       try {
         val guardianReply = TestProbe[ActorRef[Message]]()(sys)
         sys ! SpawnProtocol.Spawn(target, "child1", Props.empty, guardianReply.ref)
@@ -70,7 +73,7 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "spawn with unique name when given name is taken" in {
       val parentReply = TestProbe[ActorRef[Message]]()
-      val parent = spawn(SpawnProtocol.behavior, "parent3")
+      val parent = spawn(SpawnProtocol(), "parent3")
 
       parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
       val child0 = parentReply.receiveMessage()
@@ -101,7 +104,7 @@ class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
 
     "spawn with given name" in {
       val parentReply = TestInbox[ActorRef[Message]]()
-      val testkit = BehaviorTestKit(SpawnProtocol.behavior)
+      val testkit = BehaviorTestKit(SpawnProtocol())
       testkit.run(SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref))
       val child = parentReply.receiveMessage()
       child.path.name should ===("child")
@@ -110,7 +113,7 @@ class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
 
     "spawn anonymous when name undefined" in {
       val parentReply = TestInbox[ActorRef[Message]]()
-      val testkit = BehaviorTestKit(SpawnProtocol.behavior)
+      val testkit = BehaviorTestKit(SpawnProtocol())
       testkit.run(SpawnProtocol.Spawn(target, "", Props.empty, parentReply.ref))
       val child = parentReply.receiveMessage()
       child.path.name should startWith("$")
