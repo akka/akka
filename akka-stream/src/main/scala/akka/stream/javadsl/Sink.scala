@@ -7,7 +7,7 @@ package akka.stream.javadsl
 import java.util.Optional
 
 import akka.{ japi, Done, NotUsed }
-import akka.actor.{ ActorRef, Props }
+import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.stream.impl.LinearTraversalBuilder
@@ -263,19 +263,6 @@ object Sink {
       onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(
       scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply _))
-
-  /**
-   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
-   * be [[akka.stream.actor.ActorSubscriber]].
-   *
-   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
-   */
-  @deprecated(
-    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
-    since = "2.5.0")
-  def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
-    new Sink(scaladsl.Sink.actorSubscriber(props))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
