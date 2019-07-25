@@ -14,7 +14,11 @@ without having JDK 8 installed, by using the `-release` option.
 
 ### GPG and sbt-pgp setup
  
-* Check the [sbt-pgp usage](https://www.scala-sbt.org/sbt-pgp/usage.html) for setup steps you may still need
+* Check the [sbt-pgp usage](https://www.scala-sbt.org/sbt-pgp/usage.html) for any setup steps you may still need, for example:
+```
+sbt> set pgpReadOnly := false
+sbt> pgp-cmd gen-key
+```    
 * Check that signing works with `sbt> publishLocalSigned`
    
 #### Mac
@@ -35,6 +39,11 @@ otherwise git might convert line endings in some cases.
 Make sure you have the Lightbend Whitesource credentials configured in
 your `~/.sbt/1.0/private-credentials.sbt`.
 
+### Install Graphvis
+
+[Graphvis](https://graphviz.gitlab.io/download/) is needed for the 
+scaladoc generation build task, which is part of the release.
+ 
 ### Release script instructions
 
 Make sure you have completed the setup in `project/scripts/release`.
