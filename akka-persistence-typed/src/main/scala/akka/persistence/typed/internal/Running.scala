@@ -292,15 +292,13 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            // current + 1 as it is the inflight event that that has failed
-            onWriteRejected(setup.context, cause, p.payload, currentSequenceNumber + 1)
+            onWriteRejected(setup.context, cause, p)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            // current + 1 as it is the inflight event that that has failed
-            onWriteFailed(setup.context, cause, p.payload, currentSequenceNumber + 1)
+            onWriteFailed(setup.context, cause, p)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
 
@@ -514,14 +512,12 @@ private[akka] object Running {
   private[akka] def onWriteFailed(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
-      @unused event: Any,
-      @unused sequenceNr: Long): Unit = ()
+      @unused event: PersistentRepr): Unit = ()
   @InternalStableApi
   private[akka] def onWriteRejected(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
-      @unused event: Any,
-      @unused sequenceNr: Long): Unit = ()
+      @unused event: PersistentRepr): Unit = ()
   @InternalStableApi
   private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
   private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
