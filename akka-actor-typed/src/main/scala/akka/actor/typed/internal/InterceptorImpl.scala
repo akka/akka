@@ -113,7 +113,7 @@ private[akka] final class InterceptorImpl[O, I](
 }
 
 /**
- * Fire off any incoming message to another actor before receiving it ourselves.
+ * Fire off any incoming signal to another actor before receiving it ourselves.
  *
  * INTERNAL API
  */
@@ -157,28 +157,33 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
   val log = LoggerFactory.getLogger(classOf[BehaviorInterceptor[Any, Any]])
 
   override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
-    if (opts.enabled)
+    if (opts.enabled) {
+      val actorPath = ctx.asScala.self.path.toString
       opts.level match {
-        case Level.ERROR => log.error("received message {}", msg)
-        case Level.WARN  => log.warn("received message {}", msg)
-        case Level.INFO  => log.info("received message {}", msg)
-        case Level.DEBUG => log.debug("received message {}", msg)
-        //TODO check this debug case is actually best option
-        case _ => log.debug("received message {}", msg)
-      }
+    case Level.ERROR => log.error(s"actor $actorPath received message $msg")
+    case Level.WARN  => log.warn(s"actor $actorPath received message $msg")
+    case Level.INFO  => log.info(s"actor $actorPath received message $msg")
+    case Level.DEBUG => log.debug(s"actor $actorPath received message $msg")
+    //TODO check this debug case is actually best option
+    case _ => log.debug(s"actor $actorPath received message $msg")
+  }
+    }
     target(ctx, msg)
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
-    if (opts.enabled)
-      opts.level match {
-        case Level.ERROR => log.error("received signal {}", signal)
-        case Level.WARN  => log.warn("received signal {}", signal)
-        case Level.INFO  => log.info("received signal {}", signal)
-        case Level.DEBUG => log.debug("received signal {}", signal)
-        //TODO check this debug case is actually best option
-        case _ => log.debug("received signal {}", signal)
-      }
+    if (opts.enabled) {
+    val actorPath = ctx.asScala.self.path.toString
+    opts.level match {
+    case Level.ERROR => log.error(s"actor $actorPath received signal $signal")
+    case Level.WARN  => log.warn(s"actor $actorPath received signal $signal")
+    case Level.INFO  => log.info(s"actor $actorPath received signal $signal")
+    case Level.DEBUG => log.debug(s"actor $actorPath received signal $signal")
+    //TODO check this debug case is actually best option
+    case _ => log.debug(s"actor $actorPath received signal $signal")
+  }
+    }
+
     target(ctx, signal)
   }
 
