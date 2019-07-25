@@ -185,7 +185,7 @@ class TlsTcpWithHostnameVerificationSpec
     akka.remote.artery.ssl.config-ssl-engine {
       hostname-verification = on
     }
-    akka.remote.use-unsafe-remote-features-without-cluster = on
+    akka.remote.use-unsafe-remote-features-outside-cluster = on
 
     akka.loggers = ["akka.testkit.TestEventListener"]
     """).withFallback(TlsTcpSpec.config))

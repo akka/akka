@@ -26,7 +26,7 @@ object RemoteDeathWatchSpec {
             }
         }
         test.filter-leeway = 10s
-        remote.use-unsafe-remote-features-without-cluster = on
+        remote.use-unsafe-remote-features-outside-cluster = on
         remote.watch-failure-detector.acceptable-heartbeat-pause = 2s
 
         # reduce handshake timeout for quicker test of unknownhost, but

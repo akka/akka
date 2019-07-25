@@ -69,7 +69,7 @@ class RemoteDeploymentSpec
     extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
     akka.remote.artery.advanced.inbound-lanes = 10
     akka.remote.artery.advanced.outbound-lanes = 3
-    akka.remote.use-unsafe-remote-features-without-cluster = on
+    akka.remote.use-unsafe-remote-features-outside-cluster = on
     """).withFallback(ArterySpecSupport.defaultConfig)) {
 
   import RemoteDeploymentSpec._

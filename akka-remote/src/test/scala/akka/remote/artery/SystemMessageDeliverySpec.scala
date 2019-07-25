@@ -48,7 +48,7 @@ object SystemMessageDeliverySpec {
     """).withFallback(ArterySpecSupport.defaultConfig)
 
   val config =
-    ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-without-cluster = on").withFallback(safe)
+    ConfigFactory.parseString("akka.remote.use-unsafe-remote-features-outside-cluster = on").withFallback(safe)
 }
 
 abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiNodeSpec(c) with ImplicitSender {

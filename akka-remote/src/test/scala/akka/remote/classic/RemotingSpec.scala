@@ -89,7 +89,7 @@ object RemotingSpec {
       actor.warn-about-java-serializer-usage = off
 
       remote {
-        use-unsafe-remote-features-without-cluster = on
+        use-unsafe-remote-features-outside-cluster = on
         artery.enabled = off
         classic {
           retry-gate-closed-for = 1 s

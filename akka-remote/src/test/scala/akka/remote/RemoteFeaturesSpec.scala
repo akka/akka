@@ -32,7 +32,7 @@ object RemoteFeaturesSpec {
 
   // string config to pass into `ArteryMultiNodeSpec.extraConfig: Option[String]` for `other` system
   def common(useUnsafe: Boolean): String = s"""
-       akka.remote.use-unsafe-remote-features-without-cluster = $useUnsafe
+       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
        akka.remote.artery.enabled = on
        akka.remote.artery.canonical.port = 0
        akka.remote.artery.advanced.flight-recorder.enabled = off
