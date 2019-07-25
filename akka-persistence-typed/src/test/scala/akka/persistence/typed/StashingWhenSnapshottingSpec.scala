@@ -72,7 +72,7 @@ object StashingWhenSnapshottingSpec {
   }
     """)
 
-  def pa(pid: PersistenceId, eventProbe: TestProbe[String]) =
+  def persistentTestBehavior(pid: PersistenceId, eventProbe: TestProbe[String]) =
     EventSourcedBehavior[String, String, List[String]](
       pid,
       Nil,
@@ -89,13 +89,13 @@ class StashingWhenSnapshottingSpec
   "A persistent actor" should {
     "stash messages and automatically replay when snapshot is in progress" in {
       val eventProbe = TestProbe[String]()
-      val pa = spawn(StashingWhenSnapshottingSpec.pa(PersistenceId("1"), eventProbe))
-      pa ! "one"
+      val persistentActor = spawn(StashingWhenSnapshottingSpec.persistentTestBehavior(PersistenceId("1"), eventProbe))
+      persistentActor ! "one"
       eventProbe.expectMessage("one")
-      pa ! "snap"
+      persistentActor ! "snap"
       eventProbe.expectMessage("snap")
       ControllableSnapshotStoreExt(system).snapshotWriteStarted.await()
-      pa ! "two"
+      persistentActor ! "two"
       eventProbe.expectNoMessage() // snapshot in progress
       ControllableSnapshotStoreExt(system).completeSnapshotWrite.complete(Success(()))
       eventProbe.expectMessage("two")
