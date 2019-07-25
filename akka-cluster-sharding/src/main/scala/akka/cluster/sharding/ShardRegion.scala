@@ -6,24 +6,27 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import akka.pattern.AskTimeoutException
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
-import akka.pattern.{ ask, pipe }
-import akka.actor._
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
-import akka.cluster.Member
-import akka.cluster.MemberStatus
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
+import scala.runtime.AbstractFunction1
+import scala.util.Success
+import scala.util.Failure
 
 import akka.Done
 import akka.annotation.InternalApi
+import akka.actor._
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent._
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.sharding.Shard.ShardStats
+import akka.pattern.{ ask, pipe }
+import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -293,8 +296,14 @@ object ShardRegion {
    */
   def getRegionStatsInstance = GetShardRegionStats
 
-  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int])
-      extends ClusterShardingSerializable {
+  /**
+   *
+   * @param stats the region stats mapping of `ShardId` to number of entities
+   * @param failed set of shards if any failed to respond within the timeout
+   */
+  @SerialVersionUID(1L) final class ShardRegionStats(val stats: Map[ShardId, Int], val failed: Set[ShardId])
+      extends ClusterShardingSerializable
+      with Product {
 
     /**
      * Java API
@@ -304,6 +313,38 @@ object ShardRegion {
       stats.asJava
     }
 
+    /** Java API */
+    def getFailed(): java.util.Set[ShardId] = {
+      import akka.util.ccompat.JavaConverters._
+      failed.asJava
+    }
+
+    // For binary compatibility
+    def this(stats: Map[ShardId, Int]) = this(stats, Set.empty[ShardId])
+    private[sharding] def copy(stats: Map[ShardId, Int] = stats): ShardRegionStats =
+      new ShardRegionStats(stats, this.failed)
+
+    // For binary compatibility: class conversion from case class
+    override def equals(other: Any): Boolean = other match {
+      case o: ShardRegionStats => o.stats == stats && o.failed == failed
+      case _                   => false
+    }
+    override def hashCode: Int = stats.## + failed.##
+    override def toString: String = s"ShardRegionStats[stats=$stats, failed=$failed]"
+    override def productArity: Int = 2
+    override def productElement(n: Int) =
+      if (n == 0) stats else if (n == 1) failed else throw new NoSuchElementException
+    override def canEqual(o: Any): Boolean = o.isInstanceOf[ShardRegionStats]
+
+  }
+  // For binary compatibility
+  object ShardRegionStats extends AbstractFunction1[Map[ShardId, Int], ShardRegionStats] {
+    def apply(stats: Map[ShardId, Int]): ShardRegionStats =
+      apply(stats, Set.empty[ShardId])
+    def apply(stats: Map[ShardId, Int], failed: Set[ShardId]): ShardRegionStats =
+      new ShardRegionStats(stats, failed)
+    def unapply(stats: ShardRegionStats): Option[Map[ShardId, Int]] =
+      Option(stats.stats)
   }
 
   /**
@@ -395,7 +436,7 @@ object ShardRegion {
 
     var remaining = entities
 
-    def receive = {
+    def receive: Receive = {
       case ReceiveTimeout =>
         log.warning(
           "HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard, " +
@@ -450,6 +491,7 @@ private[akka] class ShardRegion(
     with ActorLogging
     with Timers {
 
+  import ShardingQueries.ShardsQueryResult
   import ShardCoordinator.Internal._
   import ShardRegion._
   import settings._
@@ -694,14 +736,14 @@ private[akka] class ShardRegion(
         case None    => sender() ! CurrentRegions(Set.empty)
       }
 
+    case msg: GetClusterShardingStats =>
+      coordinator.fold(sender ! ClusterShardingStats(Map.empty))(_.forward(msg))
+
     case GetShardRegionState =>
       replyToRegionStateQuery(sender())
 
     case GetShardRegionStats =>
       replyToRegionStatsQuery(sender())
-
-    case msg: GetClusterShardingStats =>
-      coordinator.fold(sender ! ClusterShardingStats(Map.empty))(_.forward(msg))
 
     case _ => unhandled(query)
   }
@@ -738,37 +780,51 @@ private[akka] class ShardRegion(
   }
 
   def replyToRegionStateQuery(ref: ActorRef): Unit = {
-    askAllShards[Shard.CurrentShardState](Shard.GetCurrentShardState)
-      .map { shardStates =>
-        CurrentShardRegionState(shardStates.map {
-          case (shardId, state) => ShardRegion.ShardState(shardId, state.entityIds)
-        }.toSet)
-      }
-      .recover {
-        case _: AskTimeoutException => CurrentShardRegionState(Set.empty)
+    queryShards[Shard.CurrentShardState](shards, Shard.GetCurrentShardState)
+      .map { qr =>
+        // Productionize CurrentShardRegionState #27406
+        val state =
+          qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)) ++
+          qr.failed.map(sid => ShardRegion.ShardState(sid, Set.empty))
+        CurrentShardRegionState(state.toSet)
       }
       .pipeTo(ref)
   }
 
   def replyToRegionStatsQuery(ref: ActorRef): Unit = {
-    askAllShards[Shard.ShardStats](Shard.GetShardStats)
-      .map { shardStats =>
-        ShardRegionStats(shardStats.map {
-          case (shardId, stats) => (shardId, stats.entityCount)
-        }.toMap)
-      }
-      .recover {
-        case _: AskTimeoutException => ShardRegionStats(Map.empty)
+    queryShards[ShardStats](shards, Shard.GetShardStats)
+      .map { qr =>
+        ShardRegionStats(qr.responses.map(stats => (stats.shardId, stats.entityCount)).toMap, qr.failed)
       }
       .pipeTo(ref)
   }
 
-  def askAllShards[T: ClassTag](msg: Any): Future[Seq[(ShardId, T)]] = {
+  /**
+   * Query all or a subset of shards, e.g. unresponsive shards that initially timed out.
+   * If the number of `shards` are less than this.shards.size, this could be a retry.
+   * Returns a partitioned set of any shards that may have not replied within the
+   * timeout and shards that did reply, to provide retry on only that subset.
+   *
+   * Logs a warning if any of the group timed out.
+   *
+   * To check subset unresponsive: {{{ queryShards[T](shards.filterKeys(u.contains), shardQuery) }}}
+   */
+  def queryShards[T: ClassTag](shards: Map[ShardId, ActorRef], msg: Any): Future[ShardsQueryResult[T]] = {
     implicit val timeout: Timeout = settings.shardRegionQueryTimeout
-    Future.sequence(shards.toSeq.map {
-      case (shardId, ref) => (ref ? msg).mapTo[T].map(t => (shardId, t))
-    })
+
+    Future.traverse(shards.toSeq) { case (shardId, shard) => askOne(shard, msg, shardId) }.map { ps =>
+      val qr = ShardsQueryResult[T](ps, this.shards.size)
+      if (qr.failed.nonEmpty) log.warning(qr.toString)
+      qr
+    }
   }
+
+  private def askOne[T: ClassTag](shard: ActorRef, msg: Any, shardId: ShardId)(
+      implicit timeout: Timeout): Future[Either[ShardId, T]] =
+    (shard ? msg).mapTo[T].transform {
+      case Success(t) => Success(Right(t))
+      case Failure(_) => Success(Left(shardId))
+    }
 
   private def tryCompleteGracefulShutdown() =
     if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty) {

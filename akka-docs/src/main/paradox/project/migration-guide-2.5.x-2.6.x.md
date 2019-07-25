@@ -364,6 +364,12 @@ akka.cluster.sharding.passivate-idle-entity-after = off
 
 It is always disabled if @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) is enabled.
 
+#### Cluster Sharding stats
+
+A new field has been added to the response of a `ShardRegion.GetClusterShardingStats` command
+for any shards per region that may have failed or not responded within the new configurable `akka.cluster.sharding.shard-region-query-timeout`. 
+This is described further in @ref:[inspecting sharding state](../cluster-sharding.md#inspecting-cluster-sharding-state).
+
 ### Distributed Data
 
 Configuration properties for controlling sizes of `Gossip` and `DeltaPropagation` messages in Distributed Data

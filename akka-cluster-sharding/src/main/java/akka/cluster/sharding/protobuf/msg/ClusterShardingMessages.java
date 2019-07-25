@@ -6190,6 +6190,26 @@ public final class ClusterShardingMessages {
      */
     akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder getStatsOrBuilder(
         int index);
+
+    // repeated string failed = 2;
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    java.util.List<java.lang.String>
+    getFailedList();
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    int getFailedCount();
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    java.lang.String getFailed(int index);
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    akka.protobuf.ByteString
+        getFailedBytes(int index);
   }
   /**
    * Protobuf type {@code ShardRegionStats}
@@ -6250,6 +6270,14 @@ public final class ClusterShardingMessages {
               stats_.add(input.readMessage(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.PARSER, extensionRegistry));
               break;
             }
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                failed_ = new akka.protobuf.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              failed_.add(input.readBytes());
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -6260,6 +6288,9 @@ public final class ClusterShardingMessages {
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
           stats_ = java.util.Collections.unmodifiableList(stats_);
+        }
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          failed_ = new akka.protobuf.UnmodifiableLazyStringList(failed_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -6328,8 +6359,39 @@ public final class ClusterShardingMessages {
       return stats_.get(index);
     }
 
+    // repeated string failed = 2;
+    public static final int FAILED_FIELD_NUMBER = 2;
+    private akka.protobuf.LazyStringList failed_;
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    public java.util.List<java.lang.String>
+        getFailedList() {
+      return failed_;
+    }
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    public int getFailedCount() {
+      return failed_.size();
+    }
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    public java.lang.String getFailed(int index) {
+      return failed_.get(index);
+    }
+    /**
+     * <code>repeated string failed = 2;</code>
+     */
+    public akka.protobuf.ByteString
+        getFailedBytes(int index) {
+      return failed_.getByteString(index);
+    }
+
     private void initFields() {
       stats_ = java.util.Collections.emptyList();
+      failed_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -6346,6 +6408,9 @@ public final class ClusterShardingMessages {
       for (int i = 0; i < stats_.size(); i++) {
         output.writeMessage(1, stats_.get(i));
       }
+      for (int i = 0; i < failed_.size(); i++) {
+        output.writeBytes(2, failed_.getByteString(i));
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -6358,6 +6423,15 @@ public final class ClusterShardingMessages {
       for (int i = 0; i < stats_.size(); i++) {
         size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, stats_.get(i));
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < failed_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(failed_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getFailedList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -6482,6 +6556,8 @@ public final class ClusterShardingMessages {
         } else {
           statsBuilder_.clear();
         }
+        failed_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -6518,6 +6594,12 @@ public final class ClusterShardingMessages {
         } else {
           result.stats_ = statsBuilder_.build();
         }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          failed_ = new akka.protobuf.UnmodifiableLazyStringList(
+              failed_);
+          bitField0_ = (bitField0_ & ~0x00000002);
+        }
+        result.failed_ = failed_;
         onBuilt();
         return result;
       }
@@ -6558,6 +6640,16 @@ public final class ClusterShardingMessages {
               statsBuilder_.addAllMessages(other.stats_);
             }
           }
+        }
+        if (!other.failed_.isEmpty()) {
+          if (failed_.isEmpty()) {
+            failed_ = other.failed_;
+            bitField0_ = (bitField0_ & ~0x00000002);
+          } else {
+            ensureFailedIsMutable();
+            failed_.addAll(other.failed_);
+          }
+          onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -6824,6 +6916,99 @@ public final class ClusterShardingMessages {
           stats_ = null;
         }
         return statsBuilder_;
+      }
+
+      // repeated string failed = 2;
+      private akka.protobuf.LazyStringList failed_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureFailedIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          failed_ = new akka.protobuf.LazyStringArrayList(failed_);
+          bitField0_ |= 0x00000002;
+         }
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public java.util.List<java.lang.String>
+          getFailedList() {
+        return java.util.Collections.unmodifiableList(failed_);
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public int getFailedCount() {
+        return failed_.size();
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public java.lang.String getFailed(int index) {
+        return failed_.get(index);
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public akka.protobuf.ByteString
+          getFailedBytes(int index) {
+        return failed_.getByteString(index);
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public Builder setFailed(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureFailedIsMutable();
+        failed_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public Builder addFailed(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureFailedIsMutable();
+        failed_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public Builder addAllFailed(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureFailedIsMutable();
+        super.addAll(values, failed_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public Builder clearFailed() {
+        failed_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string failed = 2;</code>
+       */
+      public Builder addFailedBytes(
+          akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureFailedIsMutable();
+        failed_.add(value);
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:ShardRegionStats)
@@ -12033,20 +12218,21 @@ public final class ClusterShardingMessages {
       "ties\030\001 \003(\t\"!\n\rEntityStarted\022\020\n\010entityId\030" +
       "\001 \002(\t\"!\n\rEntityStopped\022\020\n\010entityId\030\001 \002(\t" +
       "\"0\n\nShardStats\022\r\n\005shard\030\001 \002(\t\022\023\n\013entityC" +
-      "ount\030\002 \002(\005\"1\n\020ShardRegionStats\022\035\n\005stats\030" +
-      "\001 \003(\0132\016.MapFieldEntry\"+\n\rMapFieldEntry\022\013" +
-      "\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\005\"/\n\027GetCluster" +
-      "ShardingStats\022\024\n\014timeoutNanos\030\001 \002(\003\"A\n\024C" +
-      "lusterShardingStats\022)\n\005stats\030\001 \003(\0132\032.Clu" +
-      "sterShardingStatsEntry\"X\n\031ClusterShardin" +
-      "gStatsEntry\022\031\n\007address\030\001 \002(\0132\010.Address\022 ",
-      "\n\005stats\030\002 \002(\0132\021.ShardRegionStats\"+\n\016Curr" +
-      "entRegions\022\031\n\007regions\030\001 \003(\0132\010.Address\"K\n" +
-      "\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002" +
-      "(\t\022\020\n\010hostname\030\003 \002(\t\022\014\n\004port\030\004 \002(\r\"\037\n\013St" +
-      "artEntity\022\020\n\010entityId\030\001 \002(\t\"3\n\016StartEnti" +
-      "tyAck\022\020\n\010entityId\030\001 \002(\t\022\017\n\007shardId\030\002 \002(\t" +
-      "B&\n\"akka.cluster.sharding.protobuf.msgH\001"
+      "ount\030\002 \002(\005\"A\n\020ShardRegionStats\022\035\n\005stats\030" +
+      "\001 \003(\0132\016.MapFieldEntry\022\016\n\006failed\030\002 \003(\t\"+\n" +
+      "\rMapFieldEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001" +
+      "(\005\"/\n\027GetClusterShardingStats\022\024\n\014timeout" +
+      "Nanos\030\001 \002(\003\"A\n\024ClusterShardingStats\022)\n\005s" +
+      "tats\030\001 \003(\0132\032.ClusterShardingStatsEntry\"X" +
+      "\n\031ClusterShardingStatsEntry\022\031\n\007address\030\001",
+      " \002(\0132\010.Address\022 \n\005stats\030\002 \002(\0132\021.ShardReg" +
+      "ionStats\"+\n\016CurrentRegions\022\031\n\007regions\030\001 " +
+      "\003(\0132\010.Address\"K\n\007Address\022\020\n\010protocol\030\001 \002" +
+      "(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022\014\n\004" +
+      "port\030\004 \002(\r\"\037\n\013StartEntity\022\020\n\010entityId\030\001 " +
+      "\002(\t\"3\n\016StartEntityAck\022\020\n\010entityId\030\001 \002(\t\022" +
+      "\017\n\007shardId\030\002 \002(\tB&\n\"akka.cluster.shardin" +
+      "g.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -12118,7 +12304,7 @@ public final class ClusterShardingMessages {
           internal_static_ShardRegionStats_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ShardRegionStats_descriptor,
-              new java.lang.String[] { "Stats", });
+              new java.lang.String[] { "Stats", "Failed", });
           internal_static_MapFieldEntry_descriptor =
             getDescriptor().getMessageTypes().get(10);
           internal_static_MapFieldEntry_fieldAccessorTable = new

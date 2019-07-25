@@ -55,6 +55,7 @@ message ShardStats {
 
 message ShardRegionStats {
   repeated MapFieldEntry stats = 1;
+  repeated string failed = 2;
 }
 
 message MapFieldEntry {
