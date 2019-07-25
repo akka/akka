@@ -4,13 +4,9 @@
 
 package akka.cluster.sharding
 
-import scala.reflect.ClassTag
-
 import akka.annotation.InternalApi
 
-/** INTERNAL API */
-@InternalApi
-private[sharding] object ShardingQueries {
+object ShardingQueries {
 
   /**
    * INTERNAL API
@@ -26,7 +22,12 @@ private[sharding] object ShardingQueries {
    *                subset if this was a retry of those that timed out
    * @tparam B
    */
-  final case class ShardsQueryResult[B](failed: Set[ShardRegion.ShardId], responses: Seq[B], total: Int, queried: Int) {
+  @InternalApi
+  private[sharding] final case class ShardsQueryResult[B](
+      failed: Set[ShardRegion.ShardId],
+      responses: Seq[B],
+      total: Int,
+      queried: Int) {
 
     /** Returns true if there was anything to query. */
     private val nonEmpty: Boolean = total > 0 && queried > 0
@@ -55,7 +56,7 @@ private[sharding] object ShardingQueries {
      * @param total the total number of actors tracked versus a possible subset
      * @tparam B
      */
-    def apply[B: ClassTag](ps: Seq[Either[ShardRegion.ShardId, B]], total: Int): ShardsQueryResult[B] = {
+    def apply[B](ps: Seq[Either[ShardRegion.ShardId, B]], total: Int): ShardsQueryResult[B] = {
       val (t, r) = partition(ps)(identity)
       ShardsQueryResult(t.toSet, r, total, ps.size)
     }

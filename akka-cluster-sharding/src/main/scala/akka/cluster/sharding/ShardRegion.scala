@@ -320,7 +320,7 @@ object ShardRegion {
 
     // For binary compatibility
     def this(stats: Map[ShardId, Int]) = this(stats, Set.empty[ShardId])
-    def copy(stats: Map[ShardId, Int] = stats): ShardRegionStats =
+    private[sharding] def copy(stats: Map[ShardId, Int] = stats): ShardRegionStats =
       new ShardRegionStats(stats, this.failed)
 
     // For binary compatibility: class conversion from case class
@@ -330,8 +330,9 @@ object ShardRegion {
     }
     override def hashCode: Int = stats.## + failed.##
     override def toString: String = s"ShardRegionStats[stats=$stats, failed=$failed]"
-    override def productArity: Int = 0
-    override def productElement(n: Int) = throw new NoSuchElementException
+    override def productArity: Int = 2
+    override def productElement(n: Int) =
+      if (n == 0) stats else if (n == 1) failed else throw new NoSuchElementException
     override def canEqual(o: Any): Boolean = o.isInstanceOf[ShardRegionStats]
 
   }
@@ -341,8 +342,8 @@ object ShardRegion {
       apply(stats, Set.empty[ShardId])
     def apply(stats: Map[ShardId, Int], failed: Set[ShardId]): ShardRegionStats =
       new ShardRegionStats(stats, failed)
-    def unapply(stats: ShardRegionStats): Option[(Map[ShardId, Int], Set[ShardId])] =
-      Option((stats.stats, stats.failed))
+    def unapply(stats: ShardRegionStats): Option[Map[ShardId, Int]] =
+      Option(stats.stats)
   }
 
   /**
