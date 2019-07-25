@@ -6,7 +6,9 @@ package akka.cluster.sharding
 
 import akka.annotation.InternalApi
 
-object ShardingQueries {
+/** INTERNAL API */
+@InternalApi
+private[sharding] object ShardingQueries {
 
   /**
    * INTERNAL API
@@ -23,12 +25,7 @@ object ShardingQueries {
    *                subset if this was a retry of those that timed out
    * @tparam B
    */
-  @InternalApi
-  private[sharding] final case class ShardsQueryResult[B](
-      failed: Set[ShardRegion.ShardId],
-      responses: Seq[B],
-      total: Int,
-      queried: Int) {
+  final case class ShardsQueryResult[B](failed: Set[ShardRegion.ShardId], responses: Seq[B], total: Int, queried: Int) {
 
     /** Returns true if there was anything to query. */
     private val nonEmpty: Boolean = total > 0 && queried > 0
@@ -49,7 +46,7 @@ object ShardingQueries {
       }
     }
   }
-  private[sharding] object ShardsQueryResult {
+  object ShardsQueryResult {
 
     /**
      * @param ps the partitioned results of actors queried that did not reply by
