@@ -145,27 +145,64 @@ object Dependencies {
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % Test
     }
 
-    object Provided {
+    object ProvidedDependencies {
       // TODO remove from Test config
-      val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
+      val sigarLoaderVersion = "1.6.6-rev002"
+      val sigarLoader = Seq(
+        "io.kamon" % "sigar-loader" % sigarLoaderVersion % Optional,
+        "io.kamon" % "sigar-loader" % sigarLoaderVersion % Provided,
+        "io.kamon" % "sigar-loader" % sigarLoaderVersion % Test
+      ) // ApacheV2
 
-      val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
+      val activationVersion = "1.2.0"
+      val activation = Seq(
+        "com.sun.activation" % "javax.activation" % activationVersion % Provided,
+        "com.sun.activation" % "javax.activation" % activationVersion % Test
+      )
 
-      val levelDB = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided" // ApacheV2
-      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided;multi-jvm;test" // ApacheV2
-      val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
+      val levelDBVersion = "0.12"
+      val levelDB = Seq(
+        "org.iq80.leveldb" % "leveldb" % levelDBVersion % Optional,
+        "org.iq80.leveldb" % "leveldb" % levelDBVersion % Provided
+      ) // ApacheV2
 
-      val junit = Compile.junit % "optional;provided;test"
+      val levelDBmultiJVMVersion = "0.12"
+      val levelDBmultiJVM = Seq(
+        "org.iq80.leveldb" % "leveldb" % levelDBmultiJVMVersion % Optional,
+        "org.iq80.leveldb" % "leveldb" % levelDBmultiJVMVersion % Provided,
+        "org.iq80.leveldb" % "leveldb" % levelDBmultiJVMVersion % "multi-jvm",
+        "org.iq80.leveldb" % "leveldb" % levelDBmultiJVMVersion % Test
+      ) // ApacheV2
 
-      val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "optional;provided;test" // ApacheV2
+      val levelDBNativeVersion = "1.8"
+      val levelDBNative = Seq(
+        "org.fusesource.leveldbjni" % "leveldbjni-all" % levelDBNativeVersion % Optional,
+        "org.fusesource.leveldbjni" % "leveldbjni-all" % levelDBNativeVersion % Provided
+      ) // New BSD
 
-      val logback = Compile.logback % "optional;provided;test" // EPL 1.0
+      val junit = Seq(
+        Compile.junit % Optional,
+        Compile.junit % Provided,
+        Compile.junit % Test
+      )
+
+      val logback = Seq(
+        Compile.logback % Optional,
+        Compile.logback % Provided,
+        Compile.logback % Test
+      ) // EPL 1.0
+
+      val scalatest = Seq(
+        "org.scalatest" %% "scalatest" % scalaTestVersion % Optional,
+        "org.scalatest" %% "scalatest" % scalaTestVersion % Provided,
+        "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+      ) // ApacheV2
 
     }
 
   }
 
-  import Compile.{ TestDependencies => Test, _ }
+  import Compile.{ TestDependencies => Test, ProvidedDependencies => Provided, _ }
 
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
@@ -189,14 +226,13 @@ object Dependencies {
         Test.commonsMath,
         Test.scalacheck,
         Test.jimfs,
-        Test.dockerClient,
-        Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
-      )
+        Test.dockerClient
+      ) ++ Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
 
-  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest, Test.scalatestJUnit)
+  val actorTestkitTyped = l ++= Provided.logback ++ Provided.junit ++ Provided.scalatest :+ Test.scalatestJUnit
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
-  val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
+  val remoteOptionalDependencies = remoteDependencies.map(_ % Optional)
 
   val remote = l ++= Seq(agrona, Test.junit, Test.scalatest, Test.jimfs, Test.protobufRuntime) ++ remoteOptionalDependencies
 
@@ -208,44 +244,50 @@ object Dependencies {
 
   val clusterTools = l ++= Seq(Test.junit, Test.scalatest)
 
-  val clusterSharding = l ++= Seq(
-        Provided.levelDBmultiJVM,
-        Provided.levelDBNative,
+  val clusterSharding = l ++= Provided.levelDBmultiJVM ++
+  Provided.levelDBNative ++
+  Seq(
         Test.junit,
         Test.scalatest,
         Test.commonsIo)
 
-  val clusterMetrics = l ++= Seq(
-        Provided.sigarLoader,
-        Test.slf4jJul,
-        Test.slf4jLog4j,
-        Test.logback,
-        Test.scalatestMockito)
+  val clusterMetrics = l ++= Provided.sigarLoader ++ Seq(Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.scalatestMockito)
 
   val distributedData = l ++= Seq(lmdb, Test.junit, Test.scalatest)
 
   val slf4j = l ++= Seq(slf4jApi, Test.logback)
 
-  val persistence = l ++= Seq(
-        Provided.levelDB,
-        Provided.levelDBNative,
+  val persistence = l ++=
+    Provided.levelDB ++
+    Provided.levelDBNative ++
+    Seq(
         Test.scalatest,
         Test.scalatestJUnit,
         Test.junit,
         Test.commonsIo,
-        Test.commonsCodec)
+        Test.commonsCodec
+      )
 
-  val persistenceQuery = l ++= Seq(Test.scalatest, Test.junit, Test.commonsIo, Provided.levelDB, Provided.levelDBNative)
+  val persistenceQuery = l ++=
+    Provided.levelDB ++
+    Provided.levelDBNative ++
+    Seq(
+        Test.scalatest,
+        Test.junit,
+        Test.commonsIo,
+      )
 
-  val persistenceTck = l ++= Seq(
+  val persistenceTck = l ++=
+    Provided.levelDB ++
+    Provided.levelDBNative ++
+    Seq( // TODO: replace Some("compile") by LibraryManagementSyntax equivalent
         Test.scalatest.withConfigurations(Some("compile")),
-        Test.junit.withConfigurations(Some("compile")),
-        Provided.levelDB,
-        Provided.levelDBNative)
+        Test.junit.withConfigurations(Some("compile"))
+        )
 
-  val persistenceTestKit = l ++= Seq(Test.scalatest)
+  val persistenceTestKit = l += Test.scalatest
 
-  val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+  val persistenceShared = l ++= Provided.levelDB ++ Provided.levelDBNative
 
   val jackson = l ++= Seq(
         jacksonCore,
@@ -269,9 +311,9 @@ object Dependencies {
         Test.scalatest,
         Test.junit)
 
-  val docs = l ++= Seq(Test.scalatest, Test.junit, Docs.sprayJson, Docs.gson, Provided.levelDB)
+  val docs = l ++= Seq(Test.scalatest, Test.junit, Docs.sprayJson, Docs.gson) ++ Provided.levelDB
 
-  val benchJmh = l ++= Seq(logback, Provided.levelDB, Provided.levelDBNative, Compile.jctools)
+  val benchJmh = l ++= Seq(Compile.jctools) ++ Provided.levelDB ++ Provided.levelDBNative
 
   // akka stream
 
