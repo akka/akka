@@ -6,8 +6,6 @@ package akka.actor.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.Properties
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.adapter._
@@ -144,7 +142,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "pass markers to the log" in {
       EventFilter
         .custom({
-          case event: LogEventWithMarker if event.marker == marker => true
+          case event: LogEventWithMarker if event.marker.name == marker.name => true
         }, occurrences = 9)
         .intercept(spawn(Behaviors.setup[Any] { context =>
           context.log.debug(marker, "whatever")

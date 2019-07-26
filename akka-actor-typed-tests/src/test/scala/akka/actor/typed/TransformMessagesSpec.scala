@@ -4,7 +4,6 @@
 
 package akka.actor.typed
 
-import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorInitializationException
@@ -21,13 +20,13 @@ object TransformMessagesSpec {
   // this is the sample from the Scaladoc
   val b: Behavior[Number] =
     Behaviors
-      .receive[String] { (ctx, msg) =>
+      .receive[String] { (_, msg) =>
         println(msg)
         Behaviors.same
       }
       .transformMessages[Number] {
-        case b: BigDecimal => s"BigDecimal(&dollar;b)"
-        case i: BigInt     => s"BigInteger(&dollar;i)"
+        case _: BigDecimal => s"BigDecimal(&dollar;b)"
+        case _: BigInt     => s"BigInteger(&dollar;i)"
         // all other kinds of Number will be `unhandled`
       }
 }

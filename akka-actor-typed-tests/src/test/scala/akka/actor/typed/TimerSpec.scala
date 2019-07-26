@@ -54,7 +54,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     }
 
     Behaviors
-      .receive[Command] { (context, cmd) =>
+      .receive[Command] { (_, cmd) =>
         cmd match {
           case Tick(n) =>
             monitor ! Tock(n)
@@ -304,7 +304,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>
           timers.startTimerWithFixedDelay("test", "test", 250.millis)
-          Behaviors.receive { (context, message) =>
+          Behaviors.receive { (context, _) =>
             Behaviors.stopped(() => context.log.info(s"stopping"))
           }
         }
@@ -335,6 +335,8 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
                 // let Tick(0) arrive in mailbox, test will not fail if it arrives later
                 Thread.sleep(100)
                 throw TestException("boom")
+              case _ =>
+                Behaviors.unhandled
             }
           }
         case Tick(n) =>
@@ -342,6 +344,8 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
           Behaviors.same
         case End =>
           Behaviors.stopped
+        case _ =>
+          Behaviors.unhandled
       }
 
     EventFilter[TestException](occurrences = 1).intercept {
@@ -375,6 +379,8 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
         Behaviors.same
       case End =>
         Behaviors.stopped
+      case _ =>
+        Behaviors.unhandled
     }
 
     EventFilter[TestException](occurrences = 1).intercept {

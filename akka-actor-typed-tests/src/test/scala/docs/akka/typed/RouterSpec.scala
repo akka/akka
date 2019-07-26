@@ -70,6 +70,9 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         val alternativePool = pool.withPoolSize(2).withRoundRobinRouting()
         // #strategy
 
+        val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
+        alternativeRouter ! Worker.DoLog("msg")
+
         Behaviors.empty
       })
 

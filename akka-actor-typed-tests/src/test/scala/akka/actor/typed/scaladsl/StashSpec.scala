@@ -28,7 +28,7 @@ object AbstractStashSpec {
   final case class GetStashSize(replyTo: ActorRef[Int]) extends Command
 
   val immutableStash: Behavior[Command] =
-    Behaviors.setup[Command] { ctx =>
+    Behaviors.setup[Command] { _ =>
       Behaviors.withStash(10) { buffer =>
         def active(processed: Vector[String]): Behavior[Command] =
           Behaviors.receive { (_, cmd) =>
@@ -375,7 +375,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       val ref = spawn(
         Behaviors
           .supervise(Behaviors.receivePartial[String] {
-            case (ctx, "unstash") =>
+            case (_, "unstash") =>
               Behaviors.withStash(10) { stash =>
                 stash.stash("one")
                 stash.unstashAll(Behaviors.same)
@@ -398,7 +398,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       val ref = spawn(
         Behaviors
           .supervise(Behaviors.receivePartial[String] {
-            case (ctx, "unstash") =>
+            case (_, "unstash") =>
               Behaviors.withStash(10) { stash =>
                 stash.stash("one")
                 stash.stash("two")
@@ -564,14 +564,14 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
 
     "be possible in combination with setup" in {
       val probe = TestProbe[String]()
-      val ref = spawn(Behaviors.setup[String] { ctx =>
+      val ref = spawn(Behaviors.setup[String] { _ =>
         Behaviors.withStash(10) { stash =>
           stash.stash("one")
 
           // unstashing is inside setup
           Behaviors.receiveMessage {
             case "unstash" =>
-              Behaviors.setup[String] { ctx =>
+              Behaviors.setup[String] { _ =>
                 stash.unstashAll(Behaviors.same)
               }
             case msg =>
