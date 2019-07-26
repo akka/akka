@@ -445,6 +445,7 @@ object PersistentFSMSpec {
   case class ItemAdded(item: Item) extends DomainEvent
   case object OrderExecuted extends DomainEvent
   case object OrderDiscarded extends DomainEvent
+  case object CustomerInactive extends DomainEvent
   //#customer-domain-events
 
   //Side effects - report events to be sent to some "Report Actor"
@@ -545,9 +546,10 @@ object PersistentFSMSpec {
     //#customer-apply-event
     override def applyEvent(event: DomainEvent, cartBeforeEvent: ShoppingCart): ShoppingCart = {
       event match {
-        case ItemAdded(item) => cartBeforeEvent.addItem(item)
-        case OrderExecuted   => cartBeforeEvent
-        case OrderDiscarded  => cartBeforeEvent.empty()
+        case ItemAdded(item)  => cartBeforeEvent.addItem(item)
+        case OrderExecuted    => cartBeforeEvent
+        case OrderDiscarded   => cartBeforeEvent.empty()
+        case CustomerInactive => cartBeforeEvent
       }
     }
     //#customer-apply-event

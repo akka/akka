@@ -7,8 +7,6 @@ known as Akka Typed. Akka Classic is still fully supported and existing applicat
 the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
 ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
 
-For the new API see FIXME https://github.com/akka/akka/issues/26490
-
 @@@
 
 ## Dependency
@@ -23,8 +21,8 @@ Persistent FSMs are part of Akka persistence, you must add the following depende
 
 @@@ warning
 
-Persistent FSM is no longer actively developed and will be replaced by @ref[Akka Typed Persistence](typed/persistence.md). It is not advised
-to build new applications with Persistent FSM.
+Persistent FSM is no longer actively developed and will be replaced by @ref[Akka Persistence Typed](typed/persistence.md). It is not advised
+to build new applications with Persistent FSM. Existing users of Persistent FSM @ref[should migrate](#migration-to-eventsourcedbehavior). 
 
 @@@
 
@@ -126,5 +124,89 @@ Java
 
 On recovery state data is initialized according to the latest available snapshot, then the remaining domain events are replayed, triggering the
 `applyEvent` method.
+
+
+## Migration to EventSourcedBehavior
+
+Persistent FSMs can be represented using @ref[Persistence Typed](typed/persistence.md). The data stored by Persistence FSM can be read by an @apidoc[EventSourcedBehavior]
+using a snapshot adapter and an event adapter. The adapters are required as Persistent FSM doesn't store snapshots and user data directly, it wraps them in 
+internal types that include state transition information.
+
+Before reading the migration guide it is advised to understand [Persistence Typed](typed/persistence.md). 
+
+### Migration steps
+
+1. Modify or create new commands to include `replyTo` @apidoc[akka.actor.typed.ActorRef]
+1. Typically persisted events will remain the same
+1. Create an `EventSourcedBehavior` that mimics the old `PersistentFSM`
+1. Replace any state timeouts with `Behaviors.withTimers` either hard coded or stored in the state
+1. Add an @apidoc[akka.persistence.typed.EventAdapter] to convert state transition events added by `PersistentFSM` into private events or filter them
+1. If snapshots are used add a @apidoc[akka.persistence.typed.SnapshotAdapter] to convert PersistentFSM snapshots into the `EventSourcedBehavior`s `State`
+
+The following is the shopping cart example above converted to an `EventSourcedBehavior`. 
+
+The new commands, note the replyTo field for getting the current cart.
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #commands }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #commands }
+
+The states of the FSM are represented using the `EventSourcedBehavior`'s state parameter along with the event and command handlers. Here are the states:
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #state }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #state }
+
+The command handler has a separate section for each of the PersistentFSM's states: 
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #command-handler }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #command-handler }
+
+Note that there is no explicit support for state timeout as with PersistentFSM but the same behavior can be achieved
+using `Behaviors.withTimers`. If the timer is the same for all events then it can be hard coded, otherwise the
+old PersistentFSM timeout can be taken from the `StateChangeEvent` in the event adapter and is also available when
+constructing a `SnapshotAdapter`. This can be added to an internal event and then stored in the `State`. Care
+must also be taken to restart timers on recovery in the signal handler:
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #signal-handler }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #signal-handler }
+
+Then the event handler:
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #event-handler }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #event-handler }
+
+The last step is the adapters that will allow the new @apidoc[EventSourcedBehavior] to read the old data:
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #event-adapter }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #event-adapter }
+
+The snapshot adapter needs to adapt an internal type of PersistentFSM so a helper function is provided to build the @apidoc[SnapshotAdapter]:
+
+Scala
+:  @@snip [PersistentFsmToTypedMigrationSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/PersistentFsmToTypedMigrationSpec.scala) { #snapshot-adapter }
+
+Java
+:  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #snapshot-adapter }
+
+That concludes all the steps to allow an @apidoc[EventSourcedBehavior] to read a `PersistentFSM`'s data. Once the new code has been running
+you can not roll back as the PersistentFSM will not be able to read data written by Persistence Typed. This means that if using persistence
+with Cluster Sharding a full shutdown is required as shards can move between new and old nodes.
 
 

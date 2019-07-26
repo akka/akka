@@ -82,6 +82,10 @@ The `JavaTestKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.T
 
 ## Deprecated features
 
+### PersistentFSM
+
+[Migration guide to Persistence Typed](../persistence-fsm.md) is in the PersistentFSM documentation.
+
 ### TypedActor
 
 `akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
