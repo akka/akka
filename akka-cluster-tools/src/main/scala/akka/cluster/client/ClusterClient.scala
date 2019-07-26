@@ -5,8 +5,10 @@
 package akka.cluster.client
 
 import java.net.URLEncoder
+
 import scala.collection.immutable
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
@@ -344,6 +346,7 @@ object ClusterClient {
  * Note that this is a best effort implementation: messages can always be lost due to the distributed
  * nature of the actors involved.
  */
+@deprecated("Use Akka gRPC instead.", since = "2.6.0")
 final class ClusterClient(settings: ClusterClientSettings) extends Actor with ActorLogging {
 
   import ClusterClient._
