@@ -30,7 +30,7 @@ trait RetrySupport {
    * private val sendReceiveRetry: HttpRequest => Future[HttpResponse] = (req: HttpRequest) => retry[HttpResponse](
    *   attempt = () => sendAndReceive(req),
    *   attempts = 10,
-   *   delay = 2 seconds
+   *   delay = 2.seconds
    * )
    * }}}
    */
