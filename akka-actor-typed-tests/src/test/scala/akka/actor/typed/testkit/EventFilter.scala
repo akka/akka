@@ -6,7 +6,7 @@ package akka.actor.typed.testkit
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.testkit.{TestKit, TestKitExtension}
+import akka.testkit.{ TestKit, TestKitExtension }
 import akka.util.BoxedType
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.spi.ILoggingEvent
