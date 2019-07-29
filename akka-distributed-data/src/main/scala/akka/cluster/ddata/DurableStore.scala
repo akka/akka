@@ -224,6 +224,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           }
         } catch {
           case NonFatal(e) =>
+            log.error(e, "Failed to load durable dis data. FIXME remove")
             throw new LoadFailed("failed to load durable distributed-data", e)
         } finally {
           Try(tx.close())

@@ -23,8 +23,7 @@ final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeCo
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString(s"""
-                                             akka.loglevel = DEBUG
+  commonConfig(ConfigFactory.parseString(s"""akka.loglevel = DEBUG
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.log-dead-letters-during-shutdown = off
     akka.cluster.distributed-data.durable.keys = ["durable*"]
@@ -47,7 +46,7 @@ object DurableDataSpec {
     def receive = {
       case LoadAll =>
         if (failLoad)
-          throw new LoadFailed("failed to load durable distributed-data") with NoStackTrace
+          throw new LoadFailed("TestDurableStore: failed to load durable distributed-data") with NoStackTrace
         else
           sender() ! LoadAllCompleted
 
@@ -309,7 +308,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       }
 
     }
+    system.log.info("Setup complete")
     enterBarrierAfterTestStep()
+    system.log.info("All setup complete")
+
   }
 
   "stop Replicator if Load fails" in {
