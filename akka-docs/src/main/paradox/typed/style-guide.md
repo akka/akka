@@ -272,14 +272,14 @@ Java
 
 ## Public versus private messages
 
-Often an actor has some messages that are only for it's internal implementation and not part of the public
-message protocol. For example, it can be timer messages or wrapper messages for `ask` or `messageAdapter`.
+Often an actor has some messages that are only for its internal implementation and not part of the public
+message protocol, such as timer messages or wrapper messages for `ask` or `messageAdapter`.
 
-That can be be achieved by defining those messages with `private` visibility. Then they can't be accessed
-and sent from the outside of the actor. The private messages must still @scala[extend]@java[implement] the
+Such messages should be declared `private` so they can't be accessed
+and sent from the outside of the actor. Note that they must still @scala[extend]@java[implement] the
 public `Command` @scala[trait]@java[interface].
 
-Example of a private visibility for internal message:
+Here is an example of using `private` for an internal message:
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #public-private-messages-1 }
@@ -287,12 +287,12 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #public-private-messages-1 }
 
-There is another approach, which is valid but more complicated. It's not relying on visibility from the programming
-language but instead only exposing part of the message class hierarchy to the outside, by using `narrow`. The
-former approach is recommended but it can be good to know this "trick", for example it can be useful when
+An alternative approach is using a type hierarchy and `narrow` to have a super-type for the public messages as a
+distinct type from the super-type of all actor messages.  The
+former approach is recommended but it is good to know this alternative as it can be useful when
 using shared message protocol classes as described in @ref:[Where to define messages](#where-to-define-messages).
 
-Example of not exposing internal message in public `Behavior` type:
+Here's an example of using a type hierarchy to separate public and private messages:
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #public-private-messages-2 }
@@ -359,16 +359,15 @@ Also, don't use braces and return statements in one-line lambda bodies.
 
 ## Partial versus total Function
 
-It's recommended to use a `sealed` trait as the super type of the commands (incoming messages) of a an actor
-because then the Scala compiler will emit a warning if a message type is forgotten in the pattern match.
+It's recommended to use a `sealed` trait as the super type of the commands (incoming messages) of an actor
+as the compiler will emit a warning if a message type is forgotten in the pattern match.
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages-sealed }
 
-That is the main reason for why `Behaviors.receive`, `Behaviors.receiveMessage` takes a total `Function` and
-not a `PartialFunction`.
+That is the main reason for `Behaviors.receive`, `Behaviors.receiveMessage` taking a `Function` rather than a `PartialFunction`.
 
-The compiler warning if `GetValue` is not handled:
+The compiler warning if `GetValue` is not handled would be:
 
 ```
 [warn] ... Counter.scala:45:34: match may not be exhaustive.
@@ -384,13 +383,13 @@ in the pattern match and return `Behaviors.unhandled`.
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-unhandled }
 
-One thing to be aware of is the exhaustiveness check is not enabled when there is a guard condition in the
+One thing to be aware of is the exhaustiveness check is not enabled when there is a guard condition in any of the
 pattern match cases.
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-guard }
 
-Therefore it can be better to not use the guard and instead move the `if` after the `=>`.
+Therefore, for the purposes of exhaustivity checking, it is be better to not use guards and instead move the `if`s after the `=>`.
 
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #pattern-match-without-guard }
