@@ -32,7 +32,7 @@ import akka.actor.typed.Scheduler
 object SpawnProtocolDocSpec {
 
   // Silent because we want to name the unused 'context' parameter
-  @silent
+  @silent("never used")
   //#main
   object HelloWorldMain {
     val main: Behavior[SpawnProtocol.Command] =
