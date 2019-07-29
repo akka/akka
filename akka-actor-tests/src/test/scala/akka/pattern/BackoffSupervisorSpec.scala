@@ -47,13 +47,13 @@ object BackoffSupervisorSpec {
 class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
-  @silent
+  @silent("deprecated")
   def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
     Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
-  @silent
+  @silent("deprecated")
   def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
     Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
-  @silent
+  @silent("deprecated")
   def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
 
   "BackoffSupervisor" must {
@@ -178,7 +178,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "reply to sender if replyWhileStopped is specified" in {
       filterException[TestException] {
-        @silent
+        @silent("deprecated")
         val supervisor = create(
           Backoff
             .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1)
@@ -204,7 +204,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
-        @silent
+        @silent("deprecated")
         val supervisor =
           create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
         supervisor ! BackoffSupervisor.GetCurrentChild

@@ -10,7 +10,6 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
-
 import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
@@ -499,11 +498,11 @@ private[akka] final class PromiseActorRef private (
    * Stopped               => stopped, path not yet created
    */
   @volatile
-  @silent
+  @silent("never used")
   private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
-  @silent
+  @silent("never used")
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @inline

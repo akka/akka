@@ -24,5 +24,5 @@ import akka.annotation.InternalApi
  *
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 @InternalApi private[akka] class unused extends deprecated("unused", "")

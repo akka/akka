@@ -19,7 +19,7 @@ object BroadcastRoutingLogic {
 /**
  * Broadcasts a message to all its routees.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class BroadcastRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =

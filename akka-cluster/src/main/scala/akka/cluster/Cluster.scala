@@ -96,7 +96,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
-  @silent
+  @silent("deprecated")
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
@@ -164,7 +164,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
-        @silent
+        @silent("deprecated")
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
             implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)

@@ -12,7 +12,8 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
-import akka.util.{ unused, Helpers, ReentrantGuard }
+import akka.util.unused
+import akka.util.{ Helpers, ReentrantGuard }
 import akka.{ AkkaException, ConfigurationException }
 import com.github.ghik.silencer.silent
 
@@ -167,7 +168,7 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
-    @silent
+    @silent("never used")
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
@@ -1496,7 +1497,7 @@ trait LoggingFilter {
  * In retrospect should have been abstract, but we cannot change that
  * without breaking binary compatibility
  */
-@silent
+@silent("never us")
 trait LoggingFilterWithMarker extends LoggingFilter {
   def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
     isErrorEnabled(logClass, logSource)

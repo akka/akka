@@ -24,7 +24,7 @@ trait Function1[[#-T1#], +R] extends java.io.Serializable {
  * A Procedure is like a Function, but it doesn't produce a return value.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(##1L)
 trait Procedure1[[#-T1#]] extends java.io.Serializable {
   @throws(classOf[Exception])

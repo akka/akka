@@ -154,7 +154,7 @@ private[transport] class AkkaProtocolManager(
       val failureDetector = createTransportFailureDetector()
 
       // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
-      @silent
+      @silent("deprecated")
       val addressUid = AddressUidExtension(context.system).addressUid
 
       context.actorOf(
@@ -186,7 +186,7 @@ private[transport] class AkkaProtocolManager(
     val failureDetector = createTransportFailureDetector()
 
     // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
-    @silent
+    @silent("deprecated")
     val addressUid = AddressUidExtension(context.system).addressUid
 
     context.actorOf(

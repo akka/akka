@@ -47,7 +47,7 @@ private object ReplicatedDataSerializer {
     def getKey(entry: A): Any
     final def compare(x: A, y: A): Int = compareKeys(getKey(x), getKey(y))
 
-    @silent
+    @silent("deprecated")
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
       case (k1: String, k2: String)             => k1.compareTo(k2)
       case (_: String, _)                       => -1

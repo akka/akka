@@ -408,7 +408,7 @@ trait ActorPublisher[T] extends Actor {
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[akka] final case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[T] {
   import ActorPublisher.Internal._
 

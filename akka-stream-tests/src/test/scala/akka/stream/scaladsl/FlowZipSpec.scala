@@ -9,7 +9,7 @@ import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
-//@silent // keep unused imports
+@silent // keep unused imports
 class FlowZipSpec extends BaseTwoStreamsSetup {
 
 //#zip

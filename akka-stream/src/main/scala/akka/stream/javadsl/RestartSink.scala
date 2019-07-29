@@ -81,7 +81,7 @@ object RestartSink {
    *   In order to skip this additional delay pass in `0`.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  @silent
+  @silent("deprecated")
   def withBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
@@ -158,7 +158,7 @@ object RestartSink {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  @silent
+  @silent("deprecated")
   def withBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,

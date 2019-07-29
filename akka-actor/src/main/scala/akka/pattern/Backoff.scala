@@ -566,7 +566,7 @@ trait BackoffOptions {
   private[akka] def props: Props
 }
 
-@silent
+@silent("deprecated")
 private final case class BackoffOptionsImpl(
     backoffType: BackoffType = RestartImpliesFailure,
     childProps: Props,

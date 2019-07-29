@@ -404,7 +404,7 @@ private[akka] object ActorCell {
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
-@silent
+@silent("deprecated")
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,

@@ -779,7 +779,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ShutdownAndFlush =>
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
-      @silent
+      @silent("deprecated")
       def shutdownAll[T](resources: IterableOnce[T])(shutdown: T => Future[Boolean]): Future[Boolean] = {
         Future.sequence(resources.toList.map(shutdown)).map(_.forall(identity)).recover {
           case NonFatal(_) => false

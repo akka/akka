@@ -88,7 +88,7 @@ private[persistence] trait Eventsourced
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
-  @silent
+  @silent("never used")
   private val maxMessageBatchSize = {
     val journalPluginConfig = this match {
       case c: RuntimePluginConfig => c.journalPluginConfig

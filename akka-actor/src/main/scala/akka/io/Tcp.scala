@@ -117,7 +117,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
-  @silent
+  @silent("deprecated")
   final case class Connect(
       remoteAddress: InetSocketAddress,
       localAddress: Option[InetSocketAddress] = None,
@@ -145,7 +145,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    *
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
-  @silent
+  @silent("deprecated")
   final case class Bind(
       handler: ActorRef,
       localAddress: InetSocketAddress,

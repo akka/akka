@@ -167,7 +167,7 @@ class NettyTransportSettings(config: Config) {
   val PortSelector: Int = getInt("port")
 
   @deprecated("WARNING: This should only be used by professionals.", "2.4")
-  @silent
+  @silent("deprecated")
   val BindPortSelector: Int = getString("bind-port") match {
     case ""    => PortSelector
     case value => value.toInt
@@ -495,7 +495,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
-    @silent
+    @silent("deprecated")
     val bindPort = settings.BindPortSelector
 
     for {
@@ -513,7 +513,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
-        @silent
+        @silent("deprecated")
         val port = if (settings.PortSelector == 0) None else Some(settings.PortSelector)
 
         addressFromSocketAddress(

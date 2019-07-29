@@ -99,7 +99,7 @@ import com.github.ghik.silencer.silent
     shape: SourceShape[Out])
     extends SourceModule[Out, ActorRef](shape) {
 
-  @silent
+  @silent("deprecated")
   override def create(context: MaterializationContext) = {
     val publisherRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
     (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
