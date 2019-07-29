@@ -15,6 +15,7 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
@@ -50,6 +51,7 @@ class ORSetSerializationBenchmark {
   private val ref1 = (1 to 10).map(n => system1.actorOf(Props.empty, s"ref1-$n"))
   private val ref2 = (1 to 10).map(n => system2.actorOf(Props.empty, s"ref2-$n"))
 
+  @silent("deprecated")
   private val orSet = {
     val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system1), r) }
     val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system2), r) }

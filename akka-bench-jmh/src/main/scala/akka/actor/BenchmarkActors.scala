@@ -10,6 +10,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+
 object BenchmarkActors {
 
   val timeout = 30.seconds
@@ -93,12 +95,13 @@ object BenchmarkActors {
     def props(next: Option[ActorRef]) = Props(new Pipe(next))
   }
 
+  @silent("deprecated")
   private def startPingPongActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String)(
       implicit system: ActorSystem) = {
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs * 2)
     val actors = for {
-      i <- (1 to numPairs).toVector
+      _ <- (1 to numPairs).toVector
     } yield {
       val ping = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
       val pong = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))

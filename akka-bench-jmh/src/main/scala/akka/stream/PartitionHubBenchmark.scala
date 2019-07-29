@@ -69,7 +69,7 @@ class PartitionHubBenchmark {
 
     val source = testSource.runWith(
       PartitionHub.sink[java.lang.Integer](
-        (size, elem) => elem.intValue % NumberOfStreams,
+        (_, elem) => elem.intValue % NumberOfStreams,
         startAfterNrOfConsumers = NumberOfStreams,
         bufferSize = BufferSize))(materializer)
 

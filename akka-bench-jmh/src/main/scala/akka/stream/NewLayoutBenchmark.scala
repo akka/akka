@@ -4,6 +4,8 @@
 
 package akka.stream
 
+import com.github.ghik.silencer.silent
+
 /*
 import java.util
 import java.util.concurrent.TimeUnit
@@ -17,8 +19,10 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
+ */
+@silent // too long to add pattern
 class NewLayoutBenchmark {
-
+  /*
   // TODO: This benchmark is heavily copy-pasta. This is a temporary benchmark as these two implementations
   // will never exist at the same time. This needs to be turned into a better one once the design
   // settles.
@@ -360,6 +364,5 @@ class NewLayoutBenchmark {
   def mat_source_flow_and_sink_old(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     testMaterializeOld(sourceFlowSinkOld, blackhole: org.openjdk.jmh.infra.Blackhole)
   }
-
-}
  */
+}

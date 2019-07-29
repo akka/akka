@@ -100,7 +100,7 @@ class FlowMapBenchmark {
   // source setup
   private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: => Graph[FlowShape[O, O], _]): Source[O, Mat] = {
     var f = source
-    for (i <- 1 to count)
+    for (_ <- 1 to count)
       f = f.via(flow)
     f
   }

@@ -4,30 +4,33 @@
 
 package akka.remote.artery
 
-import akka.actor._
-import akka.Done
-import akka.NotUsed
-import akka.remote._
-import akka.remote.artery.compress._
-import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationExtension }
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.scaladsl._
-import akka.util.OptionVal
-import com.typesafe.config.ConfigFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-import akka.remote.artery.Decoder.InboundCompressionAccess
-import org.openjdk.jmh.annotations._
-
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import akka.Done
+import akka.NotUsed
+import akka.actor._
+import akka.remote._
+import akka.remote.artery.Decoder.InboundCompressionAccess
+import akka.remote.artery.compress._
+import akka.serialization.BaseSerializer
+import akka.serialization.ByteBufferSerializer
+import akka.serialization.SerializationExtension
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
+import akka.stream.scaladsl._
+import akka.util.OptionVal
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -38,6 +41,7 @@ import scala.concurrent.duration._
 class CodecBenchmark {
   import CodecBenchmark._
 
+  @silent("immutable val") // never updated, can not val due to: unbound placeholder parameter
   @Param(Array(Standard, RemoteInstrument))
   private var configType: String = _
 
@@ -66,11 +70,11 @@ class CodecBenchmark {
     override def publishDropped(inbound: InboundEnvelope, reason: String): Unit = ()
   }
 
-  private var materializer: ActorMaterializer = _
-  private var remoteRefB: RemoteActorRef = _
-  private var resolvedRef: InternalActorRef = _
-  private var senderStringA: String = _
-  private var recipientStringB: String = _
+  @silent("never used") private var materializer: ActorMaterializer = _
+  @silent("never used") private var remoteRefB: RemoteActorRef = _
+  @silent("never used") private var resolvedRef: InternalActorRef = _
+  @silent("never used") private var senderStringA: String = _
+  @silent("never used") private var recipientStringB: String = _
 
   private var encodeGraph: Flow[String, Unit, NotUsed] = _
   private var decodeGraph: Flow[String, Unit, NotUsed] = _
@@ -112,7 +116,7 @@ class CodecBenchmark {
     val actorOnSystemA = system.actorOf(Props.empty, "a")
     senderStringA = actorOnSystemA.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
 
-    val actorOnSystemB = systemB.actorOf(Props.empty, "b")
+    systemB.actorOf(Props.empty, "b")
     val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
     val rootB = RootActorPath(addressB)
     remoteRefB = Await
@@ -147,7 +151,7 @@ class CodecBenchmark {
           debugLogSend = false,
           version = ArteryTransport.HighestVersion))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
-      Flow[String].map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
+      Flow[String].map(_ => outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
     val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(
