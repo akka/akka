@@ -6,7 +6,7 @@ package docs.akka.typed.coexistence
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.{ AkkaSpec, TestKit }
+import akka.testkit.TestKit
 import docs.akka.typed.coexistence.TypedWatchingUntypedSpec.Typed
 //#adapter-import
 // adds support for typed actors to an untyped actor system and context
@@ -18,7 +18,6 @@ import akka.{ actor => untyped }
 //#import-alias
 import org.scalatest.WordSpec
 import scala.concurrent.duration._
-import TypedWatchingUntypedSpec.Typed._
 
 object TypedWatchingUntypedSpec {
 

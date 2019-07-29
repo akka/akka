@@ -22,7 +22,7 @@ class TerminatedSpec extends WordSpec with Matchers {
 
       (childFailed match {
         case ChildFailed(ref, e) => (ref, e)
-      }) shouldEqual (probe.ref, ex)
+      }) shouldEqual ((probe.ref, ex))
 
     }
 

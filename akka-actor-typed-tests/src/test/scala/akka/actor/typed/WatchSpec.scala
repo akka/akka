@@ -91,11 +91,11 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val ex = new TestException("boom")
       val parent = spawn(
         Behaviors.setup[Any] { context =>
-          val child = context.spawn(Behaviors.receive[Any]((context, message) => throw ex), "child")
+          val child = context.spawn(Behaviors.receive[Any]((_, _) => throw ex), "child")
           context.watch(child)
 
           Behaviors
-            .receive[Any] { (context, message) =>
+            .receive[Any] { (_, message) =>
               child ! message
               Behaviors.same
             }
@@ -159,10 +159,10 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
         spawn(
           Behaviors.setup[Any] { context =>
             val middleManagement = context.spawn(Behaviors.setup[Any] { context =>
-              val sixPackJoe = context.spawn(Behaviors.receive[Any]((context, message) => throw ex), "joe")
+              val sixPackJoe = context.spawn(Behaviors.receive[Any]((_, _) => throw ex), "joe")
               context.watch(sixPackJoe)
 
-              Behaviors.receive[Any] { (context, message) =>
+              Behaviors.receive[Any] { (_, message) =>
                 sixPackJoe ! message
                 Behaviors.same
               } // no handling of terminated, even though we watched!!!
@@ -171,7 +171,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
             context.watch(middleManagement)
 
             Behaviors
-              .receive[Any] { (context, message) =>
+              .receive[Any] { (_, message) =>
                 middleManagement ! message
                 Behaviors.same
               }

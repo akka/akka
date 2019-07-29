@@ -59,7 +59,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       val otherBehavior = Behaviors.receiveMessage[Request] {
         case Request(query, respondTo) =>
           // ... process query ...
-          respondTo ! Response("Here's your cookies!")
+          respondTo ! Response(s"Here's the cookies for [$query]!")
           Behaviors.same
       }
       // #request-response-respond
@@ -131,7 +131,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // #adapted-response
 
       val backend = spawn(Behaviors.receiveMessage[Backend.Request] {
-        case Backend.StartTranslationJob(taskId, site, replyTo) =>
+        case Backend.StartTranslationJob(taskId, site @ _, replyTo) =>
           replyTo ! Backend.JobStarted(taskId)
           replyTo ! Backend.JobProgress(taskId, 0.25)
           replyTo ! Backend.JobProgress(taskId, 0.50)
@@ -230,7 +230,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // as `ref => OpenThePodBayDoorsPlease(ref)`
       context.ask(hal)(OpenThePodBayDoorsPlease) {
         case Success(HalResponse(message)) => AdaptedResponse(message)
-        case Failure(ex)                   => AdaptedResponse("Request failed")
+        case Failure(_)                    => AdaptedResponse("Request failed")
       }
 
       // we can also tie in request context into an interaction, it is safe to look at
@@ -240,7 +240,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       val requestId = 1
       context.ask(hal)(OpenThePodBayDoorsPlease) {
         case Success(HalResponse(message)) => AdaptedResponse(s"$requestId: $message")
-        case Failure(ex)                   => AdaptedResponse(s"$requestId: Request failed")
+        case Failure(_)                    => AdaptedResponse(s"$requestId: Request failed")
       }
 
       Behaviors.receiveMessage {
@@ -378,8 +378,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     implicit val ec = system.executionContext
 
     result.onComplete {
-      case Success(cookies) => println("Yay, cookies!")
-      case Failure(ex)      => println("Boo! didn't get cookies in time.")
+      case Success(cookies) => println(s"Yay, cookies! $cookies")
+      case Failure(ex)      => println(s"Boo! didn't get cookies: ${ex.getMessage}")
     }
     // #standalone-ask
 

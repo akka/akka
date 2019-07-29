@@ -115,7 +115,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
       val snitch = Behaviors.setup[AnyRef] { context =>
-        context.ask[String, String](system.deadLetters)(ref => "boo") {
+        context.ask[String, String](system.deadLetters)(_ => "boo") {
           case Success(m) => m
           case Failure(x) => x
         }(10.millis, implicitly[ClassTag[String]])

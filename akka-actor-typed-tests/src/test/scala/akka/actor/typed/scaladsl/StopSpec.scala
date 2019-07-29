@@ -4,7 +4,6 @@
 
 package akka.actor.typed.scaladsl
 
-import scala.concurrent.Promise
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -12,7 +11,6 @@ import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.PostStop
-import akka.actor.typed.Signal
 import org.scalatest.WordSpecLike
 
 class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
