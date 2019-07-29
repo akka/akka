@@ -131,7 +131,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // #adapted-response
 
       val backend = spawn(Behaviors.receiveMessage[Backend.Request] {
-        case Backend.StartTranslationJob(taskId, site@_, replyTo) =>
+        case Backend.StartTranslationJob(taskId, site @ _, replyTo) =>
           replyTo ! Backend.JobStarted(taskId)
           replyTo ! Backend.JobProgress(taskId, 0.25)
           replyTo ! Backend.JobProgress(taskId, 0.50)
