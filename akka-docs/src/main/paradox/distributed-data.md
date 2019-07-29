@@ -481,6 +481,14 @@ you have not seen. This is the same semantics as for the `ORSet`.
 If an entry is concurrently updated to different values the values will be merged, hence the
 requirement that the values must be `ReplicatedData` types.
 
+While the `ORMap` does support removing and re-adding keys any number of times, the impact that this has on the values
+can be non deterministic. A merge will always attempt to merge two values for the same key, regardless of whether that
+key has been removed and re-added in the meantime, an attempt to replace a value with a new one may not have the
+intended effect. This means that old values can effectively be resurrected, if a node that has seen both the remove and
+the add gossips with a node that has seen neither. One consequence of this is that changing the type of the CRDT in the
+value, for example, from a `GCounter` to a `GSet`, could result in the merge function for the CRDT always failing, which
+it may not recover from, hence, the types of `ORMap` values must never change for a given key.
+
 It is rather inconvenient to use the `ORMap` directly since it does not expose specific types
 of the values. The `ORMap` is intended as a low level tool for building more specific maps,
 such as the following specialized maps.
