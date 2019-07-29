@@ -194,6 +194,7 @@ object PersistentFSM {
 
   /**
    * Persisted on state change
+   * Not deprecated as used for users migrating from PersistentFSM to EventSourcedBehavior
    *
    * @param stateIdentifier FSM state identifier
    * @param timeout FSM state timeout

@@ -19,7 +19,7 @@ object TypedActorRemoteDeploySpec {
       akka.actor.provider = remote
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
-      akka.remote.use-unsafe-remote-features-without-cluster = on
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       akka.actor.allow-java-serialization = on
       """)
 

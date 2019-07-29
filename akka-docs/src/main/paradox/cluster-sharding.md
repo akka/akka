@@ -523,7 +523,9 @@ the identifiers of the shards running in a Region and what entities are alive fo
 
 `ShardRegion.GetClusterShardingStats` which will query all the regions in the cluster and return
 a `ShardRegion.ClusterShardingStats` containing the identifiers of the shards running in each region and a count
-of entities that are alive in each shard.
+of entities that are alive in each shard. If any shard queries failed, for example due to timeout
+if a shard was too busy to reply within the configured `akka.cluster.sharding.shard-region-query-timeout`, 
+`ShardRegion.ClusterShardingStats` will also include the set of shard identifiers by region that failed.
 
 The type names of all started shards can be acquired via @scala[`ClusterSharding.shardTypeNames`]  @java[`ClusterSharding.getShardTypeNames`].
 

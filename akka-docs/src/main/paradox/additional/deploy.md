@@ -6,7 +6,7 @@
  
 * [Packaging](packaging.md)
 * [Deploying](deploying.md)
-* [Rolling Deploys](rolling-deploys.md)
+* [Rolling Updates](rolling-updates.md)
  
 @@@
 

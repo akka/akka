@@ -407,23 +407,30 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
     // #customer-states
 
     // #customer-states-data
-    static class ShoppingCart {
+    public static class ShoppingCart {
       private final List<Item> items = new ArrayList<>();
+
+      public ShoppingCart(Item initialItem) {
+        items.add(initialItem);
+      }
+
+      public ShoppingCart() {}
 
       public List<Item> getItems() {
         return Collections.unmodifiableList(items);
       }
 
-      void addItem(Item item) {
+      public ShoppingCart addItem(Item item) {
         items.add(item);
+        return this;
       }
 
-      void empty() {
+      public void empty() {
         items.clear();
       }
     }
 
-    static class Item implements Serializable {
+    public static class Item implements Serializable {
       private final String id;
       private final String name;
       private final float price;
@@ -491,7 +498,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
     }
     // #customer-commands
 
-    interface DomainEvent extends Serializable {}
+    public interface DomainEvent extends Serializable {}
 
     // #customer-domain-events
     public static final class ItemAdded implements DomainEvent {
@@ -514,6 +521,10 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
       INSTANCE
     }
     // #customer-domain-events
+
+    public enum CustomerInactive implements DomainEvent {
+      INSTANCE
+    }
 
     // Side effects - report events to be sent to some "Report Actor"
     public interface ReportEvent {}

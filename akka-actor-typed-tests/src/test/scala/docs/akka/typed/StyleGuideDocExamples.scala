@@ -371,18 +371,23 @@ object StyleGuideDocExamples {
     //#public-private-messages-2
     // above example is preferred, but this is possible and not wrong
     object Counter {
-      sealed trait PrivateCommand
-      sealed trait Command extends PrivateCommand
+      // The type of all public and private messages the Counter actor handles
+      sealed trait Message
+
+      /** Counter's public message protocol type. */
+      sealed trait Command extends Message
       case object Increment extends Command
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
 
-      // Tick is a PrivateCommand so can't be sent to an ActorRef[Command]
-      case object Tick extends PrivateCommand
+      // The type of the Counter actor's internal event messages.
+      private sealed trait Event extends Message
+      // Tick is a private Event so can't be sent to an ActorRef[Command]
+      private case object Tick extends Event
 
       def apply(name: String, tickInterval: FiniteDuration): Behavior[Command] = {
         Behaviors
-          .setup[Counter.PrivateCommand] { context =>
+          .setup[Counter.Message] { context =>
             Behaviors.withTimers { timers =>
               timers.startTimerWithFixedDelay("tick", Tick, tickInterval)
               new Counter(name, context).counter(0)
@@ -392,10 +397,10 @@ object StyleGuideDocExamples {
       }
     }
 
-    class Counter private (name: String, context: ActorContext[Counter.PrivateCommand]) {
+    class Counter private (name: String, context: ActorContext[Counter.Message]) {
       import Counter._
 
-      private def counter(n: Int): Behavior[PrivateCommand] =
+      private def counter(n: Int): Behavior[Message] =
         Behaviors.receiveMessage {
           case Increment =>
             val newValue = n + 1

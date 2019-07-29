@@ -3,3 +3,12 @@ ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
 
 # #25191
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")
+
+# #27100 Productionize: GetShardRegionStats returns empty shard set on ask timeout
+# askAllShards, an internal function, was renamed and changed to query all or a subset of shards to try failures only
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.askAllShards")
+# Added new field for failed shard queries to ShardRegion#ShardRegionStats, converted to class and updated in proto
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedList")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailed")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedCount")

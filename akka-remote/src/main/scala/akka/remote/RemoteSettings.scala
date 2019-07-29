@@ -160,9 +160,9 @@ final class RemoteSettings(val config: Config) {
   }.requiring(_.duration > Duration.Zero, "command-ack-timeout must be > 0")
 
   val UseUnsafeRemoteFeaturesWithoutCluster: Boolean = getBoolean(
-    "akka.remote.use-unsafe-remote-features-without-cluster")
+    "akka.remote.use-unsafe-remote-features-outside-cluster")
 
-  val WarnUnsafeWatchWithoutCluster: Boolean = getBoolean("akka.remote.warn-unsafe-watch-without-cluster")
+  val WarnUnsafeWatchWithoutCluster: Boolean = getBoolean("akka.remote.warn-unsafe-watch-outside-cluster")
 
   val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
   val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")

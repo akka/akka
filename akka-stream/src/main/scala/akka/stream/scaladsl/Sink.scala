@@ -6,9 +6,8 @@ package akka.stream.scaladsl
 
 import akka.{ Done, NotUsed }
 import akka.dispatch.ExecutionContexts
-import akka.actor.{ ActorRef, Props, Status }
+import akka.actor.{ ActorRef, Status }
 import akka.annotation.InternalApi
-import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
@@ -17,7 +16,6 @@ import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable
@@ -517,21 +515,6 @@ object Sink {
       onCompleteMessage: Any,
       onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
     actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
-
-  /**
-   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` must
-   * be [[akka.stream.actor.ActorSubscriber]].
-   *
-   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
-   */
-  @deprecated(
-    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
-    since = "2.5.0")
-  def actorSubscriber[T](props: Props): Sink[T, ActorRef] = {
-    require(classOf[ActorSubscriber].isAssignableFrom(props.actorClass()), "Actor must be ActorSubscriber")
-    fromGraph(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
-  }
 
   /**
    * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueueWithCancel]].

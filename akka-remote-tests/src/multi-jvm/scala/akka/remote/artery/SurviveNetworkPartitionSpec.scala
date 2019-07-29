@@ -26,7 +26,7 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.artery.enabled = on
       akka.remote.artery.advanced.give-up-system-message-after = 4s
-      akka.remote.use-unsafe-remote-features-without-cluster = on
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       """))
       .withFallback(RemotingMultiNodeSpec.commonConfig))
 

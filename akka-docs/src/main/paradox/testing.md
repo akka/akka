@@ -580,7 +580,7 @@ responsible for the Actor creation, but @scala[the]@java[using `TestProbe` or ha
 
 ## CallingThreadDispatcher
 
-The `CallingThreadDispatcher` serves good purposes in unit testing, as
+It is possible to use the `CallingThreadDispatcher` in unit testing, as
 described above, but originally it was conceived in order to allow contiguous
 stack traces to be generated in case of an error. As this special dispatcher
 runs everything which would normally be queued directly on the current thread,
@@ -660,21 +660,11 @@ the second line and never reach the fourth line, which would unblock it on a
 normal dispatcher.
 
 Thus, keep in mind that the `CallingThreadDispatcher` is not a
-general-purpose replacement for the normal dispatchers. On the other hand it
-may be quite useful to run your actor network on it for testing, because if it
-runs without dead-locking chances are very high that it will not dead-lock in
-production.
-
-@@@ warning
-
-The above sentence is unfortunately not a strong guarantee, because your
-code might directly or indirectly change its behavior when running on a
-different dispatcher. If you are looking for a tool to help you debug
-dead-locks, the `CallingThreadDispatcher` may help with certain error
+general-purpose replacement for the normal dispatchers. If you are looking 
+for a tool to help you debug dead-locks,
+the `CallingThreadDispatcher` may help with certain error
 scenarios, but keep in mind that it has may give false negatives as well as
 false positives.
-
-@@@
 
 ### Thread Interruptions
 
