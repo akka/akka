@@ -76,7 +76,7 @@ import scala.reflect.ClassTag
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val mdc = merge(staticMdc, mdcForMessage(msg))
-    MDC.setContextMap(mdc.asJava)
+    MDC.getMDCAdapter.setContextMap(mdc.asJava)
     val next =
       try {
         target(ctx, msg)
@@ -87,7 +87,7 @@ import scala.reflect.ClassTag
   }
 
   override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    MDC.setContextMap(staticMdc.asJava)
+    MDC.getMDCAdapter.setContextMap(staticMdc.asJava)
     try {
       target(ctx, signal)
     } finally {

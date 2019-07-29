@@ -10,7 +10,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.testkit.EventFilter
 import org.scalatest.WordSpecLike
+import org.slf4j.MDC
 import org.slf4j.event.Level
+import org.slf4j.helpers.{ SubstituteLogger, SubstituteLoggerFactory }
 
 class LogMessagesSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
@@ -22,110 +24,118 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
   "The log messages behavior" should {
 
     "log messages and signals" in {
-      val behavior: Behavior[String] = Behaviors.logMessages(Behaviors.ignore)
 
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.DEBUG).withLogger(substituteLogger)
+
+      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
       val ref: ActorRef[String] = spawn(behavior)
-
-      import ch.qos.logback.classic.Logger
-      import ch.qos.logback.classic.spi.ILoggingEvent
-      import ch.qos.logback.core.read.ListAppender
-      import org.slf4j.LoggerFactory
-
-      val fooLogger = LoggerFactory.getLogger("akka.actor.typed.BehaviorInterceptor").asInstanceOf[Logger]
-
-      val listAppender = new ListAppender[ILoggingEvent]
-      listAppender.start()
-      fooLogger.addAppender(listAppender)
 
       EventFilter
         .debug(s"actor ${ref.path.toString} received message Hello", source = ref.path.toString, occurrences = 1)
-        .intercept(ref ! "Hello", listAppender)
+        .intercept(ref ! "Hello", factory.getEventQueue)
 
       EventFilter
         .debug(s"actor ${ref.path.toString} received signal PostStop", source = ref.path.toString, occurrences = 1)
-        .intercept(testKit.stop(ref), listAppender)
+        .intercept(testKit.stop(ref), factory.getEventQueue)
     }
 
     "log messages with provided log level" in {
-      val opts = LogOptions().withLevel(Level.INFO)
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.INFO).withLogger(substituteLogger)
       val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
 
       val ref: ActorRef[String] = spawn(behavior)
 
-//      val res = EventFilter.info("received message Hello", source = ref.path.toString, occurrences = 1).intercept {
-//        ref ! "Hello"
-//      }
-//
-//      EventFilter.info("received signal PostStop", source = ref.path.toString, occurrences = 1).intercept {
-//        testKit.stop(ref)
-//      }
+      EventFilter
+        .info(s"actor ${ref.path.toString} received message Hello", source = ref.path.toString, occurrences = 1)
+        .intercept(ref ! "Hello", factory.getEventQueue)
+
+      EventFilter
+        .info(s"actor ${ref.path.toString} received signal PostStop", source = ref.path.toString, occurrences = 1)
+        .intercept(testKit.stop(ref), factory.getEventQueue)
     }
 
-//    "log messages with provided logger" in {
-//      val logger = system.log
-//      val opts = LogOptions().withLogger(logger)
-//      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
-//
-//      val ref: ActorRef[String] = spawn(behavior)
-//
-//      EventFilter.debug("received message Hello", source = "LogMessagesSpec", occurrences = 1).intercept {
-//        ref ! "Hello"
-//      }
-//
-//      EventFilter.debug("received signal PostStop", source = "LogMessagesSpec", occurrences = 1).intercept {
-//        testKit.stop(ref)
-//      }
-//    }
-//
-//    "not log messages when not enabled" in {
-//      val opts = LogOptions().withEnabled(false)
-//      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
-//
-//      val ref: ActorRef[String] = spawn(behavior)
-//
-//      EventFilter.debug("received message Hello", source = ref.path.toString, occurrences = 0).intercept {
-//        ref ! "Hello"
-//      }
-//
-//      EventFilter.debug("received signal PostStop", source = ref.path.toString, occurrences = 0).intercept {
-//        testKit.stop(ref)
-//      }
-//    }
-//
-//    "log messages with decorated MDC values" in {
-//      val behavior = Behaviors.withMdc[String](Map("mdc" -> "true"))(Behaviors.logMessages(Behaviors.ignore))
-//
-//      val ref = spawn(behavior)
-//      EventFilter
-//        .custom(
-//          {
-//            case logEvent if logEvent.level == Logging.DebugLevel =>
-//              logEvent.message should ===("received message Hello")
-//              logEvent.mdc should ===(Map("mdc" -> true))
-//              true
-//            case _ =>
-//              false
-//
-//          },
-//          occurrences = 1)
-//        .intercept {
-//          ref ! "Hello"
-//        }
-//
-//      EventFilter.debug("received signal PostStop", source = ref.path.toString, occurrences = 1).intercept {
-//        testKit.stop(ref)
-//      }
-//    }
-//
-//    "log messages of different type" in {
-//      val behavior: Behavior[String] = Behaviors.logMessages(Behaviors.ignore[String])
-//
-//      val ref = spawn(behavior)
-//
-//      EventFilter.debug("received message 13", source = ref.path.toString, occurrences = 1).intercept {
-//        ref.unsafeUpcast[Any] ! 13
-//      }
-//    }
+    "log messages with provided logger" in {
+
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.DEBUG).withLogger(substituteLogger)
+      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
+
+      val ref: ActorRef[String] = spawn(behavior)
+
+      EventFilter
+        .debug(s"actor ${ref.path.toString} received message Hello", source = ref.path.toString, occurrences = 1)
+        .intercept(ref ! "Hello", factory.getEventQueue)
+
+      EventFilter
+        .debug(s"actor ${ref.path.toString} received signal PostStop", source = ref.path.toString, occurrences = 1)
+        .intercept(testKit.stop(ref), factory.getEventQueue)
+    }
+
+    "not log messages when not enabled" in {
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.DEBUG).withLogger(substituteLogger).withEnabled(false)
+      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
+
+      val ref: ActorRef[String] = spawn(behavior)
+
+      EventFilter
+        .debug(s"actor ${ref.path.toString} received message Hello", source = ref.path.toString, occurrences = 0)
+        .intercept(ref ! "Hello", factory.getEventQueue)
+
+      EventFilter
+        .debug(s"actor ${ref.path.toString} received signal PostStop", source = ref.path.toString, occurrences = 0)
+        .intercept(testKit.stop(ref), factory.getEventQueue)
+    }
+
+    "log messages with decorated MDC values" in {
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.DEBUG).withLogger(substituteLogger)
+      val mdc = Map("mdc" -> "true")
+      val behavior = Behaviors.withMdc[String](mdc)(Behaviors.logMessages(opts, Behaviors.ignore))
+
+      val ref = spawn(behavior)
+      val kk = MDC.getMDCAdapter.getCopyOfContextMap()
+      EventFilter
+        .custom(
+          {
+            case logEvent if logEvent.getLevel == (Level.TRACE) /*bug slf4j described in akka.actor.typed.testkit.EventFilter line 415)*/ =>
+              logEvent.getMessage should ===(s"actor ${ref.path.toString} received message Hello MDC is $mdc")
+              true
+            case _ =>
+              false
+
+          },
+          occurrences = 1)
+        .intercept(ref ! "Hello", factory.getEventQueue)
+
+      EventFilter
+        .debug(
+          s"actor ${ref.path.toString} received signal PostStop MDC is $mdc",
+          source = ref.path.toString,
+          occurrences = 1)
+        .intercept(testKit.stop(ref), factory.getEventQueue)
+    }
+
+    "log messages of different type" in {
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.DEBUG).withLogger(substituteLogger)
+
+      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore[String])
+
+      val ref = spawn(behavior)
+
+      EventFilter
+        .debug(s"actor ${ref.path.toString} received message 13", source = ref.path.toString, occurrences = 1)
+        .intercept(ref.unsafeUpcast[Any] ! 13, factory.getEventQueue)
+    }
 
   }
 }

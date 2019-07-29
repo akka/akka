@@ -11,7 +11,7 @@ import akka.actor.typed.LogOptions
 import akka.actor.typed._
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
-import org.slf4j.LoggerFactory
+import org.slf4j.{ LoggerFactory, MDC }
 import org.slf4j.event.Level
 
 /**
@@ -153,35 +153,38 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
 private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends BehaviorInterceptor[Any, Any] {
 
   import BehaviorInterceptor._
+  import scala.collection.JavaConverters._
 
-  val log = LoggerFactory.getLogger(classOf[BehaviorInterceptor[Any, Any]])
+  val log = opts.getLogger.orElse(LoggerFactory.getLogger(classOf[BehaviorInterceptor[Any, Any]]))
 
   override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
     if (opts.enabled) {
       val actorPath = ctx.asScala.self.path.toString
+      val finalMsg = addMDC(s"actor $actorPath received message $msg")
       opts.level match {
-    case Level.ERROR => log.error(s"actor $actorPath received message $msg")
-    case Level.WARN  => log.warn(s"actor $actorPath received message $msg")
-    case Level.INFO  => log.info(s"actor $actorPath received message $msg")
-    case Level.DEBUG => log.debug(s"actor $actorPath received message $msg")
-    //TODO check this debug case is actually best option
-    case _ => log.debug(s"actor $actorPath received message $msg")
-  }
+        case Level.ERROR => log.error(finalMsg)
+        case Level.WARN  => log.warn(finalMsg)
+        case Level.INFO  => log.info(finalMsg)
+        case Level.DEBUG => log.debug(finalMsg)
+        //TODO check this debug case is actually best option
+        case _ => log.debug(finalMsg)
+      }
     }
     target(ctx, msg)
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
     if (opts.enabled) {
-    val actorPath = ctx.asScala.self.path.toString
-    opts.level match {
-    case Level.ERROR => log.error(s"actor $actorPath received signal $signal")
-    case Level.WARN  => log.warn(s"actor $actorPath received signal $signal")
-    case Level.INFO  => log.info(s"actor $actorPath received signal $signal")
-    case Level.DEBUG => log.debug(s"actor $actorPath received signal $signal")
-    //TODO check this debug case is actually best option
-    case _ => log.debug(s"actor $actorPath received signal $signal")
-  }
+      val actorPath = ctx.asScala.self.path.toString
+      val finalMsg = addMDC(s"actor $actorPath received signal $signal")
+      opts.level match {
+        case Level.ERROR => log.error(finalMsg)
+        case Level.WARN  => log.warn(finalMsg)
+        case Level.INFO  => log.info(finalMsg)
+        case Level.DEBUG => log.debug(finalMsg)
+        //TODO check this debug case is actually best option
+        case _ => log.debug(finalMsg)
+      }
     }
 
     target(ctx, signal)
@@ -191,6 +194,12 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     case a: LogMessagesInterceptor => a.opts == opts
     case _                         => false
+  }
+
+  def addMDC(msg: String): String = {
+    if (MDC.getMDCAdapter.getCopyOfContextMap != null)
+      msg + s" MDC is ${MDC.getMDCAdapter.getCopyOfContextMap.asScala}"
+    else msg
   }
 }
 

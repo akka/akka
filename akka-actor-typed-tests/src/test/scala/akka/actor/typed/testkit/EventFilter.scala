@@ -4,13 +4,13 @@ package akka.actor.typed.testkit
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
+import java.util.concurrent.LinkedBlockingQueue
+
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.testkit.{ TestKit, TestKitExtension }
 import akka.util.BoxedType
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.read.ListAppender
+import org.slf4j.event.{ Level, LoggingEvent, SubstituteLoggingEvent }
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
@@ -51,9 +51,10 @@ abstract class EventFilter(occurrences: Int) {
    * Apply this filter while executing the given code block. Care is taken to
    * remove the filter when the block is finished or aborted.
    */
-  def intercept[T](code: => T, messageAppender: ListAppender[ILoggingEvent])(implicit system: ActorSystem): T = {
+  def intercept[T](code: => T, eventsQueue: LinkedBlockingQueue[SubstituteLoggingEvent])(
+      implicit system: ActorSystem): T = {
     //TODO add appender and clean it @see original TestEventListener
-    def leftToDo: Int = todo - messageAppender.list.asScala.filter(each => matches(each)).size
+    def leftToDo: Int = todo - eventsQueue.asScala.filter(each => matches(each)).size
     val leeway = TestKitExtension(system).TestEventFilterLeeway
     val result = code
     if (!awaitDone(leeway, leftToDo))
@@ -74,7 +75,7 @@ abstract class EventFilter(occurrences: Int) {
    * This method decides whether to filter the event (<code>true</code>) or not
    * (<code>false</code>).
    */
-  protected def matches(event: ILoggingEvent): Boolean
+  protected def matches(event: LoggingEvent): Boolean
 
   /**
    * internal implementation helper, no guaranteed API
@@ -235,7 +236,7 @@ object EventFilter {
    * }
    * }}}
    */
-  def custom(test: PartialFunction[ILoggingEvent, Boolean], occurrences: Int = Int.MaxValue): EventFilter =
+  def custom(test: PartialFunction[LoggingEvent, Boolean], occurrences: Int = Int.MaxValue): EventFilter =
     CustomEventFilter(test)(occurrences)
 }
 
@@ -260,7 +261,7 @@ final case class ErrorFilter(
     override val complete: Boolean)(occurrences: Int)
     extends EventFilter(occurrences) {
 
-  def matches(event: ILoggingEvent) = {
+  def matches(event: LoggingEvent) = {
     event.getLevel match {
       case Level.ERROR => true
       case _           => false
@@ -318,7 +319,7 @@ final case class WarningFilter(
     override val complete: Boolean)(occurrences: Int)
     extends EventFilter(occurrences) {
 
-  def matches(event: ILoggingEvent) = {
+  def matches(event: LoggingEvent) = {
     event.getLevel match {
       case Level.WARN => doMatch(event.getLoggerName, event.getMessage)
       case _          => false
@@ -363,7 +364,7 @@ final case class InfoFilter(
     override val complete: Boolean)(occurrences: Int)
     extends EventFilter(occurrences) {
 
-  def matches(event: ILoggingEvent) = {
+  def matches(event: LoggingEvent) = {
     event.getLevel match {
       case Level.INFO => doMatch(event.getMessage)
       case _          => false
@@ -408,9 +409,10 @@ final case class DebugFilter(
     override val complete: Boolean)(occurrences: Int)
     extends EventFilter(occurrences) {
 
-  def matches(event: ILoggingEvent) = {
+  def matches(event: LoggingEvent) = {
     event.getLevel match {
       case Level.DEBUG => doMatch(event.getMessage)
+      case Level.TRACE => doMatch(event.getMessage) //this is a bug in slf4j, already requested a PR to fix it. https://github.com/qos-ch/slf4j/pull/211
       case _           => false
     }
   }
@@ -444,9 +446,9 @@ final case class DebugFilter(
  *
  * If the partial function is defined and returns true, filter the event.
  */
-final case class CustomEventFilter(test: PartialFunction[ILoggingEvent, Boolean])(occurrences: Int)
+final case class CustomEventFilter(test: PartialFunction[LoggingEvent, Boolean])(occurrences: Int)
     extends EventFilter(occurrences) {
-  def matches(event: ILoggingEvent) = {
+  def matches(event: LoggingEvent) = {
     test.isDefinedAt(event) && test(event)
   }
 }
@@ -462,7 +464,7 @@ object DeadLettersFilter {
  */
 final case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int) extends EventFilter(occurrences) {
 
-  def matches(event: ILoggingEvent) = {
+  def matches(event: LoggingEvent) = {
     event.getLevel match {
       case Level.WARN => BoxedType(messageClass).isInstance(event.getMessage)
       case _          => false
