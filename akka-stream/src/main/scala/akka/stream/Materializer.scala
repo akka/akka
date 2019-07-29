@@ -23,7 +23,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * Once the SPI is final this notice will be removed.
  */
-@silent // deprecatedName(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
+@silent("deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 abstract class Materializer {
 
   /**

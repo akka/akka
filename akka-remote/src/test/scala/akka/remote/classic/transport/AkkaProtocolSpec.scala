@@ -43,7 +43,7 @@ object AkkaProtocolSpec {
 
 }
 
-@silent // deprecated
+@silent("deprecated")
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString("""

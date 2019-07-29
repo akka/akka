@@ -57,7 +57,7 @@ abstract class RemoteFeaturesSpec(c: Config) extends ArteryMultiNodeSpec(c) with
 
   protected val remoteSystem1 = newRemoteSystem(name = Some("RS1"), extraConfig = Some(common(useUnsafe)))
 
-  @silent // deprecated
+  @silent("deprecated")
   private def mute(): Unit = {
     Seq(system, remoteSystem1).foreach(
       muteDeadLetters(

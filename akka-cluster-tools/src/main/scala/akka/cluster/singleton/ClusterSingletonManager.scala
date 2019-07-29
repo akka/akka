@@ -45,7 +45,7 @@ object ClusterSingletonManagerSettings {
    * Create settings from the default configuration
    * `akka.cluster.singleton`.
    */
-  @silent // deprecated setting
+  @silent("deprecated") // DownRemovalMargin
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
     // note that this setting has some additional logic inside the ClusterSingletonManager

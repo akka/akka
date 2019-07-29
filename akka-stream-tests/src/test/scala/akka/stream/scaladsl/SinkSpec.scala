@@ -15,7 +15,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-@silent // tests deprecated APIs
+@silent("deprecated")
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._

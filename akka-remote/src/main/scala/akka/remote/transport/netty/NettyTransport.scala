@@ -210,7 +210,7 @@ class NettyTransportSettings(config: Config) {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[netty] trait CommonHandlers extends NettyHelpers {
   protected val transport: NettyTransport
 
@@ -253,7 +253,7 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[netty] abstract class ServerHandler(
     protected final val transport: NettyTransport,
     private final val associationListenerFuture: Future[AssociationEventListener])
@@ -285,7 +285,7 @@ private[netty] abstract class ServerHandler(
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[netty] abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
     extends NettyClientHelpers
     with CommonHandlers {

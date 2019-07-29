@@ -73,7 +73,7 @@ object ThrottlerTransportAdapterSpec {
   final case class Lost(msg: String)
 }
 
-@silent // deprecated
+@silent("deprecated")
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
   val systemB = ActorSystem("systemB", system.settings.config)
@@ -160,7 +160,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   override def afterTermination(): Unit = shutdown(systemB)
 }
 
-@silent // deprecated
+@silent("deprecated")
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {
 
   def transportName = "ThrottlerTransportAdapter"

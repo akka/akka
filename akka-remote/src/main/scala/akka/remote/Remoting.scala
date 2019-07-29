@@ -77,7 +77,7 @@ private[akka] trait HeartbeatMessage extends PriorityMessage
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
@@ -133,7 +133,7 @@ private[remote] object Remoting {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 @ccompatUsedUntil213
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider) {
@@ -287,7 +287,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
@@ -480,7 +480,7 @@ private[remote] object EndpointManager {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {

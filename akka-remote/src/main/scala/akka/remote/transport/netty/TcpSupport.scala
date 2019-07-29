@@ -29,7 +29,7 @@ private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEvent
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] trait TcpHandlers extends CommonHandlers {
   protected def log: LoggingAdapter
 
@@ -65,7 +65,7 @@ private[remote] trait TcpHandlers extends CommonHandlers {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] class TcpServerHandler(
     _transport: NettyTransport,
     _associationListenerFuture: Future[AssociationEventListener],
@@ -81,7 +81,7 @@ private[remote] class TcpServerHandler(
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress: Address, val log: LoggingAdapter)
     extends ClientHandler(_transport, remoteAddress)
     with TcpHandlers {
@@ -94,7 +94,7 @@ private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] class TcpAssociationHandle(
     val localAddress: Address,
     val remoteAddress: Address,
