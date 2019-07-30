@@ -249,6 +249,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
             context.system.scheduler.scheduleOnce(writeBehindInterval, self, WriteBehind)(context.dispatcher)
           pending.put(key, data)
         }
+        log.debug("Write complete")
         reply match {
           case Some(StoreReply(successMsg, _, replyTo)) =>
             replyTo ! successMsg

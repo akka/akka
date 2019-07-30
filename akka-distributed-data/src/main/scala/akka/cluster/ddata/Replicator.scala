@@ -1403,6 +1403,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       val originalReplyTo = replyTo
       stash.foreach {
         case (msg, snd) =>
+          // FIXME remove
+          log.debug("Unstashing {} to with sender {}", msg, snd)
           replyTo = snd
           normalReceive.applyOrElse(msg, unhandled)
       }
@@ -1589,7 +1591,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         val newEnvelope = setData(key.id, envelope)
 
         val durable = isDurable(key.id)
-        log.debug("Is local write {}", nodes)
+        log.debug("Is local write nodes {} durable {}", nodes, durable)
         if (isLocalUpdate(writeConsistency)) {
           log.debug("Local write")
           if (durable)

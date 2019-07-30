@@ -207,6 +207,8 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     val r = newReplicator()
 
     runOn(first) {
+      // FIXME
+      log.debug("sending message with sender: {}", implicitly[ActorRef])
       r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ :+ myself.name)
       expectMsg(UpdateSuccess(KeyC, None))
     }
@@ -224,8 +226,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       system.stop(r)
       expectTerminated(r)
 
-      var r2: ActorRef = null
-      awaitAssert { r2 = newReplicator() } // try until name is free
+      val r2 = awaitAssert { newReplicator() } // try until name is free
       awaitAssert {
         r2 ! GetKeyIds
         expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])
