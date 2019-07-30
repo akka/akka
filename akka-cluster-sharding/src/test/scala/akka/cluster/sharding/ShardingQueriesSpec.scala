@@ -12,42 +12,55 @@ import akka.testkit.AkkaSpec
 class ShardingQueriesSpec extends AkkaSpec {
 
   private val shards = Seq("a", "b", "busy")
-  private val timeouts = Set("busy")
+  private val failures = Set("busy")
+  private val timeout = ClusterShardingSettings(system).shardRegionQueryTimeout
 
   "ShardsQueryResult" must {
 
+    def nonEmpty(qr: ShardsQueryResult[_]): Boolean =
+      qr.total > 0 && qr.queried > 0
+
+    def isTotalFailed(qr: ShardsQueryResult[_]): Boolean =
+      nonEmpty(qr) && qr.failed.size == qr.total
+
+    def isAllSubsetFailed(qr: ShardsQueryResult[_]): Boolean =
+      nonEmpty(qr) && qr.queried < qr.total && qr.failed.size == qr.queried
+
     "reflect nothing to acquire metadata from - 0 shards" in {
-      val qr = ShardsQueryResult[ShardState](Seq.empty, 0)
+      val qr = ShardsQueryResult[ShardState](Seq.empty, 0, timeout)
       qr.total shouldEqual qr.queried
-      qr.isTotalFailed shouldBe false // you'd have to make > 0 attempts in order to fail
-      qr.isAllSubsetFailed shouldBe false // same
+      isTotalFailed(qr) shouldBe false // you'd have to make > 0 attempts in order to fail
+      isAllSubsetFailed(qr) shouldBe false // same
+      qr.toString shouldEqual "Shard region had zero shards to gather metadata from."
     }
 
-    "partition failures and responses by type and by convention (failed Left T Right)" in {
+    "partition failures and responses by type and by convention (failed Left, T Right)" in {
       val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
-      val results = responses.map(Right(_)) ++ timeouts.map(Left(_))
-      val qr = ShardsQueryResult[ShardStats](results, shards.size)
-      qr.failed shouldEqual timeouts
+      val results = responses.map(Right(_)) ++ failures.map(Left(_))
+      val qr = ShardsQueryResult[ShardStats](results, shards.size, timeout)
+      qr.failed shouldEqual failures
       qr.responses shouldEqual responses
-      qr.isTotalFailed shouldBe false
-      qr.isAllSubsetFailed shouldBe false
+      isTotalFailed(qr) shouldBe false
+      isAllSubsetFailed(qr) shouldBe false
+      qr.toString shouldEqual s"Queried [3] shards: [2] responsive, [1] failed after $timeout."
     }
 
     "detect a subset query - not all queried" in {
       val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
-      val results = responses.map(Right(_)) ++ timeouts.map(Left(_))
-      val qr = ShardsQueryResult[ShardStats](results, shards.size + 1)
-      qr.isAllSubsetFailed shouldBe false // is subset, not all failed
+      val results = responses.map(Right(_)) ++ failures.map(Left(_))
+      val qr = ShardsQueryResult[ShardStats](results, shards.size + 1, timeout)
       qr.total > qr.queried shouldBe true
       qr.queried < shards.size
+      qr.toString shouldEqual s"Queried [3] shards of [4]: [2] responsive, [1] failed after $timeout."
     }
 
     "partition when all failed" in {
       val results = Seq(Left("c"), Left("d"))
-      val qr = ShardsQueryResult[ShardState](results, results.size)
+      val qr = ShardsQueryResult[ShardState](results, results.size, timeout)
       qr.total shouldEqual qr.queried
-      qr.isTotalFailed shouldBe true
-      qr.isAllSubsetFailed shouldBe false // not a subset
+      isTotalFailed(qr) shouldBe true
+      isAllSubsetFailed(qr) shouldBe false // not a subset
+      qr.toString shouldEqual s"Queried [2] shards: [0] responsive, [2] failed after $timeout."
     }
   }
 
