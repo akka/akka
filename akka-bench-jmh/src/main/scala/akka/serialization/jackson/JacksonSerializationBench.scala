@@ -185,7 +185,7 @@ class JacksonSerializationBench {
   var system: ActorSystem = _
   var serialization: Serialization = _
 
-  @silent("immutable val") // never updated, can not val due to: unbound placeholder parameter
+  @silent("immutable val") // JMH updates this via reflection
   @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 

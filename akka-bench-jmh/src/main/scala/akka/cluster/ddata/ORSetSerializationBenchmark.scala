@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Warmup
-import org.openjdk.jmh.annotations.{Scope => JmhScope}
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 
 @Fork(2)
 @State(JmhScope.Benchmark)
