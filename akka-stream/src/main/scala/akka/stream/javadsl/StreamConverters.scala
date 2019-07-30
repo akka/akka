@@ -112,7 +112,7 @@ object StreamConverters {
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
-  @silent
+  @silent("deprecated")
   def asInputStream(readTimeout: java.time.Duration): Sink[ByteString, InputStream] = {
     import akka.util.JavaDurationConverters._
     asInputStream(readTimeout.asScala)
@@ -188,7 +188,7 @@ object StreamConverters {
    *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block
    */
-  @silent
+  @silent("deprecated")
   def asOutputStream(writeTimeout: java.time.Duration): javadsl.Source[ByteString, OutputStream] = {
     import akka.util.JavaDurationConverters._
     asOutputStream(writeTimeout.asScala)

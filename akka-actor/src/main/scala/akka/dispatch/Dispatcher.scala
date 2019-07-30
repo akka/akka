@@ -48,7 +48,7 @@ class Dispatcher(
    * At first glance this var does not seem to be updated anywhere, but in
    * fact it is, via the esUpdater [[AtomicReferenceFieldUpdater]] below.
    */
-  @silent
+  @silent("never updated")
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
     new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, threadFactory))
 

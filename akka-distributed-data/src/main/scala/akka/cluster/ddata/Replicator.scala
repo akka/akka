@@ -1336,9 +1336,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   // possibility to disable Gossip for testing purpose
   var fullStateGossipEnabled = true
 
-  @silent
+  @silent("deprecated")
   val subscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
-  @silent
+  @silent("deprecated")
   val newSubscribers = new mutable.HashMap[KeyId, mutable.Set[ActorRef]] with mutable.MultiMap[KeyId, ActorRef]
   var subscriptionKeys = Map.empty[KeyId, KeyR]
 

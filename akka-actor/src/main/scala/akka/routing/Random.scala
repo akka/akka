@@ -21,7 +21,7 @@ object RandomRoutingLogic {
 /**
  * Randomly selects one of the target routees to send a message to
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class RandomRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =

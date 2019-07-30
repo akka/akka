@@ -251,7 +251,7 @@ object FSM {
      * Modify state transition descriptor with new state data. The data will be
      * set when transitioning to the new state.
      */
-    @silent
+    @silent("deprecated")
     def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D] = {
       copy(stateData = nextStateData)
     }

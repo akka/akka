@@ -44,7 +44,7 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
 class RemoteNodeRestartGateSpecMultiJvmNode1 extends RemoteNodeRestartGateSpec
 class RemoteNodeRestartGateSpecMultiJvmNode2 extends RemoteNodeRestartGateSpec
 
-@silent // deprecated
+@silent("deprecated")
 abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNodeRestartGateSpec) {
 
   import RemoteNodeRestartGateSpec._

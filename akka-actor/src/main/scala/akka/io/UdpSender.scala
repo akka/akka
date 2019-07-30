@@ -17,7 +17,7 @@ import com.github.ghik.silencer.silent
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[io] class UdpSender(
     val udp: UdpExt,
     channelRegistry: ChannelRegistry,

@@ -22,7 +22,7 @@ object RoundRobinRoutingLogic {
  * Uses round-robin to select a routee. For concurrent calls,
  * round robin is just a best effort.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final class RoundRobinRoutingLogic extends RoutingLogic {
   val next = new AtomicLong

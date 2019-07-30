@@ -36,7 +36,7 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
 class SurviveNetworkPartitionSpecMultiJvmNode1 extends SurviveNetworkPartitionSpec
 class SurviveNetworkPartitionSpecMultiJvmNode2 extends SurviveNetworkPartitionSpec
 
-@silent // deprecated
+@silent("deprecated")
 abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(SurviveNetworkPartitionSpec) {
 
   import SurviveNetworkPartitionSpec._

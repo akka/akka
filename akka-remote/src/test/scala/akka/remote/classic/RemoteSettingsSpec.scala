@@ -9,7 +9,7 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 
-@silent // deprecated
+@silent("deprecated")
 class RemoteSettingsSpec extends WordSpec with Matchers {
 
   "Remote settings" must {

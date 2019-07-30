@@ -17,7 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
 
-@silent // tests deprecated APIs
+@silent
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
