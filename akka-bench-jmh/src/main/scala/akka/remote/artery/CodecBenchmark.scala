@@ -41,7 +41,7 @@ import org.openjdk.jmh.annotations._
 class CodecBenchmark {
   import CodecBenchmark._
 
-  @silent("immutable val") // never updated, can not val due to: unbound placeholder parameter
+  @silent("immutable val") // JMH updates this via reflection
   @Param(Array(Standard, RemoteInstrument))
   private var configType: String = _
 

@@ -20,7 +20,10 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
  */
-@silent // too long to add pattern
+// Found names but no class, trait or object is defined in the compilation unit.
+// The incremental compiler cannot record the dependency information in such case.
+// Some errors like unused import referring to a non-existent class might not be reported.
+@silent("non-existent class")
 class NewLayoutBenchmark {
   /*
   // TODO: This benchmark is heavily copy-pasta. This is a temporary benchmark as these two implementations
