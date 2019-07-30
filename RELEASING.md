@@ -12,8 +12,9 @@ types.
 In the future we might be able to update the build to work
 without having JDK 8 installed, by using the `-release` option.
 
-### GPG and sbt-pgp setup
- 
+### One Time GPG and sbt-pgp setup
+
+If you have not set up GPG or used `sbt-pgp` on the release machine
 * Check the [sbt-pgp usage](https://www.scala-sbt.org/sbt-pgp/usage.html) for any setup steps you may still need, for example:
 ```
 sbt> set pgpReadOnly := false
