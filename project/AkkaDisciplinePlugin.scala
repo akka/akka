@@ -21,8 +21,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     // We allow warnings in docs to get the 'snippets' right
     "akka-docs",
     // To be reviewed
-    "akka-bench-jmh-typed",
-    "akka-stream-tests-tck")
+    "akka-bench-jmh-typed")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
