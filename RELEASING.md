@@ -12,7 +12,21 @@ types.
 In the future we might be able to update the build to work
 without having JDK 8 installed, by using the `-release` option.
 
-### MinGW
+### One Time GPG and sbt-pgp setup
+
+If you have not set up GPG or used `sbt-pgp` on the release machine
+* Check the [sbt-pgp usage](https://www.scala-sbt.org/sbt-pgp/usage.html) for any setup steps you may still need, for example:
+```
+sbt> set pgpReadOnly := false
+sbt> pgp-cmd gen-key
+```    
+* Check that signing works with `sbt> publishLocalSigned`
+   
+#### Mac
+
+When releasing from MacOS you may want to use YubiKey or have [MacGPG](https://gpgtools.org) installed.
+
+#### Windows
 
 When releasing from Windows, you need MinGW and a gpg distribution such as Gpg4Win
 
@@ -25,6 +39,15 @@ otherwise git might convert line endings in some cases.
 
 Make sure you have the Lightbend Whitesource credentials configured in
 your `~/.sbt/1.0/private-credentials.sbt`.
+
+### Install Graphviz
+
+[Graphvis](https://graphviz.gitlab.io/download/) is needed for the 
+scaladoc generation build task, which is part of the release.
+ 
+### Release script instructions
+
+Make sure you have completed the setup in `project/scripts/release`.
 
 ## Snapshot releases
 
@@ -39,7 +62,6 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
 
 ## Release steps
 
-* Check the instructions for `project/scripts/release`
 * Do a `project/scripts/release <version>` dry run
 * If all goes well, `project/scripts/release --real-run <version>`
 * Log into sonatype, 'close' the staging repo.
