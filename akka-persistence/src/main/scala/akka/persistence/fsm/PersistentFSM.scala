@@ -119,7 +119,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   /**
    * Discover the latest recorded state
    */
-  @silent
+  @silent("deprecated")
   override def receiveRecover: Receive = {
     case domainEventTag(event)                      => startWith(stateName, applyEvent(event, stateData))
     case StateChangeEvent(stateIdentifier, timeout) => startWith(statesMap(stateIdentifier), stateData, timeout)
@@ -520,7 +520,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
  * Persistent Finite State Machine actor abstract base class with FSM Logging
  *
  */
-@silent
+@silent("deprecated")
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSM[S, D, E]
     with LoggingPersistentFSM[S, D, E]

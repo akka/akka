@@ -60,7 +60,7 @@ private[remote] object FailureInjectorTransportAdapter {
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[remote] class FailureInjectorTransportAdapter(
     wrappedTransport: Transport,
     val extendedSystem: ExtendedActorSystem)
@@ -161,7 +161,7 @@ private[remote] class FailureInjectorTransportAdapter(
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[remote] final case class FailureInjectorHandle(
     _wrappedHandle: AssociationHandle,
     private val gremlinAdapter: FailureInjectorTransportAdapter)
@@ -188,7 +188,7 @@ private[remote] final case class FailureInjectorHandle(
   @deprecated(
     message = "Use method that states reasons to make sure disassociation reasons are logged.",
     since = "2.5.3")
-  @silent
+  @silent("deprecated")
   override def disassociate(): Unit =
     wrappedHandle.disassociate()
 

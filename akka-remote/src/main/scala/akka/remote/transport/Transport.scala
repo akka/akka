@@ -282,7 +282,7 @@ trait AssociationHandle {
    * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
    * could be called arbitrarily many times.
    */
-  @silent
+  @silent("deprecated")
   def disassociate(reason: String, log: LoggingAdapter): Unit = {
     if (log.isDebugEnabled)
       log.debug(

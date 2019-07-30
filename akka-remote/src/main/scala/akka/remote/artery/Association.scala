@@ -244,7 +244,7 @@ private[remote] class Association(
    * Holds reference to shared state of Association - *access only via helper methods*
    */
   @volatile
-  @silent
+  @silent("never used")
   private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
@@ -334,7 +334,7 @@ private[remote] class Association(
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
     // volatile read to see latest queue array
-    @silent
+    @silent("never used")
     val unused = queuesVisibility
 
     def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
@@ -726,7 +726,7 @@ private[remote] class Association(
   }
 
   private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
-    @silent
+    @silent("never used")
     val unused = queuesVisibility // volatile read to see latest queues array
     queues(queueIndex) match {
       case existing: QueueWrapper => existing

@@ -41,7 +41,6 @@ private[akka] object IndirectActorProducer {
   val CreatorFunctionConsumerClass = classOf[CreatorFunctionConsumer]
   val CreatorConsumerClass = classOf[CreatorConsumer]
   val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
-
   @silent
   def apply(clazz: Class[_], args: immutable.Seq[Any]): IndirectActorProducer = {
     if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {

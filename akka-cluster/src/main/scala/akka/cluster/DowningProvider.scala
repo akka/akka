@@ -65,7 +65,7 @@ abstract class DowningProvider {
  * is not enabled.
  */
 final class NoDowning(system: ActorSystem) extends DowningProvider {
-  @silent
+  @silent("deprecated")
   override def downRemovalMargin: FiniteDuration = Cluster(system).settings.DownRemovalMargin
   override val downingActorProps: Option[Props] = None
 }

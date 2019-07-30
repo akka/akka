@@ -15,7 +15,7 @@ import scala.concurrent._
 
 import com.github.ghik.silencer.silent
 
-@silent // deprecated
+@silent("deprecated")
 class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   val addressA: Address = Address("test", "testsytemA", "testhostA", 4321)

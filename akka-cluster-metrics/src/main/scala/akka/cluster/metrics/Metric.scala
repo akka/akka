@@ -323,7 +323,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
   /**
    * Java API
    */
-  @silent
+  @silent("deprecated")
   def getMetrics: java.lang.Iterable[Metric] =
     scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
 

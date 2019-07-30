@@ -73,7 +73,7 @@ import scala.concurrent.duration._
   /**
    * Silent to allow map update syntax
    */
-  @silent
+  @silent()
   def ready(socket: ActorRef): Receive = {
     case DropRequest(id) =>
       log.debug("Dropping request [{}]", id)

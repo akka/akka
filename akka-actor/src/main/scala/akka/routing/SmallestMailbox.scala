@@ -31,7 +31,7 @@ object SmallestMailboxRoutingLogic {
  *     since their mailbox size is unknown</li>
  * </ul>
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 class SmallestMailboxRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
@@ -81,7 +81,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
   }
 
   // TODO should we rewrite this not to use isTerminated?
-  @silent
+  @silent("deprecated")
   protected def isTerminated(a: Routee): Boolean = a match {
     case ActorRefRoutee(ref) => ref.isTerminated
     case _                   => false
@@ -179,7 +179,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
  *   supervision, death watch and router management messages
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 final case class SmallestMailboxPool(
     nrOfInstances: Int,

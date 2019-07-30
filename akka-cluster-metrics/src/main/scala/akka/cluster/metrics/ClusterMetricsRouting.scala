@@ -419,7 +419,7 @@ object MetricsSelector {
 /**
  * A MetricsSelector is responsible for producing weights from the node metrics.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 trait MetricsSelector extends Serializable {
 
@@ -433,7 +433,7 @@ trait MetricsSelector extends Serializable {
  * A MetricsSelector producing weights from remaining capacity.
  * The weights are typically proportional to the remaining capacity.
  */
-@silent
+@silent("deprecated")
 @SerialVersionUID(1L)
 abstract class CapacityMetricsSelector extends MetricsSelector {
 

@@ -132,7 +132,7 @@ object MurmurHash {
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
-  @silent
+  @silent("deprecated")
   def symmetricHash[T](xs: IterableOnce[T], seed: Int): Int = {
     var a, b, n = 0
     var c = 1

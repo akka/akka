@@ -426,7 +426,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  @silent
+  @silent("deprecated")
   private def subscribeQuarantinedEvent(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
     context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])

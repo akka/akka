@@ -33,7 +33,8 @@ import com.github.ghik.silencer.silent
 /**
  * INTERNAL API
  */
-@silent @InternalApi private[akka] final class ActorSystemStub(val name: String)
+@silent
+@InternalApi private[akka] final class ActorSystemStub(val name: String)
     extends ActorSystem[Nothing]
     with ActorRef[Nothing]
     with ActorRefImpl[Nothing]

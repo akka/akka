@@ -189,7 +189,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     builder.build()
   }
 
-  @silent
+  @silent("deprecated")
   private def clusterRouterPoolSettingsToProto(settings: ClusterRouterPoolSettings): cm.ClusterRouterPoolSettings = {
     val builder = cm.ClusterRouterPoolSettings.newBuilder()
     builder

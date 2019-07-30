@@ -110,18 +110,18 @@ private[akka] class RemoteWatcher(
     if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
     else {
       // For classic remoting the 'int' part is sufficient
-      @silent
+      @silent("deprecated")
       val addressUid = AddressUidExtension(context.system).addressUid
       (Heartbeat, HeartbeatRsp(addressUid))
     }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
-  @silent
+  @silent("deprecated")
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
-  @silent
+  @silent("deprecated")
   val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
   with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet

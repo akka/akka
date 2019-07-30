@@ -103,7 +103,7 @@ object RemoteDeploymentWhitelistSpec {
   }
 }
 
-@silent // deprecated
+@silent("deprecated")
 class RemoteDeploymentWhitelistSpec
     extends AkkaSpec(RemoteDeploymentWhitelistSpec.cfg)
     with ImplicitSender

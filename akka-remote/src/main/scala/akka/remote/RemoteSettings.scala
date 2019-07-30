@@ -45,7 +45,7 @@ final class RemoteSettings(val config: Config) {
   /**
    * INTERNAL API
    */
-  @silent
+  @silent("deprecated")
   @InternalApi private[akka] def untrustedMode: Boolean =
     if (Artery.Enabled) Artery.UntrustedMode else UntrustedMode
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
@@ -67,7 +67,7 @@ final class RemoteSettings(val config: Config) {
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val Dispatcher: String = getString("akka.remote.classic.use-dispatcher")
 
-  @silent
+  @silent("deprecated")
   def configureDispatcher(props: Props): Props =
     if (Artery.Enabled) {
       if (Artery.Advanced.Dispatcher.isEmpty) props else props.withDispatcher(Artery.Advanced.Dispatcher)

@@ -109,7 +109,7 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this operator considers
    * the *joint* frequencies of the elements in both directions.
    */
-  @silent
+  @silent("deprecated")
   def bidirectionalIdleTimeout[I, O](timeout: java.time.Duration): BidiFlow[I, I, O, O, NotUsed] = {
     import akka.util.JavaDurationConverters._
     bidirectionalIdleTimeout(timeout.asScala)

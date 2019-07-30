@@ -813,8 +813,8 @@ private[akka] class ShardRegion(
     implicit val timeout: Timeout = settings.shardRegionQueryTimeout
 
     Future.traverse(shards.toSeq) { case (shardId, shard) => askOne(shard, msg, shardId) }.map { ps =>
-      val qr = ShardsQueryResult[T](ps, this.shards.size)
-      if (qr.failed.nonEmpty) log.warning(qr.toString)
+      val qr = ShardsQueryResult[T](ps, this.shards.size, timeout.duration)
+      if (qr.failed.nonEmpty) log.warning(s"$qr")
       qr
     }
   }

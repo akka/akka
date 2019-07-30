@@ -22,7 +22,7 @@ private[akka] trait Children { this: ActorCell =>
 
   import ChildrenContainer._
 
-  @silent
+  @silent("never used")
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
@@ -30,7 +30,7 @@ private[akka] trait Children { this: ActorCell =>
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
-  @silent
+  @silent("deprecated")
   final def getChildren(): java.lang.Iterable[ActorRef] =
     scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
