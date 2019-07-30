@@ -15,7 +15,6 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
@@ -26,7 +25,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Warmup
-import org.openjdk.jmh.annotations.{ Scope => JmhScope }
+import org.openjdk.jmh.annotations.{Scope => JmhScope}
 
 @Fork(2)
 @State(JmhScope.Benchmark)
@@ -51,10 +50,11 @@ class ORSetSerializationBenchmark {
   private val ref1 = (1 to 10).map(n => system1.actorOf(Props.empty, s"ref1-$n"))
   private val ref2 = (1 to 10).map(n => system2.actorOf(Props.empty, s"ref2-$n"))
 
-  @silent("deprecated")
   private val orSet = {
-    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system1), r) }
-    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system2), r) }
+    val selfUniqueAddress1 = SelfUniqueAddress(Cluster(system1).selfUniqueAddress)
+    val selfUniqueAddress2 = SelfUniqueAddress(Cluster(system2).selfUniqueAddress)
+    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(selfUniqueAddress1, r) }
+    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(selfUniqueAddress2, r) }
     set1.merge(set2)
   }
 
