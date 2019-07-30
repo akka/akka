@@ -9,8 +9,10 @@ import java.util.concurrent.CountDownLatch
 import akka.Done
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-
 import scala.concurrent.duration._
+
+import akka.util.unused
+import com.github.ghik.silencer.silent
 
 object TypedBenchmarkActors {
 
@@ -66,7 +68,7 @@ object TypedBenchmarkActors {
       numActors: Int,
       dispatcher: String,
       batchSize: Int,
-      shutdownTimeout: FiniteDuration): Behavior[Start] =
+      @unused shutdownTimeout: FiniteDuration): Behavior[Start] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case Start(respondTo) =>
@@ -143,6 +145,7 @@ object TypedBenchmarkActors {
     }
   }
 
+  @silent("deprecated")
   private def initiatePingPongForPairs(refs: Vector[(ActorRef[Message], ActorRef[Message])], inFlight: Int): Unit = {
     for {
       (ping, pong) <- refs
