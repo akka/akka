@@ -71,9 +71,9 @@ object BehaviorSpec {
   trait Common extends WordSpecLike with Matchers with TypeCheckedTripleEquals {
     type Aux >: Null <: AnyRef
     def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux)
-    @silent
+    @silent("never used")
     def checkAux(signal: Signal, aux: Aux): Unit = ()
-    @silent
+    @silent("never used")
     def checkAux(command: Command, aux: Aux): Unit = ()
 
     case class Init(behv: Behavior[Command], inbox: TestInbox[Event], aux: Aux) {
