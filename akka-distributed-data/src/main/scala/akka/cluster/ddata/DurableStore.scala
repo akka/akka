@@ -157,6 +157,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       val l = Lmdb(env, db, keyBuffer, valueBuffer)
       _lmdb = OptionVal.Some(l)
+      log.debug("LMDB initialized")
       l
   }
 
@@ -238,6 +239,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   def active: Receive = {
     case Store(key, data, reply) =>
+      log.debug("Store key: {} reply: {} writeBehind {}", key, reply, writeBehindInterval.length)
       try {
         lmdb() // init
         if (writeBehindInterval.length == 0) {

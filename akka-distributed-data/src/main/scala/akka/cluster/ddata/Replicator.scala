@@ -1589,7 +1589,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         val newEnvelope = setData(key.id, envelope)
 
         val durable = isDurable(key.id)
+        log.debug("Is local write {}", nodes)
         if (isLocalUpdate(writeConsistency)) {
+          log.debug("Local write")
           if (durable)
             durableStore ! Store(
               key.id,
@@ -1606,6 +1608,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             case Some(d) => (newEnvelope.copy(data = d), None)
             case None    => (newEnvelope, None)
           }
+          log.debug("Remote write")
           val writeAggregator =
             context.actorOf(
               WriteAggregator
@@ -2379,19 +2382,24 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       case Some(d) => d
       case None    => writeMsg
     }
+    log.debug("WriteAggregator, consistency {}. Primary nodes {}", consistency, primaryNodes)
     primaryNodes.foreach { replica(_) ! msg }
 
     if (isDone) reply(isTimeout = false)
+
   }
 
   def receive: Receive = {
     case WriteAck =>
       remaining -= senderAddress()
+      log.debug("WriteAck Remaining {}", remaining)
       if (isDone) reply(isTimeout = false)
     case WriteNack =>
       gotWriteNackFrom += senderAddress()
+      log.debug("WriterNack Remaining {}", remaining)
       if (isDone) reply(isTimeout = false)
     case DeltaNack =>
+      log.debug("DeltaNack")
       // Deltas must be applied in order and we can't keep track of ordering of
       // simultaneous updates so there is a chance that the delta could not be applied.
       // Try again with the full state
@@ -2399,6 +2407,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
     case _: Replicator.UpdateSuccess[_] =>
       gotLocalStoreReply = true
+      log.debug("Local store success")
       if (isDone) reply(isTimeout = false)
     case _: Replicator.StoreFailure[_] =>
       gotLocalStoreReply = true
