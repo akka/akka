@@ -67,14 +67,14 @@ class TellOnlyBenchmark {
     probe.send(actor, message)
     probe.expectMsg(message)
     probe.send(actor, flipDrop)
-    probe.expectNoMsg(200.millis)
+    probe.expectNoMessage(200.millis)
     System.gc()
   }
 
   @TearDown(Level.Iteration)
   def shutdownIteration(): Unit = {
     probe.send(actor, flipDrop)
-    probe.expectNoMsg(200.millis)
+    probe.expectNoMessage(200.millis)
     actor ! stop
     probe.expectTerminated(actor, timeout)
     actor = null

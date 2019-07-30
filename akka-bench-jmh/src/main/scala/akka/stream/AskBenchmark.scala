@@ -16,7 +16,7 @@ import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 
 object AskBenchmark {
   final val OperationsPerInvocation = 100000
