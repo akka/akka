@@ -39,7 +39,7 @@ otherwise git might convert line endings in some cases.
 Make sure you have the Lightbend Whitesource credentials configured in
 your `~/.sbt/1.0/private-credentials.sbt`.
 
-### Install Graphvis
+### Install Graphviz
 
 [Graphvis](https://graphviz.gitlab.io/download/) is needed for the 
 scaladoc generation build task, which is part of the release.
