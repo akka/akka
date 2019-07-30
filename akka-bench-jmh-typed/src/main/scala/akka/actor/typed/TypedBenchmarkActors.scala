@@ -6,12 +6,11 @@ package akka.actor.typed
 
 import java.util.concurrent.CountDownLatch
 
+import scala.concurrent.duration._
+
 import akka.Done
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import scala.concurrent.duration._
-
-import akka.util.unused
 import com.github.ghik.silencer.silent
 
 object TypedBenchmarkActors {
@@ -67,8 +66,7 @@ object TypedBenchmarkActors {
       numMessagesPerActorPair: Int,
       numActors: Int,
       dispatcher: String,
-      batchSize: Int,
-      @unused shutdownTimeout: FiniteDuration): Behavior[Start] =
+      batchSize: Int): Behavior[Start] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case Start(respondTo) =>
