@@ -15,4 +15,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterRemoteWa
 
 # Remove unused protobuf messages
 ProblemFilters.exclude[MissingClassProblem]("akka.cluster.protobuf.msg.ClusterMessages*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheckOrBuilder")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheck$Builder")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheck")
+
 
