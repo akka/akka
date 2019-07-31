@@ -2921,9 +2921,8 @@ public final class ClusterMessages {
     // @@protoc_insertion_point(class_scope:InitJoinAck)
   }
 
-  public interface ConfigCheckOrBuilder extends
-      akka.protobuf.GeneratedMessage.
-          ExtendableMessageOrBuilder<ConfigCheck> {
+  public interface ConfigCheckOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .ConfigCheck.Type type = 1;
     /**
@@ -2954,10 +2953,10 @@ public final class ClusterMessages {
    * Protobuf type {@code ConfigCheck}
    */
   public static final class ConfigCheck extends
-      akka.protobuf.GeneratedMessage.ExtendableMessage<
-        ConfigCheck> implements ConfigCheckOrBuilder {
+      akka.protobuf.GeneratedMessage
+      implements ConfigCheckOrBuilder {
     // Use ConfigCheck.newBuilder() to construct.
-    private ConfigCheck(akka.protobuf.GeneratedMessage.ExtendableBuilder<akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck, ?> builder) {
+    private ConfigCheck(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
@@ -3220,10 +3219,6 @@ public final class ClusterMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!extensionsAreInitialized()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -3231,16 +3226,12 @@ public final class ClusterMessages {
     public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
-      akka.protobuf.GeneratedMessage
-        .ExtendableMessage<akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck>.ExtensionWriter extensionWriter =
-          newExtensionWriter();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, type_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getClusterConfigBytes());
       }
-      extensionWriter.writeUntil(103, output);
       getUnknownFields().writeTo(output);
     }
 
@@ -3258,7 +3249,6 @@ public final class ClusterMessages {
         size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getClusterConfigBytes());
       }
-      size += extensionsSerializedSize();
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
@@ -3341,8 +3331,8 @@ public final class ClusterMessages {
      * Protobuf type {@code ConfigCheck}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.ExtendableBuilder<
-          akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck, Builder> implements akka.cluster.protobuf.msg.ClusterMessages.ConfigCheckOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.protobuf.msg.ClusterMessages.ConfigCheckOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.protobuf.msg.ClusterMessages.internal_static_ConfigCheck_descriptor;
@@ -3439,17 +3429,12 @@ public final class ClusterMessages {
           clusterConfig_ = other.clusterConfig_;
           onChanged();
         }
-        this.mergeExtensionFields(other);
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasType()) {
-          
-          return false;
-        }
-        if (!extensionsAreInitialized()) {
           
           return false;
         }
@@ -18321,56 +18306,56 @@ public final class ClusterMessages {
       "\006gossip\030\002 \002(\0132\007.Gossip\"!\n\010InitJoin\022\025\n\rcu" +
       "rrentConfig\030\001 \001(\t\"K\n\013InitJoinAck\022\031\n\007addr" +
       "ess\030\001 \002(\0132\010.Address\022!\n\013configCheck\030\002 \002(\013" +
-      "2\014.ConfigCheck\"\226\001\n\013ConfigCheck\022\037\n\004type\030\001" +
+      "2\014.ConfigCheck\"\220\001\n\013ConfigCheck\022\037\n\004type\030\001" +
       " \002(\0162\021.ConfigCheck.Type\022\025\n\rclusterConfig" +
       "\030\002 \001(\t\"I\n\004Type\022\023\n\017UncheckedConfig\020\001\022\026\n\022I" +
       "ncompatibleConfig\020\002\022\024\n\020CompatibleConfig\020",
-      "\003*\004\010d\020g\"M\n\tHeartbeat\022\026\n\004from\030\001 \002(\0132\010.Add" +
-      "ress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creationTime" +
-      "\030\003 \001(\022\"[\n\021HeartBeatResponse\022\034\n\004from\030\001 \002(" +
-      "\0132\016.UniqueAddress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n" +
-      "\014creationTime\030\003 \001(\003\"d\n\016GossipEnvelope\022\034\n" +
-      "\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030\002 \002(\0132" +
-      "\016.UniqueAddress\022\030\n\020serializedGossip\030\003 \002(" +
-      "\014\"^\n\014GossipStatus\022\034\n\004from\030\001 \002(\0132\016.Unique" +
-      "Address\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version\030\003 " +
-      "\002(\0132\014.VectorClock\"\317\001\n\006Gossip\022$\n\014allAddre",
-      "sses\030\001 \003(\0132\016.UniqueAddress\022\020\n\010allRoles\030\002" +
-      " \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 \003(\013" +
-      "2\007.Member\022!\n\010overview\030\005 \002(\0132\017.GossipOver" +
-      "view\022\035\n\007version\030\006 \002(\0132\014.VectorClock\022\036\n\nt" +
-      "ombstones\030\007 \003(\0132\n.Tombstone\"S\n\016GossipOve" +
-      "rview\022\014\n\004seen\030\001 \003(\005\0223\n\024observerReachabil" +
-      "ity\030\002 \003(\0132\025.ObserverReachability\"p\n\024Obse" +
-      "rverReachability\022\024\n\014addressIndex\030\001 \002(\005\022\017" +
-      "\n\007version\030\004 \002(\003\0221\n\023subjectReachability\030\002" +
-      " \003(\0132\024.SubjectReachability\"a\n\023SubjectRea",
-      "chability\022\024\n\014addressIndex\030\001 \002(\005\022#\n\006statu" +
-      "s\030\003 \002(\0162\023.ReachabilityStatus\022\017\n\007version\030" +
-      "\004 \002(\003\"4\n\tTombstone\022\024\n\014addressIndex\030\001 \002(\005" +
-      "\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014address" +
-      "Index\030\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030" +
-      "\003 \002(\0162\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003" +
-      "(\005B\002\020\001\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003" +
-      "\022&\n\010versions\030\002 \003(\0132\024.VectorClock.Version" +
-      "\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimest" +
-      "amp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006system\030",
-      "\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n" +
-      "\010protocol\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007addr" +
-      "ess\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004uid2" +
-      "\030\003 \001(\r\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(" +
-      "\0132\005.Pool\022,\n\010settings\030\002 \002(\0132\032.ClusterRout" +
-      "erPoolSettings\"<\n\004Pool\022\024\n\014serializerId\030\001" +
-      " \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"\216\001\n" +
-      "\031ClusterRouterPoolSettings\022\026\n\016totalInsta" +
-      "nces\030\001 \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022" +
-      "\031\n\021allowLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 ",
-      "\001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022ReachabilitySta" +
-      "tus\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nT" +
-      "erminated\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000" +
-      "\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Do" +
-      "wn\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka." +
-      "cluster.protobuf.msgH\001"
+      "\003\"M\n\tHeartbeat\022\026\n\004from\030\001 \002(\0132\010.Address\022\022" +
+      "\n\nsequenceNr\030\002 \001(\003\022\024\n\014creationTime\030\003 \001(\022" +
+      "\"[\n\021HeartBeatResponse\022\034\n\004from\030\001 \002(\0132\016.Un" +
+      "iqueAddress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creat" +
+      "ionTime\030\003 \001(\003\"d\n\016GossipEnvelope\022\034\n\004from\030" +
+      "\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030\002 \002(\0132\016.Uniq" +
+      "ueAddress\022\030\n\020serializedGossip\030\003 \002(\014\"^\n\014G" +
+      "ossipStatus\022\034\n\004from\030\001 \002(\0132\016.UniqueAddres" +
+      "s\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version\030\003 \002(\0132\014." +
+      "VectorClock\"\317\001\n\006Gossip\022$\n\014allAddresses\030\001",
+      " \003(\0132\016.UniqueAddress\022\020\n\010allRoles\030\002 \003(\t\022\021" +
+      "\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 \003(\0132\007.Mem" +
+      "ber\022!\n\010overview\030\005 \002(\0132\017.GossipOverview\022\035" +
+      "\n\007version\030\006 \002(\0132\014.VectorClock\022\036\n\ntombsto" +
+      "nes\030\007 \003(\0132\n.Tombstone\"S\n\016GossipOverview\022" +
+      "\014\n\004seen\030\001 \003(\005\0223\n\024observerReachability\030\002 " +
+      "\003(\0132\025.ObserverReachability\"p\n\024ObserverRe" +
+      "achability\022\024\n\014addressIndex\030\001 \002(\005\022\017\n\007vers" +
+      "ion\030\004 \002(\003\0221\n\023subjectReachability\030\002 \003(\0132\024" +
+      ".SubjectReachability\"a\n\023SubjectReachabil",
+      "ity\022\024\n\014addressIndex\030\001 \002(\005\022#\n\006status\030\003 \002(" +
+      "\0162\023.ReachabilityStatus\022\017\n\007version\030\004 \002(\003\"" +
+      "4\n\tTombstone\022\024\n\014addressIndex\030\001 \002(\005\022\021\n\tti" +
+      "mestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014addressIndex\030" +
+      "\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002(\0162" +
+      "\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B\002\020\001" +
+      "\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n\010ve" +
+      "rsions\030\002 \003(\0132\024.VectorClock.Version\032/\n\007Ve" +
+      "rsion\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 " +
+      "\002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006system\030\001 \002(\t\022",
+      "\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010proto" +
+      "col\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007address\030\001 " +
+      "\002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004uid2\030\003 \001(\r" +
+      "\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(\0132\005.Po" +
+      "ol\022,\n\010settings\030\002 \002(\0132\032.ClusterRouterPool" +
+      "Settings\"<\n\004Pool\022\024\n\014serializerId\030\001 \002(\r\022\020" +
+      "\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"\216\001\n\031Clust" +
+      "erRouterPoolSettings\022\026\n\016totalInstances\030\001" +
+      " \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022\031\n\021all" +
+      "owLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 \001(\t\022\020\n",
+      "\010useRoles\030\005 \003(\t*D\n\022ReachabilityStatus\022\r\n" +
+      "\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nTermina" +
+      "ted\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000\022\006\n\002Up" +
+      "\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013" +
+      "\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka.cluste" +
+      "r.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

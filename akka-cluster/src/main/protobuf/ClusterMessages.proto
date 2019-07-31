@@ -55,9 +55,6 @@ message InitJoinAck {
 }
 
 message ConfigCheck {
-  // Don't use extensions, removed in proto3
-  extensions 100 to 102;
-
   enum Type {
     UncheckedConfig = 1;
     IncompatibleConfig = 2;
