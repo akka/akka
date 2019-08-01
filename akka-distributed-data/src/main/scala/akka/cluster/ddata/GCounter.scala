@@ -44,16 +44,12 @@ object GCounter {
 final class GCounter private[akka] (
     private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty,
     override val delta: Option[GCounter] = None)
-    extends DeltaReplicatedData
-    with ReplicatedDelta
-    with ReplicatedDataSerialization
-    with RemovedNodePruning
-    with FastMerge {
-
-  import GCounter.Zero
+    extends NodeVector[BigInt](state)
+    with ReplicatedDataSerialization {
 
   type T = GCounter
-  type D = GCounter
+
+  import GCounter.Zero
 
   /**
    * Scala API: Current total value of the counter.
@@ -101,49 +97,21 @@ final class GCounter private[akka] (
         case Some(v) => v + n
         case None    => n
       }
-      val newDelta = delta match {
-        case None    => new GCounter(Map(key -> nextValue))
-        case Some(d) => new GCounter(d.state + (key -> nextValue))
-      }
-      assignAncestor(new GCounter(state + (key -> nextValue), Some(newDelta)))
+      update(key, nextValue)
     }
   }
 
-  override def merge(that: GCounter): GCounter =
-    if ((this eq that) || that.isAncestorOf(this)) this.clearAncestor()
-    else if (this.isAncestorOf(that)) that.clearAncestor()
-    else {
-      var merged = that.state
-      for ((key, thisValue) <- state) {
-        val thatValue = merged.getOrElse(key, Zero)
-        if (thisValue > thatValue)
-          merged = merged.updated(key, thisValue)
-      }
-      clearAncestor()
-      new GCounter(merged)
-    }
+  override protected def newVector(state: Map[UniqueAddress, BigInt], delta: Option[GCounter]): GCounter =
+    new GCounter(state, delta)
 
-  override def mergeDelta(thatDelta: GCounter): GCounter = merge(thatDelta)
+  override protected def mergeValues(thisValue: BigInt, thatValue: BigInt): BigInt =
+    if (thisValue > thatValue) thisValue
+    else thatValue
+
+  override protected def collapseInto(key: UniqueAddress, value: BigInt): GCounter =
+    increment(key, value)
 
   override def zero: GCounter = GCounter.empty
-
-  override def resetDelta: GCounter =
-    if (delta.isEmpty) this
-    else assignAncestor(new GCounter(state))
-
-  override def modifiedByNodes: Set[UniqueAddress] = state.keySet
-
-  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
-    state.contains(removedNode)
-
-  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): GCounter =
-    state.get(removedNode) match {
-      case Some(value) => new GCounter(state - removedNode).increment(collapseInto, value)
-      case None        => this
-    }
-
-  override def pruningCleanup(removedNode: UniqueAddress): GCounter =
-    new GCounter(state - removedNode)
 
   // this class cannot be a `case class` because we need different `unapply`
 
