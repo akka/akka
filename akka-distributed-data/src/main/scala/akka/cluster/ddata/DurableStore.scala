@@ -242,6 +242,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       log.debug("Store key: {} reply: {} writeBehind {}", key, reply, writeBehindInterval.length)
       try {
         lmdb() // init
+        val startTime = System.nanoTime()
         if (writeBehindInterval.length == 0) {
           dbPut(OptionVal.None, key, data)
         } else {
@@ -249,7 +250,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
             context.system.scheduler.scheduleOnce(writeBehindInterval, self, WriteBehind)(context.dispatcher)
           pending.put(key, data)
         }
-        log.debug("Write complete")
+        import akka.util.PrettyDuration._
+        log.debug("Write complete in " + (System.nanoTime() - startTime).nanos.pretty)
         reply match {
           case Some(StoreReply(successMsg, _, replyTo)) =>
             replyTo ! successMsg
