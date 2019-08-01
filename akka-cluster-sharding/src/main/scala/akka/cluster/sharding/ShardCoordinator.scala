@@ -330,6 +330,8 @@ object ShardCoordinator {
         rememberEntities: Boolean = false)
         extends ClusterShardingSerializable {
 
+      override def toString = s"State($shards)"
+
       def withRememberEntities(enabled: Boolean): State = {
         if (enabled)
           copy(rememberEntities = enabled)
@@ -1035,6 +1037,7 @@ class DDataShardCoordinator(
     ({
       case g @ GetSuccess(CoordinatorStateKey, _) =>
         state = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
+        log.debug("Received initial coordinator state [{}]", state)
         val newRemainingKeys = remainingKeys - CoordinatorStateKey
         if (newRemainingKeys.isEmpty)
           becomeWaitingForStateInitialized()
@@ -1160,6 +1163,7 @@ class DDataShardCoordinator(
   private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E => Unit): Unit = {
     context.unbecome()
     afterUpdateCallback(evt)
+    log.debug("New coordinator state after [{}]: [{}]", evt, state)
     unstashAll()
   }
 
@@ -1201,6 +1205,7 @@ class DDataShardCoordinator(
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
+    log.debug("Publishing new coordinator state [{}]", state)
     replicator ! Update(CoordinatorStateKey, LWWRegister(selfUniqueAddress, initEmptyState), writeMajority, Some(evt)) {
       reg =>
         reg.withValueOf(s)
