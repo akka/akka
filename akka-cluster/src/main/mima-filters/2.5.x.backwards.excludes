@@ -12,3 +12,11 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView
 
 # Disable remote watch and remote deployment outside Cluster #26176
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterRemoteWatcher.props")
+
+# Remove unused protobuf messages
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.protobuf.msg.ClusterMessages*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheckOrBuilder")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheck$Builder")
+ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheck")
+
+

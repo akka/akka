@@ -141,7 +141,7 @@ class PersistPersistentActorWithAtLeastOnceDelivery(
 
   override def receiveCommand = {
     case n: Int =>
-      persist(MsgSent(n)) { e =>
+      persist(MsgSent(n)) { _ =>
         deliver(downStream)(deliveryId => Msg(deliveryId, n))
         if (n == respondAfter)
           //switch to wait all message confirmed
@@ -180,7 +180,7 @@ class PersistAsyncPersistentActorWithAtLeastOnceDelivery(
 
   override def receiveCommand = {
     case n: Int =>
-      persistAsync(MsgSent(n)) { e =>
+      persistAsync(MsgSent(n)) { _ =>
         deliver(downStream)(deliveryId => Msg(deliveryId, n))
         if (n == respondAfter)
           //switch to wait all message confirmed
