@@ -1,4 +1,4 @@
-# Persistence - coding style
+# Style Guide 
 
 ## Event handlers in the state
 

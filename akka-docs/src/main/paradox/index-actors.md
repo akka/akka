@@ -32,11 +32,7 @@ To use Classic Akka Actors, you must add the following dependency in your projec
 * [routing](routing.md)
 * [fsm](fsm.md)
 * [persistence](persistence.md)
-* [persistence-schema-evolution](persistence-schema-evolution.md)
-* [persistence-query](persistence-query.md)
-* [persistence-query-leveldb](persistence-query-leveldb.md)
 * [persistence-fsm](persistence-fsm.md)
-* [persistence-journals](persistence-journals.md)
 * [testing](testing.md)
 
 @@@

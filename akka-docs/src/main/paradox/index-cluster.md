@@ -15,7 +15,6 @@ For the new API see @ref[Cluster](typed/index-cluster.md).
 
 @@@ index
 
-* [common/cluster](common/cluster.md)
 * [cluster-usage](cluster-usage.md)
 * [cluster-routing](cluster-routing.md)
 * [cluster-singleton](cluster-singleton.md)
@@ -24,5 +23,6 @@ For the new API see @ref[Cluster](typed/index-cluster.md).
 * [cluster-sharding](cluster-sharding.md)
 * [cluster-metrics](cluster-metrics.md)
 * [distributed-data](distributed-data.md)
+* [coordination](coordination.md)
 
 @@@

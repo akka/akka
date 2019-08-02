@@ -4,6 +4,7 @@
 
 @@@ index
 
+* [cluster-specification](../common/cluster.md)
 * [cluster](cluster.md)
 * [distributed-data](distributed-data.md)
 * [cluster-singleton](cluster-singleton.md)
@@ -15,5 +16,6 @@
 * [cluster-dc](../cluster-dc.md)
 * [remoting-artery](../remoting-artery.md)
 * [remoting](../remoting.md)
+* [coordination](../coordination.md)
 
 @@@
