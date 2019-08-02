@@ -25,7 +25,7 @@ Dispatchers are part of core Akka, which means that they are part of the akka-ac
 
 An Akka `MessageDispatcher` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
 All `MessageDispatcher` implementations are also an `ExecutionContext`, which means that they can be used
-to execute arbitrary code, for instance @ref:[Futures](futures.md).
+to execute arbitrary code.
 
 For full details on how to work with dispatchers see the @ref:[main dispatcher docs](typed/dispatchers.md#types-of-dispatchers).
 

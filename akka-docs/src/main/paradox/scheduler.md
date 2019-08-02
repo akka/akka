@@ -1,4 +1,4 @@
-# Scheduler
+# Classic Scheduler
 
 @@@ note
 

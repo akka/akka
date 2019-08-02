@@ -289,7 +289,7 @@ Scala
 Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
-The block @scala[given to]@java[in] `within` must complete after a @ref:[Duration](common/duration.md) which
+The block @scala[given to]@java[in] `within` must complete after a duration which
 is between `min` and `max`, where the former defaults to zero. The
 deadline calculated by adding the `max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
