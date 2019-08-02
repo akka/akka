@@ -47,7 +47,7 @@ class VersionVectorBenchmark {
 
   @Setup(Level.Trial)
   def setup(): Unit = {
-    vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, n) => vv + nextNode())
+    vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, _) => vv + nextNode())
     vv2 = vv1 + nextNode()
     vv3 = vv1 + nextNode()
     dot1 = VersionVector(nodeA, vv1.versionAt(nodeA))

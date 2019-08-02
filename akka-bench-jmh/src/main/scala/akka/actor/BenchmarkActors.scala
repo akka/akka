@@ -94,20 +94,20 @@ object BenchmarkActors {
   }
 
   private def startPingPongActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String)(
-      implicit system: ActorSystem) = {
+      implicit system: ActorSystem): (Vector[(ActorRef, ActorRef)], CountDownLatch) = {
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs * 2)
-    val actors = for {
-      i <- (1 to numPairs).toVector
-    } yield {
-      val ping = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
-      val pong = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
-      (ping, pong)
-    }
+    val actors = List
+      .fill(numPairs) {
+        val ping = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
+        val pong = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
+        (ping, pong)
+      }
+      .toVector
     (actors, latch)
   }
 
-  private def initiatePingPongForPairs(refs: Vector[(ActorRef, ActorRef)], inFlight: Int) = {
+  private def initiatePingPongForPairs(refs: Vector[(ActorRef, ActorRef)], inFlight: Int): Unit = {
     for {
       (ping, pong) <- refs
       _ <- 1 to inFlight
@@ -117,7 +117,7 @@ object BenchmarkActors {
   }
 
   private def startEchoActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String, batchSize: Int)(
-      implicit system: ActorSystem) = {
+      implicit system: ActorSystem): (Vector[ActorRef], CountDownLatch) = {
 
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs)
@@ -127,18 +127,18 @@ object BenchmarkActors {
     (actors, latch)
   }
 
-  private def initiateEchoPairs(refs: Vector[ActorRef]) = {
+  private def initiateEchoPairs(refs: Vector[ActorRef]): Unit = {
     refs.foreach(_ ! Message)
   }
 
-  def printProgress(totalMessages: Long, numActors: Int, startNanoTime: Long) = {
+  def printProgress(totalMessages: Long, numActors: Int, startNanoTime: Long): Unit = {
     val durationMicros = (System.nanoTime() - startNanoTime) / 1000
     println(
       f"  $totalMessages messages by $numActors actors took ${durationMicros / 1000} ms, " +
       f"${totalMessages.toDouble / durationMicros}%,.2f M msg/s")
   }
 
-  def requireRightNumberOfCores(numCores: Int) =
+  def requireRightNumberOfCores(numCores: Int): Unit =
     require(
       Runtime.getRuntime.availableProcessors == numCores,
       s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}")

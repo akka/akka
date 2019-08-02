@@ -23,7 +23,7 @@ class DirectByteBufferPoolBenchmark {
 
   val random = new Random
 
-  var arteryPool: DirectByteBufferPool = _
+  private[akka] var arteryPool: DirectByteBufferPool = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
