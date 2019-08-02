@@ -6,11 +6,11 @@ package akka.actor.typed
 
 import java.util.concurrent.CountDownLatch
 
+import scala.concurrent.duration._
+
 import akka.Done
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-
-import scala.concurrent.duration._
 
 object TypedBenchmarkActors {
 
@@ -65,8 +65,7 @@ object TypedBenchmarkActors {
       numMessagesPerActorPair: Int,
       numActors: Int,
       dispatcher: String,
-      batchSize: Int,
-      shutdownTimeout: FiniteDuration): Behavior[Start] =
+      batchSize: Int): Behavior[Start] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case Start(respondTo) =>
@@ -146,11 +145,9 @@ object TypedBenchmarkActors {
   private def initiatePingPongForPairs(refs: Vector[(ActorRef[Message], ActorRef[Message])], inFlight: Int): Unit = {
     for {
       (ping, pong) <- refs
-      val message = Message(pong) // just allocate once
+      message = Message(pong) // just allocate once
       _ <- 1 to inFlight
-    } {
-      ping ! message
-    }
+    } ping ! message
   }
 
   private def startPingPongActorPairs(
