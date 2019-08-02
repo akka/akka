@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import akka.Done
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import com.github.ghik.silencer.silent
 
 object TypedBenchmarkActors {
 
@@ -143,15 +142,12 @@ object TypedBenchmarkActors {
     }
   }
 
-  @silent("deprecated")
   private def initiatePingPongForPairs(refs: Vector[(ActorRef[Message], ActorRef[Message])], inFlight: Int): Unit = {
     for {
       (ping, pong) <- refs
-      val message = Message(pong) // just allocate once
+      message = Message(pong) // just allocate once
       _ <- 1 to inFlight
-    } {
-      ping ! message
-    }
+    } ping ! message
   }
 
   private def startPingPongActorPairs(
