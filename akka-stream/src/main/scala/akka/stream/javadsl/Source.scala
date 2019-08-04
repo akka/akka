@@ -277,8 +277,8 @@ object Source {
    *
    * @see [[Source.lazily]]
    */
-  def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, Future[NotUsed]] =
-    scaladsl.Source.lazilyAsync[T](() => create.create().toScala).asJava
+  def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, CompletionStage[NotUsed]] =
+    scaladsl.Source.lazilyAsync[T](() => create.create().toScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
