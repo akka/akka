@@ -1,9 +1,13 @@
-# Persistence
+# Event Sourcing
 
 @@@ index
 
-* [Persistence - coding style](persistence-style.md)
-* [Persistence - snapshotting](persistence-snapshot.md)
+* [Persistence coding style](persistence-style.md)
+* [Persistence snapshotting](persistence-snapshot.md)
+* [Persistence schema evolution](../persistence-schema-evolution.md)
+* [Persistence query](../persistence-query.md)
+* [Persistence query LevelDB](../persistence-query-leveldb.md)
+* [Persistence Journals](../persistence-journals.md)
 
 @@@
 
