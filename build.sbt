@@ -231,6 +231,16 @@ lazy val docs = akkaModule("akka-docs")
         "aeron_version" -> Dependencies.aeronVersion,
         "netty_version" -> Dependencies.nettyVersion),
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    paradoxRoots := List(
+      // The real index:
+      "index.html",
+      // Page that recommends Alpakka:
+      "camel.html",
+      // TODO seems like an orphan?
+      "fault-tolerance-sample.html",
+      // will be removed in https://github.com/akka/akka/pull/27450
+      "index-futures.html",
+    ),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}"))
