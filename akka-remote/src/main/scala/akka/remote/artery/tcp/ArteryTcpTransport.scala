@@ -201,7 +201,8 @@ private[remote] class ArteryTcpTransport(
       .toMat(Sink.ignore)(Keep.right)
   }
 
-  override protected def runInboundStreams(): Unit = {
+  override protected def runInboundStreams(): Future[Int] = {
+    val boundPort = Promise[Int]
 
     // Design note: The design of how to run the inbound streams are influenced by the original design
     // for the Aeron streams, and there we can only have one single inbound since everything comes in
@@ -270,8 +271,13 @@ private[remote] class ArteryTcpTransport(
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again
     }
 
-    val bindHost = bindAddress.address.host.get
-    val bindPort = bindAddress.address.port.get
+    val bindHost = settings.Bind.Hostname
+    val bindPort =
+      if (settings.Bind.Port == 0 && settings.Canonical.Port == 0)
+        localAddress.address.port match {
+          case Some(n) => n
+          case _       => 0
+        } else settings.Bind.Port
 
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
@@ -305,7 +311,8 @@ private[remote] class ArteryTcpTransport(
           }(ExecutionContexts.sameThreadExecutionContext)
 
         // only on initial startup, when ActorSystem is starting
-        Await.result(binding, settings.Bind.BindTimeout)
+        val b = Await.result(binding, settings.Bind.BindTimeout)
+        boundPort.success(b.localAddress.getPort)
         afr.loFreq(TcpInbound_Bound, s"$bindHost:$bindPort")
         Some(binding)
       case s @ Some(_) =>
@@ -333,6 +340,8 @@ private[remote] class ArteryTcpTransport(
     }
 
     attachInboundStreamRestart("Inbound streams", completed, restart)
+
+    boundPort.future
   }
 
   private def runInboundControlStream(): (Sink[EnvelopeBuffer, NotUsed], Future[Done]) = {
