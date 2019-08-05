@@ -210,10 +210,10 @@ published, but the transitive dependency to `akka-protobuf` has been removed.
 
 Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
 
-### Cluster client
+### Cluster Client
 
 Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
-It is not advised to build new applications with Cluster client, and existing users should migrate (FIXME https://github.com/akka/akka/issues/26175) to Akka gRPC.
+It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
 
 ## Java Serialization
 
