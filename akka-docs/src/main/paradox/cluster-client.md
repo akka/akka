@@ -1,15 +1,19 @@
 # Classic Cluster Client
 
-@@@ note
+@@@ warning
 
-Cluster client has been deprecated in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
-(FIXME https://github.com/akka/akka/issues/26175)
+Cluster Client is deprecated in favor of using [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html). 
+It is not advised to build new applications with Cluster Client, and existing users @ref[should migrate](#migration-to-akka-grpc). 
+
+@@@
+
+@@@ note
 
 Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
 known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
 the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
 ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
-	
+
 @@@
 
 ## Dependency
@@ -228,3 +232,22 @@ This can be useful when initial contacts are provided from some kind of service 
 are entirely dynamic and the entire cluster might shut down or crash, be restarted on new addresses. Since the
 client will be stopped in that case a monitoring actor can watch it and upon `Terminate` a new set of initial
 contacts can be fetched and a new cluster client started.
+
+## Migration to Akka gRPC
+
+We recommend using [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html) over using Cluster Client.
+Before reading the migration guide it is advised to understand Akka gRPC. 
+
+### Migration steps
+
+The migration sample illustrates an approach to migrate from the deprecated Cluster Client to Akka gRPC, with minimal changes
+to your existing code. It is meant to be further adjusted to your requirements and use case
+(FIXME #26175 add link for scala sample, currently in PR, and a java sample).
+
+#### Cluster Client functions in Akka gRPC:
+
+* Initial contact points (Akka gRPC Service Discovery)
+* Heartbeat messages and Failure Detection (Akka gRPC connections)
+* Publishing to a named topic (Akka gRPC Send to Receptionist key) 
+* Messages and routing, for example one-to-one and one-to-all, are delegated to the Akka gRPC client. Additionally for a simplified migration path,
+@ref[Distributed Pub Sub](distributed-pub-sub.md) is also leveraged. However a better solution is to move fully to Akka gRPC.
