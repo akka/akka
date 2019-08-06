@@ -115,7 +115,6 @@ object AkkaBuild {
       resolvers += Resolver.sonatypeRepo("snapshots")
     else Seq.empty,
     pomIncludeRepository := (_ => false), // do not leak internal repositories during staging
-    resolvers += "Scala integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration",
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
