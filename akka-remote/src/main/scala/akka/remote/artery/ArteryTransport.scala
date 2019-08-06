@@ -326,7 +326,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
-  @volatile private[this] var _bindAddress: UniqueAddress = _
+  @volatile private[this] var _bindAddress: Option[UniqueAddress] = None
   @volatile private[this] var _addresses: Set[Address] = _
   @volatile protected var materializer: Materializer = _
   @volatile protected var controlMaterializer: Materializer = _
@@ -360,7 +360,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   protected def setInboundCompressionAccess(a: InboundCompressionAccess): Unit =
     _inboundCompressionAccess = OptionVal(a)
 
-  def bindAddress: UniqueAddress = _bindAddress
+  def bindAddress: Option[UniqueAddress] = _bindAddress
   override def localAddress: UniqueAddress = _localAddress
   override def defaultAddress: Address = if (_localAddress eq null) null else localAddress.address
   override def addresses: Set[Address] = _addresses
@@ -470,21 +470,23 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
 
     runInboundStreams().map { boundPort =>
-      _bindAddress = UniqueAddress(
+      val boundAddress = UniqueAddress(
         Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort),
         AddressUidExtension(system).longAddressUid)
 
-      if (localAddress.address == bindAddress.address)
+      _bindAddress = Some(boundAddress)
+
+      if (localAddress.address == boundAddress.address)
         log.info(
           "Remoting started with transport [Artery {}]; listening on address [{}] with UID [{}]",
           settings.Transport,
-          bindAddress.address,
-          bindAddress.uid)
+          boundAddress.address,
+          boundAddress.uid)
       else {
         log.info(
           s"Remoting started with transport [Artery ${settings.Transport}]; listening on address [{}] and bound to [{}] with UID [{}]",
           localAddress.address,
-          bindAddress.address,
+          boundAddress.address,
           localAddress.uid)
       }
     }(system.dispatcher)
