@@ -149,11 +149,13 @@ object Dependencies {
 
     object ProvidedDependencies {
       // TODO remove from Test config
+      val sigarLoaderOrganisation = "io.kamon"
+      val sigarLoaderName = "sigar-loader"
       val sigarLoaderVersion = "1.6.6-rev002"
       val sigarLoader = Seq(
-        "io.kamon" % "sigar-loader" % sigarLoaderVersion % Optional,
-        "io.kamon" % "sigar-loader" % sigarLoaderVersion % Provided,
-        "io.kamon" % "sigar-loader" % sigarLoaderVersion % Test
+        sigarLoaderOrganisation % sigarLoaderName % sigarLoaderVersion % Optional,
+        sigarLoaderOrganisation % sigarLoaderName % sigarLoaderVersion % Provided,
+        sigarLoaderOrganisation % sigarLoaderName % sigarLoaderVersion % Test
       ) // ApacheV2
 
       val activationVersion = "1.2.0"

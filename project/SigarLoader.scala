@@ -12,7 +12,7 @@ import sbt.Keys._
  */
 object SigarLoader {
 
-  import Dependencies.Compile.ProvidedDependencies.sigarLoader
+  import Dependencies.Compile.ProvidedDependencies.{ sigarLoaderName, sigarLoaderOrganisation }
 
   /** Enable Sigar java agent injection during tests. */
   lazy val sigarTestEnabled = sys.props.get("akka.test.sigar").getOrElse("false").toBoolean
@@ -34,7 +34,7 @@ object SigarLoader {
       sigarArtifact := {
         val report = update.value
         val artifactList = report.matching(
-          moduleFilter(organization = sigarLoader.head.organization, name = sigarLoader.head.name))
+          moduleFilter(organization = sigarLoaderOrganisation, name = sigarLoaderName))
         require(artifactList.size == 1, "Expecting single artifact, while found: " + artifactList)
         artifactList.head
       },
