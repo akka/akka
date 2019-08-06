@@ -13,7 +13,7 @@ Materialize an `ActorRef`; sending messages to it will emit them on the stream. 
 ## Description
 
 Materialize an `ActorRef`, sending messages to it will emit them on the stream. The actor responds with the provided ack message
-once the element could be emitted alowing for backpressure from the source. Sending another message before the previous one has been acknowledged will fail the stream.
+once the element could be emitted allowing for backpressure from the source. Sending another message before the previous one has been acknowledged will fail the stream.
 
 @@@div { .callout }
 
