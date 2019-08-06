@@ -95,8 +95,7 @@ object Dependencies {
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
-    // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
-    val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value } // ApacheV2
+    val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion // ApacheV2
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % Test
@@ -281,9 +280,9 @@ object Dependencies {
       )
 
   val persistenceTck = l ++=
+    Seq(Compile.scalatest, Compile.junit) ++
     Provided.levelDB ++
-    Provided.levelDBNative ++
-    Seq(Compile.scalatest, Compile.junit)
+    Provided.levelDBNative
 
   val persistenceTestKit = l += Test.scalatest
 
