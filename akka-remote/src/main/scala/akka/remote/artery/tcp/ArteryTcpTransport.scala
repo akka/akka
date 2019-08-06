@@ -78,7 +78,7 @@ private[remote] class ArteryTcpTransport(
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   // may change when inbound streams are restarted
   @volatile private var inboundStream: OptionVal[Sink[EnvelopeBuffer, NotUsed]] = OptionVal.None
-  @volatile private var serverBinding: Option[Future[ServerBinding]] = None
+  @volatile private var serverBinding: Option[ServerBinding] = None
 
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
     if (tlsEnabled) {
@@ -193,8 +193,7 @@ private[remote] class ArteryTcpTransport(
       .toMat(Sink.ignore)(Keep.right)
   }
 
-  override protected def runInboundStreams(): Unit = {
-
+  override protected def runInboundStreams(): Int = {
     // Design note: The design of how to run the inbound streams are influenced by the original design
     // for the Aeron streams, and there we can only have one single inbound since everything comes in
     // via the single AeronSource.
@@ -262,8 +261,13 @@ private[remote] class ArteryTcpTransport(
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again
     }
 
-    val bindHost = bindAddress.address.host.get
-    val bindPort = bindAddress.address.port.get
+    val bindHost = settings.Bind.Hostname
+    val bindPort =
+      if (settings.Bind.Port == 0 && settings.Canonical.Port == 0)
+        localAddress.address.port match {
+          case Some(n) => n
+          case _       => 0
+        } else settings.Bind.Port
 
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
@@ -297,9 +301,9 @@ private[remote] class ArteryTcpTransport(
           }(ExecutionContexts.sameThreadExecutionContext)
 
         // only on initial startup, when ActorSystem is starting
-        Await.result(binding, settings.Bind.BindTimeout)
-        afr.loFreq(TcpInbound_Bound, s"$bindHost:$bindPort")
-        Some(binding)
+        val b = Await.result(binding, settings.Bind.BindTimeout)
+        afr.loFreq(TcpInbound_Bound, s"$bindHost:${b.localAddress.getPort}")
+        Some(b)
       case s @ Some(_) =>
         // already bound, when restarting
         s
@@ -325,6 +329,8 @@ private[remote] class ArteryTcpTransport(
     }
 
     attachInboundStreamRestart("Inbound streams", completed, restart)
+
+    serverBinding.get.localAddress.getPort
   }
 
   private def runInboundControlStream(): (Sink[EnvelopeBuffer, NotUsed], Future[Done]) = {
@@ -446,8 +452,7 @@ private[remote] class ArteryTcpTransport(
       case Some(binding) =>
         import system.dispatcher
         for {
-          b <- binding
-          _ <- b.unbind()
+          _ <- binding.unbind()
         } yield {
           topLevelFlightRecorder.loFreq(
             TcpInbound_Bound,

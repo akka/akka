@@ -449,19 +449,10 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         else ArteryTransport.autoSelectPort(settings.Canonical.Hostname, udp)
       } else settings.Canonical.Port
 
-    val bindPort = if (settings.Bind.Port == 0) {
-      if (settings.Canonical.Port == 0) port // canonical and bind ports are zero. Use random port for both
-      else ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp)
-    } else settings.Bind.Port
-
     _localAddress = UniqueAddress(
       Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
       AddressUidExtension(system).longAddressUid)
     _addresses = Set(_localAddress.address)
-
-    _bindAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, bindPort),
-      AddressUidExtension(system).longAddressUid)
 
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
     topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
@@ -473,7 +464,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
 
-    runInboundStreams()
+    val boundPort = runInboundStreams()
+    _bindAddress = UniqueAddress(
+      Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort),
+      AddressUidExtension(system).longAddressUid)
+
     topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
 
     startRemoveQuarantinedAssociationTask()
@@ -491,12 +486,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         bindAddress.address,
         localAddress.uid)
     }
-
   }
 
   protected def startTransport(): Unit
 
-  protected def runInboundStreams(): Unit
+  protected def runInboundStreams(): Int
 
   private def startRemoveQuarantinedAssociationTask(): Unit = {
     val removeAfter = settings.Advanced.RemoveQuarantinedAssociationAfter
