@@ -79,7 +79,7 @@ private[remote] class ArteryTcpTransport(
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   // may change when inbound streams are restarted
   @volatile private var inboundStream: OptionVal[Sink[EnvelopeBuffer, NotUsed]] = OptionVal.None
-  @volatile private var serverBinding: Option[Future[ServerBinding]] = None
+  @volatile private var serverBinding: Option[ServerBinding] = None
 
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
     if (tlsEnabled) {
@@ -201,9 +201,7 @@ private[remote] class ArteryTcpTransport(
       .toMat(Sink.ignore)(Keep.right)
   }
 
-  override protected def runInboundStreams(): Future[Int] = {
-    val boundPort = Promise[Int]
-
+  override protected def runInboundStreams(): Int = {
     // Design note: The design of how to run the inbound streams are influenced by the original design
     // for the Aeron streams, and there we can only have one single inbound since everything comes in
     // via the single AeronSource.
@@ -312,9 +310,8 @@ private[remote] class ArteryTcpTransport(
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)
-        boundPort.success(b.localAddress.getPort)
-        afr.loFreq(TcpInbound_Bound, s"$bindHost:$bindPort")
-        Some(binding)
+        afr.loFreq(TcpInbound_Bound, s"$bindHost:${b.localAddress.getPort}")
+        Some(b)
       case s @ Some(_) =>
         // already bound, when restarting
         s
@@ -341,7 +338,7 @@ private[remote] class ArteryTcpTransport(
 
     attachInboundStreamRestart("Inbound streams", completed, restart)
 
-    boundPort.future
+    serverBinding.get.localAddress.getPort
   }
 
   private def runInboundControlStream(): (Sink[EnvelopeBuffer, NotUsed], Future[Done]) = {
@@ -463,8 +460,7 @@ private[remote] class ArteryTcpTransport(
       case Some(binding) =>
         implicit val ec = system.dispatchers.internalDispatcher
         for {
-          b <- binding
-          _ <- b.unbind()
+          _ <- binding.unbind()
         } yield {
           topLevelFlightRecorder.loFreq(
             TcpInbound_Bound,

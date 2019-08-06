@@ -319,7 +319,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         settings.Advanced.Aeron.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
     else 50 * settings.Advanced.Aeron.IdleCpuLevel - 240
 
-  override protected def runInboundStreams(): Future[Int] = {
+  override protected def runInboundStreams(): Int = {
     val bindPort =
       (settings.Canonical.Port, settings.Bind.Port) match {
         case (0, 0) =>
@@ -347,7 +347,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     }
     blockUntilChannelActive()
 
-    Future.successful(bindPort)
+    bindPort
   }
 
   private def runInboundControlStream(inboundChannel: String): Unit = {
