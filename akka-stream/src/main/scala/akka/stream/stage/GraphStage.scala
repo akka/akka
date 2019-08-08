@@ -172,7 +172,7 @@ object GraphStageLogic {
    */
   object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit = ()
+    override def onDownstreamFinish(cause: Throwable): Unit = ()
     override def toString = "IgnoreTerminateOutput"
   }
 
@@ -182,8 +182,8 @@ object GraphStageLogic {
    */
   class ConditionalTerminateOutput(predicate: () => Boolean) extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit =
-      if (predicate()) GraphInterpreter.currentInterpreter.activeStage.completeStage()
+    override def onDownstreamFinish(cause: Throwable): Unit =
+      if (predicate()) GraphInterpreter.currentInterpreter.activeStage.cancelStage(cause)
   }
 
   private object DoNothing extends (() => Unit) {
