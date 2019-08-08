@@ -25,7 +25,7 @@ object Dependencies {
   val jacksonVersion = "2.9.9"
   val jacksonDatabindVersion = "2.9.9.1"
 
-  val scala212Version = "2.12.9"
+  val scala212Version = "2.12.8"
   val scala213Version = "2.13.0"
 
   val sslConfigVersion = "0.3.8"
