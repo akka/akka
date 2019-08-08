@@ -172,7 +172,7 @@ private[akka] object Running {
 
             val eventsToPersist = events.map(evt => (adaptEvent(evt), setup.eventAdapter.manifest(evt)))
 
-            val newState2 = internalPersistAll(newState, eventsToPersist)
+            val newState2 = internalPersistAll(setup.context, msg, newState, eventsToPersist)
 
             persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
 
@@ -268,8 +268,10 @@ private[akka] object Running {
         onWriteSuccess(setup.context, p)
 
         // only once all things are applied we can revert back
-        if (eventCounter < numberOfEvents) this
-        else {
+        if (eventCounter < numberOfEvents) {
+          onWriteDone(setup.context, p)
+          this
+        } else {
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
             val newState = applySideEffects(sideEffects, state)
