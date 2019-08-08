@@ -135,13 +135,13 @@ object Dependencies {
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2" % "test" // CC0
 
-      val protobufRuntime =  "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
     }
 
     object Provided {
       // TODO remove from "test" config
       // If changed, update akka-docs/build.sbt as well
-      val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
+      val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6" % "optional;provided;test" // ApacheV2
 
       val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
