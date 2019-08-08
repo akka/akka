@@ -536,12 +536,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
    *
-   * It is recommended to provide a cause.
+   * If cancellation is due to an error, use `cancel(in, cause)` instead to propagate that cause upstream. This overload
+   * is a shortcut for `cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)`
    */
-  /* FIXME: Should we deprecate, cancelling without a cause? Seems like a massive change even just for our code.
-   @deprecated(
-    "Use other overload to provide a cause for cancellation or use SubscriptionWithCancelException.NoCause",
-    since = "2.6.0") */
   final protected def cancel[T](in: Inlet[T]): Unit = cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
 
   /**
