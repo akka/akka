@@ -559,21 +559,23 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     val connection = conn(in)
     val elem = connection.slot
 
-    // Fast path
+    // Fast path for active connections
     if ((connection.portState & (InReady | InFailed | InClosed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
       connection.slot = Empty
       elem.asInstanceOf[T]
     } else {
-      // Slow path
+      // Slow path for grabbing element from already failed or completed connections
       if (!isAvailable(in))
         throw new IllegalArgumentException(s"Cannot get element from already empty input port ($in)")
 
       if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
+        // failed
         val failed = connection.slot.asInstanceOf[Failed]
         val elem = failed.previousElem.asInstanceOf[T]
         connection.slot = Failed(failed.ex, Empty)
         elem
       } else {
+        // completed
         val elem = connection.slot.asInstanceOf[T]
         connection.slot = Empty
         elem
@@ -598,18 +600,18 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     val normalArrived = (conn(in).portState & (InReady | InFailed | InClosed)) == InReady
 
-    // Fast path
+    // Fast path for active connection
     if (normalArrived) connection.slot.asInstanceOf[AnyRef] ne Empty
     else {
-      // slow path on failure or cancellation
+      // slow path on failure, closure, and cancellation
       if ((connection.portState & (InReady | InClosed | InFailed)) == (InReady | InClosed))
         connection.slot match {
-          case Empty | _ @(_: Cancelled) => false
-          case _                         => true
+          case Empty | _ @(_: Cancelled) => false // cancelled (element is discarded when cancelled)
+          case _                         => true // completed but element still there to grab
         } else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
         connection.slot match {
-          case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty
-          case _               => false // This can only be Empty actually (if a cancel was concurrent with a failure)
+          case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty // failed but element still there to grab
+          case _               => false
         } else false
     }
   }

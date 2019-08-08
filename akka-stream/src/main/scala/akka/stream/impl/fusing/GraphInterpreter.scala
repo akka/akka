@@ -54,7 +54,11 @@ import akka.stream.snapshot._
    * but there is no more element to grab.
    */
   case object Empty
+
+  /** Marker class that indicates that a port was failed with a given cause and a potential outstanding element */
   final case class Failed(ex: Throwable, previousElem: Any)
+
+  /** Marker class that indicates that a port was cancelled with a given cause */
   final case class Cancelled(cause: Throwable)
 
   abstract class UpstreamBoundaryStageLogic[T] extends GraphStageLogic(inCount = 0, outCount = 1) {
@@ -86,7 +90,16 @@ import akka.stream.snapshot._
       var outOwner: GraphStageLogic,
       var inHandler: InHandler,
       var outHandler: OutHandler) {
+
+    /** See [[GraphInterpreter]] about possible states */
     var portState: Int = InReady
+
+    /**
+     * Can either be
+     *  * an in-flight element
+     *  * a failure (with an optional in-flight element), if elem.isInstanceOf[Failed]
+     *  * a cancellation cause, if elem.isInstanceOf[Cancelled]
+     */
     var slot: Any = Empty
   }
 
