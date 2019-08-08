@@ -1414,9 +1414,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _sink.pullSubstream()
     }
 
-    def cancel(): Unit = {
+    def cancel(): Unit = cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    def cancel(cause: Throwable): Unit = {
       closed = true
-      _sink.cancelSubstream()
+      _sink.cancelSubstream(cause)
     }
 
     override def toString = s"SubSinkInlet($name)"
