@@ -204,6 +204,7 @@ private class RetryFlowCoordinator[In, State, Out](
                 .applyOrElse[(Try[Out], State), Option[immutable.Iterable[(In, State)]]]((out, s), _ => None)
                 .fold(pushAndCompleteIfLast((out, s))) {
                   xs =>
+                    val current = System.currentTimeMillis()
                     xs.foreach {
                       case (in, state) =>
                         val numRestarts = internalState.numberOfRestarts + 1
@@ -212,7 +213,7 @@ private class RetryFlowCoordinator[In, State, Out](
                           (
                             in,
                             state,
-                            InternalState(numRestarts, System.currentTimeMillis() + delay.toMillis)))
+                            InternalState(numRestarts, current + delay.toMillis)))
                     }
 
                     out.foreach { _ =>

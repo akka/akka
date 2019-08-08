@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.{ActorMaterializer, KillSwitches}
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.{TestSink, TestSource}
@@ -14,10 +15,10 @@ import scala.util.{Failure, Success, Try}
 
 class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
-  implicit val mat = ActorMaterializer()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   val failedElem: Try[Int] = Failure(new Exception("cooked failure"))
-  def flow[T] = Flow.fromFunction[(Int, T), (Try[Int], T)] {
+  def flow[T]: Flow[(Int, T), (Try[Int], T), NotUsed] = Flow.fromFunction {
     case (i, j) if i % 2 == 0 => (failedElem, j)
     case (i, j) => (Success(i + 1), j)
   }
@@ -57,10 +58,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         .map(i => (i, i))
         .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
           case (Failure(_), os) =>
-            val s = (os + 1) % 3
-            if (os < 42) Some(List((os + 1, os + 1), (s, s)))
-            else if (os == 42) Some(Nil)
-            else None
+            val s = os / 2
+            if (s > 0) Some(List((s, s)))
+            else Some(List((1, 1)))
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -70,16 +70,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       source.sendNext(1)
       sink.expectNext((Success(2), 1))
 
-      source.sendNext(2)
-      sink.expectNext((Success(4), 3))
+      source.sendNext(8)
       sink.expectNext((Success(2), 1))
-      sink.expectNext((Success(2), 1))
-
-      source.sendNext(44)
-      sink.expectNext((failedElem, 44))
-
-      source.sendNext(42)
-      sink.expectNoMessage()
 
       source.sendComplete()
       sink.expectComplete()
@@ -243,7 +235,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectError(failedElem.failed.get)
     }
 
-    "tolerate killswitch abort after the RetryFkiw while on retry spin" in {
+    "tolerate killswitch abort after the RetryFlow while on retry spin" in {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -379,7 +371,7 @@ trait CustomMatchers {
 
   class StrictlyIncreasesMatcher() extends Matcher[Seq[Long]] {
 
-    def apply(left: Seq[Long]) = {
+    def apply(left: Seq[Long]): MatchResult = {
       val result = left.sliding(2).map(pair => pair.head < pair.last).reduceOption(_ && _).getOrElse(false)
 
       MatchResult(
