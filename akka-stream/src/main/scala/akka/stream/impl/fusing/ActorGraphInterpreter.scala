@@ -660,7 +660,7 @@ import scala.util.control.NonFatal
       // Will only have an effect if the above call to the interpreter failed to emit a proper failure to the downstream
       // otherwise this will have no effect
       outputs.foreach(_.fail(reason))
-      inputs.foreach(_.cancel(ex)) // TODO: should the reason be wrapped to include information that the stream was aborted?
+      inputs.foreach(_.cancel(reason))
     }
   }
 
