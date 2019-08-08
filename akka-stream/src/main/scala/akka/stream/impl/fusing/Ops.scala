@@ -2155,9 +2155,9 @@ private[stream] object Collect {
         super.onUpstreamFailure(ex)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         matPromise.success(None)
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause)
       }
 
       override def onPull(): Unit = {

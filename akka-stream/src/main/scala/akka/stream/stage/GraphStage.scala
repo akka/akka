@@ -25,6 +25,7 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future, Promise }
 import akka.stream.impl.StreamSupervisor
+import com.github.ghik.silencer.silent
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -1816,8 +1817,11 @@ trait OutHandler {
   @throws(classOf[Exception])
   // FIXME: we should add this deprecation but first we need to fix all our own usages
   // @deprecatedOverride("Override method that provides cause.", since = "2.6.0")
-  def onDownstreamFinish(): Unit =
+  @deprecated("Call onDownstreamFinish with a cancellation cause.", since = "2.6.0")
+  def onDownstreamFinish(): Unit = {
+    require(_lastCancellationCause ne null, "onDownstreamFinish() must not be called without a cancellation cause")
     GraphInterpreter.currentInterpreter.activeStage.cancelStage(_lastCancellationCause)
+  }
 
   /**
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
@@ -1826,8 +1830,10 @@ trait OutHandler {
   @throws(classOf[Exception])
   def onDownstreamFinish(cause: Throwable): Unit =
     try {
+      require(cause ne null, "Cancellation cause must not be null")
+      require(_lastCancellationCause eq null, "onDownstreamFinish(cause) must not be called recursively")
       _lastCancellationCause = cause
-      onDownstreamFinish()
+      (onDownstreamFinish(): @silent("deprecated")) // if not overridden, call old deprecated variant
     } finally _lastCancellationCause = null
 }
 
