@@ -1507,7 +1507,12 @@ private[stream] object Collect {
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         if (isEnabled(logLevels.onFinish))
-          log.log(logLevels.onFinish, "[{}] Downstream finished.", name) // FIXME
+          log.log(
+            logLevels.onFinish,
+            "[{}] Downstream finished, cause: {}: {}",
+            name,
+            Logging.simpleName(cause.getClass),
+            cause.getMessage)
 
         super.onDownstreamFinish(cause: Throwable)
       }
