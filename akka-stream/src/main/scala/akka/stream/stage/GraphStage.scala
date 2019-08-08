@@ -1816,9 +1816,9 @@ trait OutHandler {
    * be called for this port.
    */
   @throws(classOf[Exception])
-  // FIXME: we should add this deprecation but first we need to fix all our own usages
-  // @deprecatedOverride("Override method that provides cause.", since = "2.6.0")
-  @deprecated("Call onDownstreamFinish with a cancellation cause.", since = "2.6.0")
+  // FIXME: add this after fixing our own usages
+  // @deprecatedOverriding("Override `def onDownstreamFinish(cause: Throwable)`, instead.", since = "2.6.0") // warns when overriding
+  @deprecated("Call onDownstreamFinish with a cancellation cause.", since = "2.6.0") // warns when calling
   def onDownstreamFinish(): Unit = {
     require(_lastCancellationCause ne null, "onDownstreamFinish() must not be called without a cancellation cause")
     GraphInterpreter.currentInterpreter.activeStage.cancelStage(_lastCancellationCause)
