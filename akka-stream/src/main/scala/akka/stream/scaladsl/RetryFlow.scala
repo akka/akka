@@ -100,24 +100,25 @@ object RetryFlow {
       : FlowWithContext[In, State, Try[Out], State, Mat] =
     FlowWithContext.fromTuples {
       Flow.fromGraph {
-        GraphDSL.create(flow) { implicit b =>
-          origFlow =>
-            import GraphDSL.Implicits._
+        GraphDSL.create(flow) { implicit b => origFlow =>
+          import GraphDSL.Implicits._
 
-            val retry =
-              b.add(new RetryFlowCoordinator[In, State, Out](parallelism, retryWith, minBackoff, maxBackoff, randomFactor))
-            val broadcast = b.add(new Broadcast[(In, State, InternalState)](outputPorts = 2, eagerCancel = true))
-            val zip = b.add(new ZipWith2[(Try[Out], State), InternalState, (Try[Out], State, InternalState)]((el, state) =>
+          val retry =
+            b.add(
+              new RetryFlowCoordinator[In, State, Out](parallelism, retryWith, minBackoff, maxBackoff, randomFactor))
+          val broadcast = b.add(new Broadcast[(In, State, InternalState)](outputPorts = 2, eagerCancel = true))
+          val zip =
+            b.add(new ZipWith2[(Try[Out], State), InternalState, (Try[Out], State, InternalState)]((el, state) =>
               (el._1, el._2, state)))
 
-            retry.out2 ~> broadcast.in
+          retry.out2 ~> broadcast.in
 
-            broadcast.out(0).map(msg => (msg._1, msg._2)) ~> origFlow ~> zip.in0
-            broadcast.out(1).map(msg => msg._3) ~> zip.in1
+          broadcast.out(0).map(msg => (msg._1, msg._2)) ~> origFlow ~> zip.in0
+          broadcast.out(1).map(msg => msg._3) ~> zip.in1
 
-            zip.out ~> retry.in2
+          zip.out ~> retry.in2
 
-            FlowShape(retry.in1, retry.out1)
+          FlowShape(retry.in1, retry.out1)
         }
       }
     }
@@ -154,8 +155,8 @@ private class RetryFlowCoordinator[In, State, Out](
     private var numElementsInCycle = 0
     private var queueRetries =
       scala.collection.immutable.SortedSet.empty[(In, State, InternalState)](Ordering.fromLessThan { (e1, e2) =>
-          if (e1._3.retryDeadline != e2._3.retryDeadline) e1._3.retryDeadline < e2._3.retryDeadline
-          else e1.hashCode < e2.hashCode
+        if (e1._3.retryDeadline != e2._3.retryDeadline) e1._3.retryDeadline < e2._3.retryDeadline
+        else e1.hashCode < e2.hashCode
       })
     private val queueOut = scala.collection.mutable.Queue.empty[(Try[Out], State)]
 
@@ -210,11 +211,7 @@ private class RetryFlowCoordinator[In, State, Out](
                       case (in, state) =>
                         val numRestarts = internalState.numberOfRestarts + 1
                         val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
-                        queueRetries += (
-                          (
-                            in,
-                            state,
-                            new InternalState(numRestarts, current + delay.toMillis)))
+                        queueRetries += ((in, state, new InternalState(numRestarts, current + delay.toMillis)))
                     }
 
                     out.foreach { _ =>
