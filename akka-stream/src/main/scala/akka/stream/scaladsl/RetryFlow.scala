@@ -124,9 +124,9 @@ object RetryFlow {
 }
 
 private object RetryFlowCoordinator {
-  case class InternalState(numberOfRestarts: Int, retryDeadline: Long)
+  class InternalState(val numberOfRestarts: Int, val retryDeadline: Long)
   case object InternalState {
-    def apply(): InternalState = InternalState(0, System.currentTimeMillis())
+    def apply(): InternalState = new InternalState(0, System.currentTimeMillis())
   }
   case object RetryTimer
 }
@@ -153,8 +153,9 @@ private class RetryFlowCoordinator[In, State, Out](
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     private var numElementsInCycle = 0
     private var queueRetries =
-      scala.collection.immutable.SortedSet.empty[(In, State, InternalState)](Ordering.fromLessThan {
-        case ((_, _, InternalState(_, deadline1)), (_, _, InternalState(_, deadline2))) => deadline1 < deadline2
+      scala.collection.immutable.SortedSet.empty[(In, State, InternalState)](Ordering.fromLessThan { (e1, e2) =>
+          if (e1._3.retryDeadline != e2._3.retryDeadline) e1._3.retryDeadline < e2._3.retryDeadline
+          else e1.hashCode < e2.hashCode
       })
     private val queueOut = scala.collection.mutable.Queue.empty[(Try[Out], State)]
 
@@ -213,7 +214,7 @@ private class RetryFlowCoordinator[In, State, Out](
                           (
                             in,
                             state,
-                            InternalState(numRestarts, current + delay.toMillis)))
+                            new InternalState(numRestarts, current + delay.toMillis)))
                     }
 
                     out.foreach { _ =>
@@ -225,8 +226,7 @@ private class RetryFlowCoordinator[In, State, Out](
                       else pull(internalIn)
                     } else {
                       pull(internalIn)
-                      cancelTimer(RetryTimer)
-                      scheduleOnce(RetryTimer, smallestRetryDelay())
+                      scheduleRetryTimer()
                     }
                 }
           }
@@ -267,8 +267,7 @@ private class RetryFlowCoordinator[In, State, Out](
               pull(externalIn)
             }
           } else {
-            cancelTimer(RetryTimer)
-            scheduleOnce(RetryTimer, smallestRetryDelay())
+            scheduleRetryTimer()
           }
 
         override def onDownstreamFinish(): Unit = {
@@ -279,5 +278,10 @@ private class RetryFlowCoordinator[In, State, Out](
 
     private def smallestRetryDelay() =
       (queueRetries.head._3.retryDeadline - System.currentTimeMillis()).millis
+
+    private def scheduleRetryTimer() = {
+      cancelTimer(RetryTimer)
+      scheduleOnce(RetryTimer, smallestRetryDelay())
+    }
   }
 }
