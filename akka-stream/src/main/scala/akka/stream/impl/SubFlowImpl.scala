@@ -15,7 +15,7 @@ import language.higherKinds
  * INTERNAL API
  */
 @InternalApi private[akka] object SubFlowImpl {
-  trait MergeBack[In, F[+ _]] {
+  trait MergeBack[In, F[+_]] {
     def apply[T](f: Flow[In, T, NotUsed], breadth: Int): F[T]
   }
 }
@@ -23,7 +23,7 @@ import language.higherKinds
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class SubFlowImpl[In, Out, Mat, F[+ _], C](
+@InternalApi private[akka] class SubFlowImpl[In, Out, Mat, F[+_], C](
     val subFlow: Flow[In, Out, NotUsed],
     mergeBackFunction: SubFlowImpl.MergeBack[In, F],
     finishFunction: Sink[In, NotUsed] => C)
