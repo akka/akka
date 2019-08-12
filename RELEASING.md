@@ -90,3 +90,4 @@ Update the versions used in:
 * https://github.com/akka/akka-distributed-workers-scala.g8
 * https://github.com/akka/akka-grpc-quickstart-java.g8
 * https://github.com/akka/akka-grpc-quickstart-scala.g8
+* https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt (this populates https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html#_akka)
