@@ -27,3 +27,5 @@ RedirectMatch 301 ^(.*)/stream/operators/Source-or-Flow/apply\.html$ $1/stream/o
 RedirectMatch 301 ^(.*[^d])/guide/(.*) $1/typed/guide/$2
 
 RedirectMatch 301 ^(.*)/additional/rolling-deploys\.html$ $1/additional/rolling-updates.html
+
+RedirectMatch 301 ^(.*)/additional/index\.html$ $1/project/index.html
