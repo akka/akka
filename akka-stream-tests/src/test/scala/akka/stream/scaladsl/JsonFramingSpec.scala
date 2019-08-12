@@ -60,7 +60,7 @@ class JsonFramingSpec extends AkkaSpec {
       val result = Source(List(ByteString(input1), ByteString(input2)))
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       result.futureValue shouldBe Seq("""{ "name" : "john" }""", """{ "name" : "jack" }""")
