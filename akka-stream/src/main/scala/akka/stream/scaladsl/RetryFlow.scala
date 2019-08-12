@@ -33,7 +33,7 @@ object RetryFlow {
    *
    * If a successful response is matched and issued a retry, the response is still propagated downstream.
    *
-   * The implementation of the RetryFlow assumes that `flow` follows one-in-out-out element semantics.
+   * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
    *
    * The wrapped `flow` and `retryWith` takes an additional `State` parameter which can be used to correlate a request
    * with a response.
@@ -76,7 +76,7 @@ object RetryFlow {
    *
    * If a successful response is matched and issued a retry, the response is still propagated downstream.
    *
-   * The implementation of the RetryFlow assumes that `flow` follows one-in-out-out element semantics.
+   * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
    *
    * The wrapped `flow` and `retryWith` takes an additional `State` parameter which can be used to correlate a request
    * with a response.
