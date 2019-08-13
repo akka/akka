@@ -79,9 +79,6 @@ Now wait until all artifacts have been properly propagated. Then:
 
 Update the versions used in:
 
-* Update Lightbend's supported versions
-  https://github.com/lightbend/reactive-platform-docs/blob/master/build.sbt (this populates https://developer.lightbend.com/docs/reactive-platform/2.0/supported-modules/index.html#akka)
-
 * https://github.com/akka/akka-samples
 * https://github.com/akka/akka-quickstart-java.g8
 * https://github.com/akka/akka-quickstart-scala.g8
