@@ -5,7 +5,7 @@
 package docs.stream
 
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, DelayOverflowStrategy, KillSwitches }
+import akka.stream.{ DelayOverflowStrategy, KillSwitches }
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
 
@@ -13,8 +13,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class KillSwitchDocSpec extends AkkaSpec with CompileOnlySpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "Unique kill switch" must {
 

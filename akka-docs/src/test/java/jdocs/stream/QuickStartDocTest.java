@@ -36,7 +36,7 @@ public class QuickStartDocTest extends AbstractJavaTest {
   public void demonstrateSource() throws InterruptedException, ExecutionException {
     // #create-materializer
     final ActorSystem system = ActorSystem.create("QuickStart");
-    final Materializer materializer = ActorMaterializer.create(system);
+    // FIXME materializer not needed
     // #create-materializer
 
     // #create-source
@@ -44,7 +44,7 @@ public class QuickStartDocTest extends AbstractJavaTest {
     // #create-source
 
     // #run-source
-    source.runForeach(i -> System.out.println(i), materializer);
+    source.runForeach(i -> System.out.println(i), system);
     // #run-source
 
     // #transform-source
@@ -54,11 +54,11 @@ public class QuickStartDocTest extends AbstractJavaTest {
     final CompletionStage<IOResult> result =
         factorials
             .map(num -> ByteString.fromString(num.toString() + "\n"))
-            .runWith(FileIO.toPath(Paths.get("factorials.txt")), materializer);
+            .runWith(FileIO.toPath(Paths.get("factorials.txt")), system);
     // #transform-source
 
     // #use-transformed-sink
-    factorials.map(BigInteger::toString).runWith(lineSink("factorial2.txt"), materializer);
+    factorials.map(BigInteger::toString).runWith(lineSink("factorial2.txt"), system);
     // #use-transformed-sink
 
     // #add-streams
@@ -68,11 +68,11 @@ public class QuickStartDocTest extends AbstractJavaTest {
         // #add-streams
         .take(2)
         // #add-streams
-        .runForeach(s -> System.out.println(s), materializer);
+        .runForeach(s -> System.out.println(s), system);
     // #add-streams
 
     // #run-source-and-terminate
-    final CompletionStage<Done> done = source.runForeach(i -> System.out.println(i), materializer);
+    final CompletionStage<Done> done = source.runForeach(i -> System.out.println(i), system);
 
     done.thenRun(() -> system.terminate());
     // #run-source-and-terminate

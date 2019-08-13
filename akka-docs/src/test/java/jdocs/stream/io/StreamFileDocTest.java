@@ -31,19 +31,15 @@ public class StreamFileDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
 
-  static Materializer mat;
-
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamFileDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -70,7 +66,7 @@ public class StreamFileDocTest extends AbstractJavaTest {
       Sink<ByteString, CompletionStage<Done>> printlnSink =
           Sink.<ByteString>foreach(chunk -> System.out.println(chunk.utf8String()));
 
-      CompletionStage<IOResult> ioResult = FileIO.fromPath(file).to(printlnSink).run(mat);
+      CompletionStage<IOResult> ioResult = FileIO.fromPath(file).to(printlnSink).run(system);
       // #file-source
     } finally {
       Files.delete(file);
@@ -102,7 +98,7 @@ public class StreamFileDocTest extends AbstractJavaTest {
       Source<String, NotUsed> textSource = Source.single("Hello Akka Stream!");
 
       CompletionStage<IOResult> ioResult =
-          textSource.map(ByteString::fromString).runWith(fileSink, mat);
+          textSource.map(ByteString::fromString).runWith(fileSink, system);
       // #file-sink
     } finally {
       Files.delete(file);

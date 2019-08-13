@@ -7,8 +7,6 @@ package jdocs.stream;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.function.Function;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
 import jdocs.AbstractJavaTest;
@@ -20,12 +18,10 @@ import java.util.concurrent.CompletionStage;
 
 public class SinkRecipeDocTest extends AbstractJavaTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("SinkRecipeDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @Test
@@ -38,7 +34,7 @@ public class SinkRecipeDocTest extends AbstractJavaTest {
 
     final Source<Integer, NotUsed> numberSource = Source.range(1, 100);
 
-    numberSource.runWith(Sink.foreachAsync(10, asyncProcessing), mat);
+    numberSource.runWith(Sink.foreachAsync(10, asyncProcessing), system);
     // #forseachAsync-processing
   }
 }

@@ -13,7 +13,7 @@ import akka.stream._
 
 import scala.concurrent.Future
 import akka.testkit.TestProbe
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 
@@ -21,9 +21,6 @@ import scala.concurrent.ExecutionContext
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.Flow
-import akka.Done
-import akka.actor.Status.Status
-import akka.stream.QueueOfferResult.{ Dropped, Enqueued }
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -137,7 +134,6 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val materializer = ActorMaterializer()
   val ref: ActorRef = system.actorOf(Props[Translator])
 
   "ask" in {

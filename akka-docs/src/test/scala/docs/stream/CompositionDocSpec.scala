@@ -16,7 +16,6 @@ import scala.concurrent.{ Future, Promise }
 class CompositionDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   "nonnested flow" in {
     //#non-nested-flow

@@ -34,6 +34,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
 
   "demonstrate Source" in {
     //#create-materializer
+    // TODO no need, update text
     implicit val system = ActorSystem("QuickStart")
     implicit val materializer = ActorMaterializer()
     //#create-materializer

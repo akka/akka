@@ -6,8 +6,6 @@ package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -23,19 +21,16 @@ import static org.junit.Assert.assertEquals;
 
 public class RecipeFlattenList extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeFlattenList");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -56,7 +51,7 @@ public class RecipeFlattenList extends RecipeTest {
         List<Message> got =
             flattened
                 .limit(10)
-                .runWith(Sink.seq(), mat)
+                .runWith(Sink.seq(), system)
                 .toCompletableFuture()
                 .get(1, TimeUnit.SECONDS);
         assertEquals(got.get(0), new Message("1"));

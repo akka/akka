@@ -15,7 +15,6 @@ import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Source;
 
 public class LeveldbPersistenceQueryDocTest {
@@ -24,8 +23,6 @@ public class LeveldbPersistenceQueryDocTest {
 
   public void demonstrateReadJournal() {
     // #get-read-journal
-    final ActorMaterializer mat = ActorMaterializer.create(system);
-
     LeveldbReadJournal queries =
         PersistenceQuery.get(system)
             .getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());

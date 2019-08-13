@@ -10,7 +10,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
-import scala.concurrent.Future
 
 class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
@@ -91,7 +90,6 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
     //#offer-sink
 
-    implicit val mat = ActorMaterializer()
     def localMetrics(): Source[String, NotUsed] = Source.single("")
 
     //#offer-sink-use
@@ -106,8 +104,6 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
   }
 
   "show how to configure timeouts with attrs" in compileOnlySpec {
-
-    implicit val mat: ActorMaterializer = null
     //#attr-sub-timeout
     // configure the timeout for source
     import scala.concurrent.duration._

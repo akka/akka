@@ -21,19 +21,16 @@ import akka.stream.scaladsl.MergePreferred.MergePreferredShape;
 public class GraphCyclesDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("GraphCyclesDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   static final SilenceSystemOut.System System = SilenceSystemOut.get();

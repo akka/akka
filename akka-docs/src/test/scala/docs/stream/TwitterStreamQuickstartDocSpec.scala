@@ -8,7 +8,7 @@ package docs.stream
 
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializer, ClosedShape, OverflowStrategy }
+import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -81,14 +81,12 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#first-sample
     //#materializer-setup
     implicit val system = ActorSystem("reactive-tweets")
-    implicit val materializer = ActorMaterializer()
+    // TODO not needed anymore, update text
     //#materializer-setup
     //#first-sample
 
     //#fiddle_code
   }
-
-  implicit val materializer = ActorMaterializer()
 
   "filter and map" in {
     //#first-sample

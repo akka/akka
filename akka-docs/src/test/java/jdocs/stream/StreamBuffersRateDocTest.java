@@ -23,19 +23,16 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
   static class Job {}
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamBuffersDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -62,7 +59,7 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
               return i;
             })
         .async()
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #pipelining
   }
 
@@ -109,7 +106,7 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
                   b.from(zipper.out()).to(b.add(Sink.foreach(elem -> System.out.println(elem))));
                   return ClosedShape.getInstance();
                 }))
-        .run(mat);
+        .run(system);
     // #buffering-abstraction-leak
   }
 

@@ -24,19 +24,16 @@ import static org.junit.Assert.assertEquals;
 
 public class RecipeDigest extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeDigest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   // #calculating-digest
@@ -111,7 +108,7 @@ public class RecipeDigest extends RecipeTest {
         // #calculating-digest2
 
         ByteString got =
-            digest.runWith(Sink.head(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+            digest.runWith(Sink.head(), system).toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         assertEquals(
             ByteString.fromInts(

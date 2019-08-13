@@ -10,8 +10,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.testkit.typed.javadsl.ManualTime;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 // #range-imports
 
@@ -35,23 +33,21 @@ public class SourceDocExamples {
   public static void fromExample() {
     // #source-from-example
     final ActorSystem system = ActorSystem.create("SourceFromExample");
-    final Materializer materializer = ActorMaterializer.create(system);
 
     Source<Integer, NotUsed> ints = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5));
-    ints.runForeach(System.out::println, materializer);
+    ints.runForeach(System.out::println, system);
 
     String text =
         "Perfection is finally attained not when there is no longer more to add,"
             + "but when there is no longer anything to take away.";
     Source<String, NotUsed> words = Source.from(Arrays.asList(text.split("\\s")));
-    words.runForeach(System.out::println, materializer);
+    words.runForeach(System.out::println, system);
     // #source-from-example
   }
 
   static void rangeExample() {
 
     final ActorSystem system = ActorSystem.create("Source");
-    final Materializer materializer = ActorMaterializer.create(system);
 
     // #range
 
@@ -69,7 +65,7 @@ public class SourceDocExamples {
     // #range
 
     // #run-range
-    source.runForeach(i -> System.out.println(i), materializer);
+    source.runForeach(i -> System.out.println(i), system);
     // #run-range
   }
 
@@ -77,12 +73,11 @@ public class SourceDocExamples {
     // #actor-ref
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     int bufferSize = 100;
     Source<Object, ActorRef> source = Source.actorRef(bufferSize, OverflowStrategy.dropHead());
 
-    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(materializer);
+    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);
     actorRef.tell("hello", ActorRef.noSender());
     actorRef.tell("hello", ActorRef.noSender());
 
@@ -96,11 +91,10 @@ public class SourceDocExamples {
 
     // #actor-ref-with-ack
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     Source<Object, ActorRef> source = Source.actorRefWithAck("ack");
 
-    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(materializer);
+    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);
     probe.send(actorRef, "hello");
     probe.expectMsg("ack");
     probe.send(actorRef, "hello");

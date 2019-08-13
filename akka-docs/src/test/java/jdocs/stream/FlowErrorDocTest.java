@@ -20,8 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.ActorMaterializerSettings;
 import akka.stream.Materializer;
 import akka.stream.Supervision;
 import akka.stream.javadsl.Flow;
@@ -48,14 +46,13 @@ public class FlowErrorDocTest extends AbstractJavaTest {
   @Test(expected = ExecutionException.class)
   public void demonstrateFailStream() throws Exception {
     // #stop
-    final Materializer mat = ActorMaterializer.create(system);
     final Source<Integer, NotUsed> source =
         Source.from(Arrays.asList(0, 1, 2, 3, 4, 5)).map(elem -> 100 / elem);
     final Sink<Integer, CompletionStage<Integer>> fold =
         Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
-    final CompletionStage<Integer> result = source.runWith(fold, mat);
+    final CompletionStage<Integer> result = source.runWith(fold, system);
     // division by zero will fail the stream and the
-    // result here will be a Future completed with Failure(ArithmeticException)
+    // result here will be a CompletionStage failed with ArithmeticException
     // #stop
 
     result.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -69,15 +66,14 @@ public class FlowErrorDocTest extends AbstractJavaTest {
           if (exc instanceof ArithmeticException) return Supervision.resume();
           else return Supervision.stop();
         };
-    final Materializer mat =
-        ActorMaterializer.create(
-            ActorMaterializerSettings.create(system).withSupervisionStrategy(decider), system);
     final Source<Integer, NotUsed> source =
-        Source.from(Arrays.asList(0, 1, 2, 3, 4, 5)).map(elem -> 100 / elem);
+        Source.from(Arrays.asList(0, 1, 2, 3, 4, 5))
+            .map(elem -> 100 / elem)
+            .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Sink<Integer, CompletionStage<Integer>> fold = Sink.fold(0, (acc, elem) -> acc + elem);
-    final CompletionStage<Integer> result = source.runWith(fold, mat);
+    final CompletionStage<Integer> result = source.runWith(fold, system);
     // the element causing division by zero will be dropped
-    // result here will be a Future completed with Success(228)
+    // result here will be a CompletionStage completed with 228
     // #resume
 
     assertEquals(Integer.valueOf(228), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -86,7 +82,6 @@ public class FlowErrorDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateResumeSectionStream() throws Exception {
     // #resume-section
-    final Materializer mat = ActorMaterializer.create(system);
     final Function<Throwable, Supervision.Directive> decider =
         exc -> {
           if (exc instanceof ArithmeticException) return Supervision.resume();
@@ -100,9 +95,9 @@ public class FlowErrorDocTest extends AbstractJavaTest {
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5)).via(flow);
     final Sink<Integer, CompletionStage<Integer>> fold =
         Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
-    final CompletionStage<Integer> result = source.runWith(fold, mat);
+    final CompletionStage<Integer> result = source.runWith(fold, system);
     // the elements causing division by zero will be dropped
-    // result here will be a Future completed with Success(150)
+    // result here will be a Future completed with 150
     // #resume-section
 
     assertEquals(Integer.valueOf(150), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -111,7 +106,6 @@ public class FlowErrorDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateRestartSectionStream() throws Exception {
     // #restart-section
-    final Materializer mat = ActorMaterializer.create(system);
     final Function<Throwable, Supervision.Directive> decider =
         exc -> {
           if (exc instanceof IllegalArgumentException) return Supervision.restart();
@@ -128,10 +122,10 @@ public class FlowErrorDocTest extends AbstractJavaTest {
             .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 3, -1, 5, 7)).via(flow);
     final CompletionStage<List<Integer>> result =
-        source.grouped(1000).runWith(Sink.<List<Integer>>head(), mat);
+        source.grouped(1000).runWith(Sink.<List<Integer>>head(), system);
     // the negative element cause the scan stage to be restarted,
     // i.e. start from 0 again
-    // result here will be a Future completed with Success(List(0, 1, 4, 0, 5, 12))
+    // result here will be a Future completed with List(0, 1, 4, 0, 5, 12)
     // #restart-section
 
     assertEquals(
@@ -141,7 +135,6 @@ public class FlowErrorDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateRecover() {
     // #recover
-    final Materializer mat = ActorMaterializer.create(system);
     Source.from(Arrays.asList(0, 1, 2, 3, 4, 5, 6))
         .map(
             n -> {
@@ -149,7 +142,7 @@ public class FlowErrorDocTest extends AbstractJavaTest {
               else throw new RuntimeException("Boom!");
             })
         .recover(new PFBuilder().match(RuntimeException.class, ex -> "stream truncated").build())
-        .runForeach(System.out::println, mat);
+        .runForeach(System.out::println, system);
     // #recover
 
     /*
@@ -168,7 +161,6 @@ public class FlowErrorDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateRecoverWithRetries() {
     // #recoverWithRetries
-    final Materializer mat = ActorMaterializer.create(system);
     Source<String, NotUsed> planB = Source.from(Arrays.asList("five", "six", "seven", "eight"));
 
     Source.from(Arrays.asList(0, 1, 2, 3, 4, 5, 6))
@@ -180,7 +172,7 @@ public class FlowErrorDocTest extends AbstractJavaTest {
         .recoverWithRetries(
             1, // max attempts
             new PFBuilder().match(RuntimeException.class, ex -> planB).build())
-        .runForeach(System.out::println, mat);
+        .runForeach(System.out::println, system);
     // #recoverWithRetries
 
     /*

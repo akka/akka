@@ -7,8 +7,6 @@ package jdocs.stream.javadsl.cookbook;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
@@ -26,19 +24,16 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeSimpleDrop extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeSimpleDrop");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -63,7 +58,7 @@ public class RecipeSimpleDrop extends RecipeTest {
             TestSource.<Message>probe(system)
                 .via(realDroppyStream)
                 .toMat(TestSink.probe(system), (pub, sub) -> new Pair<>(pub, sub))
-                .run(mat);
+                .run(system);
         final TestPublisher.Probe<Message> pub = pubSub.first();
         final TestSubscriber.Probe<Message> sub = pubSub.second();
 

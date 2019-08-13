@@ -5,11 +5,10 @@
 package docs.stream
 
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.{ ActorMaterializer, SubstreamCancelStrategy }
+import akka.stream.{ SubstreamCancelStrategy }
 import akka.testkit.AkkaSpec
 
 class SubstreamDocSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer()
 
   "generate substreams by groupBy" in {
     //#groupBy1

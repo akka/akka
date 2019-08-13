@@ -26,19 +26,16 @@ import java.util.function.ToLongBiFunction;
 public class HubDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer materializer;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("GraphDSLDocTest");
-    materializer = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    materializer = null;
   }
 
   @Test
@@ -55,10 +52,10 @@ public class HubDocTest extends AbstractJavaTest {
     // now have access to feed elements into it. This Sink can be materialized
     // any number of times, and every element that enters the Sink will
     // be consumed by our consumer.
-    Sink<String, NotUsed> toConsumer = runnableGraph.run(materializer);
+    Sink<String, NotUsed> toConsumer = runnableGraph.run(system);
 
-    Source.single("Hello!").runWith(toConsumer, materializer);
-    Source.single("Hub!").runWith(toConsumer, materializer);
+    Source.single("Hello!").runWith(toConsumer, system);
+    Source.single("Hub!").runWith(toConsumer, system);
     // #merge-hub
   }
 
@@ -99,7 +96,7 @@ public class HubDocTest extends AbstractJavaTest {
     Pair<Sink<String, NotUsed>, Source<String, NotUsed>> sinkAndSource =
         MergeHub.of(String.class, 16)
             .toMat(BroadcastHub.of(String.class, 256), Keep.both())
-            .run(materializer);
+            .run(system);
 
     Sink<String, NotUsed> sink = sinkAndSource.first();
     Source<String, NotUsed> source = sinkAndSource.second();
@@ -109,7 +106,7 @@ public class HubDocTest extends AbstractJavaTest {
     // Ensure that the Broadcast output is dropped if there are no listening parties.
     // If this dropping Sink is not attached, then the broadcast hub will not drop any
     // elements itself when there are no subscribers, backpressuring the producer instead.
-    source.runWith(Sink.ignore(), materializer);
+    source.runWith(Sink.ignore(), system);
     // #pub-sub-2
 
     // #pub-sub-3
@@ -127,7 +124,7 @@ public class HubDocTest extends AbstractJavaTest {
         Source.repeat("Hello World!")
             .viaMat(busFlow, Keep.right())
             .to(Sink.foreach(System.out::println))
-            .run(materializer);
+            .run(system);
 
     // Shut down externally
     killSwitch.shutdown();

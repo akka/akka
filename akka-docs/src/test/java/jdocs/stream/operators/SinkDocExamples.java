@@ -7,8 +7,6 @@ package jdocs.stream.operators;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 // #takeLast-operator-example
@@ -22,13 +20,12 @@ import java.util.concurrent.TimeoutException;
 public class SinkDocExamples {
 
   private static final ActorSystem system = ActorSystem.create("SourceFromExample");
-  private static final Materializer materializer = ActorMaterializer.create(system);
 
   static void reduceExample() throws InterruptedException, ExecutionException, TimeoutException {
 
     // #reduce-operator-example
     Source<Integer, NotUsed> ints = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
-    CompletionStage<Integer> sum = ints.runWith(Sink.reduce((a, b) -> a + b), materializer);
+    CompletionStage<Integer> sum = ints.runWith(Sink.reduce((a, b) -> a + b), system);
     sum.thenAccept(System.out::println);
     // 55
     // #reduce-operator-example
@@ -48,7 +45,7 @@ public class SinkDocExamples {
 
     Source<Pair, NotUsed> studentSource = Source.from(sortedStudents);
 
-    CompletionStage<List<Pair>> topThree = studentSource.runWith(Sink.takeLast(3), materializer);
+    CompletionStage<List<Pair>> topThree = studentSource.runWith(Sink.takeLast(3), system);
 
     topThree.thenAccept(
         result -> {
@@ -70,7 +67,7 @@ public class SinkDocExamples {
   static void lastExample() throws InterruptedException, ExecutionException, TimeoutException {
     // #last-operator-example
     Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
-    CompletionStage<Integer> result = source.runWith(Sink.last(), materializer);
+    CompletionStage<Integer> result = source.runWith(Sink.last(), system);
     result.thenAccept(System.out::println);
     // 10
     // #last-operator-example
@@ -80,7 +77,7 @@ public class SinkDocExamples {
       throws InterruptedException, ExecutionException, TimeoutException {
     // #lastOption-operator-example
     Source<Integer, NotUsed> source = Source.empty();
-    CompletionStage<Optional<Integer>> result = source.runWith(Sink.lastOption(), materializer);
+    CompletionStage<Optional<Integer>> result = source.runWith(Sink.lastOption(), system);
     result.thenAccept(System.out::println);
     // Optional.empty
     // #lastOption-operator-example

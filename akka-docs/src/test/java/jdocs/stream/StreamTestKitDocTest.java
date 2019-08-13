@@ -29,19 +29,16 @@ import akka.stream.testkit.javadsl.*;
 public class StreamTestKitDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamTestKitDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -53,7 +50,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
             .toMat(Sink.fold(0, (agg, next) -> agg + next), Keep.right());
 
     final CompletionStage<Integer> future =
-        Source.from(Arrays.asList(1, 2, 3, 4)).runWith(sinkUnderTest, mat);
+        Source.from(Arrays.asList(1, 2, 3, 4)).runWith(sinkUnderTest, system);
     final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assert (result == 20);
     // #strict-collection
@@ -64,7 +61,8 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     // #grouped-infinite
     final Source<Integer, NotUsed> sourceUnderTest = Source.repeat(1).map(i -> i * 2);
 
-    final CompletionStage<List<Integer>> future = sourceUnderTest.take(10).runWith(Sink.seq(), mat);
+    final CompletionStage<List<Integer>> future =
+        sourceUnderTest.take(10).runWith(Sink.seq(), system);
     final List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Collections.nCopies(10, 2));
     // #grouped-infinite
@@ -79,7 +77,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final CompletionStage<Integer> future =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
             .via(flowUnderTest)
-            .runWith(Sink.fold(0, (agg, next) -> agg + next), mat);
+            .runWith(Sink.fold(0, (agg, next) -> agg + next), system);
     final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assert (result == 10);
     // #folded-stream
@@ -93,7 +91,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
     final TestKit probe = new TestKit(system);
     final CompletionStage<List<List<Integer>>> future =
-        sourceUnderTest.grouped(2).runWith(Sink.head(), mat);
+        sourceUnderTest.grouped(2).runWith(Sink.head(), system);
     akka.pattern.Patterns.pipe(future, system.dispatcher()).to(probe.getRef());
     probe.expectMsg(Duration.ofSeconds(3), Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4)));
     // #pipeto-testprobe
@@ -112,7 +110,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
     final TestKit probe = new TestKit(system);
     final Cancellable cancellable =
-        sourceUnderTest.to(Sink.actorRef(probe.getRef(), Tick.COMPLETED)).run(mat);
+        sourceUnderTest.to(Sink.actorRef(probe.getRef(), Tick.COMPLETED)).run(system);
     probe.expectMsg(Duration.ofSeconds(3), Tick.TOCK);
     probe.expectNoMessage(Duration.ofMillis(100));
     probe.expectMsg(Duration.ofSeconds(3), Tick.TOCK);
@@ -132,7 +130,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final Pair<ActorRef, CompletionStage<String>> refAndCompletionStage =
         Source.<Integer>actorRef(8, OverflowStrategy.fail())
             .toMat(sinkUnderTest, Keep.both())
-            .run(mat);
+            .run(system);
     final ActorRef ref = refAndCompletionStage.first();
     final CompletionStage<String> future = refAndCompletionStage.second();
 
@@ -153,7 +151,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
         Source.from(Arrays.asList(1, 2, 3, 4)).filter(elem -> elem % 2 == 0).map(elem -> elem * 2);
 
     sourceUnderTest
-        .runWith(TestSink.probe(system), mat)
+        .runWith(TestSink.probe(system), system)
         .request(2)
         .expectNext(4, 8)
         .expectComplete();
@@ -167,7 +165,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
     TestSource.<Integer>probe(system)
         .toMat(sinkUnderTest, Keep.left())
-        .run(mat)
+        .run(system)
         .expectCancellation();
     // #test-source-probe
   }
@@ -178,7 +176,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final Sink<Integer, CompletionStage<Integer>> sinkUnderTest = Sink.head();
 
     final Pair<TestPublisher.Probe<Integer>, CompletionStage<Integer>> probeAndCompletionStage =
-        TestSource.<Integer>probe(system).toMat(sinkUnderTest, Keep.both()).run(mat);
+        TestSource.<Integer>probe(system).toMat(sinkUnderTest, Keep.both()).run(system);
     final TestPublisher.Probe<Integer> probe = probeAndCompletionStage.first();
     final CompletionStage<Integer> future = probeAndCompletionStage.second();
     probe.sendError(new Exception("boom"));
@@ -211,7 +209,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
         TestSource.<Integer>probe(system)
             .via(flowUnderTest)
             .toMat(TestSink.<Integer>probe(system), Keep.both())
-            .run(mat);
+            .run(system);
     final TestPublisher.Probe<Integer> pub = pubAndSub.first();
     final TestSubscriber.Probe<Integer> sub = pubAndSub.second();
 
