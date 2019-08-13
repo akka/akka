@@ -7,6 +7,7 @@
 * [Packaging](packaging.md)
 * [Deploying](deploying.md)
 * [Rolling Updates](rolling-updates.md)
+* [Monitoring](monitoring.md)
  
 @@@
 
