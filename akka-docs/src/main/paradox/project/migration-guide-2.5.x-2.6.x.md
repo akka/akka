@@ -502,3 +502,16 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 
 * `ActorSource.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
 
+
+## Additional changes
+
+### System global Materializer provided
+
+A default materializer is now provided out of the box. For the Java API just pass `system` when running streams,
+for Scala an implicit materializer is provided if there is an implicit `ActorSystem` available. This avoids leaking 
+materializers and simplifies most stream use cases somewhat.
+
+Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()` 
+and Scala `implicit val materializer = ActorMaterializer()` should be removed. 
+
+Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
