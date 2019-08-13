@@ -57,7 +57,7 @@ public class TcpTest extends StreamTest {
       Sink.foreach(
           new Procedure<IncomingConnection>() {
             public void apply(IncomingConnection conn) {
-              conn.handleWith(Flow.of(ByteString.class), materializer);
+              conn.handleWith(Flow.of(ByteString.class), system);
             }
           });
 
@@ -76,7 +76,7 @@ public class TcpTest extends StreamTest {
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding =
         Tcp.get(system).bind(serverAddress.getHostString(), serverAddress.getPort());
 
-    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
+    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(system);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
@@ -92,7 +92,7 @@ public class TcpTest extends StreamTest {
                     return acc.concat(elem);
                   }
                 },
-                materializer);
+                system);
 
     final byte[] result = resultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS).toArray();
     for (int i = 0; i < testInput.size(); i++) {
@@ -109,7 +109,7 @@ public class TcpTest extends StreamTest {
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding =
         Tcp.get(system).bind(serverAddress.getHostString(), serverAddress.getPort());
 
-    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
+    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(system);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
@@ -122,7 +122,7 @@ public class TcpTest extends StreamTest {
                   try {
                     binding
                         .to(echoHandler)
-                        .run(materializer)
+                        .run(system)
                         .toCompletableFuture()
                         .get(5, TimeUnit.SECONDS);
                     assertTrue("Expected BindFailedException, but nothing was reported", false);
@@ -152,7 +152,7 @@ public class TcpTest extends StreamTest {
                     .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()),
                 Keep.right())
             .to(Sink.<ByteString>ignore())
-            .run(materializer)
+            .run(system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS);
         assertTrue("Expected StreamTcpException, but nothing was reported", false);

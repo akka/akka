@@ -96,7 +96,6 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
   import TlsSpec._
 
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   import GraphDSL.Implicits._
 

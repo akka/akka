@@ -4,18 +4,15 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 
 class LastSinkSpec extends StreamSpec with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
   implicit val ec = system.dispatcher
 
   "A Flow with Sink.last" must {

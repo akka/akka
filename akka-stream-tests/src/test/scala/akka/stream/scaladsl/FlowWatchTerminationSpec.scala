@@ -9,16 +9,13 @@ import akka.pattern.pipe
 import akka.stream._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 
-import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class FlowWatchTerminationSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "A WatchTermination" must {
 

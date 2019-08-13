@@ -4,14 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.TestSink
 
 class FlowWithContextSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   "A FlowWithContext" must {
 

@@ -20,8 +20,6 @@ class BidiFlowSpec extends StreamSpec {
   import Attributes._
   import GraphDSL.Implicits._
 
-  implicit val materializer = ActorMaterializer()
-
   val bidi = BidiFlow.fromFlows(
     Flow[Int].map(x => x.toLong + 2).withAttributes(name("top")),
     Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))

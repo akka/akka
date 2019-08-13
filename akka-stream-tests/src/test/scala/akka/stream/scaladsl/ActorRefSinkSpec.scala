@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import akka.actor.{ Actor, ActorRef, Props }
-import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
@@ -25,7 +24,6 @@ object ActorRefSinkSpec {
 
 class ActorRefSinkSpec extends StreamSpec {
   import ActorRefSinkSpec._
-  implicit val materializer = ActorMaterializer()
 
   "A ActorRefSink" must {
 

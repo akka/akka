@@ -18,7 +18,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
 class TimeoutsSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
 
   "InitialTimeout" must {
 

@@ -4,16 +4,15 @@
 
 package akka.stream.impl
 
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Keep, Sink, Source }
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.TestProbe
 
 class FanoutProcessorSpec extends StreamSpec {
-
-  implicit val mat = ActorMaterializer()
 
   "The FanoutProcessor" must {
 

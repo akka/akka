@@ -4,10 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.{ Actor, PoisonPill, Props }
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.actor.Actor
+import akka.actor.PoisonPill
+import akka.actor.Props
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestActors
 
 import scala.concurrent.Await
@@ -26,8 +27,6 @@ object FlowWatchSpec {
 
 class FlowWatchSpec extends StreamSpec {
   import FlowWatchSpec._
-
-  implicit val materializer = ActorMaterializer()
 
   "A Flow with watch" must {
 

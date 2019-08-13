@@ -20,8 +20,6 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
 
-  implicit val materializer = ActorMaterializer()
-
   "A Sink" must {
     "be composable without importing modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])

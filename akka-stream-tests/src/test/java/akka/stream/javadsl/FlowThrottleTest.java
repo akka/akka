@@ -35,7 +35,7 @@ public class FlowThrottleTest extends StreamTest {
             .throttle(1, java.time.Duration.ofDays(1), 1, ThrottleMode.enforcing());
 
     CompletionStage<List<Integer>> result1 =
-        Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);
+        Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), system);
 
     // If there is accidental shared state then we would not be able to pass through the single
     // element
@@ -44,7 +44,7 @@ public class FlowThrottleTest extends StreamTest {
 
     // It works with a new stream, too
     CompletionStage<List<Integer>> result2 =
-        Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);
+        Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), system);
 
     assertEquals(
         result2.toCompletableFuture().get(3, TimeUnit.SECONDS), Collections.singletonList(1));

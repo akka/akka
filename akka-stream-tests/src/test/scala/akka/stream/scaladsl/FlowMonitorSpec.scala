@@ -4,18 +4,16 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowMonitorState }
 import akka.stream.FlowMonitorState._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.ActorMaterializer
+import akka.stream.FlowMonitorState
 
 import scala.concurrent.duration._
 
 class FlowMonitorSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "A FlowMonitor" must {
     "return Finished when stream is completed" in {

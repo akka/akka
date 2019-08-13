@@ -6,16 +6,22 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.actor.{ Actor, ActorRef, PoisonPill, Props }
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.PoisonPill
+import akka.actor.Props
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
-import akka.testkit.{ TestActors, TestProbe }
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
+import akka.testkit.TestActors
+import akka.testkit.TestProbe
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 object FlowAskSpec {
@@ -72,8 +78,6 @@ object FlowAskSpec {
 
 class FlowAskSpec extends StreamSpec {
   import FlowAskSpec._
-
-  implicit val materializer = ActorMaterializer()
 
   "A Flow with ask" must {
 

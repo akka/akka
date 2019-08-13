@@ -19,8 +19,6 @@ import scala.concurrent.duration.Duration
 
 class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with ScalaFutures {
 
-  implicit val materializer = ActorMaterializer()
-
   object emit1234 extends GraphStage[FlowShape[Int, Int]] {
     val in = Inlet[Int]("in")
     val out = Outlet[Int]("out")

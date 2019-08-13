@@ -5,12 +5,10 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.StreamSpec
 
 class SetupSpec extends StreamSpec {
 
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   "Source.setup" should {

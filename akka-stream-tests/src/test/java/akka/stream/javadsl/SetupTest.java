@@ -35,7 +35,7 @@ public class SetupTest extends StreamTest {
 
     assertEquals(
         Pair.create(false, false),
-        source.runWith(Sink.head(), materializer).toCompletableFuture().get(5, TimeUnit.SECONDS));
+        source.runWith(Sink.head(), system).toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
@@ -51,7 +51,7 @@ public class SetupTest extends StreamTest {
         Pair.create(false, false),
         Source.empty()
             .via(flow)
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS));
   }
@@ -67,7 +67,7 @@ public class SetupTest extends StreamTest {
     assertEquals(
         Pair.create(false, false),
         Source.empty()
-            .runWith(sink, materializer)
+            .runWith(sink, system)
             .thenCompose(c -> c)
             .toCompletableFuture()
             .get(5, TimeUnit.SECONDS));

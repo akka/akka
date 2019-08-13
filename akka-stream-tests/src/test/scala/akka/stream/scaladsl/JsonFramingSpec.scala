@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorMaterializer
 import akka.stream.impl.JsonObjectParser
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
@@ -17,8 +17,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class JsonFramingSpec extends AkkaSpec {
-
-  implicit val mat = ActorMaterializer()
 
   "collecting multiple json" should {
     "parse json array" in {
