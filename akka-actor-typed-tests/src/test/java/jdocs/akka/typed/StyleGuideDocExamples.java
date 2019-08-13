@@ -674,11 +674,11 @@ interface StyleGuideDocExamples {
         }
       }
 
-      // The type of the Counter actor's internal event messages.
-      private interface Event extends Message {}
+      // The type of the Counter actor's internal messages.
+      interface PrivateCommand extends Message {}
 
-      // Tick is a private Event so can't be sent to an ActorRef<Command>
-      private enum Tick implements Event {
+      // Tick is a private command so can't be sent to an ActorRef<Command>
+      enum Tick implements PrivateCommand {
         INSTANCE
       }
 
