@@ -648,9 +648,15 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay.using(YoungerData(None))
 
     case Event(HandOverToMe, _) =>
-      // this node was probably quickly restarted with same hostname:port,
-      // confirm that the old singleton instance has been stopped
-      sender() ! HandOverDone
+      val selfStatus = cluster.selfMember.status
+      if (selfStatus == MemberStatus.Leaving || selfStatus == MemberStatus.Exiting)
+        logInfo("Ignoring HandOverToMe in Younger from [{}] because self is [{}].", sender().path.address, selfStatus)
+      else {
+        // this node was probably quickly restarted with same hostname:port,
+        // confirm that the old singleton instance has been stopped
+        sender() ! HandOverDone
+      }
+
       stay
   }
 
@@ -686,7 +692,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay
 
     case Event(DelayedMemberRemoved(m), BecomingOldestData(Some(previousOldest)))
-        if m.uniqueAddress == previousOldest =>
+        if m.uniqueAddress == previousOldest && !cluster.isTerminated =>
+      // don't act on DelayedMemberRemoved (starting singleton) if this node is shutting its self down,
+      // just wait for self MemberRemoved
       logInfo("Previous oldest [{}] removed", previousOldest.address)
       addRemoved(m.uniqueAddress)
       tryGotoOldest()
