@@ -18,6 +18,7 @@ import java.util.function.{ BiFunction, Supplier }
 
 import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
 import akka.util.unused
@@ -492,6 +493,25 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * The returned tuple contains the materialized values of the `Source` and `Sink`,
    * e.g. the `Subscriber` of a `Source.asSubscriber` and `Publisher` of a `Sink.asPublisher`.
+   *
+   * @tparam T materialized type of given Source
+   * @tparam U materialized type of given Sink
+   */
+  def runWith[T, U](
+      source: Graph[SourceShape[In], T],
+      sink: Graph[SinkShape[Out], U],
+      system: ActorSystem): akka.japi.Pair[T, U] = {
+    val (som, sim) = delegate.runWith(source, sink)(SystemMaterializer(system).materializer)
+    akka.japi.Pair(som, sim)
+  }
+
+  /**
+   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
+   *
+   * The returned tuple contains the materialized values of the `Source` and `Sink`,
+   * e.g. the `Subscriber` of a `Source.asSubscriber` and `Publisher` of a `Sink.asPublisher`.
+   *
+   * Prefer the method taking an ActorSystem unless you have special requirements.
    *
    * @tparam T materialized type of given Source
    * @tparam U materialized type of given Sink
@@ -3580,6 +3600,17 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
 
   /**
    * Run this flow and return the materialized values of the flow.
+   *
+   * Uses the system materializer.
+   */
+  def run(system: ActorSystem): Mat = {
+    run(SystemMaterializer(system).materializer)
+  }
+
+  /**
+   * Run this flow using a special materializer and return the materialized values of the flow.
+   *
+   * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def run(materializer: Materializer): Mat
 

@@ -4,6 +4,7 @@
 
 package akka.stream
 
+import akka.actor.ActorSystem
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
@@ -142,6 +143,16 @@ abstract class Materializer {
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
   def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
+
+}
+
+object Materializer {
+
+  /**
+   * Implicitly provides the system wide materializer
+   */
+  implicit def matFromSystem(implicit system: ActorSystem): Materializer =
+    SystemMaterializer(system).materializer
 
 }
 

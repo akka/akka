@@ -20,6 +20,8 @@ import scala.util.Try
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
+import akka.actor.ActorSystem
+
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -382,6 +384,12 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   /**
    * Connect this `Sink` to a `Source` and run it.
    */
+  def runWith[M](source: Graph[SourceShape[In], M], system: ActorSystem): M =
+    asScala.runWith(source)(SystemMaterializer(system).materializer)
+
+  /**
+   * Connect this `Sink` to a `Source` and run it.
+   */
   def runWith[M](source: Graph[SourceShape[In], M], materializer: Materializer): M =
     asScala.runWith(source)(materializer)
 
@@ -407,6 +415,19 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * that can be consume elements 'into' the pre-materialized one.
    *
    * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   */
+  def preMaterialize(system: ActorSystem): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+    val (mat, sink) = delegate.preMaterialize()(SystemMaterializer(system).materializer)
+    akka.japi.Pair(mat, sink.asJava)
+  }
+
+  /**
+   * Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink
+   * that can be consume elements 'into' the pre-materialized one.
+   *
+   * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   *
+   * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def preMaterialize(
       materializer: Materializer): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
