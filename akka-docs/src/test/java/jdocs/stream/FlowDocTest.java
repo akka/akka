@@ -292,15 +292,6 @@ public class FlowDocTest extends AbstractJavaTest {
     // #flow-async
   }
 
-  static {
-    // #materializer-from-system
-    ActorSystem system = ActorSystem.create("ExampleSystem");
-
-    // created from `system`:
-    ActorMaterializer mat = ActorMaterializer.create(system);
-    // #materializer-from-system
-  }
-
   // #materializer-from-actor-context
   final class RunWithMyself extends AbstractActor {
 
@@ -333,10 +324,11 @@ public class FlowDocTest extends AbstractJavaTest {
 
   // #materializer-from-system-in-actor
   final class RunForever extends AbstractActor {
-    final ActorMaterializer mat;
 
-    RunForever(ActorMaterializer mat) {
-      this.mat = mat;
+    private final Materializer materializer;
+
+    public RunForever(Materializer materializer) {
+      this.materializer = materializer;
     }
 
     @Override
@@ -347,7 +339,7 @@ public class FlowDocTest extends AbstractJavaTest {
                   tryDone -> {
                     System.out.println("Terminated stream: " + tryDone);
                   }),
-              mat);
+              materializer);
     }
 
     @Override

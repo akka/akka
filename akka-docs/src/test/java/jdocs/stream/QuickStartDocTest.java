@@ -34,10 +34,7 @@ public class QuickStartDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateSource() throws InterruptedException, ExecutionException {
-    // #create-materializer
     final ActorSystem system = ActorSystem.create("QuickStart");
-    // FIXME materializer not needed
-    // #create-materializer
 
     // #create-source
     final Source<Integer, NotUsed> source = Source.range(1, 100);

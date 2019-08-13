@@ -243,13 +243,6 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
 object FlowDocSpec {
 
-  {
-    //#materializer-from-system
-    implicit val system = ActorSystem("ExampleSystem")
-    // TODO not needed update text?
-    //#materializer-from-system
-  }
-
   //#materializer-from-actor-context
   final class RunWithMyself extends Actor {
     implicit val mat = ActorMaterializer()

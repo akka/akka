@@ -197,11 +197,10 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
   abstract static class Example1 {
     // #first-sample
-    // #materializer-setup
+    // #system-setup
     final ActorSystem system = ActorSystem.create("reactive-tweets");
-    // FIXME no materializer needed
     // #first-sample
-    // #materializer-setup
+    // #system-setup
   }
 
   static class Example2 {
