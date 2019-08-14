@@ -28,18 +28,22 @@ class BlockingFutureActor extends AbstractBehavior<Integer> {
         .onMessage(
             Integer.class,
             i -> {
-              System.out.println("Calling blocking Future: " + i);
-              Future<Integer> f =
-                  Futures.future(
-                      () -> {
-                        Thread.sleep(5000);
-                        System.out.println("Blocking future finished: " + i);
-                        return i;
-                      },
-                      ec);
+              triggerFutureBlockingOperation(i, ec);
               return Behaviors.same();
             })
         .build();
+  }
+
+  private static final void triggerFutureBlockingOperation(Integer i, ExecutionContext ec) {
+    System.out.println("Calling blocking Future: " + i);
+    Future<Integer> f =
+        Futures.future(
+            () -> {
+              Thread.sleep(5000);
+              System.out.println("Blocking future finished: " + i);
+              return i;
+            },
+            ec);
   }
 }
 // #blocking-in-future

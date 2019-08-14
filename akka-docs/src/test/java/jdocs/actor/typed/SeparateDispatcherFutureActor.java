@@ -19,7 +19,11 @@ class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
   }
 
   private SeparateDispatcherFutureActor(ActorContext<Integer> context) {
-    ec = context.getExecutionContext();
+    ec =
+        context
+            .getSystem()
+            .dispatchers()
+            .lookup(DispatcherSelector.fromConfig("my-blocking-dispatcher"));
   }
 
   @Override
@@ -28,18 +32,22 @@ class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
         .onMessage(
             Integer.class,
             i -> {
-              System.out.println("Calling blocking Future on separate dispatcher: " + i);
-              Future<Integer> f =
-                  Futures.future(
-                      () -> {
-                        Thread.sleep(5000);
-                        System.out.println("Blocking future finished: " + i);
-                        return i;
-                      },
-                      ec);
+              triggerFutureBlockingOperation(i, ec);
               return Behaviors.same();
             })
         .build();
+  }
+
+  private static final void triggerFutureBlockingOperation(Integer i, ExecutionContext ec) {
+    System.out.println("Calling blocking Future on separate dispatcher: " + i);
+    Future<Integer> f =
+        Futures.future(
+            () -> {
+              Thread.sleep(5000);
+              System.out.println("Blocking future finished: " + i);
+              return i;
+            },
+            ec);
   }
 }
 // #separate-dispatcher

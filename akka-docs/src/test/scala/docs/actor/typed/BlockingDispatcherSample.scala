@@ -29,14 +29,18 @@ object BlockingFutureActor {
 
       Behaviors.receiveMessage {
         case i: Int =>
-          println(s"Calling blocking Future: ${i}")
-          Future {
-            Thread.sleep(5000) //block for 5 seconds
-            println(s"Blocking future finished ${i}")
-          }
+          triggerFutureBlockingOperation(i)
           Behaviors.same
       }
     }
+
+  def triggerFutureBlockingOperation(i: Int)(implicit ec: ExecutionContext) = {
+    println(s"Calling blocking Future: ${i}")
+    Future {
+      Thread.sleep(5000) //block for 5 seconds
+      println(s"Blocking future finished ${i}")
+    }
+  }
 }
 // #blocking-in-future
 
@@ -49,14 +53,18 @@ object SeparateDispatcherFutureActor {
 
       Behaviors.receiveMessage {
         case i: Int =>
-          println(s"Calling blocking Future: ${i}")
-          Future {
-            Thread.sleep(5000) //block for 5 seconds
-            println(s"Blocking future finished ${i}")
-          }
+          triggerFutureBlockingOperation(i)
           Behaviors.same
       }
     }
+
+  def triggerFutureBlockingOperation(i: Int)(implicit ec: ExecutionContext) = {
+    println(s"Calling blocking Future: ${i}")
+    Future {
+      Thread.sleep(5000) //block for 5 seconds
+      println(s"Blocking future finished ${i}")
+    }
+  }
 }
 // #separate-dispatcher
 
