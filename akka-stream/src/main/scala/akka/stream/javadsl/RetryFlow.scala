@@ -10,7 +10,7 @@ import akka.NotUsed
 import akka.japi.Pair
 import akka.stream.scaladsl.RetryFlow.withBackoffAndContext
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.runtime.AbstractPartialFunction
 import scala.util.Try
