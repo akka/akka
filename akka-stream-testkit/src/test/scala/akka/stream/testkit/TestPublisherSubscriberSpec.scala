@@ -4,26 +4,25 @@
 
 package akka.stream.testkit
 
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import org.reactivestreams.Subscription
 import akka.testkit.AkkaSpec
+import org.reactivestreams.Subscription
 
-class TestPublisherSubscriberSpec extends AkkaSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class TestPublisherSubscriberSpec extends AkkaSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "TestPublisher and TestSubscriber" must {
 
     "have all events accessible from manual probes" in assertAllStagesStopped {
       val upstream = TestPublisher.manualProbe[Int]()
       val downstream = TestSubscriber.manualProbe[Int]()
-      Source.fromPublisher(upstream).runWith(Sink.asPublisher(false))(materializer).subscribe(downstream)
+      Source.fromPublisher(upstream).runWith(Sink.asPublisher(false)).subscribe(downstream)
 
       val upstreamSubscription = upstream.expectSubscription()
       val downstreamSubscription: Subscription = downstream.expectEventPF { case OnSubscribe(sub) => sub }
@@ -47,7 +46,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
     "handle gracefully partial function that is not suitable" in assertAllStagesStopped {
       val upstream = TestPublisher.manualProbe[Int]()
       val downstream = TestSubscriber.manualProbe[Int]()
-      Source.fromPublisher(upstream).runWith(Sink.asPublisher(false))(materializer).subscribe(downstream)
+      Source.fromPublisher(upstream).runWith(Sink.asPublisher(false)).subscribe(downstream)
       val upstreamSubscription = upstream.expectSubscription()
       val downstreamSubscription: Subscription = downstream.expectEventPF { case OnSubscribe(sub) => sub }
 

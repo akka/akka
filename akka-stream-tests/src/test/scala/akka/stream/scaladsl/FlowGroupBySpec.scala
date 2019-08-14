@@ -5,29 +5,30 @@
 package akka.stream.scaladsl
 
 import java.util
-
-import akka.{ Done, NotUsed }
-import akka.actor.ActorSystem
-import akka.stream.Attributes._
-import akka.stream.impl.SinkModule
-import akka.util.ByteString
-
-import scala.annotation.tailrec
-import scala.concurrent.{ Await, Promise }
-import scala.concurrent.duration._
-import akka.stream._
-import akka.stream.Supervision.resumingDecider
-import akka.stream.impl.fusing.GroupBy
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import org.reactivestreams.Publisher
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.actor.ActorSystem
+import akka.stream.Attributes._
+import akka.stream.Supervision.resumingDecider
+import akka.stream._
+import akka.stream.impl.SinkModule
+import akka.stream.impl.fusing.GroupBy
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestLatch
+import akka.util.ByteString
+import akka.Done
+import akka.NotUsed
+import org.reactivestreams.Publisher
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Promise
 
 object FlowGroupBySpec {
 
@@ -38,12 +39,11 @@ object FlowGroupBySpec {
 
 }
 
-class FlowGroupBySpec extends StreamSpec {
+class FlowGroupBySpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
   import FlowGroupBySpec._
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
     val probe = TestSubscriber.manualProbe[Int]()
@@ -549,8 +549,6 @@ class FlowGroupBySpec extends StreamSpec {
     }
 
     "work with random demand" in assertAllStagesStopped {
-      val mat = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1))
-
       var blockingNextElement: ByteString = null.asInstanceOf[ByteString]
 
       val probes = new java.util.ArrayList[Promise[TestSubscriber.Probe[ByteString]]](100)
@@ -608,7 +606,8 @@ class FlowGroupBySpec extends StreamSpec {
         .fromPublisher[ByteString](publisherProbe)
         .groupBy(100, elem => Math.abs(elem.head % 100))
         .to(Sink.fromGraph(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in")))))
-        .run()(mat)
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
 
       val upstreamSubscription = publisherProbe.expectSubscription()
 

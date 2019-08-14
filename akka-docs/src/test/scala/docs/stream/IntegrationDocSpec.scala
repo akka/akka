@@ -409,13 +409,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val materializer =
-      ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
-
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
       .mapAsync(4)(service.convert)
-      .runForeach(elem => println(s"after: $elem"))
+      .to(Sink.foreach(elem => println(s"after: $elem")))
+      .withAttributes(Attributes.inputBuffer(initial = 4, max = 4))
+      .run()
     //#sometimes-slow-mapAsync
 
     probe.expectMsg("after: A")
@@ -441,13 +440,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val materializer =
-      ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
-
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
       .mapAsyncUnordered(4)(service.convert)
-      .runForeach(elem => println(s"after: $elem"))
+      .to(Sink.foreach(elem => println(s"after: $elem")))
+      .withAttributes(Attributes.inputBuffer(initial = 4, max = 4))
+      .run()
     //#sometimes-slow-mapAsyncUnordered
 
     probe.receiveN(10).toSet should be(

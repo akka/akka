@@ -49,7 +49,8 @@ import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
       case ActorAttributes.IODispatcher.dispatcher =>
         // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
-        props.withDispatcher(settings.blockingIoDispatcher)
+        val actual = context.effectiveAttributes.mandatoryAttribute[ActorAttributes.BlockingIoDispatcher].dispatcher
+        props.withDispatcher(actual)
       case _ => props
     }
 
@@ -104,7 +105,7 @@ private[akka] class SubFusingActorMaterializerImpl(
         attributes: Attributes,
         materializer: PhasedFusingActorMaterializer,
         islandName: String): PhaseIsland[Any] = {
-      new GraphStageIsland(settings, attributes, materializer, islandName, OptionVal(registerShell))
+      new GraphStageIsland(attributes, materializer, islandName, OptionVal(registerShell))
         .asInstanceOf[PhaseIsland[Any]]
     }
   }
@@ -173,8 +174,10 @@ private[akka] class SubFusingActorMaterializerImpl(
  * INTERNAL API
  */
 @InternalApi private[akka] object StreamSupervisor {
-  def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
-    Props(new StreamSupervisor(haveShutDown)).withDeploy(Deploy.local).withDispatcher(settings.dispatcher)
+  def props(attributes: Attributes, haveShutDown: AtomicBoolean): Props =
+    Props(new StreamSupervisor(haveShutDown))
+      .withDeploy(Deploy.local)
+      .withDispatcher(attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
   private[stream] val baseName = "StreamSupervisor"
   private val actorName = SeqActorName(baseName)
   def nextName(): String = actorName.next()

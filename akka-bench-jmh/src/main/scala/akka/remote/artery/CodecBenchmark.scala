@@ -10,11 +10,6 @@ import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -24,13 +19,17 @@ import akka.remote.artery.compress._
 import akka.serialization.BaseSerializer
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializationExtension
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.SystemMaterializer
 import akka.stream.scaladsl._
 import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
+import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -45,7 +44,7 @@ class CodecBenchmark {
   @Param(Array(Standard, RemoteInstrument))
   private var configType: String = _
 
-  var system: ActorSystem = _
+  implicit var system: ActorSystem = _
   var systemB: ActorSystem = _
 
   private val envelopePool = new EnvelopeBufferPool(1024 * 1024, 128)
@@ -70,7 +69,6 @@ class CodecBenchmark {
     override def publishDropped(inbound: InboundEnvelope, reason: String): Unit = ()
   }
 
-  @silent("never used") private var materializer: ActorMaterializer = _
   @silent("never used") private var remoteRefB: RemoteActorRef = _
   @silent("never used") private var resolvedRef: InternalActorRef = _
   @silent("never used") private var senderStringA: String = _
@@ -106,8 +104,8 @@ class CodecBenchmark {
     system = ActorSystem("CodecBenchmark", config)
     systemB = ActorSystem("systemB", system.settings.config)
 
-    val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)(system)
+    // eager init of materializer
+    SystemMaterializer(system).materializer
 
     uniqueLocalAddress = UniqueAddress(
       system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
@@ -205,7 +203,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
@@ -217,10 +215,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source
-      .fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .via(encodeGraph)
-      .runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).via(encodeGraph).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
@@ -232,10 +227,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source
-      .fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .via(decodeGraph)
-      .runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).via(decodeGraph).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
@@ -247,10 +239,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source
-      .fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .via(encodeDecodeGraph)
-      .runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).via(encodeDecodeGraph).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")

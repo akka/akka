@@ -93,10 +93,15 @@ import org.reactivestreams.Subscriber
     val proc = new VirtualPublisher[In]
     context.materializer match {
       case am: ActorMaterializer =>
-        if (am.settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop)
-          am.scheduleOnce(am.settings.subscriptionTimeoutSettings.timeout, new Runnable {
-            def run(): Unit = proc.onSubscriptionTimeout(am)
+        val timeoutMode =
+          context.effectiveAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeoutMode].mode
+        if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
+          val timeout =
+            context.effectiveAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
+          am.scheduleOnce(timeout, new Runnable {
+            def run(): Unit = proc.onSubscriptionTimeout(am, timeoutMode)
           })
+        }
       case _ => // not possible to setup timeout
     }
     (proc, proc)
@@ -116,9 +121,7 @@ import org.reactivestreams.Subscriber
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val impl = actorMaterializer.actorOf(
-      context,
-      FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
+    val impl = actorMaterializer.actorOf(context, FanoutProcessorImpl.props(context.effectiveAttributes))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
@@ -356,7 +359,7 @@ import org.reactivestreams.Subscriber
       override def preStart(): Unit = {
         // Allocates one additional element to hold stream
         // closed/failure indicators
-        buffer = Buffer(maxBuffer + 1, materializer)
+        buffer = Buffer(maxBuffer + 1, inheritedAttributes)
         setKeepGoing(true)
         pull(in)
       }

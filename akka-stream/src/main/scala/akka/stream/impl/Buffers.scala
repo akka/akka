@@ -32,9 +32,14 @@ private[akka] object Buffer {
   val FixedQueueSize = 128
   val FixedQueueMask = 127
 
+  def apply[T](size: Int, effectiveAttributes: Attributes): Buffer[T] =
+    apply(size, effectiveAttributes.mandatoryAttribute[ActorAttributes.MaxFixedBufferSize].size)
+
+  @deprecated("Use the overload that takes Attributes instead", "2.6.0")
   def apply[T](size: Int, settings: ActorMaterializerSettings): Buffer[T] =
     apply(size, settings.maxFixedBufferSize)
 
+  @deprecated("Use the overload that takes Attributes instead", "2.6.0")
   def apply[T](size: Int, materializer: Materializer): Buffer[T] =
     materializer match {
       case m: ActorMaterializer => apply(size, m.settings.maxFixedBufferSize)

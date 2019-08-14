@@ -14,6 +14,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp => IoTcp }
+import akka.stream.Attributes.Attribute
 import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
@@ -86,9 +87,11 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
     })
 }
 
+@silent("deprecated")
 final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
 
+  // FIXME how do we deal with this vs attributes?
   private val settings = ActorMaterializerSettings(system)
 
   // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
@@ -131,8 +134,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
         options.toList,
         halfClose,
         idleTimeout,
-        bindShutdownTimeout,
-        settings.ioSettings))
+        bindShutdownTimeout))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
@@ -210,8 +212,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           localAddress,
           options.toList,
           halfClose,
-          connectTimeout,
-          settings.ioSettings))
+          connectTimeout))
       .via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
@@ -375,3 +376,11 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 final class TcpIdleTimeoutException(msg: String, @unused timeout: Duration)
     extends TimeoutException(msg: String)
     with NoStackTrace // only used from a single stage
+
+object TcpAttributes {
+  final case class TcpWriteBufferSize(size: Int) extends Attribute {
+    require(size > 0)
+  }
+  def tcpWriteBufferSize(size: Int): Attributes =
+    Attributes(TcpWriteBufferSize(size))
+}

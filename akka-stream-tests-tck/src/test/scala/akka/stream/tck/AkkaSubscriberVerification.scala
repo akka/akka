@@ -5,8 +5,6 @@
 package akka.stream.tck
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializerSettings
-import akka.stream.ActorMaterializer
 import org.reactivestreams.tck.SubscriberBlackboxVerification
 import org.reactivestreams.tck.SubscriberWhiteboxVerification
 import org.reactivestreams.tck.TestEnvironment
@@ -37,6 +35,4 @@ abstract class AkkaSubscriberWhiteboxVerification[T](env: TestEnvironment)
 
 trait AkkaSubscriberVerificationLike {
   implicit def system: ActorSystem
-
-  implicit lazy val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 }

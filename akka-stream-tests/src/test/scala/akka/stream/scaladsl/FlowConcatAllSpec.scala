@@ -5,19 +5,16 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ConstantFun
 
 import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
-class FlowConcatAllSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowConcatAllSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "ConcatAll" must {
 

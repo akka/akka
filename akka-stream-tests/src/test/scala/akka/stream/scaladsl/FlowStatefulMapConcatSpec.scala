@@ -4,15 +4,17 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision }
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
+
 import scala.util.control.NoStackTrace
 
-class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
+class FlowStatefulMapConcatSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-  implicit val materializer = ActorMaterializer(settings)
   val ex = new Exception("TEST") with NoStackTrace
 
   "A StatefulMapConcat" must {
@@ -20,7 +22,7 @@ class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
     "work in happy case" in {
       val script = Script(Seq(2) -> Seq(), Seq(1) -> Seq(1, 1), Seq(3) -> Seq(3), Seq(6) -> Seq(6, 6, 6))
       TestConfig.RandomTestRange.foreach(_ =>
-        runScript(script, settings)(_.statefulMapConcat(() => {
+        runScript(script)(_.statefulMapConcat(() => {
           var prev: Option[Int] = None
           x =>
             prev match {

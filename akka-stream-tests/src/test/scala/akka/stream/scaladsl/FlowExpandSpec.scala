@@ -4,31 +4,35 @@
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.ThreadLocalRandom
+
+import akka.stream.ActorAttributes
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
 
-class FlowExpandSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowExpandSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "Expand" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
-      // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).
-      implicit val materializer = ActorMaterializer(settings.withFuzzing(false))
-
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).expand(Iterator.single).to(Sink.fromSubscriber(subscriber)).run()
+      Source
+        .fromPublisher(publisher)
+        .expand(Iterator.single)
+        .to(Sink.fromSubscriber(subscriber))
+        // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).
+        .withAttributes(ActorAttributes.fuzzingMode(false))
+        .run()
 
       for (i <- 1 to 100) {
         // Order is important here: If the request comes first it will be extrapolated!

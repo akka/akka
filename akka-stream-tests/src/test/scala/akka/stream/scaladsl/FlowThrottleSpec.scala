@@ -21,8 +21,10 @@ import scala.util.control.NoStackTrace
 import akka.Done
 import akka.testkit.TimingTest
 
-class FlowThrottleSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
+class FlowThrottleSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   def genByteString(length: Int) =
     ByteString(new Random().shuffle(0 to 255).take(length).map(_.toByte).toArray)

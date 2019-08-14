@@ -7,18 +7,24 @@ package akka.stream.impl.fusing
 import akka.Done
 import akka.actor.ActorRef
 import akka.stream._
-import akka.stream.scaladsl.{ Keep, Sink, Source }
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
 
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.language.reflectiveCalls
 
-class AsyncCallbackSpec extends AkkaSpec {
-
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(false))
+class AsyncCallbackSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = off
+  """) {
 
   case object Started
   case class Elem(n: Int)

@@ -4,19 +4,20 @@
 
 package akka.stream.scaladsl
 
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import com.github.ghik.silencer.silent
+
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
-class FlowPrefixAndTailSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowPrefixAndTailSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "PrefixAndTail" must {
 
@@ -109,6 +110,7 @@ class FlowPrefixAndTailSpec extends StreamSpec {
     "signal error if substream has been not subscribed in time" in assertAllStagesStopped {
       val ms = 300
 
+      @silent("deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
           ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
@@ -127,6 +129,7 @@ class FlowPrefixAndTailSpec extends StreamSpec {
         s"Substream Source has not been materialized in ${ms} milliseconds")
     }
     "not fail the stream if substream has not been subscribed in time and configured subscription timeout is noop" in assertAllStagesStopped {
+      @silent("deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
           ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(

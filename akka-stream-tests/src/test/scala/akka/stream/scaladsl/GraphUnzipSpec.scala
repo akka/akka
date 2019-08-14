@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.duration._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ClosedShape, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.ClosedShape
+import akka.stream.OverflowStrategy
 
-class GraphUnzipSpec extends StreamSpec {
+import scala.concurrent.duration._
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class GraphUnzipSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "A unzip" must {
     import GraphDSL.Implicits._

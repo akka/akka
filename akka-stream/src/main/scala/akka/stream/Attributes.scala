@@ -12,9 +12,12 @@ import scala.annotation.tailrec
 import scala.reflect.{ classTag, ClassTag }
 import akka.japi.function
 import java.net.URLEncoder
+import java.time.Duration
 
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
+import akka.util.JavaDurationConverters._
 
 import scala.compat.java8.OptionConverters._
 import akka.util.{ ByteString, OptionVal }
@@ -285,10 +288,25 @@ object Attributes {
 
   trait Attribute
 
+  /**
+   * Attributes that are always present (is defined with default values by the materializer)
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
   sealed trait MandatoryAttribute extends Attribute
 
   final case class Name(n: String) extends Attribute
+
+  /**
+   * Each asynchronous piece of a materialized stream topology is executed by one Actor
+   * that manages an input buffer for all inlets of its shape. This attribute configures
+   * the initial and maximal input buffer in number of elements for each inlet.
+   *
+   * Use factory method 'inputBuffer' to create instances.
+   */
   final case class InputBuffer(initial: Int, max: Int) extends MandatoryAttribute
+
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel)
       extends Attribute
   final case object AsyncBoundary extends Attribute
@@ -349,7 +367,9 @@ object Attributes {
     else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
 
   /**
-   * Specifies the initial and maximum size of the input buffer.
+   * Each asynchronous piece of a materialized stream topology is executed by one Actor
+   * that manages an input buffer for all inlets of its shape. This attribute configures
+   * the initial and maximal input buffer in number of elements for each inlet.
    */
   def inputBuffer(initial: Int, max: Int): Attributes = Attributes(InputBuffer(initial, max))
 
@@ -403,6 +423,12 @@ object Attributes {
  */
 object ActorAttributes {
   import Attributes._
+
+  /**
+   * Configures the dispatcher to be used by streams.
+   *
+   * Use factory to create.
+   */
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
 
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
@@ -419,6 +445,8 @@ object ActorAttributes {
    *
    * Operators supporting supervision strategies explicitly document that they do so. If a operator does not document
    * support for these, it should be assumed it does not support supervision.
+   *
+   * For the Java API see [[#withSupervisionStrategy]]
    */
   def supervisionStrategy(decider: Supervision.Decider): Attributes =
     Attributes(SupervisionStrategy(decider))
@@ -428,6 +456,8 @@ object ActorAttributes {
    *
    * Operators supporting supervision strategies explicitly document that they do so. If a operator does not document
    * support for these, it should be assumed it does not support supervision.
+   *
+   * For the Scala API see [[#supervisionStrategy]]
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): Attributes =
     ActorAttributes.supervisionStrategy(decider.apply)
@@ -467,6 +497,119 @@ object ActorAttributes {
       onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
 
+  /**
+   * Enables additional low level troubleshooting logging at DEBUG log level
+   *
+   * Use factory method [[#debugLogging]] to create.
+   */
+  final case class DebugLogging(enabled: Boolean) extends MandatoryAttribute
+
+  /**
+   * Enables additional low level troubleshooting logging at DEBUG log level
+   */
+  def debugLogging(enabled: Boolean): Attributes =
+    Attributes(DebugLogging(enabled))
+
+  /**
+   * Defines what should happen when stream subscriptions times out.
+   *
+   * Use factory method [[#streamSubscriptionTimeoutMode]] to create.
+   */
+  final case class StreamSubscriptionTimeoutMode(mode: StreamSubscriptionTimeoutTerminationMode)
+      extends MandatoryAttribute
+
+  /**
+   * Defines what should happen when stream subscriptions times out.
+   */
+  def streamSubscriptionTimeoutMode(mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
+    Attributes(StreamSubscriptionTimeoutMode(mode))
+
+  /**
+   * Defines a timeout for stream subscription after which action is taken (what action is controlled
+   * by the [[StreamSubscriptionTimeoutMode]])
+   *
+   * Use factory method `streamSubscriptionTimeout` to create.
+   */
+  final case class StreamSubscriptionTimeout(timeout: FiniteDuration) extends MandatoryAttribute
+
+  /**
+   * Scala API: Defines a timeout for stream subscription after which action is taken (what action is controlled
+   * by the [[StreamSubscriptionTimeoutMode]])
+   */
+  def streamSubscriptionTimeout(timeout: FiniteDuration): Attributes =
+    Attributes(StreamSubscriptionTimeout(timeout))
+
+  /**
+   * Java API: Defines a timeout for stream subscription after which action is taken (what action is controlled
+   * by the [[StreamSubscriptionTimeoutMode]])
+   */
+  def streamSubscriptionTimeout(timeout: Duration): Attributes =
+    streamSubscriptionTimeout(timeout.asScala)
+
+  /**
+   * Maximum number of elements emitted in batch if downstream signals large demand.
+   *
+   * Use factory method [[#outputBurstLimit]] to create.
+   */
+  final case class OutputBurstLimit(limit: Int) extends MandatoryAttribute
+
+  /**
+   * Maximum number of elements emitted in batch if downstream signals large demand.
+   */
+  def outputBurstLimit(limit: Int): Attributes =
+    Attributes(OutputBurstLimit(limit))
+
+  /**
+   * Test utility: fuzzing mode means that GraphStage events are not processed
+   * in FIFO order within a fused subgraph, but randomized.
+   *
+   * Use factory method [[#fuzzingMode]] to create.
+   */
+  final case class FuzzingMode(enabled: Boolean) extends MandatoryAttribute
+
+  /**
+   * Test utility: fuzzing mode means that GraphStage events are not processed
+   * in FIFO order within a fused subgraph, but randomized.
+   */
+  def fuzzingMode(enabled: Boolean): Attributes =
+    Attributes(FuzzingMode(enabled))
+
+  /**
+   * Configure the maximum buffer size for which a FixedSizeBuffer will be preallocated.
+   * This defaults to a large value because it is usually better to fail early when
+   * system memory is not sufficient to hold the buffer.
+   *
+   * Use factory method [[#maxFixedBufferSize]] to create.
+   */
+  final case class MaxFixedBufferSize(size: Int) extends MandatoryAttribute
+
+  /**
+   * Configure the maximum buffer size for which a FixedSizeBuffer will be preallocated.
+   * This defaults to a large value because it is usually better to fail early when
+   * system memory is not sufficient to hold the buffer.
+   */
+  def maxFixedBufferSize(size: Int): Attributes =
+    Attributes(MaxFixedBufferSize(size: Int))
+
+  /**
+   * Limit for number of messages that can be processed synchronously in stream to substream communication.
+   *
+   * Use factory method [[#syncProcessingLimit]] to create.
+   */
+  final case class SyncProcessingLimit(limit: Int) extends MandatoryAttribute
+
+  /**
+   * Limit for number of messages that can be processed synchronously in stream to substream communication
+   */
+  def syncProcessingLimit(limit: Int): Attributes =
+    Attributes(SyncProcessingLimit(limit))
+
+  /**
+   * FIXME Is this really needed anymore now that we have indirect dispatcher config?
+   */
+  final case class BlockingIoDispatcher(dispatcher: String) extends MandatoryAttribute
+  def blockingIoDispatcher(dispatcher: String): Attributes =
+    Attributes(BlockingIoDispatcher(dispatcher))
 }
 
 /**
@@ -476,14 +619,57 @@ object ActorAttributes {
 object StreamRefAttributes {
   import Attributes._
 
-  /** Attributes specific to stream refs. */
+  /** Attributes specific to stream refs.
+   *
+   * Not for user extension.
+   */
+  @DoNotInherit
   sealed trait StreamRefAttribute extends Attribute
 
   final case class SubscriptionTimeout(timeout: FiniteDuration) extends StreamRefAttribute
+  final case class BufferCapacity(capacity: Int) extends StreamRefAttribute {
+    require(capacity > 0, "Buffer capacity must be > 0")
+  }
+  final case class DemandRedeliveryInterval(timeout: FiniteDuration) extends StreamRefAttribute
+  final case class FinalTerminationSignalDeadline(timeout: FiniteDuration) extends StreamRefAttribute
 
   /**
-   * Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
+   * Scala API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
    */
   def subscriptionTimeout(timeout: FiniteDuration): Attributes = Attributes(SubscriptionTimeout(timeout))
+
+  /**
+   * Java API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
+   */
+  def subscriptionTimeout(timeout: Duration): Attributes = subscriptionTimeout(timeout.asScala)
+
+  /**
+   * Specifies the size of the buffer on the receiving side that is eagerly filled even without demand.
+   */
+  def bufferCapacity(capacity: Int): Attributes = Attributes(BufferCapacity(capacity))
+
+  /**
+   *  Scala API: If no new elements arrive within this timeout, demand is redelivered.
+   */
+  def demandRedeliveryInterval(timeout: FiniteDuration): Attributes =
+    Attributes(DemandRedeliveryInterval(timeout))
+
+  /**
+   *  Java API: If no new elements arrive within this timeout, demand is redelivered.
+   */
+  def demandRedeliveryInterval(timeout: Duration): Attributes =
+    demandRedeliveryInterval(timeout.asScala)
+
+  /**
+   * Scala API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
+   */
+  def finalTerminationSignalDeadline(timeout: FiniteDuration): Attributes =
+    Attributes(FinalTerminationSignalDeadline(timeout))
+
+  /**
+   * Java API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
+   */
+  def finalTerminationSignalDeadline(timeout: Duration): Attributes =
+    finalTerminationSignalDeadline(timeout.asScala)
 
 }

@@ -4,17 +4,18 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, OverflowStrategy }
+
+import akka.stream.OverflowStrategy
 import akka.stream.testkit._
 
-class FlowBatchSpec extends StreamSpec {
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowBatchSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "Batch" must {
 

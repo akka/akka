@@ -32,14 +32,13 @@ class StreamBuffersRateSpec extends AkkaSpec {
   }
 
   "Demonstrate buffer sizes" in {
-    //#materializer-buffer
-    val materializer =
-      ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 64, maxSize = 64))
-    //#materializer-buffer
-
     //#section-buffer
     val section = Flow[Int].map(_ * 2).async.addAttributes(Attributes.inputBuffer(initial = 1, max = 1)) // the buffer size of this map is 1
     val flow = section.via(Flow[Int].map(_ / 2)).async // the buffer size of this map is the default
+    val runnableGraph =
+      Source(1 to 10).via(flow).to(Sink.foreach(elem => println(elem)))
+
+    val withOverriddenDefaults = runnableGraph.withAttributes(Attributes.inputBuffer(initial = 64, max = 64))
     //#section-buffer
   }
 

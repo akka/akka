@@ -4,13 +4,10 @@
 
 package akka.remote.artery
 
-import scala.concurrent.duration._
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
@@ -20,10 +17,11 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.OptionVal
 
-class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
+import scala.concurrent.duration._
 
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
+class OutboundHandshakeSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)

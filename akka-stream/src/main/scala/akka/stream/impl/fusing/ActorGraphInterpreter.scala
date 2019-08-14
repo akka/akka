@@ -10,16 +10,24 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.Done
 import akka.actor._
-import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
-import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
-import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
+import akka.stream.impl.fusing.GraphInterpreter.Connection
+import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
+import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
+import akka.stream.impl.SubFusingActorMaterializerImpl
+import akka.stream.impl._
 import akka.stream.snapshot._
-import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
 import akka.util.OptionVal
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -464,8 +472,7 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class GraphInterpreterShell(
     var connections: Array[Connection],
     var logics: Array[GraphStageLogic],
-    settings: ActorMaterializerSettings,
-    attributes: Attributes,
+    val attributes: Attributes,
     val mat: ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
@@ -512,9 +519,11 @@ import scala.util.control.NonFatal
     override def execute(eventLimit: Int): Int = {
       if (waitingForShutdown) {
         subscribesPending = 0
+        val subscriptionTimeout = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
         tryAbort(
-          new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
-          s"inputs or outputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
+          new TimeoutException(
+            "Streaming actor has been already stopped processing (normally), but not all of its " +
+            s"inputs or outputs have been subscribed in [${subscriptionTimeout}}]. Aborting actor now."))
       }
       0
     }
@@ -529,7 +538,7 @@ import scala.util.control.NonFatal
       if (currentInterpreter == null || (currentInterpreter.context ne self))
         self ! asyncInput
       else enqueueToShortCircuit(asyncInput)
-    }, settings.fuzzingMode, self)
+    }, attributes.mandatoryAttribute[ActorAttributes.FuzzingMode].enabled, self)
 
   // TODO: really needed?
   private var subscribesPending = 0
@@ -618,7 +627,8 @@ import scala.util.control.NonFatal
         if (canShutDown) interpreterCompleted = true
         else {
           waitingForShutdown = true
-          mat.scheduleOnce(settings.subscriptionTimeoutSettings.timeout, new Runnable {
+          val subscriptionTimeout = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
+          mat.scheduleOnce(subscriptionTimeout, new Runnable {
             override def run(): Unit = self ! Abort(GraphInterpreterShell.this)
           })
         }
@@ -703,7 +713,7 @@ import scala.util.control.NonFatal
     }
 
   //this limits number of messages that can be processed synchronously during one actor receive.
-  private val eventLimit: Int = _initial.mat.settings.syncProcessingLimit
+  private val eventLimit: Int = _initial.attributes.mandatoryAttribute[ActorAttributes.SyncProcessingLimit].limit
   private var currentLimit: Int = eventLimit
   //this is a var in order to save the allocation when no short-circuiting actually happens
   private var shortCircuitBuffer: util.ArrayDeque[Any] = null

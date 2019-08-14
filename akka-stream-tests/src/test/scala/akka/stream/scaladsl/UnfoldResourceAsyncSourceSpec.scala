@@ -8,12 +8,14 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.ActorAttributes
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.stream.{ ActorMaterializer, _ }
+import akka.stream.ActorMaterializer
+import akka.stream.Supervision
 import akka.testkit.{ TestLatch, TestProbe }
 
 import scala.concurrent.duration._
@@ -61,8 +63,6 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   import UnfoldResourceAsyncSourceSpec._
 
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
   import system.dispatcher
 
   "Unfold Resource Async Source" must {

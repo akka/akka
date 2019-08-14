@@ -9,7 +9,7 @@ import akka.actor.ActorRef
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.annotation.InternalApi
-import akka.stream.ActorMaterializerSettings
+import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
@@ -111,20 +111,20 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @InternalApi private[akka] object FanoutProcessorImpl {
-  def props(attributes: Attributes, actorMaterializerSettings: ActorMaterializerSettings): Props =
-    Props(new FanoutProcessorImpl(attributes, actorMaterializerSettings)).withDeploy(Deploy.local)
+  def props(attributes: Attributes): Props =
+    Props(new FanoutProcessorImpl(attributes)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
-    extends ActorProcessorImpl(attributes, _settings) {
+@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) {
 
-  if (settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+  val timeoutMode = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeoutMode].mode
+  if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
     import context.dispatcher
-    context.system.scheduler
-      .scheduleOnce(_settings.subscriptionTimeoutSettings.timeout, self, ActorProcessorImpl.SubscriptionTimeout)
+    val timeout = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
+    context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout)
   }
 
   override val primaryOutputs: FanoutOutputs = {
@@ -151,7 +151,7 @@ import org.reactivestreams.Subscriber
     case ActorProcessorImpl.SubscriptionTimeout =>
       import StreamSubscriptionTimeoutTerminationMode._
       if (!primaryOutputs.subscribed) {
-        settings.subscriptionTimeoutSettings.mode match {
+        timeoutMode match {
           case CancelTermination =>
             primaryInputs.cancel()
             context.stop(self)

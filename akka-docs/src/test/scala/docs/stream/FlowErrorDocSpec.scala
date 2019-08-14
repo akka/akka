@@ -5,12 +5,9 @@
 package docs.stream
 
 import scala.concurrent.Await
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.Supervision
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
-import akka.stream.Attributes
 import akka.stream.ActorAttributes
 import scala.concurrent.duration._
 
@@ -35,9 +32,13 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
-    implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(decider))
     val source = Source(0 to 5).map(100 / _)
-    val result = source.runWith(Sink.fold(0)(_ + _))
+    val runnableGraph =
+      source.toMat(Sink.fold(0)(_ + _))(Keep.right)
+
+    val withCustomSupervision = runnableGraph.withAttributes(ActorAttributes.supervisionStrategy(decider))
+
+    val result = withCustomSupervision.run()
     // the element causing division by zero will be dropped
     // result here will be a Future completed with Success(228)
     //#resume

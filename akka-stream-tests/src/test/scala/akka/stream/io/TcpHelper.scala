@@ -4,17 +4,19 @@
 
 package akka.stream.io
 
-import akka.actor._
-import akka.io.Tcp.{ ConnectionClosed, ResumeReading }
-import akka.io.{ IO, Tcp }
-import akka.stream.testkit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.{ TestKitBase, TestProbe }
-import akka.util.ByteString
 import java.net.InetSocketAddress
-import scala.collection.immutable.Queue
-import akka.testkit.SocketUtil.temporaryServerAddress
 
+import akka.actor._
+import akka.io.Tcp.ConnectionClosed
+import akka.io.Tcp.ResumeReading
+import akka.io.IO
+import akka.io.Tcp
+import akka.stream.testkit._
+import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.testkit.TestProbe
+import akka.util.ByteString
+
+import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 
 object TcpHelper {
@@ -114,12 +116,8 @@ object TcpHelper {
 
 }
 
-trait TcpHelper { this: TestKitBase =>
+trait TcpHelper { this: TcpSpec =>
   import akka.stream.io.TcpHelper._
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   class Server(val address: InetSocketAddress = temporaryServerAddress()) {
     val serverProbe = TestProbe()

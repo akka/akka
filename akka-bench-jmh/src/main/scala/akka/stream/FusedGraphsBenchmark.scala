@@ -4,13 +4,16 @@
 
 package akka.stream
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import org.openjdk.jmh.annotations.{ OperationsPerInvocation, _ }
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations.OperationsPerInvocation
+import org.openjdk.jmh.annotations._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -93,7 +96,11 @@ class IdentityStage extends GraphStage[FlowShape[MutableElement, MutableElement]
 class FusedGraphsBenchmark {
   import FusedGraphsBenchmark._
 
-  implicit val system = ActorSystem("test")
+  implicit val system = ActorSystem(
+    "test",
+    ConfigFactory.parseString(s"""
+      akka.stream.materializer.sync-processing-limit = ${Int.MaxValue}
+    """))
   var materializer: ActorMaterializer = _
   var testElements: Array[MutableElement] = _
 
@@ -110,9 +117,8 @@ class FusedGraphsBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system).withFuzzing(false).withSyncProcessingLimit(Int.MaxValue)
-
-    materializer = ActorMaterializer(settings)
+    // eager init of materializer
+    SystemMaterializer(system).materializer
     testElements = Array.fill(ElementCount)(new MutableElement(0))
     val addFunc = (x: MutableElement) => { x.value += 1; x }
 

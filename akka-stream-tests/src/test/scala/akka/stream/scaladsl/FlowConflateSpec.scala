@@ -4,22 +4,24 @@
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Attributes.inputBuffer
-import akka.stream.Supervision.{ restartingDecider, resumingDecider }
+import akka.stream.Supervision.restartingDecider
+import akka.stream.Supervision.resumingDecider
+import akka.stream._
 import akka.stream.testkit.Utils.TE
+import akka.stream.testkit._
 import akka.testkit.TestLatch
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-import akka.stream._
-import akka.stream.testkit._
 
-class FlowConflateSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowConflateSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "Conflate" must {
 

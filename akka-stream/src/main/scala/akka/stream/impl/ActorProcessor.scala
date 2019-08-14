@@ -6,11 +6,12 @@ package akka.stream.impl
 
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, Attributes }
+import akka.stream.{ AbruptTerminationException, Attributes }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnError, OnNext }
 import org.reactivestreams.{ Processor, Subscriber, Subscription }
 import akka.event.Logging
+import akka.stream.ActorAttributes
 import akka.util.unused
 
 /**
@@ -257,12 +258,12 @@ private[akka] object ActorProcessorImpl {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ActorProcessorImpl(
-    attributes: Attributes,
-    val settings: ActorMaterializerSettings)
+@InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes)
     extends Actor
     with ActorLogging
     with Pump {
+
+  private val debugLoggingEnabled = attributes.mandatoryAttribute[ActorAttributes.DebugLogging].enabled
 
   protected val primaryInputs: Inputs = {
     val initialInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].initial
@@ -290,7 +291,7 @@ private[akka] object ActorProcessorImpl {
   protected def onError(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    if (settings.debugLogging)
+    if (debugLoggingEnabled)
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     primaryOutputs.error(e)

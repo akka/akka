@@ -42,7 +42,7 @@ private object ActorRefSource {
 
       private val buffer: OptionVal[Buffer[T]] =
         if (maxBuffer != 0)
-          OptionVal(Buffer(maxBuffer, eagerMaterializer))
+          OptionVal(Buffer(maxBuffer, inheritedAttributes))
         else {
           OptionVal.None // for backwards compatibility with old actor publisher based implementation
         }
