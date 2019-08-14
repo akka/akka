@@ -322,11 +322,9 @@ object ClusterSingletonManager {
 
       def handleInitial(state: CurrentClusterState): Unit = {
         // all members except Joining and WeaklyUp
-        val allMembersByAge = immutable.SortedSet
+        membersByAge = immutable.SortedSet
           .empty(ageOrdering)
           .union(state.members.filter(m => m.upNumber != Int.MaxValue && matchingRole(m)))
-        // membersByAge only with Up members, e.g. not Exiting
-        membersByAge = allMembersByAge.filter(m => m.status == MemberStatus.Up)
 
         // If there is some removal in progress of an older node it's not safe to immediately become oldest,
         // removal of younger nodes doesn't matter. Note that it can also be started via restart after
@@ -334,7 +332,7 @@ object ClusterSingletonManager {
         val selfUpNumber = state.members
           .collectFirst { case m if m.uniqueAddress == cluster.selfUniqueAddress => m.upNumber }
           .getOrElse(Int.MaxValue)
-        val oldest = allMembersByAge.takeWhile(_.upNumber <= selfUpNumber)
+        val oldest = membersByAge.takeWhile(_.upNumber <= selfUpNumber)
         val safeToBeOldest = !oldest.exists { m =>
           m.status == MemberStatus.Down || m.status == MemberStatus.Exiting || m.status == MemberStatus.Leaving
         }
