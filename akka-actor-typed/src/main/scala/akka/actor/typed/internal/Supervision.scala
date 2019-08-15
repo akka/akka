@@ -69,19 +69,22 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
   }
 
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
+    val msg = s"Supervisor $this saw failure:"
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
       strategy.logLevel match {
         case Level.ERROR =>
-          ctx.asScala.log.error(s"Supervisor $this saw failure:", unwrapped)
+          ctx.asScala.log.error(msg, unwrapped)
         case Level.WARN =>
-          ctx.asScala.log.warn(s"Supervisor $this saw failure:", unwrapped)
+          ctx.asScala.log.warn(msg, unwrapped)
         case Level.INFO =>
-          ctx.asScala.log.info(s"Supervisor $this saw failure:", unwrapped)
+          ctx.asScala.log.info(msg, unwrapped)
         case Level.DEBUG =>
-          ctx.asScala.log.debug(s"Supervisor $this saw failure:", unwrapped)
+          ctx.asScala.log.debug(msg, unwrapped)
+        case Level.TRACE =>
+          ctx.asScala.log.trace(msg, unwrapped)
         //TODO check this debug case is actually best option when other level is found
-        case _ => ctx.asScala.log.debug(s"Supervisor $this saw failure:", unwrapped)
+        case _ => ctx.asScala.log.debug(msg, unwrapped)
       }
     }
   }

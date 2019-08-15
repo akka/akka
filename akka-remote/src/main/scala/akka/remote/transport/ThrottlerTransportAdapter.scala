@@ -232,7 +232,7 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[transport] object ThrottlerManager {
   final case class Checkin(origin: Address, handle: ThrottlerHandle) extends NoSerializationVerificationNeeded
 
@@ -250,7 +250,7 @@ private[transport] object ThrottlerManager {
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[transport] class ThrottlerManager(wrappedTransport: Transport)
     extends ActorTransportAdapterManager
     with ActorLogging {
@@ -349,7 +349,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
   }
 
   // silent because of use of isTerminated
-  @silent
+  @silent("deprecated")
   private def askModeWithDeathCompletion(target: ActorRef, mode: ThrottleMode)(
       implicit timeout: Timeout): Future[SetThrottleAck.type] = {
     if (target.isTerminated) Future.successful(SetThrottleAck)
@@ -420,7 +420,7 @@ private[transport] object ThrottledAssociation {
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[transport] class ThrottledAssociation(
     val manager: ActorRef,
     val associationHandler: AssociationEventListener,
@@ -584,7 +584,7 @@ private[transport] class ThrottledAssociation(
 /**
  * INTERNAL API
  */
-@silent
+@silent("deprecated")
 private[transport] final case class ThrottlerHandle(_wrappedHandle: AssociationHandle, throttlerActor: ActorRef)
     extends AbstractTransportAdapterHandle(_wrappedHandle, SchemeIdentifier) {
 

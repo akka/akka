@@ -43,7 +43,7 @@ private[akka] class SSLSettings(config: Config) {
  * The `SSLEngine` is created via the configured [[SSLEngineProvider]].
  */
 @ccompatUsedUntil213
-@silent // deprecated
+@silent("deprecated")
 private[akka] object NettySSLSupport {
 
   /**

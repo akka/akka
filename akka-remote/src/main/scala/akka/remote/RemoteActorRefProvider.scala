@@ -659,7 +659,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
-  @silent
+  @silent("deprecated")
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {

@@ -4,7 +4,6 @@
 
 package akka.actor.typed.scaladsl.adapter
 
-import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.actor.InvalidMessageException
@@ -70,7 +69,7 @@ object AdapterSpec {
         }
       }
       .receiveSignal {
-        case (context, Terminated(ref)) =>
+        case (_, Terminated(_)) =>
           probe ! "terminated"
           Behaviors.same
       }
@@ -146,7 +145,7 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.receive { (context, message) =>
+    Behaviors.receive { (_, message) =>
       message match {
         case Ping(replyTo) =>
           replyTo ! "pong"

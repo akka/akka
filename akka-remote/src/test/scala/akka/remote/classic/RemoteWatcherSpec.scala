@@ -67,7 +67,7 @@ object RemoteWatcherSpec {
 
 }
 
-@silent // deprecated
+@silent("deprecated")
 class RemoteWatcherSpec extends AkkaSpec("""
      akka {
        loglevel = INFO

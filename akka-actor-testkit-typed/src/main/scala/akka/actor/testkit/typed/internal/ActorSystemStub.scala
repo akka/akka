@@ -34,7 +34,8 @@ import org.slf4j.helpers.SubstituteLoggerFactory
 /**
  * INTERNAL API
  */
-@silent @InternalApi private[akka] final class ActorSystemStub(val name: String)
+@silent
+@InternalApi private[akka] final class ActorSystemStub(val name: String)
     extends ActorSystem[Nothing]
     with ActorRef[Nothing]
     with ActorRefImpl[Nothing]

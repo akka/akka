@@ -32,7 +32,7 @@ final class AutoDowning(system: ActorSystem) extends DowningProvider {
 
   private def clusterSettings = Cluster(system).settings
 
-  @silent
+  @silent("deprecated")
   override def downRemovalMargin: FiniteDuration = clusterSettings.DownRemovalMargin
 
   override def downingActorProps: Option[Props] =

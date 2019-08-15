@@ -5,7 +5,6 @@
 package akka.actor.typed.eventstream
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import org.scalatest.WordSpecLike

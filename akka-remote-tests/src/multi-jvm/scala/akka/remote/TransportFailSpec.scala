@@ -97,7 +97,7 @@ object TransportFailSpec {
  * This was fixed by not stopping the ReliableDeliverySupervisor so that the
  * receive buffer was preserved.
  */
-@silent // deprecated
+@silent("deprecated")
 abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConfig) {
   import TransportFailConfig._
   import TransportFailSpec._

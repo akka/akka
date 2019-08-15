@@ -22,7 +22,6 @@ import scala.reflect.ClassTag
       staticMdc: Map[String, String],
       mdcForMessage: T => Map[String, String],
       behavior: Behavior[T]): Behavior[T] = {
-
     BehaviorImpl.intercept(() => new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage))(behavior)
   }
 

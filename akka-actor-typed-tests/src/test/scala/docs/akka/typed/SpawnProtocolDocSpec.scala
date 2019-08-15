@@ -11,6 +11,7 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import docs.akka.typed.IntroSpec.HelloWorld
 import org.scalatest.WordSpecLike
+import com.github.ghik.silencer.silent
 
 //#imports1
 import akka.actor.typed.Behavior
@@ -30,6 +31,8 @@ import akka.actor.typed.Scheduler
 
 object SpawnProtocolDocSpec {
 
+  // Silent because we want to name the unused 'context' parameter
+  @silent("never used")
   //#main
   object HelloWorldMain {
     val main: Behavior[SpawnProtocol.Command] =

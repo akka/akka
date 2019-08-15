@@ -153,7 +153,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent
+  @silent("deprecated")
   final def scheduleWithFixedDelay(
       initialDelay: FiniteDuration,
       delay: FiniteDuration,
@@ -228,7 +228,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent
+  @silent("deprecated")
   final def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, runnable)(executor)
@@ -297,7 +297,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent
+  @silent("deprecated")
   final def scheduleAtFixedRate(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
@@ -350,7 +350,7 @@ trait Scheduler {
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  @silent
+  @silent("deprecated")
   final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(
       implicit
       executor: ExecutionContext,

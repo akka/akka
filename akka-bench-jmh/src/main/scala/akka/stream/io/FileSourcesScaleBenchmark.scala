@@ -35,7 +35,7 @@ class FileSourcesScaleBenchmark {
   val files: Seq[Path] = {
     val line = ByteString("x" * 2048 + "\n")
     (1 to FILES_NUMBER).map(i => {
-      val f = Files.createTempFile(getClass.getName, i + ".bench.tmp")
+      val f = Files.createTempFile(getClass.getName, s"$i.bench.tmp")
 
       val ft = Source
         .fromIterator(() => Iterator.continually(line))

@@ -23,7 +23,7 @@ import com.github.ghik.silencer.silent
  * Extension that keeps track of remote metrics, such
  * as max size of different message types.
  */
-@silent // deprecated
+@silent("deprecated")
 private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] with ExtensionIdProvider {
   override def get(system: ActorSystem): RemoteMetrics = super.get(system)
 
@@ -59,7 +59,7 @@ private[akka] class RemoteMetricsOff extends RemoteMetrics {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteMetrics {
 
   private val logFrameSizeExceeding: Int =

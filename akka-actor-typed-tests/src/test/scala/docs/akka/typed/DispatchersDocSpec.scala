@@ -41,7 +41,7 @@ object DispatchersDocSpec {
 
   val yourBehavior: Behavior[String] = Behaviors.same
 
-  val example = Behaviors.receive[Any] { (context, message) =>
+  val example = Behaviors.receive[Any] { (context, _) =>
     //#spawn-dispatcher
     import akka.actor.typed.DispatcherSelector
 

@@ -17,14 +17,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
 
-  val nonFatalWarningsFor = Set(
-    // We allow warnings in docs to get the 'snippets' right
-    "akka-docs",
-    // To be reviewed
-    "akka-actor-typed-tests",
-    "akka-bench-jmh",
-    "akka-bench-jmh-typed",
-    "akka-stream-tests-tck")
+  // We allow warnings in docs to get the 'snippets' right
+  val nonFatalWarningsFor = Set("akka-docs")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 

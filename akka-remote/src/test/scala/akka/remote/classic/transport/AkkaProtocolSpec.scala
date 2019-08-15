@@ -43,7 +43,7 @@ object AkkaProtocolSpec {
 
 }
 
-@silent // deprecated
+@silent("deprecated")
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString("""
@@ -217,7 +217,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       })
     }
 
-    "in outbound mode delay readiness until hadnshake finished" in {
+    "in outbound mode delay readiness until handshake finished" in {
       val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(handle)
 
@@ -235,7 +235,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, 42, None))
-      failureDetector.called should ===(true)
+      awaitCond(failureDetector.called)
 
       // keeps sending heartbeats
       awaitCond(lastActivityIsHeartbeat(registry))

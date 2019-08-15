@@ -163,7 +163,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
    * Verify that the version is the same for all given artifacts.
    */
   def checkSameVersion(productName: String, dependencies: immutable.Seq[String], logWarning: Boolean): Boolean = {
-    @silent
+    @silent("deprecated")
     val filteredVersions = versions.filterKeys(dependencies.toSet)
     val values = filteredVersions.values.toSet
     if (values.size > 1) {

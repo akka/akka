@@ -126,7 +126,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
 
 }
 
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class ClusterScope extends Scope
 

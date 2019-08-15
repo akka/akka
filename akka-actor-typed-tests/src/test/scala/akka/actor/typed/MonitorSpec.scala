@@ -16,7 +16,7 @@ class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "monitor messages" in {
       val probe = TestProbe[String]()
 
-      val beh: Behavior[String] = Behaviors.monitor(probe.ref, Behaviors.receiveMessage(message => Behaviors.same))
+      val beh: Behavior[String] = Behaviors.monitor(probe.ref, Behaviors.receiveMessage(_ => Behaviors.same))
       val ref: ActorRef[String] = spawn(beh)
 
       ref ! "message"
@@ -31,7 +31,7 @@ class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.monitor(probe.ref, beh)
 
       val beh: Behavior[String] =
-        monitor(monitor(Behaviors.receiveMessage(message => Behaviors.same)))
+        monitor(monitor(Behaviors.receiveMessage(_ => Behaviors.same)))
       val ref: ActorRef[String] = spawn(beh)
 
       ref ! "message 1"
@@ -47,7 +47,7 @@ class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.monitor(probe.ref, beh)
 
       def next: Behavior[String] =
-        monitor(Behaviors.receiveMessage(message => next))
+        monitor(Behaviors.receiveMessage(_ => next))
       val ref: ActorRef[String] = spawn(next)
 
       ref ! "message 1"

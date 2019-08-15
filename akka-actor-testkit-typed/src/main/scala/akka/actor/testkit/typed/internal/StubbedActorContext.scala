@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRefProvider
 import org.slf4j.Logger
-import org.slf4j.helpers.SubstituteLoggerFactory
+import org.slf4j.helpers.{ SubstituteLogger, SubstituteLoggerFactory }
 
 /**
  * INTERNAL API
@@ -76,7 +76,8 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override val system = new ActorSystemStub("StubbedActorContext")
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
-  private val loggingAdapter = new SubstituteLoggerFactory().getLogger("StubbedLoggingAdapter")
+  private val loggingAdapter: SubstituteLogger =
+    new SubstituteLoggerFactory().getLogger("StubbedLoggingAdapter").asInstanceOf[SubstituteLogger]
   private var unhandled: List[T] = Nil
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values.map(_.context.self)

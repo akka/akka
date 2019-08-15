@@ -40,7 +40,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   protected def classify(event: Any): Class[_] = event.getClass
 
   // TODO consider avoiding the deprecated `isTerminated`?
-  @silent
+  @silent("deprecated")
   protected def publish(event: Any, subscriber: ActorRef) = {
     if (sys == null && subscriber.isTerminated) unsubscribe(subscriber)
     else subscriber ! event

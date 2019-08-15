@@ -102,7 +102,7 @@ object SystemMessageDeliveryStressTest {
 
 }
 
-@silent // deprecated
+@silent("deprecated")
 abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
     extends AkkaSpec(ConfigFactory.parseString(cfg).withFallback(SystemMessageDeliveryStressTest.baseConfig))
     with ImplicitSender

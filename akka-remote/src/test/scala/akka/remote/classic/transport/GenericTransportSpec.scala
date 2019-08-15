@@ -16,7 +16,7 @@ import scala.concurrent.{ Await, Future }
 
 import com.github.ghik.silencer.silent
 
-@silent // deprecated
+@silent("deprecated")
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
     extends AkkaSpec("""
          akka.remote.artery.enabled = false
