@@ -266,7 +266,7 @@ and `runWith()` methods defined on `Source` and `Flow` elements as well as a sma
 well-known sinks, such as @scala[`runForeach(el => ...)`]@java[`runForeach(el -> ...)`]
 (being an alias to @scala[`runWith(Sink.foreach(el => ...))`]@java[`runWith(Sink.foreach(el -> ...))`]).
 
-Materialization is currently performed synchronously on the materializing thread by an `ActorSystem` global `Materializer`.
+Materialization is performed synchronously on the materializing thread by an `ActorSystem` global `Materializer`.
 The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
 `MaterializationSettings` while constructing the `ActorMaterializer`.

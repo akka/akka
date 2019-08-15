@@ -25,14 +25,9 @@ object SystemMaterializer extends ExtensionId[SystemMaterializer] with Extension
     new SystemMaterializer(system)
 }
 
-final class SystemMaterializer(_system: ExtendedActorSystem) extends Extension {
+final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   val materializer = {
-    val settings = ActorMaterializerSettings(_system)
-    ActorMaterializer.systemMaterializer(settings, "default", _system)
+    val settings = ActorMaterializerSettings(system)
+    ActorMaterializer.systemMaterializer(settings, "default", system)
   }
-  // FIXME not 100% sure about this, it will anyways stop when the system stops the actors
-  _system.registerOnTermination {
-    materializer.shutdown()
-  }
-
 }

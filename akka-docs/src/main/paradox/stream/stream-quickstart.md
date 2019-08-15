@@ -113,7 +113,7 @@ whether the stream terminated normally or exceptionally.
 
 ### Browser-embedded example
 
-FIXME: fiddle won't work until Akka 2.6 is released and fiddle updated with that
+FIXME: fiddle won't work until Akka 2.6 is released and fiddle updated with that [#27510](https://github.com/akka/akka/issues/27510)
  
 <a name="here-is-another-example-that-you-can-edit-and-run-in-the-browser-"></a>
 Here is another example that you can edit and run in the browser:
