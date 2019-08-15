@@ -157,7 +157,6 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       val l = Lmdb(env, db, keyBuffer, valueBuffer)
       _lmdb = OptionVal.Some(l)
-      log.debug("LMDB initialized")
       l
   }
 
@@ -225,7 +224,6 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           }
         } catch {
           case NonFatal(e) =>
-            log.error(e, "Failed to load durable dis data. FIXME remove")
             throw new LoadFailed("failed to load durable distributed-data", e)
         } finally {
           Try(tx.close())
@@ -239,10 +237,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   def active: Receive = {
     case Store(key, data, reply) =>
-      log.debug("Store key: {} reply: {} writeBehind {}", key, reply, writeBehindInterval.length)
       try {
         lmdb() // init
-        val startTime = System.nanoTime()
         if (writeBehindInterval.length == 0) {
           dbPut(OptionVal.None, key, data)
         } else {
@@ -250,8 +246,6 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
             context.system.scheduler.scheduleOnce(writeBehindInterval, self, WriteBehind)(context.dispatcher)
           pending.put(key, data)
         }
-        import akka.util.PrettyDuration._
-        log.debug("Write complete in " + (System.nanoTime() - startTime).nanos.pretty)
         reply match {
           case Some(StoreReply(successMsg, _, replyTo)) =>
             replyTo ! successMsg
