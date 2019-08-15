@@ -272,7 +272,7 @@ lazy val docs = akkaModule("akka-docs")
     paradoxRoots := List(
       // Intentional roots:
       "index.html",
-      "typed-actors.html"
+      "typed-actors.html",
       // (to be) fixed on master:
       "common/io-layer.html",
       "fault-tolerance-sample.html",
