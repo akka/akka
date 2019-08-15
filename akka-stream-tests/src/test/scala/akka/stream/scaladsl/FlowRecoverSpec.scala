@@ -8,6 +8,7 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.EventFilter
 
 import scala.util.control.NoStackTrace
 
@@ -63,6 +64,17 @@ class FlowRecoverSpec extends StreamSpec {
         .runWith(TestSink.probe[Int])
         .request(1)
         .expectComplete()
+    }
+
+    "not log error when exception is thrown from recover block" in assertAllStagesStopped {
+      val ex = new IndexOutOfBoundsException("quite intuitive")
+      EventFilter[IndexOutOfBoundsException](occurrences = 0).intercept {
+        Source
+          .failed(new IllegalStateException("expected illegal state"))
+          .recover { case _: IllegalStateException => throw ex }
+          .runWith(TestSink.probe[Int])
+          .expectSubscriptionAndError(ex)
+      }
     }
   }
 }
