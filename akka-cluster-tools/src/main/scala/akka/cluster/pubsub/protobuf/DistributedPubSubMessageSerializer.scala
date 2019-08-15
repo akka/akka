@@ -7,7 +7,7 @@ package akka.cluster.pubsub.protobuf
 import akka.serialization._
 import akka.actor.{ Address, ExtendedActorSystem }
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
-import akka.protobuf.{ ByteString, MessageLite }
+import akka.protobufv3.internal.{ ByteString, MessageLite }
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec

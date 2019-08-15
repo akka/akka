@@ -146,7 +146,7 @@ The next example is more realistic and demonstrates some important patterns:
 First we will show this example in a functional style, and then the same example is shown with an
 @ref:[Object-oriented style](#object-oriented-style). Which style you choose to use is a matter of
 taste and both styles can be mixed depending on which is best for a specific actor. Considerations
-for the choice is provided in the @ref:[Style Guide](style-guide.md#functional-vs-object-oriented-style).
+for the choice is provided in the @ref:[Style Guide](style-guide.md#functional-versus-object-oriented-style).
 
 Consider an Actor that runs a chat room: client Actors may connect by sending
 a message that contains their screen name and then they can post messages. The
@@ -284,7 +284,7 @@ for the actor behavior is defined and mutable state is kept inside of it as fiel
 
 Which style you choose to use is a matter of taste and both styles can be mixed depending on which
 is best for a specific actor. Considerations for the choice is provided in the
-@ref:[Style Guide](style-guide.md#functional-vs-object-oriented-style).
+@ref:[Style Guide](style-guide.md#functional-versus-object-oriented-style).
 
 #### AbstractBehavior API
 

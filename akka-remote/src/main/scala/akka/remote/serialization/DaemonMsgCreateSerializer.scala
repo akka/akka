@@ -7,7 +7,7 @@ package akka.remote.serialization
 import scala.collection.immutable
 
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
-import akka.protobuf.ByteString
+import akka.protobufv3.internal.ByteString
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
 import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }

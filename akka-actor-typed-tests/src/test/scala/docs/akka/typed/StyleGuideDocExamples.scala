@@ -380,10 +380,10 @@ object StyleGuideDocExamples {
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
 
-      // The type of the Counter actor's internal event messages.
-      private sealed trait Event extends Message
-      // Tick is a private Event so can't be sent to an ActorRef[Command]
-      private case object Tick extends Event
+      // The type of the Counter actor's internal messages.
+      sealed trait PrivateCommand extends Message
+      // Tick is a private command so can't be sent to an ActorRef[Command]
+      case object Tick extends PrivateCommand
 
       def apply(name: String, tickInterval: FiniteDuration): Behavior[Command] = {
         Behaviors

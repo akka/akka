@@ -62,6 +62,7 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
  * State Data is constructed based on domain events, according to user's implementation of applyEvent function.
  *
  */
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
   import akka.persistence.fsm.PersistentFSM._
 
@@ -178,6 +179,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   }
 }
 
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 object PersistentFSM {
 
   /**
@@ -484,6 +486,7 @@ object PersistentFSM {
  * Persistent Finite State Machine actor abstract base class.
  *
  */
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSMBase[S, D, E]
     with PersistentFSM[S, D, E] {
@@ -521,6 +524,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
  *
  */
 @silent("deprecated")
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSM[S, D, E]
     with LoggingPersistentFSM[S, D, E]

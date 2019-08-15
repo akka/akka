@@ -22,7 +22,7 @@ import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.protobuf.MessageLite
+import akka.protobufv3.internal.MessageLite
 import akka.util.ccompat._
 import java.io.NotSerializableException
 

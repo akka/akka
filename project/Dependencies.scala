@@ -25,7 +25,7 @@ object Dependencies {
   val jacksonVersion = "2.9.9"
   val jacksonDatabindVersion = "2.9.9.1"
 
-  val scala212Version = "2.12.8"
+  val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
 
   val sslConfigVersion = "0.3.8"
@@ -94,6 +94,8 @@ object Dependencies {
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
+
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0"
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"

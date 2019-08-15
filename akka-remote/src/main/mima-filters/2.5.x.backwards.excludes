@@ -32,3 +32,11 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.Inbound
 
 # #22333 Disable Java serialization
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ThrowableSupport.stackTraceElementBuilder")
+ 
+# Upgrade to protobuf 3
+ProblemFilters.exclude[Problem]("akka.remote.serialization.ArteryMessageSerializer*")
+ProblemFilters.exclude[Problem]("akka.remote.*Formats*")
+
+# #27455 Bind to arbitrary port in Artery TCP
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.artery.*.runInboundStreams")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.*.runInboundStreams")
