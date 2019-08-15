@@ -424,9 +424,13 @@ object ShardCoordinator {
       shard: String,
       from: ActorRef,
       handOffTimeout: FiniteDuration,
-      regions: Set[ActorRef])
-      extends Actor {
+      regions: Set[ActorRef],
+      shuttingDownRegions: Set[ActorRef])
+      extends Actor
+      with ActorLogging {
     import Internal._
+
+    shuttingDownRegions.foreach(context.watch)
     regions.foreach(_ ! BeginHandOff(shard))
     var remaining = regions
 
@@ -435,12 +439,22 @@ object ShardCoordinator {
 
     def receive = {
       case BeginHandOffAck(`shard`) =>
-        remaining -= sender()
-        if (remaining.isEmpty) {
-          from ! HandOff(shard)
-          context.become(stoppingShard, discardOld = true)
-        }
+        log.debug("BeginHandOffAck for shard [{}] received from {}.", shard, sender())
+        acked(sender())
+      case Terminated(shardRegion) =>
+        log.debug("ShardRegion {} terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
+        acked(shardRegion)
       case ReceiveTimeout => done(ok = false)
+    }
+
+    private def acked(shardRegion: ActorRef) = {
+      context.unwatch(shardRegion)
+      remaining -= shardRegion
+      if (remaining.isEmpty) {
+        log.debug("All shard regions acked, handing off shard [{}].", shard)
+        from ! HandOff(shard)
+        context.become(stoppingShard, discardOld = true)
+      }
     }
 
     def stoppingShard: Receive = {
@@ -458,9 +472,12 @@ object ShardCoordinator {
       shard: String,
       from: ActorRef,
       handOffTimeout: FiniteDuration,
-      regions: Set[ActorRef]): Props =
-    Props(new RebalanceWorker(shard, from, handOffTimeout, regions))
-
+      regions: Set[ActorRef],
+      // Note: must be a subset of regions
+      shuttingDownRegions: Set[ActorRef]): Props = {
+    require(shuttingDownRegions.size <= regions.size, "'shuttingDownRegions' must be a subset of 'regions'.")
+    Props(new RebalanceWorker(shard, from, handOffTimeout, regions, shuttingDownRegions))
+  }
 }
 
 /**
@@ -886,7 +903,8 @@ abstract class ShardCoordinator(
                 shard,
                 rebalanceFromRegion,
                 handOffTimeout,
-                state.regions.keySet.union(state.regionProxies)).withDispatcher(context.props.dispatcher))
+                state.regions.keySet.union(state.regionProxies),
+                gracefulShutdownInProgress).withDispatcher(context.props.dispatcher))
           case None =>
             log.debug("Rebalance of non-existing shard [{}] is ignored", shard)
         }
