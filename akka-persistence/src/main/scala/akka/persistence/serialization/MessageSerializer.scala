@@ -11,13 +11,17 @@ import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEv
 import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.serialization._
 import akka.protobuf._
+
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import akka.actor.Actor
 import akka.util.ccompat._
+
 import scala.concurrent.duration.Duration
 import java.io.NotSerializableException
+
+import com.github.ghik.silencer.silent
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -125,6 +129,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     AtLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot.getCurrentDeliveryId, unconfirmedDeliveries.result())
   }
 
+  @silent("deprecated")
   def stateChange(persistentStateChange: mf.PersistentStateChangeEvent): StateChangeEvent = {
     StateChangeEvent(
       persistentStateChange.getStateIdentifier,
