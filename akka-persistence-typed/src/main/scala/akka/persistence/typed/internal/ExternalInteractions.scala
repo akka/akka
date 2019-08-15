@@ -63,6 +63,8 @@ private[akka] trait JournalInteractions[C, E, S] {
       @unused repr: PersistentRepr): Unit = ()
 
   protected def internalPersistAll(
+      ctx: ActorContext[_],
+      cmd: Any,
       state: Running.RunningState[S],
       events: immutable.Seq[(EventOrTagged, String)]): Running.RunningState[S] = {
     if (events.nonEmpty) {
@@ -79,6 +81,8 @@ private[akka] trait JournalInteractions[C, E, S] {
             writerUuid = setup.writerIdentity.writerUuid,
             sender = ActorRef.noSender)
       }
+
+      onWritesInitiated(ctx, cmd, writes)
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
@@ -88,6 +92,12 @@ private[akka] trait JournalInteractions[C, E, S] {
       newState
     } else state
   }
+
+  @InternalStableApi
+  private[akka] def onWritesInitiated(
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)

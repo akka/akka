@@ -300,6 +300,9 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #public-private-messages-2 }
 
+`private` visibility can be defined for the `PrivateCommand` messages but it's not strictly needed since they can't be
+sent to an @scala[ActorRef[Command]]@java[ActorRef<Command>], which is the public message type of the actor.
+
 @@@ div {.group-java}
 
 ### Singleton messages

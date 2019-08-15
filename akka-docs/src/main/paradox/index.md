@@ -17,7 +17,6 @@
 * [additional/deploy](additional/deploy.md)
 * [howto](howto.md)
 * [project/index](project/index.md)
-* [additional/index](additional/index.md)
 * [classic](index-classic.md)
 
 @@@

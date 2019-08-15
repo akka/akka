@@ -85,7 +85,7 @@ Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
 
 To specify a dispatcher when spawning an actor use @apidoc[DispatcherSelector]. If not specified, the actor will
-use the default dispatcher, see @ref:[Default dispatcher](../dispatchers.md#default-dispatcher) for details.
+use the default dispatcher, see @ref:[Default dispatcher](dispatchers.md#default-dispatcher) for details.
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main-with-dispatchers }
