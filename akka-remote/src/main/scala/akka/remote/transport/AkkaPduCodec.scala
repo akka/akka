@@ -9,8 +9,8 @@ import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
 import akka.remote.WireFormats._
 import akka.remote._
 import akka.util.ByteString
-import akka.protobuf.InvalidProtocolBufferException
-import akka.protobuf.{ ByteString => PByteString }
+import akka.protobufv3.internal.InvalidProtocolBufferException
+import akka.protobufv3.internal.{ ByteString => PByteString }
 import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 

@@ -7,7 +7,7 @@ package akka.remote.classic.transport
 import java.util.concurrent.TimeoutException
 
 import akka.actor.Address
-import akka.protobuf.{ ByteString => PByteString }
+import akka.protobufv3.internal.{ ByteString => PByteString }
 import akka.remote.classic.transport.AkkaProtocolSpec.TestFailureDetector
 import akka.remote.transport.AkkaPduCodec.{ Associate, Disassociate, Heartbeat }
 import akka.remote.transport.AssociationHandle.{

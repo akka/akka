@@ -7,7 +7,6 @@ package akka.cluster.ddata
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -18,12 +17,13 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.CancelAfterFailure
 
 final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(ConfigFactory.parseString(s"""akka.loglevel = DEBUG
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.log-dead-letters-during-shutdown = off
     akka.cluster.distributed-data.durable.keys = ["durable*"]
@@ -46,7 +46,7 @@ object DurableDataSpec {
     def receive = {
       case LoadAll =>
         if (failLoad)
-          throw new LoadFailed("failed to load durable distributed-data") with NoStackTrace
+          throw new LoadFailed("TestDurableStore: failed to load durable distributed-data") with NoStackTrace
         else
           sender() ! LoadAllCompleted
 
@@ -74,7 +74,9 @@ class DurableDataWriteBehindSpecMultiJvmNode2 extends DurableDataSpec(DurableDat
 abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     extends MultiNodeSpec(multiNodeConfig)
     with STMultiNodeSpec
-    with ImplicitSender {
+    with ImplicitSender
+    with CancelAfterFailure {
+
   import DurableDataSpec._
   import Replicator._
   import multiNodeConfig._
@@ -207,6 +209,8 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     val r = newReplicator()
 
     runOn(first) {
+      // FIXME
+      log.debug("sending message with sender: {}", implicitly[ActorRef])
       r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ :+ myself.name)
       expectMsg(UpdateSuccess(KeyC, None))
     }
@@ -224,8 +228,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       system.stop(r)
       expectTerminated(r)
 
-      var r2: ActorRef = null
-      awaitAssert { r2 = newReplicator() } // try until name is free
+      val r2 = awaitAssert { newReplicator() } // try until name is free
       awaitAssert {
         r2 ! GetKeyIds
         expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])
@@ -308,7 +311,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       }
 
     }
+    system.log.info("Setup complete")
     enterBarrierAfterTestStep()
+    system.log.info("All setup complete")
+
   }
 
   "stop Replicator if Load fails" in {

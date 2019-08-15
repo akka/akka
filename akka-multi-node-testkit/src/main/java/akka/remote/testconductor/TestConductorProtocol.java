@@ -10,29 +10,35 @@ package akka.remote.testconductor;
 public final class TestConductorProtocol {
   private TestConductorProtocol() {}
   public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
+  }
+
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
   }
   /**
    * Protobuf enum {@code BarrierOp}
    */
   public enum BarrierOp
-      implements akka.protobuf.ProtocolMessageEnum {
+      implements akka.protobufv3.internal.ProtocolMessageEnum {
     /**
      * <code>Enter = 1;</code>
      */
-    Enter(0, 1),
+    Enter(1),
     /**
      * <code>Fail = 2;</code>
      */
-    Fail(1, 2),
+    Fail(2),
     /**
      * <code>Succeeded = 3;</code>
      */
-    Succeeded(2, 3),
+    Succeeded(3),
     /**
      * <code>Failed = 4;</code>
      */
-    Failed(3, 4),
+    Failed(4),
     ;
 
     /**
@@ -53,9 +59,19 @@ public final class TestConductorProtocol {
     public static final int Failed_VALUE = 4;
 
 
-    public final int getNumber() { return value; }
+    public final int getNumber() {
+      return value;
+    }
 
+    /**
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
     public static BarrierOp valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static BarrierOp forNumber(int value) {
       switch (value) {
         case 1: return Enter;
         case 2: return Fail;
@@ -65,27 +81,27 @@ public final class TestConductorProtocol {
       }
     }
 
-    public static akka.protobuf.Internal.EnumLiteMap<BarrierOp>
+    public static akka.protobufv3.internal.Internal.EnumLiteMap<BarrierOp>
         internalGetValueMap() {
       return internalValueMap;
     }
-    private static akka.protobuf.Internal.EnumLiteMap<BarrierOp>
-        internalValueMap =
-          new akka.protobuf.Internal.EnumLiteMap<BarrierOp>() {
+    private static final akka.protobufv3.internal.Internal.EnumLiteMap<
+        BarrierOp> internalValueMap =
+          new akka.protobufv3.internal.Internal.EnumLiteMap<BarrierOp>() {
             public BarrierOp findValueByNumber(int number) {
-              return BarrierOp.valueOf(number);
+              return BarrierOp.forNumber(number);
             }
           };
 
-    public final akka.protobuf.Descriptors.EnumValueDescriptor
+    public final akka.protobufv3.internal.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
-      return getDescriptor().getValues().get(index);
+      return getDescriptor().getValues().get(ordinal());
     }
-    public final akka.protobuf.Descriptors.EnumDescriptor
+    public final akka.protobufv3.internal.Descriptors.EnumDescriptor
         getDescriptorForType() {
       return getDescriptor();
     }
-    public static final akka.protobuf.Descriptors.EnumDescriptor
+    public static final akka.protobufv3.internal.Descriptors.EnumDescriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(0);
     }
@@ -93,7 +109,7 @@ public final class TestConductorProtocol {
     private static final BarrierOp[] VALUES = values();
 
     public static BarrierOp valueOf(
-        akka.protobuf.Descriptors.EnumValueDescriptor desc) {
+        akka.protobufv3.internal.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new java.lang.IllegalArgumentException(
           "EnumValueDescriptor is not for this type.");
@@ -101,11 +117,9 @@ public final class TestConductorProtocol {
       return VALUES[desc.getIndex()];
     }
 
-    private final int index;
     private final int value;
 
-    private BarrierOp(int index, int value) {
-      this.index = index;
+    private BarrierOp(int value) {
       this.value = value;
     }
 
@@ -116,31 +130,31 @@ public final class TestConductorProtocol {
    * Protobuf enum {@code FailType}
    */
   public enum FailType
-      implements akka.protobuf.ProtocolMessageEnum {
+      implements akka.protobufv3.internal.ProtocolMessageEnum {
     /**
      * <code>Throttle = 1;</code>
      */
-    Throttle(0, 1),
+    Throttle(1),
     /**
      * <code>Disconnect = 2;</code>
      */
-    Disconnect(1, 2),
+    Disconnect(2),
     /**
      * <code>Abort = 3;</code>
      */
-    Abort(2, 3),
+    Abort(3),
     /**
      * <code>Exit = 4;</code>
      */
-    Exit(3, 4),
+    Exit(4),
     /**
      * <code>Shutdown = 5;</code>
      */
-    Shutdown(4, 5),
+    Shutdown(5),
     /**
      * <code>ShutdownAbrupt = 6;</code>
      */
-    ShutdownAbrupt(5, 6),
+    ShutdownAbrupt(6),
     ;
 
     /**
@@ -169,9 +183,19 @@ public final class TestConductorProtocol {
     public static final int ShutdownAbrupt_VALUE = 6;
 
 
-    public final int getNumber() { return value; }
+    public final int getNumber() {
+      return value;
+    }
 
+    /**
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
     public static FailType valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static FailType forNumber(int value) {
       switch (value) {
         case 1: return Throttle;
         case 2: return Disconnect;
@@ -183,27 +207,27 @@ public final class TestConductorProtocol {
       }
     }
 
-    public static akka.protobuf.Internal.EnumLiteMap<FailType>
+    public static akka.protobufv3.internal.Internal.EnumLiteMap<FailType>
         internalGetValueMap() {
       return internalValueMap;
     }
-    private static akka.protobuf.Internal.EnumLiteMap<FailType>
-        internalValueMap =
-          new akka.protobuf.Internal.EnumLiteMap<FailType>() {
+    private static final akka.protobufv3.internal.Internal.EnumLiteMap<
+        FailType> internalValueMap =
+          new akka.protobufv3.internal.Internal.EnumLiteMap<FailType>() {
             public FailType findValueByNumber(int number) {
-              return FailType.valueOf(number);
+              return FailType.forNumber(number);
             }
           };
 
-    public final akka.protobuf.Descriptors.EnumValueDescriptor
+    public final akka.protobufv3.internal.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
-      return getDescriptor().getValues().get(index);
+      return getDescriptor().getValues().get(ordinal());
     }
-    public final akka.protobuf.Descriptors.EnumDescriptor
+    public final akka.protobufv3.internal.Descriptors.EnumDescriptor
         getDescriptorForType() {
       return getDescriptor();
     }
-    public static final akka.protobuf.Descriptors.EnumDescriptor
+    public static final akka.protobufv3.internal.Descriptors.EnumDescriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(1);
     }
@@ -211,7 +235,7 @@ public final class TestConductorProtocol {
     private static final FailType[] VALUES = values();
 
     public static FailType valueOf(
-        akka.protobuf.Descriptors.EnumValueDescriptor desc) {
+        akka.protobufv3.internal.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new java.lang.IllegalArgumentException(
           "EnumValueDescriptor is not for this type.");
@@ -219,11 +243,9 @@ public final class TestConductorProtocol {
       return VALUES[desc.getIndex()];
     }
 
-    private final int index;
     private final int value;
 
-    private FailType(int index, int value) {
-      this.index = index;
+    private FailType(int value) {
       this.value = value;
     }
 
@@ -234,19 +256,19 @@ public final class TestConductorProtocol {
    * Protobuf enum {@code Direction}
    */
   public enum Direction
-      implements akka.protobuf.ProtocolMessageEnum {
+      implements akka.protobufv3.internal.ProtocolMessageEnum {
     /**
      * <code>Send = 1;</code>
      */
-    Send(0, 1),
+    Send(1),
     /**
      * <code>Receive = 2;</code>
      */
-    Receive(1, 2),
+    Receive(2),
     /**
      * <code>Both = 3;</code>
      */
-    Both(2, 3),
+    Both(3),
     ;
 
     /**
@@ -263,9 +285,19 @@ public final class TestConductorProtocol {
     public static final int Both_VALUE = 3;
 
 
-    public final int getNumber() { return value; }
+    public final int getNumber() {
+      return value;
+    }
 
+    /**
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
     public static Direction valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static Direction forNumber(int value) {
       switch (value) {
         case 1: return Send;
         case 2: return Receive;
@@ -274,27 +306,27 @@ public final class TestConductorProtocol {
       }
     }
 
-    public static akka.protobuf.Internal.EnumLiteMap<Direction>
+    public static akka.protobufv3.internal.Internal.EnumLiteMap<Direction>
         internalGetValueMap() {
       return internalValueMap;
     }
-    private static akka.protobuf.Internal.EnumLiteMap<Direction>
-        internalValueMap =
-          new akka.protobuf.Internal.EnumLiteMap<Direction>() {
+    private static final akka.protobufv3.internal.Internal.EnumLiteMap<
+        Direction> internalValueMap =
+          new akka.protobufv3.internal.Internal.EnumLiteMap<Direction>() {
             public Direction findValueByNumber(int number) {
-              return Direction.valueOf(number);
+              return Direction.forNumber(number);
             }
           };
 
-    public final akka.protobuf.Descriptors.EnumValueDescriptor
+    public final akka.protobufv3.internal.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
-      return getDescriptor().getValues().get(index);
+      return getDescriptor().getValues().get(ordinal());
     }
-    public final akka.protobuf.Descriptors.EnumDescriptor
+    public final akka.protobufv3.internal.Descriptors.EnumDescriptor
         getDescriptorForType() {
       return getDescriptor();
     }
-    public static final akka.protobuf.Descriptors.EnumDescriptor
+    public static final akka.protobufv3.internal.Descriptors.EnumDescriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(2);
     }
@@ -302,7 +334,7 @@ public final class TestConductorProtocol {
     private static final Direction[] VALUES = values();
 
     public static Direction valueOf(
-        akka.protobuf.Descriptors.EnumValueDescriptor desc) {
+        akka.protobufv3.internal.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
         throw new java.lang.IllegalArgumentException(
           "EnumValueDescriptor is not for this type.");
@@ -310,21 +342,19 @@ public final class TestConductorProtocol {
       return VALUES[desc.getIndex()];
     }
 
-    private final int index;
     private final int value;
 
-    private Direction(int index, int value) {
-      this.index = index;
+    private Direction(int value) {
       this.value = value;
     }
 
     // @@protoc_insertion_point(enum_scope:Direction)
   }
 
-  public interface WrapperOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface WrapperOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Wrapper)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // optional .Hello hello = 1;
     /**
      * <code>optional .Hello hello = 1;</code>
      */
@@ -338,7 +368,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder getHelloOrBuilder();
 
-    // optional .EnterBarrier barrier = 2;
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
      */
@@ -352,7 +381,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder getBarrierOrBuilder();
 
-    // optional .InjectFailure failure = 3;
     /**
      * <code>optional .InjectFailure failure = 3;</code>
      */
@@ -366,7 +394,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder getFailureOrBuilder();
 
-    // optional string done = 4;
     /**
      * <code>optional string done = 4;</code>
      */
@@ -378,10 +405,9 @@ public final class TestConductorProtocol {
     /**
      * <code>optional string done = 4;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getDoneBytes();
 
-    // optional .AddressRequest addr = 5;
     /**
      * <code>optional .AddressRequest addr = 5;</code>
      */
@@ -398,39 +424,42 @@ public final class TestConductorProtocol {
   /**
    * Protobuf type {@code Wrapper}
    */
-  public static final class Wrapper extends
-      akka.protobuf.GeneratedMessage
-      implements WrapperOrBuilder {
+  public  static final class Wrapper extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:Wrapper)
+      WrapperOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use Wrapper.newBuilder() to construct.
-    private Wrapper(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Wrapper(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private Wrapper(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final Wrapper defaultInstance;
-    public static Wrapper getDefaultInstance() {
-      return defaultInstance;
+    private Wrapper() {
+      done_ = "";
     }
 
-    public Wrapper getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Wrapper();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private Wrapper(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -439,16 +468,9 @@ public final class TestConductorProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.testconductor.TestConductorProtocol.Hello.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = hello_.toBuilder();
               }
               hello_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.Hello.PARSER, extensionRegistry);
@@ -461,7 +483,7 @@ public final class TestConductorProtocol {
             }
             case 18: {
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = barrier_.toBuilder();
               }
               barrier_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.EnterBarrier.PARSER, extensionRegistry);
@@ -474,7 +496,7 @@ public final class TestConductorProtocol {
             }
             case 26: {
               akka.remote.testconductor.TestConductorProtocol.InjectFailure.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+              if (((bitField0_ & 0x00000004) != 0)) {
                 subBuilder = failure_.toBuilder();
               }
               failure_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.InjectFailure.PARSER, extensionRegistry);
@@ -486,13 +508,14 @@ public final class TestConductorProtocol {
               break;
             }
             case 34: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000008;
-              done_ = input.readBytes();
+              done_ = bs;
               break;
             }
             case 42: {
               akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000010) == 0x00000010)) {
+              if (((bitField0_ & 0x00000010) != 0)) {
                 subBuilder = addr_.toBuilder();
               }
               addr_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.AddressRequest.PARSER, extensionRegistry);
@@ -503,120 +526,109 @@ public final class TestConductorProtocol {
               bitField0_ |= 0x00000010;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_Wrapper_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_Wrapper_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.testconductor.TestConductorProtocol.Wrapper.class, akka.remote.testconductor.TestConductorProtocol.Wrapper.Builder.class);
     }
 
-    public static akka.protobuf.Parser<Wrapper> PARSER =
-        new akka.protobuf.AbstractParser<Wrapper>() {
-      public Wrapper parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new Wrapper(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<Wrapper> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // optional .Hello hello = 1;
     public static final int HELLO_FIELD_NUMBER = 1;
     private akka.remote.testconductor.TestConductorProtocol.Hello hello_;
     /**
      * <code>optional .Hello hello = 1;</code>
      */
     public boolean hasHello() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .Hello hello = 1;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.Hello getHello() {
-      return hello_;
+      return hello_ == null ? akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance() : hello_;
     }
     /**
      * <code>optional .Hello hello = 1;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder getHelloOrBuilder() {
-      return hello_;
+      return hello_ == null ? akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance() : hello_;
     }
 
-    // optional .EnterBarrier barrier = 2;
     public static final int BARRIER_FIELD_NUMBER = 2;
     private akka.remote.testconductor.TestConductorProtocol.EnterBarrier barrier_;
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
      */
     public boolean hasBarrier() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.EnterBarrier getBarrier() {
-      return barrier_;
+      return barrier_ == null ? akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance() : barrier_;
     }
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder getBarrierOrBuilder() {
-      return barrier_;
+      return barrier_ == null ? akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance() : barrier_;
     }
 
-    // optional .InjectFailure failure = 3;
     public static final int FAILURE_FIELD_NUMBER = 3;
     private akka.remote.testconductor.TestConductorProtocol.InjectFailure failure_;
     /**
      * <code>optional .InjectFailure failure = 3;</code>
      */
     public boolean hasFailure() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .InjectFailure failure = 3;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.InjectFailure getFailure() {
-      return failure_;
+      return failure_ == null ? akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance() : failure_;
     }
     /**
      * <code>optional .InjectFailure failure = 3;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder getFailureOrBuilder() {
-      return failure_;
+      return failure_ == null ? akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance() : failure_;
     }
 
-    // optional string done = 4;
     public static final int DONE_FIELD_NUMBER = 4;
-    private java.lang.Object done_;
+    private volatile java.lang.Object done_;
     /**
      * <code>optional string done = 4;</code>
      */
     public boolean hasDone() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string done = 4;</code>
@@ -626,8 +638,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           done_ = s;
@@ -638,53 +650,47 @@ public final class TestConductorProtocol {
     /**
      * <code>optional string done = 4;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getDoneBytes() {
       java.lang.Object ref = done_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         done_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional .AddressRequest addr = 5;
     public static final int ADDR_FIELD_NUMBER = 5;
     private akka.remote.testconductor.TestConductorProtocol.AddressRequest addr_;
     /**
      * <code>optional .AddressRequest addr = 5;</code>
      */
     public boolean hasAddr() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional .AddressRequest addr = 5;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr() {
-      return addr_;
+      return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance() : addr_;
     }
     /**
      * <code>optional .AddressRequest addr = 5;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder getAddrOrBuilder() {
-      return addr_;
+      return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance() : addr_;
     }
 
-    private void initFields() {
-      hello_ = akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
-      barrier_ = akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
-      failure_ = akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
-      done_ = "";
-      addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (hasHello()) {
         if (!getHello().isInitialized()) {
@@ -714,128 +720,215 @@ public final class TestConductorProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, hello_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getHello());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, barrier_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getBarrier());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(3, failure_);
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeMessage(3, getFailure());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, getDoneBytes());
+      if (((bitField0_ & 0x00000008) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 4, done_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeMessage(5, addr_);
+      if (((bitField0_ & 0x00000010) != 0)) {
+        output.writeMessage(5, getAddr());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, hello_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getHello());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, barrier_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getBarrier());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(3, failure_);
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(3, getFailure());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(4, getDoneBytes());
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(4, done_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(5, addr_);
+      if (((bitField0_ & 0x00000010) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(5, getAddr());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.testconductor.TestConductorProtocol.Wrapper)) {
+        return super.equals(obj);
+      }
+      akka.remote.testconductor.TestConductorProtocol.Wrapper other = (akka.remote.testconductor.TestConductorProtocol.Wrapper) obj;
+
+      if (hasHello() != other.hasHello()) return false;
+      if (hasHello()) {
+        if (!getHello()
+            .equals(other.getHello())) return false;
+      }
+      if (hasBarrier() != other.hasBarrier()) return false;
+      if (hasBarrier()) {
+        if (!getBarrier()
+            .equals(other.getBarrier())) return false;
+      }
+      if (hasFailure() != other.hasFailure()) return false;
+      if (hasFailure()) {
+        if (!getFailure()
+            .equals(other.getFailure())) return false;
+      }
+      if (hasDone() != other.hasDone()) return false;
+      if (hasDone()) {
+        if (!getDone()
+            .equals(other.getDone())) return false;
+      }
+      if (hasAddr() != other.hasAddr()) return false;
+      if (hasAddr()) {
+        if (!getAddr()
+            .equals(other.getAddr())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasHello()) {
+        hash = (37 * hash) + HELLO_FIELD_NUMBER;
+        hash = (53 * hash) + getHello().hashCode();
+      }
+      if (hasBarrier()) {
+        hash = (37 * hash) + BARRIER_FIELD_NUMBER;
+        hash = (53 * hash) + getBarrier().hashCode();
+      }
+      if (hasFailure()) {
+        hash = (37 * hash) + FAILURE_FIELD_NUMBER;
+        hash = (53 * hash) + getFailure().hashCode();
+      }
+      if (hasDone()) {
+        hash = (37 * hash) + DONE_FIELD_NUMBER;
+        hash = (53 * hash) + getDone().hashCode();
+      }
+      if (hasAddr()) {
+        hash = (37 * hash) + ADDR_FIELD_NUMBER;
+        hash = (53 * hash) + getAddr().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Wrapper parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.Wrapper prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.Wrapper prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -843,14 +936,16 @@ public final class TestConductorProtocol {
      * Protobuf type {@code Wrapper}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.testconductor.TestConductorProtocol.WrapperOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Wrapper)
+        akka.remote.testconductor.TestConductorProtocol.WrapperOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Wrapper_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Wrapper_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -863,38 +958,36 @@ public final class TestConductorProtocol {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getHelloFieldBuilder();
           getBarrierFieldBuilder();
           getFailureFieldBuilder();
           getAddrFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (helloBuilder_ == null) {
-          hello_ = akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
+          hello_ = null;
         } else {
           helloBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
         if (barrierBuilder_ == null) {
-          barrier_ = akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
+          barrier_ = null;
         } else {
           barrierBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000002);
         if (failureBuilder_ == null) {
-          failure_ = akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
+          failure_ = null;
         } else {
           failureBuilder_.clear();
         }
@@ -902,7 +995,7 @@ public final class TestConductorProtocol {
         done_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
         if (addrBuilder_ == null) {
-          addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
+          addr_ = null;
         } else {
           addrBuilder_.clear();
         }
@@ -910,19 +1003,18 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Wrapper_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Wrapper getDefaultInstanceForType() {
         return akka.remote.testconductor.TestConductorProtocol.Wrapper.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Wrapper build() {
         akka.remote.testconductor.TestConductorProtocol.Wrapper result = buildPartial();
         if (!result.isInitialized()) {
@@ -931,52 +1023,86 @@ public final class TestConductorProtocol {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Wrapper buildPartial() {
         akka.remote.testconductor.TestConductorProtocol.Wrapper result = new akka.remote.testconductor.TestConductorProtocol.Wrapper(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (helloBuilder_ == null) {
+            result.hello_ = hello_;
+          } else {
+            result.hello_ = helloBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (helloBuilder_ == null) {
-          result.hello_ = hello_;
-        } else {
-          result.hello_ = helloBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (barrierBuilder_ == null) {
+            result.barrier_ = barrier_;
+          } else {
+            result.barrier_ = barrierBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
         }
-        if (barrierBuilder_ == null) {
-          result.barrier_ = barrier_;
-        } else {
-          result.barrier_ = barrierBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          if (failureBuilder_ == null) {
+            result.failure_ = failure_;
+          } else {
+            result.failure_ = failureBuilder_.build();
+          }
           to_bitField0_ |= 0x00000004;
         }
-        if (failureBuilder_ == null) {
-          result.failure_ = failure_;
-        } else {
-          result.failure_ = failureBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
           to_bitField0_ |= 0x00000008;
         }
         result.done_ = done_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          if (addrBuilder_ == null) {
+            result.addr_ = addr_;
+          } else {
+            result.addr_ = addrBuilder_.build();
+          }
           to_bitField0_ |= 0x00000010;
-        }
-        if (addrBuilder_ == null) {
-          result.addr_ = addr_;
-        } else {
-          result.addr_ = addrBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.testconductor.TestConductorProtocol.Wrapper) {
           return mergeFrom((akka.remote.testconductor.TestConductorProtocol.Wrapper)other);
         } else {
@@ -1004,48 +1130,47 @@ public final class TestConductorProtocol {
         if (other.hasAddr()) {
           mergeAddr(other.getAddr());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (hasHello()) {
           if (!getHello().isInitialized()) {
-            
             return false;
           }
         }
         if (hasBarrier()) {
           if (!getBarrier().isInitialized()) {
-            
             return false;
           }
         }
         if (hasFailure()) {
           if (!getFailure().isInitialized()) {
-            
             return false;
           }
         }
         if (hasAddr()) {
           if (!getAddr().isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.testconductor.TestConductorProtocol.Wrapper parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.testconductor.TestConductorProtocol.Wrapper) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -1055,22 +1180,21 @@ public final class TestConductorProtocol {
       }
       private int bitField0_;
 
-      // optional .Hello hello = 1;
-      private akka.remote.testconductor.TestConductorProtocol.Hello hello_ = akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.Hello hello_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Hello, akka.remote.testconductor.TestConductorProtocol.Hello.Builder, akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder> helloBuilder_;
       /**
        * <code>optional .Hello hello = 1;</code>
        */
       public boolean hasHello() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .Hello hello = 1;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.Hello getHello() {
         if (helloBuilder_ == null) {
-          return hello_;
+          return hello_ == null ? akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance() : hello_;
         } else {
           return helloBuilder_.getMessage();
         }
@@ -1110,7 +1234,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeHello(akka.remote.testconductor.TestConductorProtocol.Hello value) {
         if (helloBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              hello_ != null &&
               hello_ != akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance()) {
             hello_ =
               akka.remote.testconductor.TestConductorProtocol.Hello.newBuilder(hello_).mergeFrom(value).buildPartial();
@@ -1129,7 +1254,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearHello() {
         if (helloBuilder_ == null) {
-          hello_ = akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
+          hello_ = null;
           onChanged();
         } else {
           helloBuilder_.clear();
@@ -1152,19 +1277,20 @@ public final class TestConductorProtocol {
         if (helloBuilder_ != null) {
           return helloBuilder_.getMessageOrBuilder();
         } else {
-          return hello_;
+          return hello_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance() : hello_;
         }
       }
       /**
        * <code>optional .Hello hello = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Hello, akka.remote.testconductor.TestConductorProtocol.Hello.Builder, akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder> 
           getHelloFieldBuilder() {
         if (helloBuilder_ == null) {
-          helloBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          helloBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.Hello, akka.remote.testconductor.TestConductorProtocol.Hello.Builder, akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder>(
-                  hello_,
+                  getHello(),
                   getParentForChildren(),
                   isClean());
           hello_ = null;
@@ -1172,22 +1298,21 @@ public final class TestConductorProtocol {
         return helloBuilder_;
       }
 
-      // optional .EnterBarrier barrier = 2;
-      private akka.remote.testconductor.TestConductorProtocol.EnterBarrier barrier_ = akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.EnterBarrier barrier_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.EnterBarrier, akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder, akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder> barrierBuilder_;
       /**
        * <code>optional .EnterBarrier barrier = 2;</code>
        */
       public boolean hasBarrier() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .EnterBarrier barrier = 2;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.EnterBarrier getBarrier() {
         if (barrierBuilder_ == null) {
-          return barrier_;
+          return barrier_ == null ? akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance() : barrier_;
         } else {
           return barrierBuilder_.getMessage();
         }
@@ -1227,7 +1352,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeBarrier(akka.remote.testconductor.TestConductorProtocol.EnterBarrier value) {
         if (barrierBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              barrier_ != null &&
               barrier_ != akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance()) {
             barrier_ =
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.newBuilder(barrier_).mergeFrom(value).buildPartial();
@@ -1246,7 +1372,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearBarrier() {
         if (barrierBuilder_ == null) {
-          barrier_ = akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
+          barrier_ = null;
           onChanged();
         } else {
           barrierBuilder_.clear();
@@ -1269,19 +1395,20 @@ public final class TestConductorProtocol {
         if (barrierBuilder_ != null) {
           return barrierBuilder_.getMessageOrBuilder();
         } else {
-          return barrier_;
+          return barrier_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance() : barrier_;
         }
       }
       /**
        * <code>optional .EnterBarrier barrier = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.EnterBarrier, akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder, akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder> 
           getBarrierFieldBuilder() {
         if (barrierBuilder_ == null) {
-          barrierBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          barrierBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier, akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder, akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder>(
-                  barrier_,
+                  getBarrier(),
                   getParentForChildren(),
                   isClean());
           barrier_ = null;
@@ -1289,22 +1416,21 @@ public final class TestConductorProtocol {
         return barrierBuilder_;
       }
 
-      // optional .InjectFailure failure = 3;
-      private akka.remote.testconductor.TestConductorProtocol.InjectFailure failure_ = akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.InjectFailure failure_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.InjectFailure, akka.remote.testconductor.TestConductorProtocol.InjectFailure.Builder, akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder> failureBuilder_;
       /**
        * <code>optional .InjectFailure failure = 3;</code>
        */
       public boolean hasFailure() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .InjectFailure failure = 3;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.InjectFailure getFailure() {
         if (failureBuilder_ == null) {
-          return failure_;
+          return failure_ == null ? akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance() : failure_;
         } else {
           return failureBuilder_.getMessage();
         }
@@ -1344,7 +1470,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeFailure(akka.remote.testconductor.TestConductorProtocol.InjectFailure value) {
         if (failureBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+          if (((bitField0_ & 0x00000004) != 0) &&
+              failure_ != null &&
               failure_ != akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance()) {
             failure_ =
               akka.remote.testconductor.TestConductorProtocol.InjectFailure.newBuilder(failure_).mergeFrom(value).buildPartial();
@@ -1363,7 +1490,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearFailure() {
         if (failureBuilder_ == null) {
-          failure_ = akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
+          failure_ = null;
           onChanged();
         } else {
           failureBuilder_.clear();
@@ -1386,19 +1513,20 @@ public final class TestConductorProtocol {
         if (failureBuilder_ != null) {
           return failureBuilder_.getMessageOrBuilder();
         } else {
-          return failure_;
+          return failure_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance() : failure_;
         }
       }
       /**
        * <code>optional .InjectFailure failure = 3;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.InjectFailure, akka.remote.testconductor.TestConductorProtocol.InjectFailure.Builder, akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder> 
           getFailureFieldBuilder() {
         if (failureBuilder_ == null) {
-          failureBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          failureBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.InjectFailure, akka.remote.testconductor.TestConductorProtocol.InjectFailure.Builder, akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder>(
-                  failure_,
+                  getFailure(),
                   getParentForChildren(),
                   isClean());
           failure_ = null;
@@ -1406,13 +1534,12 @@ public final class TestConductorProtocol {
         return failureBuilder_;
       }
 
-      // optional string done = 4;
       private java.lang.Object done_ = "";
       /**
        * <code>optional string done = 4;</code>
        */
       public boolean hasDone() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string done = 4;</code>
@@ -1420,9 +1547,12 @@ public final class TestConductorProtocol {
       public java.lang.String getDone() {
         java.lang.Object ref = done_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          done_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            done_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1431,17 +1561,17 @@ public final class TestConductorProtocol {
       /**
        * <code>optional string done = 4;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getDoneBytes() {
         java.lang.Object ref = done_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           done_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -1470,7 +1600,7 @@ public final class TestConductorProtocol {
        * <code>optional string done = 4;</code>
        */
       public Builder setDoneBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1480,22 +1610,21 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // optional .AddressRequest addr = 5;
-      private akka.remote.testconductor.TestConductorProtocol.AddressRequest addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.AddressRequest addr_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder> addrBuilder_;
       /**
        * <code>optional .AddressRequest addr = 5;</code>
        */
       public boolean hasAddr() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .AddressRequest addr = 5;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr() {
         if (addrBuilder_ == null) {
-          return addr_;
+          return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance() : addr_;
         } else {
           return addrBuilder_.getMessage();
         }
@@ -1535,7 +1664,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeAddr(akka.remote.testconductor.TestConductorProtocol.AddressRequest value) {
         if (addrBuilder_ == null) {
-          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+          if (((bitField0_ & 0x00000010) != 0) &&
+              addr_ != null &&
               addr_ != akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance()) {
             addr_ =
               akka.remote.testconductor.TestConductorProtocol.AddressRequest.newBuilder(addr_).mergeFrom(value).buildPartial();
@@ -1554,7 +1684,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearAddr() {
         if (addrBuilder_ == null) {
-          addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
+          addr_ = null;
           onChanged();
         } else {
           addrBuilder_.clear();
@@ -1577,41 +1707,83 @@ public final class TestConductorProtocol {
         if (addrBuilder_ != null) {
           return addrBuilder_.getMessageOrBuilder();
         } else {
-          return addr_;
+          return addr_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance() : addr_;
         }
       }
       /**
        * <code>optional .AddressRequest addr = 5;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder> 
           getAddrFieldBuilder() {
         if (addrBuilder_ == null) {
-          addrBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          addrBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder>(
-                  addr_,
+                  getAddr(),
                   getParentForChildren(),
                   isClean());
           addr_ = null;
         }
         return addrBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:Wrapper)
     }
 
+    // @@protoc_insertion_point(class_scope:Wrapper)
+    private static final akka.remote.testconductor.TestConductorProtocol.Wrapper DEFAULT_INSTANCE;
     static {
-      defaultInstance = new Wrapper(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.testconductor.TestConductorProtocol.Wrapper();
     }
 
-    // @@protoc_insertion_point(class_scope:Wrapper)
+    public static akka.remote.testconductor.TestConductorProtocol.Wrapper getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Wrapper>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Wrapper>() {
+      @java.lang.Override
+      public Wrapper parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Wrapper(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Wrapper> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Wrapper> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.testconductor.TestConductorProtocol.Wrapper getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface HelloOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface HelloOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Hello)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string name = 1;
     /**
      * <code>required string name = 1;</code>
      */
@@ -1623,10 +1795,9 @@ public final class TestConductorProtocol {
     /**
      * <code>required string name = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getNameBytes();
 
-    // required .Address address = 2;
     /**
      * <code>required .Address address = 2;</code>
      */
@@ -1643,39 +1814,42 @@ public final class TestConductorProtocol {
   /**
    * Protobuf type {@code Hello}
    */
-  public static final class Hello extends
-      akka.protobuf.GeneratedMessage
-      implements HelloOrBuilder {
+  public  static final class Hello extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:Hello)
+      HelloOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use Hello.newBuilder() to construct.
-    private Hello(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Hello(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private Hello(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final Hello defaultInstance;
-    public static Hello getDefaultInstance() {
-      return defaultInstance;
+    private Hello() {
+      name_ = "";
     }
 
-    public Hello getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Hello();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private Hello(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1684,21 +1858,15 @@ public final class TestConductorProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              name_ = input.readBytes();
+              name_ = bs;
               break;
             }
             case 18: {
               akka.remote.testconductor.TestConductorProtocol.Address.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = address_.toBuilder();
               }
               address_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.Address.PARSER, extensionRegistry);
@@ -1709,54 +1877,46 @@ public final class TestConductorProtocol {
               bitField0_ |= 0x00000002;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_Hello_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_Hello_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.testconductor.TestConductorProtocol.Hello.class, akka.remote.testconductor.TestConductorProtocol.Hello.Builder.class);
     }
 
-    public static akka.protobuf.Parser<Hello> PARSER =
-        new akka.protobuf.AbstractParser<Hello>() {
-      public Hello parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new Hello(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<Hello> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string name = 1;
     public static final int NAME_FIELD_NUMBER = 1;
-    private java.lang.Object name_;
+    private volatile java.lang.Object name_;
     /**
      * <code>required string name = 1;</code>
      */
     public boolean hasName() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string name = 1;</code>
@@ -1766,8 +1926,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           name_ = s;
@@ -1778,50 +1938,47 @@ public final class TestConductorProtocol {
     /**
      * <code>required string name = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         name_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required .Address address = 2;
     public static final int ADDRESS_FIELD_NUMBER = 2;
     private akka.remote.testconductor.TestConductorProtocol.Address address_;
     /**
      * <code>required .Address address = 2;</code>
      */
     public boolean hasAddress() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Address address = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
-      return address_;
+      return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
     }
     /**
      * <code>required .Address address = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddressOrBuilder() {
-      return address_;
+      return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
     }
 
-    private void initFields() {
-      name_ = "";
-      address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasName()) {
         memoizedIsInitialized = 0;
@@ -1839,107 +1996,167 @@ public final class TestConductorProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getNameBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, name_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, address_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getAddress());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getNameBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, name_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, address_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getAddress());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.testconductor.TestConductorProtocol.Hello)) {
+        return super.equals(obj);
+      }
+      akka.remote.testconductor.TestConductorProtocol.Hello other = (akka.remote.testconductor.TestConductorProtocol.Hello) obj;
+
+      if (hasName() != other.hasName()) return false;
+      if (hasName()) {
+        if (!getName()
+            .equals(other.getName())) return false;
+      }
+      if (hasAddress() != other.hasAddress()) return false;
+      if (hasAddress()) {
+        if (!getAddress()
+            .equals(other.getAddress())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasName()) {
+        hash = (37 * hash) + NAME_FIELD_NUMBER;
+        hash = (53 * hash) + getName().hashCode();
+      }
+      if (hasAddress()) {
+        hash = (37 * hash) + ADDRESS_FIELD_NUMBER;
+        hash = (53 * hash) + getAddress().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Hello parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.Hello prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.Hello prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1947,14 +2164,16 @@ public final class TestConductorProtocol {
      * Protobuf type {@code Hello}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Hello)
+        akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Hello_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Hello_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1967,25 +2186,23 @@ public final class TestConductorProtocol {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getAddressFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         name_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         if (addressBuilder_ == null) {
-          address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          address_ = null;
         } else {
           addressBuilder_.clear();
         }
@@ -1993,19 +2210,18 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Hello_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Hello getDefaultInstanceForType() {
         return akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Hello build() {
         akka.remote.testconductor.TestConductorProtocol.Hello result = buildPartial();
         if (!result.isInitialized()) {
@@ -2014,28 +2230,62 @@ public final class TestConductorProtocol {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Hello buildPartial() {
         akka.remote.testconductor.TestConductorProtocol.Hello result = new akka.remote.testconductor.TestConductorProtocol.Hello(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.name_ = name_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (addressBuilder_ == null) {
+            result.address_ = address_;
+          } else {
+            result.address_ = addressBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
-        }
-        if (addressBuilder_ == null) {
-          result.address_ = address_;
-        } else {
-          result.address_ = addressBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.testconductor.TestConductorProtocol.Hello) {
           return mergeFrom((akka.remote.testconductor.TestConductorProtocol.Hello)other);
         } else {
@@ -2054,36 +2304,36 @@ public final class TestConductorProtocol {
         if (other.hasAddress()) {
           mergeAddress(other.getAddress());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasName()) {
-          
           return false;
         }
         if (!hasAddress()) {
-          
           return false;
         }
         if (!getAddress().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.testconductor.TestConductorProtocol.Hello parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.testconductor.TestConductorProtocol.Hello) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -2093,13 +2343,12 @@ public final class TestConductorProtocol {
       }
       private int bitField0_;
 
-      // required string name = 1;
       private java.lang.Object name_ = "";
       /**
        * <code>required string name = 1;</code>
        */
       public boolean hasName() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string name = 1;</code>
@@ -2107,9 +2356,12 @@ public final class TestConductorProtocol {
       public java.lang.String getName() {
         java.lang.Object ref = name_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          name_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            name_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2118,17 +2370,17 @@ public final class TestConductorProtocol {
       /**
        * <code>required string name = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getNameBytes() {
         java.lang.Object ref = name_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           name_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -2157,7 +2409,7 @@ public final class TestConductorProtocol {
        * <code>required string name = 1;</code>
        */
       public Builder setNameBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -2167,22 +2419,21 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // required .Address address = 2;
-      private akka.remote.testconductor.TestConductorProtocol.Address address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.Address address_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 2;</code>
        */
       public boolean hasAddress() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Address address = 2;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
         if (addressBuilder_ == null) {
-          return address_;
+          return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
         } else {
           return addressBuilder_.getMessage();
         }
@@ -2222,7 +2473,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeAddress(akka.remote.testconductor.TestConductorProtocol.Address value) {
         if (addressBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              address_ != null &&
               address_ != akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance()) {
             address_ =
               akka.remote.testconductor.TestConductorProtocol.Address.newBuilder(address_).mergeFrom(value).buildPartial();
@@ -2241,7 +2493,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearAddress() {
         if (addressBuilder_ == null) {
-          address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          address_ = null;
           onChanged();
         } else {
           addressBuilder_.clear();
@@ -2264,41 +2516,83 @@ public final class TestConductorProtocol {
         if (addressBuilder_ != null) {
           return addressBuilder_.getMessageOrBuilder();
         } else {
-          return address_;
+          return address_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
         }
       }
       /**
        * <code>required .Address address = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> 
           getAddressFieldBuilder() {
         if (addressBuilder_ == null) {
-          addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          addressBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder>(
-                  address_,
+                  getAddress(),
                   getParentForChildren(),
                   isClean());
           address_ = null;
         }
         return addressBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:Hello)
     }
 
+    // @@protoc_insertion_point(class_scope:Hello)
+    private static final akka.remote.testconductor.TestConductorProtocol.Hello DEFAULT_INSTANCE;
     static {
-      defaultInstance = new Hello(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.testconductor.TestConductorProtocol.Hello();
     }
 
-    // @@protoc_insertion_point(class_scope:Hello)
+    public static akka.remote.testconductor.TestConductorProtocol.Hello getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Hello>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Hello>() {
+      @java.lang.Override
+      public Hello parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Hello(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Hello> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Hello> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.testconductor.TestConductorProtocol.Hello getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface EnterBarrierOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface EnterBarrierOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:EnterBarrier)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string name = 1;
     /**
      * <code>required string name = 1;</code>
      */
@@ -2310,10 +2604,9 @@ public final class TestConductorProtocol {
     /**
      * <code>required string name = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getNameBytes();
 
-    // required .BarrierOp op = 2;
     /**
      * <code>required .BarrierOp op = 2;</code>
      */
@@ -2323,7 +2616,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp();
 
-    // optional int64 timeout = 3;
     /**
      * <code>optional int64 timeout = 3;</code>
      */
@@ -2336,39 +2628,43 @@ public final class TestConductorProtocol {
   /**
    * Protobuf type {@code EnterBarrier}
    */
-  public static final class EnterBarrier extends
-      akka.protobuf.GeneratedMessage
-      implements EnterBarrierOrBuilder {
+  public  static final class EnterBarrier extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:EnterBarrier)
+      EnterBarrierOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use EnterBarrier.newBuilder() to construct.
-    private EnterBarrier(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private EnterBarrier(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private EnterBarrier(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final EnterBarrier defaultInstance;
-    public static EnterBarrier getDefaultInstance() {
-      return defaultInstance;
+    private EnterBarrier() {
+      name_ = "";
+      op_ = 1;
     }
 
-    public EnterBarrier getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new EnterBarrier();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private EnterBarrier(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2377,26 +2673,21 @@ public final class TestConductorProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              name_ = input.readBytes();
+              name_ = bs;
               break;
             }
             case 16: {
               int rawValue = input.readEnum();
+                @SuppressWarnings("deprecation")
               akka.remote.testconductor.TestConductorProtocol.BarrierOp value = akka.remote.testconductor.TestConductorProtocol.BarrierOp.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(2, rawValue);
               } else {
                 bitField0_ |= 0x00000002;
-                op_ = value;
+                op_ = rawValue;
               }
               break;
             }
@@ -2405,54 +2696,46 @@ public final class TestConductorProtocol {
               timeout_ = input.readInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_EnterBarrier_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_EnterBarrier_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.class, akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder.class);
     }
 
-    public static akka.protobuf.Parser<EnterBarrier> PARSER =
-        new akka.protobuf.AbstractParser<EnterBarrier>() {
-      public EnterBarrier parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new EnterBarrier(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<EnterBarrier> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string name = 1;
     public static final int NAME_FIELD_NUMBER = 1;
-    private java.lang.Object name_;
+    private volatile java.lang.Object name_;
     /**
      * <code>required string name = 1;</code>
      */
     public boolean hasName() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string name = 1;</code>
@@ -2462,8 +2745,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           name_ = s;
@@ -2474,44 +2757,44 @@ public final class TestConductorProtocol {
     /**
      * <code>required string name = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         name_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required .BarrierOp op = 2;
     public static final int OP_FIELD_NUMBER = 2;
-    private akka.remote.testconductor.TestConductorProtocol.BarrierOp op_;
+    private int op_;
     /**
      * <code>required .BarrierOp op = 2;</code>
      */
     public boolean hasOp() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .BarrierOp op = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp() {
-      return op_;
+      @SuppressWarnings("deprecation")
+      akka.remote.testconductor.TestConductorProtocol.BarrierOp result = akka.remote.testconductor.TestConductorProtocol.BarrierOp.valueOf(op_);
+      return result == null ? akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter : result;
     }
 
-    // optional int64 timeout = 3;
     public static final int TIMEOUT_FIELD_NUMBER = 3;
     private long timeout_;
     /**
      * <code>optional int64 timeout = 3;</code>
      */
     public boolean hasTimeout() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 timeout = 3;</code>
@@ -2520,15 +2803,12 @@ public final class TestConductorProtocol {
       return timeout_;
     }
 
-    private void initFields() {
-      name_ = "";
-      op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
-      timeout_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasName()) {
         memoizedIsInitialized = 0;
@@ -2542,114 +2822,183 @@ public final class TestConductorProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getNameBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, name_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeEnum(2, op_.getNumber());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeEnum(2, op_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeInt64(3, timeout_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getNameBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, name_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeEnumSize(2, op_.getNumber());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeEnumSize(2, op_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(3, timeout_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.testconductor.TestConductorProtocol.EnterBarrier)) {
+        return super.equals(obj);
+      }
+      akka.remote.testconductor.TestConductorProtocol.EnterBarrier other = (akka.remote.testconductor.TestConductorProtocol.EnterBarrier) obj;
+
+      if (hasName() != other.hasName()) return false;
+      if (hasName()) {
+        if (!getName()
+            .equals(other.getName())) return false;
+      }
+      if (hasOp() != other.hasOp()) return false;
+      if (hasOp()) {
+        if (op_ != other.op_) return false;
+      }
+      if (hasTimeout() != other.hasTimeout()) return false;
+      if (hasTimeout()) {
+        if (getTimeout()
+            != other.getTimeout()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasName()) {
+        hash = (37 * hash) + NAME_FIELD_NUMBER;
+        hash = (53 * hash) + getName().hashCode();
+      }
+      if (hasOp()) {
+        hash = (37 * hash) + OP_FIELD_NUMBER;
+        hash = (53 * hash) + op_;
+      }
+      if (hasTimeout()) {
+        hash = (37 * hash) + TIMEOUT_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getTimeout());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.EnterBarrier prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.EnterBarrier prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2657,14 +3006,16 @@ public final class TestConductorProtocol {
      * Protobuf type {@code EnterBarrier}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:EnterBarrier)
+        akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_EnterBarrier_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_EnterBarrier_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2677,42 +3028,39 @@ public final class TestConductorProtocol {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         name_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
+        op_ = 1;
         bitField0_ = (bitField0_ & ~0x00000002);
         timeout_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_EnterBarrier_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.EnterBarrier getDefaultInstanceForType() {
         return akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.EnterBarrier build() {
         akka.remote.testconductor.TestConductorProtocol.EnterBarrier result = buildPartial();
         if (!result.isInitialized()) {
@@ -2721,28 +3069,62 @@ public final class TestConductorProtocol {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.EnterBarrier buildPartial() {
         akka.remote.testconductor.TestConductorProtocol.EnterBarrier result = new akka.remote.testconductor.TestConductorProtocol.EnterBarrier(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.name_ = name_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           to_bitField0_ |= 0x00000002;
         }
         result.op_ = op_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.timeout_ = timeout_;
           to_bitField0_ |= 0x00000004;
         }
-        result.timeout_ = timeout_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.testconductor.TestConductorProtocol.EnterBarrier) {
           return mergeFrom((akka.remote.testconductor.TestConductorProtocol.EnterBarrier)other);
         } else {
@@ -2764,32 +3146,33 @@ public final class TestConductorProtocol {
         if (other.hasTimeout()) {
           setTimeout(other.getTimeout());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasName()) {
-          
           return false;
         }
         if (!hasOp()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.testconductor.TestConductorProtocol.EnterBarrier parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.testconductor.TestConductorProtocol.EnterBarrier) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -2799,13 +3182,12 @@ public final class TestConductorProtocol {
       }
       private int bitField0_;
 
-      // required string name = 1;
       private java.lang.Object name_ = "";
       /**
        * <code>required string name = 1;</code>
        */
       public boolean hasName() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string name = 1;</code>
@@ -2813,9 +3195,12 @@ public final class TestConductorProtocol {
       public java.lang.String getName() {
         java.lang.Object ref = name_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          name_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            name_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2824,17 +3209,17 @@ public final class TestConductorProtocol {
       /**
        * <code>required string name = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getNameBytes() {
         java.lang.Object ref = name_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           name_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -2863,7 +3248,7 @@ public final class TestConductorProtocol {
        * <code>required string name = 1;</code>
        */
       public Builder setNameBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -2873,19 +3258,20 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // required .BarrierOp op = 2;
-      private akka.remote.testconductor.TestConductorProtocol.BarrierOp op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
+      private int op_ = 1;
       /**
        * <code>required .BarrierOp op = 2;</code>
        */
       public boolean hasOp() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .BarrierOp op = 2;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp() {
-        return op_;
+        @SuppressWarnings("deprecation")
+        akka.remote.testconductor.TestConductorProtocol.BarrierOp result = akka.remote.testconductor.TestConductorProtocol.BarrierOp.valueOf(op_);
+        return result == null ? akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter : result;
       }
       /**
        * <code>required .BarrierOp op = 2;</code>
@@ -2895,7 +3281,7 @@ public final class TestConductorProtocol {
           throw new NullPointerException();
         }
         bitField0_ |= 0x00000002;
-        op_ = value;
+        op_ = value.getNumber();
         onChanged();
         return this;
       }
@@ -2904,18 +3290,17 @@ public final class TestConductorProtocol {
        */
       public Builder clearOp() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
+        op_ = 1;
         onChanged();
         return this;
       }
 
-      // optional int64 timeout = 3;
       private long timeout_ ;
       /**
        * <code>optional int64 timeout = 3;</code>
        */
       public boolean hasTimeout() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 timeout = 3;</code>
@@ -2941,22 +3326,63 @@ public final class TestConductorProtocol {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:EnterBarrier)
     }
 
+    // @@protoc_insertion_point(class_scope:EnterBarrier)
+    private static final akka.remote.testconductor.TestConductorProtocol.EnterBarrier DEFAULT_INSTANCE;
     static {
-      defaultInstance = new EnterBarrier(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.testconductor.TestConductorProtocol.EnterBarrier();
     }
 
-    // @@protoc_insertion_point(class_scope:EnterBarrier)
+    public static akka.remote.testconductor.TestConductorProtocol.EnterBarrier getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<EnterBarrier>
+        PARSER = new akka.protobufv3.internal.AbstractParser<EnterBarrier>() {
+      @java.lang.Override
+      public EnterBarrier parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new EnterBarrier(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<EnterBarrier> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<EnterBarrier> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.testconductor.TestConductorProtocol.EnterBarrier getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface AddressRequestOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AddressRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:AddressRequest)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string node = 1;
     /**
      * <code>required string node = 1;</code>
      */
@@ -2968,10 +3394,9 @@ public final class TestConductorProtocol {
     /**
      * <code>required string node = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getNodeBytes();
 
-    // optional .Address addr = 2;
     /**
      * <code>optional .Address addr = 2;</code>
      */
@@ -2988,39 +3413,42 @@ public final class TestConductorProtocol {
   /**
    * Protobuf type {@code AddressRequest}
    */
-  public static final class AddressRequest extends
-      akka.protobuf.GeneratedMessage
-      implements AddressRequestOrBuilder {
+  public  static final class AddressRequest extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:AddressRequest)
+      AddressRequestOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use AddressRequest.newBuilder() to construct.
-    private AddressRequest(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private AddressRequest(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private AddressRequest(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final AddressRequest defaultInstance;
-    public static AddressRequest getDefaultInstance() {
-      return defaultInstance;
+    private AddressRequest() {
+      node_ = "";
     }
 
-    public AddressRequest getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new AddressRequest();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private AddressRequest(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3029,21 +3457,15 @@ public final class TestConductorProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              node_ = input.readBytes();
+              node_ = bs;
               break;
             }
             case 18: {
               akka.remote.testconductor.TestConductorProtocol.Address.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = addr_.toBuilder();
               }
               addr_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.Address.PARSER, extensionRegistry);
@@ -3054,54 +3476,46 @@ public final class TestConductorProtocol {
               bitField0_ |= 0x00000002;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.testconductor.TestConductorProtocol.AddressRequest.class, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder.class);
     }
 
-    public static akka.protobuf.Parser<AddressRequest> PARSER =
-        new akka.protobuf.AbstractParser<AddressRequest>() {
-      public AddressRequest parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AddressRequest(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<AddressRequest> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string node = 1;
     public static final int NODE_FIELD_NUMBER = 1;
-    private java.lang.Object node_;
+    private volatile java.lang.Object node_;
     /**
      * <code>required string node = 1;</code>
      */
     public boolean hasNode() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string node = 1;</code>
@@ -3111,8 +3525,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           node_ = s;
@@ -3123,50 +3537,47 @@ public final class TestConductorProtocol {
     /**
      * <code>required string node = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getNodeBytes() {
       java.lang.Object ref = node_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         node_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional .Address addr = 2;
     public static final int ADDR_FIELD_NUMBER = 2;
     private akka.remote.testconductor.TestConductorProtocol.Address addr_;
     /**
      * <code>optional .Address addr = 2;</code>
      */
     public boolean hasAddr() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .Address addr = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.Address getAddr() {
-      return addr_;
+      return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : addr_;
     }
     /**
      * <code>optional .Address addr = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddrOrBuilder() {
-      return addr_;
+      return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : addr_;
     }
 
-    private void initFields() {
-      node_ = "";
-      addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasNode()) {
         memoizedIsInitialized = 0;
@@ -3182,107 +3593,167 @@ public final class TestConductorProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getNodeBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, node_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, addr_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getAddr());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getNodeBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, node_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, addr_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getAddr());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.testconductor.TestConductorProtocol.AddressRequest)) {
+        return super.equals(obj);
+      }
+      akka.remote.testconductor.TestConductorProtocol.AddressRequest other = (akka.remote.testconductor.TestConductorProtocol.AddressRequest) obj;
+
+      if (hasNode() != other.hasNode()) return false;
+      if (hasNode()) {
+        if (!getNode()
+            .equals(other.getNode())) return false;
+      }
+      if (hasAddr() != other.hasAddr()) return false;
+      if (hasAddr()) {
+        if (!getAddr()
+            .equals(other.getAddr())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasNode()) {
+        hash = (37 * hash) + NODE_FIELD_NUMBER;
+        hash = (53 * hash) + getNode().hashCode();
+      }
+      if (hasAddr()) {
+        hash = (37 * hash) + ADDR_FIELD_NUMBER;
+        hash = (53 * hash) + getAddr().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.AddressRequest prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.AddressRequest prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3290,14 +3761,16 @@ public final class TestConductorProtocol {
      * Protobuf type {@code AddressRequest}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:AddressRequest)
+        akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3310,25 +3783,23 @@ public final class TestConductorProtocol {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getAddrFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         node_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         if (addrBuilder_ == null) {
-          addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          addr_ = null;
         } else {
           addrBuilder_.clear();
         }
@@ -3336,19 +3807,18 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.AddressRequest getDefaultInstanceForType() {
         return akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.AddressRequest build() {
         akka.remote.testconductor.TestConductorProtocol.AddressRequest result = buildPartial();
         if (!result.isInitialized()) {
@@ -3357,28 +3827,62 @@ public final class TestConductorProtocol {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.AddressRequest buildPartial() {
         akka.remote.testconductor.TestConductorProtocol.AddressRequest result = new akka.remote.testconductor.TestConductorProtocol.AddressRequest(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.node_ = node_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (addrBuilder_ == null) {
+            result.addr_ = addr_;
+          } else {
+            result.addr_ = addrBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
-        }
-        if (addrBuilder_ == null) {
-          result.addr_ = addr_;
-        } else {
-          result.addr_ = addrBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.testconductor.TestConductorProtocol.AddressRequest) {
           return mergeFrom((akka.remote.testconductor.TestConductorProtocol.AddressRequest)other);
         } else {
@@ -3397,34 +3901,35 @@ public final class TestConductorProtocol {
         if (other.hasAddr()) {
           mergeAddr(other.getAddr());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasNode()) {
-          
           return false;
         }
         if (hasAddr()) {
           if (!getAddr().isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.testconductor.TestConductorProtocol.AddressRequest parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.testconductor.TestConductorProtocol.AddressRequest) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -3434,13 +3939,12 @@ public final class TestConductorProtocol {
       }
       private int bitField0_;
 
-      // required string node = 1;
       private java.lang.Object node_ = "";
       /**
        * <code>required string node = 1;</code>
        */
       public boolean hasNode() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string node = 1;</code>
@@ -3448,9 +3952,12 @@ public final class TestConductorProtocol {
       public java.lang.String getNode() {
         java.lang.Object ref = node_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          node_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            node_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -3459,17 +3966,17 @@ public final class TestConductorProtocol {
       /**
        * <code>required string node = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getNodeBytes() {
         java.lang.Object ref = node_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           node_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -3498,7 +4005,7 @@ public final class TestConductorProtocol {
        * <code>required string node = 1;</code>
        */
       public Builder setNodeBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3508,22 +4015,21 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // optional .Address addr = 2;
-      private akka.remote.testconductor.TestConductorProtocol.Address addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.Address addr_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addrBuilder_;
       /**
        * <code>optional .Address addr = 2;</code>
        */
       public boolean hasAddr() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .Address addr = 2;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.Address getAddr() {
         if (addrBuilder_ == null) {
-          return addr_;
+          return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : addr_;
         } else {
           return addrBuilder_.getMessage();
         }
@@ -3563,7 +4069,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeAddr(akka.remote.testconductor.TestConductorProtocol.Address value) {
         if (addrBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              addr_ != null &&
               addr_ != akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance()) {
             addr_ =
               akka.remote.testconductor.TestConductorProtocol.Address.newBuilder(addr_).mergeFrom(value).buildPartial();
@@ -3582,7 +4089,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearAddr() {
         if (addrBuilder_ == null) {
-          addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          addr_ = null;
           onChanged();
         } else {
           addrBuilder_.clear();
@@ -3605,41 +4112,83 @@ public final class TestConductorProtocol {
         if (addrBuilder_ != null) {
           return addrBuilder_.getMessageOrBuilder();
         } else {
-          return addr_;
+          return addr_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : addr_;
         }
       }
       /**
        * <code>optional .Address addr = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> 
           getAddrFieldBuilder() {
         if (addrBuilder_ == null) {
-          addrBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          addrBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder>(
-                  addr_,
+                  getAddr(),
                   getParentForChildren(),
                   isClean());
           addr_ = null;
         }
         return addrBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:AddressRequest)
     }
 
+    // @@protoc_insertion_point(class_scope:AddressRequest)
+    private static final akka.remote.testconductor.TestConductorProtocol.AddressRequest DEFAULT_INSTANCE;
     static {
-      defaultInstance = new AddressRequest(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.testconductor.TestConductorProtocol.AddressRequest();
     }
 
-    // @@protoc_insertion_point(class_scope:AddressRequest)
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<AddressRequest>
+        PARSER = new akka.protobufv3.internal.AbstractParser<AddressRequest>() {
+      @java.lang.Override
+      public AddressRequest parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new AddressRequest(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<AddressRequest> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<AddressRequest> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.testconductor.TestConductorProtocol.AddressRequest getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface AddressOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AddressOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Address)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string protocol = 1;
     /**
      * <code>required string protocol = 1;</code>
      */
@@ -3651,10 +4200,9 @@ public final class TestConductorProtocol {
     /**
      * <code>required string protocol = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getProtocolBytes();
 
-    // required string system = 2;
     /**
      * <code>required string system = 2;</code>
      */
@@ -3666,10 +4214,9 @@ public final class TestConductorProtocol {
     /**
      * <code>required string system = 2;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getSystemBytes();
 
-    // required string host = 3;
     /**
      * <code>required string host = 3;</code>
      */
@@ -3681,10 +4228,9 @@ public final class TestConductorProtocol {
     /**
      * <code>required string host = 3;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getHostBytes();
 
-    // required int32 port = 4;
     /**
      * <code>required int32 port = 4;</code>
      */
@@ -3697,39 +4243,44 @@ public final class TestConductorProtocol {
   /**
    * Protobuf type {@code Address}
    */
-  public static final class Address extends
-      akka.protobuf.GeneratedMessage
-      implements AddressOrBuilder {
+  public  static final class Address extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:Address)
+      AddressOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use Address.newBuilder() to construct.
-    private Address(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Address(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private Address(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final Address defaultInstance;
-    public static Address getDefaultInstance() {
-      return defaultInstance;
+    private Address() {
+      protocol_ = "";
+      system_ = "";
+      host_ = "";
     }
 
-    public Address getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Address();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private Address(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3738,26 +4289,22 @@ public final class TestConductorProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              protocol_ = input.readBytes();
+              protocol_ = bs;
               break;
             }
             case 18: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              system_ = input.readBytes();
+              system_ = bs;
               break;
             }
             case 26: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              host_ = input.readBytes();
+              host_ = bs;
               break;
             }
             case 32: {
@@ -3765,54 +4312,46 @@ public final class TestConductorProtocol {
               port_ = input.readInt32();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_Address_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_Address_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.testconductor.TestConductorProtocol.Address.class, akka.remote.testconductor.TestConductorProtocol.Address.Builder.class);
     }
 
-    public static akka.protobuf.Parser<Address> PARSER =
-        new akka.protobuf.AbstractParser<Address>() {
-      public Address parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new Address(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<Address> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string protocol = 1;
     public static final int PROTOCOL_FIELD_NUMBER = 1;
-    private java.lang.Object protocol_;
+    private volatile java.lang.Object protocol_;
     /**
      * <code>required string protocol = 1;</code>
      */
     public boolean hasProtocol() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string protocol = 1;</code>
@@ -3822,8 +4361,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           protocol_ = s;
@@ -3834,28 +4373,27 @@ public final class TestConductorProtocol {
     /**
      * <code>required string protocol = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
       java.lang.Object ref = protocol_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         protocol_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required string system = 2;
     public static final int SYSTEM_FIELD_NUMBER = 2;
-    private java.lang.Object system_;
+    private volatile java.lang.Object system_;
     /**
      * <code>required string system = 2;</code>
      */
     public boolean hasSystem() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string system = 2;</code>
@@ -3865,8 +4403,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           system_ = s;
@@ -3877,28 +4415,27 @@ public final class TestConductorProtocol {
     /**
      * <code>required string system = 2;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getSystemBytes() {
       java.lang.Object ref = system_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         system_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required string host = 3;
     public static final int HOST_FIELD_NUMBER = 3;
-    private java.lang.Object host_;
+    private volatile java.lang.Object host_;
     /**
      * <code>required string host = 3;</code>
      */
     public boolean hasHost() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string host = 3;</code>
@@ -3908,8 +4445,8 @@ public final class TestConductorProtocol {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           host_ = s;
@@ -3920,28 +4457,27 @@ public final class TestConductorProtocol {
     /**
      * <code>required string host = 3;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getHostBytes() {
       java.lang.Object ref = host_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         host_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required int32 port = 4;
     public static final int PORT_FIELD_NUMBER = 4;
     private int port_;
     /**
      * <code>required int32 port = 4;</code>
      */
     public boolean hasPort() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required int32 port = 4;</code>
@@ -3950,16 +4486,12 @@ public final class TestConductorProtocol {
       return port_;
     }
 
-    private void initFields() {
-      protocol_ = "";
-      system_ = "";
-      host_ = "";
-      port_ = 0;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasProtocol()) {
         memoizedIsInitialized = 0;
@@ -3981,121 +4513,197 @@ public final class TestConductorProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getProtocolBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, protocol_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getSystemBytes());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 2, system_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getHostBytes());
+      if (((bitField0_ & 0x00000004) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 3, host_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+      if (((bitField0_ & 0x00000008) != 0)) {
         output.writeInt32(4, port_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getProtocolBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, protocol_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getSystemBytes());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(2, system_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getHostBytes());
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(3, host_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt32Size(4, port_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.testconductor.TestConductorProtocol.Address)) {
+        return super.equals(obj);
+      }
+      akka.remote.testconductor.TestConductorProtocol.Address other = (akka.remote.testconductor.TestConductorProtocol.Address) obj;
+
+      if (hasProtocol() != other.hasProtocol()) return false;
+      if (hasProtocol()) {
+        if (!getProtocol()
+            .equals(other.getProtocol())) return false;
+      }
+      if (hasSystem() != other.hasSystem()) return false;
+      if (hasSystem()) {
+        if (!getSystem()
+            .equals(other.getSystem())) return false;
+      }
+      if (hasHost() != other.hasHost()) return false;
+      if (hasHost()) {
+        if (!getHost()
+            .equals(other.getHost())) return false;
+      }
+      if (hasPort() != other.hasPort()) return false;
+      if (hasPort()) {
+        if (getPort()
+            != other.getPort()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasProtocol()) {
+        hash = (37 * hash) + PROTOCOL_FIELD_NUMBER;
+        hash = (53 * hash) + getProtocol().hashCode();
+      }
+      if (hasSystem()) {
+        hash = (37 * hash) + SYSTEM_FIELD_NUMBER;
+        hash = (53 * hash) + getSystem().hashCode();
+      }
+      if (hasHost()) {
+        hash = (37 * hash) + HOST_FIELD_NUMBER;
+        hash = (53 * hash) + getHost().hashCode();
+      }
+      if (hasPort()) {
+        hash = (37 * hash) + PORT_FIELD_NUMBER;
+        hash = (53 * hash) + getPort();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.Address parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.Address prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.Address prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4103,14 +4711,16 @@ public final class TestConductorProtocol {
      * Protobuf type {@code Address}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Address)
+        akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Address_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Address_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4123,18 +4733,16 @@ public final class TestConductorProtocol {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         protocol_ = "";
@@ -4148,19 +4756,18 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_Address_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Address getDefaultInstanceForType() {
         return akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Address build() {
         akka.remote.testconductor.TestConductorProtocol.Address result = buildPartial();
         if (!result.isInitialized()) {
@@ -4169,32 +4776,66 @@ public final class TestConductorProtocol {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.Address buildPartial() {
         akka.remote.testconductor.TestConductorProtocol.Address result = new akka.remote.testconductor.TestConductorProtocol.Address(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.protocol_ = protocol_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           to_bitField0_ |= 0x00000002;
         }
         result.system_ = system_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
           to_bitField0_ |= 0x00000004;
         }
         result.host_ = host_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.port_ = port_;
           to_bitField0_ |= 0x00000008;
         }
-        result.port_ = port_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.testconductor.TestConductorProtocol.Address) {
           return mergeFrom((akka.remote.testconductor.TestConductorProtocol.Address)other);
         } else {
@@ -4223,40 +4864,39 @@ public final class TestConductorProtocol {
         if (other.hasPort()) {
           setPort(other.getPort());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasProtocol()) {
-          
           return false;
         }
         if (!hasSystem()) {
-          
           return false;
         }
         if (!hasHost()) {
-          
           return false;
         }
         if (!hasPort()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.testconductor.TestConductorProtocol.Address parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.testconductor.TestConductorProtocol.Address) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -4266,13 +4906,12 @@ public final class TestConductorProtocol {
       }
       private int bitField0_;
 
-      // required string protocol = 1;
       private java.lang.Object protocol_ = "";
       /**
        * <code>required string protocol = 1;</code>
        */
       public boolean hasProtocol() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string protocol = 1;</code>
@@ -4280,9 +4919,12 @@ public final class TestConductorProtocol {
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          protocol_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            protocol_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -4291,17 +4933,17 @@ public final class TestConductorProtocol {
       /**
        * <code>required string protocol = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
         java.lang.Object ref = protocol_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           protocol_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -4330,7 +4972,7 @@ public final class TestConductorProtocol {
        * <code>required string protocol = 1;</code>
        */
       public Builder setProtocolBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4340,13 +4982,12 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // required string system = 2;
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 2;</code>
        */
       public boolean hasSystem() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string system = 2;</code>
@@ -4354,9 +4995,12 @@ public final class TestConductorProtocol {
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          system_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            system_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -4365,17 +5009,17 @@ public final class TestConductorProtocol {
       /**
        * <code>required string system = 2;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getSystemBytes() {
         java.lang.Object ref = system_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           system_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -4404,7 +5048,7 @@ public final class TestConductorProtocol {
        * <code>required string system = 2;</code>
        */
       public Builder setSystemBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4414,13 +5058,12 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // required string host = 3;
       private java.lang.Object host_ = "";
       /**
        * <code>required string host = 3;</code>
        */
       public boolean hasHost() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string host = 3;</code>
@@ -4428,9 +5071,12 @@ public final class TestConductorProtocol {
       public java.lang.String getHost() {
         java.lang.Object ref = host_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          host_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            host_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -4439,17 +5085,17 @@ public final class TestConductorProtocol {
       /**
        * <code>required string host = 3;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getHostBytes() {
         java.lang.Object ref = host_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           host_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -4478,7 +5124,7 @@ public final class TestConductorProtocol {
        * <code>required string host = 3;</code>
        */
       public Builder setHostBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4488,13 +5134,12 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // required int32 port = 4;
       private int port_ ;
       /**
        * <code>required int32 port = 4;</code>
        */
       public boolean hasPort() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required int32 port = 4;</code>
@@ -4520,22 +5165,63 @@ public final class TestConductorProtocol {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:Address)
     }
 
+    // @@protoc_insertion_point(class_scope:Address)
+    private static final akka.remote.testconductor.TestConductorProtocol.Address DEFAULT_INSTANCE;
     static {
-      defaultInstance = new Address(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.testconductor.TestConductorProtocol.Address();
     }
 
-    // @@protoc_insertion_point(class_scope:Address)
+    public static akka.remote.testconductor.TestConductorProtocol.Address getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Address>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Address>() {
+      @java.lang.Override
+      public Address parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Address(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Address> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Address> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.testconductor.TestConductorProtocol.Address getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface InjectFailureOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface InjectFailureOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:InjectFailure)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .FailType failure = 1;
     /**
      * <code>required .FailType failure = 1;</code>
      */
@@ -4545,7 +5231,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.FailType getFailure();
 
-    // optional .Direction direction = 2;
     /**
      * <code>optional .Direction direction = 2;</code>
      */
@@ -4555,7 +5240,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.Direction getDirection();
 
-    // optional .Address address = 3;
     /**
      * <code>optional .Address address = 3;</code>
      */
@@ -4569,7 +5253,6 @@ public final class TestConductorProtocol {
      */
     akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddressOrBuilder();
 
-    // optional float rateMBit = 6;
     /**
      * <code>optional float rateMBit = 6;</code>
      */
@@ -4579,7 +5262,6 @@ public final class TestConductorProtocol {
      */
     float getRateMBit();
 
-    // optional int32 exitValue = 7;
     /**
      * <code>optional int32 exitValue = 7;</code>
      */
@@ -4592,39 +5274,43 @@ public final class TestConductorProtocol {
   /**
    * Protobuf type {@code InjectFailure}
    */
-  public static final class InjectFailure extends
-      akka.protobuf.GeneratedMessage
-      implements InjectFailureOrBuilder {
+  public  static final class InjectFailure extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:InjectFailure)
+      InjectFailureOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use InjectFailure.newBuilder() to construct.
-    private InjectFailure(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private InjectFailure(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private InjectFailure(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final InjectFailure defaultInstance;
-    public static InjectFailure getDefaultInstance() {
-      return defaultInstance;
+    private InjectFailure() {
+      failure_ = 1;
+      direction_ = 1;
     }
 
-    public InjectFailure getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new InjectFailure();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private InjectFailure(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4633,38 +5319,33 @@ public final class TestConductorProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 8: {
               int rawValue = input.readEnum();
+                @SuppressWarnings("deprecation")
               akka.remote.testconductor.TestConductorProtocol.FailType value = akka.remote.testconductor.TestConductorProtocol.FailType.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
                 bitField0_ |= 0x00000001;
-                failure_ = value;
+                failure_ = rawValue;
               }
               break;
             }
             case 16: {
               int rawValue = input.readEnum();
+                @SuppressWarnings("deprecation")
               akka.remote.testconductor.TestConductorProtocol.Direction value = akka.remote.testconductor.TestConductorProtocol.Direction.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(2, rawValue);
               } else {
                 bitField0_ |= 0x00000002;
-                direction_ = value;
+                direction_ = rawValue;
               }
               break;
             }
             case 26: {
               akka.remote.testconductor.TestConductorProtocol.Address.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+              if (((bitField0_ & 0x00000004) != 0)) {
                 subBuilder = address_.toBuilder();
               }
               address_ = input.readMessage(akka.remote.testconductor.TestConductorProtocol.Address.PARSER, extensionRegistry);
@@ -4685,108 +5366,101 @@ public final class TestConductorProtocol {
               exitValue_ = input.readInt32();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_InjectFailure_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.testconductor.TestConductorProtocol.internal_static_InjectFailure_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.testconductor.TestConductorProtocol.InjectFailure.class, akka.remote.testconductor.TestConductorProtocol.InjectFailure.Builder.class);
     }
 
-    public static akka.protobuf.Parser<InjectFailure> PARSER =
-        new akka.protobuf.AbstractParser<InjectFailure>() {
-      public InjectFailure parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new InjectFailure(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<InjectFailure> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .FailType failure = 1;
     public static final int FAILURE_FIELD_NUMBER = 1;
-    private akka.remote.testconductor.TestConductorProtocol.FailType failure_;
+    private int failure_;
     /**
      * <code>required .FailType failure = 1;</code>
      */
     public boolean hasFailure() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .FailType failure = 1;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.FailType getFailure() {
-      return failure_;
+      @SuppressWarnings("deprecation")
+      akka.remote.testconductor.TestConductorProtocol.FailType result = akka.remote.testconductor.TestConductorProtocol.FailType.valueOf(failure_);
+      return result == null ? akka.remote.testconductor.TestConductorProtocol.FailType.Throttle : result;
     }
 
-    // optional .Direction direction = 2;
     public static final int DIRECTION_FIELD_NUMBER = 2;
-    private akka.remote.testconductor.TestConductorProtocol.Direction direction_;
+    private int direction_;
     /**
      * <code>optional .Direction direction = 2;</code>
      */
     public boolean hasDirection() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .Direction direction = 2;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.Direction getDirection() {
-      return direction_;
+      @SuppressWarnings("deprecation")
+      akka.remote.testconductor.TestConductorProtocol.Direction result = akka.remote.testconductor.TestConductorProtocol.Direction.valueOf(direction_);
+      return result == null ? akka.remote.testconductor.TestConductorProtocol.Direction.Send : result;
     }
 
-    // optional .Address address = 3;
     public static final int ADDRESS_FIELD_NUMBER = 3;
     private akka.remote.testconductor.TestConductorProtocol.Address address_;
     /**
      * <code>optional .Address address = 3;</code>
      */
     public boolean hasAddress() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .Address address = 3;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
-      return address_;
+      return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
     }
     /**
      * <code>optional .Address address = 3;</code>
      */
     public akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddressOrBuilder() {
-      return address_;
+      return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
     }
 
-    // optional float rateMBit = 6;
     public static final int RATEMBIT_FIELD_NUMBER = 6;
     private float rateMBit_;
     /**
      * <code>optional float rateMBit = 6;</code>
      */
     public boolean hasRateMBit() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional float rateMBit = 6;</code>
@@ -4795,14 +5469,13 @@ public final class TestConductorProtocol {
       return rateMBit_;
     }
 
-    // optional int32 exitValue = 7;
     public static final int EXITVALUE_FIELD_NUMBER = 7;
     private int exitValue_;
     /**
      * <code>optional int32 exitValue = 7;</code>
      */
     public boolean hasExitValue() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional int32 exitValue = 7;</code>
@@ -4811,17 +5484,12 @@ public final class TestConductorProtocol {
       return exitValue_;
     }
 
-    private void initFields() {
-      failure_ = akka.remote.testconductor.TestConductorProtocol.FailType.Throttle;
-      direction_ = akka.remote.testconductor.TestConductorProtocol.Direction.Send;
-      address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
-      rateMBit_ = 0F;
-      exitValue_ = 0;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasFailure()) {
         memoizedIsInitialized = 0;
@@ -4837,128 +5505,216 @@ public final class TestConductorProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeEnum(1, failure_.getNumber());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeEnum(1, failure_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeEnum(2, direction_.getNumber());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeEnum(2, direction_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(3, address_);
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeMessage(3, getAddress());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+      if (((bitField0_ & 0x00000008) != 0)) {
         output.writeFloat(6, rateMBit_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+      if (((bitField0_ & 0x00000010) != 0)) {
         output.writeInt32(7, exitValue_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeEnumSize(1, failure_.getNumber());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeEnumSize(1, failure_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeEnumSize(2, direction_.getNumber());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeEnumSize(2, direction_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(3, address_);
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(3, getAddress());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeFloatSize(6, rateMBit_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000010) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt32Size(7, exitValue_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.testconductor.TestConductorProtocol.InjectFailure)) {
+        return super.equals(obj);
+      }
+      akka.remote.testconductor.TestConductorProtocol.InjectFailure other = (akka.remote.testconductor.TestConductorProtocol.InjectFailure) obj;
+
+      if (hasFailure() != other.hasFailure()) return false;
+      if (hasFailure()) {
+        if (failure_ != other.failure_) return false;
+      }
+      if (hasDirection() != other.hasDirection()) return false;
+      if (hasDirection()) {
+        if (direction_ != other.direction_) return false;
+      }
+      if (hasAddress() != other.hasAddress()) return false;
+      if (hasAddress()) {
+        if (!getAddress()
+            .equals(other.getAddress())) return false;
+      }
+      if (hasRateMBit() != other.hasRateMBit()) return false;
+      if (hasRateMBit()) {
+        if (java.lang.Float.floatToIntBits(getRateMBit())
+            != java.lang.Float.floatToIntBits(
+                other.getRateMBit())) return false;
+      }
+      if (hasExitValue() != other.hasExitValue()) return false;
+      if (hasExitValue()) {
+        if (getExitValue()
+            != other.getExitValue()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasFailure()) {
+        hash = (37 * hash) + FAILURE_FIELD_NUMBER;
+        hash = (53 * hash) + failure_;
+      }
+      if (hasDirection()) {
+        hash = (37 * hash) + DIRECTION_FIELD_NUMBER;
+        hash = (53 * hash) + direction_;
+      }
+      if (hasAddress()) {
+        hash = (37 * hash) + ADDRESS_FIELD_NUMBER;
+        hash = (53 * hash) + getAddress().hashCode();
+      }
+      if (hasRateMBit()) {
+        hash = (37 * hash) + RATEMBIT_FIELD_NUMBER;
+        hash = (53 * hash) + java.lang.Float.floatToIntBits(
+            getRateMBit());
+      }
+      if (hasExitValue()) {
+        hash = (37 * hash) + EXITVALUE_FIELD_NUMBER;
+        hash = (53 * hash) + getExitValue();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.testconductor.TestConductorProtocol.InjectFailure parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.InjectFailure prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.InjectFailure prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4966,14 +5722,16 @@ public final class TestConductorProtocol {
      * Protobuf type {@code InjectFailure}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:InjectFailure)
+        akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_InjectFailure_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_InjectFailure_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4986,27 +5744,25 @@ public final class TestConductorProtocol {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getAddressFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
-        failure_ = akka.remote.testconductor.TestConductorProtocol.FailType.Throttle;
+        failure_ = 1;
         bitField0_ = (bitField0_ & ~0x00000001);
-        direction_ = akka.remote.testconductor.TestConductorProtocol.Direction.Send;
+        direction_ = 1;
         bitField0_ = (bitField0_ & ~0x00000002);
         if (addressBuilder_ == null) {
-          address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          address_ = null;
         } else {
           addressBuilder_.clear();
         }
@@ -5018,19 +5774,18 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.testconductor.TestConductorProtocol.internal_static_InjectFailure_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.InjectFailure getDefaultInstanceForType() {
         return akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.InjectFailure build() {
         akka.remote.testconductor.TestConductorProtocol.InjectFailure result = buildPartial();
         if (!result.isInitialized()) {
@@ -5039,40 +5794,74 @@ public final class TestConductorProtocol {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.testconductor.TestConductorProtocol.InjectFailure buildPartial() {
         akka.remote.testconductor.TestConductorProtocol.InjectFailure result = new akka.remote.testconductor.TestConductorProtocol.InjectFailure(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.failure_ = failure_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           to_bitField0_ |= 0x00000002;
         }
         result.direction_ = direction_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          if (addressBuilder_ == null) {
+            result.address_ = address_;
+          } else {
+            result.address_ = addressBuilder_.build();
+          }
           to_bitField0_ |= 0x00000004;
         }
-        if (addressBuilder_ == null) {
-          result.address_ = address_;
-        } else {
-          result.address_ = addressBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.rateMBit_ = rateMBit_;
           to_bitField0_ |= 0x00000008;
         }
-        result.rateMBit_ = rateMBit_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          result.exitValue_ = exitValue_;
           to_bitField0_ |= 0x00000010;
         }
-        result.exitValue_ = exitValue_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.testconductor.TestConductorProtocol.InjectFailure) {
           return mergeFrom((akka.remote.testconductor.TestConductorProtocol.InjectFailure)other);
         } else {
@@ -5098,34 +5887,35 @@ public final class TestConductorProtocol {
         if (other.hasExitValue()) {
           setExitValue(other.getExitValue());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasFailure()) {
-          
           return false;
         }
         if (hasAddress()) {
           if (!getAddress().isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.testconductor.TestConductorProtocol.InjectFailure parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.testconductor.TestConductorProtocol.InjectFailure) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -5135,19 +5925,20 @@ public final class TestConductorProtocol {
       }
       private int bitField0_;
 
-      // required .FailType failure = 1;
-      private akka.remote.testconductor.TestConductorProtocol.FailType failure_ = akka.remote.testconductor.TestConductorProtocol.FailType.Throttle;
+      private int failure_ = 1;
       /**
        * <code>required .FailType failure = 1;</code>
        */
       public boolean hasFailure() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .FailType failure = 1;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.FailType getFailure() {
-        return failure_;
+        @SuppressWarnings("deprecation")
+        akka.remote.testconductor.TestConductorProtocol.FailType result = akka.remote.testconductor.TestConductorProtocol.FailType.valueOf(failure_);
+        return result == null ? akka.remote.testconductor.TestConductorProtocol.FailType.Throttle : result;
       }
       /**
        * <code>required .FailType failure = 1;</code>
@@ -5157,7 +5948,7 @@ public final class TestConductorProtocol {
           throw new NullPointerException();
         }
         bitField0_ |= 0x00000001;
-        failure_ = value;
+        failure_ = value.getNumber();
         onChanged();
         return this;
       }
@@ -5166,24 +5957,25 @@ public final class TestConductorProtocol {
        */
       public Builder clearFailure() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        failure_ = akka.remote.testconductor.TestConductorProtocol.FailType.Throttle;
+        failure_ = 1;
         onChanged();
         return this;
       }
 
-      // optional .Direction direction = 2;
-      private akka.remote.testconductor.TestConductorProtocol.Direction direction_ = akka.remote.testconductor.TestConductorProtocol.Direction.Send;
+      private int direction_ = 1;
       /**
        * <code>optional .Direction direction = 2;</code>
        */
       public boolean hasDirection() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .Direction direction = 2;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.Direction getDirection() {
-        return direction_;
+        @SuppressWarnings("deprecation")
+        akka.remote.testconductor.TestConductorProtocol.Direction result = akka.remote.testconductor.TestConductorProtocol.Direction.valueOf(direction_);
+        return result == null ? akka.remote.testconductor.TestConductorProtocol.Direction.Send : result;
       }
       /**
        * <code>optional .Direction direction = 2;</code>
@@ -5193,7 +5985,7 @@ public final class TestConductorProtocol {
           throw new NullPointerException();
         }
         bitField0_ |= 0x00000002;
-        direction_ = value;
+        direction_ = value.getNumber();
         onChanged();
         return this;
       }
@@ -5202,27 +5994,26 @@ public final class TestConductorProtocol {
        */
       public Builder clearDirection() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        direction_ = akka.remote.testconductor.TestConductorProtocol.Direction.Send;
+        direction_ = 1;
         onChanged();
         return this;
       }
 
-      // optional .Address address = 3;
-      private akka.remote.testconductor.TestConductorProtocol.Address address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.testconductor.TestConductorProtocol.Address address_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addressBuilder_;
       /**
        * <code>optional .Address address = 3;</code>
        */
       public boolean hasAddress() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .Address address = 3;</code>
        */
       public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
         if (addressBuilder_ == null) {
-          return address_;
+          return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
         } else {
           return addressBuilder_.getMessage();
         }
@@ -5262,7 +6053,8 @@ public final class TestConductorProtocol {
        */
       public Builder mergeAddress(akka.remote.testconductor.TestConductorProtocol.Address value) {
         if (addressBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+          if (((bitField0_ & 0x00000004) != 0) &&
+              address_ != null &&
               address_ != akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance()) {
             address_ =
               akka.remote.testconductor.TestConductorProtocol.Address.newBuilder(address_).mergeFrom(value).buildPartial();
@@ -5281,7 +6073,7 @@ public final class TestConductorProtocol {
        */
       public Builder clearAddress() {
         if (addressBuilder_ == null) {
-          address_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          address_ = null;
           onChanged();
         } else {
           addressBuilder_.clear();
@@ -5304,19 +6096,20 @@ public final class TestConductorProtocol {
         if (addressBuilder_ != null) {
           return addressBuilder_.getMessageOrBuilder();
         } else {
-          return address_;
+          return address_ == null ?
+              akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
         }
       }
       /**
        * <code>optional .Address address = 3;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> 
           getAddressFieldBuilder() {
         if (addressBuilder_ == null) {
-          addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          addressBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder>(
-                  address_,
+                  getAddress(),
                   getParentForChildren(),
                   isClean());
           address_ = null;
@@ -5324,13 +6117,12 @@ public final class TestConductorProtocol {
         return addressBuilder_;
       }
 
-      // optional float rateMBit = 6;
       private float rateMBit_ ;
       /**
        * <code>optional float rateMBit = 6;</code>
        */
       public boolean hasRateMBit() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional float rateMBit = 6;</code>
@@ -5357,13 +6149,12 @@ public final class TestConductorProtocol {
         return this;
       }
 
-      // optional int32 exitValue = 7;
       private int exitValue_ ;
       /**
        * <code>optional int32 exitValue = 7;</code>
        */
       public boolean hasExitValue() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional int32 exitValue = 7;</code>
@@ -5389,54 +6180,95 @@ public final class TestConductorProtocol {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:InjectFailure)
     }
 
+    // @@protoc_insertion_point(class_scope:InjectFailure)
+    private static final akka.remote.testconductor.TestConductorProtocol.InjectFailure DEFAULT_INSTANCE;
     static {
-      defaultInstance = new InjectFailure(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.testconductor.TestConductorProtocol.InjectFailure();
     }
 
-    // @@protoc_insertion_point(class_scope:InjectFailure)
+    public static akka.remote.testconductor.TestConductorProtocol.InjectFailure getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<InjectFailure>
+        PARSER = new akka.protobufv3.internal.AbstractParser<InjectFailure>() {
+      @java.lang.Override
+      public InjectFailure parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new InjectFailure(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<InjectFailure> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<InjectFailure> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.testconductor.TestConductorProtocol.InjectFailure getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_Wrapper_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_Wrapper_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_Hello_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_Hello_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_EnterBarrier_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_EnterBarrier_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_AddressRequest_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_AddressRequest_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_Address_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_Address_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_InjectFailure_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_InjectFailure_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -5449,7 +6281,7 @@ public final class TestConductorProtocol {
       "\022\014\n\004name\030\001 \002(\t\022\026\n\002op\030\002 \002(\0162\n.BarrierOp\022\017" +
       "\n\007timeout\030\003 \001(\003\"6\n\016AddressRequest\022\014\n\004nod" +
       "e\030\001 \002(\t\022\026\n\004addr\030\002 \001(\0132\010.Address\"G\n\007Addre" +
-      "ss\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\014\n\004",
+      "ss\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\014\n\004" +
       "host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"\212\001\n\rInjectFailu" +
       "re\022\032\n\007failure\030\001 \002(\0162\t.FailType\022\035\n\tdirect" +
       "ion\030\002 \001(\0162\n.Direction\022\031\n\007address\030\003 \001(\0132\010" +
@@ -5461,54 +6293,46 @@ public final class TestConductorProtocol {
       "t\020\006*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Receive\020\002\022" +
       "\010\n\004Both\020\003B\035\n\031akka.remote.testconductorH\001"
     };
-    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_Wrapper_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_Wrapper_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_Wrapper_descriptor,
-              new java.lang.String[] { "Hello", "Barrier", "Failure", "Done", "Addr", });
-          internal_static_Hello_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_Hello_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_Hello_descriptor,
-              new java.lang.String[] { "Name", "Address", });
-          internal_static_EnterBarrier_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_EnterBarrier_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_EnterBarrier_descriptor,
-              new java.lang.String[] { "Name", "Op", "Timeout", });
-          internal_static_AddressRequest_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_AddressRequest_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AddressRequest_descriptor,
-              new java.lang.String[] { "Node", "Addr", });
-          internal_static_Address_descriptor =
-            getDescriptor().getMessageTypes().get(4);
-          internal_static_Address_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_Address_descriptor,
-              new java.lang.String[] { "Protocol", "System", "Host", "Port", });
-          internal_static_InjectFailure_descriptor =
-            getDescriptor().getMessageTypes().get(5);
-          internal_static_InjectFailure_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_InjectFailure_descriptor,
-              new java.lang.String[] { "Failure", "Direction", "Address", "RateMBit", "ExitValue", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+        });
+    internal_static_Wrapper_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_Wrapper_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_Wrapper_descriptor,
+        new java.lang.String[] { "Hello", "Barrier", "Failure", "Done", "Addr", });
+    internal_static_Hello_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_Hello_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_Hello_descriptor,
+        new java.lang.String[] { "Name", "Address", });
+    internal_static_EnterBarrier_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_EnterBarrier_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_EnterBarrier_descriptor,
+        new java.lang.String[] { "Name", "Op", "Timeout", });
+    internal_static_AddressRequest_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_AddressRequest_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_AddressRequest_descriptor,
+        new java.lang.String[] { "Node", "Addr", });
+    internal_static_Address_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_Address_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_Address_descriptor,
+        new java.lang.String[] { "Protocol", "System", "Host", "Port", });
+    internal_static_InjectFailure_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_InjectFailure_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_InjectFailure_descriptor,
+        new java.lang.String[] { "Failure", "Direction", "Address", "RateMBit", "ExitValue", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

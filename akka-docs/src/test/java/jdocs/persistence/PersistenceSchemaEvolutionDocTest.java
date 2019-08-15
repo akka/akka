@@ -13,7 +13,7 @@ import spray.json.JsObject;
 
 import akka.persistence.journal.EventAdapter;
 import akka.persistence.journal.EventSeq;
-import akka.protobuf.InvalidProtocolBufferException;
+import akka.protobufv3.internal.InvalidProtocolBufferException;
 import akka.serialization.SerializerWithStringManifest;
 
 public class PersistenceSchemaEvolutionDocTest {

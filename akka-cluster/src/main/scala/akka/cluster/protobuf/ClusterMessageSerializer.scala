@@ -11,7 +11,7 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
 import akka.serialization._
-import akka.protobuf.{ ByteString, MessageLite }
+import akka.protobufv3.internal.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -273,7 +273,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
       InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
     } catch {
-      case _: akka.protobuf.InvalidProtocolBufferException =>
+      case _: akka.protobufv3.internal.InvalidProtocolBufferException =>
         // nodes previous to 2.5.9 sends just an address
         InternalClusterAction.InitJoinAck(addressFromBinary(bytes), UncheckedConfig)
     }

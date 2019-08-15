@@ -2,6 +2,8 @@
  * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
+syntax = "proto2";
+
 option java_package = "akka.cluster.sharding.protobuf.msg";
 option optimize_for = SPEED;
 

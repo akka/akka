@@ -10,12 +10,18 @@ package akka.remote;
 public final class SystemMessageFormats {
   private SystemMessageFormats() {}
   public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
   }
-  public interface SystemMessageOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
 
-    // required .SystemMessage.Type type = 1;
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+  }
+  public interface SystemMessageOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SystemMessage)
+      akka.protobufv3.internal.MessageOrBuilder {
+
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
      */
@@ -25,7 +31,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.SystemMessageFormats.SystemMessage.Type getType();
 
-    // optional .WatchData watchData = 2;
     /**
      * <code>optional .WatchData watchData = 2;</code>
      */
@@ -39,7 +44,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.SystemMessageFormats.WatchDataOrBuilder getWatchDataOrBuilder();
 
-    // optional .Payload causeData = 3;
     /**
      * <code>optional .Payload causeData = 3;</code>
      */
@@ -53,7 +57,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.ContainerFormats.PayloadOrBuilder getCauseDataOrBuilder();
 
-    // optional .SuperviseData superviseData = 5;
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
      */
@@ -67,7 +70,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.SystemMessageFormats.SuperviseDataOrBuilder getSuperviseDataOrBuilder();
 
-    // optional .FailedData failedData = 6;
     /**
      * <code>optional .FailedData failedData = 6;</code>
      */
@@ -81,7 +83,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.SystemMessageFormats.FailedDataOrBuilder getFailedDataOrBuilder();
 
-    // optional .DeathWatchNotificationData dwNotificationData = 7;
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
      */
@@ -98,39 +99,42 @@ public final class SystemMessageFormats {
   /**
    * Protobuf type {@code SystemMessage}
    */
-  public static final class SystemMessage extends
-      akka.protobuf.GeneratedMessage
-      implements SystemMessageOrBuilder {
+  public  static final class SystemMessage extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:SystemMessage)
+      SystemMessageOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use SystemMessage.newBuilder() to construct.
-    private SystemMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SystemMessage(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private SystemMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final SystemMessage defaultInstance;
-    public static SystemMessage getDefaultInstance() {
-      return defaultInstance;
+    private SystemMessage() {
+      type_ = 0;
     }
 
-    public SystemMessage getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new SystemMessage();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private SystemMessage(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -139,27 +143,21 @@ public final class SystemMessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 8: {
               int rawValue = input.readEnum();
+                @SuppressWarnings("deprecation")
               akka.remote.SystemMessageFormats.SystemMessage.Type value = akka.remote.SystemMessageFormats.SystemMessage.Type.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
                 bitField0_ |= 0x00000001;
-                type_ = value;
+                type_ = rawValue;
               }
               break;
             }
             case 18: {
               akka.remote.SystemMessageFormats.WatchData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = watchData_.toBuilder();
               }
               watchData_ = input.readMessage(akka.remote.SystemMessageFormats.WatchData.PARSER, extensionRegistry);
@@ -172,7 +170,7 @@ public final class SystemMessageFormats {
             }
             case 26: {
               akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+              if (((bitField0_ & 0x00000004) != 0)) {
                 subBuilder = causeData_.toBuilder();
               }
               causeData_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
@@ -185,7 +183,7 @@ public final class SystemMessageFormats {
             }
             case 42: {
               akka.remote.SystemMessageFormats.SuperviseData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000008) == 0x00000008)) {
+              if (((bitField0_ & 0x00000008) != 0)) {
                 subBuilder = superviseData_.toBuilder();
               }
               superviseData_ = input.readMessage(akka.remote.SystemMessageFormats.SuperviseData.PARSER, extensionRegistry);
@@ -198,7 +196,7 @@ public final class SystemMessageFormats {
             }
             case 50: {
               akka.remote.SystemMessageFormats.FailedData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000010) == 0x00000010)) {
+              if (((bitField0_ & 0x00000010) != 0)) {
                 subBuilder = failedData_.toBuilder();
               }
               failedData_ = input.readMessage(akka.remote.SystemMessageFormats.FailedData.PARSER, extensionRegistry);
@@ -211,7 +209,7 @@ public final class SystemMessageFormats {
             }
             case 58: {
               akka.remote.SystemMessageFormats.DeathWatchNotificationData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000020) == 0x00000020)) {
+              if (((bitField0_ & 0x00000020) != 0)) {
                 subBuilder = dwNotificationData_.toBuilder();
               }
               dwNotificationData_ = input.readMessage(akka.remote.SystemMessageFormats.DeathWatchNotificationData.PARSER, extensionRegistry);
@@ -222,90 +220,83 @@ public final class SystemMessageFormats {
               bitField0_ |= 0x00000020;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_SystemMessage_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.SystemMessageFormats.internal_static_SystemMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.SystemMessageFormats.SystemMessage.class, akka.remote.SystemMessageFormats.SystemMessage.Builder.class);
     }
 
-    public static akka.protobuf.Parser<SystemMessage> PARSER =
-        new akka.protobuf.AbstractParser<SystemMessage>() {
-      public SystemMessage parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new SystemMessage(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<SystemMessage> getParserForType() {
-      return PARSER;
-    }
-
     /**
      * Protobuf enum {@code SystemMessage.Type}
      */
     public enum Type
-        implements akka.protobuf.ProtocolMessageEnum {
+        implements akka.protobufv3.internal.ProtocolMessageEnum {
       /**
        * <code>CREATE = 0;</code>
        */
-      CREATE(0, 0),
+      CREATE(0),
       /**
        * <code>RECREATE = 1;</code>
        */
-      RECREATE(1, 1),
+      RECREATE(1),
       /**
        * <code>SUSPEND = 2;</code>
        */
-      SUSPEND(2, 2),
+      SUSPEND(2),
       /**
        * <code>RESUME = 3;</code>
        */
-      RESUME(3, 3),
+      RESUME(3),
       /**
        * <code>TERMINATE = 4;</code>
        */
-      TERMINATE(4, 4),
+      TERMINATE(4),
       /**
        * <code>SUPERVISE = 5;</code>
        */
-      SUPERVISE(5, 5),
+      SUPERVISE(5),
       /**
        * <code>WATCH = 6;</code>
        */
-      WATCH(6, 6),
+      WATCH(6),
       /**
        * <code>UNWATCH = 7;</code>
        */
-      UNWATCH(7, 7),
+      UNWATCH(7),
       /**
        * <code>FAILED = 8;</code>
        */
-      FAILED(8, 8),
+      FAILED(8),
       /**
        * <code>DEATHWATCH_NOTIFICATION = 9;</code>
        */
-      DEATHWATCH_NOTIFICATION(9, 9),
+      DEATHWATCH_NOTIFICATION(9),
       ;
 
       /**
@@ -350,9 +341,19 @@ public final class SystemMessageFormats {
       public static final int DEATHWATCH_NOTIFICATION_VALUE = 9;
 
 
-      public final int getNumber() { return value; }
+      public final int getNumber() {
+        return value;
+      }
 
+      /**
+       * @deprecated Use {@link #forNumber(int)} instead.
+       */
+      @java.lang.Deprecated
       public static Type valueOf(int value) {
+        return forNumber(value);
+      }
+
+      public static Type forNumber(int value) {
         switch (value) {
           case 0: return CREATE;
           case 1: return RECREATE;
@@ -368,27 +369,27 @@ public final class SystemMessageFormats {
         }
       }
 
-      public static akka.protobuf.Internal.EnumLiteMap<Type>
+      public static akka.protobufv3.internal.Internal.EnumLiteMap<Type>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static akka.protobuf.Internal.EnumLiteMap<Type>
-          internalValueMap =
-            new akka.protobuf.Internal.EnumLiteMap<Type>() {
+      private static final akka.protobufv3.internal.Internal.EnumLiteMap<
+          Type> internalValueMap =
+            new akka.protobufv3.internal.Internal.EnumLiteMap<Type>() {
               public Type findValueByNumber(int number) {
-                return Type.valueOf(number);
+                return Type.forNumber(number);
               }
             };
 
-      public final akka.protobuf.Descriptors.EnumValueDescriptor
+      public final akka.protobufv3.internal.Descriptors.EnumValueDescriptor
           getValueDescriptor() {
-        return getDescriptor().getValues().get(index);
+        return getDescriptor().getValues().get(ordinal());
       }
-      public final akka.protobuf.Descriptors.EnumDescriptor
+      public final akka.protobufv3.internal.Descriptors.EnumDescriptor
           getDescriptorForType() {
         return getDescriptor();
       }
-      public static final akka.protobuf.Descriptors.EnumDescriptor
+      public static final akka.protobufv3.internal.Descriptors.EnumDescriptor
           getDescriptor() {
         return akka.remote.SystemMessageFormats.SystemMessage.getDescriptor().getEnumTypes().get(0);
       }
@@ -396,7 +397,7 @@ public final class SystemMessageFormats {
       private static final Type[] VALUES = values();
 
       public static Type valueOf(
-          akka.protobuf.Descriptors.EnumValueDescriptor desc) {
+          akka.protobufv3.internal.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
             "EnumValueDescriptor is not for this type.");
@@ -404,11 +405,9 @@ public final class SystemMessageFormats {
         return VALUES[desc.getIndex()];
       }
 
-      private final int index;
       private final int value;
 
-      private Type(int index, int value) {
-        this.index = index;
+      private Type(int value) {
         this.value = value;
       }
 
@@ -416,144 +415,134 @@ public final class SystemMessageFormats {
     }
 
     private int bitField0_;
-    // required .SystemMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
-    private akka.remote.SystemMessageFormats.SystemMessage.Type type_;
+    private int type_;
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
      */
     public boolean hasType() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
      */
     public akka.remote.SystemMessageFormats.SystemMessage.Type getType() {
-      return type_;
+      @SuppressWarnings("deprecation")
+      akka.remote.SystemMessageFormats.SystemMessage.Type result = akka.remote.SystemMessageFormats.SystemMessage.Type.valueOf(type_);
+      return result == null ? akka.remote.SystemMessageFormats.SystemMessage.Type.CREATE : result;
     }
 
-    // optional .WatchData watchData = 2;
     public static final int WATCHDATA_FIELD_NUMBER = 2;
     private akka.remote.SystemMessageFormats.WatchData watchData_;
     /**
      * <code>optional .WatchData watchData = 2;</code>
      */
     public boolean hasWatchData() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .WatchData watchData = 2;</code>
      */
     public akka.remote.SystemMessageFormats.WatchData getWatchData() {
-      return watchData_;
+      return watchData_ == null ? akka.remote.SystemMessageFormats.WatchData.getDefaultInstance() : watchData_;
     }
     /**
      * <code>optional .WatchData watchData = 2;</code>
      */
     public akka.remote.SystemMessageFormats.WatchDataOrBuilder getWatchDataOrBuilder() {
-      return watchData_;
+      return watchData_ == null ? akka.remote.SystemMessageFormats.WatchData.getDefaultInstance() : watchData_;
     }
 
-    // optional .Payload causeData = 3;
     public static final int CAUSEDATA_FIELD_NUMBER = 3;
     private akka.remote.ContainerFormats.Payload causeData_;
     /**
      * <code>optional .Payload causeData = 3;</code>
      */
     public boolean hasCauseData() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .Payload causeData = 3;</code>
      */
     public akka.remote.ContainerFormats.Payload getCauseData() {
-      return causeData_;
+      return causeData_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : causeData_;
     }
     /**
      * <code>optional .Payload causeData = 3;</code>
      */
     public akka.remote.ContainerFormats.PayloadOrBuilder getCauseDataOrBuilder() {
-      return causeData_;
+      return causeData_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : causeData_;
     }
 
-    // optional .SuperviseData superviseData = 5;
     public static final int SUPERVISEDATA_FIELD_NUMBER = 5;
     private akka.remote.SystemMessageFormats.SuperviseData superviseData_;
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
      */
     public boolean hasSuperviseData() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
      */
     public akka.remote.SystemMessageFormats.SuperviseData getSuperviseData() {
-      return superviseData_;
+      return superviseData_ == null ? akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance() : superviseData_;
     }
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
      */
     public akka.remote.SystemMessageFormats.SuperviseDataOrBuilder getSuperviseDataOrBuilder() {
-      return superviseData_;
+      return superviseData_ == null ? akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance() : superviseData_;
     }
 
-    // optional .FailedData failedData = 6;
     public static final int FAILEDDATA_FIELD_NUMBER = 6;
     private akka.remote.SystemMessageFormats.FailedData failedData_;
     /**
      * <code>optional .FailedData failedData = 6;</code>
      */
     public boolean hasFailedData() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional .FailedData failedData = 6;</code>
      */
     public akka.remote.SystemMessageFormats.FailedData getFailedData() {
-      return failedData_;
+      return failedData_ == null ? akka.remote.SystemMessageFormats.FailedData.getDefaultInstance() : failedData_;
     }
     /**
      * <code>optional .FailedData failedData = 6;</code>
      */
     public akka.remote.SystemMessageFormats.FailedDataOrBuilder getFailedDataOrBuilder() {
-      return failedData_;
+      return failedData_ == null ? akka.remote.SystemMessageFormats.FailedData.getDefaultInstance() : failedData_;
     }
 
-    // optional .DeathWatchNotificationData dwNotificationData = 7;
     public static final int DWNOTIFICATIONDATA_FIELD_NUMBER = 7;
     private akka.remote.SystemMessageFormats.DeathWatchNotificationData dwNotificationData_;
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
      */
     public boolean hasDwNotificationData() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
+      return ((bitField0_ & 0x00000020) != 0);
     }
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
      */
     public akka.remote.SystemMessageFormats.DeathWatchNotificationData getDwNotificationData() {
-      return dwNotificationData_;
+      return dwNotificationData_ == null ? akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance() : dwNotificationData_;
     }
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
      */
     public akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder getDwNotificationDataOrBuilder() {
-      return dwNotificationData_;
+      return dwNotificationData_ == null ? akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance() : dwNotificationData_;
     }
 
-    private void initFields() {
-      type_ = akka.remote.SystemMessageFormats.SystemMessage.Type.CREATE;
-      watchData_ = akka.remote.SystemMessageFormats.WatchData.getDefaultInstance();
-      causeData_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
-      superviseData_ = akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance();
-      failedData_ = akka.remote.SystemMessageFormats.FailedData.getDefaultInstance();
-      dwNotificationData_ = akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasType()) {
         memoizedIsInitialized = 0;
@@ -593,135 +582,231 @@ public final class SystemMessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeEnum(1, type_.getNumber());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeEnum(1, type_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, watchData_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getWatchData());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(3, causeData_);
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeMessage(3, getCauseData());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeMessage(5, superviseData_);
+      if (((bitField0_ & 0x00000008) != 0)) {
+        output.writeMessage(5, getSuperviseData());
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeMessage(6, failedData_);
+      if (((bitField0_ & 0x00000010) != 0)) {
+        output.writeMessage(6, getFailedData());
       }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeMessage(7, dwNotificationData_);
+      if (((bitField0_ & 0x00000020) != 0)) {
+        output.writeMessage(7, getDwNotificationData());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeEnumSize(1, type_.getNumber());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeEnumSize(1, type_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, watchData_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getWatchData());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(3, causeData_);
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(3, getCauseData());
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(5, superviseData_);
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(5, getSuperviseData());
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(6, failedData_);
+      if (((bitField0_ & 0x00000010) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(6, getFailedData());
       }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(7, dwNotificationData_);
+      if (((bitField0_ & 0x00000020) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(7, getDwNotificationData());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.SystemMessageFormats.SystemMessage)) {
+        return super.equals(obj);
+      }
+      akka.remote.SystemMessageFormats.SystemMessage other = (akka.remote.SystemMessageFormats.SystemMessage) obj;
+
+      if (hasType() != other.hasType()) return false;
+      if (hasType()) {
+        if (type_ != other.type_) return false;
+      }
+      if (hasWatchData() != other.hasWatchData()) return false;
+      if (hasWatchData()) {
+        if (!getWatchData()
+            .equals(other.getWatchData())) return false;
+      }
+      if (hasCauseData() != other.hasCauseData()) return false;
+      if (hasCauseData()) {
+        if (!getCauseData()
+            .equals(other.getCauseData())) return false;
+      }
+      if (hasSuperviseData() != other.hasSuperviseData()) return false;
+      if (hasSuperviseData()) {
+        if (!getSuperviseData()
+            .equals(other.getSuperviseData())) return false;
+      }
+      if (hasFailedData() != other.hasFailedData()) return false;
+      if (hasFailedData()) {
+        if (!getFailedData()
+            .equals(other.getFailedData())) return false;
+      }
+      if (hasDwNotificationData() != other.hasDwNotificationData()) return false;
+      if (hasDwNotificationData()) {
+        if (!getDwNotificationData()
+            .equals(other.getDwNotificationData())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasType()) {
+        hash = (37 * hash) + TYPE_FIELD_NUMBER;
+        hash = (53 * hash) + type_;
+      }
+      if (hasWatchData()) {
+        hash = (37 * hash) + WATCHDATA_FIELD_NUMBER;
+        hash = (53 * hash) + getWatchData().hashCode();
+      }
+      if (hasCauseData()) {
+        hash = (37 * hash) + CAUSEDATA_FIELD_NUMBER;
+        hash = (53 * hash) + getCauseData().hashCode();
+      }
+      if (hasSuperviseData()) {
+        hash = (37 * hash) + SUPERVISEDATA_FIELD_NUMBER;
+        hash = (53 * hash) + getSuperviseData().hashCode();
+      }
+      if (hasFailedData()) {
+        hash = (37 * hash) + FAILEDDATA_FIELD_NUMBER;
+        hash = (53 * hash) + getFailedData().hashCode();
+      }
+      if (hasDwNotificationData()) {
+        hash = (37 * hash) + DWNOTIFICATIONDATA_FIELD_NUMBER;
+        hash = (53 * hash) + getDwNotificationData().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.SystemMessage parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.SystemMessageFormats.SystemMessage prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.SystemMessageFormats.SystemMessage prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -729,14 +814,16 @@ public final class SystemMessageFormats {
      * Protobuf type {@code SystemMessage}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.SystemMessageFormats.SystemMessageOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SystemMessage)
+        akka.remote.SystemMessageFormats.SystemMessageOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.SystemMessageFormats.internal_static_SystemMessage_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.SystemMessageFormats.internal_static_SystemMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -749,12 +836,13 @@ public final class SystemMessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getWatchDataFieldBuilder();
           getCauseDataFieldBuilder();
           getSuperviseDataFieldBuilder();
@@ -762,40 +850,37 @@ public final class SystemMessageFormats {
           getDwNotificationDataFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
-        type_ = akka.remote.SystemMessageFormats.SystemMessage.Type.CREATE;
+        type_ = 0;
         bitField0_ = (bitField0_ & ~0x00000001);
         if (watchDataBuilder_ == null) {
-          watchData_ = akka.remote.SystemMessageFormats.WatchData.getDefaultInstance();
+          watchData_ = null;
         } else {
           watchDataBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000002);
         if (causeDataBuilder_ == null) {
-          causeData_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+          causeData_ = null;
         } else {
           causeDataBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
         if (superviseDataBuilder_ == null) {
-          superviseData_ = akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance();
+          superviseData_ = null;
         } else {
           superviseDataBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000008);
         if (failedDataBuilder_ == null) {
-          failedData_ = akka.remote.SystemMessageFormats.FailedData.getDefaultInstance();
+          failedData_ = null;
         } else {
           failedDataBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000010);
         if (dwNotificationDataBuilder_ == null) {
-          dwNotificationData_ = akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance();
+          dwNotificationData_ = null;
         } else {
           dwNotificationDataBuilder_.clear();
         }
@@ -803,19 +888,18 @@ public final class SystemMessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.SystemMessageFormats.internal_static_SystemMessage_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.SystemMessage getDefaultInstanceForType() {
         return akka.remote.SystemMessageFormats.SystemMessage.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.SystemMessage build() {
         akka.remote.SystemMessageFormats.SystemMessage result = buildPartial();
         if (!result.isInitialized()) {
@@ -824,60 +908,94 @@ public final class SystemMessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.SystemMessage buildPartial() {
         akka.remote.SystemMessageFormats.SystemMessage result = new akka.remote.SystemMessageFormats.SystemMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.type_ = type_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (watchDataBuilder_ == null) {
+            result.watchData_ = watchData_;
+          } else {
+            result.watchData_ = watchDataBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
         }
-        if (watchDataBuilder_ == null) {
-          result.watchData_ = watchData_;
-        } else {
-          result.watchData_ = watchDataBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          if (causeDataBuilder_ == null) {
+            result.causeData_ = causeData_;
+          } else {
+            result.causeData_ = causeDataBuilder_.build();
+          }
           to_bitField0_ |= 0x00000004;
         }
-        if (causeDataBuilder_ == null) {
-          result.causeData_ = causeData_;
-        } else {
-          result.causeData_ = causeDataBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          if (superviseDataBuilder_ == null) {
+            result.superviseData_ = superviseData_;
+          } else {
+            result.superviseData_ = superviseDataBuilder_.build();
+          }
           to_bitField0_ |= 0x00000008;
         }
-        if (superviseDataBuilder_ == null) {
-          result.superviseData_ = superviseData_;
-        } else {
-          result.superviseData_ = superviseDataBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          if (failedDataBuilder_ == null) {
+            result.failedData_ = failedData_;
+          } else {
+            result.failedData_ = failedDataBuilder_.build();
+          }
           to_bitField0_ |= 0x00000010;
         }
-        if (failedDataBuilder_ == null) {
-          result.failedData_ = failedData_;
-        } else {
-          result.failedData_ = failedDataBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+        if (((from_bitField0_ & 0x00000020) != 0)) {
+          if (dwNotificationDataBuilder_ == null) {
+            result.dwNotificationData_ = dwNotificationData_;
+          } else {
+            result.dwNotificationData_ = dwNotificationDataBuilder_.build();
+          }
           to_bitField0_ |= 0x00000020;
-        }
-        if (dwNotificationDataBuilder_ == null) {
-          result.dwNotificationData_ = dwNotificationData_;
-        } else {
-          result.dwNotificationData_ = dwNotificationDataBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.SystemMessageFormats.SystemMessage) {
           return mergeFrom((akka.remote.SystemMessageFormats.SystemMessage)other);
         } else {
@@ -906,58 +1024,55 @@ public final class SystemMessageFormats {
         if (other.hasDwNotificationData()) {
           mergeDwNotificationData(other.getDwNotificationData());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasType()) {
-          
           return false;
         }
         if (hasWatchData()) {
           if (!getWatchData().isInitialized()) {
-            
             return false;
           }
         }
         if (hasCauseData()) {
           if (!getCauseData().isInitialized()) {
-            
             return false;
           }
         }
         if (hasSuperviseData()) {
           if (!getSuperviseData().isInitialized()) {
-            
             return false;
           }
         }
         if (hasFailedData()) {
           if (!getFailedData().isInitialized()) {
-            
             return false;
           }
         }
         if (hasDwNotificationData()) {
           if (!getDwNotificationData().isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.SystemMessageFormats.SystemMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.SystemMessageFormats.SystemMessage) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -967,19 +1082,20 @@ public final class SystemMessageFormats {
       }
       private int bitField0_;
 
-      // required .SystemMessage.Type type = 1;
-      private akka.remote.SystemMessageFormats.SystemMessage.Type type_ = akka.remote.SystemMessageFormats.SystemMessage.Type.CREATE;
+      private int type_ = 0;
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
        */
       public boolean hasType() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
        */
       public akka.remote.SystemMessageFormats.SystemMessage.Type getType() {
-        return type_;
+        @SuppressWarnings("deprecation")
+        akka.remote.SystemMessageFormats.SystemMessage.Type result = akka.remote.SystemMessageFormats.SystemMessage.Type.valueOf(type_);
+        return result == null ? akka.remote.SystemMessageFormats.SystemMessage.Type.CREATE : result;
       }
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
@@ -989,7 +1105,7 @@ public final class SystemMessageFormats {
           throw new NullPointerException();
         }
         bitField0_ |= 0x00000001;
-        type_ = value;
+        type_ = value.getNumber();
         onChanged();
         return this;
       }
@@ -998,27 +1114,26 @@ public final class SystemMessageFormats {
        */
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = akka.remote.SystemMessageFormats.SystemMessage.Type.CREATE;
+        type_ = 0;
         onChanged();
         return this;
       }
 
-      // optional .WatchData watchData = 2;
-      private akka.remote.SystemMessageFormats.WatchData watchData_ = akka.remote.SystemMessageFormats.WatchData.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.SystemMessageFormats.WatchData watchData_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.WatchData, akka.remote.SystemMessageFormats.WatchData.Builder, akka.remote.SystemMessageFormats.WatchDataOrBuilder> watchDataBuilder_;
       /**
        * <code>optional .WatchData watchData = 2;</code>
        */
       public boolean hasWatchData() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .WatchData watchData = 2;</code>
        */
       public akka.remote.SystemMessageFormats.WatchData getWatchData() {
         if (watchDataBuilder_ == null) {
-          return watchData_;
+          return watchData_ == null ? akka.remote.SystemMessageFormats.WatchData.getDefaultInstance() : watchData_;
         } else {
           return watchDataBuilder_.getMessage();
         }
@@ -1058,7 +1173,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeWatchData(akka.remote.SystemMessageFormats.WatchData value) {
         if (watchDataBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              watchData_ != null &&
               watchData_ != akka.remote.SystemMessageFormats.WatchData.getDefaultInstance()) {
             watchData_ =
               akka.remote.SystemMessageFormats.WatchData.newBuilder(watchData_).mergeFrom(value).buildPartial();
@@ -1077,7 +1193,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearWatchData() {
         if (watchDataBuilder_ == null) {
-          watchData_ = akka.remote.SystemMessageFormats.WatchData.getDefaultInstance();
+          watchData_ = null;
           onChanged();
         } else {
           watchDataBuilder_.clear();
@@ -1100,19 +1216,20 @@ public final class SystemMessageFormats {
         if (watchDataBuilder_ != null) {
           return watchDataBuilder_.getMessageOrBuilder();
         } else {
-          return watchData_;
+          return watchData_ == null ?
+              akka.remote.SystemMessageFormats.WatchData.getDefaultInstance() : watchData_;
         }
       }
       /**
        * <code>optional .WatchData watchData = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.WatchData, akka.remote.SystemMessageFormats.WatchData.Builder, akka.remote.SystemMessageFormats.WatchDataOrBuilder> 
           getWatchDataFieldBuilder() {
         if (watchDataBuilder_ == null) {
-          watchDataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          watchDataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.SystemMessageFormats.WatchData, akka.remote.SystemMessageFormats.WatchData.Builder, akka.remote.SystemMessageFormats.WatchDataOrBuilder>(
-                  watchData_,
+                  getWatchData(),
                   getParentForChildren(),
                   isClean());
           watchData_ = null;
@@ -1120,22 +1237,21 @@ public final class SystemMessageFormats {
         return watchDataBuilder_;
       }
 
-      // optional .Payload causeData = 3;
-      private akka.remote.ContainerFormats.Payload causeData_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ContainerFormats.Payload causeData_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> causeDataBuilder_;
       /**
        * <code>optional .Payload causeData = 3;</code>
        */
       public boolean hasCauseData() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .Payload causeData = 3;</code>
        */
       public akka.remote.ContainerFormats.Payload getCauseData() {
         if (causeDataBuilder_ == null) {
-          return causeData_;
+          return causeData_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : causeData_;
         } else {
           return causeDataBuilder_.getMessage();
         }
@@ -1175,7 +1291,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeCauseData(akka.remote.ContainerFormats.Payload value) {
         if (causeDataBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+          if (((bitField0_ & 0x00000004) != 0) &&
+              causeData_ != null &&
               causeData_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
             causeData_ =
               akka.remote.ContainerFormats.Payload.newBuilder(causeData_).mergeFrom(value).buildPartial();
@@ -1194,7 +1311,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearCauseData() {
         if (causeDataBuilder_ == null) {
-          causeData_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+          causeData_ = null;
           onChanged();
         } else {
           causeDataBuilder_.clear();
@@ -1217,19 +1334,20 @@ public final class SystemMessageFormats {
         if (causeDataBuilder_ != null) {
           return causeDataBuilder_.getMessageOrBuilder();
         } else {
-          return causeData_;
+          return causeData_ == null ?
+              akka.remote.ContainerFormats.Payload.getDefaultInstance() : causeData_;
         }
       }
       /**
        * <code>optional .Payload causeData = 3;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
           getCauseDataFieldBuilder() {
         if (causeDataBuilder_ == null) {
-          causeDataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          causeDataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  causeData_,
+                  getCauseData(),
                   getParentForChildren(),
                   isClean());
           causeData_ = null;
@@ -1237,22 +1355,21 @@ public final class SystemMessageFormats {
         return causeDataBuilder_;
       }
 
-      // optional .SuperviseData superviseData = 5;
-      private akka.remote.SystemMessageFormats.SuperviseData superviseData_ = akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.SystemMessageFormats.SuperviseData superviseData_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.SuperviseData, akka.remote.SystemMessageFormats.SuperviseData.Builder, akka.remote.SystemMessageFormats.SuperviseDataOrBuilder> superviseDataBuilder_;
       /**
        * <code>optional .SuperviseData superviseData = 5;</code>
        */
       public boolean hasSuperviseData() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional .SuperviseData superviseData = 5;</code>
        */
       public akka.remote.SystemMessageFormats.SuperviseData getSuperviseData() {
         if (superviseDataBuilder_ == null) {
-          return superviseData_;
+          return superviseData_ == null ? akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance() : superviseData_;
         } else {
           return superviseDataBuilder_.getMessage();
         }
@@ -1292,7 +1409,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeSuperviseData(akka.remote.SystemMessageFormats.SuperviseData value) {
         if (superviseDataBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) == 0x00000008) &&
+          if (((bitField0_ & 0x00000008) != 0) &&
+              superviseData_ != null &&
               superviseData_ != akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance()) {
             superviseData_ =
               akka.remote.SystemMessageFormats.SuperviseData.newBuilder(superviseData_).mergeFrom(value).buildPartial();
@@ -1311,7 +1429,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearSuperviseData() {
         if (superviseDataBuilder_ == null) {
-          superviseData_ = akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance();
+          superviseData_ = null;
           onChanged();
         } else {
           superviseDataBuilder_.clear();
@@ -1334,19 +1452,20 @@ public final class SystemMessageFormats {
         if (superviseDataBuilder_ != null) {
           return superviseDataBuilder_.getMessageOrBuilder();
         } else {
-          return superviseData_;
+          return superviseData_ == null ?
+              akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance() : superviseData_;
         }
       }
       /**
        * <code>optional .SuperviseData superviseData = 5;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.SuperviseData, akka.remote.SystemMessageFormats.SuperviseData.Builder, akka.remote.SystemMessageFormats.SuperviseDataOrBuilder> 
           getSuperviseDataFieldBuilder() {
         if (superviseDataBuilder_ == null) {
-          superviseDataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          superviseDataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.SystemMessageFormats.SuperviseData, akka.remote.SystemMessageFormats.SuperviseData.Builder, akka.remote.SystemMessageFormats.SuperviseDataOrBuilder>(
-                  superviseData_,
+                  getSuperviseData(),
                   getParentForChildren(),
                   isClean());
           superviseData_ = null;
@@ -1354,22 +1473,21 @@ public final class SystemMessageFormats {
         return superviseDataBuilder_;
       }
 
-      // optional .FailedData failedData = 6;
-      private akka.remote.SystemMessageFormats.FailedData failedData_ = akka.remote.SystemMessageFormats.FailedData.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.SystemMessageFormats.FailedData failedData_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.FailedData, akka.remote.SystemMessageFormats.FailedData.Builder, akka.remote.SystemMessageFormats.FailedDataOrBuilder> failedDataBuilder_;
       /**
        * <code>optional .FailedData failedData = 6;</code>
        */
       public boolean hasFailedData() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .FailedData failedData = 6;</code>
        */
       public akka.remote.SystemMessageFormats.FailedData getFailedData() {
         if (failedDataBuilder_ == null) {
-          return failedData_;
+          return failedData_ == null ? akka.remote.SystemMessageFormats.FailedData.getDefaultInstance() : failedData_;
         } else {
           return failedDataBuilder_.getMessage();
         }
@@ -1409,7 +1527,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeFailedData(akka.remote.SystemMessageFormats.FailedData value) {
         if (failedDataBuilder_ == null) {
-          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+          if (((bitField0_ & 0x00000010) != 0) &&
+              failedData_ != null &&
               failedData_ != akka.remote.SystemMessageFormats.FailedData.getDefaultInstance()) {
             failedData_ =
               akka.remote.SystemMessageFormats.FailedData.newBuilder(failedData_).mergeFrom(value).buildPartial();
@@ -1428,7 +1547,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearFailedData() {
         if (failedDataBuilder_ == null) {
-          failedData_ = akka.remote.SystemMessageFormats.FailedData.getDefaultInstance();
+          failedData_ = null;
           onChanged();
         } else {
           failedDataBuilder_.clear();
@@ -1451,19 +1570,20 @@ public final class SystemMessageFormats {
         if (failedDataBuilder_ != null) {
           return failedDataBuilder_.getMessageOrBuilder();
         } else {
-          return failedData_;
+          return failedData_ == null ?
+              akka.remote.SystemMessageFormats.FailedData.getDefaultInstance() : failedData_;
         }
       }
       /**
        * <code>optional .FailedData failedData = 6;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.FailedData, akka.remote.SystemMessageFormats.FailedData.Builder, akka.remote.SystemMessageFormats.FailedDataOrBuilder> 
           getFailedDataFieldBuilder() {
         if (failedDataBuilder_ == null) {
-          failedDataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          failedDataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.SystemMessageFormats.FailedData, akka.remote.SystemMessageFormats.FailedData.Builder, akka.remote.SystemMessageFormats.FailedDataOrBuilder>(
-                  failedData_,
+                  getFailedData(),
                   getParentForChildren(),
                   isClean());
           failedData_ = null;
@@ -1471,22 +1591,21 @@ public final class SystemMessageFormats {
         return failedDataBuilder_;
       }
 
-      // optional .DeathWatchNotificationData dwNotificationData = 7;
-      private akka.remote.SystemMessageFormats.DeathWatchNotificationData dwNotificationData_ = akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.SystemMessageFormats.DeathWatchNotificationData dwNotificationData_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.DeathWatchNotificationData, akka.remote.SystemMessageFormats.DeathWatchNotificationData.Builder, akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder> dwNotificationDataBuilder_;
       /**
        * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
        */
       public boolean hasDwNotificationData() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
+        return ((bitField0_ & 0x00000020) != 0);
       }
       /**
        * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
        */
       public akka.remote.SystemMessageFormats.DeathWatchNotificationData getDwNotificationData() {
         if (dwNotificationDataBuilder_ == null) {
-          return dwNotificationData_;
+          return dwNotificationData_ == null ? akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance() : dwNotificationData_;
         } else {
           return dwNotificationDataBuilder_.getMessage();
         }
@@ -1526,7 +1645,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeDwNotificationData(akka.remote.SystemMessageFormats.DeathWatchNotificationData value) {
         if (dwNotificationDataBuilder_ == null) {
-          if (((bitField0_ & 0x00000020) == 0x00000020) &&
+          if (((bitField0_ & 0x00000020) != 0) &&
+              dwNotificationData_ != null &&
               dwNotificationData_ != akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance()) {
             dwNotificationData_ =
               akka.remote.SystemMessageFormats.DeathWatchNotificationData.newBuilder(dwNotificationData_).mergeFrom(value).buildPartial();
@@ -1545,7 +1665,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearDwNotificationData() {
         if (dwNotificationDataBuilder_ == null) {
-          dwNotificationData_ = akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance();
+          dwNotificationData_ = null;
           onChanged();
         } else {
           dwNotificationDataBuilder_.clear();
@@ -1568,41 +1688,83 @@ public final class SystemMessageFormats {
         if (dwNotificationDataBuilder_ != null) {
           return dwNotificationDataBuilder_.getMessageOrBuilder();
         } else {
-          return dwNotificationData_;
+          return dwNotificationData_ == null ?
+              akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance() : dwNotificationData_;
         }
       }
       /**
        * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.SystemMessageFormats.DeathWatchNotificationData, akka.remote.SystemMessageFormats.DeathWatchNotificationData.Builder, akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder> 
           getDwNotificationDataFieldBuilder() {
         if (dwNotificationDataBuilder_ == null) {
-          dwNotificationDataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          dwNotificationDataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.SystemMessageFormats.DeathWatchNotificationData, akka.remote.SystemMessageFormats.DeathWatchNotificationData.Builder, akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder>(
-                  dwNotificationData_,
+                  getDwNotificationData(),
                   getParentForChildren(),
                   isClean());
           dwNotificationData_ = null;
         }
         return dwNotificationDataBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:SystemMessage)
     }
 
+    // @@protoc_insertion_point(class_scope:SystemMessage)
+    private static final akka.remote.SystemMessageFormats.SystemMessage DEFAULT_INSTANCE;
     static {
-      defaultInstance = new SystemMessage(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.SystemMessageFormats.SystemMessage();
     }
 
-    // @@protoc_insertion_point(class_scope:SystemMessage)
+    public static akka.remote.SystemMessageFormats.SystemMessage getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<SystemMessage>
+        PARSER = new akka.protobufv3.internal.AbstractParser<SystemMessage>() {
+      @java.lang.Override
+      public SystemMessage parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new SystemMessage(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<SystemMessage> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<SystemMessage> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.SystemMessageFormats.SystemMessage getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface WatchDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface WatchDataOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:WatchData)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .ActorRef watchee = 1;
     /**
      * <code>required .ActorRef watchee = 1;</code>
      */
@@ -1616,7 +1778,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.ContainerFormats.ActorRefOrBuilder getWatcheeOrBuilder();
 
-    // required .ActorRef watcher = 2;
     /**
      * <code>required .ActorRef watcher = 2;</code>
      */
@@ -1633,39 +1794,41 @@ public final class SystemMessageFormats {
   /**
    * Protobuf type {@code WatchData}
    */
-  public static final class WatchData extends
-      akka.protobuf.GeneratedMessage
-      implements WatchDataOrBuilder {
+  public  static final class WatchData extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:WatchData)
+      WatchDataOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use WatchData.newBuilder() to construct.
-    private WatchData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private WatchData(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private WatchData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final WatchData defaultInstance;
-    public static WatchData getDefaultInstance() {
-      return defaultInstance;
+    private WatchData() {
     }
 
-    public WatchData getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new WatchData();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private WatchData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1674,16 +1837,9 @@ public final class SystemMessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ContainerFormats.ActorRef.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = watchee_.toBuilder();
               }
               watchee_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
@@ -1696,7 +1852,7 @@ public final class SystemMessageFormats {
             }
             case 18: {
               akka.remote.ContainerFormats.ActorRef.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = watcher_.toBuilder();
               }
               watcher_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
@@ -1707,98 +1863,87 @@ public final class SystemMessageFormats {
               bitField0_ |= 0x00000002;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_WatchData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.SystemMessageFormats.internal_static_WatchData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.SystemMessageFormats.WatchData.class, akka.remote.SystemMessageFormats.WatchData.Builder.class);
     }
 
-    public static akka.protobuf.Parser<WatchData> PARSER =
-        new akka.protobuf.AbstractParser<WatchData>() {
-      public WatchData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new WatchData(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<WatchData> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .ActorRef watchee = 1;
     public static final int WATCHEE_FIELD_NUMBER = 1;
     private akka.remote.ContainerFormats.ActorRef watchee_;
     /**
      * <code>required .ActorRef watchee = 1;</code>
      */
     public boolean hasWatchee() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef watchee = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRef getWatchee() {
-      return watchee_;
+      return watchee_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watchee_;
     }
     /**
      * <code>required .ActorRef watchee = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRefOrBuilder getWatcheeOrBuilder() {
-      return watchee_;
+      return watchee_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watchee_;
     }
 
-    // required .ActorRef watcher = 2;
     public static final int WATCHER_FIELD_NUMBER = 2;
     private akka.remote.ContainerFormats.ActorRef watcher_;
     /**
      * <code>required .ActorRef watcher = 2;</code>
      */
     public boolean hasWatcher() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ActorRef watcher = 2;</code>
      */
     public akka.remote.ContainerFormats.ActorRef getWatcher() {
-      return watcher_;
+      return watcher_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watcher_;
     }
     /**
      * <code>required .ActorRef watcher = 2;</code>
      */
     public akka.remote.ContainerFormats.ActorRefOrBuilder getWatcherOrBuilder() {
-      return watcher_;
+      return watcher_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watcher_;
     }
 
-    private void initFields() {
-      watchee_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      watcher_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasWatchee()) {
         memoizedIsInitialized = 0;
@@ -1820,107 +1965,168 @@ public final class SystemMessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, watchee_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getWatchee());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, watcher_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getWatcher());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, watchee_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getWatchee());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, watcher_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getWatcher());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.SystemMessageFormats.WatchData)) {
+        return super.equals(obj);
+      }
+      akka.remote.SystemMessageFormats.WatchData other = (akka.remote.SystemMessageFormats.WatchData) obj;
+
+      if (hasWatchee() != other.hasWatchee()) return false;
+      if (hasWatchee()) {
+        if (!getWatchee()
+            .equals(other.getWatchee())) return false;
+      }
+      if (hasWatcher() != other.hasWatcher()) return false;
+      if (hasWatcher()) {
+        if (!getWatcher()
+            .equals(other.getWatcher())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasWatchee()) {
+        hash = (37 * hash) + WATCHEE_FIELD_NUMBER;
+        hash = (53 * hash) + getWatchee().hashCode();
+      }
+      if (hasWatcher()) {
+        hash = (37 * hash) + WATCHER_FIELD_NUMBER;
+        hash = (53 * hash) + getWatcher().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.SystemMessageFormats.WatchData parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.SystemMessageFormats.WatchData parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.WatchData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.SystemMessageFormats.WatchData prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.SystemMessageFormats.WatchData prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1928,14 +2134,16 @@ public final class SystemMessageFormats {
      * Protobuf type {@code WatchData}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.SystemMessageFormats.WatchDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:WatchData)
+        akka.remote.SystemMessageFormats.WatchDataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.SystemMessageFormats.internal_static_WatchData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.SystemMessageFormats.internal_static_WatchData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1948,30 +2156,28 @@ public final class SystemMessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getWatcheeFieldBuilder();
           getWatcherFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (watcheeBuilder_ == null) {
-          watchee_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          watchee_ = null;
         } else {
           watcheeBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
         if (watcherBuilder_ == null) {
-          watcher_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          watcher_ = null;
         } else {
           watcherBuilder_.clear();
         }
@@ -1979,19 +2185,18 @@ public final class SystemMessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.SystemMessageFormats.internal_static_WatchData_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.WatchData getDefaultInstanceForType() {
         return akka.remote.SystemMessageFormats.WatchData.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.WatchData build() {
         akka.remote.SystemMessageFormats.WatchData result = buildPartial();
         if (!result.isInitialized()) {
@@ -2000,32 +2205,66 @@ public final class SystemMessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.WatchData buildPartial() {
         akka.remote.SystemMessageFormats.WatchData result = new akka.remote.SystemMessageFormats.WatchData(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (watcheeBuilder_ == null) {
+            result.watchee_ = watchee_;
+          } else {
+            result.watchee_ = watcheeBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (watcheeBuilder_ == null) {
-          result.watchee_ = watchee_;
-        } else {
-          result.watchee_ = watcheeBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (watcherBuilder_ == null) {
+            result.watcher_ = watcher_;
+          } else {
+            result.watcher_ = watcherBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
-        }
-        if (watcherBuilder_ == null) {
-          result.watcher_ = watcher_;
-        } else {
-          result.watcher_ = watcherBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.SystemMessageFormats.WatchData) {
           return mergeFrom((akka.remote.SystemMessageFormats.WatchData)other);
         } else {
@@ -2042,40 +2281,39 @@ public final class SystemMessageFormats {
         if (other.hasWatcher()) {
           mergeWatcher(other.getWatcher());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasWatchee()) {
-          
           return false;
         }
         if (!hasWatcher()) {
-          
           return false;
         }
         if (!getWatchee().isInitialized()) {
-          
           return false;
         }
         if (!getWatcher().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.SystemMessageFormats.WatchData parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.SystemMessageFormats.WatchData) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -2085,22 +2323,21 @@ public final class SystemMessageFormats {
       }
       private int bitField0_;
 
-      // required .ActorRef watchee = 1;
-      private akka.remote.ContainerFormats.ActorRef watchee_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ContainerFormats.ActorRef watchee_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> watcheeBuilder_;
       /**
        * <code>required .ActorRef watchee = 1;</code>
        */
       public boolean hasWatchee() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef watchee = 1;</code>
        */
       public akka.remote.ContainerFormats.ActorRef getWatchee() {
         if (watcheeBuilder_ == null) {
-          return watchee_;
+          return watchee_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watchee_;
         } else {
           return watcheeBuilder_.getMessage();
         }
@@ -2140,7 +2377,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeWatchee(akka.remote.ContainerFormats.ActorRef value) {
         if (watcheeBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              watchee_ != null &&
               watchee_ != akka.remote.ContainerFormats.ActorRef.getDefaultInstance()) {
             watchee_ =
               akka.remote.ContainerFormats.ActorRef.newBuilder(watchee_).mergeFrom(value).buildPartial();
@@ -2159,7 +2397,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearWatchee() {
         if (watcheeBuilder_ == null) {
-          watchee_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          watchee_ = null;
           onChanged();
         } else {
           watcheeBuilder_.clear();
@@ -2182,19 +2420,20 @@ public final class SystemMessageFormats {
         if (watcheeBuilder_ != null) {
           return watcheeBuilder_.getMessageOrBuilder();
         } else {
-          return watchee_;
+          return watchee_ == null ?
+              akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watchee_;
         }
       }
       /**
        * <code>required .ActorRef watchee = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> 
           getWatcheeFieldBuilder() {
         if (watcheeBuilder_ == null) {
-          watcheeBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          watcheeBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder>(
-                  watchee_,
+                  getWatchee(),
                   getParentForChildren(),
                   isClean());
           watchee_ = null;
@@ -2202,22 +2441,21 @@ public final class SystemMessageFormats {
         return watcheeBuilder_;
       }
 
-      // required .ActorRef watcher = 2;
-      private akka.remote.ContainerFormats.ActorRef watcher_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ContainerFormats.ActorRef watcher_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> watcherBuilder_;
       /**
        * <code>required .ActorRef watcher = 2;</code>
        */
       public boolean hasWatcher() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ActorRef watcher = 2;</code>
        */
       public akka.remote.ContainerFormats.ActorRef getWatcher() {
         if (watcherBuilder_ == null) {
-          return watcher_;
+          return watcher_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watcher_;
         } else {
           return watcherBuilder_.getMessage();
         }
@@ -2257,7 +2495,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeWatcher(akka.remote.ContainerFormats.ActorRef value) {
         if (watcherBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              watcher_ != null &&
               watcher_ != akka.remote.ContainerFormats.ActorRef.getDefaultInstance()) {
             watcher_ =
               akka.remote.ContainerFormats.ActorRef.newBuilder(watcher_).mergeFrom(value).buildPartial();
@@ -2276,7 +2515,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearWatcher() {
         if (watcherBuilder_ == null) {
-          watcher_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          watcher_ = null;
           onChanged();
         } else {
           watcherBuilder_.clear();
@@ -2299,41 +2538,83 @@ public final class SystemMessageFormats {
         if (watcherBuilder_ != null) {
           return watcherBuilder_.getMessageOrBuilder();
         } else {
-          return watcher_;
+          return watcher_ == null ?
+              akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watcher_;
         }
       }
       /**
        * <code>required .ActorRef watcher = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> 
           getWatcherFieldBuilder() {
         if (watcherBuilder_ == null) {
-          watcherBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          watcherBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder>(
-                  watcher_,
+                  getWatcher(),
                   getParentForChildren(),
                   isClean());
           watcher_ = null;
         }
         return watcherBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:WatchData)
     }
 
+    // @@protoc_insertion_point(class_scope:WatchData)
+    private static final akka.remote.SystemMessageFormats.WatchData DEFAULT_INSTANCE;
     static {
-      defaultInstance = new WatchData(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.SystemMessageFormats.WatchData();
     }
 
-    // @@protoc_insertion_point(class_scope:WatchData)
+    public static akka.remote.SystemMessageFormats.WatchData getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<WatchData>
+        PARSER = new akka.protobufv3.internal.AbstractParser<WatchData>() {
+      @java.lang.Override
+      public WatchData parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new WatchData(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<WatchData> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<WatchData> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.SystemMessageFormats.WatchData getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface SuperviseDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SuperviseDataOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SuperviseData)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .ActorRef child = 1;
     /**
      * <code>required .ActorRef child = 1;</code>
      */
@@ -2347,7 +2628,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.ContainerFormats.ActorRefOrBuilder getChildOrBuilder();
 
-    // required bool async = 2;
     /**
      * <code>required bool async = 2;</code>
      */
@@ -2360,39 +2640,41 @@ public final class SystemMessageFormats {
   /**
    * Protobuf type {@code SuperviseData}
    */
-  public static final class SuperviseData extends
-      akka.protobuf.GeneratedMessage
-      implements SuperviseDataOrBuilder {
+  public  static final class SuperviseData extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:SuperviseData)
+      SuperviseDataOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use SuperviseData.newBuilder() to construct.
-    private SuperviseData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SuperviseData(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private SuperviseData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final SuperviseData defaultInstance;
-    public static SuperviseData getDefaultInstance() {
-      return defaultInstance;
+    private SuperviseData() {
     }
 
-    public SuperviseData getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new SuperviseData();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private SuperviseData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2401,16 +2683,9 @@ public final class SystemMessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ContainerFormats.ActorRef.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = child_.toBuilder();
               }
               child_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
@@ -2426,76 +2701,67 @@ public final class SystemMessageFormats {
               async_ = input.readBool();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_SuperviseData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.SystemMessageFormats.internal_static_SuperviseData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.SystemMessageFormats.SuperviseData.class, akka.remote.SystemMessageFormats.SuperviseData.Builder.class);
     }
 
-    public static akka.protobuf.Parser<SuperviseData> PARSER =
-        new akka.protobuf.AbstractParser<SuperviseData>() {
-      public SuperviseData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new SuperviseData(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<SuperviseData> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .ActorRef child = 1;
     public static final int CHILD_FIELD_NUMBER = 1;
     private akka.remote.ContainerFormats.ActorRef child_;
     /**
      * <code>required .ActorRef child = 1;</code>
      */
     public boolean hasChild() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef child = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRef getChild() {
-      return child_;
+      return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
     }
     /**
      * <code>required .ActorRef child = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRefOrBuilder getChildOrBuilder() {
-      return child_;
+      return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
     }
 
-    // required bool async = 2;
     public static final int ASYNC_FIELD_NUMBER = 2;
     private boolean async_;
     /**
      * <code>required bool async = 2;</code>
      */
     public boolean hasAsync() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bool async = 2;</code>
@@ -2504,14 +2770,12 @@ public final class SystemMessageFormats {
       return async_;
     }
 
-    private void initFields() {
-      child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      async_ = false;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasChild()) {
         memoizedIsInitialized = 0;
@@ -2529,107 +2793,169 @@ public final class SystemMessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, child_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getChild());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeBool(2, async_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, child_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getChild());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBoolSize(2, async_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.SystemMessageFormats.SuperviseData)) {
+        return super.equals(obj);
+      }
+      akka.remote.SystemMessageFormats.SuperviseData other = (akka.remote.SystemMessageFormats.SuperviseData) obj;
+
+      if (hasChild() != other.hasChild()) return false;
+      if (hasChild()) {
+        if (!getChild()
+            .equals(other.getChild())) return false;
+      }
+      if (hasAsync() != other.hasAsync()) return false;
+      if (hasAsync()) {
+        if (getAsync()
+            != other.getAsync()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasChild()) {
+        hash = (37 * hash) + CHILD_FIELD_NUMBER;
+        hash = (53 * hash) + getChild().hashCode();
+      }
+      if (hasAsync()) {
+        hash = (37 * hash) + ASYNC_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getAsync());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.SuperviseData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.SystemMessageFormats.SuperviseData prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.SystemMessageFormats.SuperviseData prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2637,14 +2963,16 @@ public final class SystemMessageFormats {
      * Protobuf type {@code SuperviseData}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.SystemMessageFormats.SuperviseDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SuperviseData)
+        akka.remote.SystemMessageFormats.SuperviseDataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.SystemMessageFormats.internal_static_SuperviseData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.SystemMessageFormats.internal_static_SuperviseData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2657,23 +2985,21 @@ public final class SystemMessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getChildFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (childBuilder_ == null) {
-          child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          child_ = null;
         } else {
           childBuilder_.clear();
         }
@@ -2683,19 +3009,18 @@ public final class SystemMessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.SystemMessageFormats.internal_static_SuperviseData_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.SuperviseData getDefaultInstanceForType() {
         return akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.SuperviseData build() {
         akka.remote.SystemMessageFormats.SuperviseData result = buildPartial();
         if (!result.isInitialized()) {
@@ -2704,28 +3029,62 @@ public final class SystemMessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.SuperviseData buildPartial() {
         akka.remote.SystemMessageFormats.SuperviseData result = new akka.remote.SystemMessageFormats.SuperviseData(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (childBuilder_ == null) {
+            result.child_ = child_;
+          } else {
+            result.child_ = childBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (childBuilder_ == null) {
-          result.child_ = child_;
-        } else {
-          result.child_ = childBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.async_ = async_;
           to_bitField0_ |= 0x00000002;
         }
-        result.async_ = async_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.SystemMessageFormats.SuperviseData) {
           return mergeFrom((akka.remote.SystemMessageFormats.SuperviseData)other);
         } else {
@@ -2742,36 +3101,36 @@ public final class SystemMessageFormats {
         if (other.hasAsync()) {
           setAsync(other.getAsync());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasChild()) {
-          
           return false;
         }
         if (!hasAsync()) {
-          
           return false;
         }
         if (!getChild().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.SystemMessageFormats.SuperviseData parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.SystemMessageFormats.SuperviseData) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -2781,22 +3140,21 @@ public final class SystemMessageFormats {
       }
       private int bitField0_;
 
-      // required .ActorRef child = 1;
-      private akka.remote.ContainerFormats.ActorRef child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ContainerFormats.ActorRef child_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> childBuilder_;
       /**
        * <code>required .ActorRef child = 1;</code>
        */
       public boolean hasChild() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef child = 1;</code>
        */
       public akka.remote.ContainerFormats.ActorRef getChild() {
         if (childBuilder_ == null) {
-          return child_;
+          return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
         } else {
           return childBuilder_.getMessage();
         }
@@ -2836,7 +3194,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeChild(akka.remote.ContainerFormats.ActorRef value) {
         if (childBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              child_ != null &&
               child_ != akka.remote.ContainerFormats.ActorRef.getDefaultInstance()) {
             child_ =
               akka.remote.ContainerFormats.ActorRef.newBuilder(child_).mergeFrom(value).buildPartial();
@@ -2855,7 +3214,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearChild() {
         if (childBuilder_ == null) {
-          child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          child_ = null;
           onChanged();
         } else {
           childBuilder_.clear();
@@ -2878,19 +3237,20 @@ public final class SystemMessageFormats {
         if (childBuilder_ != null) {
           return childBuilder_.getMessageOrBuilder();
         } else {
-          return child_;
+          return child_ == null ?
+              akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
         }
       }
       /**
        * <code>required .ActorRef child = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> 
           getChildFieldBuilder() {
         if (childBuilder_ == null) {
-          childBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          childBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder>(
-                  child_,
+                  getChild(),
                   getParentForChildren(),
                   isClean());
           child_ = null;
@@ -2898,13 +3258,12 @@ public final class SystemMessageFormats {
         return childBuilder_;
       }
 
-      // required bool async = 2;
       private boolean async_ ;
       /**
        * <code>required bool async = 2;</code>
        */
       public boolean hasAsync() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bool async = 2;</code>
@@ -2930,22 +3289,63 @@ public final class SystemMessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:SuperviseData)
     }
 
+    // @@protoc_insertion_point(class_scope:SuperviseData)
+    private static final akka.remote.SystemMessageFormats.SuperviseData DEFAULT_INSTANCE;
     static {
-      defaultInstance = new SuperviseData(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.SystemMessageFormats.SuperviseData();
     }
 
-    // @@protoc_insertion_point(class_scope:SuperviseData)
+    public static akka.remote.SystemMessageFormats.SuperviseData getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<SuperviseData>
+        PARSER = new akka.protobufv3.internal.AbstractParser<SuperviseData>() {
+      @java.lang.Override
+      public SuperviseData parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new SuperviseData(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<SuperviseData> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<SuperviseData> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.SystemMessageFormats.SuperviseData getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface FailedDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface FailedDataOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:FailedData)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .ActorRef child = 1;
     /**
      * <code>required .ActorRef child = 1;</code>
      */
@@ -2959,7 +3359,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.ContainerFormats.ActorRefOrBuilder getChildOrBuilder();
 
-    // required uint64 uid = 2;
     /**
      * <code>required uint64 uid = 2;</code>
      */
@@ -2972,39 +3371,41 @@ public final class SystemMessageFormats {
   /**
    * Protobuf type {@code FailedData}
    */
-  public static final class FailedData extends
-      akka.protobuf.GeneratedMessage
-      implements FailedDataOrBuilder {
+  public  static final class FailedData extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:FailedData)
+      FailedDataOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use FailedData.newBuilder() to construct.
-    private FailedData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private FailedData(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private FailedData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final FailedData defaultInstance;
-    public static FailedData getDefaultInstance() {
-      return defaultInstance;
+    private FailedData() {
     }
 
-    public FailedData getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new FailedData();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private FailedData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3013,16 +3414,9 @@ public final class SystemMessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ContainerFormats.ActorRef.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = child_.toBuilder();
               }
               child_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
@@ -3038,76 +3432,67 @@ public final class SystemMessageFormats {
               uid_ = input.readUInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_FailedData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.SystemMessageFormats.internal_static_FailedData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.SystemMessageFormats.FailedData.class, akka.remote.SystemMessageFormats.FailedData.Builder.class);
     }
 
-    public static akka.protobuf.Parser<FailedData> PARSER =
-        new akka.protobuf.AbstractParser<FailedData>() {
-      public FailedData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new FailedData(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<FailedData> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .ActorRef child = 1;
     public static final int CHILD_FIELD_NUMBER = 1;
     private akka.remote.ContainerFormats.ActorRef child_;
     /**
      * <code>required .ActorRef child = 1;</code>
      */
     public boolean hasChild() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef child = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRef getChild() {
-      return child_;
+      return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
     }
     /**
      * <code>required .ActorRef child = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRefOrBuilder getChildOrBuilder() {
-      return child_;
+      return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
     }
 
-    // required uint64 uid = 2;
     public static final int UID_FIELD_NUMBER = 2;
     private long uid_;
     /**
      * <code>required uint64 uid = 2;</code>
      */
     public boolean hasUid() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 uid = 2;</code>
@@ -3116,14 +3501,12 @@ public final class SystemMessageFormats {
       return uid_;
     }
 
-    private void initFields() {
-      child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      uid_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasChild()) {
         memoizedIsInitialized = 0;
@@ -3141,107 +3524,169 @@ public final class SystemMessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, child_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getChild());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeUInt64(2, uid_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, child_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getChild());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(2, uid_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.SystemMessageFormats.FailedData)) {
+        return super.equals(obj);
+      }
+      akka.remote.SystemMessageFormats.FailedData other = (akka.remote.SystemMessageFormats.FailedData) obj;
+
+      if (hasChild() != other.hasChild()) return false;
+      if (hasChild()) {
+        if (!getChild()
+            .equals(other.getChild())) return false;
+      }
+      if (hasUid() != other.hasUid()) return false;
+      if (hasUid()) {
+        if (getUid()
+            != other.getUid()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasChild()) {
+        hash = (37 * hash) + CHILD_FIELD_NUMBER;
+        hash = (53 * hash) + getChild().hashCode();
+      }
+      if (hasUid()) {
+        hash = (37 * hash) + UID_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getUid());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.SystemMessageFormats.FailedData parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.SystemMessageFormats.FailedData parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.FailedData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.SystemMessageFormats.FailedData prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.SystemMessageFormats.FailedData prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3249,14 +3694,16 @@ public final class SystemMessageFormats {
      * Protobuf type {@code FailedData}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.SystemMessageFormats.FailedDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:FailedData)
+        akka.remote.SystemMessageFormats.FailedDataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.SystemMessageFormats.internal_static_FailedData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.SystemMessageFormats.internal_static_FailedData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3269,23 +3716,21 @@ public final class SystemMessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getChildFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (childBuilder_ == null) {
-          child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          child_ = null;
         } else {
           childBuilder_.clear();
         }
@@ -3295,19 +3740,18 @@ public final class SystemMessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.SystemMessageFormats.internal_static_FailedData_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.FailedData getDefaultInstanceForType() {
         return akka.remote.SystemMessageFormats.FailedData.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.FailedData build() {
         akka.remote.SystemMessageFormats.FailedData result = buildPartial();
         if (!result.isInitialized()) {
@@ -3316,28 +3760,62 @@ public final class SystemMessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.FailedData buildPartial() {
         akka.remote.SystemMessageFormats.FailedData result = new akka.remote.SystemMessageFormats.FailedData(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (childBuilder_ == null) {
+            result.child_ = child_;
+          } else {
+            result.child_ = childBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (childBuilder_ == null) {
-          result.child_ = child_;
-        } else {
-          result.child_ = childBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.uid_ = uid_;
           to_bitField0_ |= 0x00000002;
         }
-        result.uid_ = uid_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.SystemMessageFormats.FailedData) {
           return mergeFrom((akka.remote.SystemMessageFormats.FailedData)other);
         } else {
@@ -3354,36 +3832,36 @@ public final class SystemMessageFormats {
         if (other.hasUid()) {
           setUid(other.getUid());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasChild()) {
-          
           return false;
         }
         if (!hasUid()) {
-          
           return false;
         }
         if (!getChild().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.SystemMessageFormats.FailedData parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.SystemMessageFormats.FailedData) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -3393,22 +3871,21 @@ public final class SystemMessageFormats {
       }
       private int bitField0_;
 
-      // required .ActorRef child = 1;
-      private akka.remote.ContainerFormats.ActorRef child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ContainerFormats.ActorRef child_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> childBuilder_;
       /**
        * <code>required .ActorRef child = 1;</code>
        */
       public boolean hasChild() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef child = 1;</code>
        */
       public akka.remote.ContainerFormats.ActorRef getChild() {
         if (childBuilder_ == null) {
-          return child_;
+          return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
         } else {
           return childBuilder_.getMessage();
         }
@@ -3448,7 +3925,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeChild(akka.remote.ContainerFormats.ActorRef value) {
         if (childBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              child_ != null &&
               child_ != akka.remote.ContainerFormats.ActorRef.getDefaultInstance()) {
             child_ =
               akka.remote.ContainerFormats.ActorRef.newBuilder(child_).mergeFrom(value).buildPartial();
@@ -3467,7 +3945,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearChild() {
         if (childBuilder_ == null) {
-          child_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          child_ = null;
           onChanged();
         } else {
           childBuilder_.clear();
@@ -3490,19 +3968,20 @@ public final class SystemMessageFormats {
         if (childBuilder_ != null) {
           return childBuilder_.getMessageOrBuilder();
         } else {
-          return child_;
+          return child_ == null ?
+              akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
         }
       }
       /**
        * <code>required .ActorRef child = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> 
           getChildFieldBuilder() {
         if (childBuilder_ == null) {
-          childBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          childBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder>(
-                  child_,
+                  getChild(),
                   getParentForChildren(),
                   isClean());
           child_ = null;
@@ -3510,13 +3989,12 @@ public final class SystemMessageFormats {
         return childBuilder_;
       }
 
-      // required uint64 uid = 2;
       private long uid_ ;
       /**
        * <code>required uint64 uid = 2;</code>
        */
       public boolean hasUid() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 uid = 2;</code>
@@ -3542,22 +4020,63 @@ public final class SystemMessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:FailedData)
     }
 
+    // @@protoc_insertion_point(class_scope:FailedData)
+    private static final akka.remote.SystemMessageFormats.FailedData DEFAULT_INSTANCE;
     static {
-      defaultInstance = new FailedData(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.SystemMessageFormats.FailedData();
     }
 
-    // @@protoc_insertion_point(class_scope:FailedData)
+    public static akka.remote.SystemMessageFormats.FailedData getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<FailedData>
+        PARSER = new akka.protobufv3.internal.AbstractParser<FailedData>() {
+      @java.lang.Override
+      public FailedData parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new FailedData(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<FailedData> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<FailedData> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.SystemMessageFormats.FailedData getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface DeathWatchNotificationDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface DeathWatchNotificationDataOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:DeathWatchNotificationData)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .ActorRef actor = 1;
     /**
      * <code>required .ActorRef actor = 1;</code>
      */
@@ -3571,7 +4090,6 @@ public final class SystemMessageFormats {
      */
     akka.remote.ContainerFormats.ActorRefOrBuilder getActorOrBuilder();
 
-    // required bool existenceConfirmed = 2;
     /**
      * <code>required bool existenceConfirmed = 2;</code>
      */
@@ -3581,7 +4099,6 @@ public final class SystemMessageFormats {
      */
     boolean getExistenceConfirmed();
 
-    // required bool addressTerminated = 3;
     /**
      * <code>required bool addressTerminated = 3;</code>
      */
@@ -3594,39 +4111,41 @@ public final class SystemMessageFormats {
   /**
    * Protobuf type {@code DeathWatchNotificationData}
    */
-  public static final class DeathWatchNotificationData extends
-      akka.protobuf.GeneratedMessage
-      implements DeathWatchNotificationDataOrBuilder {
+  public  static final class DeathWatchNotificationData extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:DeathWatchNotificationData)
+      DeathWatchNotificationDataOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use DeathWatchNotificationData.newBuilder() to construct.
-    private DeathWatchNotificationData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private DeathWatchNotificationData(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private DeathWatchNotificationData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final DeathWatchNotificationData defaultInstance;
-    public static DeathWatchNotificationData getDefaultInstance() {
-      return defaultInstance;
+    private DeathWatchNotificationData() {
     }
 
-    public DeathWatchNotificationData getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new DeathWatchNotificationData();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private DeathWatchNotificationData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3635,16 +4154,9 @@ public final class SystemMessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ContainerFormats.ActorRef.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = actor_.toBuilder();
               }
               actor_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
@@ -3665,76 +4177,67 @@ public final class SystemMessageFormats {
               addressTerminated_ = input.readBool();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.SystemMessageFormats.internal_static_DeathWatchNotificationData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.SystemMessageFormats.internal_static_DeathWatchNotificationData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.SystemMessageFormats.DeathWatchNotificationData.class, akka.remote.SystemMessageFormats.DeathWatchNotificationData.Builder.class);
     }
 
-    public static akka.protobuf.Parser<DeathWatchNotificationData> PARSER =
-        new akka.protobuf.AbstractParser<DeathWatchNotificationData>() {
-      public DeathWatchNotificationData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new DeathWatchNotificationData(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<DeathWatchNotificationData> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .ActorRef actor = 1;
     public static final int ACTOR_FIELD_NUMBER = 1;
     private akka.remote.ContainerFormats.ActorRef actor_;
     /**
      * <code>required .ActorRef actor = 1;</code>
      */
     public boolean hasActor() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef actor = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRef getActor() {
-      return actor_;
+      return actor_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : actor_;
     }
     /**
      * <code>required .ActorRef actor = 1;</code>
      */
     public akka.remote.ContainerFormats.ActorRefOrBuilder getActorOrBuilder() {
-      return actor_;
+      return actor_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : actor_;
     }
 
-    // required bool existenceConfirmed = 2;
     public static final int EXISTENCECONFIRMED_FIELD_NUMBER = 2;
     private boolean existenceConfirmed_;
     /**
      * <code>required bool existenceConfirmed = 2;</code>
      */
     public boolean hasExistenceConfirmed() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bool existenceConfirmed = 2;</code>
@@ -3743,14 +4246,13 @@ public final class SystemMessageFormats {
       return existenceConfirmed_;
     }
 
-    // required bool addressTerminated = 3;
     public static final int ADDRESSTERMINATED_FIELD_NUMBER = 3;
     private boolean addressTerminated_;
     /**
      * <code>required bool addressTerminated = 3;</code>
      */
     public boolean hasAddressTerminated() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bool addressTerminated = 3;</code>
@@ -3759,15 +4261,12 @@ public final class SystemMessageFormats {
       return addressTerminated_;
     }
 
-    private void initFields() {
-      actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      existenceConfirmed_ = false;
-      addressTerminated_ = false;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasActor()) {
         memoizedIsInitialized = 0;
@@ -3789,114 +4288,186 @@ public final class SystemMessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, actor_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getActor());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeBool(2, existenceConfirmed_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeBool(3, addressTerminated_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, actor_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getActor());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBoolSize(2, existenceConfirmed_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBoolSize(3, addressTerminated_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.SystemMessageFormats.DeathWatchNotificationData)) {
+        return super.equals(obj);
+      }
+      akka.remote.SystemMessageFormats.DeathWatchNotificationData other = (akka.remote.SystemMessageFormats.DeathWatchNotificationData) obj;
+
+      if (hasActor() != other.hasActor()) return false;
+      if (hasActor()) {
+        if (!getActor()
+            .equals(other.getActor())) return false;
+      }
+      if (hasExistenceConfirmed() != other.hasExistenceConfirmed()) return false;
+      if (hasExistenceConfirmed()) {
+        if (getExistenceConfirmed()
+            != other.getExistenceConfirmed()) return false;
+      }
+      if (hasAddressTerminated() != other.hasAddressTerminated()) return false;
+      if (hasAddressTerminated()) {
+        if (getAddressTerminated()
+            != other.getAddressTerminated()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasActor()) {
+        hash = (37 * hash) + ACTOR_FIELD_NUMBER;
+        hash = (53 * hash) + getActor().hashCode();
+      }
+      if (hasExistenceConfirmed()) {
+        hash = (37 * hash) + EXISTENCECONFIRMED_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getExistenceConfirmed());
+      }
+      if (hasAddressTerminated()) {
+        hash = (37 * hash) + ADDRESSTERMINATED_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getAddressTerminated());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.SystemMessageFormats.DeathWatchNotificationData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.SystemMessageFormats.DeathWatchNotificationData prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.SystemMessageFormats.DeathWatchNotificationData prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3904,14 +4475,16 @@ public final class SystemMessageFormats {
      * Protobuf type {@code DeathWatchNotificationData}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:DeathWatchNotificationData)
+        akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.SystemMessageFormats.internal_static_DeathWatchNotificationData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.SystemMessageFormats.internal_static_DeathWatchNotificationData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3924,23 +4497,21 @@ public final class SystemMessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getActorFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (actorBuilder_ == null) {
-          actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          actor_ = null;
         } else {
           actorBuilder_.clear();
         }
@@ -3952,19 +4523,18 @@ public final class SystemMessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.SystemMessageFormats.internal_static_DeathWatchNotificationData_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.DeathWatchNotificationData getDefaultInstanceForType() {
         return akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.DeathWatchNotificationData build() {
         akka.remote.SystemMessageFormats.DeathWatchNotificationData result = buildPartial();
         if (!result.isInitialized()) {
@@ -3973,32 +4543,66 @@ public final class SystemMessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.SystemMessageFormats.DeathWatchNotificationData buildPartial() {
         akka.remote.SystemMessageFormats.DeathWatchNotificationData result = new akka.remote.SystemMessageFormats.DeathWatchNotificationData(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (actorBuilder_ == null) {
+            result.actor_ = actor_;
+          } else {
+            result.actor_ = actorBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (actorBuilder_ == null) {
-          result.actor_ = actor_;
-        } else {
-          result.actor_ = actorBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.existenceConfirmed_ = existenceConfirmed_;
           to_bitField0_ |= 0x00000002;
         }
-        result.existenceConfirmed_ = existenceConfirmed_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.addressTerminated_ = addressTerminated_;
           to_bitField0_ |= 0x00000004;
         }
-        result.addressTerminated_ = addressTerminated_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.SystemMessageFormats.DeathWatchNotificationData) {
           return mergeFrom((akka.remote.SystemMessageFormats.DeathWatchNotificationData)other);
         } else {
@@ -4018,40 +4622,39 @@ public final class SystemMessageFormats {
         if (other.hasAddressTerminated()) {
           setAddressTerminated(other.getAddressTerminated());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasActor()) {
-          
           return false;
         }
         if (!hasExistenceConfirmed()) {
-          
           return false;
         }
         if (!hasAddressTerminated()) {
-          
           return false;
         }
         if (!getActor().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.SystemMessageFormats.DeathWatchNotificationData parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.SystemMessageFormats.DeathWatchNotificationData) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -4061,22 +4664,21 @@ public final class SystemMessageFormats {
       }
       private int bitField0_;
 
-      // required .ActorRef actor = 1;
-      private akka.remote.ContainerFormats.ActorRef actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ContainerFormats.ActorRef actor_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> actorBuilder_;
       /**
        * <code>required .ActorRef actor = 1;</code>
        */
       public boolean hasActor() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef actor = 1;</code>
        */
       public akka.remote.ContainerFormats.ActorRef getActor() {
         if (actorBuilder_ == null) {
-          return actor_;
+          return actor_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : actor_;
         } else {
           return actorBuilder_.getMessage();
         }
@@ -4116,7 +4718,8 @@ public final class SystemMessageFormats {
        */
       public Builder mergeActor(akka.remote.ContainerFormats.ActorRef value) {
         if (actorBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              actor_ != null &&
               actor_ != akka.remote.ContainerFormats.ActorRef.getDefaultInstance()) {
             actor_ =
               akka.remote.ContainerFormats.ActorRef.newBuilder(actor_).mergeFrom(value).buildPartial();
@@ -4135,7 +4738,7 @@ public final class SystemMessageFormats {
        */
       public Builder clearActor() {
         if (actorBuilder_ == null) {
-          actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          actor_ = null;
           onChanged();
         } else {
           actorBuilder_.clear();
@@ -4158,19 +4761,20 @@ public final class SystemMessageFormats {
         if (actorBuilder_ != null) {
           return actorBuilder_.getMessageOrBuilder();
         } else {
-          return actor_;
+          return actor_ == null ?
+              akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : actor_;
         }
       }
       /**
        * <code>required .ActorRef actor = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> 
           getActorFieldBuilder() {
         if (actorBuilder_ == null) {
-          actorBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          actorBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder>(
-                  actor_,
+                  getActor(),
                   getParentForChildren(),
                   isClean());
           actor_ = null;
@@ -4178,13 +4782,12 @@ public final class SystemMessageFormats {
         return actorBuilder_;
       }
 
-      // required bool existenceConfirmed = 2;
       private boolean existenceConfirmed_ ;
       /**
        * <code>required bool existenceConfirmed = 2;</code>
        */
       public boolean hasExistenceConfirmed() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bool existenceConfirmed = 2;</code>
@@ -4211,13 +4814,12 @@ public final class SystemMessageFormats {
         return this;
       }
 
-      // required bool addressTerminated = 3;
       private boolean addressTerminated_ ;
       /**
        * <code>required bool addressTerminated = 3;</code>
        */
       public boolean hasAddressTerminated() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool addressTerminated = 3;</code>
@@ -4243,49 +4845,90 @@ public final class SystemMessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:DeathWatchNotificationData)
     }
 
+    // @@protoc_insertion_point(class_scope:DeathWatchNotificationData)
+    private static final akka.remote.SystemMessageFormats.DeathWatchNotificationData DEFAULT_INSTANCE;
     static {
-      defaultInstance = new DeathWatchNotificationData(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.SystemMessageFormats.DeathWatchNotificationData();
     }
 
-    // @@protoc_insertion_point(class_scope:DeathWatchNotificationData)
+    public static akka.remote.SystemMessageFormats.DeathWatchNotificationData getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<DeathWatchNotificationData>
+        PARSER = new akka.protobufv3.internal.AbstractParser<DeathWatchNotificationData>() {
+      @java.lang.Override
+      public DeathWatchNotificationData parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new DeathWatchNotificationData(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<DeathWatchNotificationData> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<DeathWatchNotificationData> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.SystemMessageFormats.DeathWatchNotificationData getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_SystemMessage_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_SystemMessage_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_WatchData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_WatchData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_SuperviseData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_SuperviseData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_FailedData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_FailedData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_DeathWatchNotificationData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_DeathWatchNotificationData_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -4298,7 +4941,7 @@ public final class SystemMessageFormats {
       "\022dwNotificationData\030\007 \001(\0132\033.DeathWatchNo" +
       "tificationData\"\230\001\n\004Type\022\n\n\006CREATE\020\000\022\014\n\010R" +
       "ECREATE\020\001\022\013\n\007SUSPEND\020\002\022\n\n\006RESUME\020\003\022\r\n\tTE" +
-      "RMINATE\020\004\022\r\n\tSUPERVISE\020\005\022\t\n\005WATCH\020\006\022\013\n\007U",
+      "RMINATE\020\004\022\r\n\tSUPERVISE\020\005\022\t\n\005WATCH\020\006\022\013\n\007U" +
       "NWATCH\020\007\022\n\n\006FAILED\020\010\022\033\n\027DEATHWATCH_NOTIF" +
       "ICATION\020\t\"C\n\tWatchData\022\032\n\007watchee\030\001 \002(\0132" +
       "\t.ActorRef\022\032\n\007watcher\030\002 \002(\0132\t.ActorRef\"8" +
@@ -4309,49 +4952,42 @@ public final class SystemMessageFormats {
       "orRef\022\032\n\022existenceConfirmed\030\002 \002(\010\022\031\n\021add" +
       "ressTerminated\030\003 \002(\010B\017\n\013akka.remoteH\001"
     };
-    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_SystemMessage_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_SystemMessage_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SystemMessage_descriptor,
-              new java.lang.String[] { "Type", "WatchData", "CauseData", "SuperviseData", "FailedData", "DwNotificationData", });
-          internal_static_WatchData_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_WatchData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_WatchData_descriptor,
-              new java.lang.String[] { "Watchee", "Watcher", });
-          internal_static_SuperviseData_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_SuperviseData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SuperviseData_descriptor,
-              new java.lang.String[] { "Child", "Async", });
-          internal_static_FailedData_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_FailedData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_FailedData_descriptor,
-              new java.lang.String[] { "Child", "Uid", });
-          internal_static_DeathWatchNotificationData_descriptor =
-            getDescriptor().getMessageTypes().get(4);
-          internal_static_DeathWatchNotificationData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_DeathWatchNotificationData_descriptor,
-              new java.lang.String[] { "Actor", "ExistenceConfirmed", "AddressTerminated", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
           akka.remote.ContainerFormats.getDescriptor(),
-        }, assigner);
+        });
+    internal_static_SystemMessage_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_SystemMessage_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_SystemMessage_descriptor,
+        new java.lang.String[] { "Type", "WatchData", "CauseData", "SuperviseData", "FailedData", "DwNotificationData", });
+    internal_static_WatchData_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_WatchData_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_WatchData_descriptor,
+        new java.lang.String[] { "Watchee", "Watcher", });
+    internal_static_SuperviseData_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_SuperviseData_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_SuperviseData_descriptor,
+        new java.lang.String[] { "Child", "Async", });
+    internal_static_FailedData_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_FailedData_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_FailedData_descriptor,
+        new java.lang.String[] { "Child", "Uid", });
+    internal_static_DeathWatchNotificationData_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_DeathWatchNotificationData_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_DeathWatchNotificationData_descriptor,
+        new java.lang.String[] { "Actor", "ExistenceConfirmed", "AddressTerminated", });
+    akka.remote.ContainerFormats.getDescriptor();
   }
 
   // @@protoc_insertion_point(outer_class_scope)

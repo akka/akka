@@ -21,7 +21,7 @@ import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.BaseSerializer
 import akka.util.{ ByteString => AkkaByteString }
-import akka.protobuf.ByteString
+import akka.protobufv3.internal.ByteString
 import akka.cluster.ddata.Key.KeyR
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec

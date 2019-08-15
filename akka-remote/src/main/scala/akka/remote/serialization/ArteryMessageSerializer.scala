@@ -7,7 +7,7 @@ package akka.remote.serialization
 import java.io.NotSerializableException
 
 import akka.actor.{ ActorRef, Address, ExtendedActorSystem }
-import akka.protobuf.MessageLite
+import akka.protobufv3.internal.MessageLite
 import akka.remote.RemoteWatcher.ArteryHeartbeatRsp
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol._

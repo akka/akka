@@ -10,3 +10,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.Persist
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.copy$default$3")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.PersistentFSM#Timer.copy")
+
+# Upgrade to protobuf 3
+ProblemFilters.exclude[Problem]("akka.persistence.serialization.MessageFormats*")
