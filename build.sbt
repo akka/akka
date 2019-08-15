@@ -269,6 +269,23 @@ lazy val docs = akkaModule("akka-docs")
       "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
     ),
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    paradoxRoots := List(
+      // Intentional roots:
+      "index.html",
+      "typed-actors.html"
+      // (to be) fixed on master:
+      "common/io-layer.html",
+      "fault-tolerance-sample.html",
+      "stream/operators/Source-or-Flow/apply.html",
+      "stream/operators/Source-or-Flow/balance.html",
+      "stream/operators/Source-or-Flow/broadcast.html",
+      "stream/operators/Source-or-Flow/mergeLatest.html",
+      "stream/operators/Source-or-Flow/mergePreferred.html",
+      "stream/operators/Source-or-Flow/mergePrioritized.html",
+      "stream/operators/Source-or-Flow/partition.html",
+      "stream/operators/Source-or-Flow/unzip.html",
+      "stream/operators/Source-or-Flow/unzipWith.html",
+    ),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
