@@ -32,14 +32,14 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
     - Use `akka.testkit.javadsl.TestKit` instead.
 * `UntypedPersistentActor`
     - Use `AbstractPersistentActor` instead.
-* `UntypedPersistentActorWithAtLeastOnceDelivery` 
+* `UntypedPersistentActorWithAtLeastOnceDelivery`
     - Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 
 After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
-* `actorFor` 
+* `actorFor`
     - Use `ActorSelection` instead.
-    
+
 ### Removed methods
 
 * `Logging.getLogger(UntypedActor)` `UntypedActor` has been removed, use `AbstractActor` instead.
@@ -338,6 +338,8 @@ This is described further in @ref:[inspecting sharding state](../cluster-shardin
 
 ### Distributed Data
 
+#### Config for message payload size
+
 Configuration properties for controlling sizes of `Gossip` and `DeltaPropagation` messages in Distributed Data
 have been reduced. Previous defaults sometimes resulted in messages exceeding max payload size for remote
 actor messages.
@@ -348,6 +350,17 @@ The new configuration properties are:
 akka.cluster.distributed-data.max-delta-elements = 500
 akka.cluster.distributed-data.delta-crdt.max-delta-size = 50
 ```
+
+#### DataDeleted
+
+`DataDeleted` has been changed in its usage. While it is still a possible response to a Delete request,
+it is no longer the response when an `Update` or `Get` request couldn't be performed because the entry has been deleted.
+In its place are two new possible responses to a request, `UpdateDataDeleted` for an `Update` and `GetDataDeleted`
+for a `Get`.
+
+The reason for this change is that `DataDeleted` didn't extend the `UpdateResponse` and `GetResponse` types
+and could therefore cause problems when `Update` and `Get` were used with `ask`. This was also a problem for
+Akka Typed.
 
 ### CoordinatedShutdown is run from ActorSystem.terminate
 
@@ -379,7 +392,7 @@ down.
 It is no longer required to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
 the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException].
 
-Additionally when downstream of the IO-sources cancels with a failure, the materialized value 
+Additionally when downstream of the IO-sources cancels with a failure, the materialized value
 is failed with that failure rather than completed successfully.
 
 ### Akka now uses Fork Join Pool from JDK
@@ -424,7 +437,7 @@ The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no
 ### Naming convention changed
 
 In needing a way to distinguish the new APIs in code and docs from the original, Akka used the naming
-convention `untyped`. All references of the original have now been changed to `classic`. The 
+convention `untyped`. All references of the original have now been changed to `classic`. The
 reference of the new APIs as `typed` is going away as it becomes the primary APIs.
 
 ### Receptionist has moved
@@ -480,6 +493,9 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * Akka Typed is now using SLF4J as the logging API. @scala[`ActorContext.log`]@java[`ActorContext.getLog`] returns
   an `org.slf4j.Logger`. MDC has been changed to only support `String` values.
 * `setLoggerClass` in `ActorContext` has been renamed to `setLoggerName`.
+* `GetDataDeleted` and `UpdateDataDeleted` introduced as described in @ref[DataDeleted](#datadeleted).
+* `SubscribeResponse` introduced in `Subscribe` because the responses can be both `Changed` and `Deleted`.
+* `ReplicationDeleteFailure` renamed to `DeleteFailure`.
 
 #### Akka Typed Stream API changes
 
@@ -497,22 +513,22 @@ for Scala an implicit materializer is provided if there is an implicit `ActorSys
 materializers and simplifies most stream use cases somewhat.
 
 The `ActorMaterializer` factories has been deprecated and replaced with a few corresponding factories in `akka.stream.Materializer`.
-New factories with per-materializer settings has not been provided but should instead be done globally through config or per stream, 
-see below for more details. 
+New factories with per-materializer settings has not been provided but should instead be done globally through config or per stream,
+see below for more details.
 
-Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()` 
-and Scala `implicit val materializer = ActorMaterializer()` should be removed. 
+Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()`
+and Scala `implicit val materializer = ActorMaterializer()` should be removed.
 
 Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
 
-When using streams from typed the same factories and methods for creating materializers and running streams as from classic can now be used with typed. The  
+When using streams from typed the same factories and methods for creating materializers and running streams as from classic can now be used with typed. The
 `akka.stream.typed.scaladsl.ActorMaterializer` and `akka.stream.typed.javadsl.ActorMaterializerFactory` that previously existed in the `akka-stream-typed` module has been removed.
 
 ### Materializer settings deprecated
 
 The `ActorMaterializerSettings` class has been deprecated.
 
-All materializer settings are available as configuration to change the system default or through attributes that can be 
+All materializer settings are available as configuration to change the system default or through attributes that can be
 used for individual streams when they are materialized.
 
 | Materializer setting   | Corresponding attribute | Setting |
@@ -546,18 +562,18 @@ Java
 
 ### Stream cancellation available upstream
 
-Previously an Akka streams stage or operator failed it was impossible to discern this from 
+Previously an Akka streams stage or operator failed it was impossible to discern this from
 the stage just cancelling. This has been improved so that when a stream stage fails the cause
 will be propagated upstream.
 
 The following operators have a slight change in behavior because of this:
 
-* `FileIO.fromPath`, `FileIO.fromFile` and `StreamConverters.fromInputStream`  will fail the materialized future with 
+* `FileIO.fromPath`, `FileIO.fromFile` and `StreamConverters.fromInputStream`  will fail the materialized future with
   an `IOOperationIncompleteException` when downstream fails
 * `.watchTermination` will fail the materialized `Future` or `CompletionStage` rather than completing it when downstream fails
-* `StreamRef` - `SourceRef` will cancel with a failure when the receiving node is downed 
+* `StreamRef` - `SourceRef` will cancel with a failure when the receiving node is downed
 
 This also means that custom `GraphStage` implementations should be changed to pass on the
-cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature 
-taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause upstream. The old zero-argument 
-`onDownstreamFinish` method has been deprecated.   
+cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature
+taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause upstream. The old zero-argument
+`onDownstreamFinish` method has been deprecated.

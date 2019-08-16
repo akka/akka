@@ -86,6 +86,15 @@ object Replicator {
     def unapply[A <: ReplicatedData](rsp: GetFailure[A]): Option[Key[A]] = Some(rsp.key)
   }
 
+  /**
+   * The [[Get]] request couldn't be performed because the entry has been deleted.
+   */
+  type GetDataDeleted[A <: ReplicatedData] = dd.Replicator.GetDataDeleted[A]
+  object GetDataDeleted {
+    def unapply[A <: ReplicatedData](rsp: GetDataDeleted[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
+
   object Update {
 
     /**
@@ -166,6 +175,15 @@ object Replicator {
   }
 
   /**
+   * The [[Update]] couldn't be performed because the entry has been deleted.
+   */
+  type UpdateDataDeleted[A <: ReplicatedData] = dd.Replicator.UpdateDataDeleted[A]
+  object UpdateDataDeleted {
+    def unapply[A <: ReplicatedData](rsp: UpdateDataDeleted[A]): Option[Key[A]] =
+      Some(rsp.key)
+  }
+
+  /**
    * If the `modify` function of the [[Update]] throws an exception the reply message
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
@@ -214,6 +232,16 @@ object Replicator {
    */
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
 
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  type SubscribeResponse[A <: ReplicatedData] = dd.Replicator.SubscribeResponse[A]
+
+  /**
+   * The data value is retrieved with [[#get]] using the typed key.
+   *
+   * @see [[Replicator.Subscribe]]
+   */
   object Changed {
     def unapply[A <: ReplicatedData](chg: Changed[A]): Option[Key[A]] = Some(chg.key)
   }
@@ -224,6 +252,15 @@ object Replicator {
    * @see [[Replicator.Subscribe]]
    */
   type Changed[A <: ReplicatedData] = dd.Replicator.Changed[A]
+
+  object Deleted {
+    def unapply[A <: ReplicatedData](del: Deleted[A]): Option[Key[A]] = Some(del.key)
+  }
+
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  type Deleted[A <: ReplicatedData] = dd.Replicator.Deleted[A]
 
   object Delete {
 
@@ -253,9 +290,9 @@ object Replicator {
     def unapply[A <: ReplicatedData](rsp: DeleteSuccess[A]): Option[Key[A]] =
       Some(rsp.key)
   }
-  type ReplicationDeleteFailure[A <: ReplicatedData] = dd.Replicator.ReplicationDeleteFailure[A]
-  object ReplicationDeleteFailure {
-    def unapply[A <: ReplicatedData](rsp: ReplicationDeleteFailure[A]): Option[Key[A]] =
+  type DeleteFailure[A <: ReplicatedData] = dd.Replicator.ReplicationDeleteFailure[A]
+  object DeleteFailure {
+    def unapply[A <: ReplicatedData](rsp: DeleteFailure[A]): Option[Key[A]] =
       Some(rsp.key)
   }
   type DataDeleted[A <: ReplicatedData] = dd.Replicator.DataDeleted[A]

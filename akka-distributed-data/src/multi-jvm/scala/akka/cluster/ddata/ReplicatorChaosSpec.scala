@@ -86,7 +86,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
     within(5.seconds) {
       awaitAssert {
         replicator ! Get(key, ReadLocal)
-        expectMsg(DataDeleted(key, None))
+        expectMsg(GetDataDeleted(key, None))
       }
     }
 
