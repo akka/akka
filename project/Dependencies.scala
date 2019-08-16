@@ -23,7 +23,7 @@ object Dependencies {
   val agronaVersion = "1.0.1"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
-  val jacksonDatabindVersion = "2.9.9.1"
+  val jacksonDatabindVersion = "2.9.9.3"
 
   val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
