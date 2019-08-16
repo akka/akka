@@ -482,8 +482,6 @@ object Source {
     fromGraph(new SubscriberSource[T](DefaultAttributes.subscriberSource, shape("SubscriberSource")))
 
   /**
-   * INTERNAL API
-   *
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
    * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received.
@@ -517,10 +515,12 @@ object Source {
    *
    * See also [[akka.stream.scaladsl.Source.queue]].
    *
+   * @param completionMatcher catches the completion message to end the stream
+   * @param failureMatcher catches the failure message to fail the stream
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @InternalApi private[akka] def actorRef[T](
+  def actorRef[T](
       completionMatcher: PartialFunction[Any, CompletionStrategy],
       failureMatcher: PartialFunction[Any, Throwable],
       bufferSize: Int,
@@ -568,6 +568,7 @@ object Source {
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
+  @deprecated("Use variant accepting completion and failure matchers", "2.6.0")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef({
       case akka.actor.Status.Success(s: CompletionStrategy) => s
@@ -592,6 +593,27 @@ object Source {
    * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
    * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
    *
+   * The stream can be completed with failure by sending a message that is matched by `failureMatcher`. The extracted
+   * [[Throwable]] will be used to fail the stream. In case the Actor is still draining its internal buffer (after having received
+   * a message matched by `completionMatcher`) before signaling completion and it receives a message matched by `failureMatcher`,
+   * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   */
+  def actorRefWithAck[T](
+      ackMessage: Any,
+      completionMatcher: PartialFunction[Any, CompletionStrategy],
+      failureMatcher: PartialFunction[Any, Throwable]): Source[T, ActorRef] = {
+    Source.fromGraph(new ActorRefBackpressureSource(None, ackMessage, completionMatcher, failureMatcher))
+  }
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
+   * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
+   *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
    * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
@@ -605,6 +627,7 @@ object Source {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    */
+  @deprecated("Use variant accepting completion and failure matchers", "2.6.0")
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
     actorRefWithAck(None, ackMessage, {
       case akka.actor.Status.Success(s: CompletionStrategy) => s

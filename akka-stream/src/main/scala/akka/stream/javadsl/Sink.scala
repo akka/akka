@@ -8,19 +8,13 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
-import akka.Done
-import akka.NotUsed
-import akka.actor.ActorRef
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
 import akka.dispatch.ExecutionContexts
-import akka.japi
+import akka._
 import akka.japi.function
-import akka.stream._
 import akka.stream.impl.LinearTraversalBuilder
-import akka.stream.javadsl
-import akka.stream.scaladsl
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
+import akka.stream.{ javadsl, scaladsl, _ }
+import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
@@ -245,7 +239,7 @@ object Sink {
    *
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
-    new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
+    new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage, (t: Throwable) => Status.Failure(t)))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -267,7 +261,7 @@ object Sink {
       onCompleteMessage: Any,
       onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(
-      scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply _))
+      scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, t => onFailureMessage(t)))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
