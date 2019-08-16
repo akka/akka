@@ -10,6 +10,7 @@ import java.util.function.{ Function => JFunction }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.DeadLetterSuppression
+import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.ddata.Key
