@@ -87,13 +87,17 @@ If you accidentally mix Akka versions, for example through transitive
 dependencies, you might get a warning at run time such as:
 
 ```
-Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same across all modules of Akka that you are using, e.g. if you use [2.5.17] all other modules that are released together MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions [2.5.4, 2.5.17] in libraries [akka-protobuf:2.5.4, akka-actor:2.5.17, akka-stream:2.5.4]
+Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same
+across all modules of Akka that you are using, e.g. if you use [2.5.20] all other modules that are released together
+MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions
+[2.5.19, 2.5.20] in libraries [akka-persistence:2.5.19, akka-cluster-sharding:2.5.19, akka-protobuf:2.5.19,
+akka-persistence-query:2.5.19, akka-actor:2.5.20, akka-slf4j:2.5.19, akka-remote:2.5.19, akka-cluster:2.5.19,
+akka-distributed-data:2.5.19, akka-stream:2.5.19, akka-cluster-tools:2.5.19]
 ```
 
 The fix is typically to pick the highest Akka version, and add explicit
 dependencies to your project as needed. For example, in the example above
-you might want to add dependencies on akka-protobuf:2.5.17 and
-akka-stream:2.5.17.
+you might want to add dependencies for 2.5.20.
 
 @@@ note
 
