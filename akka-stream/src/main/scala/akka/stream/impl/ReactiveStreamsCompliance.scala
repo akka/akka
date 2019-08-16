@@ -5,6 +5,7 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
+import akka.stream.SubscriptionWithCancelException
 
 import scala.util.control.NonFatal
 import org.reactivestreams.{ Subscriber, Subscription }
@@ -125,11 +126,13 @@ import org.reactivestreams.{ Subscriber, Subscription }
     }
   }
 
-  final def tryCancel(subscription: Subscription): Unit = {
+  final def tryCancel(subscription: Subscription, cause: Throwable): Unit = {
     if (subscription eq null)
       throw new IllegalStateException("Subscription must be not null on cancel() call, rule 1.3")
-    try subscription.cancel()
-    catch {
+    try subscription match {
+      case s: SubscriptionWithCancelException => s.cancel(cause)
+      case s                                  => s.cancel()
+    } catch {
       case NonFatal(t) =>
         throw new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t)
     }

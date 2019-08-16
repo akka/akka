@@ -1505,11 +1505,16 @@ private[stream] object Collect {
         super.onUpstreamFinish()
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (isEnabled(logLevels.onFinish))
-          log.log(logLevels.onFinish, "[{}] Downstream finished.", name)
+          log.log(
+            logLevels.onFinish,
+            "[{}] Downstream finished, cause: {}: {}",
+            name,
+            Logging.simpleName(cause.getClass),
+            cause.getMessage)
 
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause: Throwable)
       }
 
       private def isEnabled(l: LogLevel): Boolean = l.asInt != OffInt
@@ -2150,9 +2155,9 @@ private[stream] object Collect {
         super.onUpstreamFailure(ex)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         matPromise.success(None)
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause)
       }
 
       override def onPull(): Unit = {

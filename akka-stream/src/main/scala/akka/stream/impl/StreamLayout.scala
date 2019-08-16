@@ -176,10 +176,10 @@ import scala.util.control.NonFatal
                 case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case _ =>
+        case state @ _ =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(_).onSubscribe.rec($s) spec violation")
           // spec violation
-          tryCancel(s)
+          tryCancel(s, new IllegalStateException(s"VirtualProcessor in wrong state [$state]. Spec violation"))
       }
     }
 
@@ -223,7 +223,7 @@ import scala.util.control.NonFatal
             set(Inert)
 
           case Inert =>
-            tryCancel(subscription)
+            tryCancel(subscription, new IllegalStateException("VirtualProcessor was already subscribed to."))
 
           case other =>
             throw new IllegalStateException(
@@ -234,7 +234,7 @@ import scala.util.control.NonFatal
     } catch {
       case NonFatal(ex) =>
         set(Inert)
-        tryCancel(subscription)
+        tryCancel(subscription, ex)
         tryOnError(establishing.subscriber, ex)
     }
   }
@@ -397,7 +397,7 @@ import scala.util.control.NonFatal
       if (n < 1) {
         if (VirtualProcessor.Debug)
           println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).request($n)")
-        tryCancel(real)
+        tryCancel(real, new IllegalArgumentException(s"Demand must not be < 1 but was $n"))
         VirtualProcessor.this.getAndSet(Inert) match {
           case Both(subscriber)  => rejectDueToNonPositiveDemand(subscriber)
           case est: Establishing => rejectDueToNonPositiveDemand(est.subscriber)

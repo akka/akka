@@ -674,10 +674,9 @@ import org.reactivestreams.Subscriber
               }
             }
           }
-          override def onDownstreamFinish(): Unit = {
-            if (!isClosed(in)) {
-              cancel(in)
-            }
+
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            if (!isClosed(in)) cancel(in, cause)
             maybeCompleteStage()
           }
         })
