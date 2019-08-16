@@ -32,6 +32,7 @@ import akka.testkit.TestKit
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.Module
@@ -45,6 +46,8 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonGenerator
 
 object ScalaTestMessages {
   trait TestMessage
@@ -137,23 +140,84 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       JacksonObjectMapperProvider(system).getOrCreate(anotherBindingName, None) shouldBe theSameInstanceAs(mapper2)
     }
 
-    "support several different configurations" in {
+    "JacksonSerializer configuration" must {
+
       withSystem("""
         akka.actor.serializers.jackson-json2 = "akka.serialization.jackson.JacksonJsonSerializer"
         akka.actor.serialization-identifiers.jackson-json2 = 999
         akka.serialization.jackson.jackson-json2 {
-          deserialization-features.FAIL_ON_UNKNOWN_PROPERTIES = on
-        }
-        """) { sys =>
-        val objMapper2 = serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
-        objMapper2.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
-        val objMapper3 = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
-        objMapper3.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(true)
 
-        // default has different config, different instance but same JacksonJsonSerializer class
-        val objMapper =
+          # on is Jackson's default
+          serialization-features.WRITE_DURATIONS_AS_TIMESTAMPS = off
+
+          # on is Jackson's default
+          deserialization-features.EAGER_DESERIALIZER_FETCH = off
+
+          # off is Jackson's default
+          mapper-features.SORT_PROPERTIES_ALPHABETICALLY = on
+
+          # off is Jackson's default
+          json-parser-features.ALLOW_COMMENTS = on
+
+          # on is Jackson's default
+          json-generator-features.AUTO_CLOSE_TARGET = off
+        }
+      """) { sys =>
+        val identifiedObjectMapper =
+          serialization(sys).serializerByIdentity(999).asInstanceOf[JacksonJsonSerializer].objectMapper
+        val namedObjectMapper = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json2", None)
+        val defaultObjectMapper =
           serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
-        objMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) should ===(false)
+
+        "support serialization features" in {
+          identifiedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
+          namedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(true)
+        }
+
+        "support deserialization features" in {
+          identifiedObjectMapper.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(false)
+          namedObjectMapper.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(false)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(true)
+        }
+
+        "support mapper features" in {
+          identifiedObjectMapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
+          namedObjectMapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(false)
+        }
+
+        "support json parser features" in {
+          identifiedObjectMapper.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(true)
+          namedObjectMapper.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(false)
+        }
+
+        "support json generator features" in {
+          identifiedObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(false)
+          namedObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(false)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(true)
+        }
+
+        "fallback to defaults when object mapper is not configured" in {
+          val notConfigured = JacksonObjectMapperProvider(sys).getOrCreate("jackson-not-configured", None)
+          // Use Jacksons and Akka defaults
+          notConfigured.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(true)
+          notConfigured.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(true)
+          notConfigured.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(false)
+          notConfigured.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(false)
+          notConfigured.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(true)
+        }
       }
     }
   }
@@ -254,19 +318,45 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             bindingName: String,
             configuredFeatures: immutable.Seq[(SerializationFeature, Boolean)])
             : immutable.Seq[(SerializationFeature, Boolean)] = {
-          if (bindingName == "jackson-json") {
+          if (bindingName == "jackson-json")
             configuredFeatures :+ (SerializationFeature.INDENT_OUTPUT -> true)
-          } else
+          else
             super.overrideConfiguredSerializationFeatures(bindingName, configuredFeatures)
         }
 
         override def overrideConfiguredModules(
             bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
-          if (bindingName == "jackson-json") {
+          if (bindingName == "jackson-json")
             configuredModules.filterNot(_.isInstanceOf[JavaTimeModule])
-          } else
+          else
             super.overrideConfiguredModules(bindingName, configuredModules)
+
+        override def overrideConfiguredMapperFeatures(
+            bindingName: String,
+            configuredFeatures: immutable.Seq[(MapperFeature, Boolean)]): immutable.Seq[(MapperFeature, Boolean)] =
+          if (bindingName == "jackson-json")
+            configuredFeatures :+ (MapperFeature.SORT_PROPERTIES_ALPHABETICALLY -> true)
+          else
+            super.overrideConfiguredMapperFeatures(bindingName, configuredFeatures)
+
+        override def overrideConfiguredJsonParserFeatures(
+            bindingName: String,
+            configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)])
+            : immutable.Seq[(JsonParser.Feature, Boolean)] =
+          if (bindingName == "jackson-json")
+            configuredFeatures :+ (JsonParser.Feature.ALLOW_SINGLE_QUOTES -> true)
+          else
+            super.overrideConfiguredJsonParserFeatures(bindingName, configuredFeatures)
+
+        override def overrideConfiguredJsonGeneratorFeatures(
+            bindingName: String,
+            configuredFeatures: immutable.Seq[(JsonGenerator.Feature, Boolean)])
+            : immutable.Seq[(JsonGenerator.Feature, Boolean)] =
+          if (bindingName == "jackson-json")
+            configuredFeatures :+ (JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS -> true)
+          else
+            super.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredFeatures)
       }
 
       val config = system.settings.config
@@ -275,12 +365,19 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
         .withSetup(JacksonObjectMapperProviderSetup(customJacksonObjectMapperFactory))
         .withSetup(BootstrapSetup(config))
       withSystem(setup) { sys =>
+        val mapper = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json", None)
+        mapper.isEnabled(SerializationFeature.INDENT_OUTPUT) should ===(true)
+        mapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
+        mapper.isEnabled(JsonParser.Feature.ALLOW_SINGLE_QUOTES) should ===(true)
+        mapper.isEnabled(SerializationFeature.INDENT_OUTPUT) should ===(true)
+        mapper.isEnabled(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS) should ===(true)
+
         val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
         // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
         json should include("""  "instant" : {""")
-        json should include("""    "seconds" : 1559907792,""")
-        json should include("""    "nanos" : 75000000,""")
+        json should include("""    "nanos" : "75000000",""")
+        json should include("""    "seconds" : "1559907792"""")
       }
     }
 
