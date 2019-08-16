@@ -219,9 +219,9 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
   // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
   @InternalApi
   private[akka] def systemActor[T](behavior: Behavior[T], name: String): ActorRef[T] =
-    Await.result(system.systemActorOf(behavior, name), timeout.duration)
+    system.systemActorOf(behavior, name)
 
   @InternalApi
   private[akka] def systemActor[T](behavior: Behavior[T]): ActorRef[T] =
-    Await.result(system.systemActorOf(behavior, childName.next()), timeout.duration)
+    system.systemActorOf(behavior, childName.next())
 }

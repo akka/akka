@@ -14,7 +14,6 @@ import java.util.{ List => JList }
 import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
@@ -33,7 +32,6 @@ import akka.annotation.InternalApi
 import akka.util.BoxedType
 import akka.util.JavaDurationConverters._
 import akka.util.PrettyDuration._
-import akka.util.Timeout
 
 @InternalApi
 private[akka] object TestProbeImpl {
@@ -81,13 +79,8 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    */
   private var lastWasNoMessage = false
 
-  private val testActor: ActorRef[M] = {
-    // FIXME arbitrary timeout?
-    implicit val timeout: Timeout = Timeout(3.seconds)
-    val futRef =
-      system.systemActorOf(TestProbeImpl.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
-    Await.result(futRef, timeout.duration + 1.second)
-  }
+  private val testActor: ActorRef[M] =
+    system.systemActorOf(TestProbeImpl.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
 
   override def ref: ActorRef[M] = testActor
 
