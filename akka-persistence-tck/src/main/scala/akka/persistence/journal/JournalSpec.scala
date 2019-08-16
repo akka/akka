@@ -18,8 +18,6 @@ object JournalSpec {
   val config: Config = ConfigFactory.parseString(s"""
     akka.persistence.publish-plugin-commands = on
     akka.actor {
-      serialize-messages = off
-      serialize-creators = off
       serializers {
         persistence-tck-test = "${classOf[TestSerializer].getName}"
       }

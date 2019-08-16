@@ -19,7 +19,6 @@ object AkkaProtocolStressTest {
     ConfigFactory.parseString("""
     akka {
       #loglevel = DEBUG
-      actor.serialize-messages = off
       actor.provider = remote
       remote.artery.enabled = off
 

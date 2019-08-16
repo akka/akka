@@ -17,7 +17,6 @@ import akka.pattern.ask
 object ResizerSpec {
 
   val config = """
-    akka.actor.serialize-messages = off
     akka.actor.deployment {
       /router1 {
         router = round-robin-pool

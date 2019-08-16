@@ -17,8 +17,7 @@ import java.net.DatagramSocket
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     # tests expect to be able to mutate messages
-    akka.actor.serialize-messages = off
-    akka.actor.serialize-creators = on""") with ImplicitSender {
+    """) with ImplicitSender {
 
   def bindUdp(handler: ActorRef): InetSocketAddress = {
     val commander = TestProbe()

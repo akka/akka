@@ -50,8 +50,6 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.actor {
-        serialize-creators = off
-        serialize-messages = off
         serialization-bindings {
           "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$$Reply" = java-test
         }

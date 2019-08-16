@@ -35,6 +35,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         getBoolean("akka.actor.serialize-messages") should ===(false)
         settings.SerializeAllMessages should ===(false)
 
+        settings.NoSerializationVerificationNeededClassPrefix should ===(Set("akka."))
+
         getInt("akka.scheduler.ticks-per-wheel") should ===(512)
         getDuration("akka.scheduler.tick-duration", TimeUnit.MILLISECONDS) should ===(10L)
         getString("akka.scheduler.implementation") should ===("akka.actor.LightArrayRevolverScheduler")

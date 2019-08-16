@@ -15,9 +15,7 @@ import com.github.ghik.silencer.silent
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-class LocalDeathWatchSpec extends AkkaSpec("""
-  akka.actor.serialize-messages = on
-  """) with ImplicitSender with DefaultTimeout with DeathWatchSpec
+class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
 
 object DeathWatchSpec {
   class Watcher(target: ActorRef, testActor: ActorRef) extends Actor {

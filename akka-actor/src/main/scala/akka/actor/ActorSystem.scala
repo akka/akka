@@ -424,6 +424,10 @@ object ActorSystem {
     final val EnableAdditionalSerializationBindings: Boolean = true
     final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
+    final val NoSerializationVerificationNeededClassPrefix: Set[String] = {
+      import akka.util.ccompat.JavaConverters._
+      getStringList("akka.actor.no-serialization-verification-needed-class-prefix").asScala.toSet
+    }
 
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")

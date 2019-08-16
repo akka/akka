@@ -61,22 +61,6 @@ Akka provides serializers for several primitive types and [protobuf](http://code
 depending on the akka-remote module), so normally you don't need to add
 configuration for that if you send raw protobuf messages as actor messages.
 
-### Verification
-
-Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
-
-@@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-messages-config }
-
-If you want to verify that your `Props` are serializable you can enable the following config option:
-
-@@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-creators-config }
-
-@@@ warning
-
-We recommend having these config options turned on **only** when you're running tests. Turning these options on in production is pointless, as it would negatively impact the performance of local message passing without giving any gain.
-
-@@@
-
 ### Programmatic
 
 If you want to programmatically serialize/deserialize using Akka Serialization,
@@ -275,3 +259,23 @@ It must still be possible to deserialize the events that were stored with the ol
 * [Akka-kryo by Roman Levenstein](https://github.com/romix/akka-kryo-serialization)
 
 * [Twitter Chill Scala extensions for Kryo](https://github.com/twitter/chill)
+
+### Verification
+
+Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
+
+@@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-messages-config }
+
+Certain messages can be excluded from verification by extending the marker @scala[trait]@java[interface]
+`akka.actor.NoSerializationVerificationNeeded` or define a class name prefix in configuration
+`akka.actor.no-serialization-verification-needed-class-prefix`.
+
+If you want to verify that your `Props` are serializable you can enable the following config option:
+
+@@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-creators-config }
+
+@@@ warning
+
+We recommend having these config options turned on **only** when you're running tests. Turning these options on in production is pointless, as it would negatively impact the performance of local message passing without giving any gain.
+
+@@@

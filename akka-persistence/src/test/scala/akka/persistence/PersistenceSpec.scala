@@ -64,8 +64,9 @@ object PersistenceSpec {
       .map(ConfigFactory.parseString(_))
       .getOrElse(ConfigFactory.empty())
       .withFallback(ConfigFactory.parseString(s"""
-      akka.actor.serialize-creators = ${serialization}
-      akka.actor.serialize-messages = ${serialization}
+      akka.actor.serialize-creators = $serialization
+      akka.actor.serialize-messages = $serialization
+      akka.actor.no-serialization-verification-needed-class-prefix = []
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on
       akka.actor.warn-about-java-serializer-usage = off

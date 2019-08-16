@@ -128,8 +128,6 @@ class DaemonMsgCreateSerializerAllowJavaSerializationSpec
 
 class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
    akka.actor.allow-java-serialization=off
-   akka.actor.serialize-messages=off
-   akka.actor.serialize-creators=off
   """) with SerializationVerification {
 
   import DaemonMsgCreateSerializerAllowJavaSerializationSpec.MyActor

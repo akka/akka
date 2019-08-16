@@ -15,7 +15,6 @@ import com.github.ghik.silencer.silent
 class InetAddressDnsResolverSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = default
     akka.io.dns.inet-address.negative-ttl = default
-    akka.actor.serialize-creators = on
     """) { thisSpecs =>
 
   "The DNS resolver default ttl's" must {
@@ -124,7 +123,6 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
 class InetAddressDnsResolverConfigSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = forever
     akka.io.dns.inet-address.negative-ttl = never
-    akka.actor.serialize-creators = on
     """) {
   thisSpecs =>
 

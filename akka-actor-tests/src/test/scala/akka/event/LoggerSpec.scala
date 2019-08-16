@@ -66,6 +66,7 @@ object LoggerSpec {
         loggers = ["akka.event.LoggerSpec$$TestLogger1"]
         actor {
           serialize-messages = on
+          no-serialization-verification-needed-class-prefix = []
           serialization-bindings {
             "akka.event.Logging$$LogEvent" = bytes
             "java.io.Serializable" = java
@@ -79,9 +80,6 @@ object LoggerSpec {
         stdout-loglevel = "WARNING"
         loglevel = "WARNING"
         loggers = ["akka.event.LoggerSpec$TestLogger1"]
-        actor {
-          serialize-messages = off
-        }
       }
     """).withFallback(AkkaSpec.testConf)
 

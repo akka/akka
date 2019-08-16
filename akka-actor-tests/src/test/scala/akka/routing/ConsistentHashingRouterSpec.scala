@@ -19,7 +19,6 @@ object ConsistentHashingRouterSpec {
 
   val config = """
     akka.actor {
-      serialize-messages = off
       # consistent hashing is serializing the hash key, unless it's bytes or string
       allow-java-serialization = on
     }

@@ -4,8 +4,6 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
-import akka.actor.NoSerializationVerificationNeeded
-
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
@@ -145,7 +143,6 @@ object Replicator {
       writeConsistency: WriteConsistency,
       replyTo: ActorRef[UpdateResponse[A]])(val modify: Option[A] => A)
       extends Command
-      with NoSerializationVerificationNeeded {}
 
   type UpdateResponse[A <: ReplicatedData] = dd.Replicator.UpdateResponse[A]
   type UpdateSuccess[A <: ReplicatedData] = dd.Replicator.UpdateSuccess[A]
@@ -282,7 +279,6 @@ object Replicator {
       consistency: WriteConsistency,
       replyTo: ActorRef[DeleteResponse[A]])
       extends Command
-      with NoSerializationVerificationNeeded
 
   type DeleteResponse[A <: ReplicatedData] = dd.Replicator.DeleteResponse[A]
   type DeleteSuccess[A <: ReplicatedData] = dd.Replicator.DeleteSuccess[A]

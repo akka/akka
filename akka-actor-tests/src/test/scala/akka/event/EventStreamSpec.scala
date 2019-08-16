@@ -15,7 +15,6 @@ object EventStreamSpec {
 
   val config = ConfigFactory.parseString("""
       akka {
-        actor.serialize-messages = off
         stdout-loglevel = WARNING
         loglevel = INFO
         loggers = ["akka.event.EventStreamSpec$MyLog", "%s"]
@@ -24,7 +23,6 @@ object EventStreamSpec {
 
   val configUnhandled = ConfigFactory.parseString("""
       akka {
-        actor.serialize-messages = off
         stdout-loglevel = WARNING
         loglevel = WARNING
         actor.debug.unhandled = on

@@ -41,6 +41,7 @@ class FunctionRefSpec extends AkkaSpec("""
   akka.actor.allow-java-serialization = on
   akka.actor.warn-about-java-serializer-usage = off
   akka.actor.serialize-messages = on
+  akka.actor.no-serialization-verification-needed-class-prefix = []
   """) with ImplicitSender {
   import FunctionRefSpec._
 

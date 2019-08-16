@@ -18,7 +18,6 @@ object DisabledJavaSerializerWarningSpec {
 class DisabledJavaSerializerWarningSpec extends AkkaSpec("""
   akka.actor {
     allow-java-serialization = off
-    serialize-messages = on
     # this is by default on, but tests are running with off
     warn-about-java-serializer-usage = on
   }

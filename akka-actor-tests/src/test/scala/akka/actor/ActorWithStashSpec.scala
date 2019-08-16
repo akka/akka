@@ -96,17 +96,13 @@ object ActorWithStashSpec {
     var expectedException: TestLatch = null
   }
 
-  val testConf = """
-    akka.actor.serialize-messages = off
-    """
-
 }
 
 @silent
 class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
 @silent
-class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
+class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
   override def atStartup: Unit = {

@@ -23,10 +23,6 @@ object ClusterSingletonPersistenceSpec {
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
-      akka.actor {
-        serialize-messages = off
-      }
-
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """.stripMargin)
 

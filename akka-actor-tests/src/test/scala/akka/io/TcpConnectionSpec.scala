@@ -45,7 +45,6 @@ class TcpConnectionSpec extends AkkaSpec("""
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = on
     akka.io.tcp.register-timeout = 500ms
-    akka.actor.serialize-creators = on
     """) with WithLogCapturing { thisSpecs =>
   import TcpConnectionSpec._
 

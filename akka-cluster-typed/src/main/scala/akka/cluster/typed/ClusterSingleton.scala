@@ -4,7 +4,6 @@
 
 package akka.cluster.typed
 
-import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{
@@ -50,8 +49,7 @@ final class ClusterSingletonSettings(
     val singletonIdentificationInterval: FiniteDuration,
     val removalMargin: FiniteDuration,
     val handOverRetryInterval: FiniteDuration,
-    val bufferSize: Int)
-    extends NoSerializationVerificationNeeded {
+    val bufferSize: Int) {
 
   def withRole(role: String): ClusterSingletonSettings = copy(role = Some(role))
 
@@ -270,8 +268,7 @@ final class ClusterSingletonManagerSettings(
     val singletonName: String,
     val role: Option[String],
     val removalMargin: FiniteDuration,
-    val handOverRetryInterval: FiniteDuration)
-    extends NoSerializationVerificationNeeded {
+    val handOverRetryInterval: FiniteDuration) {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
 

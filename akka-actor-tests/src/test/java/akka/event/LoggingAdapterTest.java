@@ -29,8 +29,7 @@ import static org.junit.Assert.assertSame;
 
 public class LoggingAdapterTest extends JUnitSuite {
 
-  private static final Config config =
-      ConfigFactory.parseString("akka.loglevel = DEBUG\n" + "akka.actor.serialize-messages = off");
+  private static final Config config = ConfigFactory.parseString("akka.loglevel = DEBUG\n");
 
   @Rule
   public AkkaJUnitActorSystemResource actorSystemResource =

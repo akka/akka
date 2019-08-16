@@ -35,9 +35,6 @@ class ReplicatedDataSerializerSpec
     akka.actor.provider=cluster
     akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
-    akka.actor {
-      serialize-messages = off
-    }
     """)))
     with WordSpecLike
     with Matchers

@@ -52,8 +52,6 @@ object ClusterShardingSpec {
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
 
       akka.actor {
-        serialize-messages = off
-
        serializers {
           test = "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$Serializer"
         }
