@@ -134,7 +134,7 @@ Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #blocking-in-actor }
 
 Java
-:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingActor.java)
+:   @@snip [BlockingActor.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingActor.java)
 
 When facing this, you
 may be tempted to wrap the blocking call inside a `Future` and work
@@ -146,7 +146,7 @@ Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #blocking-in-future }
 
 Java
-:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingFutureActor.java) { #blocking-in-future  }
+:   @@snip [BlockingFutureActor.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingFutureActor.java) { #blocking-in-future  }
 
 
 ### Problem: Blocking on default dispatcher
@@ -196,14 +196,14 @@ Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #print-actor }
 
 Java
-:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/typed/PrintActor.java) { #print-actor }
+:   @@snip [PrintActor.java](/akka-docs/src/test/java/jdocs/actor/typed/PrintActor.java) { #print-actor }
 
 
 Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #blocking-main }
 
 Java
-:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingDispatcherTest.java) { #blocking-main }
+:   @@snip [BlockingDispatcherTest.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingDispatcherTest.java) { #blocking-main }
 
 
 Here the app is sending 100 messages to `BlockingFutureActor` and `PrintActor` and large numbers
@@ -263,7 +263,7 @@ In `application.conf`, the dispatcher dedicated to blocking behavior should
 be configured as follows:
 
 <!--same config text for Scala & Java-->
-@@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
+@@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
 
 
 A `thread-pool-executor` based dispatcher allows us to set a limit on the number of threads it will host,
@@ -278,7 +278,7 @@ Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #separate-dispatcher }
 
 Java
-:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/typed/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
+:   @@snip [SeparateDispatcherFutureActor.java](/akka-docs/src/test/java/jdocs/actor/typed/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
 
 The thread pool behavior is shown in the below diagram.
 
