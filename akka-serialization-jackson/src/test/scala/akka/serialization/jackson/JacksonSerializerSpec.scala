@@ -169,10 +169,6 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
         val defaultObjectMapper =
           serializerFor(ScalaTestMessages.SimpleCommand("abc")).asInstanceOf[JacksonJsonSerializer].objectMapper
 
-        println(s"identifiedObjectMapper => $identifiedObjectMapper")
-        println(s"namedObjectMapper => $namedObjectMapper")
-        println(s"defaultObjectMapper => $defaultObjectMapper")
-
         "support serialization features" in {
           identifiedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
           namedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
@@ -322,19 +318,45 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             bindingName: String,
             configuredFeatures: immutable.Seq[(SerializationFeature, Boolean)])
             : immutable.Seq[(SerializationFeature, Boolean)] = {
-          if (bindingName == "jackson-json") {
+          if (bindingName == "jackson-json")
             configuredFeatures :+ (SerializationFeature.INDENT_OUTPUT -> true)
-          } else
+          else
             super.overrideConfiguredSerializationFeatures(bindingName, configuredFeatures)
         }
 
         override def overrideConfiguredModules(
             bindingName: String,
             configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
-          if (bindingName == "jackson-json") {
+          if (bindingName == "jackson-json")
             configuredModules.filterNot(_.isInstanceOf[JavaTimeModule])
-          } else
+          else
             super.overrideConfiguredModules(bindingName, configuredModules)
+
+        override def overrideConfiguredMapperFeatures(
+            bindingName: String,
+            configuredFeatures: immutable.Seq[(MapperFeature, Boolean)]): immutable.Seq[(MapperFeature, Boolean)] =
+          if (bindingName == "jackson-json")
+            configuredFeatures :+ (MapperFeature.SORT_PROPERTIES_ALPHABETICALLY -> true)
+          else
+            super.overrideConfiguredMapperFeatures(bindingName, configuredFeatures)
+
+        override def overrideConfiguredJsonParserFeatures(
+            bindingName: String,
+            configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)])
+            : immutable.Seq[(JsonParser.Feature, Boolean)] =
+          if (bindingName == "jackson-json")
+            configuredFeatures :+ (JsonParser.Feature.ALLOW_SINGLE_QUOTES -> true)
+          else
+            super.overrideConfiguredJsonParserFeatures(bindingName, configuredFeatures)
+
+        override def overrideConfiguredJsonGeneratorFeatures(
+            bindingName: String,
+            configuredFeatures: immutable.Seq[(JsonGenerator.Feature, Boolean)])
+            : immutable.Seq[(JsonGenerator.Feature, Boolean)] =
+          if (bindingName == "jackson-json")
+            configuredFeatures :+ (JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS -> true)
+          else
+            super.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredFeatures)
       }
 
       val config = system.settings.config
@@ -343,12 +365,19 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
         .withSetup(JacksonObjectMapperProviderSetup(customJacksonObjectMapperFactory))
         .withSetup(BootstrapSetup(config))
       withSystem(setup) { sys =>
+        val mapper = JacksonObjectMapperProvider(sys).getOrCreate("jackson-json", None)
+        mapper.isEnabled(SerializationFeature.INDENT_OUTPUT) should ===(true)
+        mapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
+        mapper.isEnabled(JsonParser.Feature.ALLOW_SINGLE_QUOTES) should ===(true)
+        mapper.isEnabled(SerializationFeature.INDENT_OUTPUT) should ===(true)
+        mapper.isEnabled(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS) should ===(true)
+
         val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
         // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
         json should include("""  "instant" : {""")
-        json should include("""    "seconds" : 1559907792,""")
-        json should include("""    "nanos" : 75000000,""")
+        json should include("""    "nanos" : "75000000",""")
+        json should include("""    "seconds" : "1559907792"""")
       }
     }
 
