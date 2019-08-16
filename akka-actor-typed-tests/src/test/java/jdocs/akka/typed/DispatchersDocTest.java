@@ -11,24 +11,14 @@ import akka.actor.typed.DispatcherSelector;
 
 public class DispatchersDocTest {
 
-  private static Behavior<String> yourBehavior = Behaviors.empty();
-
-  private static Behavior<Object> example =
-      Behaviors.receive(
-          (context, message) -> {
-
-            // #spawn-dispatcher
-            context.spawn(yourBehavior, "DefaultDispatcher");
-            context.spawn(
-                yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.defaultDispatcher());
-            context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking());
-            context.spawn(
-                yourBehavior,
-                "DispatcherFromConfig",
-                DispatcherSelector.fromConfig("your-dispatcher"));
-            context.spawn(yourBehavior, "ParentDispatcher", DispatcherSelector.sameAsParent());
-            // #spawn-dispatcher
-
-            return Behaviors.same();
-          });
+  public static void spawnDispatchers(ActorContext<Integer> context, Behavior<String> behavior) {
+    // #spawn-dispatcher
+    context.spawn(behavior, "DefaultDispatcher");
+    context.spawn(behavior, "ExplicitDefaultDispatcher", DispatcherSelector.defaultDispatcher());
+    context.spawn(behavior, "BlockingDispatcher", DispatcherSelector.blocking());
+    context.spawn(behavior, "ParentDispatcher", DispatcherSelector.sameAsParent());
+    context.spawn(
+        behavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"));
+    // #spawn-dispatcher
+  }
 }

@@ -10,17 +10,6 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-// #blocking-in-actor
-object BlockingActor {
-  val behavior: Behavior[Int] = Behaviors.receiveMessage {
-    case i: Int =>
-      Thread.sleep(5000) //block for 5 seconds, representing blocking I/O, etc
-      println(s"Blocking operation finished: ${i}")
-      Behaviors.same
-  }
-}
-// #blocking-in-actor
-
 // #blocking-in-future
 object BlockingFutureActor {
   def apply(): Behavior[Int] =
@@ -67,16 +56,6 @@ object SeparateDispatcherFutureActor {
   }
 }
 // #separate-dispatcher
-
-// #print-actor
-object PrintActor {
-  val behavior: Behavior[Integer] =
-    Behaviors.receiveMessage(i => {
-      println(s"PrintActor: ${i}")
-      Behaviors.same
-    })
-}
-// #print-actor
 
 object BlockingDispatcherSample {
   def main(args: Array[String]) = {

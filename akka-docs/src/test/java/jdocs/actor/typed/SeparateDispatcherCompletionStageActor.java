@@ -4,15 +4,15 @@
 
 package jdocs.actor.typed;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
-import akka.dispatch.Futures;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.Future;
 
 // #separate-dispatcher
 class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
-  final ExecutionContext ec;
+  final Executor ec;
 
   public static Behavior<Integer> create() {
     return Behaviors.setup(SeparateDispatcherFutureActor::new);
@@ -38,14 +38,18 @@ class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
         .build();
   }
 
-  private static final void triggerFutureBlockingOperation(Integer i, ExecutionContext ec) {
+  private static final void triggerFutureBlockingOperation(Integer i, Executor ec) {
     System.out.println("Calling blocking Future on separate dispatcher: " + i);
-    Future<Integer> f =
-        Futures.future(
+    CompletableFuture<Integer> f =
+        CompletableFuture.supplyAsync(
             () -> {
-              Thread.sleep(5000);
-              System.out.println("Blocking future finished: " + i);
-              return i;
+              try {
+                Thread.sleep(5000);
+                System.out.println("Blocking future finished: " + i);
+                return i;
+              } catch (InterruptedException e) {
+                return -1;
+              }
             },
             ec);
   }
