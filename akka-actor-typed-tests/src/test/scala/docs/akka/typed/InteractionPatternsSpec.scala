@@ -244,7 +244,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
           // as OpenThePodBayDoorsPlease is a case class it has a factory apply method
           // that is what we are passing as the second parameter here it could also be written
           // as `ref => OpenThePodBayDoorsPlease(ref)`
-          context.ask(hal)(Hal.OpenThePodBayDoorsPlease) {
+          context.ask(hal, Hal.OpenThePodBayDoorsPlease) {
             case Success(Hal.Response(message)) => AdaptedResponse(message)
             case Failure(_)                     => AdaptedResponse("Request failed")
           }
@@ -254,7 +254,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
           // changed at the time the response arrives and the transformation is done, best is to
           // use immutable state we have closed over like here.
           val requestId = 1
-          context.ask(hal)(Hal.OpenThePodBayDoorsPlease) {
+          context.ask(hal, Hal.OpenThePodBayDoorsPlease) {
             case Success(Hal.Response(message)) => AdaptedResponse(s"$requestId: $message")
             case Failure(_)                     => AdaptedResponse(s"$requestId: Request failed")
           }

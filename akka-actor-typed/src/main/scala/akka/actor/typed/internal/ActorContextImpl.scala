@@ -91,7 +91,7 @@ import akka.util.JavaDurationConverters._
     spawnAnonymous(behavior, Props.empty)
 
   // Scala API impl
-  override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] => Req)(
+  override def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
     pipeToSelf((target.ask(createRequest))(responseTimeout, system.scheduler))(mapResponse)

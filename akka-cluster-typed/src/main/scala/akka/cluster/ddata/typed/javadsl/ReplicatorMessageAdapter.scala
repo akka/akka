@@ -16,6 +16,7 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 /**
  * When interacting with the `Replicator` from an actor this class provides convenient
@@ -97,11 +98,11 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askUpdate(
       createRequest: JFunction[ActorRef[Replicator.UpdateResponse[B]], Replicator.Update[B]],
       responseAdapter: JFunction[Replicator.UpdateResponse[B], A]): Unit = {
-    context.asScala.ask[Replicator.Update[B], Replicator.UpdateResponse[B]](replicator)(askReplyTo =>
-      createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context.asScala
+      .ask[Replicator.Update[B], Replicator.UpdateResponse[B]](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
   /**
@@ -113,14 +114,15 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
    * `ActorRef[GetResponse]` that the the replicator will send the response message back through.
    * Use that `ActorRef[GetResponse]` as the `replyTo` parameter in the `Get` message.
    */
+  @silent
   def askGet(
       createRequest: JFunction[ActorRef[Replicator.GetResponse[B]], Replicator.Get[B]],
       responseAdapter: JFunction[Replicator.GetResponse[B], A]): Unit = {
-    context.asScala.ask[Replicator.Get[B], Replicator.GetResponse[B]](replicator)(askReplyTo =>
-      createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context.asScala
+      .ask[Replicator.Get[B], Replicator.GetResponse[B]](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
   /**
@@ -135,11 +137,11 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askDelete(
       createRequest: JFunction[ActorRef[Replicator.DeleteResponse[B]], Replicator.Delete[B]],
       responseAdapter: JFunction[Replicator.DeleteResponse[B], A]): Unit = {
-    context.asScala.ask[Replicator.Delete[B], Replicator.DeleteResponse[B]](replicator)(askReplyTo =>
-      createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context.asScala
+      .ask[Replicator.Delete[B], Replicator.DeleteResponse[B]](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
   /**
@@ -154,11 +156,11 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askReplicaCount(
       createRequest: JFunction[ActorRef[Replicator.ReplicaCount], Replicator.GetReplicaCount],
       responseAdapter: JFunction[Replicator.ReplicaCount, A]): Unit = {
-    context.asScala.ask[Replicator.GetReplicaCount, Replicator.ReplicaCount](replicator)(askReplyTo =>
-      createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context.asScala
+      .ask[Replicator.GetReplicaCount, Replicator.ReplicaCount](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
 }
