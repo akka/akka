@@ -236,7 +236,7 @@ private[remote] class ArteryTcpTransport(
           .recoverWith {
             case e =>
               Future.failed(new RemoteTransportException(
-                s"Failed to bind TCP to [${localAddress.address.host.get}:${localAddress.address.port.get}] due to: " +
+                s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
                 e.getMessage,
                 e))
           }(ExecutionContexts.sameThreadExecutionContext)
