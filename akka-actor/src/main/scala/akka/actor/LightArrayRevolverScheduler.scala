@@ -147,12 +147,27 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       case cause @ SchedulerException(msg) => throw new IllegalStateException(msg, cause)
     }
 
-  override def close(): Unit = Await.result(stop(), getShutdownTimeout).foreach { task =>
-    try task.run()
-    catch {
-      case e: InterruptedException => throw e
-      case _: SchedulerException   => // ignore terminated actors
-      case NonFatal(e)             => log.error(e, "exception while executing timer task")
+  override def close(): Unit = {
+
+    def runTask(task: Runnable): Unit = {
+      try task.run()
+      catch {
+        case e: InterruptedException => throw e
+        case _: SchedulerException   => // ignore terminated actors
+        case NonFatal(e)             => log.error(e, "exception while executing timer task")
+      }
+    }
+
+    Await.result(stop(), getShutdownTimeout).foreach {
+      case task: Scheduler.TaskRunOnClose =>
+        runTask(task)
+      case holder: TaskHolder => // don't run
+        holder.task match {
+          case task: Scheduler.TaskRunOnClose =>
+            runTask(task)
+          case _ => // don't run
+        }
+      case _ => // don't run
     }
   }
 
