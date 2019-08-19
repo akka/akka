@@ -11,8 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 object PrintActor {
   val behavior: Behavior[Integer] =
     Behaviors.receiveMessage(i => {
-        println(s"PrintActor: ${i}")
-        Behaviors.same
-  })
+      println(s"PrintActor: ${i}")
+      Behaviors.same
+    })
 }
 // #print-actor
