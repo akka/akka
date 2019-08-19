@@ -1,0 +1,3 @@
+# Protobuf 3
+ProblemFilters.exclude[Problem]("akka.remote.testconductor.TestConductorProtocol*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.ProtobufDecoder.this")

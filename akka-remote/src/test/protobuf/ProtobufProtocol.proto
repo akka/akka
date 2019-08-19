@@ -2,6 +2,8 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
+syntax = "proto2";
+
 option java_package = "akka.remote";
 
 message MyMessage {

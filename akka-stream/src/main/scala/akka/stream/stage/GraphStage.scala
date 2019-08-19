@@ -6,6 +6,7 @@ package akka.stream.stage
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.deprecated
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
@@ -18,12 +19,13 @@ import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
 import akka.{ Done, NotUsed }
+
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future, Promise }
-
 import akka.stream.impl.StreamSupervisor
+import com.github.ghik.silencer.silent
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -170,7 +172,7 @@ object GraphStageLogic {
    */
   object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit = ()
+    override def onDownstreamFinish(cause: Throwable): Unit = ()
     override def toString = "IgnoreTerminateOutput"
   }
 
@@ -180,8 +182,8 @@ object GraphStageLogic {
    */
   class ConditionalTerminateOutput(predicate: () => Boolean) extends OutHandler {
     override def onPull(): Unit = ()
-    override def onDownstreamFinish(): Unit =
-      if (predicate()) GraphInterpreter.currentInterpreter.activeStage.completeStage()
+    override def onDownstreamFinish(cause: Throwable): Unit =
+      if (predicate()) GraphInterpreter.currentInterpreter.activeStage.cancelStage(cause)
   }
 
   private object DoNothing extends (() => Unit) {
@@ -533,8 +535,16 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
+   *
+   * If cancellation is due to an error, use `cancel(in, cause)` instead to propagate that cause upstream. This overload
+   * is a shortcut for `cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)`
    */
-  final protected def cancel[T](in: Inlet[T]): Unit = interpreter.cancel(conn(in))
+  final protected def cancel[T](in: Inlet[T]): Unit = cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
+
+  /**
+   * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
+   */
+  final protected def cancel[T](in: Inlet[T], cause: Throwable): Unit = interpreter.cancel(conn(in), cause)
 
   /**
    * Once the callback [[InHandler.onPush()]] for an input port has been invoked, the element that has been pushed
@@ -547,18 +557,27 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     val connection = conn(in)
     val elem = connection.slot
 
-    // Fast path
-    if ((connection.portState & (InReady | InFailed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
+    // Fast path for active connections
+    if ((connection.portState & (InReady | InFailed | InClosed)) == InReady && (elem.asInstanceOf[AnyRef] ne Empty)) {
       connection.slot = Empty
       elem.asInstanceOf[T]
     } else {
-      // Slow path
+      // Slow path for grabbing element from already failed or completed connections
       if (!isAvailable(in))
         throw new IllegalArgumentException(s"Cannot get element from already empty input port ($in)")
-      val failed = connection.slot.asInstanceOf[Failed]
-      val elem = failed.previousElem.asInstanceOf[T]
-      connection.slot = Failed(failed.ex, Empty)
-      elem
+
+      if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
+        // failed
+        val failed = connection.slot.asInstanceOf[Failed]
+        val elem = failed.previousElem.asInstanceOf[T]
+        connection.slot = Failed(failed.ex, Empty)
+        elem
+      } else {
+        // completed
+        val elem = connection.slot.asInstanceOf[T]
+        connection.slot = Empty
+        elem
+      }
     }
   }
 
@@ -577,18 +596,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def isAvailable[T](in: Inlet[T]): Boolean = {
     val connection = conn(in)
 
-    val normalArrived = (conn(in).portState & (InReady | InFailed)) == InReady
+    val normalArrived = (conn(in).portState & (InReady | InFailed | InClosed)) == InReady
 
-    // Fast path
+    // Fast path for active connection
     if (normalArrived) connection.slot.asInstanceOf[AnyRef] ne Empty
     else {
-      // Slow path on failure
-      if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed)) {
+      // slow path on failure, closure, and cancellation
+      if ((connection.portState & (InReady | InClosed | InFailed)) == (InReady | InClosed))
         connection.slot match {
-          case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty
-          case _               => false // This can only be Empty actually (if a cancel was concurrent with a failure)
-        }
-      } else false
+          case Empty | _ @(_: Cancelled) => false // cancelled (element is discarded when cancelled)
+          case _                         => true // completed but element still there to grab
+        } else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
+        connection.slot match {
+          case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty // failed but element still there to grab
+          case _               => false
+        } else false
     }
   }
 
@@ -655,11 +677,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
-  final def completeStage(): Unit = {
+  final def completeStage(): Unit = cancelStage(SubscriptionWithCancelException.StageWasCompleted)
+
+  /**
+   * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
+   * then marks the stage as stopped.
+   */
+  final def cancelStage(cause: Throwable): Unit = {
+    // TODO: It's debatable if completing the stage if one output is cancelled is the right way to do things.
+    //       At least optionally it might be more reasonable to fail the stage with the given cause. That
+    //       would mean that all other *outputs* are failed, i.e. it would only concern stages with more that one
+    //       output anyway.
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i))
+        interpreter.cancel(portToConn(i), cause)
       else
         handlers(i) match {
           case e: Emitting[_] => e.addFollowUp(new EmittingCompletion(e.out, e.previous))
@@ -678,7 +710,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i))
+        interpreter.cancel(portToConn(i), ex)
       else
         interpreter.fail(portToConn(i), ex)
       i += 1
@@ -1004,7 +1036,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       ret
     }
 
-    override def onDownstreamFinish(): Unit = previous.onDownstreamFinish()
+    override def onDownstreamFinish(cause: Throwable): Unit = previous.onDownstreamFinish(cause)
   }
 
   private class EmittingSingle[T](_out: Outlet[T], elem: T, _previous: OutHandler, _andThen: () => Unit)
@@ -1379,9 +1411,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _sink.pullSubstream()
     }
 
-    def cancel(): Unit = {
+    def cancel(): Unit = cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    def cancel(cause: Throwable): Unit = {
       closed = true
-      _sink.cancelSubstream()
+      _sink.cancelSubstream(cause)
     }
 
     override def toString = s"SubSinkInlet($name)"
@@ -1410,11 +1443,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           available = true
           handler.onPull()
         }
-      case SubSink.Cancel =>
+      case SubSink.Cancel(cause) =>
         if (!closed) {
           available = false
           closed = true
-          handler.onDownstreamFinish()
+          handler.onDownstreamFinish(cause)
         }
     }
 
@@ -1772,14 +1805,34 @@ trait OutHandler {
   @throws(classOf[Exception])
   def onPull(): Unit
 
+  // Hack to make sure that old `onDownstreamFinish` can be called without losing the cause in the default implementation
+  private[this] var _lastCancellationCause: Throwable = _
+
   /**
    * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
    * be called for this port.
    */
   @throws(classOf[Exception])
+  // FIXME: add this after fixing our own usages, https://github.com/akka/akka/issues/27472
+  // @deprecatedOverriding("Override `def onDownstreamFinish(cause: Throwable)`, instead.", since = "2.6.0") // warns when overriding
+  @deprecated("Call onDownstreamFinish with a cancellation cause.", since = "2.6.0") // warns when calling
   def onDownstreamFinish(): Unit = {
-    GraphInterpreter.currentInterpreter.activeStage.completeStage()
+    require(_lastCancellationCause ne null, "onDownstreamFinish() must not be called without a cancellation cause")
+    GraphInterpreter.currentInterpreter.activeStage.cancelStage(_lastCancellationCause)
   }
+
+  /**
+   * Called when the output port will no longer accept any new elements. After this callback no other callbacks will
+   * be called for this port.
+   */
+  @throws(classOf[Exception])
+  def onDownstreamFinish(cause: Throwable): Unit =
+    try {
+      require(cause ne null, "Cancellation cause must not be null")
+      require(_lastCancellationCause eq null, "onDownstreamFinish(cause) must not be called recursively")
+      _lastCancellationCause = cause
+      (onDownstreamFinish(): @silent("deprecated")) // if not overridden, call old deprecated variant
+    } finally _lastCancellationCause = null
 }
 
 /**

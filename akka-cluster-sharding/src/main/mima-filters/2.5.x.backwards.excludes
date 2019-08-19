@@ -4,6 +4,11 @@ ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
 # #25191
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.retryTask")
 
+# Internal API change https://github.com/akka/akka/pull/27261
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#RebalanceWorker.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.rebalanceWorkerProps")
+
+
 # #27100 Productionize: GetShardRegionStats returns empty shard set on ask timeout
 # askAllShards, an internal function, was renamed and changed to query all or a subset of shards to try failures only
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.askAllShards")
@@ -12,3 +17,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.prot
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailed")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedBytes")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.sharding.protobuf.msg.ClusterShardingMessages#ShardRegionStatsOrBuilder.getFailedCount")
+
+# Upgrade to protobuf 3
+ProblemFilters.exclude[Problem]("akka.cluster.sharding.protobuf.msg.*")

@@ -146,7 +146,6 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSub
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSubscriber$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSink")
 
-
 # #19980 subscription timeouts for streams
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.subTimeoutHandling")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutOutputs.this")
@@ -154,3 +153,13 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutOutpu
 # #24304 stack overflow in StreamConverters
 ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.CollectorState")
 ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.ReducerState")
+
+# Protobuf 3
+ProblemFilters.exclude[Problem]("akka.stream.StreamRefMessages*")
+
+# #27266 changes to streams internals
+ProblemFilters.exclude[Problem]("akka.stream.impl.*")
+
+# added private[this] field to public class, shouldn't have more impact than a potential naming clash
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.OutHandler.akka$stream$stage$OutHandler$$_lastCancellationCause")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.OutHandler.akka$stream$stage$OutHandler$$_lastCancellationCause_=")

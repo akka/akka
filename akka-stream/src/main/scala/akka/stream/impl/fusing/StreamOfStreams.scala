@@ -661,7 +661,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   case object RequestOneScheduledBeforeMaterialization extends CommandScheduledBeforeMaterialization(RequestOne)
 
   /** A Cancel command was scheduled before materialization */
-  case object CancelScheduledBeforeMaterialization extends CommandScheduledBeforeMaterialization(Cancel)
+  case class CancelScheduledBeforeMaterialization(cause: Throwable)
+      extends CommandScheduledBeforeMaterialization(Cancel(cause))
 
   /** Steady state: sink has been materialized, commands can be delivered through the callback */
   // Represented in unwrapped form as AsyncCallback[Command] directly to prevent a level of indirection
@@ -669,7 +670,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   sealed trait Command
   case object RequestOne extends Command
-  case object Cancel extends Command
+  case class Cancel(cause: Throwable) extends Command
 }
 
 /**
@@ -687,7 +688,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   private val status = new AtomicReference[ /* State */ AnyRef](Uninitialized)
 
   def pullSubstream(): Unit = dispatchCommand(RequestOneScheduledBeforeMaterialization)
-  def cancelSubstream(): Unit = dispatchCommand(CancelScheduledBeforeMaterialization)
+  def cancelSubstream(): Unit = cancelSubstream(SubscriptionWithCancelException.NoMoreElementsNeeded)
+  def cancelSubstream(cause: Throwable): Unit = dispatchCommand(CancelScheduledBeforeMaterialization(cause))
 
   @tailrec
   private def dispatchCommand(newState: CommandScheduledBeforeMaterialization): Unit =
@@ -697,7 +699,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         if (!status.compareAndSet(Uninitialized, newState))
           dispatchCommand(newState) // changed to materialized in the meantime
 
-      case RequestOneScheduledBeforeMaterialization if newState == CancelScheduledBeforeMaterialization =>
+      case RequestOneScheduledBeforeMaterialization if newState.isInstanceOf[CancelScheduledBeforeMaterialization] =>
         // cancellation is allowed to replace pull
         if (!status.compareAndSet(RequestOneScheduledBeforeMaterialization, newState))
           dispatchCommand(RequestOneScheduledBeforeMaterialization)
@@ -735,8 +737,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
     override def preStart(): Unit =
       setCallback {
-        case RequestOne => tryPull(in)
-        case Cancel     => completeStage()
+        case RequestOne    => tryPull(in)
+        case Cancel(cause) => cancelStage(cause)
       }
   }
 
@@ -807,7 +809,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     }
 
     override def onPull(): Unit = externalCallback.invoke(RequestOne)
-    override def onDownstreamFinish(): Unit = externalCallback.invoke(Cancel)
+    override def onDownstreamFinish(cause: Throwable): Unit = externalCallback.invoke(Cancel(cause))
   }
 
   override def toString: String = name

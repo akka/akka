@@ -10,12 +10,18 @@ package akka.persistence.serialization;
 public final class MessageFormats {
   private MessageFormats() {}
   public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
   }
-  public interface PersistentMessageOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
 
-    // optional .PersistentPayload payload = 1;
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+  }
+  public interface PersistentMessageOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:PersistentMessage)
+      akka.protobufv3.internal.MessageOrBuilder {
+
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
      */
@@ -29,7 +35,6 @@ public final class MessageFormats {
      */
     akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getPayloadOrBuilder();
 
-    // optional int64 sequenceNr = 2;
     /**
      * <code>optional int64 sequenceNr = 2;</code>
      */
@@ -39,7 +44,6 @@ public final class MessageFormats {
      */
     long getSequenceNr();
 
-    // optional string persistenceId = 3;
     /**
      * <code>optional string persistenceId = 3;</code>
      */
@@ -51,31 +55,27 @@ public final class MessageFormats {
     /**
      * <code>optional string persistenceId = 3;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getPersistenceIdBytes();
 
-    // optional bool deleted = 4;
     /**
-     * <code>optional bool deleted = 4;</code>
-     *
      * <pre>
      * not used in new records from 2.4
      * </pre>
+     *
+     * <code>optional bool deleted = 4;</code>
      */
     boolean hasDeleted();
     /**
-     * <code>optional bool deleted = 4;</code>
-     *
      * <pre>
      * not used in new records from 2.4
      * </pre>
+     *
+     * <code>optional bool deleted = 4;</code>
      */
     boolean getDeleted();
 
-    // optional string sender = 11;
     /**
-     * <code>optional string sender = 11;</code>
-     *
      * <pre>
      * optional int32 redeliveries = 6; // Removed in 2.4
      * repeated string confirms = 7; // Removed in 2.4
@@ -83,11 +83,11 @@ public final class MessageFormats {
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
      * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
+     *
+     * <code>optional string sender = 11;</code>
      */
     boolean hasSender();
     /**
-     * <code>optional string sender = 11;</code>
-     *
      * <pre>
      * optional int32 redeliveries = 6; // Removed in 2.4
      * repeated string confirms = 7; // Removed in 2.4
@@ -95,11 +95,11 @@ public final class MessageFormats {
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
      * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
+     *
+     * <code>optional string sender = 11;</code>
      */
     java.lang.String getSender();
     /**
-     * <code>optional string sender = 11;</code>
-     *
      * <pre>
      * optional int32 redeliveries = 6; // Removed in 2.4
      * repeated string confirms = 7; // Removed in 2.4
@@ -107,11 +107,12 @@ public final class MessageFormats {
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
      * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
+     *
+     * <code>optional string sender = 11;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getSenderBytes();
 
-    // optional string manifest = 12;
     /**
      * <code>optional string manifest = 12;</code>
      */
@@ -123,10 +124,9 @@ public final class MessageFormats {
     /**
      * <code>optional string manifest = 12;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getManifestBytes();
 
-    // optional string writerUuid = 13;
     /**
      * <code>optional string writerUuid = 13;</code>
      */
@@ -138,45 +138,51 @@ public final class MessageFormats {
     /**
      * <code>optional string writerUuid = 13;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getWriterUuidBytes();
   }
   /**
    * Protobuf type {@code PersistentMessage}
    */
-  public static final class PersistentMessage extends
-      akka.protobuf.GeneratedMessage
-      implements PersistentMessageOrBuilder {
+  public  static final class PersistentMessage extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:PersistentMessage)
+      PersistentMessageOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use PersistentMessage.newBuilder() to construct.
-    private PersistentMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private PersistentMessage(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private PersistentMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final PersistentMessage defaultInstance;
-    public static PersistentMessage getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public PersistentMessage getDefaultInstanceForType() {
-      return defaultInstance;
+    private PersistentMessage() {
+      persistenceId_ = "";
+      sender_ = "";
+      manifest_ = "";
+      writerUuid_ = "";
     }
 
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new PersistentMessage();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private PersistentMessage(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -185,16 +191,9 @@ public final class MessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.persistence.serialization.MessageFormats.PersistentPayload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = payload_.toBuilder();
               }
               payload_ = input.readMessage(akka.persistence.serialization.MessageFormats.PersistentPayload.PARSER, extensionRegistry);
@@ -211,8 +210,9 @@ public final class MessageFormats {
               break;
             }
             case 26: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              persistenceId_ = input.readBytes();
+              persistenceId_ = bs;
               break;
             }
             case 32: {
@@ -221,90 +221,84 @@ public final class MessageFormats {
               break;
             }
             case 90: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000010;
-              sender_ = input.readBytes();
+              sender_ = bs;
               break;
             }
             case 98: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000020;
-              manifest_ = input.readBytes();
+              manifest_ = bs;
               break;
             }
             case 106: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000040;
-              writerUuid_ = input.readBytes();
+              writerUuid_ = bs;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
               break;
             }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessage_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.persistence.serialization.MessageFormats.PersistentMessage.class, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder.class);
     }
 
-    public static akka.protobuf.Parser<PersistentMessage> PARSER =
-        new akka.protobuf.AbstractParser<PersistentMessage>() {
-      public PersistentMessage parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new PersistentMessage(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<PersistentMessage> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // optional .PersistentPayload payload = 1;
     public static final int PAYLOAD_FIELD_NUMBER = 1;
     private akka.persistence.serialization.MessageFormats.PersistentPayload payload_;
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
      */
     public boolean hasPayload() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
      */
     public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
-      return payload_;
+      return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
     }
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
      */
     public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getPayloadOrBuilder() {
-      return payload_;
+      return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
     }
 
-    // optional int64 sequenceNr = 2;
     public static final int SEQUENCENR_FIELD_NUMBER = 2;
     private long sequenceNr_;
     /**
      * <code>optional int64 sequenceNr = 2;</code>
      */
     public boolean hasSequenceNr() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional int64 sequenceNr = 2;</code>
@@ -313,14 +307,13 @@ public final class MessageFormats {
       return sequenceNr_;
     }
 
-    // optional string persistenceId = 3;
     public static final int PERSISTENCEID_FIELD_NUMBER = 3;
-    private java.lang.Object persistenceId_;
+    private volatile java.lang.Object persistenceId_;
     /**
      * <code>optional string persistenceId = 3;</code>
      */
     public boolean hasPersistenceId() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional string persistenceId = 3;</code>
@@ -330,8 +323,8 @@ public final class MessageFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           persistenceId_ = s;
@@ -342,50 +335,46 @@ public final class MessageFormats {
     /**
      * <code>optional string persistenceId = 3;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getPersistenceIdBytes() {
       java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         persistenceId_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional bool deleted = 4;
     public static final int DELETED_FIELD_NUMBER = 4;
     private boolean deleted_;
     /**
-     * <code>optional bool deleted = 4;</code>
-     *
      * <pre>
      * not used in new records from 2.4
      * </pre>
+     *
+     * <code>optional bool deleted = 4;</code>
      */
     public boolean hasDeleted() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
-     * <code>optional bool deleted = 4;</code>
-     *
      * <pre>
      * not used in new records from 2.4
      * </pre>
+     *
+     * <code>optional bool deleted = 4;</code>
      */
     public boolean getDeleted() {
       return deleted_;
     }
 
-    // optional string sender = 11;
     public static final int SENDER_FIELD_NUMBER = 11;
-    private java.lang.Object sender_;
+    private volatile java.lang.Object sender_;
     /**
-     * <code>optional string sender = 11;</code>
-     *
      * <pre>
      * optional int32 redeliveries = 6; // Removed in 2.4
      * repeated string confirms = 7; // Removed in 2.4
@@ -393,13 +382,13 @@ public final class MessageFormats {
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
      * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
+     *
+     * <code>optional string sender = 11;</code>
      */
     public boolean hasSender() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000010) != 0);
     }
     /**
-     * <code>optional string sender = 11;</code>
-     *
      * <pre>
      * optional int32 redeliveries = 6; // Removed in 2.4
      * repeated string confirms = 7; // Removed in 2.4
@@ -407,14 +396,16 @@ public final class MessageFormats {
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
      * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
+     *
+     * <code>optional string sender = 11;</code>
      */
     public java.lang.String getSender() {
       java.lang.Object ref = sender_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           sender_ = s;
@@ -423,8 +414,6 @@ public final class MessageFormats {
       }
     }
     /**
-     * <code>optional string sender = 11;</code>
-     *
      * <pre>
      * optional int32 redeliveries = 6; // Removed in 2.4
      * repeated string confirms = 7; // Removed in 2.4
@@ -432,29 +421,30 @@ public final class MessageFormats {
      * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
      * optional string confirmTarget = 10; // Removed in 2.4
      * </pre>
+     *
+     * <code>optional string sender = 11;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getSenderBytes() {
       java.lang.Object ref = sender_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         sender_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional string manifest = 12;
     public static final int MANIFEST_FIELD_NUMBER = 12;
-    private java.lang.Object manifest_;
+    private volatile java.lang.Object manifest_;
     /**
      * <code>optional string manifest = 12;</code>
      */
     public boolean hasManifest() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
+      return ((bitField0_ & 0x00000020) != 0);
     }
     /**
      * <code>optional string manifest = 12;</code>
@@ -464,8 +454,8 @@ public final class MessageFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           manifest_ = s;
@@ -476,28 +466,27 @@ public final class MessageFormats {
     /**
      * <code>optional string manifest = 12;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getManifestBytes() {
       java.lang.Object ref = manifest_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         manifest_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional string writerUuid = 13;
     public static final int WRITERUUID_FIELD_NUMBER = 13;
-    private java.lang.Object writerUuid_;
+    private volatile java.lang.Object writerUuid_;
     /**
      * <code>optional string writerUuid = 13;</code>
      */
     public boolean hasWriterUuid() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
+      return ((bitField0_ & 0x00000040) != 0);
     }
     /**
      * <code>optional string writerUuid = 13;</code>
@@ -507,8 +496,8 @@ public final class MessageFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           writerUuid_ = s;
@@ -519,33 +508,26 @@ public final class MessageFormats {
     /**
      * <code>optional string writerUuid = 13;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getWriterUuidBytes() {
       java.lang.Object ref = writerUuid_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         writerUuid_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    private void initFields() {
-      payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
-      sequenceNr_ = 0L;
-      persistenceId_ = "";
-      deleted_ = false;
-      sender_ = "";
-      manifest_ = "";
-      writerUuid_ = "";
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (hasPayload()) {
         if (!getPayload().isInitialized()) {
@@ -557,142 +539,246 @@ public final class MessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, payload_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getPayload());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeInt64(2, sequenceNr_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getPersistenceIdBytes());
+      if (((bitField0_ & 0x00000004) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 3, persistenceId_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+      if (((bitField0_ & 0x00000008) != 0)) {
         output.writeBool(4, deleted_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(11, getSenderBytes());
+      if (((bitField0_ & 0x00000010) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 11, sender_);
       }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeBytes(12, getManifestBytes());
+      if (((bitField0_ & 0x00000020) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 12, manifest_);
       }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeBytes(13, getWriterUuidBytes());
+      if (((bitField0_ & 0x00000040) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 13, writerUuid_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, payload_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getPayload());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(2, sequenceNr_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getPersistenceIdBytes());
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(3, persistenceId_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBoolSize(4, deleted_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(11, getSenderBytes());
+      if (((bitField0_ & 0x00000010) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(11, sender_);
       }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(12, getManifestBytes());
+      if (((bitField0_ & 0x00000020) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(12, manifest_);
       }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(13, getWriterUuidBytes());
+      if (((bitField0_ & 0x00000040) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(13, writerUuid_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.persistence.serialization.MessageFormats.PersistentMessage)) {
+        return super.equals(obj);
+      }
+      akka.persistence.serialization.MessageFormats.PersistentMessage other = (akka.persistence.serialization.MessageFormats.PersistentMessage) obj;
+
+      if (hasPayload() != other.hasPayload()) return false;
+      if (hasPayload()) {
+        if (!getPayload()
+            .equals(other.getPayload())) return false;
+      }
+      if (hasSequenceNr() != other.hasSequenceNr()) return false;
+      if (hasSequenceNr()) {
+        if (getSequenceNr()
+            != other.getSequenceNr()) return false;
+      }
+      if (hasPersistenceId() != other.hasPersistenceId()) return false;
+      if (hasPersistenceId()) {
+        if (!getPersistenceId()
+            .equals(other.getPersistenceId())) return false;
+      }
+      if (hasDeleted() != other.hasDeleted()) return false;
+      if (hasDeleted()) {
+        if (getDeleted()
+            != other.getDeleted()) return false;
+      }
+      if (hasSender() != other.hasSender()) return false;
+      if (hasSender()) {
+        if (!getSender()
+            .equals(other.getSender())) return false;
+      }
+      if (hasManifest() != other.hasManifest()) return false;
+      if (hasManifest()) {
+        if (!getManifest()
+            .equals(other.getManifest())) return false;
+      }
+      if (hasWriterUuid() != other.hasWriterUuid()) return false;
+      if (hasWriterUuid()) {
+        if (!getWriterUuid()
+            .equals(other.getWriterUuid())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasPayload()) {
+        hash = (37 * hash) + PAYLOAD_FIELD_NUMBER;
+        hash = (53 * hash) + getPayload().hashCode();
+      }
+      if (hasSequenceNr()) {
+        hash = (37 * hash) + SEQUENCENR_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getSequenceNr());
+      }
+      if (hasPersistenceId()) {
+        hash = (37 * hash) + PERSISTENCEID_FIELD_NUMBER;
+        hash = (53 * hash) + getPersistenceId().hashCode();
+      }
+      if (hasDeleted()) {
+        hash = (37 * hash) + DELETED_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getDeleted());
+      }
+      if (hasSender()) {
+        hash = (37 * hash) + SENDER_FIELD_NUMBER;
+        hash = (53 * hash) + getSender().hashCode();
+      }
+      if (hasManifest()) {
+        hash = (37 * hash) + MANIFEST_FIELD_NUMBER;
+        hash = (53 * hash) + getManifest().hashCode();
+      }
+      if (hasWriterUuid()) {
+        hash = (37 * hash) + WRITERUUID_FIELD_NUMBER;
+        hash = (53 * hash) + getWriterUuid().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentMessage parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentMessage prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentMessage prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -700,14 +786,16 @@ public final class MessageFormats {
      * Protobuf type {@code PersistentMessage}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:PersistentMessage)
+        akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessage_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -720,23 +808,21 @@ public final class MessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (payloadBuilder_ == null) {
-          payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+          payload_ = null;
         } else {
           payloadBuilder_.clear();
         }
@@ -756,19 +842,18 @@ public final class MessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentMessage_descriptor;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentMessage getDefaultInstanceForType() {
         return akka.persistence.serialization.MessageFormats.PersistentMessage.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentMessage build() {
         akka.persistence.serialization.MessageFormats.PersistentMessage result = buildPartial();
         if (!result.isInitialized()) {
@@ -777,39 +862,40 @@ public final class MessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentMessage buildPartial() {
         akka.persistence.serialization.MessageFormats.PersistentMessage result = new akka.persistence.serialization.MessageFormats.PersistentMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (payloadBuilder_ == null) {
+            result.payload_ = payload_;
+          } else {
+            result.payload_ = payloadBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (payloadBuilder_ == null) {
-          result.payload_ = payload_;
-        } else {
-          result.payload_ = payloadBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.sequenceNr_ = sequenceNr_;
           to_bitField0_ |= 0x00000002;
         }
-        result.sequenceNr_ = sequenceNr_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
           to_bitField0_ |= 0x00000004;
         }
         result.persistenceId_ = persistenceId_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.deleted_ = deleted_;
           to_bitField0_ |= 0x00000008;
         }
-        result.deleted_ = deleted_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+        if (((from_bitField0_ & 0x00000010) != 0)) {
           to_bitField0_ |= 0x00000010;
         }
         result.sender_ = sender_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+        if (((from_bitField0_ & 0x00000020) != 0)) {
           to_bitField0_ |= 0x00000020;
         }
         result.manifest_ = manifest_;
-        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+        if (((from_bitField0_ & 0x00000040) != 0)) {
           to_bitField0_ |= 0x00000040;
         }
         result.writerUuid_ = writerUuid_;
@@ -818,7 +904,40 @@ public final class MessageFormats {
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.serialization.MessageFormats.PersistentMessage) {
           return mergeFrom((akka.persistence.serialization.MessageFormats.PersistentMessage)other);
         } else {
@@ -858,30 +977,32 @@ public final class MessageFormats {
           writerUuid_ = other.writerUuid_;
           onChanged();
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (hasPayload()) {
           if (!getPayload().isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.persistence.serialization.MessageFormats.PersistentMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.persistence.serialization.MessageFormats.PersistentMessage) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -891,22 +1012,21 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // optional .PersistentPayload payload = 1;
-      private akka.persistence.serialization.MessageFormats.PersistentPayload payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.persistence.serialization.MessageFormats.PersistentPayload payload_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> payloadBuilder_;
       /**
        * <code>optional .PersistentPayload payload = 1;</code>
        */
       public boolean hasPayload() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .PersistentPayload payload = 1;</code>
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
         if (payloadBuilder_ == null) {
-          return payload_;
+          return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
         } else {
           return payloadBuilder_.getMessage();
         }
@@ -946,7 +1066,8 @@ public final class MessageFormats {
        */
       public Builder mergePayload(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
         if (payloadBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              payload_ != null &&
               payload_ != akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance()) {
             payload_ =
               akka.persistence.serialization.MessageFormats.PersistentPayload.newBuilder(payload_).mergeFrom(value).buildPartial();
@@ -965,7 +1086,7 @@ public final class MessageFormats {
        */
       public Builder clearPayload() {
         if (payloadBuilder_ == null) {
-          payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+          payload_ = null;
           onChanged();
         } else {
           payloadBuilder_.clear();
@@ -988,19 +1109,20 @@ public final class MessageFormats {
         if (payloadBuilder_ != null) {
           return payloadBuilder_.getMessageOrBuilder();
         } else {
-          return payload_;
+          return payload_ == null ?
+              akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
         }
       }
       /**
        * <code>optional .PersistentPayload payload = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> 
           getPayloadFieldBuilder() {
         if (payloadBuilder_ == null) {
-          payloadBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          payloadBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder>(
-                  payload_,
+                  getPayload(),
                   getParentForChildren(),
                   isClean());
           payload_ = null;
@@ -1008,13 +1130,12 @@ public final class MessageFormats {
         return payloadBuilder_;
       }
 
-      // optional int64 sequenceNr = 2;
       private long sequenceNr_ ;
       /**
        * <code>optional int64 sequenceNr = 2;</code>
        */
       public boolean hasSequenceNr() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
@@ -1041,13 +1162,12 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional string persistenceId = 3;
       private java.lang.Object persistenceId_ = "";
       /**
        * <code>optional string persistenceId = 3;</code>
        */
       public boolean hasPersistenceId() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional string persistenceId = 3;</code>
@@ -1055,9 +1175,12 @@ public final class MessageFormats {
       public java.lang.String getPersistenceId() {
         java.lang.Object ref = persistenceId_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          persistenceId_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            persistenceId_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1066,17 +1189,17 @@ public final class MessageFormats {
       /**
        * <code>optional string persistenceId = 3;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getPersistenceIdBytes() {
         java.lang.Object ref = persistenceId_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           persistenceId_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -1105,7 +1228,7 @@ public final class MessageFormats {
        * <code>optional string persistenceId = 3;</code>
        */
       public Builder setPersistenceIdBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1115,34 +1238,33 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional bool deleted = 4;
       private boolean deleted_ ;
       /**
-       * <code>optional bool deleted = 4;</code>
-       *
        * <pre>
        * not used in new records from 2.4
        * </pre>
+       *
+       * <code>optional bool deleted = 4;</code>
        */
       public boolean hasDeleted() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
-       * <code>optional bool deleted = 4;</code>
-       *
        * <pre>
        * not used in new records from 2.4
        * </pre>
+       *
+       * <code>optional bool deleted = 4;</code>
        */
       public boolean getDeleted() {
         return deleted_;
       }
       /**
-       * <code>optional bool deleted = 4;</code>
-       *
        * <pre>
        * not used in new records from 2.4
        * </pre>
+       *
+       * <code>optional bool deleted = 4;</code>
        */
       public Builder setDeleted(boolean value) {
         bitField0_ |= 0x00000008;
@@ -1151,11 +1273,11 @@ public final class MessageFormats {
         return this;
       }
       /**
-       * <code>optional bool deleted = 4;</code>
-       *
        * <pre>
        * not used in new records from 2.4
        * </pre>
+       *
+       * <code>optional bool deleted = 4;</code>
        */
       public Builder clearDeleted() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1164,11 +1286,8 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional string sender = 11;
       private java.lang.Object sender_ = "";
       /**
-       * <code>optional string sender = 11;</code>
-       *
        * <pre>
        * optional int32 redeliveries = 6; // Removed in 2.4
        * repeated string confirms = 7; // Removed in 2.4
@@ -1176,13 +1295,13 @@ public final class MessageFormats {
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
        * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
+       *
+       * <code>optional string sender = 11;</code>
        */
       public boolean hasSender() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000010) != 0);
       }
       /**
-       * <code>optional string sender = 11;</code>
-       *
        * <pre>
        * optional int32 redeliveries = 6; // Removed in 2.4
        * repeated string confirms = 7; // Removed in 2.4
@@ -1190,21 +1309,24 @@ public final class MessageFormats {
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
        * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
+       *
+       * <code>optional string sender = 11;</code>
        */
       public java.lang.String getSender() {
         java.lang.Object ref = sender_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          sender_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            sender_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string sender = 11;</code>
-       *
        * <pre>
        * optional int32 redeliveries = 6; // Removed in 2.4
        * repeated string confirms = 7; // Removed in 2.4
@@ -1212,23 +1334,23 @@ public final class MessageFormats {
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
        * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
+       *
+       * <code>optional string sender = 11;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getSenderBytes() {
         java.lang.Object ref = sender_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           sender_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
-       * <code>optional string sender = 11;</code>
-       *
        * <pre>
        * optional int32 redeliveries = 6; // Removed in 2.4
        * repeated string confirms = 7; // Removed in 2.4
@@ -1236,6 +1358,8 @@ public final class MessageFormats {
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
        * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
+       *
+       * <code>optional string sender = 11;</code>
        */
       public Builder setSender(
           java.lang.String value) {
@@ -1248,8 +1372,6 @@ public final class MessageFormats {
         return this;
       }
       /**
-       * <code>optional string sender = 11;</code>
-       *
        * <pre>
        * optional int32 redeliveries = 6; // Removed in 2.4
        * repeated string confirms = 7; // Removed in 2.4
@@ -1257,6 +1379,8 @@ public final class MessageFormats {
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
        * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
+       *
+       * <code>optional string sender = 11;</code>
        */
       public Builder clearSender() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -1265,8 +1389,6 @@ public final class MessageFormats {
         return this;
       }
       /**
-       * <code>optional string sender = 11;</code>
-       *
        * <pre>
        * optional int32 redeliveries = 6; // Removed in 2.4
        * repeated string confirms = 7; // Removed in 2.4
@@ -1274,9 +1396,11 @@ public final class MessageFormats {
        * optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
        * optional string confirmTarget = 10; // Removed in 2.4
        * </pre>
+       *
+       * <code>optional string sender = 11;</code>
        */
       public Builder setSenderBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1286,13 +1410,12 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional string manifest = 12;
       private java.lang.Object manifest_ = "";
       /**
        * <code>optional string manifest = 12;</code>
        */
       public boolean hasManifest() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
+        return ((bitField0_ & 0x00000020) != 0);
       }
       /**
        * <code>optional string manifest = 12;</code>
@@ -1300,9 +1423,12 @@ public final class MessageFormats {
       public java.lang.String getManifest() {
         java.lang.Object ref = manifest_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          manifest_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            manifest_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1311,17 +1437,17 @@ public final class MessageFormats {
       /**
        * <code>optional string manifest = 12;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getManifestBytes() {
         java.lang.Object ref = manifest_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           manifest_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -1350,7 +1476,7 @@ public final class MessageFormats {
        * <code>optional string manifest = 12;</code>
        */
       public Builder setManifestBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1360,13 +1486,12 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional string writerUuid = 13;
       private java.lang.Object writerUuid_ = "";
       /**
        * <code>optional string writerUuid = 13;</code>
        */
       public boolean hasWriterUuid() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000040) != 0);
       }
       /**
        * <code>optional string writerUuid = 13;</code>
@@ -1374,9 +1499,12 @@ public final class MessageFormats {
       public java.lang.String getWriterUuid() {
         java.lang.Object ref = writerUuid_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          writerUuid_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            writerUuid_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1385,17 +1513,17 @@ public final class MessageFormats {
       /**
        * <code>optional string writerUuid = 13;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getWriterUuidBytes() {
         java.lang.Object ref = writerUuid_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           writerUuid_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -1424,7 +1552,7 @@ public final class MessageFormats {
        * <code>optional string writerUuid = 13;</code>
        */
       public Builder setWriterUuidBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1433,22 +1561,63 @@ public final class MessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:PersistentMessage)
     }
 
+    // @@protoc_insertion_point(class_scope:PersistentMessage)
+    private static final akka.persistence.serialization.MessageFormats.PersistentMessage DEFAULT_INSTANCE;
     static {
-      defaultInstance = new PersistentMessage(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.PersistentMessage();
     }
 
-    // @@protoc_insertion_point(class_scope:PersistentMessage)
+    public static akka.persistence.serialization.MessageFormats.PersistentMessage getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<PersistentMessage>
+        PARSER = new akka.protobufv3.internal.AbstractParser<PersistentMessage>() {
+      @java.lang.Override
+      public PersistentMessage parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new PersistentMessage(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<PersistentMessage> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<PersistentMessage> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.serialization.MessageFormats.PersistentMessage getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface PersistentPayloadOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface PersistentPayloadOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:PersistentPayload)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required int32 serializerId = 1;
     /**
      * <code>required int32 serializerId = 1;</code>
      */
@@ -1458,7 +1627,6 @@ public final class MessageFormats {
      */
     int getSerializerId();
 
-    // required bytes payload = 2;
     /**
      * <code>required bytes payload = 2;</code>
      */
@@ -1466,9 +1634,8 @@ public final class MessageFormats {
     /**
      * <code>required bytes payload = 2;</code>
      */
-    akka.protobuf.ByteString getPayload();
+    akka.protobufv3.internal.ByteString getPayload();
 
-    // optional bytes payloadManifest = 3;
     /**
      * <code>optional bytes payloadManifest = 3;</code>
      */
@@ -1476,44 +1643,48 @@ public final class MessageFormats {
     /**
      * <code>optional bytes payloadManifest = 3;</code>
      */
-    akka.protobuf.ByteString getPayloadManifest();
+    akka.protobufv3.internal.ByteString getPayloadManifest();
   }
   /**
    * Protobuf type {@code PersistentPayload}
    */
-  public static final class PersistentPayload extends
-      akka.protobuf.GeneratedMessage
-      implements PersistentPayloadOrBuilder {
+  public  static final class PersistentPayload extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:PersistentPayload)
+      PersistentPayloadOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use PersistentPayload.newBuilder() to construct.
-    private PersistentPayload(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private PersistentPayload(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private PersistentPayload(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final PersistentPayload defaultInstance;
-    public static PersistentPayload getDefaultInstance() {
-      return defaultInstance;
+    private PersistentPayload() {
+      payload_ = akka.protobufv3.internal.ByteString.EMPTY;
+      payloadManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
 
-    public PersistentPayload getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new PersistentPayload();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private PersistentPayload(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1522,13 +1693,6 @@ public final class MessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 8: {
               bitField0_ |= 0x00000001;
               serializerId_ = input.readInt32();
@@ -1544,54 +1708,46 @@ public final class MessageFormats {
               payloadManifest_ = input.readBytes();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentPayload_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentPayload_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.persistence.serialization.MessageFormats.PersistentPayload.class, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder.class);
     }
 
-    public static akka.protobuf.Parser<PersistentPayload> PARSER =
-        new akka.protobuf.AbstractParser<PersistentPayload>() {
-      public PersistentPayload parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new PersistentPayload(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<PersistentPayload> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required int32 serializerId = 1;
     public static final int SERIALIZERID_FIELD_NUMBER = 1;
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 1;</code>
      */
     public boolean hasSerializerId() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 serializerId = 1;</code>
@@ -1600,47 +1756,42 @@ public final class MessageFormats {
       return serializerId_;
     }
 
-    // required bytes payload = 2;
     public static final int PAYLOAD_FIELD_NUMBER = 2;
-    private akka.protobuf.ByteString payload_;
+    private akka.protobufv3.internal.ByteString payload_;
     /**
      * <code>required bytes payload = 2;</code>
      */
     public boolean hasPayload() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bytes payload = 2;</code>
      */
-    public akka.protobuf.ByteString getPayload() {
+    public akka.protobufv3.internal.ByteString getPayload() {
       return payload_;
     }
 
-    // optional bytes payloadManifest = 3;
     public static final int PAYLOADMANIFEST_FIELD_NUMBER = 3;
-    private akka.protobuf.ByteString payloadManifest_;
+    private akka.protobufv3.internal.ByteString payloadManifest_;
     /**
      * <code>optional bytes payloadManifest = 3;</code>
      */
     public boolean hasPayloadManifest() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes payloadManifest = 3;</code>
      */
-    public akka.protobuf.ByteString getPayloadManifest() {
+    public akka.protobufv3.internal.ByteString getPayloadManifest() {
       return payloadManifest_;
     }
 
-    private void initFields() {
-      serializerId_ = 0;
-      payload_ = akka.protobuf.ByteString.EMPTY;
-      payloadManifest_ = akka.protobuf.ByteString.EMPTY;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasSerializerId()) {
         memoizedIsInitialized = 0;
@@ -1654,114 +1805,184 @@ public final class MessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+      if (((bitField0_ & 0x00000001) != 0)) {
         output.writeInt32(1, serializerId_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeBytes(2, payload_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeBytes(3, payloadManifest_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt32Size(1, serializerId_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBytesSize(2, payload_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBytesSize(3, payloadManifest_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.persistence.serialization.MessageFormats.PersistentPayload)) {
+        return super.equals(obj);
+      }
+      akka.persistence.serialization.MessageFormats.PersistentPayload other = (akka.persistence.serialization.MessageFormats.PersistentPayload) obj;
+
+      if (hasSerializerId() != other.hasSerializerId()) return false;
+      if (hasSerializerId()) {
+        if (getSerializerId()
+            != other.getSerializerId()) return false;
+      }
+      if (hasPayload() != other.hasPayload()) return false;
+      if (hasPayload()) {
+        if (!getPayload()
+            .equals(other.getPayload())) return false;
+      }
+      if (hasPayloadManifest() != other.hasPayloadManifest()) return false;
+      if (hasPayloadManifest()) {
+        if (!getPayloadManifest()
+            .equals(other.getPayloadManifest())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasSerializerId()) {
+        hash = (37 * hash) + SERIALIZERID_FIELD_NUMBER;
+        hash = (53 * hash) + getSerializerId();
+      }
+      if (hasPayload()) {
+        hash = (37 * hash) + PAYLOAD_FIELD_NUMBER;
+        hash = (53 * hash) + getPayload().hashCode();
+      }
+      if (hasPayloadManifest()) {
+        hash = (37 * hash) + PAYLOADMANIFEST_FIELD_NUMBER;
+        hash = (53 * hash) + getPayloadManifest().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentPayload parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentPayload prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentPayload prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1769,14 +1990,16 @@ public final class MessageFormats {
      * Protobuf type {@code PersistentPayload}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:PersistentPayload)
+        akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentPayload_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentPayload_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1789,42 +2012,39 @@ public final class MessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000001);
-        payload_ = akka.protobuf.ByteString.EMPTY;
+        payload_ = akka.protobufv3.internal.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000002);
-        payloadManifest_ = akka.protobuf.ByteString.EMPTY;
+        payloadManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentPayload_descriptor;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentPayload getDefaultInstanceForType() {
         return akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentPayload build() {
         akka.persistence.serialization.MessageFormats.PersistentPayload result = buildPartial();
         if (!result.isInitialized()) {
@@ -1833,19 +2053,20 @@ public final class MessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentPayload buildPartial() {
         akka.persistence.serialization.MessageFormats.PersistentPayload result = new akka.persistence.serialization.MessageFormats.PersistentPayload(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.serializerId_ = serializerId_;
           to_bitField0_ |= 0x00000001;
         }
-        result.serializerId_ = serializerId_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           to_bitField0_ |= 0x00000002;
         }
         result.payload_ = payload_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
           to_bitField0_ |= 0x00000004;
         }
         result.payloadManifest_ = payloadManifest_;
@@ -1854,7 +2075,40 @@ public final class MessageFormats {
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.serialization.MessageFormats.PersistentPayload) {
           return mergeFrom((akka.persistence.serialization.MessageFormats.PersistentPayload)other);
         } else {
@@ -1874,32 +2128,33 @@ public final class MessageFormats {
         if (other.hasPayloadManifest()) {
           setPayloadManifest(other.getPayloadManifest());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasSerializerId()) {
-          
           return false;
         }
         if (!hasPayload()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.persistence.serialization.MessageFormats.PersistentPayload parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.persistence.serialization.MessageFormats.PersistentPayload) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -1909,13 +2164,12 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // required int32 serializerId = 1;
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 1;</code>
        */
       public boolean hasSerializerId() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 serializerId = 1;</code>
@@ -1942,24 +2196,23 @@ public final class MessageFormats {
         return this;
       }
 
-      // required bytes payload = 2;
-      private akka.protobuf.ByteString payload_ = akka.protobuf.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString payload_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes payload = 2;</code>
        */
       public boolean hasPayload() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bytes payload = 2;</code>
        */
-      public akka.protobuf.ByteString getPayload() {
+      public akka.protobufv3.internal.ByteString getPayload() {
         return payload_;
       }
       /**
        * <code>required bytes payload = 2;</code>
        */
-      public Builder setPayload(akka.protobuf.ByteString value) {
+      public Builder setPayload(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1978,24 +2231,23 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional bytes payloadManifest = 3;
-      private akka.protobuf.ByteString payloadManifest_ = akka.protobuf.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString payloadManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes payloadManifest = 3;</code>
        */
       public boolean hasPayloadManifest() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes payloadManifest = 3;</code>
        */
-      public akka.protobuf.ByteString getPayloadManifest() {
+      public akka.protobufv3.internal.ByteString getPayloadManifest() {
         return payloadManifest_;
       }
       /**
        * <code>optional bytes payloadManifest = 3;</code>
        */
-      public Builder setPayloadManifest(akka.protobuf.ByteString value) {
+      public Builder setPayloadManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -2013,22 +2265,63 @@ public final class MessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:PersistentPayload)
     }
 
+    // @@protoc_insertion_point(class_scope:PersistentPayload)
+    private static final akka.persistence.serialization.MessageFormats.PersistentPayload DEFAULT_INSTANCE;
     static {
-      defaultInstance = new PersistentPayload(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.PersistentPayload();
     }
 
-    // @@protoc_insertion_point(class_scope:PersistentPayload)
+    public static akka.persistence.serialization.MessageFormats.PersistentPayload getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<PersistentPayload>
+        PARSER = new akka.protobufv3.internal.AbstractParser<PersistentPayload>() {
+      @java.lang.Override
+      public PersistentPayload parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new PersistentPayload(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<PersistentPayload> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<PersistentPayload> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.serialization.MessageFormats.PersistentPayload getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface AtomicWriteOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AtomicWriteOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:AtomicWrite)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // repeated .PersistentMessage payload = 1;
     /**
      * <code>repeated .PersistentMessage payload = 1;</code>
      */
@@ -2056,39 +2349,42 @@ public final class MessageFormats {
   /**
    * Protobuf type {@code AtomicWrite}
    */
-  public static final class AtomicWrite extends
-      akka.protobuf.GeneratedMessage
-      implements AtomicWriteOrBuilder {
+  public  static final class AtomicWrite extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:AtomicWrite)
+      AtomicWriteOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use AtomicWrite.newBuilder() to construct.
-    private AtomicWrite(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private AtomicWrite(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private AtomicWrite(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final AtomicWrite defaultInstance;
-    public static AtomicWrite getDefaultInstance() {
-      return defaultInstance;
+    private AtomicWrite() {
+      payload_ = java.util.Collections.emptyList();
     }
 
-    public AtomicWrite getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new AtomicWrite();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private AtomicWrite(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2097,64 +2393,50 @@ public final class MessageFormats {
             case 0:
               done = true;
               break;
+            case 10: {
+              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
+                payload_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.PersistentMessage>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              payload_.add(
+                  input.readMessage(akka.persistence.serialization.MessageFormats.PersistentMessage.PARSER, extensionRegistry));
+              break;
+            }
             default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
                 done = true;
               }
               break;
             }
-            case 10: {
-              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-                payload_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.PersistentMessage>();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              payload_.add(input.readMessage(akka.persistence.serialization.MessageFormats.PersistentMessage.PARSER, extensionRegistry));
-              break;
-            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((mutable_bitField0_ & 0x00000001) != 0)) {
           payload_ = java.util.Collections.unmodifiableList(payload_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_AtomicWrite_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.persistence.serialization.MessageFormats.internal_static_AtomicWrite_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.persistence.serialization.MessageFormats.AtomicWrite.class, akka.persistence.serialization.MessageFormats.AtomicWrite.Builder.class);
     }
 
-    public static akka.protobuf.Parser<AtomicWrite> PARSER =
-        new akka.protobuf.AbstractParser<AtomicWrite>() {
-      public AtomicWrite parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AtomicWrite(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<AtomicWrite> getParserForType() {
-      return PARSER;
-    }
-
-    // repeated .PersistentMessage payload = 1;
     public static final int PAYLOAD_FIELD_NUMBER = 1;
     private java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> payload_;
     /**
@@ -2190,13 +2472,12 @@ public final class MessageFormats {
       return payload_.get(index);
     }
 
-    private void initFields() {
-      payload_ = java.util.Collections.emptyList();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       for (int i = 0; i < getPayloadCount(); i++) {
         if (!getPayload(i).isInitialized()) {
@@ -2208,100 +2489,149 @@ public final class MessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
       for (int i = 0; i < payload_.size(); i++) {
         output.writeMessage(1, payload_.get(i));
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
       for (int i = 0; i < payload_.size(); i++) {
-        size += akka.protobuf.CodedOutputStream
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(1, payload_.get(i));
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.persistence.serialization.MessageFormats.AtomicWrite)) {
+        return super.equals(obj);
+      }
+      akka.persistence.serialization.MessageFormats.AtomicWrite other = (akka.persistence.serialization.MessageFormats.AtomicWrite) obj;
+
+      if (!getPayloadList()
+          .equals(other.getPayloadList())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (getPayloadCount() > 0) {
+        hash = (37 * hash) + PAYLOAD_FIELD_NUMBER;
+        hash = (53 * hash) + getPayloadList().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.AtomicWrite parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.AtomicWrite prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.AtomicWrite prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2309,14 +2639,16 @@ public final class MessageFormats {
      * Protobuf type {@code AtomicWrite}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.persistence.serialization.MessageFormats.AtomicWriteOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:AtomicWrite)
+        akka.persistence.serialization.MessageFormats.AtomicWriteOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtomicWrite_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtomicWrite_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2329,19 +2661,17 @@ public final class MessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (payloadBuilder_ == null) {
@@ -2353,19 +2683,18 @@ public final class MessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtomicWrite_descriptor;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.AtomicWrite getDefaultInstanceForType() {
         return akka.persistence.serialization.MessageFormats.AtomicWrite.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.AtomicWrite build() {
         akka.persistence.serialization.MessageFormats.AtomicWrite result = buildPartial();
         if (!result.isInitialized()) {
@@ -2374,11 +2703,12 @@ public final class MessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.AtomicWrite buildPartial() {
         akka.persistence.serialization.MessageFormats.AtomicWrite result = new akka.persistence.serialization.MessageFormats.AtomicWrite(this);
         int from_bitField0_ = bitField0_;
         if (payloadBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          if (((bitField0_ & 0x00000001) != 0)) {
             payload_ = java.util.Collections.unmodifiableList(payload_);
             bitField0_ = (bitField0_ & ~0x00000001);
           }
@@ -2390,7 +2720,40 @@ public final class MessageFormats {
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.serialization.MessageFormats.AtomicWrite) {
           return mergeFrom((akka.persistence.serialization.MessageFormats.AtomicWrite)other);
         } else {
@@ -2420,37 +2783,39 @@ public final class MessageFormats {
               payload_ = other.payload_;
               bitField0_ = (bitField0_ & ~0x00000001);
               payloadBuilder_ = 
-                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getPayloadFieldBuilder() : null;
             } else {
               payloadBuilder_.addAllMessages(other.payload_);
             }
           }
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         for (int i = 0; i < getPayloadCount(); i++) {
           if (!getPayload(i).isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.persistence.serialization.MessageFormats.AtomicWrite parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.persistence.serialization.MessageFormats.AtomicWrite) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -2460,17 +2825,16 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // repeated .PersistentMessage payload = 1;
       private java.util.List<akka.persistence.serialization.MessageFormats.PersistentMessage> payload_ =
         java.util.Collections.emptyList();
       private void ensurePayloadIsMutable() {
-        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+        if (!((bitField0_ & 0x00000001) != 0)) {
           payload_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.PersistentMessage>(payload_);
           bitField0_ |= 0x00000001;
          }
       }
 
-      private akka.protobuf.RepeatedFieldBuilder<
+      private akka.protobufv3.internal.RepeatedFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.PersistentMessage, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder, akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> payloadBuilder_;
 
       /**
@@ -2602,7 +2966,8 @@ public final class MessageFormats {
           java.lang.Iterable<? extends akka.persistence.serialization.MessageFormats.PersistentMessage> values) {
         if (payloadBuilder_ == null) {
           ensurePayloadIsMutable();
-          super.addAll(values, payload_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+              values, payload_);
           onChanged();
         } else {
           payloadBuilder_.addAllMessages(values);
@@ -2685,36 +3050,77 @@ public final class MessageFormats {
            getPayloadBuilderList() {
         return getPayloadFieldBuilder().getBuilderList();
       }
-      private akka.protobuf.RepeatedFieldBuilder<
+      private akka.protobufv3.internal.RepeatedFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.PersistentMessage, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder, akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder> 
           getPayloadFieldBuilder() {
         if (payloadBuilder_ == null) {
-          payloadBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+          payloadBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
               akka.persistence.serialization.MessageFormats.PersistentMessage, akka.persistence.serialization.MessageFormats.PersistentMessage.Builder, akka.persistence.serialization.MessageFormats.PersistentMessageOrBuilder>(
                   payload_,
-                  ((bitField0_ & 0x00000001) == 0x00000001),
+                  ((bitField0_ & 0x00000001) != 0),
                   getParentForChildren(),
                   isClean());
           payload_ = null;
         }
         return payloadBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:AtomicWrite)
     }
 
+    // @@protoc_insertion_point(class_scope:AtomicWrite)
+    private static final akka.persistence.serialization.MessageFormats.AtomicWrite DEFAULT_INSTANCE;
     static {
-      defaultInstance = new AtomicWrite(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.AtomicWrite();
     }
 
-    // @@protoc_insertion_point(class_scope:AtomicWrite)
+    public static akka.persistence.serialization.MessageFormats.AtomicWrite getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<AtomicWrite>
+        PARSER = new akka.protobufv3.internal.AbstractParser<AtomicWrite>() {
+      @java.lang.Override
+      public AtomicWrite parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new AtomicWrite(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<AtomicWrite> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<AtomicWrite> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.serialization.MessageFormats.AtomicWrite getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface AtLeastOnceDeliverySnapshotOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AtLeastOnceDeliverySnapshotOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:AtLeastOnceDeliverySnapshot)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required int64 currentDeliveryId = 1;
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
      */
@@ -2724,7 +3130,6 @@ public final class MessageFormats {
      */
     long getCurrentDeliveryId();
 
-    // repeated .AtLeastOnceDeliverySnapshot.UnconfirmedDelivery unconfirmedDeliveries = 2;
     /**
      * <code>repeated .AtLeastOnceDeliverySnapshot.UnconfirmedDelivery unconfirmedDeliveries = 2;</code>
      */
@@ -2752,39 +3157,42 @@ public final class MessageFormats {
   /**
    * Protobuf type {@code AtLeastOnceDeliverySnapshot}
    */
-  public static final class AtLeastOnceDeliverySnapshot extends
-      akka.protobuf.GeneratedMessage
-      implements AtLeastOnceDeliverySnapshotOrBuilder {
+  public  static final class AtLeastOnceDeliverySnapshot extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:AtLeastOnceDeliverySnapshot)
+      AtLeastOnceDeliverySnapshotOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use AtLeastOnceDeliverySnapshot.newBuilder() to construct.
-    private AtLeastOnceDeliverySnapshot(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private AtLeastOnceDeliverySnapshot(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private AtLeastOnceDeliverySnapshot(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final AtLeastOnceDeliverySnapshot defaultInstance;
-    public static AtLeastOnceDeliverySnapshot getDefaultInstance() {
-      return defaultInstance;
+    private AtLeastOnceDeliverySnapshot() {
+      unconfirmedDeliveries_ = java.util.Collections.emptyList();
     }
 
-    public AtLeastOnceDeliverySnapshot getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new AtLeastOnceDeliverySnapshot();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private AtLeastOnceDeliverySnapshot(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2793,72 +3201,59 @@ public final class MessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 8: {
               bitField0_ |= 0x00000001;
               currentDeliveryId_ = input.readInt64();
               break;
             }
             case 18: {
-              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
                 unconfirmedDeliveries_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery>();
                 mutable_bitField0_ |= 0x00000002;
               }
-              unconfirmedDeliveries_.add(input.readMessage(akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.PARSER, extensionRegistry));
+              unconfirmedDeliveries_.add(
+                  input.readMessage(akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.PARSER, extensionRegistry));
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
               break;
             }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((mutable_bitField0_ & 0x00000002) != 0)) {
           unconfirmedDeliveries_ = java.util.Collections.unmodifiableList(unconfirmedDeliveries_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.class, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.Builder.class);
     }
 
-    public static akka.protobuf.Parser<AtLeastOnceDeliverySnapshot> PARSER =
-        new akka.protobuf.AbstractParser<AtLeastOnceDeliverySnapshot>() {
-      public AtLeastOnceDeliverySnapshot parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AtLeastOnceDeliverySnapshot(input, extensionRegistry);
-      }
-    };
+    public interface UnconfirmedDeliveryOrBuilder extends
+        // @@protoc_insertion_point(interface_extends:AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)
+        akka.protobufv3.internal.MessageOrBuilder {
 
-    @java.lang.Override
-    public akka.protobuf.Parser<AtLeastOnceDeliverySnapshot> getParserForType() {
-      return PARSER;
-    }
-
-    public interface UnconfirmedDeliveryOrBuilder
-        extends akka.protobuf.MessageOrBuilder {
-
-      // required int64 deliveryId = 1;
       /**
        * <code>required int64 deliveryId = 1;</code>
        */
@@ -2868,7 +3263,6 @@ public final class MessageFormats {
        */
       long getDeliveryId();
 
-      // required string destination = 2;
       /**
        * <code>required string destination = 2;</code>
        */
@@ -2880,10 +3274,9 @@ public final class MessageFormats {
       /**
        * <code>required string destination = 2;</code>
        */
-      akka.protobuf.ByteString
+      akka.protobufv3.internal.ByteString
           getDestinationBytes();
 
-      // required .PersistentPayload payload = 3;
       /**
        * <code>required .PersistentPayload payload = 3;</code>
        */
@@ -2900,39 +3293,42 @@ public final class MessageFormats {
     /**
      * Protobuf type {@code AtLeastOnceDeliverySnapshot.UnconfirmedDelivery}
      */
-    public static final class UnconfirmedDelivery extends
-        akka.protobuf.GeneratedMessage
-        implements UnconfirmedDeliveryOrBuilder {
+    public  static final class UnconfirmedDelivery extends
+        akka.protobufv3.internal.GeneratedMessageV3 implements
+        // @@protoc_insertion_point(message_implements:AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)
+        UnconfirmedDeliveryOrBuilder {
+    private static final long serialVersionUID = 0L;
       // Use UnconfirmedDelivery.newBuilder() to construct.
-      private UnconfirmedDelivery(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      private UnconfirmedDelivery(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
         super(builder);
-        this.unknownFields = builder.getUnknownFields();
       }
-      private UnconfirmedDelivery(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-      private static final UnconfirmedDelivery defaultInstance;
-      public static UnconfirmedDelivery getDefaultInstance() {
-        return defaultInstance;
+      private UnconfirmedDelivery() {
+        destination_ = "";
       }
 
-      public UnconfirmedDelivery getDefaultInstanceForType() {
-        return defaultInstance;
-      }
-
-      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final akka.protobuf.UnknownFieldSet
-          getUnknownFields() {
+      @SuppressWarnings({"unused"})
+      protected java.lang.Object newInstance(
+          akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+        return new UnconfirmedDelivery();
+      }
+
+      @java.lang.Override
+      public final akka.protobufv3.internal.UnknownFieldSet
+      getUnknownFields() {
         return this.unknownFields;
       }
       private UnconfirmedDelivery(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        initFields();
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        this();
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         int mutable_bitField0_ = 0;
-        akka.protobuf.UnknownFieldSet.Builder unknownFields =
-            akka.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+            akka.protobufv3.internal.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -2941,26 +3337,20 @@ public final class MessageFormats {
               case 0:
                 done = true;
                 break;
-              default: {
-                if (!parseUnknownField(input, unknownFields,
-                                       extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
               case 8: {
                 bitField0_ |= 0x00000001;
                 deliveryId_ = input.readInt64();
                 break;
               }
               case 18: {
+                akka.protobufv3.internal.ByteString bs = input.readBytes();
                 bitField0_ |= 0x00000002;
-                destination_ = input.readBytes();
+                destination_ = bs;
                 break;
               }
               case 26: {
                 akka.persistence.serialization.MessageFormats.PersistentPayload.Builder subBuilder = null;
-                if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                if (((bitField0_ & 0x00000004) != 0)) {
                   subBuilder = payload_.toBuilder();
                 }
                 payload_ = input.readMessage(akka.persistence.serialization.MessageFormats.PersistentPayload.PARSER, extensionRegistry);
@@ -2971,54 +3361,46 @@ public final class MessageFormats {
                 bitField0_ |= 0x00000004;
                 break;
               }
+              default: {
+                if (!parseUnknownField(
+                    input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
             }
           }
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new akka.protobuf.InvalidProtocolBufferException(
-              e.getMessage()).setUnfinishedMessage(this);
+          throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+              e).setUnfinishedMessage(this);
         } finally {
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
       }
-      public static final akka.protobuf.Descriptors.Descriptor
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.class, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.Builder.class);
       }
 
-      public static akka.protobuf.Parser<UnconfirmedDelivery> PARSER =
-          new akka.protobuf.AbstractParser<UnconfirmedDelivery>() {
-        public UnconfirmedDelivery parsePartialFrom(
-            akka.protobuf.CodedInputStream input,
-            akka.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws akka.protobuf.InvalidProtocolBufferException {
-          return new UnconfirmedDelivery(input, extensionRegistry);
-        }
-      };
-
-      @java.lang.Override
-      public akka.protobuf.Parser<UnconfirmedDelivery> getParserForType() {
-        return PARSER;
-      }
-
       private int bitField0_;
-      // required int64 deliveryId = 1;
       public static final int DELIVERYID_FIELD_NUMBER = 1;
       private long deliveryId_;
       /**
        * <code>required int64 deliveryId = 1;</code>
        */
       public boolean hasDeliveryId() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 deliveryId = 1;</code>
@@ -3027,14 +3409,13 @@ public final class MessageFormats {
         return deliveryId_;
       }
 
-      // required string destination = 2;
       public static final int DESTINATION_FIELD_NUMBER = 2;
-      private java.lang.Object destination_;
+      private volatile java.lang.Object destination_;
       /**
        * <code>required string destination = 2;</code>
        */
       public boolean hasDestination() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string destination = 2;</code>
@@ -3044,8 +3425,8 @@ public final class MessageFormats {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          akka.protobuf.ByteString bs = 
-              (akka.protobuf.ByteString) ref;
+          akka.protobufv3.internal.ByteString bs = 
+              (akka.protobufv3.internal.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             destination_ = s;
@@ -3056,51 +3437,47 @@ public final class MessageFormats {
       /**
        * <code>required string destination = 2;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getDestinationBytes() {
         java.lang.Object ref = destination_;
         if (ref instanceof java.lang.String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           destination_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
 
-      // required .PersistentPayload payload = 3;
       public static final int PAYLOAD_FIELD_NUMBER = 3;
       private akka.persistence.serialization.MessageFormats.PersistentPayload payload_;
       /**
        * <code>required .PersistentPayload payload = 3;</code>
        */
       public boolean hasPayload() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .PersistentPayload payload = 3;</code>
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
-        return payload_;
+        return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
       }
       /**
        * <code>required .PersistentPayload payload = 3;</code>
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getPayloadOrBuilder() {
-        return payload_;
+        return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
       }
 
-      private void initFields() {
-        deliveryId_ = 0L;
-        destination_ = "";
-        payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
-      }
       private byte memoizedIsInitialized = -1;
+      @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
-        if (isInitialized != -1) return isInitialized == 1;
+        if (isInitialized == 1) return true;
+        if (isInitialized == 0) return false;
 
         if (!hasDeliveryId()) {
           memoizedIsInitialized = 0;
@@ -3122,114 +3499,184 @@ public final class MessageFormats {
         return true;
       }
 
-      public void writeTo(akka.protobuf.CodedOutputStream output)
+      @java.lang.Override
+      public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                           throws java.io.IOException {
-        getSerializedSize();
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((bitField0_ & 0x00000001) != 0)) {
           output.writeInt64(1, deliveryId_);
         }
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBytes(2, getDestinationBytes());
+        if (((bitField0_ & 0x00000002) != 0)) {
+          akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 2, destination_);
         }
-        if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          output.writeMessage(3, payload_);
+        if (((bitField0_ & 0x00000004) != 0)) {
+          output.writeMessage(3, getPayload());
         }
-        getUnknownFields().writeTo(output);
+        unknownFields.writeTo(output);
       }
 
-      private int memoizedSerializedSize = -1;
+      @java.lang.Override
       public int getSerializedSize() {
-        int size = memoizedSerializedSize;
+        int size = memoizedSize;
         if (size != -1) return size;
 
         size = 0;
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += akka.protobuf.CodedOutputStream
+        if (((bitField0_ & 0x00000001) != 0)) {
+          size += akka.protobufv3.internal.CodedOutputStream
             .computeInt64Size(1, deliveryId_);
         }
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += akka.protobuf.CodedOutputStream
-            .computeBytesSize(2, getDestinationBytes());
+        if (((bitField0_ & 0x00000002) != 0)) {
+          size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(2, destination_);
         }
-        if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          size += akka.protobuf.CodedOutputStream
-            .computeMessageSize(3, payload_);
+        if (((bitField0_ & 0x00000004) != 0)) {
+          size += akka.protobufv3.internal.CodedOutputStream
+            .computeMessageSize(3, getPayload());
         }
-        size += getUnknownFields().getSerializedSize();
-        memoizedSerializedSize = size;
+        size += unknownFields.getSerializedSize();
+        memoizedSize = size;
         return size;
       }
 
-      private static final long serialVersionUID = 0L;
       @java.lang.Override
-      protected java.lang.Object writeReplace()
-          throws java.io.ObjectStreamException {
-        return super.writeReplace();
+      public boolean equals(final java.lang.Object obj) {
+        if (obj == this) {
+         return true;
+        }
+        if (!(obj instanceof akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)) {
+          return super.equals(obj);
+        }
+        akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery other = (akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery) obj;
+
+        if (hasDeliveryId() != other.hasDeliveryId()) return false;
+        if (hasDeliveryId()) {
+          if (getDeliveryId()
+              != other.getDeliveryId()) return false;
+        }
+        if (hasDestination() != other.hasDestination()) return false;
+        if (hasDestination()) {
+          if (!getDestination()
+              .equals(other.getDestination())) return false;
+        }
+        if (hasPayload() != other.hasPayload()) return false;
+        if (hasPayload()) {
+          if (!getPayload()
+              .equals(other.getPayload())) return false;
+        }
+        if (!unknownFields.equals(other.unknownFields)) return false;
+        return true;
+      }
+
+      @java.lang.Override
+      public int hashCode() {
+        if (memoizedHashCode != 0) {
+          return memoizedHashCode;
+        }
+        int hash = 41;
+        hash = (19 * hash) + getDescriptor().hashCode();
+        if (hasDeliveryId()) {
+          hash = (37 * hash) + DELIVERYID_FIELD_NUMBER;
+          hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+              getDeliveryId());
+        }
+        if (hasDestination()) {
+          hash = (37 * hash) + DESTINATION_FIELD_NUMBER;
+          hash = (53 * hash) + getDestination().hashCode();
+        }
+        if (hasPayload()) {
+          hash = (37 * hash) + PAYLOAD_FIELD_NUMBER;
+          hash = (53 * hash) + getPayload().hashCode();
+        }
+        hash = (29 * hash) + unknownFields.hashCode();
+        memoizedHashCode = hash;
+        return hash;
       }
 
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
-          akka.protobuf.ByteString data)
-          throws akka.protobuf.InvalidProtocolBufferException {
+          java.nio.ByteBuffer data)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
-          akka.protobuf.ByteString data,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
+          java.nio.ByteBuffer data,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
+          akka.protobufv3.internal.ByteString data)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
+          akka.protobufv3.internal.ByteString data,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(byte[] data)
-          throws akka.protobuf.InvalidProtocolBufferException {
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
           byte[] data,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(java.io.InputStream input)
           throws java.io.IOException {
-        return PARSER.parseFrom(input);
+        return akka.protobufv3.internal.GeneratedMessageV3
+            .parseWithIOException(PARSER, input);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
           java.io.InputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        return PARSER.parseFrom(input, extensionRegistry);
+        return akka.protobufv3.internal.GeneratedMessageV3
+            .parseWithIOException(PARSER, input, extensionRegistry);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
-        return PARSER.parseDelimitedFrom(input);
+        return akka.protobufv3.internal.GeneratedMessageV3
+            .parseDelimitedWithIOException(PARSER, input);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseDelimitedFrom(
           java.io.InputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+        return akka.protobufv3.internal.GeneratedMessageV3
+            .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
-          akka.protobuf.CodedInputStream input)
+          akka.protobufv3.internal.CodedInputStream input)
           throws java.io.IOException {
-        return PARSER.parseFrom(input);
+        return akka.protobufv3.internal.GeneratedMessageV3
+            .parseWithIOException(PARSER, input);
       }
       public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parseFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        return PARSER.parseFrom(input, extensionRegistry);
+        return akka.protobufv3.internal.GeneratedMessageV3
+            .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      public static Builder newBuilder() { return Builder.create(); }
+      @java.lang.Override
       public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery prototype) {
-        return newBuilder().mergeFrom(prototype);
+      public static Builder newBuilder() {
+        return DEFAULT_INSTANCE.toBuilder();
       }
-      public Builder toBuilder() { return newBuilder(this); }
+      public static Builder newBuilder(akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery prototype) {
+        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+      }
+      @java.lang.Override
+      public Builder toBuilder() {
+        return this == DEFAULT_INSTANCE
+            ? new Builder() : new Builder().mergeFrom(this);
+      }
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -3237,14 +3684,16 @@ public final class MessageFormats {
        * Protobuf type {@code AtLeastOnceDeliverySnapshot.UnconfirmedDelivery}
        */
       public static final class Builder extends
-          akka.protobuf.GeneratedMessage.Builder<Builder>
-         implements akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDeliveryOrBuilder {
-        public static final akka.protobuf.Descriptors.Descriptor
+          akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+          // @@protoc_insertion_point(builder_implements:AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)
+          akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDeliveryOrBuilder {
+        public static final akka.protobufv3.internal.Descriptors.Descriptor
             getDescriptor() {
           return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor;
         }
 
-        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        @java.lang.Override
+        protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -3257,19 +3706,17 @@ public final class MessageFormats {
         }
 
         private Builder(
-            akka.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobufv3.internal.GeneratedMessageV3
+                  .alwaysUseFieldBuilders) {
             getPayloadFieldBuilder();
           }
         }
-        private static Builder create() {
-          return new Builder();
-        }
-
+        @java.lang.Override
         public Builder clear() {
           super.clear();
           deliveryId_ = 0L;
@@ -3277,7 +3724,7 @@ public final class MessageFormats {
           destination_ = "";
           bitField0_ = (bitField0_ & ~0x00000002);
           if (payloadBuilder_ == null) {
-            payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+            payload_ = null;
           } else {
             payloadBuilder_.clear();
           }
@@ -3285,19 +3732,18 @@ public final class MessageFormats {
           return this;
         }
 
-        public Builder clone() {
-          return create().mergeFrom(buildPartial());
-        }
-
-        public akka.protobuf.Descriptors.Descriptor
+        @java.lang.Override
+        public akka.protobufv3.internal.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor;
         }
 
+        @java.lang.Override
         public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery getDefaultInstanceForType() {
           return akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.getDefaultInstance();
         }
 
+        @java.lang.Override
         public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery build() {
           akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery result = buildPartial();
           if (!result.isInitialized()) {
@@ -3306,32 +3752,66 @@ public final class MessageFormats {
           return result;
         }
 
+        @java.lang.Override
         public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery buildPartial() {
           akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery result = new akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery(this);
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
-          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          if (((from_bitField0_ & 0x00000001) != 0)) {
+            result.deliveryId_ = deliveryId_;
             to_bitField0_ |= 0x00000001;
           }
-          result.deliveryId_ = deliveryId_;
-          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          if (((from_bitField0_ & 0x00000002) != 0)) {
             to_bitField0_ |= 0x00000002;
           }
           result.destination_ = destination_;
-          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          if (((from_bitField0_ & 0x00000004) != 0)) {
+            if (payloadBuilder_ == null) {
+              result.payload_ = payload_;
+            } else {
+              result.payload_ = payloadBuilder_.build();
+            }
             to_bitField0_ |= 0x00000004;
-          }
-          if (payloadBuilder_ == null) {
-            result.payload_ = payload_;
-          } else {
-            result.payload_ = payloadBuilder_.build();
           }
           result.bitField0_ = to_bitField0_;
           onBuilt();
           return result;
         }
 
-        public Builder mergeFrom(akka.protobuf.Message other) {
+        @java.lang.Override
+        public Builder clone() {
+          return super.clone();
+        }
+        @java.lang.Override
+        public Builder setField(
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+            java.lang.Object value) {
+          return super.setField(field, value);
+        }
+        @java.lang.Override
+        public Builder clearField(
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+          return super.clearField(field);
+        }
+        @java.lang.Override
+        public Builder clearOneof(
+            akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+          return super.clearOneof(oneof);
+        }
+        @java.lang.Override
+        public Builder setRepeatedField(
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+            int index, java.lang.Object value) {
+          return super.setRepeatedField(field, index, value);
+        }
+        @java.lang.Override
+        public Builder addRepeatedField(
+            akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+            java.lang.Object value) {
+          return super.addRepeatedField(field, value);
+        }
+        @java.lang.Override
+        public Builder mergeFrom(akka.protobufv3.internal.Message other) {
           if (other instanceof akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery) {
             return mergeFrom((akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)other);
           } else {
@@ -3353,40 +3833,39 @@ public final class MessageFormats {
           if (other.hasPayload()) {
             mergePayload(other.getPayload());
           }
-          this.mergeUnknownFields(other.getUnknownFields());
+          this.mergeUnknownFields(other.unknownFields);
+          onChanged();
           return this;
         }
 
+        @java.lang.Override
         public final boolean isInitialized() {
           if (!hasDeliveryId()) {
-            
             return false;
           }
           if (!hasDestination()) {
-            
             return false;
           }
           if (!hasPayload()) {
-            
             return false;
           }
           if (!getPayload().isInitialized()) {
-            
             return false;
           }
           return true;
         }
 
+        @java.lang.Override
         public Builder mergeFrom(
-            akka.protobuf.CodedInputStream input,
-            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
             parsedMessage = (akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery) e.getUnfinishedMessage();
-            throw e;
+            throw e.unwrapIOException();
           } finally {
             if (parsedMessage != null) {
               mergeFrom(parsedMessage);
@@ -3396,13 +3875,12 @@ public final class MessageFormats {
         }
         private int bitField0_;
 
-        // required int64 deliveryId = 1;
         private long deliveryId_ ;
         /**
          * <code>required int64 deliveryId = 1;</code>
          */
         public boolean hasDeliveryId() {
-          return ((bitField0_ & 0x00000001) == 0x00000001);
+          return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required int64 deliveryId = 1;</code>
@@ -3429,13 +3907,12 @@ public final class MessageFormats {
           return this;
         }
 
-        // required string destination = 2;
         private java.lang.Object destination_ = "";
         /**
          * <code>required string destination = 2;</code>
          */
         public boolean hasDestination() {
-          return ((bitField0_ & 0x00000002) == 0x00000002);
+          return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required string destination = 2;</code>
@@ -3443,9 +3920,12 @@ public final class MessageFormats {
         public java.lang.String getDestination() {
           java.lang.Object ref = destination_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((akka.protobuf.ByteString) ref)
-                .toStringUtf8();
-            destination_ = s;
+            akka.protobufv3.internal.ByteString bs =
+                (akka.protobufv3.internal.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            if (bs.isValidUtf8()) {
+              destination_ = s;
+            }
             return s;
           } else {
             return (java.lang.String) ref;
@@ -3454,17 +3934,17 @@ public final class MessageFormats {
         /**
          * <code>required string destination = 2;</code>
          */
-        public akka.protobuf.ByteString
+        public akka.protobufv3.internal.ByteString
             getDestinationBytes() {
           java.lang.Object ref = destination_;
           if (ref instanceof String) {
-            akka.protobuf.ByteString b = 
-                akka.protobuf.ByteString.copyFromUtf8(
+            akka.protobufv3.internal.ByteString b = 
+                akka.protobufv3.internal.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             destination_ = b;
             return b;
           } else {
-            return (akka.protobuf.ByteString) ref;
+            return (akka.protobufv3.internal.ByteString) ref;
           }
         }
         /**
@@ -3493,7 +3973,7 @@ public final class MessageFormats {
          * <code>required string destination = 2;</code>
          */
         public Builder setDestinationBytes(
-            akka.protobuf.ByteString value) {
+            akka.protobufv3.internal.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -3503,22 +3983,21 @@ public final class MessageFormats {
           return this;
         }
 
-        // required .PersistentPayload payload = 3;
-        private akka.persistence.serialization.MessageFormats.PersistentPayload payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
-        private akka.protobuf.SingleFieldBuilder<
+        private akka.persistence.serialization.MessageFormats.PersistentPayload payload_;
+        private akka.protobufv3.internal.SingleFieldBuilderV3<
             akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> payloadBuilder_;
         /**
          * <code>required .PersistentPayload payload = 3;</code>
          */
         public boolean hasPayload() {
-          return ((bitField0_ & 0x00000004) == 0x00000004);
+          return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>required .PersistentPayload payload = 3;</code>
          */
         public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
           if (payloadBuilder_ == null) {
-            return payload_;
+            return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
           } else {
             return payloadBuilder_.getMessage();
           }
@@ -3558,7 +4037,8 @@ public final class MessageFormats {
          */
         public Builder mergePayload(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
           if (payloadBuilder_ == null) {
-            if (((bitField0_ & 0x00000004) == 0x00000004) &&
+            if (((bitField0_ & 0x00000004) != 0) &&
+                payload_ != null &&
                 payload_ != akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance()) {
               payload_ =
                 akka.persistence.serialization.MessageFormats.PersistentPayload.newBuilder(payload_).mergeFrom(value).buildPartial();
@@ -3577,7 +4057,7 @@ public final class MessageFormats {
          */
         public Builder clearPayload() {
           if (payloadBuilder_ == null) {
-            payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+            payload_ = null;
             onChanged();
           } else {
             payloadBuilder_.clear();
@@ -3600,46 +4080,87 @@ public final class MessageFormats {
           if (payloadBuilder_ != null) {
             return payloadBuilder_.getMessageOrBuilder();
           } else {
-            return payload_;
+            return payload_ == null ?
+                akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
           }
         }
         /**
          * <code>required .PersistentPayload payload = 3;</code>
          */
-        private akka.protobuf.SingleFieldBuilder<
+        private akka.protobufv3.internal.SingleFieldBuilderV3<
             akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> 
             getPayloadFieldBuilder() {
           if (payloadBuilder_ == null) {
-            payloadBuilder_ = new akka.protobuf.SingleFieldBuilder<
+            payloadBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
                 akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder>(
-                    payload_,
+                    getPayload(),
                     getParentForChildren(),
                     isClean());
             payload_ = null;
           }
           return payloadBuilder_;
         }
+        @java.lang.Override
+        public final Builder setUnknownFields(
+            final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+          return super.setUnknownFields(unknownFields);
+        }
+
+        @java.lang.Override
+        public final Builder mergeUnknownFields(
+            final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+          return super.mergeUnknownFields(unknownFields);
+        }
+
 
         // @@protoc_insertion_point(builder_scope:AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)
       }
 
+      // @@protoc_insertion_point(class_scope:AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)
+      private static final akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery DEFAULT_INSTANCE;
       static {
-        defaultInstance = new UnconfirmedDelivery(true);
-        defaultInstance.initFields();
+        DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery();
       }
 
-      // @@protoc_insertion_point(class_scope:AtLeastOnceDeliverySnapshot.UnconfirmedDelivery)
+      public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+      }
+
+      @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<UnconfirmedDelivery>
+          PARSER = new akka.protobufv3.internal.AbstractParser<UnconfirmedDelivery>() {
+        @java.lang.Override
+        public UnconfirmedDelivery parsePartialFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+          return new UnconfirmedDelivery(input, extensionRegistry);
+        }
+      };
+
+      public static akka.protobufv3.internal.Parser<UnconfirmedDelivery> parser() {
+        return PARSER;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Parser<UnconfirmedDelivery> getParserForType() {
+        return PARSER;
+      }
+
+      @java.lang.Override
+      public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery getDefaultInstanceForType() {
+        return DEFAULT_INSTANCE;
+      }
+
     }
 
     private int bitField0_;
-    // required int64 currentDeliveryId = 1;
     public static final int CURRENTDELIVERYID_FIELD_NUMBER = 1;
     private long currentDeliveryId_;
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
      */
     public boolean hasCurrentDeliveryId() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
@@ -3648,7 +4169,6 @@ public final class MessageFormats {
       return currentDeliveryId_;
     }
 
-    // repeated .AtLeastOnceDeliverySnapshot.UnconfirmedDelivery unconfirmedDeliveries = 2;
     public static final int UNCONFIRMEDDELIVERIES_FIELD_NUMBER = 2;
     private java.util.List<akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery> unconfirmedDeliveries_;
     /**
@@ -3684,14 +4204,12 @@ public final class MessageFormats {
       return unconfirmedDeliveries_.get(index);
     }
 
-    private void initFields() {
-      currentDeliveryId_ = 0L;
-      unconfirmedDeliveries_ = java.util.Collections.emptyList();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasCurrentDeliveryId()) {
         memoizedIsInitialized = 0;
@@ -3707,107 +4225,166 @@ public final class MessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+      if (((bitField0_ & 0x00000001) != 0)) {
         output.writeInt64(1, currentDeliveryId_);
       }
       for (int i = 0; i < unconfirmedDeliveries_.size(); i++) {
         output.writeMessage(2, unconfirmedDeliveries_.get(i));
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(1, currentDeliveryId_);
       }
       for (int i = 0; i < unconfirmedDeliveries_.size(); i++) {
-        size += akka.protobuf.CodedOutputStream
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(2, unconfirmedDeliveries_.get(i));
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot)) {
+        return super.equals(obj);
+      }
+      akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot other = (akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot) obj;
+
+      if (hasCurrentDeliveryId() != other.hasCurrentDeliveryId()) return false;
+      if (hasCurrentDeliveryId()) {
+        if (getCurrentDeliveryId()
+            != other.getCurrentDeliveryId()) return false;
+      }
+      if (!getUnconfirmedDeliveriesList()
+          .equals(other.getUnconfirmedDeliveriesList())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasCurrentDeliveryId()) {
+        hash = (37 * hash) + CURRENTDELIVERYID_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getCurrentDeliveryId());
+      }
+      if (getUnconfirmedDeliveriesCount() > 0) {
+        hash = (37 * hash) + UNCONFIRMEDDELIVERIES_FIELD_NUMBER;
+        hash = (53 * hash) + getUnconfirmedDeliveriesList().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3815,14 +4392,16 @@ public final class MessageFormats {
      * Protobuf type {@code AtLeastOnceDeliverySnapshot}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshotOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:AtLeastOnceDeliverySnapshot)
+        akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshotOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3835,19 +4414,17 @@ public final class MessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getUnconfirmedDeliveriesFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         currentDeliveryId_ = 0L;
@@ -3861,19 +4438,18 @@ public final class MessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.persistence.serialization.MessageFormats.internal_static_AtLeastOnceDeliverySnapshot_descriptor;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot getDefaultInstanceForType() {
         return akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot build() {
         akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot result = buildPartial();
         if (!result.isInitialized()) {
@@ -3882,16 +4458,17 @@ public final class MessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot buildPartial() {
         akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot result = new akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.currentDeliveryId_ = currentDeliveryId_;
           to_bitField0_ |= 0x00000001;
         }
-        result.currentDeliveryId_ = currentDeliveryId_;
         if (unconfirmedDeliveriesBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          if (((bitField0_ & 0x00000002) != 0)) {
             unconfirmedDeliveries_ = java.util.Collections.unmodifiableList(unconfirmedDeliveries_);
             bitField0_ = (bitField0_ & ~0x00000002);
           }
@@ -3904,7 +4481,40 @@ public final class MessageFormats {
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot) {
           return mergeFrom((akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot)other);
         } else {
@@ -3937,41 +4547,42 @@ public final class MessageFormats {
               unconfirmedDeliveries_ = other.unconfirmedDeliveries_;
               bitField0_ = (bitField0_ & ~0x00000002);
               unconfirmedDeliveriesBuilder_ = 
-                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getUnconfirmedDeliveriesFieldBuilder() : null;
             } else {
               unconfirmedDeliveriesBuilder_.addAllMessages(other.unconfirmedDeliveries_);
             }
           }
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasCurrentDeliveryId()) {
-          
           return false;
         }
         for (int i = 0; i < getUnconfirmedDeliveriesCount(); i++) {
           if (!getUnconfirmedDeliveries(i).isInitialized()) {
-            
             return false;
           }
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -3981,13 +4592,12 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // required int64 currentDeliveryId = 1;
       private long currentDeliveryId_ ;
       /**
        * <code>required int64 currentDeliveryId = 1;</code>
        */
       public boolean hasCurrentDeliveryId() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 currentDeliveryId = 1;</code>
@@ -4014,17 +4624,16 @@ public final class MessageFormats {
         return this;
       }
 
-      // repeated .AtLeastOnceDeliverySnapshot.UnconfirmedDelivery unconfirmedDeliveries = 2;
       private java.util.List<akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery> unconfirmedDeliveries_ =
         java.util.Collections.emptyList();
       private void ensureUnconfirmedDeliveriesIsMutable() {
-        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+        if (!((bitField0_ & 0x00000002) != 0)) {
           unconfirmedDeliveries_ = new java.util.ArrayList<akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery>(unconfirmedDeliveries_);
           bitField0_ |= 0x00000002;
          }
       }
 
-      private akka.protobuf.RepeatedFieldBuilder<
+      private akka.protobufv3.internal.RepeatedFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.Builder, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDeliveryOrBuilder> unconfirmedDeliveriesBuilder_;
 
       /**
@@ -4156,7 +4765,8 @@ public final class MessageFormats {
           java.lang.Iterable<? extends akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery> values) {
         if (unconfirmedDeliveriesBuilder_ == null) {
           ensureUnconfirmedDeliveriesIsMutable();
-          super.addAll(values, unconfirmedDeliveries_);
+          akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+              values, unconfirmedDeliveries_);
           onChanged();
         } else {
           unconfirmedDeliveriesBuilder_.addAllMessages(values);
@@ -4239,36 +4849,77 @@ public final class MessageFormats {
            getUnconfirmedDeliveriesBuilderList() {
         return getUnconfirmedDeliveriesFieldBuilder().getBuilderList();
       }
-      private akka.protobuf.RepeatedFieldBuilder<
+      private akka.protobufv3.internal.RepeatedFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.Builder, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDeliveryOrBuilder> 
           getUnconfirmedDeliveriesFieldBuilder() {
         if (unconfirmedDeliveriesBuilder_ == null) {
-          unconfirmedDeliveriesBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+          unconfirmedDeliveriesBuilder_ = new akka.protobufv3.internal.RepeatedFieldBuilderV3<
               akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.Builder, akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot.UnconfirmedDeliveryOrBuilder>(
                   unconfirmedDeliveries_,
-                  ((bitField0_ & 0x00000002) == 0x00000002),
+                  ((bitField0_ & 0x00000002) != 0),
                   getParentForChildren(),
                   isClean());
           unconfirmedDeliveries_ = null;
         }
         return unconfirmedDeliveriesBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:AtLeastOnceDeliverySnapshot)
     }
 
+    // @@protoc_insertion_point(class_scope:AtLeastOnceDeliverySnapshot)
+    private static final akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot DEFAULT_INSTANCE;
     static {
-      defaultInstance = new AtLeastOnceDeliverySnapshot(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot();
     }
 
-    // @@protoc_insertion_point(class_scope:AtLeastOnceDeliverySnapshot)
+    public static akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<AtLeastOnceDeliverySnapshot>
+        PARSER = new akka.protobufv3.internal.AbstractParser<AtLeastOnceDeliverySnapshot>() {
+      @java.lang.Override
+      public AtLeastOnceDeliverySnapshot parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new AtLeastOnceDeliverySnapshot(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<AtLeastOnceDeliverySnapshot> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<AtLeastOnceDeliverySnapshot> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.serialization.MessageFormats.AtLeastOnceDeliverySnapshot getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface PersistentStateChangeEventOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface PersistentStateChangeEventOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:PersistentStateChangeEvent)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string stateIdentifier = 1;
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
@@ -4280,37 +4931,35 @@ public final class MessageFormats {
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getStateIdentifierBytes();
 
-    // optional string timeout = 2;
     /**
-     * <code>optional string timeout = 2;</code>
-     *
      * <pre>
      *not used in new records from 2.4.5
      * </pre>
+     *
+     * <code>optional string timeout = 2;</code>
      */
     boolean hasTimeout();
     /**
-     * <code>optional string timeout = 2;</code>
-     *
      * <pre>
      *not used in new records from 2.4.5
      * </pre>
+     *
+     * <code>optional string timeout = 2;</code>
      */
     java.lang.String getTimeout();
     /**
-     * <code>optional string timeout = 2;</code>
-     *
      * <pre>
      *not used in new records from 2.4.5
      * </pre>
+     *
+     * <code>optional string timeout = 2;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getTimeoutBytes();
 
-    // optional int64 timeoutNanos = 3;
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
      */
@@ -4323,39 +4972,43 @@ public final class MessageFormats {
   /**
    * Protobuf type {@code PersistentStateChangeEvent}
    */
-  public static final class PersistentStateChangeEvent extends
-      akka.protobuf.GeneratedMessage
-      implements PersistentStateChangeEventOrBuilder {
+  public  static final class PersistentStateChangeEvent extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:PersistentStateChangeEvent)
+      PersistentStateChangeEventOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use PersistentStateChangeEvent.newBuilder() to construct.
-    private PersistentStateChangeEvent(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private PersistentStateChangeEvent(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private PersistentStateChangeEvent(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final PersistentStateChangeEvent defaultInstance;
-    public static PersistentStateChangeEvent getDefaultInstance() {
-      return defaultInstance;
+    private PersistentStateChangeEvent() {
+      stateIdentifier_ = "";
+      timeout_ = "";
     }
 
-    public PersistentStateChangeEvent getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new PersistentStateChangeEvent();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private PersistentStateChangeEvent(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4364,21 +5017,16 @@ public final class MessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              stateIdentifier_ = input.readBytes();
+              stateIdentifier_ = bs;
               break;
             }
             case 18: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              timeout_ = input.readBytes();
+              timeout_ = bs;
               break;
             }
             case 24: {
@@ -4386,54 +5034,46 @@ public final class MessageFormats {
               timeoutNanos_ = input.readInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentStateChangeEvent_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentStateChangeEvent_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent.class, akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent.Builder.class);
     }
 
-    public static akka.protobuf.Parser<PersistentStateChangeEvent> PARSER =
-        new akka.protobuf.AbstractParser<PersistentStateChangeEvent>() {
-      public PersistentStateChangeEvent parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new PersistentStateChangeEvent(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<PersistentStateChangeEvent> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string stateIdentifier = 1;
     public static final int STATEIDENTIFIER_FIELD_NUMBER = 1;
-    private java.lang.Object stateIdentifier_;
+    private volatile java.lang.Object stateIdentifier_;
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
     public boolean hasStateIdentifier() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string stateIdentifier = 1;</code>
@@ -4443,8 +5083,8 @@ public final class MessageFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           stateIdentifier_ = s;
@@ -4455,47 +5095,46 @@ public final class MessageFormats {
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getStateIdentifierBytes() {
       java.lang.Object ref = stateIdentifier_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         stateIdentifier_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional string timeout = 2;
     public static final int TIMEOUT_FIELD_NUMBER = 2;
-    private java.lang.Object timeout_;
+    private volatile java.lang.Object timeout_;
     /**
-     * <code>optional string timeout = 2;</code>
-     *
      * <pre>
      *not used in new records from 2.4.5
      * </pre>
+     *
+     * <code>optional string timeout = 2;</code>
      */
     public boolean hasTimeout() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
-     * <code>optional string timeout = 2;</code>
-     *
      * <pre>
      *not used in new records from 2.4.5
      * </pre>
+     *
+     * <code>optional string timeout = 2;</code>
      */
     public java.lang.String getTimeout() {
       java.lang.Object ref = timeout_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           timeout_ = s;
@@ -4504,34 +5143,33 @@ public final class MessageFormats {
       }
     }
     /**
-     * <code>optional string timeout = 2;</code>
-     *
      * <pre>
      *not used in new records from 2.4.5
      * </pre>
+     *
+     * <code>optional string timeout = 2;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getTimeoutBytes() {
       java.lang.Object ref = timeout_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         timeout_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // optional int64 timeoutNanos = 3;
     public static final int TIMEOUTNANOS_FIELD_NUMBER = 3;
     private long timeoutNanos_;
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
      */
     public boolean hasTimeoutNanos() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
@@ -4540,15 +5178,12 @@ public final class MessageFormats {
       return timeoutNanos_;
     }
 
-    private void initFields() {
-      stateIdentifier_ = "";
-      timeout_ = "";
-      timeoutNanos_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasStateIdentifier()) {
         memoizedIsInitialized = 0;
@@ -4558,114 +5193,183 @@ public final class MessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getStateIdentifierBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, stateIdentifier_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getTimeoutBytes());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 2, timeout_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeInt64(3, timeoutNanos_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getStateIdentifierBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, stateIdentifier_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getTimeoutBytes());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(2, timeout_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(3, timeoutNanos_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent)) {
+        return super.equals(obj);
+      }
+      akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent other = (akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent) obj;
+
+      if (hasStateIdentifier() != other.hasStateIdentifier()) return false;
+      if (hasStateIdentifier()) {
+        if (!getStateIdentifier()
+            .equals(other.getStateIdentifier())) return false;
+      }
+      if (hasTimeout() != other.hasTimeout()) return false;
+      if (hasTimeout()) {
+        if (!getTimeout()
+            .equals(other.getTimeout())) return false;
+      }
+      if (hasTimeoutNanos() != other.hasTimeoutNanos()) return false;
+      if (hasTimeoutNanos()) {
+        if (getTimeoutNanos()
+            != other.getTimeoutNanos()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasStateIdentifier()) {
+        hash = (37 * hash) + STATEIDENTIFIER_FIELD_NUMBER;
+        hash = (53 * hash) + getStateIdentifier().hashCode();
+      }
+      if (hasTimeout()) {
+        hash = (37 * hash) + TIMEOUT_FIELD_NUMBER;
+        hash = (53 * hash) + getTimeout().hashCode();
+      }
+      if (hasTimeoutNanos()) {
+        hash = (37 * hash) + TIMEOUTNANOS_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getTimeoutNanos());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4673,14 +5377,16 @@ public final class MessageFormats {
      * Protobuf type {@code PersistentStateChangeEvent}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.persistence.serialization.MessageFormats.PersistentStateChangeEventOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:PersistentStateChangeEvent)
+        akka.persistence.serialization.MessageFormats.PersistentStateChangeEventOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentStateChangeEvent_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentStateChangeEvent_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4693,18 +5399,16 @@ public final class MessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         stateIdentifier_ = "";
@@ -4716,19 +5420,18 @@ public final class MessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentStateChangeEvent_descriptor;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent getDefaultInstanceForType() {
         return akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent build() {
         akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent result = buildPartial();
         if (!result.isInitialized()) {
@@ -4737,28 +5440,62 @@ public final class MessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent buildPartial() {
         akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent result = new akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.stateIdentifier_ = stateIdentifier_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           to_bitField0_ |= 0x00000002;
         }
         result.timeout_ = timeout_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.timeoutNanos_ = timeoutNanos_;
           to_bitField0_ |= 0x00000004;
         }
-        result.timeoutNanos_ = timeoutNanos_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent) {
           return mergeFrom((akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent)other);
         } else {
@@ -4782,28 +5519,30 @@ public final class MessageFormats {
         if (other.hasTimeoutNanos()) {
           setTimeoutNanos(other.getTimeoutNanos());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasStateIdentifier()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -4813,13 +5552,12 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // required string stateIdentifier = 1;
       private java.lang.Object stateIdentifier_ = "";
       /**
        * <code>required string stateIdentifier = 1;</code>
        */
       public boolean hasStateIdentifier() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
@@ -4827,9 +5565,12 @@ public final class MessageFormats {
       public java.lang.String getStateIdentifier() {
         java.lang.Object ref = stateIdentifier_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          stateIdentifier_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            stateIdentifier_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -4838,17 +5579,17 @@ public final class MessageFormats {
       /**
        * <code>required string stateIdentifier = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getStateIdentifierBytes() {
         java.lang.Object ref = stateIdentifier_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           stateIdentifier_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -4877,7 +5618,7 @@ public final class MessageFormats {
        * <code>required string stateIdentifier = 1;</code>
        */
       public Builder setStateIdentifierBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4887,62 +5628,64 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional string timeout = 2;
       private java.lang.Object timeout_ = "";
       /**
-       * <code>optional string timeout = 2;</code>
-       *
        * <pre>
        *not used in new records from 2.4.5
        * </pre>
+       *
+       * <code>optional string timeout = 2;</code>
        */
       public boolean hasTimeout() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
-       * <code>optional string timeout = 2;</code>
-       *
        * <pre>
        *not used in new records from 2.4.5
        * </pre>
+       *
+       * <code>optional string timeout = 2;</code>
        */
       public java.lang.String getTimeout() {
         java.lang.Object ref = timeout_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          timeout_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            timeout_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string timeout = 2;</code>
-       *
        * <pre>
        *not used in new records from 2.4.5
        * </pre>
+       *
+       * <code>optional string timeout = 2;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getTimeoutBytes() {
         java.lang.Object ref = timeout_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           timeout_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
-       * <code>optional string timeout = 2;</code>
-       *
        * <pre>
        *not used in new records from 2.4.5
        * </pre>
+       *
+       * <code>optional string timeout = 2;</code>
        */
       public Builder setTimeout(
           java.lang.String value) {
@@ -4955,11 +5698,11 @@ public final class MessageFormats {
         return this;
       }
       /**
-       * <code>optional string timeout = 2;</code>
-       *
        * <pre>
        *not used in new records from 2.4.5
        * </pre>
+       *
+       * <code>optional string timeout = 2;</code>
        */
       public Builder clearTimeout() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4968,14 +5711,14 @@ public final class MessageFormats {
         return this;
       }
       /**
-       * <code>optional string timeout = 2;</code>
-       *
        * <pre>
        *not used in new records from 2.4.5
        * </pre>
+       *
+       * <code>optional string timeout = 2;</code>
        */
       public Builder setTimeoutBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4985,13 +5728,12 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional int64 timeoutNanos = 3;
       private long timeoutNanos_ ;
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
        */
       public boolean hasTimeoutNanos() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
@@ -5017,22 +5759,63 @@ public final class MessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:PersistentStateChangeEvent)
     }
 
+    // @@protoc_insertion_point(class_scope:PersistentStateChangeEvent)
+    private static final akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent DEFAULT_INSTANCE;
     static {
-      defaultInstance = new PersistentStateChangeEvent(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent();
     }
 
-    // @@protoc_insertion_point(class_scope:PersistentStateChangeEvent)
+    public static akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<PersistentStateChangeEvent>
+        PARSER = new akka.protobufv3.internal.AbstractParser<PersistentStateChangeEvent>() {
+      @java.lang.Override
+      public PersistentStateChangeEvent parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new PersistentStateChangeEvent(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<PersistentStateChangeEvent> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<PersistentStateChangeEvent> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.serialization.MessageFormats.PersistentStateChangeEvent getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface PersistentFSMSnapshotOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface PersistentFSMSnapshotOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:PersistentFSMSnapshot)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string stateIdentifier = 1;
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
@@ -5044,10 +5827,9 @@ public final class MessageFormats {
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getStateIdentifierBytes();
 
-    // required .PersistentPayload data = 2;
     /**
      * <code>required .PersistentPayload data = 2;</code>
      */
@@ -5061,7 +5843,6 @@ public final class MessageFormats {
      */
     akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getDataOrBuilder();
 
-    // optional int64 timeoutNanos = 3;
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
      */
@@ -5074,39 +5855,42 @@ public final class MessageFormats {
   /**
    * Protobuf type {@code PersistentFSMSnapshot}
    */
-  public static final class PersistentFSMSnapshot extends
-      akka.protobuf.GeneratedMessage
-      implements PersistentFSMSnapshotOrBuilder {
+  public  static final class PersistentFSMSnapshot extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:PersistentFSMSnapshot)
+      PersistentFSMSnapshotOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use PersistentFSMSnapshot.newBuilder() to construct.
-    private PersistentFSMSnapshot(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private PersistentFSMSnapshot(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private PersistentFSMSnapshot(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final PersistentFSMSnapshot defaultInstance;
-    public static PersistentFSMSnapshot getDefaultInstance() {
-      return defaultInstance;
+    private PersistentFSMSnapshot() {
+      stateIdentifier_ = "";
     }
 
-    public PersistentFSMSnapshot getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new PersistentFSMSnapshot();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private PersistentFSMSnapshot(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -5115,21 +5899,15 @@ public final class MessageFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              stateIdentifier_ = input.readBytes();
+              stateIdentifier_ = bs;
               break;
             }
             case 18: {
               akka.persistence.serialization.MessageFormats.PersistentPayload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = data_.toBuilder();
               }
               data_ = input.readMessage(akka.persistence.serialization.MessageFormats.PersistentPayload.PARSER, extensionRegistry);
@@ -5145,54 +5923,46 @@ public final class MessageFormats {
               timeoutNanos_ = input.readInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.class, akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.Builder.class);
     }
 
-    public static akka.protobuf.Parser<PersistentFSMSnapshot> PARSER =
-        new akka.protobuf.AbstractParser<PersistentFSMSnapshot>() {
-      public PersistentFSMSnapshot parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new PersistentFSMSnapshot(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<PersistentFSMSnapshot> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string stateIdentifier = 1;
     public static final int STATEIDENTIFIER_FIELD_NUMBER = 1;
-    private java.lang.Object stateIdentifier_;
+    private volatile java.lang.Object stateIdentifier_;
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
     public boolean hasStateIdentifier() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string stateIdentifier = 1;</code>
@@ -5202,8 +5972,8 @@ public final class MessageFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           stateIdentifier_ = s;
@@ -5214,50 +5984,48 @@ public final class MessageFormats {
     /**
      * <code>required string stateIdentifier = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getStateIdentifierBytes() {
       java.lang.Object ref = stateIdentifier_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         stateIdentifier_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required .PersistentPayload data = 2;
     public static final int DATA_FIELD_NUMBER = 2;
     private akka.persistence.serialization.MessageFormats.PersistentPayload data_;
     /**
      * <code>required .PersistentPayload data = 2;</code>
      */
     public boolean hasData() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .PersistentPayload data = 2;</code>
      */
     public akka.persistence.serialization.MessageFormats.PersistentPayload getData() {
-      return data_;
+      return data_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : data_;
     }
     /**
      * <code>required .PersistentPayload data = 2;</code>
      */
     public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getDataOrBuilder() {
-      return data_;
+      return data_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : data_;
     }
 
-    // optional int64 timeoutNanos = 3;
     public static final int TIMEOUTNANOS_FIELD_NUMBER = 3;
     private long timeoutNanos_;
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
      */
     public boolean hasTimeoutNanos() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
@@ -5266,15 +6034,12 @@ public final class MessageFormats {
       return timeoutNanos_;
     }
 
-    private void initFields() {
-      stateIdentifier_ = "";
-      data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
-      timeoutNanos_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasStateIdentifier()) {
         memoizedIsInitialized = 0;
@@ -5292,114 +6057,184 @@ public final class MessageFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getStateIdentifierBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, stateIdentifier_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, data_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getData());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeInt64(3, timeoutNanos_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getStateIdentifierBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, stateIdentifier_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, data_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getData());
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt64Size(3, timeoutNanos_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot)) {
+        return super.equals(obj);
+      }
+      akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot other = (akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot) obj;
+
+      if (hasStateIdentifier() != other.hasStateIdentifier()) return false;
+      if (hasStateIdentifier()) {
+        if (!getStateIdentifier()
+            .equals(other.getStateIdentifier())) return false;
+      }
+      if (hasData() != other.hasData()) return false;
+      if (hasData()) {
+        if (!getData()
+            .equals(other.getData())) return false;
+      }
+      if (hasTimeoutNanos() != other.hasTimeoutNanos()) return false;
+      if (hasTimeoutNanos()) {
+        if (getTimeoutNanos()
+            != other.getTimeoutNanos()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasStateIdentifier()) {
+        hash = (37 * hash) + STATEIDENTIFIER_FIELD_NUMBER;
+        hash = (53 * hash) + getStateIdentifier().hashCode();
+      }
+      if (hasData()) {
+        hash = (37 * hash) + DATA_FIELD_NUMBER;
+        hash = (53 * hash) + getData().hashCode();
+      }
+      if (hasTimeoutNanos()) {
+        hash = (37 * hash) + TIMEOUTNANOS_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getTimeoutNanos());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5407,14 +6242,16 @@ public final class MessageFormats {
      * Protobuf type {@code PersistentFSMSnapshot}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.persistence.serialization.MessageFormats.PersistentFSMSnapshotOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:PersistentFSMSnapshot)
+        akka.persistence.serialization.MessageFormats.PersistentFSMSnapshotOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5427,25 +6264,23 @@ public final class MessageFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getDataFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         stateIdentifier_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         if (dataBuilder_ == null) {
-          data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+          data_ = null;
         } else {
           dataBuilder_.clear();
         }
@@ -5455,19 +6290,18 @@ public final class MessageFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.persistence.serialization.MessageFormats.internal_static_PersistentFSMSnapshot_descriptor;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot getDefaultInstanceForType() {
         return akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot build() {
         akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot result = buildPartial();
         if (!result.isInitialized()) {
@@ -5476,32 +6310,66 @@ public final class MessageFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot buildPartial() {
         akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot result = new akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.stateIdentifier_ = stateIdentifier_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (dataBuilder_ == null) {
+            result.data_ = data_;
+          } else {
+            result.data_ = dataBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
         }
-        if (dataBuilder_ == null) {
-          result.data_ = data_;
-        } else {
-          result.data_ = dataBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.timeoutNanos_ = timeoutNanos_;
           to_bitField0_ |= 0x00000004;
         }
-        result.timeoutNanos_ = timeoutNanos_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot) {
           return mergeFrom((akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot)other);
         } else {
@@ -5523,36 +6391,36 @@ public final class MessageFormats {
         if (other.hasTimeoutNanos()) {
           setTimeoutNanos(other.getTimeoutNanos());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasStateIdentifier()) {
-          
           return false;
         }
         if (!hasData()) {
-          
           return false;
         }
         if (!getData().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -5562,13 +6430,12 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // required string stateIdentifier = 1;
       private java.lang.Object stateIdentifier_ = "";
       /**
        * <code>required string stateIdentifier = 1;</code>
        */
       public boolean hasStateIdentifier() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
@@ -5576,9 +6443,12 @@ public final class MessageFormats {
       public java.lang.String getStateIdentifier() {
         java.lang.Object ref = stateIdentifier_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          stateIdentifier_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            stateIdentifier_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -5587,17 +6457,17 @@ public final class MessageFormats {
       /**
        * <code>required string stateIdentifier = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getStateIdentifierBytes() {
         java.lang.Object ref = stateIdentifier_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           stateIdentifier_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -5626,7 +6496,7 @@ public final class MessageFormats {
        * <code>required string stateIdentifier = 1;</code>
        */
       public Builder setStateIdentifierBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -5636,22 +6506,21 @@ public final class MessageFormats {
         return this;
       }
 
-      // required .PersistentPayload data = 2;
-      private akka.persistence.serialization.MessageFormats.PersistentPayload data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.persistence.serialization.MessageFormats.PersistentPayload data_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> dataBuilder_;
       /**
        * <code>required .PersistentPayload data = 2;</code>
        */
       public boolean hasData() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .PersistentPayload data = 2;</code>
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayload getData() {
         if (dataBuilder_ == null) {
-          return data_;
+          return data_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : data_;
         } else {
           return dataBuilder_.getMessage();
         }
@@ -5691,7 +6560,8 @@ public final class MessageFormats {
        */
       public Builder mergeData(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
         if (dataBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              data_ != null &&
               data_ != akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance()) {
             data_ =
               akka.persistence.serialization.MessageFormats.PersistentPayload.newBuilder(data_).mergeFrom(value).buildPartial();
@@ -5710,7 +6580,7 @@ public final class MessageFormats {
        */
       public Builder clearData() {
         if (dataBuilder_ == null) {
-          data_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
+          data_ = null;
           onChanged();
         } else {
           dataBuilder_.clear();
@@ -5733,19 +6603,20 @@ public final class MessageFormats {
         if (dataBuilder_ != null) {
           return dataBuilder_.getMessageOrBuilder();
         } else {
-          return data_;
+          return data_ == null ?
+              akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : data_;
         }
       }
       /**
        * <code>required .PersistentPayload data = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> 
           getDataFieldBuilder() {
         if (dataBuilder_ == null) {
-          dataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          dataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder>(
-                  data_,
+                  getData(),
                   getParentForChildren(),
                   isClean());
           data_ = null;
@@ -5753,13 +6624,12 @@ public final class MessageFormats {
         return dataBuilder_;
       }
 
-      // optional int64 timeoutNanos = 3;
       private long timeoutNanos_ ;
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
        */
       public boolean hasTimeoutNanos() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
@@ -5785,59 +6655,100 @@ public final class MessageFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:PersistentFSMSnapshot)
     }
 
+    // @@protoc_insertion_point(class_scope:PersistentFSMSnapshot)
+    private static final akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot DEFAULT_INSTANCE;
     static {
-      defaultInstance = new PersistentFSMSnapshot(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot();
     }
 
-    // @@protoc_insertion_point(class_scope:PersistentFSMSnapshot)
+    public static akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<PersistentFSMSnapshot>
+        PARSER = new akka.protobufv3.internal.AbstractParser<PersistentFSMSnapshot>() {
+      @java.lang.Override
+      public PersistentFSMSnapshot parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new PersistentFSMSnapshot(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<PersistentFSMSnapshot> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<PersistentFSMSnapshot> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.serialization.MessageFormats.PersistentFSMSnapshot getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_PersistentMessage_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_PersistentMessage_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_PersistentPayload_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_PersistentPayload_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_AtomicWrite_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_AtomicWrite_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_AtLeastOnceDeliverySnapshot_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_AtLeastOnceDeliverySnapshot_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_PersistentStateChangeEvent_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_PersistentStateChangeEvent_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_PersistentFSMSnapshot_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_PersistentFSMSnapshot_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -5850,7 +6761,7 @@ public final class MessageFormats {
       "\n\007payload\030\002 \002(\014\022\027\n\017payloadManifest\030\003 \001(\014" +
       "\"2\n\013AtomicWrite\022#\n\007payload\030\001 \003(\0132\022.Persi" +
       "stentMessage\"\356\001\n\033AtLeastOnceDeliverySnap" +
-      "shot\022\031\n\021currentDeliveryId\030\001 \002(\003\022O\n\025uncon",
+      "shot\022\031\n\021currentDeliveryId\030\001 \002(\003\022O\n\025uncon" +
       "firmedDeliveries\030\002 \003(\01320.AtLeastOnceDeli" +
       "verySnapshot.UnconfirmedDelivery\032c\n\023Unco" +
       "nfirmedDelivery\022\022\n\ndeliveryId\030\001 \002(\003\022\023\n\013d" +
@@ -5860,63 +6771,55 @@ public final class MessageFormats {
       "\002 \001(\t\022\024\n\014timeoutNanos\030\003 \001(\003\"h\n\025Persisten" +
       "tFSMSnapshot\022\027\n\017stateIdentifier\030\001 \002(\t\022 \n" +
       "\004data\030\002 \002(\0132\022.PersistentPayload\022\024\n\014timeo" +
-      "utNanos\030\003 \001(\003B\"\n\036akka.persistence.serial",
+      "utNanos\030\003 \001(\003B\"\n\036akka.persistence.serial" +
       "izationH\001"
     };
-    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_PersistentMessage_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_PersistentMessage_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_PersistentMessage_descriptor,
-              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", });
-          internal_static_PersistentPayload_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_PersistentPayload_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_PersistentPayload_descriptor,
-              new java.lang.String[] { "SerializerId", "Payload", "PayloadManifest", });
-          internal_static_AtomicWrite_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_AtomicWrite_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AtomicWrite_descriptor,
-              new java.lang.String[] { "Payload", });
-          internal_static_AtLeastOnceDeliverySnapshot_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_AtLeastOnceDeliverySnapshot_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AtLeastOnceDeliverySnapshot_descriptor,
-              new java.lang.String[] { "CurrentDeliveryId", "UnconfirmedDeliveries", });
-          internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor =
-            internal_static_AtLeastOnceDeliverySnapshot_descriptor.getNestedTypes().get(0);
-          internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor,
-              new java.lang.String[] { "DeliveryId", "Destination", "Payload", });
-          internal_static_PersistentStateChangeEvent_descriptor =
-            getDescriptor().getMessageTypes().get(4);
-          internal_static_PersistentStateChangeEvent_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_PersistentStateChangeEvent_descriptor,
-              new java.lang.String[] { "StateIdentifier", "Timeout", "TimeoutNanos", });
-          internal_static_PersistentFSMSnapshot_descriptor =
-            getDescriptor().getMessageTypes().get(5);
-          internal_static_PersistentFSMSnapshot_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_PersistentFSMSnapshot_descriptor,
-              new java.lang.String[] { "StateIdentifier", "Data", "TimeoutNanos", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+        });
+    internal_static_PersistentMessage_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_PersistentMessage_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_PersistentMessage_descriptor,
+        new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", });
+    internal_static_PersistentPayload_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_PersistentPayload_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_PersistentPayload_descriptor,
+        new java.lang.String[] { "SerializerId", "Payload", "PayloadManifest", });
+    internal_static_AtomicWrite_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_AtomicWrite_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_AtomicWrite_descriptor,
+        new java.lang.String[] { "Payload", });
+    internal_static_AtLeastOnceDeliverySnapshot_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_AtLeastOnceDeliverySnapshot_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_AtLeastOnceDeliverySnapshot_descriptor,
+        new java.lang.String[] { "CurrentDeliveryId", "UnconfirmedDeliveries", });
+    internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor =
+      internal_static_AtLeastOnceDeliverySnapshot_descriptor.getNestedTypes().get(0);
+    internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_AtLeastOnceDeliverySnapshot_UnconfirmedDelivery_descriptor,
+        new java.lang.String[] { "DeliveryId", "Destination", "Payload", });
+    internal_static_PersistentStateChangeEvent_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_PersistentStateChangeEvent_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_PersistentStateChangeEvent_descriptor,
+        new java.lang.String[] { "StateIdentifier", "Timeout", "TimeoutNanos", });
+    internal_static_PersistentFSMSnapshot_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_PersistentFSMSnapshot_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_PersistentFSMSnapshot_descriptor,
+        new java.lang.String[] { "StateIdentifier", "Data", "TimeoutNanos", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

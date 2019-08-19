@@ -121,11 +121,11 @@ object KillSwitches {
         })
         setHandler(shape.out1, new OutHandler {
           override def onPull(): Unit = pull(shape.in1)
-          override def onDownstreamFinish(): Unit = cancel(shape.in1)
+          override def onDownstreamFinish(cause: Throwable): Unit = cancel(shape.in1, cause)
         })
         setHandler(shape.out2, new OutHandler {
           override def onPull(): Unit = pull(shape.in2)
-          override def onDownstreamFinish(): Unit = cancel(shape.in2)
+          override def onDownstreamFinish(cause: Throwable): Unit = cancel(shape.in2, cause)
         })
 
       }

@@ -28,11 +28,14 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonGenerator
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
@@ -91,6 +94,32 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     val deserializationFeatures =
       objectMapperFactory.overrideConfiguredDeserializationFeatures(bindingName, configuredDeserializationFeatures)
     deserializationFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredMapperFeatures = features(config, "mapper-features").map {
+      case (enumName, value) => MapperFeature.valueOf(enumName) -> value
+    }
+    val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
+    mapperFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredJsonParserFeatures = features(config, "json-parser-features").map {
+      case (enumName, value) => JsonParser.Feature.valueOf(enumName) -> value
+    }
+    val jsonParserFeatures =
+      objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
+    jsonParserFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredJsonGeneratorFeatures = features(config, "json-generator-features").map {
+      case (enumName, value) => JsonGenerator.Feature.valueOf(enumName) -> value
+    }
+    val jsonGeneratorFeatures =
+      objectMapperFactory.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredJsonGeneratorFeatures)
+    jsonGeneratorFeatures.foreach {
       case (feature, value) => mapper.configure(feature, value)
     }
 
@@ -327,4 +356,43 @@ class JacksonObjectMapperFactory {
       configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
     configuredModules
 
+  /**
+   * After construction of the `ObjectMapper` the configured mapper features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `MapperFeatures` that were configured in `akka.serialization.jackson.mapper-features`
+   */
+  def overrideConfiguredMapperFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(MapperFeature, Boolean)]): immutable.Seq[(MapperFeature, Boolean)] =
+    configuredFeatures
+
+  /**
+   * After construction of the `ObjectMapper` the configured JSON parser features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `JsonParser.Feature` that were configured in `akka.serialization.jackson.json-parser-features`
+   */
+  def overrideConfiguredJsonParserFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)]): immutable.Seq[(JsonParser.Feature, Boolean)] =
+    configuredFeatures
+
+  /**
+   * After construction of the `ObjectMapper` the configured JSON generator features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `JsonGenerator.Feature` that were configured in `akka.serialization.jackson.json-generator-features`
+   */
+  def overrideConfiguredJsonGeneratorFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(JsonGenerator.Feature, Boolean)])
+      : immutable.Seq[(JsonGenerator.Feature, Boolean)] =
+    configuredFeatures
 }

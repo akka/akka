@@ -23,7 +23,7 @@ object Dependencies {
   val agronaVersion = "1.0.1"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
-  val jacksonDatabindVersion = "2.9.9.1"
+  val jacksonDatabindVersion = "2.9.9.3"
 
   val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
@@ -95,6 +95,8 @@ object Dependencies {
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
 
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0"
+
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
@@ -133,9 +135,9 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % "test" // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.3-RC1" % "test" // CC0
 
-      val protobufRuntime =  "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
     }
 
     object Provided {

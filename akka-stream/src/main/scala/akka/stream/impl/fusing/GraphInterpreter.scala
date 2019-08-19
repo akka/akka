@@ -54,7 +54,12 @@ import akka.stream.snapshot._
    * but there is no more element to grab.
    */
   case object Empty
+
+  /** Marker class that indicates that a port was failed with a given cause and a potential outstanding element */
   final case class Failed(ex: Throwable, previousElem: Any)
+
+  /** Marker class that indicates that a port was cancelled with a given cause */
+  final case class Cancelled(cause: Throwable)
 
   abstract class UpstreamBoundaryStageLogic[T] extends GraphStageLogic(inCount = 0, outCount = 1) {
     def out: Outlet[T]
@@ -85,7 +90,16 @@ import akka.stream.snapshot._
       var outOwner: GraphStageLogic,
       var inHandler: InHandler,
       var outHandler: OutHandler) {
+
+    /** See [[GraphInterpreter]] about possible states */
     var portState: Int = InReady
+
+    /**
+     * Can either be
+     *  * an in-flight element
+     *  * a failure (with an optional in-flight element), if elem.isInstanceOf[Failed]
+     *  * a cancellation cause, if elem.isInstanceOf[Cancelled]
+     */
     var slot: Any = Empty
   }
 
@@ -493,7 +507,9 @@ import akka.stream.snapshot._
           s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
       completeConnection(connection.outOwner.stageId)
-      connection.outHandler.onDownstreamFinish()
+      val cause = connection.slot.asInstanceOf[Cancelled].cause
+      connection.slot = Empty
+      connection.outHandler.onDownstreamFinish(cause)
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
       // COMPLETIONS
 
@@ -637,12 +653,12 @@ import akka.stream.snapshot._
   }
 
   @InternalStableApi
-  private[stream] def cancel(connection: Connection): Unit = {
+  private[stream] def cancel(connection: Connection, cause: Throwable): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   cancel($connection) [$currentState]")
     connection.portState = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
-      connection.slot = Empty
+      connection.slot = Cancelled(cause)
       if ((currentState & (Pulling | Pushing | InClosed)) == 0) enqueue(connection)
       else if (chasedPull eq connection) {
         // Abort chasing so Cancel is not lost (chasing does NOT decode the event but assumes it to be a PULL

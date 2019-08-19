@@ -19,4 +19,6 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMe
 ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheck$Builder")
 ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMessages$ConfigCheck")
 
-
+# Upgrade to protobuf 3
+ProblemFilters.exclude[Problem]("akka.cluster.protobuf.msg.ClusterMessages*")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.protobuf.ClusterMessageSerializer.compress")

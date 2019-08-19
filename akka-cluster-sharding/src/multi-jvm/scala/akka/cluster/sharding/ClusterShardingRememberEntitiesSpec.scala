@@ -54,7 +54,7 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String) exten
   commonConfig(
     ConfigFactory
       .parseString(s"""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.cluster.auto-down-unreachable-after = 0s
     akka.remote.log-remote-lifecycle-events = off

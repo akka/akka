@@ -10,12 +10,18 @@ package akka.remote;
 public final class ArteryControlFormats {
   private ArteryControlFormats() {}
   public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
   }
-  public interface QuarantinedOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
 
-    // required .UniqueAddress from = 1;
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+  }
+  public interface QuarantinedOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Quarantined)
+      akka.protobufv3.internal.MessageOrBuilder {
+
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
@@ -29,7 +35,6 @@ public final class ArteryControlFormats {
      */
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
 
-    // required .UniqueAddress to = 2;
     /**
      * <code>required .UniqueAddress to = 2;</code>
      */
@@ -46,39 +51,41 @@ public final class ArteryControlFormats {
   /**
    * Protobuf type {@code Quarantined}
    */
-  public static final class Quarantined extends
-      akka.protobuf.GeneratedMessage
-      implements QuarantinedOrBuilder {
+  public  static final class Quarantined extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:Quarantined)
+      QuarantinedOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use Quarantined.newBuilder() to construct.
-    private Quarantined(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Quarantined(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private Quarantined(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final Quarantined defaultInstance;
-    public static Quarantined getDefaultInstance() {
-      return defaultInstance;
+    private Quarantined() {
     }
 
-    public Quarantined getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Quarantined();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private Quarantined(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -87,16 +94,9 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = from_.toBuilder();
               }
               from_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -109,7 +109,7 @@ public final class ArteryControlFormats {
             }
             case 18: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = to_.toBuilder();
               }
               to_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -120,98 +120,87 @@ public final class ArteryControlFormats {
               bitField0_ |= 0x00000002;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_Quarantined_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_Quarantined_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.Quarantined.class, akka.remote.ArteryControlFormats.Quarantined.Builder.class);
     }
 
-    public static akka.protobuf.Parser<Quarantined> PARSER =
-        new akka.protobuf.AbstractParser<Quarantined>() {
-      public Quarantined parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new Quarantined(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<Quarantined> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .UniqueAddress from = 1;
     public static final int FROM_FIELD_NUMBER = 1;
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public boolean hasFrom() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
 
-    // required .UniqueAddress to = 2;
     public static final int TO_FIELD_NUMBER = 2;
     private akka.remote.ArteryControlFormats.UniqueAddress to_;
     /**
      * <code>required .UniqueAddress to = 2;</code>
      */
     public boolean hasTo() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .UniqueAddress to = 2;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getTo() {
-      return to_;
+      return to_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : to_;
     }
     /**
      * <code>required .UniqueAddress to = 2;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getToOrBuilder() {
-      return to_;
+      return to_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : to_;
     }
 
-    private void initFields() {
-      from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      to_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasFrom()) {
         memoizedIsInitialized = 0;
@@ -233,107 +222,168 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, to_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getTo());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, to_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getTo());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.Quarantined)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.Quarantined other = (akka.remote.ArteryControlFormats.Quarantined) obj;
+
+      if (hasFrom() != other.hasFrom()) return false;
+      if (hasFrom()) {
+        if (!getFrom()
+            .equals(other.getFrom())) return false;
+      }
+      if (hasTo() != other.hasTo()) return false;
+      if (hasTo()) {
+        if (!getTo()
+            .equals(other.getTo())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasFrom()) {
+        hash = (37 * hash) + FROM_FIELD_NUMBER;
+        hash = (53 * hash) + getFrom().hashCode();
+      }
+      if (hasTo()) {
+        hash = (37 * hash) + TO_FIELD_NUMBER;
+        hash = (53 * hash) + getTo().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.Quarantined parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.Quarantined prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.Quarantined prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -341,14 +391,16 @@ public final class ArteryControlFormats {
      * Protobuf type {@code Quarantined}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.QuarantinedOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Quarantined)
+        akka.remote.ArteryControlFormats.QuarantinedOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_Quarantined_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_Quarantined_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -361,30 +413,28 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getFromFieldBuilder();
           getToFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
         } else {
           fromBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
         if (toBuilder_ == null) {
-          to_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          to_ = null;
         } else {
           toBuilder_.clear();
         }
@@ -392,19 +442,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_Quarantined_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.Quarantined getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.Quarantined.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.Quarantined build() {
         akka.remote.ArteryControlFormats.Quarantined result = buildPartial();
         if (!result.isInitialized()) {
@@ -413,32 +462,66 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.Quarantined buildPartial() {
         akka.remote.ArteryControlFormats.Quarantined result = new akka.remote.ArteryControlFormats.Quarantined(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (fromBuilder_ == null) {
+            result.from_ = from_;
+          } else {
+            result.from_ = fromBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (fromBuilder_ == null) {
-          result.from_ = from_;
-        } else {
-          result.from_ = fromBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (toBuilder_ == null) {
+            result.to_ = to_;
+          } else {
+            result.to_ = toBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
-        }
-        if (toBuilder_ == null) {
-          result.to_ = to_;
-        } else {
-          result.to_ = toBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.Quarantined) {
           return mergeFrom((akka.remote.ArteryControlFormats.Quarantined)other);
         } else {
@@ -455,40 +538,39 @@ public final class ArteryControlFormats {
         if (other.hasTo()) {
           mergeTo(other.getTo());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasFrom()) {
-          
           return false;
         }
         if (!hasTo()) {
-          
           return false;
         }
         if (!getFrom().isInitialized()) {
-          
           return false;
         }
         if (!getTo().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.Quarantined parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.Quarantined) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -498,22 +580,21 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required .UniqueAddress from = 1;
-      private akka.remote.ArteryControlFormats.UniqueAddress from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress from_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public boolean hasFrom() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
-          return from_;
+          return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         } else {
           return fromBuilder_.getMessage();
         }
@@ -553,7 +634,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (fromBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              from_ != null &&
               from_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             from_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(from_).mergeFrom(value).buildPartial();
@@ -572,7 +654,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearFrom() {
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
           onChanged();
         } else {
           fromBuilder_.clear();
@@ -595,19 +677,20 @@ public final class ArteryControlFormats {
         if (fromBuilder_ != null) {
           return fromBuilder_.getMessageOrBuilder();
         } else {
-          return from_;
+          return from_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         }
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getFromFieldBuilder() {
         if (fromBuilder_ == null) {
-          fromBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          fromBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  from_,
+                  getFrom(),
                   getParentForChildren(),
                   isClean());
           from_ = null;
@@ -615,22 +698,21 @@ public final class ArteryControlFormats {
         return fromBuilder_;
       }
 
-      // required .UniqueAddress to = 2;
-      private akka.remote.ArteryControlFormats.UniqueAddress to_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress to_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> toBuilder_;
       /**
        * <code>required .UniqueAddress to = 2;</code>
        */
       public boolean hasTo() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .UniqueAddress to = 2;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getTo() {
         if (toBuilder_ == null) {
-          return to_;
+          return to_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : to_;
         } else {
           return toBuilder_.getMessage();
         }
@@ -670,7 +752,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeTo(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (toBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              to_ != null &&
               to_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             to_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(to_).mergeFrom(value).buildPartial();
@@ -689,7 +772,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearTo() {
         if (toBuilder_ == null) {
-          to_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          to_ = null;
           onChanged();
         } else {
           toBuilder_.clear();
@@ -712,41 +795,83 @@ public final class ArteryControlFormats {
         if (toBuilder_ != null) {
           return toBuilder_.getMessageOrBuilder();
         } else {
-          return to_;
+          return to_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : to_;
         }
       }
       /**
        * <code>required .UniqueAddress to = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getToFieldBuilder() {
         if (toBuilder_ == null) {
-          toBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          toBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  to_,
+                  getTo(),
                   getParentForChildren(),
                   isClean());
           to_ = null;
         }
         return toBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:Quarantined)
     }
 
+    // @@protoc_insertion_point(class_scope:Quarantined)
+    private static final akka.remote.ArteryControlFormats.Quarantined DEFAULT_INSTANCE;
     static {
-      defaultInstance = new Quarantined(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.Quarantined();
     }
 
-    // @@protoc_insertion_point(class_scope:Quarantined)
+    public static akka.remote.ArteryControlFormats.Quarantined getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Quarantined>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Quarantined>() {
+      @java.lang.Override
+      public Quarantined parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Quarantined(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Quarantined> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Quarantined> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.Quarantined getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface MessageWithAddressOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface MessageWithAddressOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:MessageWithAddress)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .UniqueAddress address = 1;
     /**
      * <code>required .UniqueAddress address = 1;</code>
      */
@@ -761,8 +886,6 @@ public final class ArteryControlFormats {
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAddressOrBuilder();
   }
   /**
-   * Protobuf type {@code MessageWithAddress}
-   *
    * <pre>
    * Generic message declaration that is used for all types of message that (currently) have a single
    * address field. A message that needs to changed later can be cloned from this one and then adapted.
@@ -770,40 +893,44 @@ public final class ArteryControlFormats {
    * ActorSystemTerminating.Ack
    * OutboundHandshake.HandshakeRsp
    * </pre>
+   *
+   * Protobuf type {@code MessageWithAddress}
    */
-  public static final class MessageWithAddress extends
-      akka.protobuf.GeneratedMessage
-      implements MessageWithAddressOrBuilder {
+  public  static final class MessageWithAddress extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:MessageWithAddress)
+      MessageWithAddressOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use MessageWithAddress.newBuilder() to construct.
-    private MessageWithAddress(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private MessageWithAddress(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private MessageWithAddress(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final MessageWithAddress defaultInstance;
-    public static MessageWithAddress getDefaultInstance() {
-      return defaultInstance;
+    private MessageWithAddress() {
     }
 
-    public MessageWithAddress getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new MessageWithAddress();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private MessageWithAddress(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -812,16 +939,9 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = address_.toBuilder();
               }
               address_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -832,75 +952,66 @@ public final class ArteryControlFormats {
               bitField0_ |= 0x00000001;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_MessageWithAddress_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_MessageWithAddress_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.MessageWithAddress.class, akka.remote.ArteryControlFormats.MessageWithAddress.Builder.class);
     }
 
-    public static akka.protobuf.Parser<MessageWithAddress> PARSER =
-        new akka.protobuf.AbstractParser<MessageWithAddress>() {
-      public MessageWithAddress parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new MessageWithAddress(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<MessageWithAddress> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .UniqueAddress address = 1;
     public static final int ADDRESS_FIELD_NUMBER = 1;
     private akka.remote.ArteryControlFormats.UniqueAddress address_;
     /**
      * <code>required .UniqueAddress address = 1;</code>
      */
     public boolean hasAddress() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress address = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getAddress() {
-      return address_;
+      return address_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : address_;
     }
     /**
      * <code>required .UniqueAddress address = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAddressOrBuilder() {
-      return address_;
+      return address_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : address_;
     }
 
-    private void initFields() {
-      address_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasAddress()) {
         memoizedIsInitialized = 0;
@@ -914,106 +1025,156 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, address_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getAddress());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, address_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getAddress());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.MessageWithAddress)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.MessageWithAddress other = (akka.remote.ArteryControlFormats.MessageWithAddress) obj;
+
+      if (hasAddress() != other.hasAddress()) return false;
+      if (hasAddress()) {
+        if (!getAddress()
+            .equals(other.getAddress())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasAddress()) {
+        hash = (37 * hash) + ADDRESS_FIELD_NUMBER;
+        hash = (53 * hash) + getAddress().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.MessageWithAddress parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.MessageWithAddress prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.MessageWithAddress prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code MessageWithAddress}
-     *
      * <pre>
      * Generic message declaration that is used for all types of message that (currently) have a single
      * address field. A message that needs to changed later can be cloned from this one and then adapted.
@@ -1021,16 +1182,20 @@ public final class ArteryControlFormats {
      * ActorSystemTerminating.Ack
      * OutboundHandshake.HandshakeRsp
      * </pre>
+     *
+     * Protobuf type {@code MessageWithAddress}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.MessageWithAddressOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:MessageWithAddress)
+        akka.remote.ArteryControlFormats.MessageWithAddressOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_MessageWithAddress_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_MessageWithAddress_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1043,23 +1208,21 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getAddressFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (addressBuilder_ == null) {
-          address_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          address_ = null;
         } else {
           addressBuilder_.clear();
         }
@@ -1067,19 +1230,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_MessageWithAddress_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.MessageWithAddress getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.MessageWithAddress.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.MessageWithAddress build() {
         akka.remote.ArteryControlFormats.MessageWithAddress result = buildPartial();
         if (!result.isInitialized()) {
@@ -1088,24 +1250,58 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.MessageWithAddress buildPartial() {
         akka.remote.ArteryControlFormats.MessageWithAddress result = new akka.remote.ArteryControlFormats.MessageWithAddress(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (addressBuilder_ == null) {
+            result.address_ = address_;
+          } else {
+            result.address_ = addressBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
-        }
-        if (addressBuilder_ == null) {
-          result.address_ = address_;
-        } else {
-          result.address_ = addressBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.MessageWithAddress) {
           return mergeFrom((akka.remote.ArteryControlFormats.MessageWithAddress)other);
         } else {
@@ -1119,32 +1315,33 @@ public final class ArteryControlFormats {
         if (other.hasAddress()) {
           mergeAddress(other.getAddress());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasAddress()) {
-          
           return false;
         }
         if (!getAddress().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.MessageWithAddress parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.MessageWithAddress) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -1154,22 +1351,21 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required .UniqueAddress address = 1;
-      private akka.remote.ArteryControlFormats.UniqueAddress address_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress address_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> addressBuilder_;
       /**
        * <code>required .UniqueAddress address = 1;</code>
        */
       public boolean hasAddress() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress address = 1;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getAddress() {
         if (addressBuilder_ == null) {
-          return address_;
+          return address_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : address_;
         } else {
           return addressBuilder_.getMessage();
         }
@@ -1209,7 +1405,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeAddress(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (addressBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              address_ != null &&
               address_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             address_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(address_).mergeFrom(value).buildPartial();
@@ -1228,7 +1425,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearAddress() {
         if (addressBuilder_ == null) {
-          address_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          address_ = null;
           onChanged();
         } else {
           addressBuilder_.clear();
@@ -1251,41 +1448,83 @@ public final class ArteryControlFormats {
         if (addressBuilder_ != null) {
           return addressBuilder_.getMessageOrBuilder();
         } else {
-          return address_;
+          return address_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : address_;
         }
       }
       /**
        * <code>required .UniqueAddress address = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getAddressFieldBuilder() {
         if (addressBuilder_ == null) {
-          addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          addressBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  address_,
+                  getAddress(),
                   getParentForChildren(),
                   isClean());
           address_ = null;
         }
         return addressBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:MessageWithAddress)
     }
 
+    // @@protoc_insertion_point(class_scope:MessageWithAddress)
+    private static final akka.remote.ArteryControlFormats.MessageWithAddress DEFAULT_INSTANCE;
     static {
-      defaultInstance = new MessageWithAddress(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.MessageWithAddress();
     }
 
-    // @@protoc_insertion_point(class_scope:MessageWithAddress)
+    public static akka.remote.ArteryControlFormats.MessageWithAddress getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<MessageWithAddress>
+        PARSER = new akka.protobufv3.internal.AbstractParser<MessageWithAddress>() {
+      @java.lang.Override
+      public MessageWithAddress parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new MessageWithAddress(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<MessageWithAddress> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<MessageWithAddress> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.MessageWithAddress getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface HandshakeReqOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface HandshakeReqOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:HandshakeReq)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .UniqueAddress from = 1;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
@@ -1299,7 +1538,6 @@ public final class ArteryControlFormats {
      */
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
 
-    // required .Address to = 2;
     /**
      * <code>required .Address to = 2;</code>
      */
@@ -1316,39 +1554,41 @@ public final class ArteryControlFormats {
   /**
    * Protobuf type {@code HandshakeReq}
    */
-  public static final class HandshakeReq extends
-      akka.protobuf.GeneratedMessage
-      implements HandshakeReqOrBuilder {
+  public  static final class HandshakeReq extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:HandshakeReq)
+      HandshakeReqOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use HandshakeReq.newBuilder() to construct.
-    private HandshakeReq(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private HandshakeReq(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private HandshakeReq(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final HandshakeReq defaultInstance;
-    public static HandshakeReq getDefaultInstance() {
-      return defaultInstance;
+    private HandshakeReq() {
     }
 
-    public HandshakeReq getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new HandshakeReq();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private HandshakeReq(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1357,16 +1597,9 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = from_.toBuilder();
               }
               from_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -1379,7 +1612,7 @@ public final class ArteryControlFormats {
             }
             case 18: {
               akka.remote.ArteryControlFormats.Address.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = to_.toBuilder();
               }
               to_ = input.readMessage(akka.remote.ArteryControlFormats.Address.PARSER, extensionRegistry);
@@ -1390,98 +1623,87 @@ public final class ArteryControlFormats {
               bitField0_ |= 0x00000002;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.HandshakeReq.class, akka.remote.ArteryControlFormats.HandshakeReq.Builder.class);
     }
 
-    public static akka.protobuf.Parser<HandshakeReq> PARSER =
-        new akka.protobuf.AbstractParser<HandshakeReq>() {
-      public HandshakeReq parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new HandshakeReq(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<HandshakeReq> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .UniqueAddress from = 1;
     public static final int FROM_FIELD_NUMBER = 1;
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public boolean hasFrom() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
 
-    // required .Address to = 2;
     public static final int TO_FIELD_NUMBER = 2;
     private akka.remote.ArteryControlFormats.Address to_;
     /**
      * <code>required .Address to = 2;</code>
      */
     public boolean hasTo() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Address to = 2;</code>
      */
     public akka.remote.ArteryControlFormats.Address getTo() {
-      return to_;
+      return to_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : to_;
     }
     /**
      * <code>required .Address to = 2;</code>
      */
     public akka.remote.ArteryControlFormats.AddressOrBuilder getToOrBuilder() {
-      return to_;
+      return to_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : to_;
     }
 
-    private void initFields() {
-      from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasFrom()) {
         memoizedIsInitialized = 0;
@@ -1503,107 +1725,168 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, to_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getTo());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, to_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getTo());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.HandshakeReq)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.HandshakeReq other = (akka.remote.ArteryControlFormats.HandshakeReq) obj;
+
+      if (hasFrom() != other.hasFrom()) return false;
+      if (hasFrom()) {
+        if (!getFrom()
+            .equals(other.getFrom())) return false;
+      }
+      if (hasTo() != other.hasTo()) return false;
+      if (hasTo()) {
+        if (!getTo()
+            .equals(other.getTo())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasFrom()) {
+        hash = (37 * hash) + FROM_FIELD_NUMBER;
+        hash = (53 * hash) + getFrom().hashCode();
+      }
+      if (hasTo()) {
+        hash = (37 * hash) + TO_FIELD_NUMBER;
+        hash = (53 * hash) + getTo().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.HandshakeReq prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.HandshakeReq prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1611,14 +1894,16 @@ public final class ArteryControlFormats {
      * Protobuf type {@code HandshakeReq}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.HandshakeReqOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:HandshakeReq)
+        akka.remote.ArteryControlFormats.HandshakeReqOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1631,30 +1916,28 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getFromFieldBuilder();
           getToFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
         } else {
           fromBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
         if (toBuilder_ == null) {
-          to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+          to_ = null;
         } else {
           toBuilder_.clear();
         }
@@ -1662,19 +1945,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.HandshakeReq getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.HandshakeReq.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.HandshakeReq build() {
         akka.remote.ArteryControlFormats.HandshakeReq result = buildPartial();
         if (!result.isInitialized()) {
@@ -1683,32 +1965,66 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.HandshakeReq buildPartial() {
         akka.remote.ArteryControlFormats.HandshakeReq result = new akka.remote.ArteryControlFormats.HandshakeReq(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (fromBuilder_ == null) {
+            result.from_ = from_;
+          } else {
+            result.from_ = fromBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (fromBuilder_ == null) {
-          result.from_ = from_;
-        } else {
-          result.from_ = fromBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (toBuilder_ == null) {
+            result.to_ = to_;
+          } else {
+            result.to_ = toBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
-        }
-        if (toBuilder_ == null) {
-          result.to_ = to_;
-        } else {
-          result.to_ = toBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.HandshakeReq) {
           return mergeFrom((akka.remote.ArteryControlFormats.HandshakeReq)other);
         } else {
@@ -1725,40 +2041,39 @@ public final class ArteryControlFormats {
         if (other.hasTo()) {
           mergeTo(other.getTo());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasFrom()) {
-          
           return false;
         }
         if (!hasTo()) {
-          
           return false;
         }
         if (!getFrom().isInitialized()) {
-          
           return false;
         }
         if (!getTo().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.HandshakeReq parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.HandshakeReq) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -1768,22 +2083,21 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required .UniqueAddress from = 1;
-      private akka.remote.ArteryControlFormats.UniqueAddress from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress from_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public boolean hasFrom() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
-          return from_;
+          return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         } else {
           return fromBuilder_.getMessage();
         }
@@ -1823,7 +2137,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (fromBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              from_ != null &&
               from_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             from_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(from_).mergeFrom(value).buildPartial();
@@ -1842,7 +2157,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearFrom() {
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
           onChanged();
         } else {
           fromBuilder_.clear();
@@ -1865,19 +2180,20 @@ public final class ArteryControlFormats {
         if (fromBuilder_ != null) {
           return fromBuilder_.getMessageOrBuilder();
         } else {
-          return from_;
+          return from_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         }
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getFromFieldBuilder() {
         if (fromBuilder_ == null) {
-          fromBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          fromBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  from_,
+                  getFrom(),
                   getParentForChildren(),
                   isClean());
           from_ = null;
@@ -1885,22 +2201,21 @@ public final class ArteryControlFormats {
         return fromBuilder_;
       }
 
-      // required .Address to = 2;
-      private akka.remote.ArteryControlFormats.Address to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.Address to_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> toBuilder_;
       /**
        * <code>required .Address to = 2;</code>
        */
       public boolean hasTo() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Address to = 2;</code>
        */
       public akka.remote.ArteryControlFormats.Address getTo() {
         if (toBuilder_ == null) {
-          return to_;
+          return to_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : to_;
         } else {
           return toBuilder_.getMessage();
         }
@@ -1940,7 +2255,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeTo(akka.remote.ArteryControlFormats.Address value) {
         if (toBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              to_ != null &&
               to_ != akka.remote.ArteryControlFormats.Address.getDefaultInstance()) {
             to_ =
               akka.remote.ArteryControlFormats.Address.newBuilder(to_).mergeFrom(value).buildPartial();
@@ -1959,7 +2275,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearTo() {
         if (toBuilder_ == null) {
-          to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+          to_ = null;
           onChanged();
         } else {
           toBuilder_.clear();
@@ -1982,41 +2298,83 @@ public final class ArteryControlFormats {
         if (toBuilder_ != null) {
           return toBuilder_.getMessageOrBuilder();
         } else {
-          return to_;
+          return to_ == null ?
+              akka.remote.ArteryControlFormats.Address.getDefaultInstance() : to_;
         }
       }
       /**
        * <code>required .Address to = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> 
           getToFieldBuilder() {
         if (toBuilder_ == null) {
-          toBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          toBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder>(
-                  to_,
+                  getTo(),
                   getParentForChildren(),
                   isClean());
           to_ = null;
         }
         return toBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:HandshakeReq)
     }
 
+    // @@protoc_insertion_point(class_scope:HandshakeReq)
+    private static final akka.remote.ArteryControlFormats.HandshakeReq DEFAULT_INSTANCE;
     static {
-      defaultInstance = new HandshakeReq(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.HandshakeReq();
     }
 
-    // @@protoc_insertion_point(class_scope:HandshakeReq)
+    public static akka.remote.ArteryControlFormats.HandshakeReq getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<HandshakeReq>
+        PARSER = new akka.protobufv3.internal.AbstractParser<HandshakeReq>() {
+      @java.lang.Override
+      public HandshakeReq parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new HandshakeReq(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<HandshakeReq> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<HandshakeReq> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.HandshakeReq getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface CompressionTableAdvertisementOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface CompressionTableAdvertisementOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:CompressionTableAdvertisement)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .UniqueAddress from = 1;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
@@ -2030,7 +2388,6 @@ public final class ArteryControlFormats {
      */
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
 
-    // required uint64 originUid = 2;
     /**
      * <code>required uint64 originUid = 2;</code>
      */
@@ -2040,7 +2397,6 @@ public final class ArteryControlFormats {
      */
     long getOriginUid();
 
-    // required uint32 tableVersion = 3;
     /**
      * <code>required uint32 tableVersion = 3;</code>
      */
@@ -2050,51 +2406,49 @@ public final class ArteryControlFormats {
      */
     int getTableVersion();
 
-    // repeated string keys = 4;
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
     java.util.List<java.lang.String>
-    getKeysList();
+        getKeysList();
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
     int getKeysCount();
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
     java.lang.String getKeys(int index);
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getKeysBytes(int index);
 
-    // repeated uint32 values = 5;
     /**
      * <code>repeated uint32 values = 5;</code>
      */
@@ -2109,46 +2463,50 @@ public final class ArteryControlFormats {
     int getValues(int index);
   }
   /**
-   * Protobuf type {@code CompressionTableAdvertisement}
-   *
    * <pre>
    * CompressionProtocol.ActorRefCompressionAdvertisement
    * CompressionProtocol.ClassManifestCompressionAdvertisement
    * </pre>
+   *
+   * Protobuf type {@code CompressionTableAdvertisement}
    */
-  public static final class CompressionTableAdvertisement extends
-      akka.protobuf.GeneratedMessage
-      implements CompressionTableAdvertisementOrBuilder {
+  public  static final class CompressionTableAdvertisement extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:CompressionTableAdvertisement)
+      CompressionTableAdvertisementOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use CompressionTableAdvertisement.newBuilder() to construct.
-    private CompressionTableAdvertisement(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private CompressionTableAdvertisement(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private CompressionTableAdvertisement(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final CompressionTableAdvertisement defaultInstance;
-    public static CompressionTableAdvertisement getDefaultInstance() {
-      return defaultInstance;
+    private CompressionTableAdvertisement() {
+      keys_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      values_ = emptyIntList();
     }
 
-    public CompressionTableAdvertisement getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new CompressionTableAdvertisement();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private CompressionTableAdvertisement(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2157,16 +2515,9 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = from_.toBuilder();
               }
               from_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -2188,110 +2539,102 @@ public final class ArteryControlFormats {
               break;
             }
             case 34: {
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                keys_ = new akka.protobuf.LazyStringArrayList();
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000008) != 0)) {
+                keys_ = new akka.protobufv3.internal.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000008;
               }
-              keys_.add(input.readBytes());
+              keys_.add(bs);
               break;
             }
             case 40: {
-              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
-                values_ = new java.util.ArrayList<java.lang.Integer>();
+              if (!((mutable_bitField0_ & 0x00000010) != 0)) {
+                values_ = newIntList();
                 mutable_bitField0_ |= 0x00000010;
               }
-              values_.add(input.readUInt32());
+              values_.addInt(input.readUInt32());
               break;
             }
             case 42: {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010) && input.getBytesUntilLimit() > 0) {
-                values_ = new java.util.ArrayList<java.lang.Integer>();
+              if (!((mutable_bitField0_ & 0x00000010) != 0) && input.getBytesUntilLimit() > 0) {
+                values_ = newIntList();
                 mutable_bitField0_ |= 0x00000010;
               }
               while (input.getBytesUntilLimit() > 0) {
-                values_.add(input.readUInt32());
+                values_.addInt(input.readUInt32());
               }
               input.popLimit(limit);
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-          keys_ = new akka.protobuf.UnmodifiableLazyStringList(keys_);
+        if (((mutable_bitField0_ & 0x00000008) != 0)) {
+          keys_ = keys_.getUnmodifiableView();
         }
-        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
-          values_ = java.util.Collections.unmodifiableList(values_);
+        if (((mutable_bitField0_ & 0x00000010) != 0)) {
+          values_.makeImmutable(); // C
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisement_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisement_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.CompressionTableAdvertisement.class, akka.remote.ArteryControlFormats.CompressionTableAdvertisement.Builder.class);
     }
 
-    public static akka.protobuf.Parser<CompressionTableAdvertisement> PARSER =
-        new akka.protobuf.AbstractParser<CompressionTableAdvertisement>() {
-      public CompressionTableAdvertisement parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new CompressionTableAdvertisement(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<CompressionTableAdvertisement> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .UniqueAddress from = 1;
     public static final int FROM_FIELD_NUMBER = 1;
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public boolean hasFrom() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
 
-    // required uint64 originUid = 2;
     public static final int ORIGINUID_FIELD_NUMBER = 2;
     private long originUid_;
     /**
      * <code>required uint64 originUid = 2;</code>
      */
     public boolean hasOriginUid() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 originUid = 2;</code>
@@ -2300,14 +2643,13 @@ public final class ArteryControlFormats {
       return originUid_;
     }
 
-    // required uint32 tableVersion = 3;
     public static final int TABLEVERSION_FIELD_NUMBER = 3;
     private int tableVersion_;
     /**
      * <code>required uint32 tableVersion = 3;</code>
      */
     public boolean hasTableVersion() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 tableVersion = 3;</code>
@@ -2316,63 +2658,61 @@ public final class ArteryControlFormats {
       return tableVersion_;
     }
 
-    // repeated string keys = 4;
     public static final int KEYS_FIELD_NUMBER = 4;
-    private akka.protobuf.LazyStringList keys_;
+    private akka.protobufv3.internal.LazyStringList keys_;
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
-    public java.util.List<java.lang.String>
+    public akka.protobufv3.internal.ProtocolStringList
         getKeysList() {
       return keys_;
     }
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
     public int getKeysCount() {
       return keys_.size();
     }
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
     public java.lang.String getKeys(int index) {
       return keys_.get(index);
     }
     /**
-     * <code>repeated string keys = 4;</code>
-     *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
      * relies on both sequences using the same order so that corresponding entries can be
      * associated again when deserializing
      * </pre>
+     *
+     * <code>repeated string keys = 4;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getKeysBytes(int index) {
       return keys_.getByteString(index);
     }
 
-    // repeated uint32 values = 5;
     public static final int VALUES_FIELD_NUMBER = 5;
-    private java.util.List<java.lang.Integer> values_;
+    private akka.protobufv3.internal.Internal.IntList values_;
     /**
      * <code>repeated uint32 values = 5;</code>
      */
@@ -2390,20 +2730,15 @@ public final class ArteryControlFormats {
      * <code>repeated uint32 values = 5;</code>
      */
     public int getValues(int index) {
-      return values_.get(index);
+      return values_.getInt(index);
     }
 
-    private void initFields() {
-      from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      originUid_ = 0L;
-      tableVersion_ = 0;
-      keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
-      values_ = java.util.Collections.emptyList();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasFrom()) {
         memoizedIsInitialized = 0;
@@ -2425,50 +2760,49 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeUInt64(2, originUid_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeUInt32(3, tableVersion_);
       }
       for (int i = 0; i < keys_.size(); i++) {
-        output.writeBytes(4, keys_.getByteString(i));
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 4, keys_.getRaw(i));
       }
       for (int i = 0; i < values_.size(); i++) {
-        output.writeUInt32(5, values_.get(i));
+        output.writeUInt32(5, values_.getInt(i));
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(2, originUid_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt32Size(3, tableVersion_);
       }
       {
         int dataSize = 0;
         for (int i = 0; i < keys_.size(); i++) {
-          dataSize += akka.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(keys_.getByteString(i));
+          dataSize += computeStringSizeNoTag(keys_.getRaw(i));
         }
         size += dataSize;
         size += 1 * getKeysList().size();
@@ -2476,107 +2810,192 @@ public final class ArteryControlFormats {
       {
         int dataSize = 0;
         for (int i = 0; i < values_.size(); i++) {
-          dataSize += akka.protobuf.CodedOutputStream
-            .computeUInt32SizeNoTag(values_.get(i));
+          dataSize += akka.protobufv3.internal.CodedOutputStream
+            .computeUInt32SizeNoTag(values_.getInt(i));
         }
         size += dataSize;
         size += 1 * getValuesList().size();
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.CompressionTableAdvertisement)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.CompressionTableAdvertisement other = (akka.remote.ArteryControlFormats.CompressionTableAdvertisement) obj;
+
+      if (hasFrom() != other.hasFrom()) return false;
+      if (hasFrom()) {
+        if (!getFrom()
+            .equals(other.getFrom())) return false;
+      }
+      if (hasOriginUid() != other.hasOriginUid()) return false;
+      if (hasOriginUid()) {
+        if (getOriginUid()
+            != other.getOriginUid()) return false;
+      }
+      if (hasTableVersion() != other.hasTableVersion()) return false;
+      if (hasTableVersion()) {
+        if (getTableVersion()
+            != other.getTableVersion()) return false;
+      }
+      if (!getKeysList()
+          .equals(other.getKeysList())) return false;
+      if (!getValuesList()
+          .equals(other.getValuesList())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasFrom()) {
+        hash = (37 * hash) + FROM_FIELD_NUMBER;
+        hash = (53 * hash) + getFrom().hashCode();
+      }
+      if (hasOriginUid()) {
+        hash = (37 * hash) + ORIGINUID_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getOriginUid());
+      }
+      if (hasTableVersion()) {
+        hash = (37 * hash) + TABLEVERSION_FIELD_NUMBER;
+        hash = (53 * hash) + getTableVersion();
+      }
+      if (getKeysCount() > 0) {
+        hash = (37 * hash) + KEYS_FIELD_NUMBER;
+        hash = (53 * hash) + getKeysList().hashCode();
+      }
+      if (getValuesCount() > 0) {
+        hash = (37 * hash) + VALUES_FIELD_NUMBER;
+        hash = (53 * hash) + getValuesList().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.CompressionTableAdvertisement prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.CompressionTableAdvertisement prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code CompressionTableAdvertisement}
-     *
      * <pre>
      * CompressionProtocol.ActorRefCompressionAdvertisement
      * CompressionProtocol.ClassManifestCompressionAdvertisement
      * </pre>
+     *
+     * Protobuf type {@code CompressionTableAdvertisement}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.CompressionTableAdvertisementOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:CompressionTableAdvertisement)
+        akka.remote.ArteryControlFormats.CompressionTableAdvertisementOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisement_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisement_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2589,23 +3008,21 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getFromFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
         } else {
           fromBuilder_.clear();
         }
@@ -2614,26 +3031,25 @@ public final class ArteryControlFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         tableVersion_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
-        keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        keys_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
-        values_ = java.util.Collections.emptyList();
+        values_ = emptyIntList();
         bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisement_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.CompressionTableAdvertisement getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.CompressionTableAdvertisement.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.CompressionTableAdvertisement build() {
         akka.remote.ArteryControlFormats.CompressionTableAdvertisement result = buildPartial();
         if (!result.isInitialized()) {
@@ -2642,34 +3058,34 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.CompressionTableAdvertisement buildPartial() {
         akka.remote.ArteryControlFormats.CompressionTableAdvertisement result = new akka.remote.ArteryControlFormats.CompressionTableAdvertisement(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (fromBuilder_ == null) {
+            result.from_ = from_;
+          } else {
+            result.from_ = fromBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (fromBuilder_ == null) {
-          result.from_ = from_;
-        } else {
-          result.from_ = fromBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.originUid_ = originUid_;
           to_bitField0_ |= 0x00000002;
         }
-        result.originUid_ = originUid_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.tableVersion_ = tableVersion_;
           to_bitField0_ |= 0x00000004;
         }
-        result.tableVersion_ = tableVersion_;
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          keys_ = new akka.protobuf.UnmodifiableLazyStringList(
-              keys_);
+        if (((bitField0_ & 0x00000008) != 0)) {
+          keys_ = keys_.getUnmodifiableView();
           bitField0_ = (bitField0_ & ~0x00000008);
         }
         result.keys_ = keys_;
-        if (((bitField0_ & 0x00000010) == 0x00000010)) {
-          values_ = java.util.Collections.unmodifiableList(values_);
+        if (((bitField0_ & 0x00000010) != 0)) {
+          values_.makeImmutable();
           bitField0_ = (bitField0_ & ~0x00000010);
         }
         result.values_ = values_;
@@ -2678,7 +3094,40 @@ public final class ArteryControlFormats {
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.CompressionTableAdvertisement) {
           return mergeFrom((akka.remote.ArteryControlFormats.CompressionTableAdvertisement)other);
         } else {
@@ -2718,40 +3167,39 @@ public final class ArteryControlFormats {
           }
           onChanged();
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasFrom()) {
-          
           return false;
         }
         if (!hasOriginUid()) {
-          
           return false;
         }
         if (!hasTableVersion()) {
-          
           return false;
         }
         if (!getFrom().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.CompressionTableAdvertisement parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.CompressionTableAdvertisement) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -2761,22 +3209,21 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required .UniqueAddress from = 1;
-      private akka.remote.ArteryControlFormats.UniqueAddress from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress from_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public boolean hasFrom() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
-          return from_;
+          return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         } else {
           return fromBuilder_.getMessage();
         }
@@ -2816,7 +3263,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (fromBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              from_ != null &&
               from_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             from_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(from_).mergeFrom(value).buildPartial();
@@ -2835,7 +3283,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearFrom() {
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
           onChanged();
         } else {
           fromBuilder_.clear();
@@ -2858,19 +3306,20 @@ public final class ArteryControlFormats {
         if (fromBuilder_ != null) {
           return fromBuilder_.getMessageOrBuilder();
         } else {
-          return from_;
+          return from_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         }
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getFromFieldBuilder() {
         if (fromBuilder_ == null) {
-          fromBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          fromBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  from_,
+                  getFrom(),
                   getParentForChildren(),
                   isClean());
           from_ = null;
@@ -2878,13 +3327,12 @@ public final class ArteryControlFormats {
         return fromBuilder_;
       }
 
-      // required uint64 originUid = 2;
       private long originUid_ ;
       /**
        * <code>required uint64 originUid = 2;</code>
        */
       public boolean hasOriginUid() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 originUid = 2;</code>
@@ -2911,13 +3359,12 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required uint32 tableVersion = 3;
       private int tableVersion_ ;
       /**
        * <code>required uint32 tableVersion = 3;</code>
        */
       public boolean hasTableVersion() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 tableVersion = 3;</code>
@@ -2944,72 +3391,71 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // repeated string keys = 4;
-      private akka.protobuf.LazyStringList keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobufv3.internal.LazyStringList keys_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
       private void ensureKeysIsMutable() {
-        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          keys_ = new akka.protobuf.LazyStringArrayList(keys_);
+        if (!((bitField0_ & 0x00000008) != 0)) {
+          keys_ = new akka.protobufv3.internal.LazyStringArrayList(keys_);
           bitField0_ |= 0x00000008;
          }
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
-      public java.util.List<java.lang.String>
+      public akka.protobufv3.internal.ProtocolStringList
           getKeysList() {
-        return java.util.Collections.unmodifiableList(keys_);
+        return keys_.getUnmodifiableView();
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public int getKeysCount() {
         return keys_.size();
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public java.lang.String getKeys(int index) {
         return keys_.get(index);
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getKeysBytes(int index) {
         return keys_.getByteString(index);
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public Builder setKeys(
           int index, java.lang.String value) {
@@ -3022,13 +3468,13 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public Builder addKeys(
           java.lang.String value) {
@@ -3041,47 +3487,48 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public Builder addAllKeys(
           java.lang.Iterable<java.lang.String> values) {
         ensureKeysIsMutable();
-        super.addAll(values, keys_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, keys_);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public Builder clearKeys() {
-        keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        keys_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string keys = 4;</code>
-       *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
        * relies on both sequences using the same order so that corresponding entries can be
        * associated again when deserializing
        * </pre>
+       *
+       * <code>repeated string keys = 4;</code>
        */
       public Builder addKeysBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3091,11 +3538,10 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // repeated uint32 values = 5;
-      private java.util.List<java.lang.Integer> values_ = java.util.Collections.emptyList();
+      private akka.protobufv3.internal.Internal.IntList values_ = emptyIntList();
       private void ensureValuesIsMutable() {
-        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
-          values_ = new java.util.ArrayList<java.lang.Integer>(values_);
+        if (!((bitField0_ & 0x00000010) != 0)) {
+          values_ = mutableCopy(values_);
           bitField0_ |= 0x00000010;
          }
       }
@@ -3104,7 +3550,8 @@ public final class ArteryControlFormats {
        */
       public java.util.List<java.lang.Integer>
           getValuesList() {
-        return java.util.Collections.unmodifiableList(values_);
+        return ((bitField0_ & 0x00000010) != 0) ?
+                 java.util.Collections.unmodifiableList(values_) : values_;
       }
       /**
        * <code>repeated uint32 values = 5;</code>
@@ -3116,7 +3563,7 @@ public final class ArteryControlFormats {
        * <code>repeated uint32 values = 5;</code>
        */
       public int getValues(int index) {
-        return values_.get(index);
+        return values_.getInt(index);
       }
       /**
        * <code>repeated uint32 values = 5;</code>
@@ -3124,7 +3571,7 @@ public final class ArteryControlFormats {
       public Builder setValues(
           int index, int value) {
         ensureValuesIsMutable();
-        values_.set(index, value);
+        values_.setInt(index, value);
         onChanged();
         return this;
       }
@@ -3133,7 +3580,7 @@ public final class ArteryControlFormats {
        */
       public Builder addValues(int value) {
         ensureValuesIsMutable();
-        values_.add(value);
+        values_.addInt(value);
         onChanged();
         return this;
       }
@@ -3143,7 +3590,8 @@ public final class ArteryControlFormats {
       public Builder addAllValues(
           java.lang.Iterable<? extends java.lang.Integer> values) {
         ensureValuesIsMutable();
-        super.addAll(values, values_);
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, values_);
         onChanged();
         return this;
       }
@@ -3151,27 +3599,68 @@ public final class ArteryControlFormats {
        * <code>repeated uint32 values = 5;</code>
        */
       public Builder clearValues() {
-        values_ = java.util.Collections.emptyList();
+        values_ = emptyIntList();
         bitField0_ = (bitField0_ & ~0x00000010);
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:CompressionTableAdvertisement)
     }
 
+    // @@protoc_insertion_point(class_scope:CompressionTableAdvertisement)
+    private static final akka.remote.ArteryControlFormats.CompressionTableAdvertisement DEFAULT_INSTANCE;
     static {
-      defaultInstance = new CompressionTableAdvertisement(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.CompressionTableAdvertisement();
     }
 
-    // @@protoc_insertion_point(class_scope:CompressionTableAdvertisement)
+    public static akka.remote.ArteryControlFormats.CompressionTableAdvertisement getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<CompressionTableAdvertisement>
+        PARSER = new akka.protobufv3.internal.AbstractParser<CompressionTableAdvertisement>() {
+      @java.lang.Override
+      public CompressionTableAdvertisement parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new CompressionTableAdvertisement(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<CompressionTableAdvertisement> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<CompressionTableAdvertisement> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.CompressionTableAdvertisement getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface CompressionTableAdvertisementAckOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface CompressionTableAdvertisementAckOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:CompressionTableAdvertisementAck)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .UniqueAddress from = 1;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
@@ -3185,7 +3674,6 @@ public final class ArteryControlFormats {
      */
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
 
-    // required uint32 version = 2;
     /**
      * <code>required uint32 version = 2;</code>
      */
@@ -3196,46 +3684,48 @@ public final class ArteryControlFormats {
     int getVersion();
   }
   /**
-   * Protobuf type {@code CompressionTableAdvertisementAck}
-   *
    * <pre>
    * CompressionProtocol.ActorRefCompressionAdvertisementAck
    * CompressionProtocol.ClassManifestCompressionAdvertisementAck
    * </pre>
+   *
+   * Protobuf type {@code CompressionTableAdvertisementAck}
    */
-  public static final class CompressionTableAdvertisementAck extends
-      akka.protobuf.GeneratedMessage
-      implements CompressionTableAdvertisementAckOrBuilder {
+  public  static final class CompressionTableAdvertisementAck extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:CompressionTableAdvertisementAck)
+      CompressionTableAdvertisementAckOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use CompressionTableAdvertisementAck.newBuilder() to construct.
-    private CompressionTableAdvertisementAck(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private CompressionTableAdvertisementAck(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private CompressionTableAdvertisementAck(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final CompressionTableAdvertisementAck defaultInstance;
-    public static CompressionTableAdvertisementAck getDefaultInstance() {
-      return defaultInstance;
+    private CompressionTableAdvertisementAck() {
     }
 
-    public CompressionTableAdvertisementAck getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new CompressionTableAdvertisementAck();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private CompressionTableAdvertisementAck(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3244,16 +3734,9 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = from_.toBuilder();
               }
               from_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -3269,76 +3752,67 @@ public final class ArteryControlFormats {
               version_ = input.readUInt32();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisementAck_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisementAck_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck.class, akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck.Builder.class);
     }
 
-    public static akka.protobuf.Parser<CompressionTableAdvertisementAck> PARSER =
-        new akka.protobuf.AbstractParser<CompressionTableAdvertisementAck>() {
-      public CompressionTableAdvertisementAck parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new CompressionTableAdvertisementAck(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<CompressionTableAdvertisementAck> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .UniqueAddress from = 1;
     public static final int FROM_FIELD_NUMBER = 1;
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public boolean hasFrom() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
 
-    // required uint32 version = 2;
     public static final int VERSION_FIELD_NUMBER = 2;
     private int version_;
     /**
      * <code>required uint32 version = 2;</code>
      */
     public boolean hasVersion() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 version = 2;</code>
@@ -3347,14 +3821,12 @@ public final class ArteryControlFormats {
       return version_;
     }
 
-    private void initFields() {
-      from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      version_ = 0;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasFrom()) {
         memoizedIsInitialized = 0;
@@ -3372,127 +3844,190 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeUInt32(2, version_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, from_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getFrom());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt32Size(2, version_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck other = (akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck) obj;
+
+      if (hasFrom() != other.hasFrom()) return false;
+      if (hasFrom()) {
+        if (!getFrom()
+            .equals(other.getFrom())) return false;
+      }
+      if (hasVersion() != other.hasVersion()) return false;
+      if (hasVersion()) {
+        if (getVersion()
+            != other.getVersion()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasFrom()) {
+        hash = (37 * hash) + FROM_FIELD_NUMBER;
+        hash = (53 * hash) + getFrom().hashCode();
+      }
+      if (hasVersion()) {
+        hash = (37 * hash) + VERSION_FIELD_NUMBER;
+        hash = (53 * hash) + getVersion();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code CompressionTableAdvertisementAck}
-     *
      * <pre>
      * CompressionProtocol.ActorRefCompressionAdvertisementAck
      * CompressionProtocol.ClassManifestCompressionAdvertisementAck
      * </pre>
+     *
+     * Protobuf type {@code CompressionTableAdvertisementAck}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.CompressionTableAdvertisementAckOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:CompressionTableAdvertisementAck)
+        akka.remote.ArteryControlFormats.CompressionTableAdvertisementAckOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisementAck_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisementAck_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3505,23 +4040,21 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getFromFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
         } else {
           fromBuilder_.clear();
         }
@@ -3531,19 +4064,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_CompressionTableAdvertisementAck_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck build() {
         akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck result = buildPartial();
         if (!result.isInitialized()) {
@@ -3552,28 +4084,62 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck buildPartial() {
         akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck result = new akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (fromBuilder_ == null) {
+            result.from_ = from_;
+          } else {
+            result.from_ = fromBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (fromBuilder_ == null) {
-          result.from_ = from_;
-        } else {
-          result.from_ = fromBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.version_ = version_;
           to_bitField0_ |= 0x00000002;
         }
-        result.version_ = version_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck) {
           return mergeFrom((akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck)other);
         } else {
@@ -3590,36 +4156,36 @@ public final class ArteryControlFormats {
         if (other.hasVersion()) {
           setVersion(other.getVersion());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasFrom()) {
-          
           return false;
         }
         if (!hasVersion()) {
-          
           return false;
         }
         if (!getFrom().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -3629,22 +4195,21 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required .UniqueAddress from = 1;
-      private akka.remote.ArteryControlFormats.UniqueAddress from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress from_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public boolean hasFrom() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
-          return from_;
+          return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         } else {
           return fromBuilder_.getMessage();
         }
@@ -3684,7 +4249,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (fromBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              from_ != null &&
               from_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             from_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(from_).mergeFrom(value).buildPartial();
@@ -3703,7 +4269,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearFrom() {
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
           onChanged();
         } else {
           fromBuilder_.clear();
@@ -3726,19 +4292,20 @@ public final class ArteryControlFormats {
         if (fromBuilder_ != null) {
           return fromBuilder_.getMessageOrBuilder();
         } else {
-          return from_;
+          return from_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         }
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getFromFieldBuilder() {
         if (fromBuilder_ == null) {
-          fromBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          fromBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  from_,
+                  getFrom(),
                   getParentForChildren(),
                   isClean());
           from_ = null;
@@ -3746,13 +4313,12 @@ public final class ArteryControlFormats {
         return fromBuilder_;
       }
 
-      // required uint32 version = 2;
       private int version_ ;
       /**
        * <code>required uint32 version = 2;</code>
        */
       public boolean hasVersion() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 version = 2;</code>
@@ -3778,22 +4344,63 @@ public final class ArteryControlFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:CompressionTableAdvertisementAck)
     }
 
+    // @@protoc_insertion_point(class_scope:CompressionTableAdvertisementAck)
+    private static final akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck DEFAULT_INSTANCE;
     static {
-      defaultInstance = new CompressionTableAdvertisementAck(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck();
     }
 
-    // @@protoc_insertion_point(class_scope:CompressionTableAdvertisementAck)
+    public static akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<CompressionTableAdvertisementAck>
+        PARSER = new akka.protobufv3.internal.AbstractParser<CompressionTableAdvertisementAck>() {
+      @java.lang.Override
+      public CompressionTableAdvertisementAck parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new CompressionTableAdvertisementAck(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<CompressionTableAdvertisementAck> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<CompressionTableAdvertisementAck> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.CompressionTableAdvertisementAck getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface SystemMessageEnvelopeOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SystemMessageEnvelopeOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SystemMessageEnvelope)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required bytes message = 1;
     /**
      * <code>required bytes message = 1;</code>
      */
@@ -3801,9 +4408,8 @@ public final class ArteryControlFormats {
     /**
      * <code>required bytes message = 1;</code>
      */
-    akka.protobuf.ByteString getMessage();
+    akka.protobufv3.internal.ByteString getMessage();
 
-    // required int32 serializerId = 2;
     /**
      * <code>required int32 serializerId = 2;</code>
      */
@@ -3813,7 +4419,6 @@ public final class ArteryControlFormats {
      */
     int getSerializerId();
 
-    // optional bytes messageManifest = 3;
     /**
      * <code>optional bytes messageManifest = 3;</code>
      */
@@ -3821,9 +4426,8 @@ public final class ArteryControlFormats {
     /**
      * <code>optional bytes messageManifest = 3;</code>
      */
-    akka.protobuf.ByteString getMessageManifest();
+    akka.protobufv3.internal.ByteString getMessageManifest();
 
-    // required uint64 seqNo = 4;
     /**
      * <code>required uint64 seqNo = 4;</code>
      */
@@ -3833,7 +4437,6 @@ public final class ArteryControlFormats {
      */
     long getSeqNo();
 
-    // required .UniqueAddress ackReplyTo = 5;
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
@@ -3848,45 +4451,49 @@ public final class ArteryControlFormats {
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAckReplyToOrBuilder();
   }
   /**
-   * Protobuf type {@code SystemMessageEnvelope}
-   *
    * <pre>
    * SystemMessageDelivery.SystemMessageEnvelope
    * </pre>
+   *
+   * Protobuf type {@code SystemMessageEnvelope}
    */
-  public static final class SystemMessageEnvelope extends
-      akka.protobuf.GeneratedMessage
-      implements SystemMessageEnvelopeOrBuilder {
+  public  static final class SystemMessageEnvelope extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:SystemMessageEnvelope)
+      SystemMessageEnvelopeOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use SystemMessageEnvelope.newBuilder() to construct.
-    private SystemMessageEnvelope(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SystemMessageEnvelope(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private SystemMessageEnvelope(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final SystemMessageEnvelope defaultInstance;
-    public static SystemMessageEnvelope getDefaultInstance() {
-      return defaultInstance;
+    private SystemMessageEnvelope() {
+      message_ = akka.protobufv3.internal.ByteString.EMPTY;
+      messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
 
-    public SystemMessageEnvelope getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new SystemMessageEnvelope();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private SystemMessageEnvelope(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3895,13 +4502,6 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               bitField0_ |= 0x00000001;
               message_ = input.readBytes();
@@ -3924,7 +4524,7 @@ public final class ArteryControlFormats {
             }
             case 42: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000010) == 0x00000010)) {
+              if (((bitField0_ & 0x00000010) != 0)) {
                 subBuilder = ackReplyTo_.toBuilder();
               }
               ackReplyTo_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -3935,70 +4535,61 @@ public final class ArteryControlFormats {
               bitField0_ |= 0x00000010;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_SystemMessageEnvelope_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_SystemMessageEnvelope_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.SystemMessageEnvelope.class, akka.remote.ArteryControlFormats.SystemMessageEnvelope.Builder.class);
     }
 
-    public static akka.protobuf.Parser<SystemMessageEnvelope> PARSER =
-        new akka.protobuf.AbstractParser<SystemMessageEnvelope>() {
-      public SystemMessageEnvelope parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new SystemMessageEnvelope(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<SystemMessageEnvelope> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required bytes message = 1;
     public static final int MESSAGE_FIELD_NUMBER = 1;
-    private akka.protobuf.ByteString message_;
+    private akka.protobufv3.internal.ByteString message_;
     /**
      * <code>required bytes message = 1;</code>
      */
     public boolean hasMessage() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes message = 1;</code>
      */
-    public akka.protobuf.ByteString getMessage() {
+    public akka.protobufv3.internal.ByteString getMessage() {
       return message_;
     }
 
-    // required int32 serializerId = 2;
     public static final int SERIALIZERID_FIELD_NUMBER = 2;
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
      */
     public boolean hasSerializerId() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
@@ -4007,30 +4598,28 @@ public final class ArteryControlFormats {
       return serializerId_;
     }
 
-    // optional bytes messageManifest = 3;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
-    private akka.protobuf.ByteString messageManifest_;
+    private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 3;</code>
      */
     public boolean hasMessageManifest() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 3;</code>
      */
-    public akka.protobuf.ByteString getMessageManifest() {
+    public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
     }
 
-    // required uint64 seqNo = 4;
     public static final int SEQNO_FIELD_NUMBER = 4;
     private long seqNo_;
     /**
      * <code>required uint64 seqNo = 4;</code>
      */
     public boolean hasSeqNo() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required uint64 seqNo = 4;</code>
@@ -4039,39 +4628,33 @@ public final class ArteryControlFormats {
       return seqNo_;
     }
 
-    // required .UniqueAddress ackReplyTo = 5;
     public static final int ACKREPLYTO_FIELD_NUMBER = 5;
     private akka.remote.ArteryControlFormats.UniqueAddress ackReplyTo_;
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     public boolean hasAckReplyTo() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo() {
-      return ackReplyTo_;
+      return ackReplyTo_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : ackReplyTo_;
     }
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getAckReplyToOrBuilder() {
-      return ackReplyTo_;
+      return ackReplyTo_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : ackReplyTo_;
     }
 
-    private void initFields() {
-      message_ = akka.protobuf.ByteString.EMPTY;
-      serializerId_ = 0;
-      messageManifest_ = akka.protobuf.ByteString.EMPTY;
-      seqNo_ = 0L;
-      ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasMessage()) {
         memoizedIsInitialized = 0;
@@ -4097,147 +4680,238 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+      if (((bitField0_ & 0x00000001) != 0)) {
         output.writeBytes(1, message_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeInt32(2, serializerId_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+      if (((bitField0_ & 0x00000004) != 0)) {
         output.writeBytes(3, messageManifest_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+      if (((bitField0_ & 0x00000008) != 0)) {
         output.writeUInt64(4, seqNo_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeMessage(5, ackReplyTo_);
+      if (((bitField0_ & 0x00000010) != 0)) {
+        output.writeMessage(5, getAckReplyTo());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBytesSize(1, message_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeInt32Size(2, serializerId_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeBytesSize(3, messageManifest_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(4, seqNo_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(5, ackReplyTo_);
+      if (((bitField0_ & 0x00000010) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(5, getAckReplyTo());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.SystemMessageEnvelope)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.SystemMessageEnvelope other = (akka.remote.ArteryControlFormats.SystemMessageEnvelope) obj;
+
+      if (hasMessage() != other.hasMessage()) return false;
+      if (hasMessage()) {
+        if (!getMessage()
+            .equals(other.getMessage())) return false;
+      }
+      if (hasSerializerId() != other.hasSerializerId()) return false;
+      if (hasSerializerId()) {
+        if (getSerializerId()
+            != other.getSerializerId()) return false;
+      }
+      if (hasMessageManifest() != other.hasMessageManifest()) return false;
+      if (hasMessageManifest()) {
+        if (!getMessageManifest()
+            .equals(other.getMessageManifest())) return false;
+      }
+      if (hasSeqNo() != other.hasSeqNo()) return false;
+      if (hasSeqNo()) {
+        if (getSeqNo()
+            != other.getSeqNo()) return false;
+      }
+      if (hasAckReplyTo() != other.hasAckReplyTo()) return false;
+      if (hasAckReplyTo()) {
+        if (!getAckReplyTo()
+            .equals(other.getAckReplyTo())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasMessage()) {
+        hash = (37 * hash) + MESSAGE_FIELD_NUMBER;
+        hash = (53 * hash) + getMessage().hashCode();
+      }
+      if (hasSerializerId()) {
+        hash = (37 * hash) + SERIALIZERID_FIELD_NUMBER;
+        hash = (53 * hash) + getSerializerId();
+      }
+      if (hasMessageManifest()) {
+        hash = (37 * hash) + MESSAGEMANIFEST_FIELD_NUMBER;
+        hash = (53 * hash) + getMessageManifest().hashCode();
+      }
+      if (hasSeqNo()) {
+        hash = (37 * hash) + SEQNO_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getSeqNo());
+      }
+      if (hasAckReplyTo()) {
+        hash = (37 * hash) + ACKREPLYTO_FIELD_NUMBER;
+        hash = (53 * hash) + getAckReplyTo().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageEnvelope parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.SystemMessageEnvelope prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.SystemMessageEnvelope prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code SystemMessageEnvelope}
-     *
      * <pre>
      * SystemMessageDelivery.SystemMessageEnvelope
      * </pre>
+     *
+     * Protobuf type {@code SystemMessageEnvelope}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.SystemMessageEnvelopeOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SystemMessageEnvelope)
+        akka.remote.ArteryControlFormats.SystemMessageEnvelopeOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_SystemMessageEnvelope_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_SystemMessageEnvelope_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4250,31 +4924,29 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getAckReplyToFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
-        message_ = akka.protobuf.ByteString.EMPTY;
+        message_ = akka.protobufv3.internal.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
-        messageManifest_ = akka.protobuf.ByteString.EMPTY;
+        messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
         seqNo_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000008);
         if (ackReplyToBuilder_ == null) {
-          ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          ackReplyTo_ = null;
         } else {
           ackReplyToBuilder_.clear();
         }
@@ -4282,19 +4954,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_SystemMessageEnvelope_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.SystemMessageEnvelope getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.SystemMessageEnvelope.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.SystemMessageEnvelope build() {
         akka.remote.ArteryControlFormats.SystemMessageEnvelope result = buildPartial();
         if (!result.isInitialized()) {
@@ -4303,40 +4974,74 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.SystemMessageEnvelope buildPartial() {
         akka.remote.ArteryControlFormats.SystemMessageEnvelope result = new akka.remote.ArteryControlFormats.SystemMessageEnvelope(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.message_ = message_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.serializerId_ = serializerId_;
           to_bitField0_ |= 0x00000002;
         }
-        result.serializerId_ = serializerId_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
           to_bitField0_ |= 0x00000004;
         }
         result.messageManifest_ = messageManifest_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.seqNo_ = seqNo_;
           to_bitField0_ |= 0x00000008;
         }
-        result.seqNo_ = seqNo_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          if (ackReplyToBuilder_ == null) {
+            result.ackReplyTo_ = ackReplyTo_;
+          } else {
+            result.ackReplyTo_ = ackReplyToBuilder_.build();
+          }
           to_bitField0_ |= 0x00000010;
-        }
-        if (ackReplyToBuilder_ == null) {
-          result.ackReplyTo_ = ackReplyTo_;
-        } else {
-          result.ackReplyTo_ = ackReplyToBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.SystemMessageEnvelope) {
           return mergeFrom((akka.remote.ArteryControlFormats.SystemMessageEnvelope)other);
         } else {
@@ -4362,44 +5067,42 @@ public final class ArteryControlFormats {
         if (other.hasAckReplyTo()) {
           mergeAckReplyTo(other.getAckReplyTo());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasMessage()) {
-          
           return false;
         }
         if (!hasSerializerId()) {
-          
           return false;
         }
         if (!hasSeqNo()) {
-          
           return false;
         }
         if (!hasAckReplyTo()) {
-          
           return false;
         }
         if (!getAckReplyTo().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.SystemMessageEnvelope parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.SystemMessageEnvelope) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -4409,24 +5112,23 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required bytes message = 1;
-      private akka.protobuf.ByteString message_ = akka.protobuf.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString message_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes message = 1;</code>
        */
       public boolean hasMessage() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes message = 1;</code>
        */
-      public akka.protobuf.ByteString getMessage() {
+      public akka.protobufv3.internal.ByteString getMessage() {
         return message_;
       }
       /**
        * <code>required bytes message = 1;</code>
        */
-      public Builder setMessage(akka.protobuf.ByteString value) {
+      public Builder setMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4445,13 +5147,12 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required int32 serializerId = 2;
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
        */
       public boolean hasSerializerId() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
@@ -4478,24 +5179,23 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // optional bytes messageManifest = 3;
-      private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
+      private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 3;</code>
        */
       public boolean hasMessageManifest() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
        */
-      public akka.protobuf.ByteString getMessageManifest() {
+      public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
        */
-      public Builder setMessageManifest(akka.protobuf.ByteString value) {
+      public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4514,13 +5214,12 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required uint64 seqNo = 4;
       private long seqNo_ ;
       /**
        * <code>required uint64 seqNo = 4;</code>
        */
       public boolean hasSeqNo() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required uint64 seqNo = 4;</code>
@@ -4547,22 +5246,21 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required .UniqueAddress ackReplyTo = 5;
-      private akka.remote.ArteryControlFormats.UniqueAddress ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress ackReplyTo_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> ackReplyToBuilder_;
       /**
        * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public boolean hasAckReplyTo() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo() {
         if (ackReplyToBuilder_ == null) {
-          return ackReplyTo_;
+          return ackReplyTo_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : ackReplyTo_;
         } else {
           return ackReplyToBuilder_.getMessage();
         }
@@ -4602,7 +5300,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeAckReplyTo(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (ackReplyToBuilder_ == null) {
-          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+          if (((bitField0_ & 0x00000010) != 0) &&
+              ackReplyTo_ != null &&
               ackReplyTo_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             ackReplyTo_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(ackReplyTo_).mergeFrom(value).buildPartial();
@@ -4621,7 +5320,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearAckReplyTo() {
         if (ackReplyToBuilder_ == null) {
-          ackReplyTo_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          ackReplyTo_ = null;
           onChanged();
         } else {
           ackReplyToBuilder_.clear();
@@ -4644,41 +5343,83 @@ public final class ArteryControlFormats {
         if (ackReplyToBuilder_ != null) {
           return ackReplyToBuilder_.getMessageOrBuilder();
         } else {
-          return ackReplyTo_;
+          return ackReplyTo_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : ackReplyTo_;
         }
       }
       /**
        * <code>required .UniqueAddress ackReplyTo = 5;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getAckReplyToFieldBuilder() {
         if (ackReplyToBuilder_ == null) {
-          ackReplyToBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          ackReplyToBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  ackReplyTo_,
+                  getAckReplyTo(),
                   getParentForChildren(),
                   isClean());
           ackReplyTo_ = null;
         }
         return ackReplyToBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:SystemMessageEnvelope)
     }
 
+    // @@protoc_insertion_point(class_scope:SystemMessageEnvelope)
+    private static final akka.remote.ArteryControlFormats.SystemMessageEnvelope DEFAULT_INSTANCE;
     static {
-      defaultInstance = new SystemMessageEnvelope(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.SystemMessageEnvelope();
     }
 
-    // @@protoc_insertion_point(class_scope:SystemMessageEnvelope)
+    public static akka.remote.ArteryControlFormats.SystemMessageEnvelope getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<SystemMessageEnvelope>
+        PARSER = new akka.protobufv3.internal.AbstractParser<SystemMessageEnvelope>() {
+      @java.lang.Override
+      public SystemMessageEnvelope parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new SystemMessageEnvelope(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<SystemMessageEnvelope> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<SystemMessageEnvelope> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.SystemMessageEnvelope getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface SystemMessageDeliveryAckOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SystemMessageDeliveryAckOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SystemMessageDeliveryAck)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required uint64 seqNo = 1;
     /**
      * <code>required uint64 seqNo = 1;</code>
      */
@@ -4688,7 +5429,6 @@ public final class ArteryControlFormats {
      */
     long getSeqNo();
 
-    // required .UniqueAddress from = 2;
     /**
      * <code>required .UniqueAddress from = 2;</code>
      */
@@ -4703,46 +5443,48 @@ public final class ArteryControlFormats {
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
   }
   /**
-   * Protobuf type {@code SystemMessageDeliveryAck}
-   *
    * <pre>
    * SystemMessageDelivery.Ack
    * SystemMessageDelivery.Nack
    * </pre>
+   *
+   * Protobuf type {@code SystemMessageDeliveryAck}
    */
-  public static final class SystemMessageDeliveryAck extends
-      akka.protobuf.GeneratedMessage
-      implements SystemMessageDeliveryAckOrBuilder {
+  public  static final class SystemMessageDeliveryAck extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:SystemMessageDeliveryAck)
+      SystemMessageDeliveryAckOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use SystemMessageDeliveryAck.newBuilder() to construct.
-    private SystemMessageDeliveryAck(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SystemMessageDeliveryAck(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private SystemMessageDeliveryAck(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final SystemMessageDeliveryAck defaultInstance;
-    public static SystemMessageDeliveryAck getDefaultInstance() {
-      return defaultInstance;
+    private SystemMessageDeliveryAck() {
     }
 
-    public SystemMessageDeliveryAck getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new SystemMessageDeliveryAck();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private SystemMessageDeliveryAck(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4751,13 +5493,6 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 8: {
               bitField0_ |= 0x00000001;
               seqNo_ = input.readUInt64();
@@ -4765,7 +5500,7 @@ public final class ArteryControlFormats {
             }
             case 18: {
               akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+              if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = from_.toBuilder();
               }
               from_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
@@ -4776,54 +5511,46 @@ public final class ArteryControlFormats {
               bitField0_ |= 0x00000002;
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_SystemMessageDeliveryAck_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_SystemMessageDeliveryAck_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.SystemMessageDeliveryAck.class, akka.remote.ArteryControlFormats.SystemMessageDeliveryAck.Builder.class);
     }
 
-    public static akka.protobuf.Parser<SystemMessageDeliveryAck> PARSER =
-        new akka.protobuf.AbstractParser<SystemMessageDeliveryAck>() {
-      public SystemMessageDeliveryAck parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new SystemMessageDeliveryAck(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<SystemMessageDeliveryAck> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required uint64 seqNo = 1;
     public static final int SEQNO_FIELD_NUMBER = 1;
     private long seqNo_;
     /**
      * <code>required uint64 seqNo = 1;</code>
      */
     public boolean hasSeqNo() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint64 seqNo = 1;</code>
@@ -4832,36 +5559,33 @@ public final class ArteryControlFormats {
       return seqNo_;
     }
 
-    // required .UniqueAddress from = 2;
     public static final int FROM_FIELD_NUMBER = 2;
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 2;</code>
      */
     public boolean hasFrom() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 2;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
     /**
      * <code>required .UniqueAddress from = 2;</code>
      */
     public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
-      return from_;
+      return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
     }
 
-    private void initFields() {
-      seqNo_ = 0L;
-      from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasSeqNo()) {
         memoizedIsInitialized = 0;
@@ -4879,127 +5603,191 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+      if (((bitField0_ & 0x00000001) != 0)) {
         output.writeUInt64(1, seqNo_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, from_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getFrom());
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(1, seqNo_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, from_);
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(2, getFrom());
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.SystemMessageDeliveryAck)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.SystemMessageDeliveryAck other = (akka.remote.ArteryControlFormats.SystemMessageDeliveryAck) obj;
+
+      if (hasSeqNo() != other.hasSeqNo()) return false;
+      if (hasSeqNo()) {
+        if (getSeqNo()
+            != other.getSeqNo()) return false;
+      }
+      if (hasFrom() != other.hasFrom()) return false;
+      if (hasFrom()) {
+        if (!getFrom()
+            .equals(other.getFrom())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasSeqNo()) {
+        hash = (37 * hash) + SEQNO_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getSeqNo());
+      }
+      if (hasFrom()) {
+        hash = (37 * hash) + FROM_FIELD_NUMBER;
+        hash = (53 * hash) + getFrom().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.SystemMessageDeliveryAck prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.SystemMessageDeliveryAck prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code SystemMessageDeliveryAck}
-     *
      * <pre>
      * SystemMessageDelivery.Ack
      * SystemMessageDelivery.Nack
      * </pre>
+     *
+     * Protobuf type {@code SystemMessageDeliveryAck}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.SystemMessageDeliveryAckOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SystemMessageDeliveryAck)
+        akka.remote.ArteryControlFormats.SystemMessageDeliveryAckOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_SystemMessageDeliveryAck_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_SystemMessageDeliveryAck_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5012,25 +5800,23 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getFromFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         seqNo_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000001);
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
         } else {
           fromBuilder_.clear();
         }
@@ -5038,19 +5824,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_SystemMessageDeliveryAck_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.SystemMessageDeliveryAck getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.SystemMessageDeliveryAck.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.SystemMessageDeliveryAck build() {
         akka.remote.ArteryControlFormats.SystemMessageDeliveryAck result = buildPartial();
         if (!result.isInitialized()) {
@@ -5059,28 +5844,62 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.SystemMessageDeliveryAck buildPartial() {
         akka.remote.ArteryControlFormats.SystemMessageDeliveryAck result = new akka.remote.ArteryControlFormats.SystemMessageDeliveryAck(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.seqNo_ = seqNo_;
           to_bitField0_ |= 0x00000001;
         }
-        result.seqNo_ = seqNo_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (fromBuilder_ == null) {
+            result.from_ = from_;
+          } else {
+            result.from_ = fromBuilder_.build();
+          }
           to_bitField0_ |= 0x00000002;
-        }
-        if (fromBuilder_ == null) {
-          result.from_ = from_;
-        } else {
-          result.from_ = fromBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.SystemMessageDeliveryAck) {
           return mergeFrom((akka.remote.ArteryControlFormats.SystemMessageDeliveryAck)other);
         } else {
@@ -5097,36 +5916,36 @@ public final class ArteryControlFormats {
         if (other.hasFrom()) {
           mergeFrom(other.getFrom());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasSeqNo()) {
-          
           return false;
         }
         if (!hasFrom()) {
-          
           return false;
         }
         if (!getFrom().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.SystemMessageDeliveryAck parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.SystemMessageDeliveryAck) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -5136,13 +5955,12 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required uint64 seqNo = 1;
       private long seqNo_ ;
       /**
        * <code>required uint64 seqNo = 1;</code>
        */
       public boolean hasSeqNo() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint64 seqNo = 1;</code>
@@ -5169,22 +5987,21 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required .UniqueAddress from = 2;
-      private akka.remote.ArteryControlFormats.UniqueAddress from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.UniqueAddress from_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 2;</code>
        */
       public boolean hasFrom() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 2;</code>
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
-          return from_;
+          return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         } else {
           return fromBuilder_.getMessage();
         }
@@ -5224,7 +6041,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
         if (fromBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000002) != 0) &&
+              from_ != null &&
               from_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
             from_ =
               akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(from_).mergeFrom(value).buildPartial();
@@ -5243,7 +6061,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearFrom() {
         if (fromBuilder_ == null) {
-          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          from_ = null;
           onChanged();
         } else {
           fromBuilder_.clear();
@@ -5266,41 +6084,83 @@ public final class ArteryControlFormats {
         if (fromBuilder_ != null) {
           return fromBuilder_.getMessageOrBuilder();
         } else {
-          return from_;
+          return from_ == null ?
+              akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
         }
       }
       /**
        * <code>required .UniqueAddress from = 2;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
           getFromFieldBuilder() {
         if (fromBuilder_ == null) {
-          fromBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          fromBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
-                  from_,
+                  getFrom(),
                   getParentForChildren(),
                   isClean());
           from_ = null;
         }
         return fromBuilder_;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:SystemMessageDeliveryAck)
     }
 
+    // @@protoc_insertion_point(class_scope:SystemMessageDeliveryAck)
+    private static final akka.remote.ArteryControlFormats.SystemMessageDeliveryAck DEFAULT_INSTANCE;
     static {
-      defaultInstance = new SystemMessageDeliveryAck(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.SystemMessageDeliveryAck();
     }
 
-    // @@protoc_insertion_point(class_scope:SystemMessageDeliveryAck)
+    public static akka.remote.ArteryControlFormats.SystemMessageDeliveryAck getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<SystemMessageDeliveryAck>
+        PARSER = new akka.protobufv3.internal.AbstractParser<SystemMessageDeliveryAck>() {
+      @java.lang.Override
+      public SystemMessageDeliveryAck parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new SystemMessageDeliveryAck(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<SystemMessageDeliveryAck> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<SystemMessageDeliveryAck> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.SystemMessageDeliveryAck getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface AddressOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AddressOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Address)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required string protocol = 1;
     /**
      * <code>required string protocol = 1;</code>
      */
@@ -5312,10 +6172,9 @@ public final class ArteryControlFormats {
     /**
      * <code>required string protocol = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getProtocolBytes();
 
-    // required string system = 2;
     /**
      * <code>required string system = 2;</code>
      */
@@ -5327,10 +6186,9 @@ public final class ArteryControlFormats {
     /**
      * <code>required string system = 2;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getSystemBytes();
 
-    // required string hostname = 3;
     /**
      * <code>required string hostname = 3;</code>
      */
@@ -5342,10 +6200,9 @@ public final class ArteryControlFormats {
     /**
      * <code>required string hostname = 3;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
-    // required uint32 port = 4;
     /**
      * <code>required uint32 port = 4;</code>
      */
@@ -5356,46 +6213,51 @@ public final class ArteryControlFormats {
     int getPort();
   }
   /**
-   * Protobuf type {@code Address}
-   *
    * <pre>
    **
    * Defines a remote address.
    * </pre>
+   *
+   * Protobuf type {@code Address}
    */
-  public static final class Address extends
-      akka.protobuf.GeneratedMessage
-      implements AddressOrBuilder {
+  public  static final class Address extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:Address)
+      AddressOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use Address.newBuilder() to construct.
-    private Address(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Address(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private Address(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final Address defaultInstance;
-    public static Address getDefaultInstance() {
-      return defaultInstance;
+    private Address() {
+      protocol_ = "";
+      system_ = "";
+      hostname_ = "";
     }
 
-    public Address getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new Address();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private Address(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -5404,26 +6266,22 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              protocol_ = input.readBytes();
+              protocol_ = bs;
               break;
             }
             case 18: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              system_ = input.readBytes();
+              system_ = bs;
               break;
             }
             case 26: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              hostname_ = input.readBytes();
+              hostname_ = bs;
               break;
             }
             case 32: {
@@ -5431,54 +6289,46 @@ public final class ArteryControlFormats {
               port_ = input.readUInt32();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_Address_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_Address_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.Address.class, akka.remote.ArteryControlFormats.Address.Builder.class);
     }
 
-    public static akka.protobuf.Parser<Address> PARSER =
-        new akka.protobuf.AbstractParser<Address>() {
-      public Address parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new Address(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<Address> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string protocol = 1;
     public static final int PROTOCOL_FIELD_NUMBER = 1;
-    private java.lang.Object protocol_;
+    private volatile java.lang.Object protocol_;
     /**
      * <code>required string protocol = 1;</code>
      */
     public boolean hasProtocol() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string protocol = 1;</code>
@@ -5488,8 +6338,8 @@ public final class ArteryControlFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           protocol_ = s;
@@ -5500,28 +6350,27 @@ public final class ArteryControlFormats {
     /**
      * <code>required string protocol = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
       java.lang.Object ref = protocol_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         protocol_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required string system = 2;
     public static final int SYSTEM_FIELD_NUMBER = 2;
-    private java.lang.Object system_;
+    private volatile java.lang.Object system_;
     /**
      * <code>required string system = 2;</code>
      */
     public boolean hasSystem() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string system = 2;</code>
@@ -5531,8 +6380,8 @@ public final class ArteryControlFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           system_ = s;
@@ -5543,28 +6392,27 @@ public final class ArteryControlFormats {
     /**
      * <code>required string system = 2;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getSystemBytes() {
       java.lang.Object ref = system_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         system_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required string hostname = 3;
     public static final int HOSTNAME_FIELD_NUMBER = 3;
-    private java.lang.Object hostname_;
+    private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 3;</code>
      */
     public boolean hasHostname() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string hostname = 3;</code>
@@ -5574,8 +6422,8 @@ public final class ArteryControlFormats {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           hostname_ = s;
@@ -5586,28 +6434,27 @@ public final class ArteryControlFormats {
     /**
      * <code>required string hostname = 3;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
       java.lang.Object ref = hostname_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         hostname_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required uint32 port = 4;
     public static final int PORT_FIELD_NUMBER = 4;
     private int port_;
     /**
      * <code>required uint32 port = 4;</code>
      */
     public boolean hasPort() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required uint32 port = 4;</code>
@@ -5616,16 +6463,12 @@ public final class ArteryControlFormats {
       return port_;
     }
 
-    private void initFields() {
-      protocol_ = "";
-      system_ = "";
-      hostname_ = "";
-      port_ = 0;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasProtocol()) {
         memoizedIsInitialized = 0;
@@ -5647,141 +6490,219 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getProtocolBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, protocol_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getSystemBytes());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 2, system_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getHostnameBytes());
+      if (((bitField0_ & 0x00000004) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 3, hostname_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+      if (((bitField0_ & 0x00000008) != 0)) {
         output.writeUInt32(4, port_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getProtocolBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, protocol_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getSystemBytes());
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(2, system_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getHostnameBytes());
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(3, hostname_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt32Size(4, port_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.Address)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.Address other = (akka.remote.ArteryControlFormats.Address) obj;
+
+      if (hasProtocol() != other.hasProtocol()) return false;
+      if (hasProtocol()) {
+        if (!getProtocol()
+            .equals(other.getProtocol())) return false;
+      }
+      if (hasSystem() != other.hasSystem()) return false;
+      if (hasSystem()) {
+        if (!getSystem()
+            .equals(other.getSystem())) return false;
+      }
+      if (hasHostname() != other.hasHostname()) return false;
+      if (hasHostname()) {
+        if (!getHostname()
+            .equals(other.getHostname())) return false;
+      }
+      if (hasPort() != other.hasPort()) return false;
+      if (hasPort()) {
+        if (getPort()
+            != other.getPort()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasProtocol()) {
+        hash = (37 * hash) + PROTOCOL_FIELD_NUMBER;
+        hash = (53 * hash) + getProtocol().hashCode();
+      }
+      if (hasSystem()) {
+        hash = (37 * hash) + SYSTEM_FIELD_NUMBER;
+        hash = (53 * hash) + getSystem().hashCode();
+      }
+      if (hasHostname()) {
+        hash = (37 * hash) + HOSTNAME_FIELD_NUMBER;
+        hash = (53 * hash) + getHostname().hashCode();
+      }
+      if (hasPort()) {
+        hash = (37 * hash) + PORT_FIELD_NUMBER;
+        hash = (53 * hash) + getPort();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.Address parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.Address parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.Address parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Address parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.Address parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.Address parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.Address prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.Address prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code Address}
-     *
      * <pre>
      **
      * Defines a remote address.
      * </pre>
+     *
+     * Protobuf type {@code Address}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.AddressOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Address)
+        akka.remote.ArteryControlFormats.AddressOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_Address_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_Address_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5794,18 +6715,16 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         protocol_ = "";
@@ -5819,19 +6738,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_Address_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.Address getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.Address.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.Address build() {
         akka.remote.ArteryControlFormats.Address result = buildPartial();
         if (!result.isInitialized()) {
@@ -5840,32 +6758,66 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.Address buildPartial() {
         akka.remote.ArteryControlFormats.Address result = new akka.remote.ArteryControlFormats.Address(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.protocol_ = protocol_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           to_bitField0_ |= 0x00000002;
         }
         result.system_ = system_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField0_ & 0x00000004) != 0)) {
           to_bitField0_ |= 0x00000004;
         }
         result.hostname_ = hostname_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.port_ = port_;
           to_bitField0_ |= 0x00000008;
         }
-        result.port_ = port_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.Address) {
           return mergeFrom((akka.remote.ArteryControlFormats.Address)other);
         } else {
@@ -5894,40 +6846,39 @@ public final class ArteryControlFormats {
         if (other.hasPort()) {
           setPort(other.getPort());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasProtocol()) {
-          
           return false;
         }
         if (!hasSystem()) {
-          
           return false;
         }
         if (!hasHostname()) {
-          
           return false;
         }
         if (!hasPort()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.Address parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.Address) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -5937,13 +6888,12 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required string protocol = 1;
       private java.lang.Object protocol_ = "";
       /**
        * <code>required string protocol = 1;</code>
        */
       public boolean hasProtocol() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string protocol = 1;</code>
@@ -5951,9 +6901,12 @@ public final class ArteryControlFormats {
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          protocol_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            protocol_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -5962,17 +6915,17 @@ public final class ArteryControlFormats {
       /**
        * <code>required string protocol = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
         java.lang.Object ref = protocol_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           protocol_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -6001,7 +6954,7 @@ public final class ArteryControlFormats {
        * <code>required string protocol = 1;</code>
        */
       public Builder setProtocolBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -6011,13 +6964,12 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required string system = 2;
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 2;</code>
        */
       public boolean hasSystem() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string system = 2;</code>
@@ -6025,9 +6977,12 @@ public final class ArteryControlFormats {
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          system_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            system_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -6036,17 +6991,17 @@ public final class ArteryControlFormats {
       /**
        * <code>required string system = 2;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getSystemBytes() {
         java.lang.Object ref = system_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           system_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -6075,7 +7030,7 @@ public final class ArteryControlFormats {
        * <code>required string system = 2;</code>
        */
       public Builder setSystemBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -6085,13 +7040,12 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required string hostname = 3;
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 3;</code>
        */
       public boolean hasHostname() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string hostname = 3;</code>
@@ -6099,9 +7053,12 @@ public final class ArteryControlFormats {
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          hostname_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            hostname_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -6110,17 +7067,17 @@ public final class ArteryControlFormats {
       /**
        * <code>required string hostname = 3;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
         java.lang.Object ref = hostname_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           hostname_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -6149,7 +7106,7 @@ public final class ArteryControlFormats {
        * <code>required string hostname = 3;</code>
        */
       public Builder setHostnameBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -6159,13 +7116,12 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // required uint32 port = 4;
       private int port_ ;
       /**
        * <code>required uint32 port = 4;</code>
        */
       public boolean hasPort() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required uint32 port = 4;</code>
@@ -6191,22 +7147,63 @@ public final class ArteryControlFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:Address)
     }
 
+    // @@protoc_insertion_point(class_scope:Address)
+    private static final akka.remote.ArteryControlFormats.Address DEFAULT_INSTANCE;
     static {
-      defaultInstance = new Address(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.Address();
     }
 
-    // @@protoc_insertion_point(class_scope:Address)
+    public static akka.remote.ArteryControlFormats.Address getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<Address>
+        PARSER = new akka.protobufv3.internal.AbstractParser<Address>() {
+      @java.lang.Override
+      public Address parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new Address(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<Address> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<Address> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.Address getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface UniqueAddressOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface UniqueAddressOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:UniqueAddress)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required .Address address = 1;
     /**
      * <code>required .Address address = 1;</code>
      */
@@ -6220,7 +7217,6 @@ public final class ArteryControlFormats {
      */
     akka.remote.ArteryControlFormats.AddressOrBuilder getAddressOrBuilder();
 
-    // required uint64 uid = 2;
     /**
      * <code>required uint64 uid = 2;</code>
      */
@@ -6231,46 +7227,48 @@ public final class ArteryControlFormats {
     long getUid();
   }
   /**
-   * Protobuf type {@code UniqueAddress}
-   *
    * <pre>
    **
    * Defines a remote address with uid.
    * </pre>
+   *
+   * Protobuf type {@code UniqueAddress}
    */
-  public static final class UniqueAddress extends
-      akka.protobuf.GeneratedMessage
-      implements UniqueAddressOrBuilder {
+  public  static final class UniqueAddress extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:UniqueAddress)
+      UniqueAddressOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use UniqueAddress.newBuilder() to construct.
-    private UniqueAddress(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private UniqueAddress(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private UniqueAddress(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final UniqueAddress defaultInstance;
-    public static UniqueAddress getDefaultInstance() {
-      return defaultInstance;
+    private UniqueAddress() {
     }
 
-    public UniqueAddress getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new UniqueAddress();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private UniqueAddress(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6279,16 +7277,9 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
               akka.remote.ArteryControlFormats.Address.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+              if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = address_.toBuilder();
               }
               address_ = input.readMessage(akka.remote.ArteryControlFormats.Address.PARSER, extensionRegistry);
@@ -6304,76 +7295,67 @@ public final class ArteryControlFormats {
               uid_ = input.readUInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_UniqueAddress_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_UniqueAddress_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.UniqueAddress.class, akka.remote.ArteryControlFormats.UniqueAddress.Builder.class);
     }
 
-    public static akka.protobuf.Parser<UniqueAddress> PARSER =
-        new akka.protobuf.AbstractParser<UniqueAddress>() {
-      public UniqueAddress parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new UniqueAddress(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<UniqueAddress> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required .Address address = 1;
     public static final int ADDRESS_FIELD_NUMBER = 1;
     private akka.remote.ArteryControlFormats.Address address_;
     /**
      * <code>required .Address address = 1;</code>
      */
     public boolean hasAddress() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address address = 1;</code>
      */
     public akka.remote.ArteryControlFormats.Address getAddress() {
-      return address_;
+      return address_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : address_;
     }
     /**
      * <code>required .Address address = 1;</code>
      */
     public akka.remote.ArteryControlFormats.AddressOrBuilder getAddressOrBuilder() {
-      return address_;
+      return address_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : address_;
     }
 
-    // required uint64 uid = 2;
     public static final int UID_FIELD_NUMBER = 2;
     private long uid_;
     /**
      * <code>required uint64 uid = 2;</code>
      */
     public boolean hasUid() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 uid = 2;</code>
@@ -6382,14 +7364,12 @@ public final class ArteryControlFormats {
       return uid_;
     }
 
-    private void initFields() {
-      address_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
-      uid_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasAddress()) {
         memoizedIsInitialized = 0;
@@ -6407,127 +7387,191 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeMessage(1, address_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        output.writeMessage(1, getAddress());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeUInt64(2, uid_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, address_);
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(1, getAddress());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(2, uid_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.UniqueAddress)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.UniqueAddress other = (akka.remote.ArteryControlFormats.UniqueAddress) obj;
+
+      if (hasAddress() != other.hasAddress()) return false;
+      if (hasAddress()) {
+        if (!getAddress()
+            .equals(other.getAddress())) return false;
+      }
+      if (hasUid() != other.hasUid()) return false;
+      if (hasUid()) {
+        if (getUid()
+            != other.getUid()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasAddress()) {
+        hash = (37 * hash) + ADDRESS_FIELD_NUMBER;
+        hash = (53 * hash) + getAddress().hashCode();
+      }
+      if (hasUid()) {
+        hash = (37 * hash) + UID_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getUid());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.UniqueAddress parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.UniqueAddress prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.UniqueAddress prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code UniqueAddress}
-     *
      * <pre>
      **
      * Defines a remote address with uid.
      * </pre>
+     *
+     * Protobuf type {@code UniqueAddress}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.UniqueAddressOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:UniqueAddress)
+        akka.remote.ArteryControlFormats.UniqueAddressOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_UniqueAddress_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_UniqueAddress_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -6540,23 +7584,21 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
           getAddressFieldBuilder();
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         if (addressBuilder_ == null) {
-          address_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+          address_ = null;
         } else {
           addressBuilder_.clear();
         }
@@ -6566,19 +7608,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_UniqueAddress_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.UniqueAddress getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.UniqueAddress build() {
         akka.remote.ArteryControlFormats.UniqueAddress result = buildPartial();
         if (!result.isInitialized()) {
@@ -6587,28 +7628,62 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.UniqueAddress buildPartial() {
         akka.remote.ArteryControlFormats.UniqueAddress result = new akka.remote.ArteryControlFormats.UniqueAddress(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (addressBuilder_ == null) {
+            result.address_ = address_;
+          } else {
+            result.address_ = addressBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        if (addressBuilder_ == null) {
-          result.address_ = address_;
-        } else {
-          result.address_ = addressBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.uid_ = uid_;
           to_bitField0_ |= 0x00000002;
         }
-        result.uid_ = uid_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.UniqueAddress) {
           return mergeFrom((akka.remote.ArteryControlFormats.UniqueAddress)other);
         } else {
@@ -6625,36 +7700,36 @@ public final class ArteryControlFormats {
         if (other.hasUid()) {
           setUid(other.getUid());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasAddress()) {
-          
           return false;
         }
         if (!hasUid()) {
-          
           return false;
         }
         if (!getAddress().isInitialized()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.UniqueAddress parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.UniqueAddress) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -6664,22 +7739,21 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required .Address address = 1;
-      private akka.remote.ArteryControlFormats.Address address_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.remote.ArteryControlFormats.Address address_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 1;</code>
        */
       public boolean hasAddress() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address address = 1;</code>
        */
       public akka.remote.ArteryControlFormats.Address getAddress() {
         if (addressBuilder_ == null) {
-          return address_;
+          return address_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : address_;
         } else {
           return addressBuilder_.getMessage();
         }
@@ -6719,7 +7793,8 @@ public final class ArteryControlFormats {
        */
       public Builder mergeAddress(akka.remote.ArteryControlFormats.Address value) {
         if (addressBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+          if (((bitField0_ & 0x00000001) != 0) &&
+              address_ != null &&
               address_ != akka.remote.ArteryControlFormats.Address.getDefaultInstance()) {
             address_ =
               akka.remote.ArteryControlFormats.Address.newBuilder(address_).mergeFrom(value).buildPartial();
@@ -6738,7 +7813,7 @@ public final class ArteryControlFormats {
        */
       public Builder clearAddress() {
         if (addressBuilder_ == null) {
-          address_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+          address_ = null;
           onChanged();
         } else {
           addressBuilder_.clear();
@@ -6761,19 +7836,20 @@ public final class ArteryControlFormats {
         if (addressBuilder_ != null) {
           return addressBuilder_.getMessageOrBuilder();
         } else {
-          return address_;
+          return address_ == null ?
+              akka.remote.ArteryControlFormats.Address.getDefaultInstance() : address_;
         }
       }
       /**
        * <code>required .Address address = 1;</code>
        */
-      private akka.protobuf.SingleFieldBuilder<
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
           akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> 
           getAddressFieldBuilder() {
         if (addressBuilder_ == null) {
-          addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
+          addressBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
               akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder>(
-                  address_,
+                  getAddress(),
                   getParentForChildren(),
                   isClean());
           address_ = null;
@@ -6781,13 +7857,12 @@ public final class ArteryControlFormats {
         return addressBuilder_;
       }
 
-      // required uint64 uid = 2;
       private long uid_ ;
       /**
        * <code>required uint64 uid = 2;</code>
        */
       public boolean hasUid() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 uid = 2;</code>
@@ -6813,22 +7888,63 @@ public final class ArteryControlFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:UniqueAddress)
     }
 
+    // @@protoc_insertion_point(class_scope:UniqueAddress)
+    private static final akka.remote.ArteryControlFormats.UniqueAddress DEFAULT_INSTANCE;
     static {
-      defaultInstance = new UniqueAddress(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.UniqueAddress();
     }
 
-    // @@protoc_insertion_point(class_scope:UniqueAddress)
+    public static akka.remote.ArteryControlFormats.UniqueAddress getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<UniqueAddress>
+        PARSER = new akka.protobufv3.internal.AbstractParser<UniqueAddress>() {
+      @java.lang.Override
+      public UniqueAddress parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new UniqueAddress(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<UniqueAddress> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<UniqueAddress> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.UniqueAddress getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  public interface ArteryHeartbeatRspOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface ArteryHeartbeatRspOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:ArteryHeartbeatRsp)
+      akka.protobufv3.internal.MessageOrBuilder {
 
-    // required uint64 uid = 1;
     /**
      * <code>required uint64 uid = 1;</code>
      */
@@ -6839,46 +7955,48 @@ public final class ArteryControlFormats {
     long getUid();
   }
   /**
-   * Protobuf type {@code ArteryHeartbeatRsp}
-   *
    * <pre>
    * RemoteWatcher.ArteryHeartbeat is empty array
    * RemoteWatcher.ArteryHeartbeatRsp
    * </pre>
+   *
+   * Protobuf type {@code ArteryHeartbeatRsp}
    */
-  public static final class ArteryHeartbeatRsp extends
-      akka.protobuf.GeneratedMessage
-      implements ArteryHeartbeatRspOrBuilder {
+  public  static final class ArteryHeartbeatRsp extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:ArteryHeartbeatRsp)
+      ArteryHeartbeatRspOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use ArteryHeartbeatRsp.newBuilder() to construct.
-    private ArteryHeartbeatRsp(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ArteryHeartbeatRsp(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private ArteryHeartbeatRsp(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final ArteryHeartbeatRsp defaultInstance;
-    public static ArteryHeartbeatRsp getDefaultInstance() {
-      return defaultInstance;
+    private ArteryHeartbeatRsp() {
     }
 
-    public ArteryHeartbeatRsp getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new ArteryHeartbeatRsp();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private ArteryHeartbeatRsp(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6887,66 +8005,51 @@ public final class ArteryControlFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 8: {
               bitField0_ |= 0x00000001;
               uid_ = input.readUInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.class, akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.Builder.class);
     }
 
-    public static akka.protobuf.Parser<ArteryHeartbeatRsp> PARSER =
-        new akka.protobuf.AbstractParser<ArteryHeartbeatRsp>() {
-      public ArteryHeartbeatRsp parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new ArteryHeartbeatRsp(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<ArteryHeartbeatRsp> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required uint64 uid = 1;
     public static final int UID_FIELD_NUMBER = 1;
     private long uid_;
     /**
      * <code>required uint64 uid = 1;</code>
      */
     public boolean hasUid() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint64 uid = 1;</code>
@@ -6955,13 +8058,12 @@ public final class ArteryControlFormats {
       return uid_;
     }
 
-    private void initFields() {
-      uid_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasUid()) {
         memoizedIsInitialized = 0;
@@ -6971,120 +8073,175 @@ public final class ArteryControlFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+      if (((bitField0_ & 0x00000001) != 0)) {
         output.writeUInt64(1, uid_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(1, uid_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ArteryControlFormats.ArteryHeartbeatRsp)) {
+        return super.equals(obj);
+      }
+      akka.remote.ArteryControlFormats.ArteryHeartbeatRsp other = (akka.remote.ArteryControlFormats.ArteryHeartbeatRsp) obj;
+
+      if (hasUid() != other.hasUid()) return false;
+      if (hasUid()) {
+        if (getUid()
+            != other.getUid()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasUid()) {
+        hash = (37 * hash) + UID_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getUid());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.remote.ArteryControlFormats.ArteryHeartbeatRsp prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.ArteryHeartbeatRsp prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
     /**
-     * Protobuf type {@code ArteryHeartbeatRsp}
-     *
      * <pre>
      * RemoteWatcher.ArteryHeartbeat is empty array
      * RemoteWatcher.ArteryHeartbeatRsp
      * </pre>
+     *
+     * Protobuf type {@code ArteryHeartbeatRsp}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ArteryControlFormats.ArteryHeartbeatRspOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:ArteryHeartbeatRsp)
+        akka.remote.ArteryControlFormats.ArteryHeartbeatRspOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -7097,18 +8254,16 @@ public final class ArteryControlFormats {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         uid_ = 0L;
@@ -7116,19 +8271,18 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_descriptor;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp getDefaultInstanceForType() {
         return akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp build() {
         akka.remote.ArteryControlFormats.ArteryHeartbeatRsp result = buildPartial();
         if (!result.isInitialized()) {
@@ -7137,20 +8291,54 @@ public final class ArteryControlFormats {
         return result;
       }
 
+      @java.lang.Override
       public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp buildPartial() {
         akka.remote.ArteryControlFormats.ArteryHeartbeatRsp result = new akka.remote.ArteryControlFormats.ArteryHeartbeatRsp(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.uid_ = uid_;
           to_bitField0_ |= 0x00000001;
         }
-        result.uid_ = uid_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.remote.ArteryControlFormats.ArteryHeartbeatRsp) {
           return mergeFrom((akka.remote.ArteryControlFormats.ArteryHeartbeatRsp)other);
         } else {
@@ -7164,28 +8352,30 @@ public final class ArteryControlFormats {
         if (other.hasUid()) {
           setUid(other.getUid());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasUid()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.remote.ArteryControlFormats.ArteryHeartbeatRsp) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -7195,13 +8385,12 @@ public final class ArteryControlFormats {
       }
       private int bitField0_;
 
-      // required uint64 uid = 1;
       private long uid_ ;
       /**
        * <code>required uint64 uid = 1;</code>
        */
       public boolean hasUid() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint64 uid = 1;</code>
@@ -7227,74 +8416,115 @@ public final class ArteryControlFormats {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:ArteryHeartbeatRsp)
     }
 
+    // @@protoc_insertion_point(class_scope:ArteryHeartbeatRsp)
+    private static final akka.remote.ArteryControlFormats.ArteryHeartbeatRsp DEFAULT_INSTANCE;
     static {
-      defaultInstance = new ArteryHeartbeatRsp(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.remote.ArteryControlFormats.ArteryHeartbeatRsp();
     }
 
-    // @@protoc_insertion_point(class_scope:ArteryHeartbeatRsp)
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ArteryHeartbeatRsp>
+        PARSER = new akka.protobufv3.internal.AbstractParser<ArteryHeartbeatRsp>() {
+      @java.lang.Override
+      public ArteryHeartbeatRsp parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new ArteryHeartbeatRsp(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<ArteryHeartbeatRsp> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<ArteryHeartbeatRsp> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_Quarantined_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_Quarantined_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_MessageWithAddress_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_MessageWithAddress_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_HandshakeReq_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_HandshakeReq_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_CompressionTableAdvertisement_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_CompressionTableAdvertisement_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_CompressionTableAdvertisementAck_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_CompressionTableAdvertisementAck_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_SystemMessageEnvelope_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_SystemMessageEnvelope_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_SystemMessageDeliveryAck_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_SystemMessageDeliveryAck_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_Address_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_Address_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_UniqueAddress_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_UniqueAddress_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_ArteryHeartbeatRsp_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ArteryHeartbeatRsp_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -7307,7 +8537,7 @@ public final class ArteryControlFormats {
       "TableAdvertisement\022\034\n\004from\030\001 \002(\0132\016.Uniqu" +
       "eAddress\022\021\n\toriginUid\030\002 \002(\004\022\024\n\014tableVers" +
       "ion\030\003 \002(\r\022\014\n\004keys\030\004 \003(\t\022\016\n\006values\030\005 \003(\r\"" +
-      "Q\n CompressionTableAdvertisementAck\022\034\n\004f",
+      "Q\n CompressionTableAdvertisementAck\022\034\n\004f" +
       "rom\030\001 \002(\0132\016.UniqueAddress\022\017\n\007version\030\002 \002" +
       "(\r\"\212\001\n\025SystemMessageEnvelope\022\017\n\007message\030" +
       "\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageMa" +
@@ -7317,82 +8547,74 @@ public final class ArteryControlFormats {
       "2\016.UniqueAddress\"K\n\007Address\022\020\n\010protocol\030" +
       "\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022" +
       "\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddress\022\031\n\007addres" +
-      "s\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\004\"!\n\022Artery",
+      "s\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\004\"!\n\022Artery" +
       "HeartbeatRsp\022\013\n\003uid\030\001 \002(\004B\017\n\013akka.remote" +
       "H\001"
     };
-    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_Quarantined_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_Quarantined_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_Quarantined_descriptor,
-              new java.lang.String[] { "From", "To", });
-          internal_static_MessageWithAddress_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_MessageWithAddress_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_MessageWithAddress_descriptor,
-              new java.lang.String[] { "Address", });
-          internal_static_HandshakeReq_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_HandshakeReq_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_HandshakeReq_descriptor,
-              new java.lang.String[] { "From", "To", });
-          internal_static_CompressionTableAdvertisement_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_CompressionTableAdvertisement_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_CompressionTableAdvertisement_descriptor,
-              new java.lang.String[] { "From", "OriginUid", "TableVersion", "Keys", "Values", });
-          internal_static_CompressionTableAdvertisementAck_descriptor =
-            getDescriptor().getMessageTypes().get(4);
-          internal_static_CompressionTableAdvertisementAck_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_CompressionTableAdvertisementAck_descriptor,
-              new java.lang.String[] { "From", "Version", });
-          internal_static_SystemMessageEnvelope_descriptor =
-            getDescriptor().getMessageTypes().get(5);
-          internal_static_SystemMessageEnvelope_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SystemMessageEnvelope_descriptor,
-              new java.lang.String[] { "Message", "SerializerId", "MessageManifest", "SeqNo", "AckReplyTo", });
-          internal_static_SystemMessageDeliveryAck_descriptor =
-            getDescriptor().getMessageTypes().get(6);
-          internal_static_SystemMessageDeliveryAck_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SystemMessageDeliveryAck_descriptor,
-              new java.lang.String[] { "SeqNo", "From", });
-          internal_static_Address_descriptor =
-            getDescriptor().getMessageTypes().get(7);
-          internal_static_Address_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_Address_descriptor,
-              new java.lang.String[] { "Protocol", "System", "Hostname", "Port", });
-          internal_static_UniqueAddress_descriptor =
-            getDescriptor().getMessageTypes().get(8);
-          internal_static_UniqueAddress_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_UniqueAddress_descriptor,
-              new java.lang.String[] { "Address", "Uid", });
-          internal_static_ArteryHeartbeatRsp_descriptor =
-            getDescriptor().getMessageTypes().get(9);
-          internal_static_ArteryHeartbeatRsp_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_ArteryHeartbeatRsp_descriptor,
-              new java.lang.String[] { "Uid", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+        });
+    internal_static_Quarantined_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_Quarantined_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_Quarantined_descriptor,
+        new java.lang.String[] { "From", "To", });
+    internal_static_MessageWithAddress_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_MessageWithAddress_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_MessageWithAddress_descriptor,
+        new java.lang.String[] { "Address", });
+    internal_static_HandshakeReq_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_HandshakeReq_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_HandshakeReq_descriptor,
+        new java.lang.String[] { "From", "To", });
+    internal_static_CompressionTableAdvertisement_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_CompressionTableAdvertisement_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_CompressionTableAdvertisement_descriptor,
+        new java.lang.String[] { "From", "OriginUid", "TableVersion", "Keys", "Values", });
+    internal_static_CompressionTableAdvertisementAck_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_CompressionTableAdvertisementAck_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_CompressionTableAdvertisementAck_descriptor,
+        new java.lang.String[] { "From", "Version", });
+    internal_static_SystemMessageEnvelope_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_SystemMessageEnvelope_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_SystemMessageEnvelope_descriptor,
+        new java.lang.String[] { "Message", "SerializerId", "MessageManifest", "SeqNo", "AckReplyTo", });
+    internal_static_SystemMessageDeliveryAck_descriptor =
+      getDescriptor().getMessageTypes().get(6);
+    internal_static_SystemMessageDeliveryAck_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_SystemMessageDeliveryAck_descriptor,
+        new java.lang.String[] { "SeqNo", "From", });
+    internal_static_Address_descriptor =
+      getDescriptor().getMessageTypes().get(7);
+    internal_static_Address_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_Address_descriptor,
+        new java.lang.String[] { "Protocol", "System", "Hostname", "Port", });
+    internal_static_UniqueAddress_descriptor =
+      getDescriptor().getMessageTypes().get(8);
+    internal_static_UniqueAddress_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_UniqueAddress_descriptor,
+        new java.lang.String[] { "Address", "Uid", });
+    internal_static_ArteryHeartbeatRsp_descriptor =
+      getDescriptor().getMessageTypes().get(9);
+    internal_static_ArteryHeartbeatRsp_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_ArteryHeartbeatRsp_descriptor,
+        new java.lang.String[] { "Uid", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

@@ -5,7 +5,7 @@
 package akka.remote
 
 import akka.remote.WireFormats._
-import akka.protobuf.ByteString
+import akka.protobufv3.internal.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder, OutboundEnvelope }

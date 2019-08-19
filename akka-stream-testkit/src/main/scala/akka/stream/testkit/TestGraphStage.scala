@@ -133,9 +133,9 @@ private[testkit] class TestSourceStage[T, M](
             throw ex
         }
       }
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         try {
-          outHandler.onDownstreamFinish()
+          outHandler.onDownstreamFinish(cause)
           probe.ref ! GraphStageMessages.DownstreamFinish
         } catch {
           case NonFatal(ex) =>

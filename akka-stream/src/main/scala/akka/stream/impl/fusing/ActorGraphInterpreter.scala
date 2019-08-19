@@ -111,7 +111,7 @@ import scala.util.control.NonFatal
     private var inputBufferElements = 0
     private var nextInputElementCursor = 0
     private var upstreamCompleted = false
-    private var downstreamCanceled = false
+    private var downstreamCanceled: Option[Throwable] = None
     private val IndexMask = size - 1
 
     private def requestBatchSize = math.max(1, inputBuffer.length / 2)
@@ -168,11 +168,11 @@ import scala.util.control.NonFatal
       inputBufferElements = 0
     }
 
-    def cancel(): Unit = {
-      downstreamCanceled = true
+    def cancel(cause: Throwable): Unit = {
+      downstreamCanceled = Some(cause)
       if (!upstreamCompleted) {
         upstreamCompleted = true
-        if (upstream ne null) tryCancel(upstream)
+        if (upstream ne null) tryCancel(upstream, cause)
         clear()
       }
     }
@@ -188,7 +188,7 @@ import scala.util.control.NonFatal
     }
 
     def onError(e: Throwable): Unit =
-      if (!upstreamCompleted || !downstreamCanceled) {
+      if (!upstreamCompleted || downstreamCanceled.isEmpty) {
         upstreamCompleted = true
         clear()
         fail(out, e)
@@ -197,7 +197,7 @@ import scala.util.control.NonFatal
     // Call this when an error happens that does not come from the usual onError channel
     // (exceptions while calling RS interfaces, abrupt termination etc)
     def onInternalError(e: Throwable): Unit = {
-      if (!(upstreamCompleted || downstreamCanceled) && (upstream ne null)) {
+      if (!(upstreamCompleted || downstreamCanceled.isDefined) && (upstream ne null)) {
         upstream.cancel()
       }
       if (!isClosed(out)) onError(e)
@@ -212,12 +212,13 @@ import scala.util.control.NonFatal
     def onSubscribe(subscription: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
       if (upstreamCompleted) {
-        tryCancel(subscription)
-      } else if (downstreamCanceled) {
+        // onComplete or onError has been called before OnSubscribe
+        tryCancel(subscription, SubscriptionWithCancelException.NoMoreElementsNeeded)
+      } else if (downstreamCanceled.isDefined) {
         upstreamCompleted = true
-        tryCancel(subscription)
+        tryCancel(subscription, downstreamCanceled.get)
       } else if (upstream != null) { // reactive streams spec 2.5
-        tryCancel(subscription)
+        tryCancel(subscription, new IllegalStateException("Publisher can only be subscribed once."))
       } else {
         upstream = subscription
         // Prefetch
@@ -243,8 +244,8 @@ import scala.util.control.NonFatal
       }
     }
 
-    override def onDownstreamFinish(): Unit =
-      try cancel()
+    override def onDownstreamFinish(cause: Throwable): Unit =
+      try cancel(cause)
       catch {
         case s: SpecViolation => shell.tryAbort(s)
       }
@@ -270,11 +271,12 @@ import scala.util.control.NonFatal
     override def shell: GraphInterpreterShell = boundary.shell
     override def logic: GraphStageLogic = boundary
   }
-  final case class Cancel(boundary: ActorOutputBoundary) extends SimpleBoundaryEvent {
+  final case class Cancel(boundary: ActorOutputBoundary, cause: Throwable) extends SimpleBoundaryEvent {
     override def execute(): Unit = {
       if (GraphInterpreter.Debug)
-        println(s"${boundary.shell.interpreter.Name}  cancel port=${boundary.internalPortName}")
-      boundary.cancel()
+        println(
+          s"${boundary.shell.interpreter.Name}  cancel port=${boundary.internalPortName} cause=${cause.getMessage}")
+      boundary.cancel(cause)
     }
 
     override def shell: GraphInterpreterShell = boundary.shell
@@ -360,7 +362,9 @@ import scala.util.control.NonFatal
     private var downstreamDemand: Long = 0L
     // This flag is only used if complete/fail is called externally since this op turns into a Finished one inside the
     // interpreter (i.e. inside this op this flag has no effects since if it is completed the op will not be invoked)
-    private var downstreamCompleted = false
+    private[this] var downstreamCompletionCause: Option[Throwable] = None
+    def downstreamCompleted: Boolean = downstreamCompletionCause.isDefined
+
     // when upstream failed before we got the exposed publisher
     private var upstreamCompleted: Boolean = false
 
@@ -392,7 +396,7 @@ import scala.util.control.NonFatal
     override def onPush(): Unit = {
       try {
         onNext(grab(in))
-        if (downstreamCompleted) cancel(in)
+        if (downstreamCompleted) cancel(in, downstreamCompletionCause.get)
         else if (downstreamDemand > 0) pull(in)
       } catch {
         case s: SpecViolation => shell.tryAbort(s)
@@ -415,9 +419,10 @@ import scala.util.control.NonFatal
       publisher.takePendingSubscribers().foreach { sub =>
         if (subscriber eq null) {
           subscriber = sub
-          val subscription = new Subscription {
+          val subscription = new Subscription with SubscriptionWithCancelException {
             override def request(elements: Long): Unit = actor ! RequestMore(ActorOutputBoundary.this, elements)
-            override def cancel(): Unit = actor ! Cancel(ActorOutputBoundary.this)
+            override def cancel(cause: Throwable): Unit = actor ! Cancel(ActorOutputBoundary.this, cause)
+
             override def toString = s"BoundarySubscription[$actor, $internalPortName]"
           }
 
@@ -430,7 +435,7 @@ import scala.util.control.NonFatal
 
     def requestMore(elements: Long): Unit = {
       if (elements < 1) {
-        cancel(in)
+        cancel(in, ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
         fail(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
       } else {
         downstreamDemand += elements
@@ -440,11 +445,11 @@ import scala.util.control.NonFatal
       }
     }
 
-    def cancel(): Unit = {
-      downstreamCompleted = true
+    def cancel(cause: Throwable): Unit = {
+      downstreamCompletionCause = Some(cause)
       subscriber = null
       publisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
-      cancel(in)
+      cancel(in, cause)
     }
 
     override def toString: String =
@@ -655,7 +660,7 @@ import scala.util.control.NonFatal
       // Will only have an effect if the above call to the interpreter failed to emit a proper failure to the downstream
       // otherwise this will have no effect
       outputs.foreach(_.fail(reason))
-      inputs.foreach(_.cancel())
+      inputs.foreach(_.cancel(reason))
     }
   }
 

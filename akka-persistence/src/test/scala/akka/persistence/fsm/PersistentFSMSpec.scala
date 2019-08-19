@@ -10,6 +10,7 @@ import akka.actor.{ ActorSystem, _ }
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 
@@ -17,6 +18,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
+@silent("deprecated")
 abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentFSMSpec._
 
@@ -398,6 +400,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
   }
 }
 
+@silent("deprecated")
 object PersistentFSMSpec {
   //#customer-states
   sealed trait UserState extends FSMState

@@ -62,6 +62,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceTck,
   persistenceTyped,
   protobuf,
+  protobufV3,
   remote,
   remoteTests,
   slf4j,
@@ -75,7 +76,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .settings(rootSettings: _*)
-  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, akkaScalaNightly, docs))
+  .settings(
+    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -256,7 +258,12 @@ lazy val docs = akkaModule("akka-docs")
   .disablePlugins(ScalafixPlugin)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
-  .dependsOn(actor, actorTyped % "optional->compile", stream % "optional->compile" ,actorTests % "test->test", testkit % "test->test")
+  .dependsOn(
+    actor,
+    actorTyped % "optional->compile",
+    stream % "optional->compile",
+    actorTests % "test->test",
+    testkit % "test->test")
   .settings(Dependencies.jackson)
   .settings(AutomaticModuleName.settings("akka.serialization.jackson"))
   .settings(OSGi.jackson)
@@ -279,7 +286,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(parallelExecution in Test := false)
 
 lazy val persistence = akkaModule("akka-persistence")
-  .dependsOn(actor, testkit % "test->test", protobuf)
+  .dependsOn(actor, testkit % "test->test", protobufV3)
   .settings(Dependencies.persistence)
   .settings(AutomaticModuleName.settings("akka.persistence"))
   .settings(OSGi.persistence)
@@ -295,7 +302,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val persistenceShared = akkaModule("akka-persistence-shared")
-  .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test", protobuf)
+  .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test", protobufV3)
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.shared"))
   .settings(fork in Test := true)
@@ -316,20 +323,43 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
 
-lazy val remote = akkaModule("akka-remote")
-  .dependsOn(
-    actor,
-    stream,
-    actorTests % "test->test",
-    testkit % "test->test",
-    streamTestkit % "test",
-    protobuf,
-    jackson % "test->test")
-  .settings(Dependencies.remote)
-  .settings(AutomaticModuleName.settings("akka.remote"))
-  .settings(OSGi.remote)
-  .settings(Protobuf.settings)
-  .settings(parallelExecution in Test := false)
+lazy val protobufV3 = akkaModule("akka-protobuf-v3")
+  .settings(AutomaticModuleName.settings("akka.protobuf.v3"))
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
+  .disablePlugins(MimaPlugin)
+  .settings(
+    libraryDependencies += Dependencies.Compile.protobufRuntime,
+    assemblyShadeRules in assembly := Seq(
+        ShadeRule
+          .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
+          .inLibrary(Dependencies.Compile.protobufRuntime)),
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
+    autoScalaLibrary := false, // do not include scala dependency in pom
+    exportJars := true, // in dependent projects, use assembled and shaded jar
+    makePomConfiguration := makePomConfiguration.value
+        .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
+    packageBin in Compile := (assembly in Compile).value, // package by running assembly
+    // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
+    fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
+    test in assembly := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
+    description := "Akka Protobuf V3 is a shaded version of the protobuf runtime. Original POM: https://github.com/protocolbuffers/protobuf/blob/v3.9.0/java/pom.xml")
+
+lazy val remote =
+  akkaModule("akka-remote")
+    .dependsOn(
+      actor,
+      stream,
+      protobufV3,
+      protobuf % "test",
+      actorTests % "test->test",
+      testkit % "test->test",
+      streamTestkit % "test",
+      jackson % "test->test")
+    .settings(Dependencies.remote)
+    .settings(AutomaticModuleName.settings("akka.remote"))
+    .settings(OSGi.remote)
+    .settings(Protobuf.settings)
+    .settings(parallelExecution in Test := false)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
@@ -352,7 +382,7 @@ lazy val slf4j = akkaModule("akka-slf4j")
   .settings(OSGi.slf4j)
 
 lazy val stream = akkaModule("akka-stream")
-  .dependsOn(actor, protobuf)
+  .dependsOn(actor, protobufV3)
   .settings(Dependencies.stream)
   .settings(AutomaticModuleName.settings("akka.stream"))
   .settings(OSGi.stream)
@@ -426,7 +456,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     distributedData,
     persistence % "test->test",
     persistenceTyped % "test->test",
-    protobuf,
+    protobufV3,
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test",

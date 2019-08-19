@@ -10,12 +10,18 @@ package akka.cluster.typed.internal.protobuf;
 public final class ClusterMessages {
   private ClusterMessages() {}
   public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
+      akka.protobufv3.internal.ExtensionRegistryLite registry) {
   }
-  public interface ReceptionistEntryOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
 
-    // required string actorRef = 1;
+  public static void registerAllExtensions(
+      akka.protobufv3.internal.ExtensionRegistry registry) {
+    registerAllExtensions(
+        (akka.protobufv3.internal.ExtensionRegistryLite) registry);
+  }
+  public interface ReceptionistEntryOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:akka.cluster.typed.ReceptionistEntry)
+      akka.protobufv3.internal.MessageOrBuilder {
+
     /**
      * <code>required string actorRef = 1;</code>
      */
@@ -27,10 +33,9 @@ public final class ClusterMessages {
     /**
      * <code>required string actorRef = 1;</code>
      */
-    akka.protobuf.ByteString
+    akka.protobufv3.internal.ByteString
         getActorRefBytes();
 
-    // required uint64 systemUid = 2;
     /**
      * <code>required uint64 systemUid = 2;</code>
      */
@@ -43,39 +48,42 @@ public final class ClusterMessages {
   /**
    * Protobuf type {@code akka.cluster.typed.ReceptionistEntry}
    */
-  public static final class ReceptionistEntry extends
-      akka.protobuf.GeneratedMessage
-      implements ReceptionistEntryOrBuilder {
+  public  static final class ReceptionistEntry extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:akka.cluster.typed.ReceptionistEntry)
+      ReceptionistEntryOrBuilder {
+  private static final long serialVersionUID = 0L;
     // Use ReceptionistEntry.newBuilder() to construct.
-    private ReceptionistEntry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ReceptionistEntry(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
       super(builder);
-      this.unknownFields = builder.getUnknownFields();
     }
-    private ReceptionistEntry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final ReceptionistEntry defaultInstance;
-    public static ReceptionistEntry getDefaultInstance() {
-      return defaultInstance;
+    private ReceptionistEntry() {
+      actorRef_ = "";
     }
 
-    public ReceptionistEntry getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new ReceptionistEntry();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
       return this.unknownFields;
     }
     private ReceptionistEntry(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
-      initFields();
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
       int mutable_bitField0_ = 0;
-      akka.protobuf.UnknownFieldSet.Builder unknownFields =
-          akka.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -84,16 +92,10 @@ public final class ClusterMessages {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
             case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              actorRef_ = input.readBytes();
+              actorRef_ = bs;
               break;
             }
             case 16: {
@@ -101,54 +103,46 @@ public final class ClusterMessages {
               systemUid_ = input.readUInt64();
               break;
             }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
           }
         }
-      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_ReceptionistEntry_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_ReceptionistEntry_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry.class, akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry.Builder.class);
     }
 
-    public static akka.protobuf.Parser<ReceptionistEntry> PARSER =
-        new akka.protobuf.AbstractParser<ReceptionistEntry>() {
-      public ReceptionistEntry parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new ReceptionistEntry(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public akka.protobuf.Parser<ReceptionistEntry> getParserForType() {
-      return PARSER;
-    }
-
     private int bitField0_;
-    // required string actorRef = 1;
     public static final int ACTORREF_FIELD_NUMBER = 1;
-    private java.lang.Object actorRef_;
+    private volatile java.lang.Object actorRef_;
     /**
      * <code>required string actorRef = 1;</code>
      */
     public boolean hasActorRef() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string actorRef = 1;</code>
@@ -158,8 +152,8 @@ public final class ClusterMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           actorRef_ = s;
@@ -170,28 +164,27 @@ public final class ClusterMessages {
     /**
      * <code>required string actorRef = 1;</code>
      */
-    public akka.protobuf.ByteString
+    public akka.protobufv3.internal.ByteString
         getActorRefBytes() {
       java.lang.Object ref = actorRef_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         actorRef_ = b;
         return b;
       } else {
-        return (akka.protobuf.ByteString) ref;
+        return (akka.protobufv3.internal.ByteString) ref;
       }
     }
 
-    // required uint64 systemUid = 2;
     public static final int SYSTEMUID_FIELD_NUMBER = 2;
     private long systemUid_;
     /**
      * <code>required uint64 systemUid = 2;</code>
      */
     public boolean hasSystemUid() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
+      return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 systemUid = 2;</code>
@@ -200,14 +193,12 @@ public final class ClusterMessages {
       return systemUid_;
     }
 
-    private void initFields() {
-      actorRef_ = "";
-      systemUid_ = 0L;
-    }
     private byte memoizedIsInitialized = -1;
+    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasActorRef()) {
         memoizedIsInitialized = 0;
@@ -221,107 +212,168 @@ public final class ClusterMessages {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getActorRefBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, actorRef_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+      if (((bitField0_ & 0x00000002) != 0)) {
         output.writeUInt64(2, systemUid_);
       }
-      getUnknownFields().writeTo(output);
+      unknownFields.writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    @java.lang.Override
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memoizedSize;
       if (size != -1) return size;
 
       size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getActorRefBytes());
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, actorRef_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(2, systemUid_);
       }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
       return size;
     }
 
-    private static final long serialVersionUID = 0L;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry)) {
+        return super.equals(obj);
+      }
+      akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry other = (akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry) obj;
+
+      if (hasActorRef() != other.hasActorRef()) return false;
+      if (hasActorRef()) {
+        if (!getActorRef()
+            .equals(other.getActorRef())) return false;
+      }
+      if (hasSystemUid() != other.hasSystemUid()) return false;
+      if (hasSystemUid()) {
+        if (getSystemUid()
+            != other.getSystemUid()) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasActorRef()) {
+        hash = (37 * hash) + ACTORREF_FIELD_NUMBER;
+        hash = (53 * hash) + getActorRef().hashCode();
+      }
+      if (hasSystemUid()) {
+        hash = (37 * hash) + SYSTEMUID_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getSystemUid());
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
     }
 
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(byte[] data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
         byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseDelimitedFrom(
         java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
-        akka.protobuf.CodedInputStream input)
+        akka.protobufv3.internal.CodedInputStream input)
         throws java.io.IOException {
-      return PARSER.parseFrom(input);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
     }
     public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
+    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry prototype) {
-      return newBuilder().mergeFrom(prototype);
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
     }
-    public Builder toBuilder() { return newBuilder(this); }
+    public static Builder newBuilder(akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -329,14 +381,16 @@ public final class ClusterMessages {
      * Protobuf type {@code akka.cluster.typed.ReceptionistEntry}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntryOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:akka.cluster.typed.ReceptionistEntry)
+        akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntryOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_ReceptionistEntry_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_ReceptionistEntry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -349,18 +403,16 @@ public final class ClusterMessages {
       }
 
       private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
         }
       }
-      private static Builder create() {
-        return new Builder();
-      }
-
+      @java.lang.Override
       public Builder clear() {
         super.clear();
         actorRef_ = "";
@@ -370,19 +422,18 @@ public final class ClusterMessages {
         return this;
       }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public akka.protobuf.Descriptors.Descriptor
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.typed.internal.protobuf.ClusterMessages.internal_static_akka_cluster_typed_ReceptionistEntry_descriptor;
       }
 
+      @java.lang.Override
       public akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry getDefaultInstanceForType() {
         return akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry.getDefaultInstance();
       }
 
+      @java.lang.Override
       public akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry build() {
         akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry result = buildPartial();
         if (!result.isInitialized()) {
@@ -391,24 +442,58 @@ public final class ClusterMessages {
         return result;
       }
 
+      @java.lang.Override
       public akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry buildPartial() {
         akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry result = new akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x00000001) != 0)) {
           to_bitField0_ |= 0x00000001;
         }
         result.actorRef_ = actorRef_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.systemUid_ = systemUid_;
           to_bitField0_ |= 0x00000002;
         }
-        result.systemUid_ = systemUid_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      public Builder mergeFrom(akka.protobuf.Message other) {
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
         if (other instanceof akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry) {
           return mergeFrom((akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry)other);
         } else {
@@ -427,32 +512,33 @@ public final class ClusterMessages {
         if (other.hasSystemUid()) {
           setSystemUid(other.getSystemUid());
         }
-        this.mergeUnknownFields(other.getUnknownFields());
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
         return this;
       }
 
+      @java.lang.Override
       public final boolean isInitialized() {
         if (!hasActorRef()) {
-          
           return false;
         }
         if (!hasSystemUid()) {
-          
           return false;
         }
         return true;
       }
 
+      @java.lang.Override
       public Builder mergeFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry) e.getUnfinishedMessage();
-          throw e;
+          throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
             mergeFrom(parsedMessage);
@@ -462,13 +548,12 @@ public final class ClusterMessages {
       }
       private int bitField0_;
 
-      // required string actorRef = 1;
       private java.lang.Object actorRef_ = "";
       /**
        * <code>required string actorRef = 1;</code>
        */
       public boolean hasActorRef() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string actorRef = 1;</code>
@@ -476,9 +561,12 @@ public final class ClusterMessages {
       public java.lang.String getActorRef() {
         java.lang.Object ref = actorRef_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          actorRef_ = s;
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            actorRef_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -487,17 +575,17 @@ public final class ClusterMessages {
       /**
        * <code>required string actorRef = 1;</code>
        */
-      public akka.protobuf.ByteString
+      public akka.protobufv3.internal.ByteString
           getActorRefBytes() {
         java.lang.Object ref = actorRef_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           actorRef_ = b;
           return b;
         } else {
-          return (akka.protobuf.ByteString) ref;
+          return (akka.protobufv3.internal.ByteString) ref;
         }
       }
       /**
@@ -526,7 +614,7 @@ public final class ClusterMessages {
        * <code>required string actorRef = 1;</code>
        */
       public Builder setActorRefBytes(
-          akka.protobuf.ByteString value) {
+          akka.protobufv3.internal.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -536,13 +624,12 @@ public final class ClusterMessages {
         return this;
       }
 
-      // required uint64 systemUid = 2;
       private long systemUid_ ;
       /**
        * <code>required uint64 systemUid = 2;</code>
        */
       public boolean hasSystemUid() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 systemUid = 2;</code>
@@ -568,29 +655,70 @@ public final class ClusterMessages {
         onChanged();
         return this;
       }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
 
       // @@protoc_insertion_point(builder_scope:akka.cluster.typed.ReceptionistEntry)
     }
 
+    // @@protoc_insertion_point(class_scope:akka.cluster.typed.ReceptionistEntry)
+    private static final akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry DEFAULT_INSTANCE;
     static {
-      defaultInstance = new ReceptionistEntry(true);
-      defaultInstance.initFields();
+      DEFAULT_INSTANCE = new akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry();
     }
 
-    // @@protoc_insertion_point(class_scope:akka.cluster.typed.ReceptionistEntry)
+    public static akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ReceptionistEntry>
+        PARSER = new akka.protobufv3.internal.AbstractParser<ReceptionistEntry>() {
+      @java.lang.Override
+      public ReceptionistEntry parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new ReceptionistEntry(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<ReceptionistEntry> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<ReceptionistEntry> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.cluster.typed.internal.protobuf.ClusterMessages.ReceptionistEntry getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_akka_cluster_typed_ReceptionistEntry_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_akka_cluster_typed_ReceptionistEntry_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
+  public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
+  private static  akka.protobufv3.internal.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -599,24 +727,16 @@ public final class ClusterMessages {
       "(\t\022\021\n\tsystemUid\030\002 \002(\004B(\n$akka.cluster.ty" +
       "ped.internal.protobufH\001"
     };
-    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_akka_cluster_typed_ReceptionistEntry_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_akka_cluster_typed_ReceptionistEntry_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_akka_cluster_typed_ReceptionistEntry_descriptor,
-              new java.lang.String[] { "ActorRef", "SystemUid", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
+    descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
+        new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+        });
+    internal_static_akka_cluster_typed_ReceptionistEntry_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_akka_cluster_typed_ReceptionistEntry_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_akka_cluster_typed_ReceptionistEntry_descriptor,
+        new java.lang.String[] { "ActorRef", "SystemUid", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

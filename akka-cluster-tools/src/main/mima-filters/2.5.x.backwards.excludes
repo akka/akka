@@ -1,0 +1,3 @@
+# Protobuf 3
+ProblemFilters.exclude[Problem]("akka.cluster.client.protobuf.msg.*")
+ProblemFilters.exclude[Problem]("akka.cluster.pubsub.protobuf.msg.*")
