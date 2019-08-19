@@ -320,7 +320,7 @@ private[remote] class ArteryTcpTransport(
         .filter(_ => false) // don't send back anything in this TCP socket
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again
     }(system.dispatcher)
-    firstConnectionFlow.tryCompleteWith(inboundConnectionFlow)
+    firstConnectionFlow.completeWith(inboundConnectionFlow)
 
     // Failures in any of the inbound streams should be extremely rare, probably an unforeseen accident.
     // Tear down everything and start over again. Inbound streams are "stateless" so that should be fine.
