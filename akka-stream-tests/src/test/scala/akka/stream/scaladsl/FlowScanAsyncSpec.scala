@@ -11,14 +11,14 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
+import org.scalatest.Matchers
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
 import scala.util.Failure
 
-class FlowScanAsyncSpec extends StreamSpec {
+class FlowScanAsyncSpec extends StreamSpec with Matchers {
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext = materializer.executionContext
@@ -84,10 +84,8 @@ class FlowScanAsyncSpec extends StreamSpec {
     "work with a large source" in {
       val elements = 1 to 100000
       val expectedSum = elements.sum
-      val eventualActual: Future[Int] = Source(elements).via(sumScanFlow).runWith(Sink.last)
-      whenReady(eventualActual) { actual =>
-        assert(actual === expectedSum)
-      }
+      val result = Source(elements).via(sumScanFlow).runWith(Sink.last).futureValue(timeout(patience.timeout * 2))
+      result should ===(expectedSum)
     }
 
     "work with slow futures" in {
