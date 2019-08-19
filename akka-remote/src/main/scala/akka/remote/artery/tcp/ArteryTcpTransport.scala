@@ -311,7 +311,7 @@ private[remote] class ArteryTcpTransport(
 
     // If something in the inboundConnectionFlow fails, e.g. framing, the connection will be teared down,
     // but other parts of the inbound streams don't have to restarted.
-    inboundConnectionFlow = Future {
+    val newInboundConnectionFlow = {
       // must create new Flow for each connection because of the FlightRecorder that can't be shared
       val afr = createFlightRecorderEventSink()
       Flow[ByteString]
@@ -320,8 +320,9 @@ private[remote] class ArteryTcpTransport(
         .alsoTo(inboundStream)
         .filter(_ => false) // don't send back anything in this TCP socket
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again
-    }(system.dispatcher)
-    firstConnectionFlow.completeWith(inboundConnectionFlow)
+    }
+    firstConnectionFlow.trySuccess(newInboundConnectionFlow)
+    inboundConnectionFlow = Future.successful(newInboundConnectionFlow)
 
     // Failures in any of the inbound streams should be extremely rare, probably an unforeseen accident.
     // Tear down everything and start over again. Inbound streams are "stateless" so that should be fine.
