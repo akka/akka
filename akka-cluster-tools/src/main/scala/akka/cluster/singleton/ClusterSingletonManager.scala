@@ -618,9 +618,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       oldestChangedReceived = true
       if (oldestOption == selfUniqueAddressOption) {
         logInfo("Younger observed OldestChanged: [{} -> myself]", previousOldest.headOption.map(_.address))
-        if (previousOldest.isEmpty)
-          tryGotoOldest()
-        else if (previousOldest.forall(removed.contains))
+        if (previousOldest.forall(removed.contains))
           tryGotoOldest()
         else {
           peer(previousOldest.head.address) ! HandOverToMe
@@ -652,9 +650,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay
 
     case Event(DelayedMemberRemoved(m), YoungerData(previousOldest)) =>
-      // FIXME don't log previousOldest here
       if (!selfExited)
-        logInfo("Member removed [{}], previous oldest [{}]", m.address, previousOldest.map(_.address).mkString(", "))
+        logInfo("Member removed [{}]", m.address)
       addRemoved(m.uniqueAddress)
       // transition when OldestChanged
       stay.using(YoungerData(previousOldest.filterNot(_ == m.uniqueAddress)))

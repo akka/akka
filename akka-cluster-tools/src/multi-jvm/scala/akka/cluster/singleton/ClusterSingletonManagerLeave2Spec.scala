@@ -30,7 +30,7 @@ object ClusterSingletonManagerLeave2Spec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = off
