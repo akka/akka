@@ -235,10 +235,11 @@ private[remote] class ArteryTcpTransport(
           .run()
           .recoverWith {
             case e =>
-              Future.failed(new RemoteTransportException(
-                s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
-                e.getMessage,
-                e))
+              Future.failed(
+                new RemoteTransportException(
+                  s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
+                  e.getMessage,
+                  e))
           }(ExecutionContexts.sameThreadExecutionContext)
 
         // only on initial startup, when ActorSystem is starting
