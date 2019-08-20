@@ -2,8 +2,6 @@
 
 Splits each element of input into multiple downstreams using a function
 
-@ref[Fan-out operators](../index.md#fan-out-operators)
-
 ## Signature
 
 ## Description

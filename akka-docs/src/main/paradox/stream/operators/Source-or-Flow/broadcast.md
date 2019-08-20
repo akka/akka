@@ -2,8 +2,6 @@
 
 Emit each incoming element each of `n` outputs.
 
-@ref[Fan-out operators](../index.md#fan-out-operators)
-
 ## Description
 
 Emit each incoming element each of `n` outputs.

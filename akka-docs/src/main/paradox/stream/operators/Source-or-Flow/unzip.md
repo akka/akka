@@ -2,8 +2,6 @@
 
 Takes a stream of two element tuples and unzips the two elements ino two different downstreams.
 
-@ref[Fan-out operators](../index.md#fan-out-operators)
-
 ## Signature
 
 ## Description
