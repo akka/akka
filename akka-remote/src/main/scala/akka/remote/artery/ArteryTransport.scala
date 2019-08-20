@@ -487,8 +487,20 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   protected def startTransport(): Unit
 
+  /**
+   * Bind to the ports for inbound streams. If '0' is specified, this will also select an
+   * arbitrary free local port. For UDP, we only select the port and leave the actual
+   * binding to Aeron when running the inbound stream.
+   *
+   * After calling this method the 'localAddress' and 'bindAddress' fields can be set.
+   */
   protected def bindInboundStreams(): (Int, Int)
 
+  /**
+   * Run the inbound streams that have been previously bound.
+   *
+   * Before calling this method the 'localAddress' and 'bindAddress' should have been set.
+   */
   protected def runInboundStreams(port: Int, bindPort: Int): Unit
 
   private def startRemoveQuarantinedAssociationTask(): Unit = {
