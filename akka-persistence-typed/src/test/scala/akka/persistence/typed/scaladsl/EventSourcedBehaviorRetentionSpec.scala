@@ -29,14 +29,13 @@ import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import akka.util.unused
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
-object EventSourcedBehaviorRetentionSpec {
+object EventSourcedBehaviorRetentionSpec extends Matchers {
 
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
@@ -53,6 +52,8 @@ object EventSourcedBehaviorRetentionSpec {
   final case class GetValue(replyTo: ActorRef[State]) extends Command
   final case object StopIt extends Command
 
+  final case class WrappedSignal(signal: EventSourcedSignal)
+
   sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event
 
@@ -62,7 +63,7 @@ object EventSourcedBehaviorRetentionSpec {
       @unused ctx: ActorContext[Command],
       persistenceId: PersistenceId,
       probe: Option[ActorRef[(State, Event)]] = None,
-      snapshotSignalProbe: Option[ActorRef[EventSourcedSignal]] = None,
+      snapshotSignalProbe: Option[ActorRef[WrappedSignal]] = None,
       eventSignalProbe: Option[ActorRef[Try[EventSourcedSignal]]] = None)
     : EventSourcedBehavior[Command, Event, State] = {
     EventSourcedBehavior[Command, Event, State](
@@ -92,22 +93,38 @@ object EventSourcedBehaviorRetentionSpec {
       }).receiveSignal {
       case (_, RecoveryCompleted) => ()
       case (_, sc: SnapshotCompleted) =>
-        println(s"${System.currentTimeMillis()} snapshot completed: $sc, telling $snapshotSignalProbe")
-        snapshotSignalProbe.foreach(_ ! sc)
+        snapshotSignalProbe.foreach(_ ! WrappedSignal(sc))
       case (_, sf: SnapshotFailed) =>
-        println(s"snapshot failed: $sf, telling $snapshotSignalProbe")
-        snapshotSignalProbe.foreach(_ ! sf)
+        snapshotSignalProbe.foreach(_ ! WrappedSignal(sf))
       case (_, dc: DeleteSnapshotsCompleted) =>
-        println(s"delete snapshot completed: $dc, telling $snapshotSignalProbe")
-        snapshotSignalProbe.foreach(_ ! dc)
+        snapshotSignalProbe.foreach(_ ! WrappedSignal(dc))
       case (_, dsf: DeleteSnapshotsFailed) =>
-        println(s"delete snapshot failed: $dsf, telling $snapshotSignalProbe")
-        snapshotSignalProbe.foreach(_ ! dsf)
+        snapshotSignalProbe.foreach(_ ! WrappedSignal(dsf))
       case (_, e: EventSourcedSignal) =>
-        println(s"other signal: $e, telling $eventSignalProbe")
         eventSignalProbe.foreach(_ ! Success(e))
     }
   }
+
+  implicit class WrappedSignalProbeAssert(probe: TestProbe[WrappedSignal]) {
+    def expectSnapshotCompleted(sequenceNumber: Int): SnapshotCompleted = {
+      val wrapped = probe.expectMessageType[WrappedSignal]
+      wrapped.signal shouldBe a[SnapshotCompleted]
+      val completed = wrapped.signal.asInstanceOf[SnapshotCompleted]
+      completed.metadata.sequenceNr should ===(sequenceNumber)
+      completed
+    }
+
+    def expectDeleteSnapshotCompleted(maxSequenceNr: Long, minSequenceNr: Long): DeleteSnapshotsCompleted = {
+      val wrapped = probe.expectMessageType[WrappedSignal]
+      wrapped.signal shouldBe a[DeleteSnapshotsCompleted]
+      val signal = wrapped.signal.asInstanceOf[DeleteSnapshotsCompleted]
+      signal.target should ===(
+        DeletionTarget.Criteria(
+          SnapshotSelectionCriteria.latest.withMaxSequenceNr(maxSequenceNr).withMinSequenceNr(minSequenceNr)))
+      signal
+    }
+  }
+
 }
 
 class EventSourcedBehaviorRetentionSpec
@@ -138,23 +155,16 @@ class EventSourcedBehaviorRetentionSpec
 
       // no snapshot should have happened
       val probeC2 = TestProbe[(State, Event)]()
-      val stupidProbe = createTestProbe[AnyRef]()
-      stupidProbe.ref ! "bjöö"
-      stupidProbe.expectMessage("bjöö") // passes
-      stupidProbe.ref ! "bjöööö"
-      stupidProbe.expectMessageType[String] // passes
-      stupidProbe.ref ! SnapshotCompleted(SnapshotMetadata("a", 1, 1))
-      stupidProbe.expectMessageType[SnapshotCompleted] // fails here
+      val snapshotProbe = createTestProbe[WrappedSignal]()
 
       val c2 = spawn(
         Behaviors.setup[Command](ctx =>
-          counter(ctx, pid, probe = Some(probeC2.ref), snapshotSignalProbe = Some(stupidProbe.ref))
+          counter(ctx, pid, probe = Some(probeC2.ref), snapshotSignalProbe = Some(snapshotProbe.ref))
             .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       probeC2.expectMessage[(State, Event)]((State(0, Vector()), Incremented(1)))
 
       c2 ! Increment
-      println(s"${System.currentTimeMillis()} waiting for snapshot probe ${stupidProbe.ref}")
-      stupidProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(2)
+      snapshotProbe.expectSnapshotCompleted(2)
       c2 ! StopIt
       watchProbe.expectTerminated(c2)
 
@@ -171,7 +181,7 @@ class EventSourcedBehaviorRetentionSpec
 
     "snapshot every N sequence nrs when persisting multiple events" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val c =
         spawn(
           Behaviors.setup[Command](ctx =>
@@ -183,7 +193,7 @@ class EventSourcedBehaviorRetentionSpec
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
       // snapshot at seqNr 3 because of persistAll
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
       c ! StopIt
       val watchProbe = TestProbe()
       watchProbe.expectTerminated(c)
@@ -200,7 +210,7 @@ class EventSourcedBehaviorRetentionSpec
 
     "snapshot via predicate" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]
+      val snapshotSignalProbe = TestProbe[WrappedSignal]
       val alwaysSnapshot: Behavior[Command] =
         Behaviors.setup { ctx =>
           counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref)).snapshotWhen { (_, _, _) =>
@@ -211,7 +221,7 @@ class EventSourcedBehaviorRetentionSpec
       val replyProbe = TestProbe[State]()
 
       c ! Increment
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(1)
+      snapshotSignalProbe.expectSnapshotCompleted(1)
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
       c ! StopIt
@@ -230,7 +240,7 @@ class EventSourcedBehaviorRetentionSpec
 
     "check all events for snapshot in PersistAll" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]
+      val snapshotSignalProbe = TestProbe[WrappedSignal]
       val snapshotAtTwo = Behaviors.setup[Command](ctx =>
         counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref)).snapshotWhen { (s, _, _) =>
           s.value == 2
@@ -244,7 +254,7 @@ class EventSourcedBehaviorRetentionSpec
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
       // snapshot at seqNr 3 because of persistAll
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
       c ! StopIt
       val watchProbe = TestProbe()
       watchProbe.expectTerminated(c)
@@ -257,18 +267,9 @@ class EventSourcedBehaviorRetentionSpec
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
     }
 
-    def expectDeleteSnapshotCompleted(
-        retentionProbe: TestProbe[EventSourcedSignal],
-        maxSequenceNr: Long,
-        minSequenceNr: Long): Unit = {
-      retentionProbe.expectMessageType[DeleteSnapshotsCompleted].target should ===(
-        DeleteSnapshotsCompleted(DeletionTarget.Criteria(
-          SnapshotSelectionCriteria.latest.withMaxSequenceNr(maxSequenceNr).withMinSequenceNr(minSequenceNr))))
-    }
-
     "delete snapshots automatically, based on criteria" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
@@ -279,27 +280,27 @@ class EventSourcedBehaviorRetentionSpec
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(10, (0 until 10).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(6)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(9)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 3, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
+      snapshotSignalProbe.expectSnapshotCompleted(6)
+      snapshotSignalProbe.expectSnapshotCompleted(9)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(20, (0 until 20).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(12)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(15)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(18)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 6, 0)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 9, 3)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 12, 6)
+      snapshotSignalProbe.expectSnapshotCompleted(12)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(6, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(15)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(9, 3)
+      snapshotSignalProbe.expectSnapshotCompleted(18)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(12, 6)
 
       snapshotSignalProbe.expectNoMessage()
     }
 
     "optionally delete both old events and snapshots" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val eventProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
@@ -312,32 +313,30 @@ class EventSourcedBehaviorRetentionSpec
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(10, (0 until 10).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(6)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(9)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
+      snapshotSignalProbe.expectSnapshotCompleted(6)
+      snapshotSignalProbe.expectSnapshotCompleted(9)
 
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 3
       // Note that when triggering deletion of snapshots from deletion of events it is intentionally "off by one".
       // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
       // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
       // starting at the snapshot at toSequenceNr would be invalid.
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 2, 0)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(2, 0)
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(20, (0 until 20).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(12)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(15)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(18)
-
+      snapshotSignalProbe.expectSnapshotCompleted(12)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 6
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 5, 0)
-
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(15)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 9
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 8, 2)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(8, 2)
+      snapshotSignalProbe.expectSnapshotCompleted(18)
 
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 12
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 11, 5)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(11, 5)
 
       eventProbe.expectNoMessage()
       snapshotSignalProbe.expectNoMessage()
@@ -345,7 +344,7 @@ class EventSourcedBehaviorRetentionSpec
 
     "be possible to combine snapshotWhen and retention criteria" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val eventProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
@@ -357,30 +356,30 @@ class EventSourcedBehaviorRetentionSpec
       (1 to 3).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, (0 until 3).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
       eventProbe.expectNoMessage()
 
       (4 to 10).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(5)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(10)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 5, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(5)
+      snapshotSignalProbe.expectSnapshotCompleted(10)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 0)
 
       (11 to 13).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(13)
+      snapshotSignalProbe.expectSnapshotCompleted(13)
       // no deletes triggered by snapshotWhen
       eventProbe.expectNoMessage()
 
       (14 to 16).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(16, (0 until 16).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(15)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 10, 5)
+      snapshotSignalProbe.expectSnapshotCompleted(15)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(10, 5)
       eventProbe.expectNoMessage()
     }
 
     "be possible to combine snapshotWhen and retention criteria withDeleteEventsOnSnapshot" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val eventProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
@@ -393,42 +392,45 @@ class EventSourcedBehaviorRetentionSpec
       (1 to 3).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, (0 until 3).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(2)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
+      snapshotSignalProbe.expectSnapshotCompleted(2) // every-2 through criteria
+      snapshotSignalProbe.expectSnapshotCompleted(3) // snapshotWhen
       eventProbe.expectNoMessage()
 
       (4 to 10).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(4)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(6)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(8)
+      snapshotSignalProbe.expectSnapshotCompleted(4)
+      snapshotSignalProbe.expectSnapshotCompleted(6)
+      // we now have 4 snapshots, so delete to keep 3 according to criteria
+
+      snapshotSignalProbe.expectSnapshotCompleted(8)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 2
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 1, 0)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(10)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 4
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 3, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(10)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
 
       (11 to 13).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(12)
+      snapshotSignalProbe.expectSnapshotCompleted(12)
+      // snapshotSignalProbe.expectDeleteSnapshotCompleted(4, 0)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 0)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 6
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 5, 0)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(13)
+      snapshotSignalProbe.expectSnapshotCompleted(13) // snapshotWhen
       // no deletes triggered by snapshotWhen
       eventProbe.expectNoMessage()
 
       (14 to 16).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(14)
+      snapshotSignalProbe.expectSnapshotCompleted(14)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 8
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 7, 1)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(16)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(7, 1)
+      snapshotSignalProbe.expectSnapshotCompleted(16)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 10
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 9, 3)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(9, 3)
       eventProbe.expectNoMessage()
     }
 
     "be possible to snapshot every event" in {
       // very bad idea to snapshot every event, but technically possible
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
@@ -439,35 +441,35 @@ class EventSourcedBehaviorRetentionSpec
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(10, (0 until 10).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(1)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(2)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(4)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 1, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(1)
+      snapshotSignalProbe.expectSnapshotCompleted(2)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
+      snapshotSignalProbe.expectSnapshotCompleted(4)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(5)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 2, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(5)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(2, 0)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(6)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 3, 0)
+      snapshotSignalProbe.expectSnapshotCompleted(6)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(7)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 4, 1)
+      snapshotSignalProbe.expectSnapshotCompleted(7)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(4, 1)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(8)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 5, 2)
+      snapshotSignalProbe.expectSnapshotCompleted(8)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 2)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(9)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 6, 3)
+      snapshotSignalProbe.expectSnapshotCompleted(9)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(6, 3)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(10)
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 7, 4)
+      snapshotSignalProbe.expectSnapshotCompleted(10)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(7, 4)
     }
 
     "be possible to snapshot every event withDeleteEventsOnSnapshot" in {
       // very bad idea to snapshot every event, but technically possible
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[EventSourcedSignal]()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val eventProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
@@ -479,37 +481,35 @@ class EventSourcedBehaviorRetentionSpec
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(10, (0 until 10).toVector))
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(1)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(2)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(3)
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(4)
+      snapshotSignalProbe.expectSnapshotCompleted(1)
+      snapshotSignalProbe.expectSnapshotCompleted(2)
+      snapshotSignalProbe.expectSnapshotCompleted(3)
+      snapshotSignalProbe.expectSnapshotCompleted(4)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 1
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(5)
+      snapshotSignalProbe.expectSnapshotCompleted(5)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 2
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 1, 0)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(6)
+      snapshotSignalProbe.expectSnapshotCompleted(6)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 3
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 2, 0)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(2, 0)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(7)
+      snapshotSignalProbe.expectSnapshotCompleted(7)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 4
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 3, 0)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(8)
+      snapshotSignalProbe.expectSnapshotCompleted(8)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 5
-      // DeleteEventsCompleted(6) did not equal DeleteSnapshotsCompleted(Criteria(SnapshotSelectionCriteria(4,9223372036854775807,1,0)))
-      // because events and snapshots come from different sources so racy,
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 4, 1)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(4, 1)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(9)
+      snapshotSignalProbe.expectSnapshotCompleted(9)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 6
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 5, 2)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 2)
 
-      snapshotSignalProbe.expectMessageType[SnapshotCompleted].metadata.sequenceNr should ===(10)
+      snapshotSignalProbe.expectSnapshotCompleted(10)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 7
-      expectDeleteSnapshotCompleted(snapshotSignalProbe, 6, 3)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(6, 3)
     }
 
   }
