@@ -34,6 +34,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
+import scala.concurrent.duration._
 
 object EventSourcedBehaviorRetentionSpec extends Matchers {
 
@@ -324,15 +325,25 @@ class EventSourcedBehaviorRetentionSpec
       // starting at the snapshot at toSequenceNr would be invalid.
       snapshotSignalProbe.expectDeleteSnapshotCompleted(2, 0)
 
-      (1 to 10).foreach(_ => persistentActor ! Increment)
-      persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(20, (0 until 20).toVector))
+      // one at a time since snapshotting+event-deletion switches to running state before deleting snapshot so ordering
+      // if sending many commands in one go is not deterministic
+      persistentActor ! Increment // 11
+      persistentActor ! Increment // 12
       snapshotSignalProbe.expectSnapshotCompleted(12)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 6
       snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 0)
+
+      persistentActor ! Increment // 13
+      persistentActor ! Increment // 14
+      persistentActor ! Increment // 11
+      persistentActor ! Increment // 15
       snapshotSignalProbe.expectSnapshotCompleted(15)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 9
       snapshotSignalProbe.expectDeleteSnapshotCompleted(8, 2)
+
+      persistentActor ! Increment // 16
+      persistentActor ! Increment // 17
+      persistentActor ! Increment // 18
       snapshotSignalProbe.expectSnapshotCompleted(18)
 
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 12
@@ -367,14 +378,20 @@ class EventSourcedBehaviorRetentionSpec
       (11 to 13).foreach(_ => persistentActor ! Increment)
       snapshotSignalProbe.expectSnapshotCompleted(13)
       // no deletes triggered by snapshotWhen
-      eventProbe.expectNoMessage()
+      eventProbe.within(3.seconds) {
+        eventProbe.expectNoMessage()
+        snapshotSignalProbe.expectNoMessage()
+      }
 
       (14 to 16).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(16, (0 until 16).toVector))
       snapshotSignalProbe.expectSnapshotCompleted(15)
       snapshotSignalProbe.expectDeleteSnapshotCompleted(10, 5)
-      eventProbe.expectNoMessage()
+      eventProbe.within(3.seconds) {
+        eventProbe.expectNoMessage()
+        snapshotSignalProbe.expectNoMessage()
+      }
     }
 
     "be possible to combine snapshotWhen and retention criteria withDeleteEventsOnSnapshot" in {
@@ -394,37 +411,62 @@ class EventSourcedBehaviorRetentionSpec
       replyProbe.expectMessage(State(3, (0 until 3).toVector))
       snapshotSignalProbe.expectSnapshotCompleted(2) // every-2 through criteria
       snapshotSignalProbe.expectSnapshotCompleted(3) // snapshotWhen
-      eventProbe.expectNoMessage()
+      // no event deletes or snapshot deletes after snapshotWhen
+      eventProbe.within(3.seconds) {
+        eventProbe.expectNoMessage()
+        snapshotSignalProbe.expectNoMessage()
+      }
 
-      (4 to 10).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectSnapshotCompleted(4)
-      snapshotSignalProbe.expectSnapshotCompleted(6)
-      // we now have 4 snapshots, so delete to keep 3 according to criteria
+      // one at a time since snapshotting+event-deletion switches to running state before deleting snapshot so ordering
+      // if sending many commands in one go is not deterministic
+      persistentActor ! Increment // 4
+      snapshotSignalProbe.expectSnapshotCompleted(4) // every-2 through criteria
+      persistentActor ! Increment // 5
+      persistentActor ! Increment // 6
+      snapshotSignalProbe.expectSnapshotCompleted(6) // every-2 through criteria
 
-      snapshotSignalProbe.expectSnapshotCompleted(8)
-      snapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0)
+      persistentActor ! Increment // 7
+      persistentActor ! Increment // 8
+      snapshotSignalProbe.expectSnapshotCompleted(8) // every-2 through criteria
+      // triggers delete up to snapshot no 2
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 2
-      eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 4
-      snapshotSignalProbe.expectSnapshotCompleted(10)
-      snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0) // then delete oldest snapshot
 
-      (11 to 13).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectSnapshotCompleted(12)
-      // snapshotSignalProbe.expectDeleteSnapshotCompleted(4, 0)
+      persistentActor ! Increment // 9
+      persistentActor ! Increment // 10
+      snapshotSignalProbe.expectSnapshotCompleted(10) // every-2 through criteria
+      snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
+      eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 4
+
+      persistentActor ! Increment // 11
+      persistentActor ! Increment // 12
+      snapshotSignalProbe.expectSnapshotCompleted(12) // every-2 through criteria
       snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 0)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 6
+
+      persistentActor ! Increment // 13
       snapshotSignalProbe.expectSnapshotCompleted(13) // snapshotWhen
       // no deletes triggered by snapshotWhen
-      eventProbe.expectNoMessage()
+      eventProbe.within(3.seconds) {
+        eventProbe.expectNoMessage()
+        snapshotSignalProbe.expectNoMessage()
+      }
 
-      (14 to 16).foreach(_ => persistentActor ! Increment)
-      snapshotSignalProbe.expectSnapshotCompleted(14)
+      persistentActor ! Increment // 14
+      snapshotSignalProbe.expectSnapshotCompleted(14) // every-2 through criteria
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 8
       snapshotSignalProbe.expectDeleteSnapshotCompleted(7, 1)
-      snapshotSignalProbe.expectSnapshotCompleted(16)
+
+      persistentActor ! Increment // 15
+      persistentActor ! Increment // 16
+      snapshotSignalProbe.expectSnapshotCompleted(16) // every-2 through criteria
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 10
       snapshotSignalProbe.expectDeleteSnapshotCompleted(9, 3)
-      eventProbe.expectNoMessage()
+
+      eventProbe.within(3.seconds) {
+        eventProbe.expectNoMessage()
+        snapshotSignalProbe.expectNoMessage()
+      }
     }
 
     "be possible to snapshot every event" in {
@@ -471,42 +513,47 @@ class EventSourcedBehaviorRetentionSpec
       val pid = nextPid()
       val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val eventProbe = TestProbe[Try[EventSourcedSignal]]()
-      val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(Behaviors.setup[Command](ctx =>
         counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref), eventSignalProbe = Some(eventProbe.ref))
           .withRetention(
             RetentionCriteria.snapshotEvery(numberOfEvents = 1, keepNSnapshots = 3).withDeleteEventsOnSnapshot)))
 
-      (1 to 10).foreach(_ => persistentActor ! Increment)
-      persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(10, (0 until 10).toVector))
+      // one at a time since snapshotting+event-deletion switches to running state before deleting snapshot so ordering
+      // if sending many commands in one go is not deterministic
+      (1 to 4).foreach(_ => persistentActor ! Increment)
       snapshotSignalProbe.expectSnapshotCompleted(1)
       snapshotSignalProbe.expectSnapshotCompleted(2)
       snapshotSignalProbe.expectSnapshotCompleted(3)
       snapshotSignalProbe.expectSnapshotCompleted(4)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 1
 
+      persistentActor ! Increment // 5
       snapshotSignalProbe.expectSnapshotCompleted(5)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 2
       snapshotSignalProbe.expectDeleteSnapshotCompleted(1, 0)
 
+      persistentActor ! Increment // 6
       snapshotSignalProbe.expectSnapshotCompleted(6)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 3
       snapshotSignalProbe.expectDeleteSnapshotCompleted(2, 0)
 
+      persistentActor ! Increment // 7
       snapshotSignalProbe.expectSnapshotCompleted(7)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 4
       snapshotSignalProbe.expectDeleteSnapshotCompleted(3, 0)
 
+      persistentActor ! Increment // 8
       snapshotSignalProbe.expectSnapshotCompleted(8)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 5
       snapshotSignalProbe.expectDeleteSnapshotCompleted(4, 1)
 
+      persistentActor ! Increment // 9
       snapshotSignalProbe.expectSnapshotCompleted(9)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 6
       snapshotSignalProbe.expectDeleteSnapshotCompleted(5, 2)
 
+      persistentActor ! Increment // 10
       snapshotSignalProbe.expectSnapshotCompleted(10)
       eventProbe.expectMessageType[Success[DeleteEventsCompleted]].value.toSequenceNr shouldEqual 7
       snapshotSignalProbe.expectDeleteSnapshotCompleted(6, 3)

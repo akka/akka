@@ -143,9 +143,10 @@ private[akka] trait JournalInteractions[C, E, S] {
     if (toSequenceNr > 0) {
       val self = setup.selfClassic
 
-      if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
+      if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr) {
+        setup.log.debug("Deleting events up to sequenceNr [{}]", toSequenceNr)
         setup.journal ! JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, self)
-      else
+      } else
         self ! DeleteMessagesFailure(
           new RuntimeException(
             s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
