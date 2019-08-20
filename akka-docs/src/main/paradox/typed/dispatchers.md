@@ -19,7 +19,7 @@ to execute arbitrary code, for instance @scala[`Future`s]@java[`CompletableFutur
 ## Default dispatcher
 
 Every `ActorSystem` will have a default dispatcher that will be used in case nothing else is configured for an `Actor`.
-The default dispatcher can be configured, and is by default a `Dispatcher` with the configured `akka.actor.deployment.default-dispatcher.executor`.
+The default dispatcher can be configured, and is by default a `Dispatcher` with the configured `akka.actor.default-dispatcher.executor`.
 If no executor is selected a "fork-join-executor" is selected, which
 gives excellent performance in most cases.
 
