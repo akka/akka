@@ -4,14 +4,20 @@
 
 package akka.persistence
 
+import java.io.File
+
 import akka.actor._
+import akka.persistence.serialization.Snapshot
+import akka.serialization.{Serialization, SerializationExtension}
 import akka.testkit._
+import org.apache.commons.io.FileUtils
 
 object SnapshotRecoveryWithEmptyJournalSpec {
-  case class TakeSnapshot(deleteMessages: Boolean)
+  val survivingSnapshotPath = "target/survivingSnapshotPath"
+
+  case object TakeSnapshot
 
   class SaveSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
-    var deleteMessages = false
     var state = List.empty[String]
 
     override def receiveRecover: Receive = {
@@ -24,15 +30,8 @@ object SnapshotRecoveryWithEmptyJournalSpec {
         persist(payload) { _ =>
           state = s"${payload}-${lastSequenceNr}" :: state
         }
-      case TakeSnapshot(deleteMsgs) =>
-        deleteMessages = deleteMsgs
-        saveSnapshot(state)
-      case SaveSnapshotSuccess(md) =>
-        if (deleteMessages) {
-          deleteMessages(md.sequenceNr)
-          deleteMessages = false
-        }
-        probe ! md.sequenceNr
+      case TakeSnapshot             => saveSnapshot(state)
+      case SaveSnapshotSuccess(md)  => probe ! md.sequenceNr
       case GetState                 => probe ! state.reverse
       case o: DeleteMessagesSuccess => probe ! o
     }
@@ -60,32 +59,50 @@ object SnapshotRecoveryWithEmptyJournalSpec {
   }
 }
 
-class SnapshotRecoveryWithEmptyJournalSpec extends PersistenceSpec(PersistenceSpec.config(
-  "inmem", // with leveldb the error cannot be reproduced (counterKey is not reset after deleteMessages() )
-  "SnapshotRecoveryWithEmptyJournalSpec")) with ImplicitSender {
+class SnapshotRecoveryWithEmptyJournalSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config(
+        "leveldb",
+        "SnapshotRecoveryWithEmptyJournalSpec",
+        extraConfig = Some(s"""
+  akka.persistence.snapshot-store.local.dir = "${SnapshotRecoveryWithEmptyJournalSpec.survivingSnapshotPath}"
+  """)))
+    with ImplicitSender {
+
   import SnapshotRecoveryWithEmptyJournalSpec._
+
+  val persistenceId: String = namePrefix
+  val snapshotsDir: File = new File(survivingSnapshotPath)
+
+  val serializationExtension: Serialization = SerializationExtension(system)
+
+  // Prepare a hand made snapshot file as basis for the recovery start point
+  private def createSnapshotFile(sequenceNr: Long, data: Any): Unit = {
+    val snapshotFile = new File(snapshotsDir, s"snapshot-$persistenceId-$sequenceNr-123456789")
+    FileUtils.writeByteArrayToFile(snapshotFile, serializationExtension.serialize(Snapshot(data)).get)
+  }
+
+  val givenSnapshotSequenceNr: Long = 4711L
+
+  override protected def atStartup(): Unit = {
+    createSnapshotFile(givenSnapshotSequenceNr, List("a-1", "b-2"))
+  }
 
   "A persistentActor" must {
     "recover state starting from the most recent snapshot and use subsequent sequence numbers to persist events to the journal" in {
-      val persistenceId = name
-      val persistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
-      persistentActor ! "a"
-      persistentActor ! "b"
-      persistentActor ! TakeSnapshot(true)
-      expectMsgAllOf(DeleteMessagesSuccess(2), 2L)
-
-      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, Recovery(), testActor))
+      system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, Recovery(), testActor))
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
-          state should ===(List("a-1", "b-2").reverse)
-          timestamp should be > (0L)
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, `givenSnapshotSequenceNr`, timestamp), state) =>
+          state should ===(List("a-1", "b-2"))
+          timestamp shouldEqual 123456789L
       }
       expectMsg(RecoveryCompleted)
 
-      val persistentActor1 = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
+      val persistentActor1 = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], persistenceId, testActor))
       persistentActor1 ! "c"
-      persistentActor1 ! TakeSnapshot(true)
-      expectMsgAllOf(DeleteMessagesSuccess(3), 3L)
+      persistentActor1 ! TakeSnapshot
+      expectMsgAllOf(givenSnapshotSequenceNr + 1)
     }
   }
+
 }
