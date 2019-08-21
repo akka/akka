@@ -77,24 +77,27 @@ class SnapshotRecoveryWithEmptyJournalSpec
   val serializationExtension: Serialization = SerializationExtension(system)
 
   // Prepare a hand made snapshot file as basis for the recovery start point
-  private def createSnapshotFile(sequenceNr: Long, data: Any): Unit = {
-    val snapshotFile = new File(snapshotsDir, s"snapshot-$persistenceId-$sequenceNr-123456789")
+  private def createSnapshotFile(sequenceNr: Long, ts: Long, data: Any): Unit = {
+    val snapshotFile = new File(snapshotsDir, s"snapshot-$persistenceId-$sequenceNr-$ts")
     FileUtils.writeByteArrayToFile(snapshotFile, serializationExtension.serialize(Snapshot(data)).get)
   }
 
   val givenSnapshotSequenceNr: Long = 4711L
+  val givenTimestamp: Long = 1000L
 
   override protected def atStartup(): Unit = {
-    createSnapshotFile(givenSnapshotSequenceNr, List("a-1", "b-2"))
+    super.atStartup()
+    createSnapshotFile(givenSnapshotSequenceNr - 1, givenTimestamp - 1, List("a-1"))
+    createSnapshotFile(givenSnapshotSequenceNr, givenTimestamp, List("a-1", "b-2"))
   }
 
-  "A persistentActor" must {
-    "recover state starting from the most recent snapshot and use subsequent sequence numbers to persist events to the journal" in {
+  "A persistent actor in a system that only has snapshots and no previous journal activity" must {
+    "recover its state and sequence number starting from the most recent snapshot and use subsequent sequence numbers to persist events to the journal" in {
       system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, Recovery(), testActor))
       expectMsgPF() {
         case SnapshotOffer(SnapshotMetadata(`persistenceId`, `givenSnapshotSequenceNr`, timestamp), state) =>
           state should ===(List("a-1", "b-2"))
-          timestamp shouldEqual 123456789L
+          timestamp shouldEqual givenTimestamp
       }
       expectMsg(RecoveryCompleted)
 
