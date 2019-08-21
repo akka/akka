@@ -13,12 +13,14 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
 import akka.ConfigurationException
+import akka.annotation.DoNotInherit
 import akka.dispatch._
 import akka.event._
 import akka.japi.Util.immutableSeq
 import akka.util.Helpers.toRootLowerCase
 import akka.util._
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters
@@ -674,6 +676,7 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
  * actually roll your own Akka, beware that you are completely on your own in
  * that case!
  */
+@DoNotInherit
 abstract class ExtendedActorSystem extends ActorSystem {
 
   /**
