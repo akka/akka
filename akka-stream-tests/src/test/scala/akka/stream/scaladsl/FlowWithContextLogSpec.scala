@@ -24,7 +24,7 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
   "log() from FlowWithContextOps" must {
 
-    val supervisorPath = ActorMaterializerHelper.downcast(SystemMaterializer(system).materializer).supervisor.path
+    val supervisorPath = (SystemMaterializer(system).materializer).supervisor.path
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 

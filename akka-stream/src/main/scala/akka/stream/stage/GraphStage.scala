@@ -196,14 +196,14 @@ object GraphStageLogic {
    * @param name leave empty to use plain auto generated names
    */
   final class StageActor(
-      materializer: ActorMaterializer,
+      materializer: Materializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
       name: String,
       poisonPillFallback: Boolean) { // internal fallback to support deprecated SourceActorRef implementation replacement
 
     def this(
-        materializer: akka.stream.ActorMaterializer,
+        materializer: akka.stream.Materializer,
         getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
         initialReceive: StageActorRef.Receive,
         name: String) {
@@ -212,7 +212,7 @@ object GraphStageLogic {
 
     // not really needed, but let's keep MiMa happy
     def this(
-        materializer: akka.stream.ActorMaterializer,
+        materializer: akka.stream.Materializer,
         getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
         initialReceive: StageActorRef.Receive) {
       this(materializer, getAsyncCallback, initialReceive, "", false)
@@ -1280,9 +1280,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       receive: ((ActorRef, Any)) => Unit): StageActor =
     _stageActor match {
       case null =>
-        val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
         _stageActor =
-          new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
+          new StageActor(eagerMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
         _stageActor
       case existing =>
         existing.become(receive)

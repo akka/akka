@@ -120,8 +120,7 @@ import scala.util.control.NonFatal
     extends SinkModule[In, Publisher[In]](shape) {
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val impl = actorMaterializer.actorOf(context, FanoutProcessorImpl.props(context.effectiveAttributes))
+    val impl = context.materializer.actorOf(context, FanoutProcessorImpl.props(context.effectiveAttributes))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
@@ -178,7 +177,7 @@ import scala.util.control.NonFatal
     extends SinkModule[In, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
-    val subscriberRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
+    val subscriberRef = context.materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
   }
 

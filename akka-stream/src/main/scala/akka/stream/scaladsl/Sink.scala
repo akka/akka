@@ -157,8 +157,18 @@ object Sink {
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
-  def setup[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
+  def onMaterialization[T, M](factory: (Materializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
     Sink.fromGraph(new SetupSinkStage(factory))
+
+  /**
+   * Defers the creation of a [[Sink]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Sink]] returned by this method.
+   */
+  @deprecated("Use 'onMaterialization' instead", "2.6.0")
+  def setup[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
+    Sink.fromGraph(new SetupSinkStage((materializer, attributes) =>
+      factory(ActorMaterializerHelper.downcast(materializer), attributes)))
 
   /**
    * Helper to create [[Sink]] from `Subscriber`.

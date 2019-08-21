@@ -1451,16 +1451,7 @@ private[stream] object Collect {
         log = logAdapter match {
           case Some(l) => l
           case _ =>
-            val mat = try ActorMaterializerHelper.downcast(materializer)
-            catch {
-              case ex: Exception =>
-                throw new RuntimeException(
-                  "Log stage can only provide LoggingAdapter when used with ActorMaterializer! " +
-                  "Provide a LoggingAdapter explicitly or use the actor based flow materializer.",
-                  ex)
-            }
-
-            Logging(mat.system, mat)(fromMaterializer)
+            Logging(materializer.system, materializer)(fromMaterializer)
         }
       }
 
@@ -1538,7 +1529,7 @@ private[stream] object Collect {
     override def getClazz(t: Materializer): Class[_] = classOf[Materializer]
 
     override def genString(t: Materializer): String = {
-      try s"$DefaultLoggerName(${ActorMaterializerHelper.downcast(t).supervisor.path})"
+      try s"$DefaultLoggerName(${t.supervisor.path})"
       catch {
         case _: Exception => LogSource.fromString.genString(DefaultLoggerName)
       }

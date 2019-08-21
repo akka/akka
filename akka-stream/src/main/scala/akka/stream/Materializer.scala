@@ -4,27 +4,28 @@
 
 package akka.stream
 
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.ActorContext
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Cancellable
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.Props
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
 /**
- * Materializer SPI (Service Provider Interface)
+ * The Materializer is the component responsible for turning a stream blueprint into a running stream.
+ * In general the system wide materializer should be preferred over creating instances manually.
  *
- * Binary compatibility is NOT guaranteed on materializer internals.
- *
- * Custom materializer implementations should be aware that the materializer SPI
- * is not yet final and may change in patch releases of Akka. Please note that this
- * does not impact end-users of Akka streams, only implementors of custom materializers,
- * with whom the Akka team co-ordinates such changes.
- *
- * Once the SPI is final this notice will be removed.
+ * Not for user extension
  */
 @silent("deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
+@DoNotInherit
 abstract class Materializer {
 
   /**
@@ -144,6 +145,41 @@ abstract class Materializer {
     since = "2.6.0")
   def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
 
+  /**
+   * Shuts down this materializer and all the operators that have been materialized through this materializer. After
+   * having shut down, this materializer cannot be used again. Any attempt to materialize operators after having
+   * shut down will result in an IllegalStateException being thrown at materialization time.
+   */
+  def shutdown(): Unit
+
+  /**
+   * Indicates if the materializer has been shut down.
+   */
+  def isShutdown: Boolean
+
+  /**
+   * INTERNAL API
+   *
+   * FIXME this was documented as internal api but was public, can we make it internal?
+   */
+  def system: ActorSystem
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def logger: LoggingAdapter
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def supervisor: ActorRef
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
+
+  def settings: ActorMaterializerSettings
 }
 
 object Materializer {
@@ -154,40 +190,20 @@ object Materializer {
   implicit def matFromSystem(implicit provider: ClassicActorSystemProvider): Materializer =
     SystemMaterializer(provider.classicSystem).materializer
 
-}
+  /**
+   * Scala API: Create a materializer whose lifecycle will be tied to the one of the passed actor. When the actor stops the materializer
+   * will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   */
+  @silent("deprecated")
+  def apply(context: ActorContext): Materializer =
+    ActorMaterializer(None, None)(context)
 
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object NoMaterializer extends Materializer {
-  override def withNamePrefix(name: String): Materializer =
-    throw new UnsupportedOperationException("NoMaterializer cannot be named")
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
-    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
-    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+  /**
+   * Java API: Create a materializer whose lifecycle will be tied to the one of the passed actor. When the actor stops the materializer
+   * will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   */
+  def create(context: ActorContext): Materializer = apply(context)
 
-  override def executionContext: ExecutionContextExecutor =
-    throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
-
-  def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot schedule a single event")
-
-  def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot schedule a repeated event")
-
-  override def scheduleWithFixedDelay(
-      initialDelay: FiniteDuration,
-      delay: FiniteDuration,
-      task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot scheduleWithFixedDelay")
-
-  override def scheduleAtFixedRate(
-      initialDelay: FiniteDuration,
-      interval: FiniteDuration,
-      task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot scheduleAtFixedRate")
 }
 
 /**

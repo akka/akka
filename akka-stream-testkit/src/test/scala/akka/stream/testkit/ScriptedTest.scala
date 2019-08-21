@@ -4,12 +4,18 @@
 
 package akka.stream.testkit
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializerSettings
+import akka.stream.Materializer
+import akka.stream.SystemMaterializer
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.scaladsl.{ Flow, Sink, Source }
 import org.reactivestreams.Publisher
 import org.scalatest.Matchers
 
@@ -24,7 +30,7 @@ trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
-  def toPublisher[In, Out]: (Source[Out, _], ActorMaterializer) => Publisher[Out] =
+  def toPublisher[In, Out]: (Source[Out, _], Materializer) => Publisher[Out] =
     (f, m) => f.runWith(Sink.asPublisher(false))(m)
 
   object Script {

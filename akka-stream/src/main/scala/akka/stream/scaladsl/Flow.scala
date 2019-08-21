@@ -396,8 +396,18 @@ object Flow {
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Flow]] returned by this method.
    */
-  def setup[T, U, M](factory: (ActorMaterializer, Attributes) => Flow[T, U, M]): Flow[T, U, Future[M]] =
+  def onMaterialization[T, U, M](factory: (Materializer, Attributes) => Flow[T, U, M]): Flow[T, U, Future[M]] =
     Flow.fromGraph(new SetupFlowStage(factory))
+
+  /**
+   * Defers the creation of a [[Flow]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Flow]] returned by this method.
+   */
+  @deprecated("Use 'onMaterialization' instead", "2.6.0")
+  def setup[T, U, M](factory: (ActorMaterializer, Attributes) => Flow[T, U, M]): Flow[T, U, Future[M]] =
+    Flow.fromGraph(new SetupFlowStage((materializer, attributes) =>
+      factory(ActorMaterializerHelper.downcast(materializer), attributes)))
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input

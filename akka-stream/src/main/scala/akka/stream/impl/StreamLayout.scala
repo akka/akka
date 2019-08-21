@@ -10,7 +10,10 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.Processor
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
@@ -499,7 +502,7 @@ import scala.util.control.NonFatal
 
   // this is when the subscription timeout hits, implemented like this to
   // avoid allocating a separate object for that
-  def onSubscriptionTimeout(am: ActorMaterializer, mode: StreamSubscriptionTimeoutTerminationMode): Unit = {
+  def onSubscriptionTimeout(am: Materializer, mode: StreamSubscriptionTimeoutTerminationMode): Unit = {
     import StreamSubscriptionTimeoutTerminationMode._
     get() match {
       case null | _: Publisher[_] =>

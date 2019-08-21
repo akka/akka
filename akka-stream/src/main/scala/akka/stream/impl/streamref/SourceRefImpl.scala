@@ -58,12 +58,12 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       eagerMaterializer: Materializer): (GraphStageLogic, SinkRef[Out]) = {
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with OutHandler {
-      private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
+      private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 
       // settings ---
       import StreamRefAttributes._
       @silent("deprecated") // can't remove this settings access without breaking compat
-      private[this] val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
+      private[this] val settings = eagerMaterializer.settings.streamRefSettings
 
       @silent("deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
