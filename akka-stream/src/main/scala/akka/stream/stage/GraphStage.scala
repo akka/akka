@@ -681,7 +681,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   // Variable used from `OutHandler.onDownstreamFinish` to carry over cancellation cause in cases where
   // `OutHandler` implementations call `super.onDownstreamFinished()`.
-  private[stream] var lastCancellationCause: Throwable = _
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[stream] var lastCancellationCause: Throwable = _
 
   /**
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
@@ -1822,7 +1825,7 @@ trait OutHandler {
     require(
       thisStage.lastCancellationCause ne null,
       "onDownstreamFinish() must not be called without a cancellation cause")
-    GraphInterpreter.currentInterpreter.activeStage.cancelStage(thisStage.lastCancellationCause)
+    thisStage.cancelStage(thisStage.lastCancellationCause)
   }
 
   /**
