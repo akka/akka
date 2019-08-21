@@ -55,6 +55,11 @@ import com.github.ghik.silencer.silent
 
   // impl InternalRecipientRef, ask not supported
   override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
+
+  // stream materialization etc. using stub not supported
+  override private[akka] def classicSystem =
+    throw new UnsupportedOperationException("no untyped actor system available")
+
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
 

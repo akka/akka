@@ -27,8 +27,6 @@ object ActorFlowSpec {
 class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import ActorFlowSpec._
 
-  implicit val mat = ActorMaterializer()
-
   "ActorFlow" should {
 
     val replier = spawn(Behaviors.receiveMessage[Asking] {

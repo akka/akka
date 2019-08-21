@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.function.{ BiFunction, Supplier }
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.util.unused
 import com.github.ghik.silencer.silent
 
@@ -675,8 +676,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a `Sink.asPublisher`.
    */
-  def runWith[M](sink: Graph[SinkShape[Out], M], system: ActorSystem): M =
-    delegate.runWith(sink)(SystemMaterializer(system).materializer)
+  def runWith[M](sink: Graph[SinkShape[Out], M], systemProvider: ClassicActorSystemProvider): M =
+    delegate.runWith(sink)(SystemMaterializer(systemProvider.classicSystem).materializer)
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value

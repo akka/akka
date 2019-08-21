@@ -4,7 +4,7 @@
 
 package akka.stream
 
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
@@ -149,10 +149,10 @@ abstract class Materializer {
 object Materializer {
 
   /**
-   * Implicitly provides the system wide materializer
+   * Implicitly provides the system wide materializer from a classic or typed `ActorSystem`
    */
-  implicit def matFromSystem(implicit system: ActorSystem): Materializer =
-    SystemMaterializer(system).materializer
+  implicit def matFromSystem(implicit provider: ClassicActorSystemProvider): Materializer =
+    SystemMaterializer(provider.classicSystem).materializer
 
 }
 

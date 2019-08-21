@@ -4,28 +4,33 @@
 
 package akka.stream.javadsl
 
-import akka.util.{ ConstantFun, Timeout }
-import akka.{ Done, NotUsed }
-import akka.event.LoggingAdapter
-import akka.japi.{ function, Pair, Util }
-import akka.stream._
-import org.reactivestreams.Processor
-
-import scala.concurrent.duration.FiniteDuration
-import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
-import java.util.function.{ BiFunction, Supplier }
+import java.util.function.BiFunction
+import java.util.function.Supplier
+import java.util.Comparator
+import java.util.Optional
 
-import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
+import akka.event.LoggingAdapter
+import akka.japi.Pair
+import akka.japi.Util
+import akka.japi.function
+import akka.stream._
 import akka.stream.impl.fusing.LazyFlow
+import akka.util.JavaDurationConverters._
 import akka.util.unused
+import akka.util.ConstantFun
+import akka.util.Timeout
+import akka.Done
+import akka.NotUsed
 import com.github.ghik.silencer.silent
+import org.reactivestreams.Processor
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 object Flow {
@@ -500,8 +505,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def runWith[T, U](
       source: Graph[SourceShape[In], T],
       sink: Graph[SinkShape[Out], U],
-      system: ActorSystem): akka.japi.Pair[T, U] = {
-    val (som, sim) = delegate.runWith(source, sink)(SystemMaterializer(system).materializer)
+      systemProvider: ClassicActorSystemProvider): akka.japi.Pair[T, U] = {
+    val (som, sim) = delegate.runWith(source, sink)(SystemMaterializer(systemProvider.classicSystem).materializer)
     akka.japi.Pair(som, sim)
   }
 
@@ -3603,8 +3608,8 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
    *
    * Uses the system materializer.
    */
-  def run(system: ActorSystem): Mat = {
-    run(SystemMaterializer(system).materializer)
+  def run(systemProvider: ClassicActorSystemProvider): Mat = {
+    run(SystemMaterializer(systemProvider.classicSystem).materializer)
   }
 
   /**

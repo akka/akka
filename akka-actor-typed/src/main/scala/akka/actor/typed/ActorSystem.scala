@@ -6,6 +6,7 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
@@ -17,6 +18,7 @@ import akka.util.Helpers.Requiring
 import akka.util.Timeout
 import akka.{ Done, actor => untyped }
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
@@ -29,7 +31,8 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
  * Not for user extension.
  */
 @DoNotInherit
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] =>
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicActorSystemProvider {
+  this: InternalRecipientRef[T] =>
 
   /**
    * The name of this actor system, used to distinguish multiple ones within

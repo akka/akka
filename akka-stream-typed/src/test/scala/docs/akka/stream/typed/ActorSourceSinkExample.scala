@@ -7,13 +7,10 @@ package docs.akka.stream.typed
 import akka.NotUsed
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.typed.scaladsl.ActorMaterializer
 
 object ActorSourceSinkExample {
 
-  val system: ActorSystem[_] = ActorSystem(Behaviors.empty, "ActorSourceSinkExample")
-
-  implicit val mat: ActorMaterializer = ActorMaterializer()(system)
+  implicit val system: ActorSystem[_] = ActorSystem(Behaviors.empty, "ActorSourceSinkExample")
 
   {
     // #actor-source-ref
