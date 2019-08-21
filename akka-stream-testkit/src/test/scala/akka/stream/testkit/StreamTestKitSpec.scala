@@ -4,19 +4,16 @@
 
 package akka.stream.testkit
 
-import akka.stream._
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import scala.concurrent.duration._
-
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.TestEvent.Mute
 import akka.testkit.TestEvent.UnMute
 
-class StreamTestKitSpec extends AkkaSpec {
+import scala.concurrent.duration._
 
-  implicit val materializer = ActorMaterializer()
+class StreamTestKitSpec extends AkkaSpec {
 
   val ex = new Exception("Boom!")
 

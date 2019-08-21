@@ -14,7 +14,6 @@ import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.japi.function
-import akka.stream.impl.PhasedFusingActorMaterializer.PhasedFusingActorMaterializer
 import akka.stream.impl._
 import akka.stream.stage.GraphStageLogic
 import akka.util.Helpers.toRootLowerCase

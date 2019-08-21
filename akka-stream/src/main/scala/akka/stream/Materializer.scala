@@ -179,6 +179,7 @@ abstract class Materializer {
    */
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
 
+  @deprecated("Use attributes to access settings from stages", "2.6.0")
   def settings: ActorMaterializerSettings
 }
 
@@ -203,6 +204,28 @@ object Materializer {
    * will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
    */
   def create(context: ActorContext): Materializer = apply(context)
+
+  /**
+   * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
+   *
+   * *Note* prefer using the default [[SystemMaterializer]] and only create new system level materializers if you have specific
+   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle of the materializer to
+   * an actor, use the [[ActorContext]] one instead.
+   */
+  @silent("deprecated")
+  def apply(system: ActorSystem): Materializer =
+    ActorMaterializer(None, None)(system)
+
+  /**
+   * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
+   *
+   * *Note* prefer using the default [[SystemMaterializer]] and only create new system level materializers if you have specific
+   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle of the materializer to
+   * an actor, use the [[ActorContext]] one instead.
+   */
+  @silent("deprecated")
+  def create(system: ActorSystem): Materializer =
+    apply(system)
 
 }
 

@@ -68,7 +68,7 @@ class FlowWatchTerminationSpec extends StreamSpec {
     }
 
     "fail future when stream abruptly terminated" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
 
       val (_, future) = TestSource.probe[Int].watchTermination()(Keep.both).to(Sink.ignore).run()(mat)
       mat.shutdown()

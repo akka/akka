@@ -180,7 +180,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "not leave blocked threads when materializer shutdown" in {
-      val materializer2 = ActorMaterializer()(system)
+      val materializer2 = Materializer(system)
       val (_, probe) =
         StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer2)
 

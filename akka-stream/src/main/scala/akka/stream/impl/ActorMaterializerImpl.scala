@@ -15,11 +15,6 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.pattern.retry
 import akka.stream._
-import akka.stream.impl.PhasedFusingActorMaterializer.GraphStageIsland
-import akka.stream.impl.PhasedFusingActorMaterializer.IslandTag
-import akka.stream.impl.PhasedFusingActorMaterializer.Phase
-import akka.stream.impl.PhasedFusingActorMaterializer.PhaseIsland
-import akka.stream.impl.PhasedFusingActorMaterializer.PhasedFusingActorMaterializer
 import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.snapshot.StreamSnapshot
@@ -182,6 +177,7 @@ private[akka] class SubFusingActorMaterializerImpl(
   override private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef =
     delegate.actorOf(context, props)
 
+  @silent("deprecated")
   override def settings: ActorMaterializerSettings = delegate.settings
 }
 

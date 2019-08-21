@@ -513,12 +513,11 @@ class TcpSpec extends StreamSpec("""
         """).withFallback(system.settings.config))
 
       try {
-        val mat2 = ActorMaterializer.create(system2)
+        implicit val materializer = SystemMaterializer(system2).materializer
 
         val serverAddress = temporaryServerAddress()
-        val binding = Tcp(system2)
-          .bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2)
-          .futureValue
+        val binding =
+          Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort).futureValue
 
         val probe = TestProbe()
         val testMsg = ByteString(0)
@@ -529,7 +528,7 @@ class TcpSpec extends StreamSpec("""
             .via(Tcp(system2).outgoingConnection(serverAddress))
             .runForeach { msg =>
               probe.ref ! msg
-            }(mat2)
+            }
 
         // Ensure first that the actor is there
         probe.expectMsg(testMsg)
@@ -811,12 +810,11 @@ class TcpSpec extends StreamSpec("""
 
     "not thrown on unbind after system has been shut down" in {
       val sys2 = ActorSystem("shutdown-test-system")
-      val mat2 = ActorMaterializer()(sys2)
-
+      implicit val materializer = SystemMaterializer(sys2).materializer
       try {
         val address = temporaryServerAddress()
 
-        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)(mat2)
+        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)
 
         // Ensure server is running
         bindingFuture.futureValue

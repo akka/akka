@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.AbruptTerminationException
+import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.AbruptTerminationException
-import akka.stream.ActorMaterializer
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -81,7 +81,7 @@ class HeadSinkSpec extends StreamSpec("""
     }
 
     "fail on abrupt termination" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val source = TestPublisher.probe()
       val f = Source.fromPublisher(source).runWith(Sink.headOption)(mat)
       mat.shutdown()

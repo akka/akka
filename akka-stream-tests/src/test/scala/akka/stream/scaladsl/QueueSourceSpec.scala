@@ -9,9 +9,12 @@ import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
+import akka.stream.testkit.GraphStageMessages
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSourceStage
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, TestSubscriber }
 import akka.testkit.TestProbe
 import org.scalatest.time.Span
 
@@ -19,7 +22,6 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 class QueueSourceSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
   val pause = 300.millis
 
@@ -190,7 +192,7 @@ class QueueSourceSpec extends StreamSpec {
     }
 
     "complete watching future with failure if materializer shut down" in assertAllStagesStopped {
-      val tempMap = ActorMaterializer()
+      val tempMap = Materializer(system)
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(1, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()(tempMap)
       queue.watchCompletion().pipeTo(testActor)

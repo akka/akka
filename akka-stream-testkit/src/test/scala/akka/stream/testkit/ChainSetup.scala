@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Materializer
 import akka.stream.scaladsl._
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
 class ChainSetup[In, Out, M](
@@ -19,12 +20,14 @@ class ChainSetup[In, Out, M](
     materializer: Materializer,
     toPublisher: (Source[Out, _], Materializer) => Publisher[Out])(implicit val system: ActorSystem) {
 
+  @silent("deprecated")
   def this(
       stream: Flow[In, In, NotUsed] => Flow[In, Out, M],
       settings: ActorMaterializerSettings,
       toPublisher: (Source[Out, _], Materializer) => Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, ActorMaterializer(settings)(system), toPublisher)(system)
 
+  @silent("deprecated")
   def this(
       stream: Flow[In, In, NotUsed] => Flow[In, Out, M],
       settings: ActorMaterializerSettings,
