@@ -104,5 +104,4 @@ class SnapshotRecoveryWithEmptyJournalSpec
       expectMsgAllOf(givenSnapshotSequenceNr + 1)
     }
   }
-
 }
