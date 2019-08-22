@@ -193,30 +193,14 @@ object GraphStageLogic {
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
    *
-   * @param name leave empty to use plain auto generated names
+   * Not for user instantiation, use [[#getStageActor]].
    */
-  final class StageActor(
+  final class StageActor @InternalApi() private[akka] (
       materializer: Materializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
-      name: String,
-      poisonPillFallback: Boolean) { // internal fallback to support deprecated SourceActorRef implementation replacement
-
-    def this(
-        materializer: akka.stream.Materializer,
-        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
-        initialReceive: StageActorRef.Receive,
-        name: String) {
-      this(materializer, getAsyncCallback, initialReceive, name, false)
-    }
-
-    // not really needed, but let's keep MiMa happy
-    def this(
-        materializer: akka.stream.Materializer,
-        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
-        initialReceive: StageActorRef.Receive) {
-      this(materializer, getAsyncCallback, initialReceive, "", false)
-    }
+      poisonPillFallback: Boolean, // internal fallback to support deprecated SourceActorRef implementation replacement
+      name: String) {
 
     private val callback = getAsyncCallback(internalReceive)
 
@@ -1281,7 +1265,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     _stageActor match {
       case null =>
         _stageActor =
-          new StageActor(eagerMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
+          new StageActor(eagerMaterializer, getAsyncCallback _, receive, poisonPillCompatibility, stageActorName)
         _stageActor
       case existing =>
         existing.become(receive)

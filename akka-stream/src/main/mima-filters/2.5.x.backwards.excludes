@@ -161,6 +161,7 @@ ProblemFilters.exclude[Problem]("akka.stream.StreamRefMessages*")
 ProblemFilters.exclude[Problem]("akka.stream.impl.*")
 
 # #25559 simplifying materialization
+# internals
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.settings")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanOut.settings")
@@ -210,3 +211,17 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.FanoutProc
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.FanoutProcessorImpl.props")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.GraphStageIsland.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.GraphInterpreterShell.this")
+# internal and only used in one test
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.NoMaterializer$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.NoMaterializer")
+# Materializer not for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.supervisor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.logger")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.settings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.actorOf")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.isShutdown")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.system")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.shutdown")
+# StageActor was never meant to be constructed by users
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")
