@@ -419,9 +419,12 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * that can be consume elements 'into' the pre-materialized one.
    *
    * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
-  def preMaterialize(system: ActorSystem): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
-    val (mat, sink) = delegate.preMaterialize()(SystemMaterializer(system).materializer)
+  def preMaterialize(systemProvider: ClassicActorSystemProvider)
+      : japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+    val (mat, sink) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
     akka.japi.Pair(mat, sink.asJava)
   }
 

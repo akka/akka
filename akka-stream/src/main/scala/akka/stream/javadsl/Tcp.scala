@@ -26,6 +26,7 @@ import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ClassicActorSystemProvider
 import javax.net.ssl.SSLContext
 import akka.annotation.InternalApi
 import akka.stream.SystemMaterializer
@@ -80,9 +81,11 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * materialized value is returned.
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
+     *
+     * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
      */
-    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], system: ActorSystem): Mat =
-      delegate.handleWith(handler.asScala)(SystemMaterializer(system).materializer)
+    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], systemProvider: ClassicActorSystemProvider): Mat =
+      delegate.handleWith(handler.asScala)(SystemMaterializer(systemProvider.classicSystem).materializer)
 
     /**
      * Handles the connection using the given flow, which is materialized exactly once and the respective
@@ -90,7 +93,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      *
-     * Prefer the method taking an ActorSystem unless you have special requirements.
+     * Prefer the method taking an `ActorSystemProvider` unless you have special requirements.
      */
     def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], materializer: Materializer): Mat =
       delegate.handleWith(handler.asScala)(materializer)
