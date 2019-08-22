@@ -5,15 +5,19 @@
 package docs.akka.typed
 
 //#imports
+import akka.Done
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+//#imports
+
+import akka.NotUsed
+import akka.actor.typed.Terminated
+
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-import akka.actor.typed._
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
-//#imports
 
 object OOIntroSpec {
 
@@ -107,37 +111,38 @@ object OOIntroSpec {
     //#chatroom-gabbler
   }
 
+  //#chatroom-main
+  object Main {
+    def apply(): Behavior[NotUsed] =
+      Behaviors.setup { context =>
+        val chatRoom = context.spawn(ChatRoom(), "chatroom")
+        val gabblerRef = context.spawn(Gabbler(), "gabbler")
+        context.watch(gabblerRef)
+        chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
+
+        Behaviors.receiveSignal {
+          case (_, Terminated(_)) =>
+            Behaviors.stopped
+        }
+      }
+
+    def main(args: Array[String]): Unit = {
+      ActorSystem(Main(), "ChatRoomDemo")
+    }
+
+  }
+  //#chatroom-main
+
 }
 
 class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import OOIntroSpec._
 
-  "A chat room" must {
+  "Intro sample" must {
     "chat" in {
-      //#chatroom-main
-      val main: Behavior[String] =
-        Behaviors.setup { context =>
-          val chatRoom = context.spawn(ChatRoom(), "chatroom")
-          val gabblerRef = context.spawn(Gabbler(), "gabbler")
-          context.watch(gabblerRef)
-
-          Behaviors
-            .receiveMessagePartial[String] {
-              case "go" =>
-                chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
-                Behaviors.same
-            }
-            .receiveSignal {
-              case (_, Terminated(_)) =>
-                context.log.info("Stopping guardian")
-                Behaviors.stopped
-            }
-        }
-
-      val system = ActorSystem(main, "ChatRoomDemo")
-      system ! "go"
-      //#chatroom-main
+      val system = ActorSystem(Main(), "ChatRoomDemo")
+      system.whenTerminated.futureValue should ===(Done)
     }
   }
 }

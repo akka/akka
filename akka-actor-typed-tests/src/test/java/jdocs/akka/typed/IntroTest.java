@@ -390,26 +390,28 @@ public interface IntroTest {
   }
   // #chatroom-gabbler
 
-  public static void runChatRoom() throws Exception {
+  // #chatroom-main
+  public class Main {
+    public static Behavior<Void> create() {
+      return Behaviors.setup(
+          context -> {
+            ActorRef<ChatRoom.RoomCommand> chatRoom = context.spawn(ChatRoom.create(), "chatRoom");
+            ActorRef<ChatRoom.SessionEvent> gabbler = context.spawn(Gabbler.create(), "gabbler");
+            context.watch(gabbler);
+            chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-    // #chatroom-main
-    Behavior<Void> main =
-        Behaviors.setup(
-            context -> {
-              ActorRef<ChatRoom.RoomCommand> chatRoom =
-                  context.spawn(ChatRoom.create(), "chatRoom");
-              ActorRef<ChatRoom.SessionEvent> gabbler = context.spawn(Gabbler.create(), "gabbler");
-              context.watch(gabbler);
-              chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
+            return Behaviors.<Void>receiveSignal(
+                (c, sig) -> {
+                  if (sig instanceof Terminated) return Behaviors.stopped();
+                  else return Behaviors.unhandled();
+                });
+          });
+    }
 
-              return Behaviors.<Void>receiveSignal(
-                  (c, sig) -> {
-                    if (sig instanceof Terminated) return Behaviors.stopped();
-                    else return Behaviors.unhandled();
-                  });
-            });
-
-    final ActorSystem<Void> system = ActorSystem.create(main, "ChatRoomDemo");
-    // #chatroom-main
+    public static void main(String[] args) {
+      ActorSystem.create(Main.create(), "ChatRoomDemo");
+    }
   }
+  // #chatroom-main
+
 }
