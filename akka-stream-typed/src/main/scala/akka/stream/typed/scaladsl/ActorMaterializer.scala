@@ -7,6 +7,7 @@ package akka.stream.typed.scaladsl
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.ActorContext
 import akka.stream.ActorMaterializerSettings
+import com.github.ghik.silencer.silent
 
 object ActorMaterializer {
   import akka.actor.typed.scaladsl.adapter._
@@ -23,6 +24,9 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def apply[T](materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(
       implicit actorSystem: ActorSystem[T]): ActorMaterializer =
     akka.stream.ActorMaterializer(materializerSettings, namePrefix)(actorSystem.toClassic)
@@ -39,6 +43,7 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  // FIXME could we do the same as with ClassicActorContextProvider here?
   def boundToActor[T](
       ctx: ActorContext[T],
       materializerSettings: Option[ActorMaterializerSettings] = None,

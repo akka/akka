@@ -1,8 +1,14 @@
 # Source/Flow.setup
 
-Defer the creation of a `Source/Flow` until materialization and access `ActorMaterializer` and `Attributes`
+Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`
 
 @ref[Simple operators](../index.md#simple-operators)
+
+@@@ warning
+
+The `setup` operator has been deprecated, use @ref:[fromMaterializer](./fromMaterializer.md) instead. 
+
+@@@
 
 @@@ div { .group-scala }
 

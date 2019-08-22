@@ -310,7 +310,7 @@ object Source {
    * exposes [[Materializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Source]] returned by this method.
    */
-  def onMaterialization[T, M](factory: (Materializer, Attributes) => Source[T, M]): Source[T, Future[M]] =
+  def fromMaterializer[T, M](factory: (Materializer, Attributes) => Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new SetupSourceStage(factory))
 
   /**
@@ -318,7 +318,7 @@ object Source {
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Source]] returned by this method.
    */
-  @deprecated("Use 'onMaterialization' instead", "2.6.0")
+  @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: (ActorMaterializer, Attributes) => Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new SetupSourceStage((materializer, attributes) =>
       factory(ActorMaterializerHelper.downcast(materializer), attributes)))

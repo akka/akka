@@ -20,6 +20,9 @@ object ActorMaterializerFactory {
    * Defaults the actor name prefix used to name actors running the processing steps to `"flow"`.
    * The actor names are built up of `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create[T](actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
     akka.stream.ActorMaterializer.create(actorSystem.toClassic)
 
@@ -28,6 +31,9 @@ object ActorMaterializerFactory {
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.typed.ActorSystem]]
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
+  @deprecated(
+    "Use the system wide materializer with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create[T](settings: ActorMaterializerSettings, actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
     akka.stream.ActorMaterializer.create(settings, actorSystem.toClassic)
 
@@ -41,6 +47,9 @@ object ActorMaterializerFactory {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create[T](
       settings: ActorMaterializerSettings,
       namePrefix: String,

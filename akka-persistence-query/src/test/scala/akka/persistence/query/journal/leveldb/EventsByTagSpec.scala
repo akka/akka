@@ -4,17 +4,19 @@
 
 package akka.persistence.query.journal.leveldb
 
-import scala.concurrent.duration._
 import akka.persistence.journal.Tagged
 import akka.persistence.journal.WriteEventAdapter
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
+import akka.persistence.query.NoOffset
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.query.scaladsl.EventsByTagQuery
-import akka.stream.ActorMaterializer
+import akka.persistence.query.EventEnvelope
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.Sequence
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.persistence.query.NoOffset
+
+import scala.concurrent.duration._
 
 object EventsByTagSpec {
   val config = s"""
@@ -58,8 +60,6 @@ class ColorTagger extends WriteEventAdapter {
 }
 
 class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with ImplicitSender {
-
-  implicit val mat = ActorMaterializer()(system)
 
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 

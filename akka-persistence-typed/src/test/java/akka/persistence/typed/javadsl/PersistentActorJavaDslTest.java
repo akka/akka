@@ -19,7 +19,6 @@ import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.persistence.typed.*;
 import akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec;
 import akka.serialization.jackson.CborSerializable;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -53,9 +52,6 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   private LeveldbReadJournal queries =
       PersistenceQuery.get(Adapter.toClassic(testKit.system()))
           .getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());
-
-  private ActorMaterializer materializer =
-      ActorMaterializer.create(Adapter.toClassic(testKit.system()));
 
   interface Command extends CborSerializable {}
 
@@ -547,7 +543,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     List<EventEnvelope> events =
         queries
             .currentEventsByTag("tag1", NoOffset.getInstance())
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), testKit.system())
             .toCompletableFuture()
             .get();
     assertEquals(
@@ -578,7 +574,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     List<EventEnvelope> events =
         queries
             .currentEventsByPersistenceId("transform", 0, Long.MAX_VALUE)
-            .runWith(Sink.seq(), materializer)
+            .runWith(Sink.seq(), testKit.system())
             .toCompletableFuture()
             .get();
     assertEquals(

@@ -6,9 +6,6 @@ package akka.cluster
 
 import java.lang.management.ManagementFactory
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.CoordinatedShutdown
@@ -17,7 +14,7 @@ import akka.actor.Props
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent._
 import akka.cluster.InternalClusterAction._
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.StreamRefs
@@ -26,6 +23,9 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import javax.management.ObjectName
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object ClusterSpec {
   val config = """
@@ -223,7 +223,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[CurrentClusterState]
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         probe.expectMsgType[MemberUp]
-        val mat = ActorMaterializer()(sys2)
+        val mat = Materializer(sys2)
         val sink = StreamRefs.sinkRef[String]().to(Sink.ignore).run()(mat)
         Source.tick(1.milli, 10.millis, "tick").to(sink).run()(mat)
 
