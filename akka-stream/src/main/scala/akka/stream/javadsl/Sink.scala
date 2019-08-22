@@ -8,18 +8,17 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorRef
-import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
+import akka.japi
 import akka.japi.function
+import akka.stream._
 import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.javadsl
 import akka.stream.scaladsl
-import akka.stream._
-import akka.Done
-import akka.NotUsed
-import akka.japi
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 
