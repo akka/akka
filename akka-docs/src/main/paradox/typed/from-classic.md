@@ -1,7 +1,7 @@
 # Learning Akka Typed from Classic
 
-This is a good starting point if you already know the classic actor APIs and would like to learn Akka Typed.
-Many concepts are the same and this guide tries to highlight differences and how to do certain things
+This is a good reference if you already know the classic actor APIs and would like to learn Akka Typed.
+Many concepts are the same and this page tries to highlight differences and how to do certain things
 in Typed compared to classic.
 
 Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs,
@@ -63,7 +63,21 @@ An actor in Typed is defined by a class extending @scala[`akka.actor.typed.scala
 It's also possible to define an actor in Typed from functions instead of extending a class. This is called
 the @ref:[functional style](style-guide.md#functional-versus-object-oriented-style).
 
-TODO snip
+Classic HelloWorld actor:
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/fromclassic/ClassicSample.scala) { #hello-world-actor }
+
+Java
+:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/fromclassic/ClassicSample.java) { #hello-world-actor }
+
+Typed HelloWorld actor:
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/fromclassic/TypedSample.scala) { #hello-world-actor }
+
+Java
+:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/fromclassic/TypedSample.java) { #hello-world-actor }
 
 Why is it called `Behavior` and not `Actor`?
 

@@ -18,7 +18,7 @@
 * [mailboxes](mailboxes.md)
 * [testing](testing.md)
 * [coexisting](coexisting.md)
-* [from-classic](from-classic.md)
 * [style-guide](style-guide.md)
+* [from-classic](from-classic.md)
 
 @@@
