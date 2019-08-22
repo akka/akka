@@ -35,7 +35,7 @@ object SpawnProtocolDocSpec {
   @silent("never used")
   //#main
   object HelloWorldMain {
-    val main: Behavior[SpawnProtocol.Command] =
+    def apply(): Behavior[SpawnProtocol.Command] =
       Behaviors.setup { context =>
         // Start initial tasks
         // context.spawn(...)
@@ -55,7 +55,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       //#system-spawn
 
       val system: ActorSystem[SpawnProtocol.Command] =
-        ActorSystem(HelloWorldMain.main, "hello")
+        ActorSystem(HelloWorldMain(), "hello")
 
       // needed in implicit scope for ask (?)
       import akka.actor.typed.scaladsl.AskPattern._

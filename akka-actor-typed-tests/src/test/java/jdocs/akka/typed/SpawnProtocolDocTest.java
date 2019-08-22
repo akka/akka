@@ -21,31 +21,31 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.AskPattern;
-import akka.util.Timeout;
 
 // #imports2
 
-public class SpawnProtocolDocTest {
+public interface SpawnProtocolDocTest {
 
   // #main
-  public abstract static class HelloWorldMain {
+  public abstract class HelloWorldMain {
     private HelloWorldMain() {}
 
-    public static final Behavior<SpawnProtocol.Command> main =
-        Behaviors.setup(
-            context -> {
-              // Start initial tasks
-              // context.spawn(...)
+    public static Behavior<SpawnProtocol.Command> create() {
+      return Behaviors.setup(
+          context -> {
+            // Start initial tasks
+            // context.spawn(...)
 
-              return SpawnProtocol.create();
-            });
+            return SpawnProtocol.create();
+          });
+    }
   }
   // #main
 
   public static void main(String[] args) throws Exception {
     // #system-spawn
     final ActorSystem<SpawnProtocol.Command> system =
-        ActorSystem.create(HelloWorldMain.main, "hello");
+        ActorSystem.create(HelloWorldMain.create(), "hello");
     final Duration timeout = Duration.ofSeconds(3);
 
     CompletionStage<ActorRef<HelloWorld.Greet>> greeter =

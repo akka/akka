@@ -26,7 +26,7 @@ can stop itself or be stopped at any time but it can never outlive its parent.
 The ActorContext can be accessed for many purposes such as:
 
 * Spawning child actors and supervision
-* Watching other actors (`DeathWatch`) to receive a `Terminated(otherActor)` event should the watched actor stop permanently
+* Watching other actors to receive a `Terminated(otherActor)` event should the watched actor stop permanently
 * Logging
 * Creating message adapters
 * Request-response interactions (ask) with another actor
@@ -36,10 +36,10 @@ If a behavior needs to use the `ActorContext`, for example to spawn child actors
 @scala[`context.self`]@java[`context.getSelf()`], it can be obtained by wrapping construction with `Behaviors.setup`:
 
 Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #actor-context }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
 
 Java
-:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #actor-context }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main-setup }
 
 #### ActorContext Thread Safety
 
@@ -47,13 +47,13 @@ Many of the methods in `ActorContext` are not thread-safe and
 
 * Must not be accessed by threads from @scala[`scala.concurrent.Future`]@java[`java.util.concurrent.CompletionStage`] callbacks
 * Must not be shared between several actor instances
-* Should only be used in the ordinary actor message processing thread
+* Must only be used in the ordinary actor message processing thread
 
 ### The Guardian Actor
 
 The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
 system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`,
-named `HelloWorldMain.main` in the example below:
+named `HelloWorldMain` in the example below:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
@@ -73,7 +73,7 @@ is a tool that mimics the old style of starting up actors.
 
 ### Spawning Children
 
-Child actors are spawned with @apidoc[typed.*.ActorContext]'s `spawn`.
+Child actors are created and started with @apidoc[typed.*.ActorContext]'s `spawn`.
 In the example below, when the root actor
 is started, it spawns a child actor described by the `HelloWorld` behavior. Additionally, when the root actor receives a
 `Start` message, it creates a child actor defined by the behavior `HelloWorldBot`:

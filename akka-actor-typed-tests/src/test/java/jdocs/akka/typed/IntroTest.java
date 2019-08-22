@@ -108,7 +108,9 @@ public interface IntroTest {
   // #hello-world-bot
 
   // #hello-world-main
+  // #hello-world-main-setup
   public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.Start> {
+    // #hello-world-main-setup
 
     public static class Start {
       public final String name;
@@ -118,6 +120,7 @@ public interface IntroTest {
       }
     }
 
+    // #hello-world-main-setup
     public static Behavior<Start> create() {
       return Behaviors.setup(HelloWorldMain::new);
     }
@@ -129,6 +132,7 @@ public interface IntroTest {
       this.context = context;
       greeter = context.spawn(HelloWorld.create(), "greeter");
     }
+    // #hello-world-main-setup
 
     @Override
     public Receive<Start> createReceive() {
@@ -140,7 +144,9 @@ public interface IntroTest {
       greeter.tell(new HelloWorld.Greet(command.name, replyTo));
       return this;
     }
+    // #hello-world-main-setup
   }
+  // #hello-world-main-setup
   // #hello-world-main
 
   interface CustomDispatchersExample {
