@@ -400,11 +400,9 @@ public interface IntroTest {
             context.watch(gabbler);
             chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-            return Behaviors.<Void>receiveSignal(
-                (c, sig) -> {
-                  if (sig instanceof Terminated) return Behaviors.stopped();
-                  else return Behaviors.unhandled();
-                });
+            return Behaviors.receive(Void.class)
+                .onSignal(Terminated.class, sig -> Behaviors.stopped())
+                .build();
           });
     }
 
