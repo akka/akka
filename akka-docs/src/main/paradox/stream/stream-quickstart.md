@@ -416,7 +416,7 @@ has also a type parameter of @scala[`Future[Int]`]@java[`CompletionStage<Integer
 
 This step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be `run()`, as indicated by its type: @scala[`RunnableGraph[Future[Int]]`]@java[`RunnableGraph<CompletionStage<Integer>>`]. Next we call `run()` which uses the @scala[implicit] `ActorMaterializer`
+be `run()`, as indicated by its type: @scala[`RunnableGraph[Future[Int]]`]@java[`RunnableGraph<CompletionStage<Integer>>`]. Next we call `run()` which uses the @scala[implicit] `Materializer`
 to materialize and run the Flow. The value returned by calling `run()` on a @scala[`RunnableGraph[T]`]@java[`RunnableGraph<T>`] is of type `T`.
 In our case this type is @scala[`Future[Int]`]@java[`CompletionStage<Integer>`] which, when completed, will contain the total length of our `tweets` stream.
 In case of the stream failing, this future would complete with a Failure.

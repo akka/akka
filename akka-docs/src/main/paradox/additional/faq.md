@@ -24,7 +24,7 @@ Akka is also:
 
 ## Resources with Explicit Lifecycle
 
-Actors, ActorSystems, ActorMaterializers (for streams), all these types of objects bind
+Actors, ActorSystems, Materializers (for streams), all these types of objects bind
 resources that must be released explicitly. The reason is that Actors are meant to have
 a life of their own, existing independently of whether messages are currently en route
 to them. Therefore you should always make sure that for every creation of such an object
@@ -39,7 +39,7 @@ Due to an ActorSystem’s explicit lifecycle the JVM will not exit until it is s
 Therefore it is necessary to shutdown all ActorSystems within a running application or
 Scala REPL session in order to allow these processes to terminate.
 
-Shutting down an ActorSystem will properly terminate all Actors and ActorMaterializers
+Shutting down an ActorSystem will properly terminate all Actors and Materializers
 that were created within it.
 
 ## Actors in General

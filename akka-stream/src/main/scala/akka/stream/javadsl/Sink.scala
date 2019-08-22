@@ -281,7 +281,7 @@ object Sink {
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
-   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * exposes [[Materializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
   def onMaterialization[T, M](factory: BiFunction[Materializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =

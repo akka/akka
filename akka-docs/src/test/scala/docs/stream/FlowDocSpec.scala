@@ -6,7 +6,6 @@ package docs.stream
 
 import akka.NotUsed
 import akka.actor.{ Actor, ActorSystem, Cancellable }
-import akka.stream.ActorMaterializer
 import akka.stream.Materializer
 import akka.stream.{ ClosedShape, FlowShape, OverflowStrategy }
 import akka.stream.scaladsl._
@@ -245,7 +244,7 @@ object FlowDocSpec {
 
   //#materializer-from-actor-context
   final class RunWithMyself extends Actor {
-    implicit val mat = ActorMaterializer()
+    implicit val mat = Materializer(context)
 
     Source.maybe.runWith(Sink.onComplete {
       case Success(done) => println(s"Completed: $done")

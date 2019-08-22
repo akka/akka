@@ -64,7 +64,7 @@ public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> 
   @Override
   public GraphStageLogic createLogic(Attributes inheritedAttributes) {
     return new TimerGraphStageLogic(shape()) {
-      private ActorSystem system = ((ActorMaterializer) materializer()).system();
+      private ActorSystem system = materializer().system();
       private long currentOffset = initialOffset;
       private List<EventEnvelope> buf = new LinkedList<>();
       private final Serialization serialization = SerializationExtension.get(system);

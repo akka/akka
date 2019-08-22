@@ -6,7 +6,6 @@ package docs.stream
 
 import akka.NotUsed
 import akka.actor.{ Actor, Props }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -22,7 +21,6 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])
 
     class DataSource extends Actor {
-      implicit val mat = ActorMaterializer()(context)
 
       def receive = {
         case RequestLogs(streamId) =>
@@ -43,7 +41,6 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     }
     //#offer-source
 
-    implicit val mat = ActorMaterializer()
     //#offer-source-use
     val sourceActor = system.actorOf(Props[DataSource], "dataSource")
 
@@ -60,15 +57,12 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "offer a sink ref" in compileOnlySpec {
     //#offer-sink
-    import akka.pattern.pipe
     import akka.stream.SinkRef
 
     case class PrepareUpload(id: String)
     case class MeasurementsSinkReady(id: String, sinkRef: SinkRef[String])
 
     class DataReceiver extends Actor {
-
-      implicit val mat = ActorMaterializer()(context)
 
       def receive = {
         case PrepareUpload(nodeId) =>

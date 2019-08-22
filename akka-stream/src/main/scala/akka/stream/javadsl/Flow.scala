@@ -69,7 +69,7 @@ object Flow {
 
   /**
    * Defers the creation of a [[Flow]] until materialization. The `factory` function
-   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * exposes [[Materializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Flow]] returned by this method.
    */
   def onMaterialization[I, O, M](

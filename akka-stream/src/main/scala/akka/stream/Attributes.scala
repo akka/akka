@@ -28,7 +28,7 @@ import scala.concurrent.duration.FiniteDuration
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
  * or [[akka.stream.scaladsl.GraphDSL]] / [[akka.stream.javadsl.GraphDSL]] materialization.
  *
- * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[Materializer]] are defined in [[ActorAttributes]].
  *
  * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
  * Note that the order was the opposite in Akka 2.4.x.
@@ -282,7 +282,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 }
 
 /**
- * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[Materializer]] are defined in [[ActorAttributes]].
  */
 object Attributes {
 
@@ -418,7 +418,7 @@ object Attributes {
 }
 
 /**
- * Attributes for the [[ActorMaterializer]].
+ * Attributes for the [[Materializer]].
  * Note that more attributes defined in [[Attributes]].
  */
 object ActorAttributes {

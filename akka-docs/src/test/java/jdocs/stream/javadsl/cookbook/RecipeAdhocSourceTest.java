@@ -8,8 +8,6 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.japi.pf.PFBuilder;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;

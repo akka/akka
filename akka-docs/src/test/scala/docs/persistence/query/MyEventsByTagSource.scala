@@ -24,11 +24,7 @@ class MyEventsByTagSource(tag: String, offset: Long, refreshInterval: FiniteDura
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with OutHandler {
-      lazy val system = materializer match {
-        case a: ActorMaterializer => a.system
-        case _ =>
-          throw new IllegalStateException("EventsByTagStage requires ActorMaterializer")
-      }
+      lazy val system = materializer.system
       private val Limit = 1000
       private val connection: java.sql.Connection = ???
       private var currentOffset = offset

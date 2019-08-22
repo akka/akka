@@ -481,14 +481,18 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 
 ## Materializer changes
 
-### System global Materializer provided
+### Materializer changes
 
 A default materializer is now provided out of the box. For the Java API just pass `system` when running streams,
 for Scala an implicit materializer is provided if there is an implicit `ActorSystem` available. This avoids leaking
 materializers and simplifies most stream use cases somewhat.
 
-Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()`
-and Scala `implicit val materializer = ActorMaterializer()` should be removed.
+The `ActorMaterializer` factories has been deprecated and replaced with a few corresponding factories in `akka.stream.Materializer`.
+New factories with per-materializer settings has not been provided but should instead be done globally through config or per stream, 
+see below for more details. 
+
+Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()` 
+and Scala `implicit val materializer = ActorMaterializer()` should be removed. 
 
 Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
 

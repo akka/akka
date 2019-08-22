@@ -4,12 +4,13 @@
 
 package akka.stream.stage
 
-import akka.event.{ LoggingAdapter, NoLogging }
+import akka.event.LoggingAdapter
+import akka.event.NoLogging
 import akka.stream.MaterializerLoggingProvider
 
 /**
- * Simple way to obtain a [[LoggingAdapter]] when used together with an [[ActorMaterializer]].
- * If used with a different materializer [[NoLogging]] will be returned.
+ * Simple way to obtain a [[akka.event.LoggingAdapter]] when used together with an [[akka.stream.Materializer]].
+ * If used with a different materializer [[akka.event.NoLogging]] will be returned.
  *
  * Make sure to only access `log` from GraphStage callbacks (such as `pull`, `push` or the async-callback).
  *
