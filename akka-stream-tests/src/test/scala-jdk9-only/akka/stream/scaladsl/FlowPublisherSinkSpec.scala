@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ClosedShape,  }
+import akka.stream.ClosedShape
 
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
