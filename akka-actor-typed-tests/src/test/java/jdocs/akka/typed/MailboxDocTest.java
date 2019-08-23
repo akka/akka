@@ -14,8 +14,9 @@ import akka.actor.typed.javadsl.Behaviors;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 
-public class MailboxDocTest {
+public class MailboxDocTest extends JUnitSuite {
 
   @ClassRule
   public static final TestKitJunitResource testKit =
