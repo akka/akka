@@ -19,7 +19,6 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.Dispatchers
-import akka.actor.typed.Logger
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.actor.typed.Settings
@@ -31,8 +30,8 @@ import akka.actor.typed.internal.PropsImpl.DispatcherFromConfig
 import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.annotation.InternalApi
-import akka.event.LoggingFilterWithMarker
 import akka.{ actor => classic }
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting a classic ActorSystem to a Behavior (via the context).
@@ -88,19 +87,15 @@ import akka.{ actor => classic }
     override def shutdown(): Unit = () // there was no shutdown in classic Akka
   }
   override def dynamicAccess: classic.DynamicAccess = system.dynamicAccess
-  implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = system.dispatcher
-  override val log: Logger = new LoggerAdapterImpl(
-    system.eventStream,
-    classOf[ActorSystem[_]],
-    name,
-    LoggingFilterWithMarker.wrap(system.logFilter))
-  override def logConfiguration(): Unit = system.logConfiguration()
-  override def name: String = system.name
-  override val scheduler: Scheduler = new SchedulerAdapter(system.scheduler)
-  override def settings: Settings = new Settings(system.settings)
-  override def startTime: Long = system.startTime
+  implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = classicSystem.dispatcher
+  override val log: Logger = LoggerFactory.getLogger(classOf[ActorSystem[_]])
+  override def logConfiguration(): Unit = classicSystem.logConfiguration()
+  override def name: String = classicSystem.name
+  override val scheduler: Scheduler = new SchedulerAdapter(classicSystem.scheduler)
+  override def settings: Settings = new Settings(classicSystem.settings)
+  override def startTime: Long = classicSystem.startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = system.threadFactory
-  override def uptime: Long = system.uptime
+  override def uptime: Long = classicSystem.uptime
   override def printTree: String = system.printTree
 
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext

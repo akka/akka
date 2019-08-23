@@ -14,6 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 import akka.annotation.InternalApi
+import org.slf4j.Logger
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
