@@ -61,7 +61,7 @@ import scala.util.control.NonFatal
       if (resumingMode) onPull()
     }
 
-    override def onDownstreamFinish(): Unit = closeStage()
+    override def onDownstreamFinish(cause: Throwable): Unit = closeStage()
 
     private def restartState(): Unit = {
       open = false

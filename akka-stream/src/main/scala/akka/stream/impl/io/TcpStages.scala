@@ -121,7 +121,7 @@ import scala.concurrent.{ Future, Promise }
           if (listener ne null) listener ! ResumeAccepting(1)
         }
 
-        override def onDownstreamFinish(): Unit = tryUnbind()
+        override def onDownstreamFinish(cause: Throwable): Unit = tryUnbind()
       })
 
       private def connectionFor(connected: Connected, connection: ActorRef): StreamTcp.IncomingConnection = {
@@ -334,7 +334,7 @@ private[stream] object ConnectionSourceStage {
         connection ! ResumeReading
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (!isClosed(bytesIn)) connection ! ResumeReading
         else {
           connection ! Abort

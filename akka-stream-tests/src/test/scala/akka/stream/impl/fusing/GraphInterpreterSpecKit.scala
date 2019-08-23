@@ -96,7 +96,7 @@ object GraphInterpreterSpecKit {
       upstreams: Array[UpstreamBoundaryStageLogic[_]],
       downstreams: Array[DownstreamBoundaryStageLogic[_]],
       attributes: Array[Attributes] = Array.empty)
-      : (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
+    : (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
     if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
 
@@ -335,7 +335,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     }
 
     case class OnComplete(source: GraphStageLogic) extends TestEvent
-    case class Cancel(source: GraphStageLogic) extends TestEvent
+    case class Cancel(source: GraphStageLogic, cause: Throwable) extends TestEvent
     case class OnError(source: GraphStageLogic, cause: Throwable) extends TestEvent
     case class OnNext(source: GraphStageLogic, elem: Any) extends TestEvent
     case class RequestOne(source: GraphStageLogic) extends TestEvent
@@ -359,7 +359,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = lastEvent += RequestOne(UpstreamProbe.this)
-        override def onDownstreamFinish(): Unit = lastEvent += Cancel(UpstreamProbe.this)
+        override def onDownstreamFinish(cause: Throwable): Unit = lastEvent += Cancel(UpstreamProbe.this, cause)
         override def toString = s"${UpstreamProbe.this.toString}.outHandler"
       })
 
@@ -425,7 +425,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
           override def onPull(): Unit = pull(in)
           override def onUpstreamFinish(): Unit = complete(out)
           override def onUpstreamFailure(ex: Throwable): Unit = fail(out, ex)
-          override def onDownstreamFinish(): Unit = cancel(in)
+          override def onDownstreamFinish(cause: Throwable): Unit = cancel(in, cause)
 
           setHandlers(in, out, this)
         }
@@ -525,7 +525,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
       setHandler(stageout, new OutHandler {
         override def onPull(): Unit = mayFail(pull(stagein))
-        override def onDownstreamFinish(): Unit = mayFail(completeStage())
+        override def onDownstreamFinish(cause: Throwable): Unit = mayFail(completeStage())
         override def toString = "insideOutStage.stageout"
       })
 
@@ -567,7 +567,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     sealed trait TestEvent
 
     case object OnComplete extends TestEvent
-    case object Cancel extends TestEvent
+    case class Cancel(cause: Throwable) extends TestEvent
     case class OnError(cause: Throwable) extends TestEvent
     case class OnNext(elem: Any) extends TestEvent
     case object RequestOne extends TestEvent
@@ -604,7 +604,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
             else lastEvent += RequestOne
           }
 
-          override def onDownstreamFinish(): Unit = lastEvent += Cancel
+          override def onDownstreamFinish(cause: Throwable): Unit = lastEvent += Cancel(cause)
         })
 
       def onNext(elem: TT): Unit = {
@@ -649,7 +649,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       }
 
       def cancel(): Unit = {
-        cancel(in)
+        cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
         run()
       }
 

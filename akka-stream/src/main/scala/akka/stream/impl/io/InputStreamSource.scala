@@ -14,7 +14,8 @@ import akka.stream.{
   IOOperationIncompleteException,
   IOResult,
   Outlet,
-  SourceShape
+  SourceShape,
+  SubscriptionWithCancelException
 }
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, OutHandler }
 import akka.util.ByteString
@@ -70,10 +71,19 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
             failStage(t)
         }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (!isClosed) {
           closeInputStream()
-          mat.trySuccess(IOResult(readBytesTotal))
+          cause match {
+            case _: SubscriptionWithCancelException.NonFailureCancellation =>
+              mat.trySuccess(IOResult(readBytesTotal))
+            case ex: Throwable =>
+              mat.tryFailure(
+                new IOOperationIncompleteException(
+                  "Downstream failed before input stream reached end",
+                  readBytesTotal,
+                  ex))
+          }
         }
       }
 

@@ -160,7 +160,7 @@ class GraphStageTimersSpec extends StreamSpec {
 
         setHandler(out, new OutHandler {
           override def onPull() = () // Do nothing
-          override def onDownstreamFinish() = completeStage()
+          override def onDownstreamFinish(cause: Throwable) = completeStage()
         })
 
         setHandler(in, new InHandler {

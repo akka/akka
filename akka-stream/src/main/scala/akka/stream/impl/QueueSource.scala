@@ -152,7 +152,7 @@ import scala.concurrent.{ Future, Promise }
 
       setHandler(out, this)
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         pendingOffer match {
           case Some(Offer(_, promise)) =>
             promise.success(QueueOfferResult.QueueClosed)

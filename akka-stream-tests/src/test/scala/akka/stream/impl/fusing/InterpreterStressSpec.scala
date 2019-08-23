@@ -4,6 +4,7 @@
 
 package akka.stream.impl.fusing
 
+import akka.stream.SubscriptionWithCancelException
 import akka.stream.testkit.StreamSpec
 import akka.testkit.LongRunningTest
 import akka.util.ConstantFun
@@ -68,7 +69,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(0)
-      lastEvents() should be(Set(Cancel, OnComplete, OnNext(0 + chainLength)))
+      lastEvents() should be(
+        Set(Cancel(SubscriptionWithCancelException.StageWasCompleted), OnComplete, OnNext(0 + chainLength)))
 
       val time = (System.nanoTime() - tstamp) / (1000.0 * 1000.0 * 1000.0)
       // Not a real benchmark, just for sanity check
@@ -82,7 +84,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(0)
-      lastEvents() should be(Set(Cancel, OnNext(0), OnComplete))
+      lastEvents() should be(Set(Cancel(SubscriptionWithCancelException.StageWasCompleted), OnNext(0), OnComplete))
 
     }
 

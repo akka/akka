@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.AbruptStageTerminationException
-import akka.stream.Materializer
+import akka.stream.{ AbruptStageTerminationException, KillSwitches, Materializer }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
 
 import scala.concurrent.duration._
@@ -18,7 +18,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
   "The Maybe Source" must {
 
-    "complete materialized future with None when stream cancels" in assertAllStagesStopped {
+    "complete materialized promise with None when stream cancels" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.asPublisher[Int](false)
 
@@ -33,6 +33,15 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
       subs.cancel()
       f.future.futureValue shouldEqual None
+    }
+
+    "complete materialized promise with None when stream cancels with a failure cause" in assertAllStagesStopped {
+      val (promise, killswitch) = Source.maybe[Int].viaMat(KillSwitches.single)(Keep.both).to(Sink.ignore).run()
+      val boom = TE("Boom")
+      killswitch.abort(boom)
+      // Could make sense to fail it with the propagated exception instead but that breaks
+      // the assumptions in the CoupledTerminationFlowSpec
+      promise.future.futureValue should ===(None)
     }
 
     "allow external triggering of empty completion" in assertAllStagesStopped {

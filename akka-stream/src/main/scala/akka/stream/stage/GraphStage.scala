@@ -1361,20 +1361,22 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private var closed = false
     private var pulled = false
 
-    private val _sink = new SubSink[T](name, getAsyncCallback[ActorSubscriberMessage] { msg =>
-      if (!closed) msg match {
-        case OnNext(e) =>
-          elem = e.asInstanceOf[T]
-          pulled = false
-          handler.onPush()
-        case OnComplete =>
-          closed = true
-          handler.onUpstreamFinish()
-        case OnError(ex) =>
-          closed = true
-          handler.onUpstreamFailure(ex)
-      }
-    }.invoke _)
+    private val _sink = new SubSink[T](
+      name,
+      getAsyncCallback[ActorSubscriberMessage] { msg =>
+        if (!closed) msg match {
+          case OnNext(e) =>
+            elem = e.asInstanceOf[T]
+            pulled = false
+            handler.onPush()
+          case OnComplete =>
+            closed = true
+            handler.onUpstreamFinish()
+          case OnError(ex) =>
+            closed = true
+            handler.onUpstreamFailure(ex)
+        }
+      }.invoke _)
 
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 
@@ -1800,8 +1802,7 @@ trait OutHandler {
    * be called for this port.
    */
   @throws(classOf[Exception])
-  // FIXME: add this after fixing our own usages, https://github.com/akka/akka/issues/27472
-  // @deprecatedOverriding("Override `def onDownstreamFinish(cause: Throwable)`, instead.", since = "2.6.0") // warns when overriding
+  @deprecatedOverriding("Override `def onDownstreamFinish(cause: Throwable)`, instead.", since = "2.6.0") // warns when overriding
   @deprecated("Call onDownstreamFinish with a cancellation cause.", since = "2.6.0") // warns when calling
   def onDownstreamFinish(): Unit = {
     val thisStage = GraphInterpreter.currentInterpreter.activeStage

@@ -79,4 +79,9 @@ final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwab
  * @param count The number of bytes read/written up until the error
  * @param cause cause
  */
-final class IOOperationIncompleteException(val count: Long, cause: Throwable) extends RuntimeException(cause)
+final class IOOperationIncompleteException(message: String, val count: Long, cause: Throwable)
+    extends RuntimeException(message, cause) {
+
+  def this(count: Long, cause: Throwable) = this(null, count, cause)
+
+}

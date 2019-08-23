@@ -121,7 +121,16 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
           }
         } else chunks
 
-      override def onDownstreamFinish(): Unit = success()
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        cause match {
+          case _: SubscriptionWithCancelException.NonFailureCancellation =>
+            success()
+          case ex =>
+            ioResultPromise.tryFailure(
+              new IOOperationIncompleteException("Downstream failed before reaching file end", position, ex))
+            completeStage()
+        }
+      }
 
       override def postStop(): Unit = {
         ioResultPromise.trySuccess(IOResult(position, Success(Done)))

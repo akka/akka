@@ -35,7 +35,7 @@ import scala.util.control.NonFatal
     import SetupStage._
 
     val subOutlet = new SubSourceOutlet[T]("SetupSinkStage")
-    subOutlet.setHandler(delegateToInlet(() => pull(in), () => cancel(in)))
+    subOutlet.setHandler(delegateToInlet(() => pull(in), cause => cancel(in, cause)))
     setHandler(in, delegateToSubOutlet(() => grab(in), subOutlet))
 
     override def preStart(): Unit = {
@@ -74,7 +74,7 @@ import scala.util.control.NonFatal
     val subOutlet = new SubSourceOutlet[T]("SetupFlowStage")
 
     subInlet.setHandler(delegateToOutlet(push(out, _: U), () => complete(out), fail(out, _), subInlet))
-    subOutlet.setHandler(delegateToInlet(() => pull(in), () => cancel(in)))
+    subOutlet.setHandler(delegateToInlet(() => pull(in), cause => cancel(in, cause)))
 
     setHandler(in, delegateToSubOutlet(() => grab(in), subOutlet))
     setHandler(out, delegateToSubInlet(subInlet))
@@ -158,14 +158,14 @@ private object SetupStage {
   def delegateToSubInlet[T](subInlet: GraphStageLogic#SubSinkInlet[T]) = new OutHandler {
     override def onPull(): Unit =
       subInlet.pull()
-    override def onDownstreamFinish(): Unit =
-      subInlet.cancel()
+    override def onDownstreamFinish(cause: Throwable): Unit =
+      subInlet.cancel(cause)
   }
 
-  def delegateToInlet(pull: () => Unit, cancel: () => Unit) = new OutHandler {
+  def delegateToInlet(pull: () => Unit, cancel: (Throwable) => Unit) = new OutHandler {
     override def onPull(): Unit =
       pull()
-    override def onDownstreamFinish(): Unit =
-      cancel()
+    override def onDownstreamFinish(cause: Throwable): Unit =
+      cancel(cause)
   }
 }

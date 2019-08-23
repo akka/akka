@@ -225,3 +225,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.s
 # StageActor was never meant to be constructed by users
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")
+
+# Internal class made final #27472
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.scaladsl.CoupledTerminationBidi")

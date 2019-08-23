@@ -66,7 +66,7 @@ object CoupledTerminationFlow {
 }
 
 /** INTERNAL API */
-private[stream] class CoupledTerminationBidi[I, O] extends GraphStage[BidiShape[I, I, O, O]] {
+private[stream] final class CoupledTerminationBidi[I, O] extends GraphStage[BidiShape[I, I, O, O]] {
   val in1: Inlet[I] = Inlet("CoupledCompletion.in1")
   val out1: Outlet[I] = Outlet("CoupledCompletion.out1")
   val in2: Inlet[O] = Inlet("CoupledCompletion.in2")
@@ -79,7 +79,7 @@ private[stream] class CoupledTerminationBidi[I, O] extends GraphStage[BidiShape[
       override def onPush(): Unit = push(out1, grab(in1))
       override def onPull(): Unit = pull(in1)
 
-      override def onDownstreamFinish(): Unit = completeStage()
+      override def onDownstreamFinish(cause: Throwable): Unit = cancelStage(cause)
       override def onUpstreamFinish(): Unit = completeStage()
       override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
     }
@@ -88,7 +88,7 @@ private[stream] class CoupledTerminationBidi[I, O] extends GraphStage[BidiShape[
       override def onPush(): Unit = push(out2, grab(in2))
       override def onPull(): Unit = pull(in2)
 
-      override def onDownstreamFinish(): Unit = completeStage()
+      override def onDownstreamFinish(cause: Throwable): Unit = cancelStage(cause)
       override def onUpstreamFinish(): Unit = completeStage()
       override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
     }

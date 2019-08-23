@@ -6,12 +6,17 @@ package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.testkit.TestSubscriber.Probe
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
+import akka.testkit.TestProbe
 import akka.util.unused
+import akka.Done
+import akka.NotUsed
 import org.reactivestreams.Publisher
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -189,6 +194,40 @@ class GraphUnzipWithSpec extends StreamSpec("""
 
       leftProbe.expectNoMessage(100.millis)
       rightProbe.expectNoMessage(100.millis)
+    }
+
+    "propagagate last downstream cancellation cause once all downstreams has cancelled" in {
+      val probe = TestProbe()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val source = Source
+            .maybe[Int]
+            .watchTermination()(Keep.right)
+            .mapMaterializedValue(termination =>
+              // side effecting our way out of this
+              probe.ref ! termination)
+
+          val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) => (1 / b, s"1 / $b")))
+
+          source ~> unzip.in
+
+          def killSwitchFlow[T] = Flow[T].viaMat(KillSwitches.single)(Keep.right).mapMaterializedValue { killSwitch =>
+            probe.ref ! killSwitch
+            NotUsed
+          }
+          unzip.out0 ~> killSwitchFlow[Int] ~> Sink.ignore
+          unzip.out1 ~> killSwitchFlow[String] ~> Sink.ignore
+
+          ClosedShape
+        })
+        .run()
+      val termination = probe.expectMsgType[Future[_]].asInstanceOf[Future[Done]]
+      val killSwitch1 = probe.expectMsgType[UniqueKillSwitch]
+      val killSwitch2 = probe.expectMsgType[UniqueKillSwitch]
+      val boom = TE("Boom")
+      killSwitch1.abort(boom)
+      killSwitch2.abort(boom)
+      termination.failed.futureValue should ===(boom)
     }
 
     "unzipWith expanded Person.unapply (3 outputs)" in {
