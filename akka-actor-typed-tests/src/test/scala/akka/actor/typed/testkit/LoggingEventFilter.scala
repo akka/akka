@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.actor.typed.testkit
 
 /*
@@ -17,8 +21,11 @@ import akka.testkit.TestEvent.{Mute, UnMute}
 import akka.testkit.{EventFilter, TestEvent, TestKit, TestKitExtension}
 import akka.util.BoxedType
 import akka.util.ccompat.ccompatUsedUntil213
+import ch.qos.logback.classic.spi.ILoggingEvent
 import org.slf4j.Marker
 import org.slf4j.event.{Level, LoggingEvent}
+
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
@@ -49,9 +56,9 @@ abstract class LoggingEventFilter[LE <: LoggingEvent](occurrences: Int) {
    * Apply this filter while executing the given code block. Care is taken to
    * remove the filter when the block is finished or aborted.
    */
-  def intercept[T, LE <: LoggingEvent](code: => T, eventsQueue: util.Queue[LE])(implicit system: ActorSystem): T = {
+  def intercept[T, LE <: LoggingEvent](code: => T, loggingEvents: util.Collection[LE])(implicit system: ActorSystem): T = {
     //TODO  @see original TestEventListener#116: system.eventStream.publish(TestEvent.Mute(this))
-    def leftToDo: Int = todo - eventsQueue.asScala.count(matches)
+    def leftToDo: Int = todo - loggingEvents.asScala.count(matches)
     val leeway = TestKitExtension(system).TestEventFilterLeeway
     val result = code
     if (!awaitDone(leeway, leftToDo))
@@ -60,6 +67,24 @@ abstract class LoggingEventFilter[LE <: LoggingEvent](occurrences: Int) {
       else
         throw new AssertionError(s"received ${-leftToDo} excess messages on $this")
 
+    result
+  }
+
+  import scala.concurrent.duration._
+  /**
+    * Apply this filter while executing the given code block. Care is taken to
+    * remove the filter when the block is finished or aborted.
+    */
+  def interceptIt[T] (code: => T, loggingEvents: () => Seq[LoggingEvent])(implicit system: ActorSystem): T = {
+    //TODO  @see original TestEventListener#116: system.eventStream.publish(TestEvent.Mute(this))
+    val result = code
+    def leftToDo: Int = todo - loggingEvents.apply().count(matches)
+    val leeway = TestKitExtension(system).TestEventFilterLeeway
+    if (!awaitDone(leeway, leftToDo))
+      if (leftToDo > 0)
+        throw new AssertionError(s"timeout ($leeway) waiting for $leftToDo messages on $this")
+      else
+        throw new AssertionError(s"received ${-leftToDo} excess messages on $this")
     result
   }
 
@@ -473,6 +498,9 @@ final case class DeadLettersFilterLogging(val messageClass: Class[_])(occurrence
   }
 
 }
+
+
+//TODO this still has EventFilter!! Slf4jLogger has also to be changed
 
 @ccompatUsedUntil213
 class TestEventListener extends Slf4jLogger {

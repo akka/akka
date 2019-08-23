@@ -8,13 +8,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.testkit.LoggingEventFilter._
+import akka.actor.typed.testkit.{ AppenderInterceptor, LoggingEventFilter }
+import akka.actor.typed.{ ActorRef, Behavior, LogOptions }
 import akka.event.Logging
 import akka.event.Logging.{ LogEvent, LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
+import ch.qos.logback.classic.spi.ILoggingEvent
 import org.scalatest.WordSpecLike
-import org.slf4j.helpers.BasicMarkerFactory
+import org.slf4j.event.{ Level, LoggingEvent }
+import org.slf4j.helpers.{ BasicMarkerFactory, SubstituteLogger, SubstituteLoggerFactory }
 
 class SomeClass
 
@@ -39,7 +43,7 @@ class BehaviorWhereTheLoggerIsUsed(context: ActorContext[String]) extends Abstra
 
 class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
-    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loggers = ["akka.actor.typed.testkit.TestEventListener"]
     """) with WordSpecLike {
 
   val marker = new BasicMarkerFactory().getMarker("marker")
@@ -49,47 +53,68 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
   "Logging in a typed actor" must {
 
+    "log messages and signals" in {
+
+      val factory = new SubstituteLoggerFactory()
+      val substituteLogger: SubstituteLogger = factory.getLogger("substitute").asInstanceOf[SubstituteLogger]
+      val opts = LogOptions().withLevel(Level.DEBUG).withLogger(substituteLogger)
+
+      val behavior: Behavior[String] = Behaviors.logMessages(opts, Behaviors.ignore)
+      val ref: ActorRef[String] = spawn(behavior)
+
+      debug(s"actor ${ref.path.toString} received message Hello", source = ref.path.toString, occurrences = 1)
+        .intercept(ref ! "Hello", factory.getEventQueue)
+
+      debug(s"actor ${ref.path.toString} received signal PostStop", source = ref.path.toString, occurrences = 1)
+        .intercept(testKit.stop(ref), factory.getEventQueue)
+    }
+
+    //TODO be aware of context.log.xyz logging are very different as they aren't created by the InterceptorImpl! @see LogMessagesInterceptor.aroundReceive
+    //  That's why AppenderInterceptor.events approach has been taken
     "be conveniently available from the context" in {
-      val actor =
-        EventFilter.info("Started", source = "akka://ActorLoggingSpec/user/the-actor", occurrences = 1).intercept {
-          spawn(
-            Behaviors.setup[String] { context =>
-              context.log.info("Started")
 
-              Behaviors.receive { (context, message) =>
-                context.log.info("got message {}", message)
-                Behaviors.same
-              }
-            },
-            "the-actor")
-        }
+      val behavior: Behavior[String] = Behaviors.setup[String] { context =>
+        println(s"context out ${context.executionContext.hashCode()}")
+        context.log.info("Started")
 
-      EventFilter
-        .info("got message Hello", source = "akka://ActorLoggingSpec/user/the-actor", occurrences = 1)
-        .intercept {
-          actor ! "Hello"
+        Behaviors.receive { (context, message) =>
+          println(s"context in ${context.executionContext.hashCode()}")
+
+          context.log.info("got message {}", message)
+          Behaviors.same
         }
+      }
+
+      val actor = LoggingEventFilter
+        .info("Started", occurrences = 1)
+        .interceptIt(spawn(behavior, "the-actor"), AppenderInterceptor.events)
+
+      LoggingEventFilter
+        .info("got message Hello", occurrences = 1)
+        .interceptIt(actor ! "Hello", AppenderInterceptor.events)
+
     }
 
     "contain the class name where the first log was called" in {
-      val eventFilter = EventFilter.custom({
-        case l: LogEvent if l.logClass == classOf[ActorLoggingSpec] => true
-        case l: LogEvent =>
-          println(l.logClass)
+      val eventFilter = custom({
+        case l: LoggingEvent if l.getLoggerName == classOf[ActorLoggingSpec].getName =>
+          true
+        case l: LoggingEvent =>
+          println(l.getLoggerName)
           false
       }, occurrences = 1)
 
-      eventFilter.intercept {
-        spawn(Behaviors.setup[String] { context =>
+        eventFilter.interceptIt(spawn(Behaviors.setup[String] { context =>
           context.log.info("Started")
 
           Behaviors.receive { (context, message) =>
             context.log.info("got message {}", message)
             Behaviors.same
           }
-        }, "the-actor-with-class")
-      }
+        }, "the-actor-with-class"), AppenderInterceptor.events)
+
     }
+    //TODO all below
 
     "contain the object class name where the first log was called" in {
       val eventFilter = EventFilter.custom({
@@ -118,19 +143,21 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "allow for adapting log source and class" in {
-      val eventFilter = EventFilter.custom({
-        case l: LogEvent =>
-          l.logClass == classOf[SomeClass] &&
-          l.logSource == "who-knows-where-it-came-from" &&
-          l.mdc == Map("mdc" -> true) // mdc should be kept
+      //TODO WIP...
+      val eventFilter = custom({
+        case l: ILoggingEvent =>
+          l.getLoggerName == classOf[SomeClass] &&
+          l.getCallerData == "who-knows-where-it-came-from" &&
+          l.getMDCPropertyMap == Map("mdc" -> true) // mdc should be kept
       }, occurrences = 1)
 
-      eventFilter.intercept {
-        spawn(Behaviors.setup[String] { context =>
-          context.log.info("Started")
-          Behaviors.empty
-        }, "the-actor-with-custom-class")
-      }
+      spawn(Behaviors.setup[String] { context =>
+        context.log.info("Started")
+        Behaviors.empty
+      }, "the-actor-with-custom-class")
+      Thread.sleep(1)
+      eventFilter.interceptIt(println(""), AppenderInterceptor.events)
+
     }
 
     "pass markers to the log" in {
