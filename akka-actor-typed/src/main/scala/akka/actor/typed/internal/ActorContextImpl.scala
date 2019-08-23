@@ -151,7 +151,7 @@ import akka.util.JavaDurationConverters._
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
     _messageAdapters = (messageClass, f.asInstanceOf[Any => T]) ::
-      _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
+    _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
     val ref = messageAdapterRef match {
       case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
       case OptionVal.None      =>

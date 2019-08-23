@@ -7,7 +7,7 @@ package akka.stream.typed.scaladsl
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.AbruptStageTerminationException
+import akka.stream.{ AbruptStageTerminationException, Materializer }
 import akka.stream.scaladsl.{ Sink, Source }
 import org.scalatest.WordSpecLike
 
@@ -15,11 +15,16 @@ import scala.concurrent.Future
 
 class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
-  implicit val mat = ActorMaterializer()
+  "Materializer" should {
 
-  "ActorMaterializer" should {
+    "be provided out of the box from typed ActorSystem" in {
+      val it: Future[String] = Source.single("hello").runWith(Sink.head)
 
-    "work with typed ActorSystem with custom guardian" in {
+      it.futureValue should ===("hello")
+    }
+
+    "be possible to create from typed ActorSystem" in {
+      implicit val mat = Materializer(system)
       val it: Future[String] = Source.single("hello").runWith(Sink.head)
 
       it.futureValue should ===("hello")
@@ -29,7 +34,7 @@ class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with W
       var doneF: Future[Done] = null
       val behavior =
         Behaviors.setup[String] { ctx =>
-          implicit val mat: ActorMaterializer = ActorMaterializer.boundToActor(ctx)
+          implicit val mat: Materializer = Materializer(ctx)
           doneF = Source.repeat("hello").runWith(Sink.ignore)
 
           Behaviors.receiveMessage[String](_ => Behaviors.stopped)

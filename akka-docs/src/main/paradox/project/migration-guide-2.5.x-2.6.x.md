@@ -479,7 +479,8 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `ActorSource.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
 * `toUntyped` has been renamed to `toClassic`.
 
-## Materializer changes
+
+## Akka Stream changes
 
 ### Materializer changes
 
@@ -495,6 +496,9 @@ Having a default materializer available means that most, if not all, usages of J
 and Scala `implicit val materializer = ActorMaterializer()` should be removed. 
 
 Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
+
+When using streams from typed the same factories and methods for creating materializers and running streams as from classic can now be used with typed. The  
+`akka.stream.typed.scaladsl.ActorMaterializer` and `akka.stream.typed.javadsl.ActorMaterializerFactory` that previously existed in the `akka-stream-typed` module has been removed.
 
 ### Materializer settings deprecated
 

@@ -30,7 +30,6 @@ public class ActorSourceSinkCompileTest {
 
   {
     final ActorSystem<String> system = null;
-    final ActorMaterializer mat = ActorMaterializerFactory.create(system);
   }
 
   {

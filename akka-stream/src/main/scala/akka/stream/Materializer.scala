@@ -4,10 +4,10 @@
 
 package akka.stream
 
-import akka.actor.ActorContext
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Cancellable
+import akka.actor.ClassicActorContextProvider
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.Props
 import akka.annotation.DoNotInherit
@@ -192,40 +192,46 @@ object Materializer {
     SystemMaterializer(provider.classicSystem).materializer
 
   /**
-   * Scala API: Create a materializer whose lifecycle will be tied to the one of the passed actor. When the actor stops the materializer
-   * will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   * Scala API: Create a materializer whose lifecycle will be tied to the one of the passed actor context.
+   * When the actor stops the materializer will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   *
+   * You can pass either a classic actor context or a typed actor context.
    */
   @silent("deprecated")
-  def apply(context: ActorContext): Materializer =
-    ActorMaterializer(None, None)(context)
+  def apply(contextProvider: ClassicActorContextProvider): Materializer =
+    ActorMaterializer(None, None)(contextProvider.classicActorContext)
 
   /**
-   * Java API: Create a materializer whose lifecycle will be tied to the one of the passed actor. When the actor stops the materializer
-   * will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   * Java API: Create a materializer whose lifecycle will be tied to the one of the passed actor context.
+   * When the actor stops the materializer will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   *
+   * You can pass either a classic actor context or a typed actor context.
    */
-  def create(context: ActorContext): Materializer = apply(context)
+  def create(contextProvider: ClassicActorContextProvider): Materializer = apply(contextProvider)
 
   /**
    * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
    *
-   * *Note* prefer using the default [[SystemMaterializer]] and only create new system level materializers if you have specific
-   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle of the materializer to
-   * an actor, use the [[ActorContext]] one instead.
+   * *Note* prefer using the default [[SystemMaterializer]] that is implicitly available if you have an implicit
+   * `ActorSystem` in scope. Only create new system level materializers if you have specific
+   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle
+   * of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
    */
   @silent("deprecated")
-  def apply(system: ActorSystem): Materializer =
-    ActorMaterializer(None, None)(system)
+  def apply(systemProvider: ClassicActorSystemProvider): Materializer =
+    ActorMaterializer(None, None)(systemProvider.classicSystem)
 
   /**
    * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
    *
-   * *Note* prefer using the default [[SystemMaterializer]] and only create new system level materializers if you have specific
-   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle of the materializer to
-   * an actor, use the [[ActorContext]] one instead.
+   * *Note* prefer using the default [[SystemMaterializer]] by passing the `ActorSystem` to the various `run`
+   * methods on the streams. Only create new system level materializers if you have specific
+   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the
+   * lifecycle of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
    */
   @silent("deprecated")
-  def create(system: ActorSystem): Materializer =
-    apply(system)
+  def create(systemProvider: ClassicActorSystemProvider): Materializer =
+    apply(systemProvider)
 
 }
 
