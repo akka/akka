@@ -12,19 +12,19 @@ import akka.actor.typed.Behavior;
 // in Java use the static methods on Adapter to convert from untyped to typed
 import akka.actor.typed.javadsl.Adapter;
 // #adapter-import
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 import akka.testkit.javadsl.TestKit;
-import akka.testkit.TestProbe;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
-
-import static akka.actor.typed.javadsl.Behaviors.same;
-import static akka.actor.typed.javadsl.Behaviors.stopped;
 
 public class TypedWatchingUntypedTest extends JUnitSuite {
 
   // #typed
-  public abstract static class Typed {
+  public static class Typed extends AbstractBehavior<Typed.Command> {
+
     public static class Ping {
       public final akka.actor.typed.ActorRef<Pong> replyTo;
 
@@ -35,9 +35,19 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
 
     interface Command {}
 
-    public static class Pong implements Command {}
+    public enum Pong implements Command {
+      INSTANCE
+    }
 
-    public static Behavior<Command> behavior() {
+    private final akka.actor.typed.javadsl.ActorContext<Command> context;
+    private final akka.actor.ActorRef second;
+
+    private Typed(ActorContext<Command> context, akka.actor.ActorRef second) {
+      this.context = context;
+      this.second = second;
+    }
+
+    public static Behavior<Command> create() {
       return akka.actor.typed.javadsl.Behaviors.setup(
           context -> {
             akka.actor.ActorRef second = Adapter.actorOf(context, Untyped.props(), "second");
@@ -47,16 +57,21 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
             second.tell(
                 new Typed.Ping(context.getSelf().narrow()), Adapter.toUntyped(context.getSelf()));
 
-            return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
-                .onMessage(
-                    Typed.Pong.class,
-                    message -> {
-                      Adapter.stop(context, second);
-                      return same();
-                    })
-                .onSignal(akka.actor.typed.Terminated.class, sig -> stopped())
-                .build();
+            return new Typed(context, second);
           });
+    }
+
+    @Override
+    public Receive<Command> createReceive() {
+      return newReceiveBuilder()
+          .onMessage(Typed.Pong.class, message -> onPong())
+          .onSignal(akka.actor.typed.Terminated.class, sig -> Behaviors.stopped())
+          .build();
+    }
+
+    private Behavior<Command> onPong() {
+      Adapter.stop(context, second);
+      return this;
     }
   }
   // #typed
@@ -69,13 +84,11 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
 
     @Override
     public Receive createReceive() {
-      return receiveBuilder()
-          .match(
-              Typed.Ping.class,
-              message -> {
-                message.replyTo.tell(new Typed.Pong());
-              })
-          .build();
+      return receiveBuilder().match(Typed.Ping.class, this::onPing).build();
+    }
+
+    private void onPing(Typed.Ping message) {
+      message.replyTo.tell(Typed.Pong.INSTANCE);
     }
   }
   // #untyped
@@ -84,11 +97,11 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
   public void testItWorks() {
     // #create
     ActorSystem as = ActorSystem.create();
-    ActorRef<Typed.Command> typed = Adapter.spawn(as, Typed.behavior(), "Typed");
+    ActorRef<Typed.Command> typed = Adapter.spawn(as, Typed.create(), "Typed");
     // #create
-    TestProbe probe = new TestProbe(as);
+    TestKit probe = new TestKit(as);
     probe.watch(Adapter.toUntyped(typed));
-    probe.expectTerminated(Adapter.toUntyped(typed), Duration.create(1, "second"));
+    probe.expectTerminated(Adapter.toUntyped(typed));
     TestKit.shutdownActorSystem(as);
   }
 }

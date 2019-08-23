@@ -29,7 +29,7 @@ object UntypedWatchingTypedSpec {
   class Untyped extends untyped.Actor with ActorLogging {
     // context.spawn is an implicit extension method
     val second: ActorRef[Typed.Command] =
-      context.spawn(Typed.behavior, "second")
+      context.spawn(Typed(), "second")
 
     // context.watch is an implicit extension method
     context.watch(second)
@@ -57,7 +57,7 @@ object UntypedWatchingTypedSpec {
     final case class Ping(replyTo: ActorRef[Pong.type]) extends Command
     case object Pong
 
-    val behavior: Behavior[Command] =
+    def apply(): Behavior[Command] =
       Behaviors.receive { (context, message) =>
         message match {
           case Ping(replyTo) =>
