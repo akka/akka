@@ -19,7 +19,6 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.Dispatchers
-import akka.actor.typed.Logger
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.actor.typed.Settings
@@ -31,8 +30,8 @@ import akka.actor.typed.internal.PropsImpl.DispatcherFromConfig
 import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.annotation.InternalApi
-import akka.event.LoggingFilterWithMarker
 import akka.{ actor => untyped }
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -89,11 +88,7 @@ import akka.{ actor => untyped }
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override val log: Logger = new LoggerAdapterImpl(
-    untypedSystem.eventStream,
-    classOf[ActorSystem[_]],
-    name,
-    LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
+  override val log: Logger = LoggerFactory.getLogger(classOf[ActorSystem[_]])
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
   override val scheduler: Scheduler = new SchedulerAdapter(untypedSystem.scheduler)

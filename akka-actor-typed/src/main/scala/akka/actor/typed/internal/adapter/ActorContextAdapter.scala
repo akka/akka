@@ -6,12 +6,11 @@ package akka.actor.typed
 package internal
 package adapter
 
-import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.event.LoggingFilterWithMarker
 import akka.util.OptionVal
-
 import akka.{ actor => untyped }
+import org.slf4j.{ Logger, LoggerFactory }
+
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
@@ -120,11 +119,10 @@ private[akka] object ActorContextAdapter {
     ActorRefAdapter[U](ref)
   }
 
-  private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
-    val logSource = self.path.toString
-    val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
-    val logger =
-      new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
+  private def initLoggerWithClass(logClass: Class[_]): Logger = {
+    val logger = LoggerFactory.getLogger(logClass)
+    //TODO remove it from MDC. Under discussion
+    org.slf4j.MDC.put("actorPath", self.path.name)
     actorLogger = OptionVal.Some(logger)
     logger
   }

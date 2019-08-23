@@ -12,6 +12,8 @@ import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import org.slf4j.Logger
+
 import scala.concurrent.ExecutionContextExecutor
 
 /**

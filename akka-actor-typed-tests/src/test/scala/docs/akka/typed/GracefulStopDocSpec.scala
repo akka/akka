@@ -6,9 +6,11 @@ package docs.akka.typed
 
 //#imports
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorSystem, Behavior, Logger, PostStop }
+import akka.actor.typed.{ ActorSystem, PostStop }
 
 //#imports
+
+import org.slf4j.Logger
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import org.scalatest.WordSpecLike

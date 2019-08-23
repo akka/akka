@@ -7,24 +7,19 @@ package internal
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.concurrent.duration.Deadline
-import scala.concurrent.duration.FiniteDuration
+import akka.actor.{ DeadLetterSuppression, Dropped }
+import akka.actor.typed.BehaviorInterceptor.{ PreStartTarget, ReceiveTarget, SignalTarget }
+import akka.actor.typed.SupervisorStrategy._
+import akka.actor.typed.scaladsl.{ Behaviors, StashBuffer }
+import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.util.{ unused, OptionVal }
+import org.slf4j.event.Level
+
+import scala.concurrent.duration.{ Deadline, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
-import akka.actor.DeadLetterSuppression
-import akka.actor.Dropped
-import akka.actor.typed.BehaviorInterceptor.PreStartTarget
-import akka.actor.typed.BehaviorInterceptor.ReceiveTarget
-import akka.actor.typed.BehaviorInterceptor.SignalTarget
-import akka.actor.typed.SupervisorStrategy._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.StashBuffer
-import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.util.OptionVal
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -54,9 +49,6 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
 
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
 
-  protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =
-    throwableClass.isAssignableFrom(UnstashException.unwrap(t).getClass)
-
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
     other match {
       case as: AbstractSupervisor[_, Thr] if throwableClass == as.throwableClass => true
@@ -77,14 +69,22 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
   }
 
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
+    val msg = s"Supervisor $this saw failure:"
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
       strategy.logLevel match {
-        case Logging.ErrorLevel =>
-          ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case Logging.WarningLevel =>
-          ctx.asScala.log.warning(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case level => ctx.asScala.log.log(level, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case Level.ERROR =>
+          ctx.asScala.log.error(msg, unwrapped)
+        case Level.WARN =>
+          ctx.asScala.log.warn(msg, unwrapped)
+        case Level.INFO =>
+          ctx.asScala.log.info(msg, unwrapped)
+        case Level.DEBUG =>
+          ctx.asScala.log.debug(msg, unwrapped)
+        case Level.TRACE =>
+          ctx.asScala.log.trace(msg, unwrapped)
+        //TODO check this debug case is actually best option when other level is found
+        case _ => ctx.asScala.log.debug(msg, unwrapped)
       }
     }
   }
@@ -95,11 +95,16 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
       .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toUntyped))
   }
 
-  protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Catcher[Behavior[I]]
-  protected def handleSignalException(ctx: TypedActorContext[Any], target: SignalTarget[I]): Catcher[Behavior[I]]
-  protected def handleReceiveException(ctx: TypedActorContext[Any], target: ReceiveTarget[I]): Catcher[Behavior[I]]
-
   override def toString: String = Logging.simpleName(getClass)
+
+  protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =
+    throwableClass.isAssignableFrom(UnstashException.unwrap(t).getClass)
+
+  protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Catcher[Behavior[I]]
+
+  protected def handleSignalException(ctx: TypedActorContext[Any], target: SignalTarget[I]): Catcher[Behavior[I]]
+
+  protected def handleReceiveException(ctx: TypedActorContext[Any], target: ReceiveTarget[I]): Catcher[Behavior[I]]
 }
 
 /**
@@ -114,6 +119,9 @@ private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: Super
     } catch handleReceiveException(ctx, target)
   }
 
+  protected def handleReceiveException(ctx: TypedActorContext[Any], target: ReceiveTarget[T]): Catcher[Behavior[T]] =
+    handleException(ctx)
+
   protected def handleException(@unused ctx: TypedActorContext[Any]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       BehaviorImpl.failed(t)
@@ -122,9 +130,8 @@ private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: Super
   // convenience if target not required to handle exception
   protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[T]): Catcher[Behavior[T]] =
     handleException(ctx)
+
   protected def handleSignalException(ctx: TypedActorContext[Any], target: SignalTarget[T]): Catcher[Behavior[T]] =
-    handleException(ctx)
-  protected def handleReceiveException(ctx: TypedActorContext[Any], target: ReceiveTarget[T]): Catcher[Behavior[T]] =
     handleException(ctx)
 }
 
@@ -182,11 +189,6 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
   private var restartCount: Int = 0
   private var gotScheduledRestart = true
   private var deadline: OptionVal[Deadline] = OptionVal.None
-
-  private def deadlineHasTimeLeft: Boolean = deadline match {
-    case OptionVal.None    => true
-    case OptionVal.Some(d) => d.hasTimeLeft
-  }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     restartingInProgress match {
@@ -288,6 +290,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       case _                                   => target(ctx, PreRestart)
     })
   }
+
   override protected def handleReceiveException(
       ctx: TypedActorContext[Any],
       target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
@@ -295,6 +298,11 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       case e: UnstashException[Any] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
       case _                                   => target.signalRestart(ctx)
     })
+  }
+
+  private def deadlineHasTimeLeft: Boolean = deadline match {
+    case OptionVal.None    => true
+    case OptionVal.Some(d) => d.hasTimeLeft
   }
 
   private def handleException(ctx: TypedActorContext[Any], signalRestart: Throwable => Unit): Catcher[Behavior[T]] = {
@@ -311,7 +319,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error(ex, "failure during PreRestart")
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart", ex)
         }
 
         prepareRestart(ctx, t)

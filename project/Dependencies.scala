@@ -15,7 +15,7 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val junitVersion = "4.12"
-  val slf4jVersion = "1.7.25"
+  val slf4jVersion = "1.7.27"
   // check agrona version when updating this
   val aeronVersion = "1.19.1"
   // needs to be inline with the aeron version
@@ -164,11 +164,13 @@ object Dependencies {
 
   val actor = l ++= Seq(config, java8Compat.value)
 
+  val actorTyped = l ++= Seq(slf4jApi)
+
   val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
 
   val coordination = l ++= Seq(Test.junit, Test.scalatest.value)
 
-  val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
+  val testkit = l ++= Seq(Test.logback, Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
   val actorTests = l ++= Seq(
         Test.junit,

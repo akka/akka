@@ -115,7 +115,6 @@ class SyncTestingExampleSpec extends WordSpec with Matchers {
       val testKit = BehaviorTestKit(myBehavior)
       val inbox = TestInbox[String]("Inboxer")
       testKit.run(LogAndSayHello(inbox.ref))
-
       testKit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, "Saying hello to Inboxer"))
       //#test-check-logging
     }

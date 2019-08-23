@@ -426,6 +426,7 @@ lazy val testkit = akkaModule("akka-testkit")
 lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  .settings(Dependencies.actorTyped)
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=
     """
@@ -495,7 +496,9 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
-  .dependsOn(actorTyped, testkit % "compile->compile;test->test")
+  .dependsOn(actorTyped,
+    slf4j,
+    testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
 
