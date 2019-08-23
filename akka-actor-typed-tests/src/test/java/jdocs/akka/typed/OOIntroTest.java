@@ -8,19 +8,26 @@ package jdocs.akka.typed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.*;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.ReceiveBuilder;
+
 // #imports
+
+import akka.actor.typed.Terminated;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OOIntroTest {
+public interface OOIntroTest {
 
   // #chatroom-behavior
-  public static class ChatRoom {
+  public class ChatRoom {
     // #chatroom-behavior
     // #chatroom-protocol
     static interface RoomCommand {}
@@ -175,7 +182,7 @@ public class OOIntroTest {
   // #chatroom-behavior
 
   // #chatroom-gabbler
-  public static class Gabbler extends AbstractBehavior<ChatRoom.SessionEvent> {
+  public class Gabbler extends AbstractBehavior<ChatRoom.SessionEvent> {
     public static Behavior<ChatRoom.SessionEvent> create() {
       return Behaviors.setup(Gabbler::new);
     }
@@ -215,30 +222,26 @@ public class OOIntroTest {
   }
   // #chatroom-gabbler
 
-  public static void runChatRoom() {
+  // #chatroom-main
+  public class Main {
+    public static Behavior<Void> create() {
+      return Behaviors.setup(
+          context -> {
+            ActorRef<ChatRoom.RoomCommand> chatRoom = context.spawn(ChatRoom.create(), "chatRoom");
+            ActorRef<ChatRoom.SessionEvent> gabbler = context.spawn(Gabbler.create(), "gabbler");
+            context.watch(gabbler);
+            chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-    // #chatroom-main
-    Behavior<Void> main =
-        Behaviors.setup(
-            context -> {
-              ActorRef<ChatRoom.RoomCommand> chatRoom =
-                  context.spawn(ChatRoom.create(), "chatRoom");
-              ActorRef<ChatRoom.SessionEvent> gabbler = context.spawn(Gabbler.create(), "gabbler");
-              context.watch(gabbler);
-              chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
+            return Behaviors.receive(Void.class)
+                .onSignal(Terminated.class, sig -> Behaviors.stopped())
+                .build();
+          });
+    }
 
-              return Behaviors.<Void>receiveSignal(
-                  (c, sig) -> {
-                    if (sig instanceof Terminated) return Behaviors.stopped();
-                    else return Behaviors.unhandled();
-                  });
-            });
-
-    final ActorSystem<Void> system = ActorSystem.create(main, "ChatRoomDemo");
-    // #chatroom-main
+    public static void main(String[] args) {
+      ActorSystem.create(Main.create(), "ChatRoomDemo");
+    }
   }
+  // #chatroom-main
 
-  public static void main(String[] args) throws Exception {
-    runChatRoom();
-  }
 }

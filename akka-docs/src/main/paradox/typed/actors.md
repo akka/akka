@@ -250,7 +250,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-main }
 
-In good tradition we call the `main` Actor what it is, it directly
+In good tradition we call the `Main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
@@ -260,16 +260,16 @@ particular one using the `receive` behavior decorator. The
 provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
 or the `onMessage` function for user messages.
 
-This particular `main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
+This particular `Main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
 that creates the behavior instance immediately before the actor is running. The factory function in
 `setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
-This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+This `Main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `context.watch` for it. This allows us to shut down the Actor system: when
-the main Actor terminates there is nothing more to do.
+the `Main` Actor terminates there is nothing more to do.
 
-Therefore after creating the Actor system with the `main` Actor’s
+Therefore after creating the Actor system with the `Main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
 
@@ -395,7 +395,7 @@ Scala
 Java
 :  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-main }
 
-In good tradition we call the `main` Actor what it is, it directly
+In good tradition we call the `Main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
@@ -405,15 +405,15 @@ particular one using the `receive` behavior decorator. The
 provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
 or the `onMessage` function for user messages.
 
-This particular `main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
+This particular `Main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
 that creates the behavior instance immediately before the actor is running. The factory function in
 `setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
-This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+This `Main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `context.watch` for it. This allows us to shut down the Actor system: when
-the main Actor terminates there is nothing more to do.
+the `Main` Actor terminates there is nothing more to do.
 
-Therefore after creating the Actor system with the `main` Actor’s
+Therefore after creating the Actor system with the `Main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
