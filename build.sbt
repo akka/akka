@@ -239,9 +239,7 @@ lazy val docs = akkaModule("akka-docs")
       // Page that recommends Alpakka:
       "camel.html",
       // TODO seems like an orphan?
-      "fault-tolerance-sample.html",
-      // will be removed in https://github.com/akka/akka/pull/27450
-      "index-futures.html",
+      "fault-tolerance-sample.html"
     ),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",

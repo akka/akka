@@ -591,8 +591,7 @@ Java
 
 You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a `Future`
-of the matching `ActorRef` if such an actor exists. @java[(see also
-@ref:[Java 8 Compatibility](java8-compat.md) for Java compatibility).] It is completed with
+of the matching `ActorRef` if such an actor exists. It is completed with
 failure `akka.actor.ActorNotFound` if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
@@ -749,8 +748,6 @@ If the actor does not complete the @scala[`Future`]@java[`CompletionStage`], it 
  2. implicit argument of type `akka.util.Timeout`, e.g.
 
     @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
-
-See @ref:[Futures](futures.md) for more information on how to await or query a future.
 
 @@@
 

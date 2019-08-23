@@ -16,5 +16,6 @@ ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we rec
 * [index-actors](index-actors.md)
 * [index-cluster](index-cluster.md)
 * [index-network](index-network.md)
+* [index-utilities](classic/index-utilities.md)
 
 @@@
