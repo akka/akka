@@ -27,7 +27,6 @@ For more zero-impact rolling upgrades, it is important to consider a strategy fo
 One approach to retiring a serializer without downtime is described in @ref:[two rolling upgrade steps to switch to the new serializer](../serialization.md#rolling-upgrades). 
 Additionally you can find advice on @ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md) which also applies to remote messages when deploying with rolling updates.
 
-
 ## Cluster Sharding
 
 During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../cluster-sharding.md#shard-rebalancing), 
@@ -62,7 +61,7 @@ In case of network failures it may still be necessary to set the node's status t
 the cluster continues to function during network partitions and node failures. For example
 if there is an unreachability problem Split Brain Resolver would make a decision based on the configured downing strategy. 
   
-## Cluster Configuration Compatibility Checks
+## Configuration Compatibility Checks
 
 During rolling updates the configuration from existing nodes should pass the Cluster configuration compatibility checks.
 For example, it is possible to migrate Cluster Sharding from Classic to Typed Actors in a rolling update using a two step approach
@@ -74,3 +73,42 @@ and ensure all nodes are in this state
   
 Full documentation about enforcing these checks on joining nodes and optionally adding custom checks can be found in  
 @ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check).
+
+
+## Rolling Updates and Migrating Akka
+
+### From Akka 2.5 to Akka 2.6
+
+#### From Java serialization to Jackson
+
+If you use Java serialization you can replace it with, for example, the new
+@ref:[Serialization with Jackson](../serialization-jackson.md) and still be able to perform a rolling updates
+without bringing down the entire cluster.
+
+The procedure for changing from Java serialization to Jackson would look like:
+
+1. Rolling update from 2.5.24 (or later) to 2.6.0
+    * Use config `allow-java-serialization=on`.
+    * Roll out the change.
+    * Java serialization will be used as before.
+    * This step is optional and you could combine it with next step if you like, but could be good to
+      make one change at a time.
+1. Rolling update to support deserialization but not enable serialization
+    * Change message classes by adding the marker interface and possibly needed annotations as
+      described in @ref:[Serialization with Jackson](../serialization-jackson.md).
+    * Test the system with the new serialization in a new test cluster (no rolling update).
+    * Remove the binding for the marker interface, so that Jackson is not used for serialization yet.
+    * Roll out the change.
+    * Java serialization is still used, but this version is prepared for next roll out.
+1. Rolling update to enable serialization with Jackson.
+    * Add the binding to the marker interface to the Jackson serializer.
+    * Roll out the change.
+    * Old nodes will still send messages with Java serialization, and that can still be deserialized by new nodes.
+    * New nodes will send messages with Jackson serialization, and old node can deserialize those because they were
+      prepared in previous roll out.
+1. Rolling update to disable Java serialization
+    * Remove `allow-java-serialization` config, to use the default `allow-java-serialization=off`.
+    * Remove `.warn-about-java-serializer-usage` config if you had changed that, to use the default `.warn-about-java-serializer-usage=on`.
+    * Roll out the change.
+    
+   

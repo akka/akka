@@ -44,3 +44,27 @@ to see what this looks like in practice.
 ### Resource limits
 
 To avoid CFS scheduler limits, it is best not to use `resources.limits.cpu` limits, but use `resources.requests.cpu` configuration instead.
+
+## When Shutdown/Startup Is Required
+ 
+There are a few instances when a full shutdown and startup is required versus being able to do a rolling update.
+
+### Migrating from PersistentFSM to EventSourcedBehavior
+
+If you've migrated from `PersistentFSM` to `EventSourcedBehavior`
+and are using persistence with Cluster Sharding, a full shutdown is required as shards can move between new and old nodes.
+
+### Migrating from classic remoting to Artery
+
+If you've migrated from classic remoting to Artery
+which has a completely different protocol, a rolling update is not supported.
+For more details on this migration
+see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
+
+### Migrating from Akka 2.5 to 2.6
+
+#### Akka Typed with Receptionist or Cluster Receptionist
+
+If you are using the `Receptionist` or `Cluster Receptionist` with Akka Typed, information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6. When all old nodes have been shutdown it will work properly again.
+ 

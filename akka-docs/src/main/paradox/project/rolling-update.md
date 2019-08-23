@@ -9,13 +9,6 @@ For example it's possible to update from 2.5.14 to 2.5.16 without intermediate 2
 It's not supported to have a cluster with more than two different versions. Roll out the first
 update completely before starting next update.
 
-@@@ note
-
-Rolling update from classic remoting to Artery is not supported since the protocol
-is completely different. It will require a full cluster shutdown and new startup.
-
-@@@
-
 ## Change log
 
 ### 2.5.0 Several changes in minor release
