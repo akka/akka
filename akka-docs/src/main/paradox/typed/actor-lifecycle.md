@@ -93,7 +93,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main-with-dispatchers }
 
-Refer to @ref:[Actors](actors.md#introduction) for a walk-through of the above examples.
+Refer to @ref:[Actors](actors.md#first-example) for a walk-through of the above examples.
 
 ### SpawnProtocol
 

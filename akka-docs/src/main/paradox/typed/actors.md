@@ -1,4 +1,4 @@
-# Actors
+# Introduction to Actors
 
 ## Dependency
 
@@ -10,7 +10,7 @@ To use Akka Actor Typed, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Introduction
+## First example
 
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
@@ -417,78 +417,3 @@ the main Actor terminates there is nothing more to do.
 Therefore after creating the Actor system with the `main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
-
-
-## Relation to Akka (untyped) Actors
-
-The most prominent difference is the removal of the `sender()` functionality.
-The solution chosen in Akka Typed is to explicitly include the properly typed
-reply-to address in the message, which both burdens the user with this task but
-also places this aspect of protocol design where it belongs.
-
-The other prominent difference is the removal of the `Actor` trait. In
-order to avoid closing over unstable references from different execution
-contexts (e.g. Future transformations) we turned all remaining methods that
-were on this trait into messages: the behavior receives the
-`ActorContext` as an argument during processing and the lifecycle hooks
-have been converted into Signals.
-
-A side-effect of this is that behaviors can now be tested in isolation without
-having to be packaged into an Actor, tests can run fully synchronously without
-having to worry about timeouts and spurious failures. Another side-effect is
-that behaviors can nicely be composed and decorated, for example `Behaviors.tap`
-is not special or using something internal. New operators can be written as
-external libraries or tailor-made for each project.
-
-## A Little Bit of Theory
-
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
-Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
-exactly what it means for computation to be distributed. The processing
-units—Actors—can only communicate by exchanging messages and upon reception of a
-message an Actor can do the following three fundamental actions:
-
-  1. send a finite number of messages to Actors it knows
-  2. create a finite number of new Actors
-  3. designate the behavior to be applied to the next message
-
-The Akka Typed project expresses these actions using behaviors and addresses.
-Messages can be sent to an address and behind this façade there is a behavior
-that receives the message and acts upon it. The binding between address and
-behavior can change over time as per the third point above, but that is not
-visible on the outside.
-
-With this preamble we can get to the unique property of this project, namely
-that it introduces static type checking to Actor interactions: addresses are
-parameterized and only messages that are of the specified type can be sent to
-them. The association between an address and its type parameter must be made
-when the address (and its Actor) is created. For this purpose each behavior is
-also parameterized with the type of messages it is able to process. Since the
-behavior can change behind the address façade, designating the next behavior is
-a constrained operation: the successor must handle the same type of messages as
-its predecessor. This is necessary in order to not invalidate the addresses
-that refer to this Actor.
-
-What this enables is that whenever a message is sent to an Actor we can
-statically ensure that the type of the message is one that the Actor declares
-to handle—we can avoid the mistake of sending completely pointless messages.
-What we cannot statically ensure, though, is that the behavior behind the
-address will be in a given state when our message is received. The fundamental
-reason is that the association between address and behavior is a dynamic
-runtime property, the compiler cannot know it while it translates the source
-code.
-
-This is the same as for normal Java objects with internal variables: when
-compiling the program we cannot know what their value will be, and if the
-result of a method call depends on those variables then the outcome is
-uncertain to a degree—we can only be certain that the returned value is of a
-given type.
-
-We have seen above that the return type of an Actor command is described by the
-type of reply-to address that is contained within the message. This allows a
-conversation to be described in terms of its types: the reply will be of type
-A, but it might also contain an address of type B, which then allows the other
-Actor to continue the conversation by sending a message of type B to this new
-address. While we cannot statically express the “current” state of an Actor, we
-can express the current state of a protocol between two Actors, since that is
-just given by the last message type that was received or sent.
