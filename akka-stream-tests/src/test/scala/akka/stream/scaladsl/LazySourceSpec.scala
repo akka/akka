@@ -92,7 +92,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
             Source.maybe[Int].watchTermination()(Keep.right).mapMaterializedValue { done =>
               probe.ref ! Done
               done
-          })
+            })
           .mapMaterializedValue(_.flatten)
           .viaMat(KillSwitches.single)(Keep.both)
           .to(Sink.ignore)

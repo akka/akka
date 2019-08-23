@@ -234,8 +234,7 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
 
     val pullMe = Array.tabulate(secondaryPorts)(i => {
       val port = in(i)
-      () =>
-        tryPull(port)
+      () => tryPull(port)
     })
 
     /*

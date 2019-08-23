@@ -140,8 +140,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(OnNext(Vector(13, 14)), OnComplete))
     }
 
-    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](
-      new Expand((in: Int) => if (in == 2) throw TE else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
+    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](new Expand((in: Int) =>
+      if (in == 2) throw TE else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
       lastEvents() should be(Set(RequestOne))
 

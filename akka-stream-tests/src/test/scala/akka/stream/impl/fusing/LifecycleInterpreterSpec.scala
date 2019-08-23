@@ -96,8 +96,8 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set(Cancel(boom), OnError(boom)))
     }
 
-    "continue with stream shutdown when postStop fails" in new OneBoundedSetup[String](
-      PostStopFailer(() => throw TE("Boom!"))) {
+    "continue with stream shutdown when postStop fails" in new OneBoundedSetup[String](PostStopFailer(() =>
+      throw TE("Boom!"))) {
       lastEvents() should ===(Set())
 
       upstream.onComplete()

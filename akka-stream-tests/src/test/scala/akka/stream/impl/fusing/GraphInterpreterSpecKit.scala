@@ -96,7 +96,7 @@ object GraphInterpreterSpecKit {
       upstreams: Array[UpstreamBoundaryStageLogic[_]],
       downstreams: Array[DownstreamBoundaryStageLogic[_]],
       attributes: Array[Attributes] = Array.empty)
-    : (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
+      : (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
     if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
 

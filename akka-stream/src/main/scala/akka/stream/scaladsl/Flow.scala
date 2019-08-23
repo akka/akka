@@ -2556,12 +2556,11 @@ trait FlowOps[+Out, +Mat] {
   def zipWithIndex: Repr[(Out, Long)] = {
     statefulMapConcat[(Out, Long)] { () =>
       var index: Long = 0L
-      elem =>
-        {
-          val zipped = (elem, index)
-          index += 1
-          immutable.Iterable[(Out, Long)](zipped)
-        }
+      elem => {
+        val zipped = (elem, index)
+        index += 1
+        immutable.Iterable[(Out, Long)](zipped)
+      }
     }
   }
 
