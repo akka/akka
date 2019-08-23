@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
-import akka.actor.typed.Terminated;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -23,7 +22,7 @@ interface GracefulStopDocTest {
 
   // #master-actor
 
-  public class JobControl extends AbstractBehavior<JobControl.Command> {
+  public class MasterControlProgram extends AbstractBehavior<MasterControlProgram.Command> {
 
     interface Command {}
 
@@ -40,12 +39,12 @@ interface GracefulStopDocTest {
     }
 
     public static Behavior<Command> create() {
-      return Behaviors.setup(JobControl::new);
+      return Behaviors.setup(MasterControlProgram::new);
     }
 
     private final ActorContext<Command> context;
 
-    public JobControl(ActorContext<Command> context) {
+    public MasterControlProgram(ActorContext<Command> context) {
       this.context = context;
     }
 
@@ -67,14 +66,13 @@ interface GracefulStopDocTest {
     private Behavior<Command> onGracefulShutdown() {
       context.getSystem().log().info("Initiating graceful shutdown...");
 
-      // perform graceful stop, executing cleanup before final system
-      // termination
+      // perform graceful stop, executing cleanup before final system termination
       // behavior executing cleanup is passed as a parameter to Actor.stopped
       return Behaviors.stopped(() -> context.getSystem().log().info("Cleanup!"));
     }
 
     private Behavior<Command> onPostStop() {
-      context.getSystem().log().info("Master Control Programme stopped");
+      context.getSystem().log().info("Master Control Program stopped");
       return this;
     }
   }
@@ -83,15 +81,16 @@ interface GracefulStopDocTest {
   public static void main(String[] args) throws Exception {
     // #graceful-shutdown
 
-    final ActorSystem<JobControl.Command> system = ActorSystem.create(JobControl.create(), "B6700");
+    final ActorSystem<MasterControlProgram.Command> system =
+        ActorSystem.create(MasterControlProgram.create(), "B6700");
 
-    system.tell(new JobControl.SpawnJob("a"));
-    system.tell(new JobControl.SpawnJob("b"));
+    system.tell(new MasterControlProgram.SpawnJob("a"));
+    system.tell(new MasterControlProgram.SpawnJob("b"));
 
     // sleep here to allow time for the new actors to be started
     Thread.sleep(100);
 
-    system.tell(JobControl.GracefulShutdown.INSTANCE);
+    system.tell(MasterControlProgram.GracefulShutdown.INSTANCE);
 
     system.getWhenTerminated().toCompletableFuture().get(3, TimeUnit.SECONDS);
     // #graceful-shutdown

@@ -19,7 +19,7 @@ object GracefulStopDocSpec {
 
   //#master-actor
 
-  object JobControl {
+  object MasterControlProgram {
     sealed trait Command
     final case class SpawnJob(name: String) extends Command
     final case object GracefulShutdown extends Command
@@ -46,7 +46,7 @@ object GracefulStopDocSpec {
         }
         .receiveSignal {
           case (context, PostStop) =>
-            context.log.info("MCPA stopped")
+            context.log.info("Master Control Program stopped")
             Behaviors.same
         }
     }
@@ -78,9 +78,9 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "start some workers" in {
       //#start-workers
-      import JobControl._
+      import MasterControlProgram._
 
-      val system: ActorSystem[Command] = ActorSystem(JobControl(), "B6700")
+      val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B6700")
 
       system ! SpawnJob("a")
       system ! SpawnJob("b")
@@ -98,9 +98,9 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "gracefully stop workers and master" in {
       //#graceful-shutdown
 
-      import JobControl._
+      import MasterControlProgram._
 
-      val system: ActorSystem[Command] = ActorSystem(JobControl(), "B7700")
+      val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
 
       system ! SpawnJob("a")
       system ! SpawnJob("b")
