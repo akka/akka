@@ -8,11 +8,12 @@ import java.time.Duration
 import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
+import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import akka.actor.ClassicActorContextProvider
+import org.slf4j.Logger
 
 import scala.concurrent.ExecutionContextExecutor
 

@@ -17,7 +17,7 @@ import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
 import akka.{ Done, actor => classic }
 import com.typesafe.config.{ Config, ConfigFactory }
-
+import org.slf4j.Logger
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
@@ -50,7 +50,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
   def logConfiguration(): Unit
 
   /**
-   * A [[akka.actor.typed.Logger]] that can be used to emit log messages
+   * A [[org.slf4j.Logger]] that can be used to emit log messages
    * without specifying a more detailed source. Typically it is desirable to
    * use the dedicated `Logger` available from each Actor’s [[TypedActorContext]]
    * as that ties the log entries to the actor.

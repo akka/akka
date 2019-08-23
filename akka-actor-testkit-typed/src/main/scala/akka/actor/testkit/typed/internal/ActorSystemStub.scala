@@ -14,7 +14,6 @@ import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.Dispatchers
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
-import akka.actor.typed.Logger
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.actor.typed.Settings
@@ -28,6 +27,8 @@ import scala.concurrent._
 import akka.actor.ActorRefProvider
 import akka.actor.typed.internal.InternalRecipientRef
 import com.github.ghik.silencer.silent
+import org.slf4j.Logger
+import org.slf4j.helpers.SubstituteLoggerFactory
 
 /**
  * INTERNAL API
@@ -103,5 +104,7 @@ import com.github.ghik.silencer.silent
   override def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
     throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
 
-  override def log: Logger = new StubbedLogger
+  val loggerFactory = new SubstituteLoggerFactory()
+
+  override def log: Logger = loggerFactory.getLogger("StubbedLogger")
 }

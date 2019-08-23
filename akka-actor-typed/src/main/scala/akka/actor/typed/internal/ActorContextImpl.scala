@@ -20,6 +20,7 @@ import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
 import akka.util.JavaDurationConverters._
+import org.slf4j.Logger
 
 /**
  * INTERNAL API
