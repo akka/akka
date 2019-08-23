@@ -51,13 +51,27 @@ abstract class ActorRefResolver extends Extension {
   private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
 
   override def toSerializationFormat[T](ref: ActorRef[T]): String = {
-    val originalSystem: ExtendedActorSystem = ref.toUntyped match {
-      case a: ActorRefWithCell => a.underlying.system.asInstanceOf[ExtendedActorSystem]
-      case _                   => null
-    }
-    originalSystem match {
-      case null     => ref.path.toSerializationFormatWithAddress(untypedSystem.provider.getDefaultAddress)
-      case original => ref.path.toSerializationFormatWithAddress(original.provider.getDefaultAddress)
+
+    def toSerializationFormatWithAddress =
+      ref.path.toSerializationFormatWithAddress(untypedSystem.provider.getDefaultAddress)
+
+    ref.toUntyped match {
+      case a: ActorRefWithCell =>
+        val originSystem = a.underlying.system.asInstanceOf[ExtendedActorSystem]
+        if (originSystem eq untypedSystem)
+          toSerializationFormatWithAddress
+        else
+          throw new IllegalArgumentException(
+            s"ActorRefResolver for ActorSystem [${untypedSystem.provider.getDefaultAddress}] shouldn't be for " +
+            "serialization of ActorRef that originates from another ActorSystem " +
+            s"[${originSystem.provider.getDefaultAddress}]. Use the ActorRefResolver for that system instead.")
+
+      case _ =>
+        // no origin system information for RemoteActorRef or MinimalActorRef, so just use the
+        // one for this extension. That is correct for RemoteActorRef, but MinimalActorRef
+        // could be wrong. However, since we don't allow usage of "wrong" ActorSystem for
+        // ordinary ActorRef the users will learn not do that mistake.
+        toSerializationFormatWithAddress
     }
   }
 
