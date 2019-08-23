@@ -4,19 +4,26 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.{ ActorRef, Kill, NoSerializationVerificationNeeded, PoisonPill }
+import akka.actor.ActorRef
+import akka.actor.Kill
+import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.PoisonPill
 import akka.event.Logging
 import akka.stream._
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.stage.InHandler
 import akka.stream.testkit.StreamSpec
-import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
+import akka.testkit.EventFilter
+import akka.testkit.ImplicitSender
+import akka.testkit.TestEvent
+import akka.testkit.TestProbe
 
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 class StageActorRefSpec extends StreamSpec with ImplicitSender {
-  implicit val materializer = ActorMaterializer()
-
   import StageActorRefSpec._
   import ControlProtocol._
 

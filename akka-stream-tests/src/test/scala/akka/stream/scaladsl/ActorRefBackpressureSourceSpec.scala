@@ -8,7 +8,6 @@ import akka.actor.Status
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
@@ -20,8 +19,6 @@ private object ActorRefBackpressureSourceSpec {
 
 class ActorRefBackpressureSourceSpec extends StreamSpec {
   import ActorRefBackpressureSourceSpec._
-
-  private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   "An Source.actorRefWithAck" must {
 

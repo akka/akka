@@ -6,18 +6,13 @@ package akka.stream.scaladsl
 
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
+
 import scala.util.control.NoStackTrace
 
 class FlowTakeWhileSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "A TakeWhile" must {
 

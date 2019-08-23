@@ -49,7 +49,7 @@ public class OutputStreamSourceTest extends StreamTest {
                         probe.getRef().tell(elem, ActorRef.noSender());
                       }
                     }))
-            .run(materializer);
+            .run(system);
 
     s.write("a".getBytes());
 

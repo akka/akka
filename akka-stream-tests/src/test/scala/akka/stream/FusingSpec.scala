@@ -10,8 +10,6 @@ import akka.stream.testkit.StreamSpec
 
 class FusingSpec extends StreamSpec {
 
-  implicit val materializer = ActorMaterializer()
-
   def actorRunningStage = {
     GraphInterpreter.currentInterpreter.context
   }

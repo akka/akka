@@ -67,8 +67,7 @@ public class GraphDslTest extends StreamTest {
                   return ClosedShape.getInstance();
                 }));
     // #simple-graph-dsl
-    final List<String> list =
-        result.run(materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+    final List<String> list = result.run(system).toCompletableFuture().get(3, TimeUnit.SECONDS);
     final String[] res = list.toArray(new String[] {});
     Arrays.sort(res, null);
     assertArrayEquals(
@@ -128,7 +127,7 @@ public class GraphDslTest extends StreamTest {
                   return ClosedShape.getInstance();
                 }));
     // #graph-dsl-reusing-a-flow
-    final Pair<CompletionStage<Integer>, CompletionStage<Integer>> pair = g.run(materializer);
+    final Pair<CompletionStage<Integer>, CompletionStage<Integer>> pair = g.run(system);
     assertEquals(Integer.valueOf(2), pair.first().toCompletableFuture().get(3, TimeUnit.SECONDS));
     assertEquals(Integer.valueOf(2), pair.second().toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -209,7 +208,7 @@ public class GraphDslTest extends StreamTest {
 
                   return ClosedShape.getInstance();
                 }));
-    List<CompletionStage<String>> result = g.run(materializer);
+    List<CompletionStage<String>> result = g.run(system);
     // #graph-from-list
 
     assertEquals(3, result.size());

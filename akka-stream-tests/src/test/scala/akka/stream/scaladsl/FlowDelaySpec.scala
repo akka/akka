@@ -7,21 +7,22 @@ package akka.stream.scaladsl
 import akka.Done
 import akka.stream.Attributes._
 import akka.stream.OverflowStrategies.EmitEarly
+import akka.stream._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.TimingTest
 import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.time.{ Milliseconds, Span }
+import org.scalatest.time.Milliseconds
+import org.scalatest.time.Span
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class FlowDelaySpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A Delay" must {
 

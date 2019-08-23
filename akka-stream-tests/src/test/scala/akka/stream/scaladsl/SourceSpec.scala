@@ -4,27 +4,27 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Millis, Span }
+import com.github.ghik.silencer.silent
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
 import scala.concurrent.Future
-import akka.stream.testkit.Utils.TE
-import com.github.ghik.silencer.silent
 //#imports
 import akka.stream._
 
 //#imports
-import akka.stream.testkit._
 import akka.NotUsed
-import akka.testkit.EventFilter
-import scala.collection.immutable
-
+import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.EventFilter
+
+import scala.collection.immutable
 
 @silent // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Single Source" must {

@@ -5,7 +5,7 @@
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializer, KillSwitches, UniqueKillSwitch }
+import akka.stream.{ KillSwitches, UniqueKillSwitch }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 import akka.stream.ThrottleMode
 
 class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
-  implicit val materializer = ActorMaterializer()
 
   "Hubs" must {
 

@@ -8,8 +8,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Function;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SubSource;
@@ -29,19 +27,16 @@ import static junit.framework.TestCase.assertTrue;
 
 public class RecipeMultiGroupByTest extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeMultiGroupBy");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   static class Topic {
@@ -142,7 +137,7 @@ public class RecipeMultiGroupByTest extends RecipeTest {
                               "]");
                     })
                 .grouped(10)
-                .runWith(Sink.head(), mat);
+                .runWith(Sink.head(), system);
 
         List<String> got = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertTrue(got.contains("1[1: a, 1: b, all: c, all: d, 1: e]"));

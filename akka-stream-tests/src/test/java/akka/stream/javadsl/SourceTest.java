@@ -84,7 +84,7 @@ public class SourceTest extends StreamTest {
         .mapConcat(elem -> elem)
         .groupedWithin(100, Duration.ofMillis(50))
         .mapConcat(elem -> elem)
-        .runFold("", (acc, elem) -> acc + elem, materializer)
+        .runFold("", (acc, elem) -> acc + elem, system)
         .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
 
     probe.expectMsgEquals("de");
@@ -97,7 +97,7 @@ public class SourceTest extends StreamTest {
     Source<String, NotUsed> ints = Source.from(input);
 
     final CompletionStage<Done> completion =
-        ints.runForeach(elem -> probe.getRef().tell(elem, ActorRef.noSender()), materializer);
+        ints.runForeach(elem -> probe.getRef().tell(elem, ActorRef.noSender()), system);
 
     completion.thenAccept(elem -> probe.getRef().tell(String.valueOf(elem), ActorRef.noSender()));
 
@@ -161,8 +161,7 @@ public class SourceTest extends StreamTest {
               }
             })
         .runForeach(
-            (Procedure<Integer>) elem -> probe.getRef().tell(elem, ActorRef.noSender()),
-            materializer);
+            (Procedure<Integer>) elem -> probe.getRef().tell(elem, ActorRef.noSender()), system);
 
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(0);
@@ -192,7 +191,7 @@ public class SourceTest extends StreamTest {
             .mergeSubstreams();
 
     final CompletionStage<List<List<String>>> future =
-        source.grouped(10).runWith(Sink.<List<List<String>>>head(), materializer);
+        source.grouped(10).runWith(Sink.<List<List<String>>>head(), system);
     final Object[] result = future.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray();
     Arrays.sort(
         result,
@@ -227,7 +226,7 @@ public class SourceTest extends StreamTest {
             .concatSubstreams();
 
     final CompletionStage<List<List<String>>> future =
-        source.grouped(10).runWith(Sink.<List<List<String>>>head(), materializer);
+        source.grouped(10).runWith(Sink.<List<List<String>>>head(), system);
     final List<List<String>> result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(
@@ -251,7 +250,7 @@ public class SourceTest extends StreamTest {
             .concatSubstreams();
 
     final CompletionStage<List<List<String>>> future =
-        source.grouped(10).runWith(Sink.<List<List<String>>>head(), materializer);
+        source.grouped(10).runWith(Sink.<List<List<String>>>head(), system);
     final List<List<String>> result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(
@@ -276,7 +275,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
@@ -298,7 +297,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
@@ -322,7 +321,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
@@ -343,7 +342,7 @@ public class SourceTest extends StreamTest {
                     probe.getRef().tell(param.get(), ActorRef.noSender());
                   }
                 }),
-            materializer);
+            system);
 
     probe.expectMsgClass(Done.class);
   }
@@ -358,7 +357,7 @@ public class SourceTest extends StreamTest {
             in -> {
               throw new RuntimeException("simulated err");
             })
-        .runWith(Sink.<String>head(), materializer)
+        .runWith(Sink.<String>head(), system)
         .whenComplete(
             (s, ex) -> {
               if (ex == null) {
@@ -375,7 +374,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseToFuture() throws Exception {
     final TestKit probe = new TestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
-    CompletionStage<String> future = Source.from(input).runWith(Sink.<String>head(), materializer);
+    CompletionStage<String> future = Source.from(input).runWith(Sink.<String>head(), system);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("A", result);
   }
@@ -383,7 +382,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseSingle() throws Exception {
     // #source-single
-    CompletionStage<List<String>> future = Source.single("A").runWith(Sink.seq(), materializer);
+    CompletionStage<List<String>> future = Source.single("A").runWith(Sink.seq(), system);
     CompletableFuture<List<String>> completableFuture = future.toCompletableFuture();
     completableFuture.thenAccept(result -> System.out.printf("collected elements: %s\n", result));
     // result list will contain exactly one element "A"
@@ -402,13 +401,13 @@ public class SourceTest extends StreamTest {
     CompletionStage<Pair<List<Integer>, Source<Integer, NotUsed>>> future =
         Source.from(input)
             .prefixAndTail(3)
-            .runWith(Sink.<Pair<List<Integer>, Source<Integer, NotUsed>>>head(), materializer);
+            .runWith(Sink.<Pair<List<Integer>, Source<Integer, NotUsed>>>head(), system);
     Pair<List<Integer>, Source<Integer, NotUsed>> result =
         future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
     CompletionStage<List<Integer>> tailFuture =
-        result.second().limit(4).runWith(Sink.<Integer>seq(), materializer);
+        result.second().limit(4).runWith(Sink.<Integer>seq(), system);
     List<Integer> tailResult = tailFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }
@@ -428,7 +427,7 @@ public class SourceTest extends StreamTest {
             .<Integer, NotUsed>flatMapConcat(
                 ConstantFun.<Source<Integer, NotUsed>>javaIdentityFunction())
             .grouped(6)
-            .runWith(Sink.<List<Integer>>head(), materializer);
+            .runWith(Sink.<List<Integer>>head(), system);
 
     List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -453,7 +452,7 @@ public class SourceTest extends StreamTest {
         Source.from(mainInputs)
             .flatMapMerge(3, ConstantFun.<Source<Integer, NotUsed>>javaIdentityFunction())
             .grouped(60)
-            .runWith(Sink.<List<Integer>>head(), materializer);
+            .runWith(Sink.<List<Integer>>head(), system);
 
     List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     final Set<Integer> set = new HashSet<Integer>();
@@ -476,7 +475,7 @@ public class SourceTest extends StreamTest {
         Source.from(input)
             .buffer(2, OverflowStrategy.backpressure())
             .grouped(4)
-            .runWith(Sink.<List<String>>head(), materializer);
+            .runWith(Sink.<List<String>>head(), system);
 
     List<String> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(input, result);
@@ -489,7 +488,7 @@ public class SourceTest extends StreamTest {
     CompletionStage<String> future =
         Source.from(input)
             .conflateWithSeed(s -> s, (aggr, in) -> aggr + in)
-            .runFold("", (aggr, in) -> aggr + in, materializer);
+            .runFold("", (aggr, in) -> aggr + in, system);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("ABC", result);
 
@@ -498,7 +497,7 @@ public class SourceTest extends StreamTest {
     CompletionStage<String> future2 =
         Source.from(input)
             .conflate((String a, String b) -> a + b)
-            .runFold("", (a, b) -> a + b, materializer);
+            .runFold("", (a, b) -> a + b, system);
     String result2 = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("ABC", result2);
   }
@@ -510,7 +509,7 @@ public class SourceTest extends StreamTest {
     CompletionStage<String> future =
         Source.from(input)
             .expand(in -> Stream.iterate(in, i -> i).iterator())
-            .runWith(Sink.<String>head(), materializer);
+            .runWith(Sink.<String>head(), system);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("A", result);
   }
@@ -530,7 +529,7 @@ public class SourceTest extends StreamTest {
                         probe.getRef().tell(elem, ActorRef.noSender());
                       }
                     }))
-            .run(materializer);
+            .run(system);
     probe.expectNoMessage(Duration.ofMillis(600));
     probe.expectMsgEquals("tick");
     probe.expectNoMessage(Duration.ofMillis(200));
@@ -552,7 +551,7 @@ public class SourceTest extends StreamTest {
     final Iterable<String> input = Arrays.asList("a", "b", "c");
     Source.from(input)
         .mapAsync(4, elem -> CompletableFuture.completedFuture(elem.toUpperCase()))
-        .runForeach(elem -> probe.getRef().tell(elem, ActorRef.noSender()), materializer);
+        .runForeach(elem -> probe.getRef().tell(elem, ActorRef.noSender()), system);
     probe.expectMsgEquals("A");
     probe.expectMsgEquals("B");
     probe.expectMsgEquals("C");
@@ -571,16 +570,16 @@ public class SourceTest extends StreamTest {
             (elem) -> {
               probe.getRef().tell(elem, ActorRef.noSender());
             },
-            materializer);
+            system);
     probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
   }
 
   @Test
   public void mustWorkFromFuture() throws Exception {
     final Iterable<String> input = Arrays.asList("A", "B", "C");
-    CompletionStage<String> future1 = Source.from(input).runWith(Sink.<String>head(), materializer);
+    CompletionStage<String> future1 = Source.from(input).runWith(Sink.<String>head(), system);
     CompletionStage<String> future2 =
-        Source.fromCompletionStage(future1).runWith(Sink.<String>head(), materializer);
+        Source.fromCompletionStage(future1).runWith(Sink.<String>head(), system);
     String result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("A", result);
   }
@@ -589,7 +588,7 @@ public class SourceTest extends StreamTest {
   public void mustWorkFromFutureVoid() throws Exception {
     CompletionStage<Void> future = CompletableFuture.completedFuture(null);
     CompletionStage<List<Void>> future2 =
-        Source.fromCompletionStage(future).runWith(Sink.seq(), materializer);
+        Source.fromCompletionStage(future).runWith(Sink.seq(), system);
     List<Void> result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(0, result.size());
   }
@@ -597,7 +596,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustWorkFromRange() throws Exception {
     CompletionStage<List<Integer>> f =
-        Source.range(0, 10).grouped(20).runWith(Sink.<List<Integer>>head(), materializer);
+        Source.range(0, 10).grouped(20).runWith(Sink.<List<Integer>>head(), system);
     final List<Integer> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(11, result.size());
     Integer counter = 0;
@@ -607,7 +606,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustWorkFromRangeWithStep() throws Exception {
     CompletionStage<List<Integer>> f =
-        Source.range(0, 10, 2).grouped(20).runWith(Sink.<List<Integer>>head(), materializer);
+        Source.range(0, 10, 2).grouped(20).runWith(Sink.<List<Integer>>head(), system);
     final List<Integer> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(6, result.size());
     Integer counter = 0;
@@ -620,7 +619,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustRepeat() throws Exception {
     final CompletionStage<List<Integer>> f =
-        Source.repeat(42).grouped(10000).runWith(Sink.<List<Integer>>head(), materializer);
+        Source.repeat(42).grouped(10000).runWith(Sink.<List<Integer>>head(), system);
     final List<Integer> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result.size(), 10000);
     for (Integer i : result) assertEquals(i, (Integer) 42);
@@ -629,8 +628,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseQueue() throws Exception {
     final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
-        Flow.of(String.class)
-            .runWith(Source.queue(2, OverflowStrategy.fail()), Sink.seq(), materializer);
+        Flow.of(String.class).runWith(Source.queue(2, OverflowStrategy.fail()), Sink.seq(), system);
     final SourceQueueWithComplete<String> source = x.first();
     final CompletionStage<List<String>> result = x.second();
     source.offer("hello");
@@ -653,7 +651,7 @@ public class SourceTest extends StreamTest {
                         probe.getRef().tell(elem, ActorRef.noSender());
                       }
                     }))
-            .run(materializer);
+            .run(system);
     ref.tell(1, ActorRef.noSender());
     probe.expectMsgEquals(1);
     ref.tell(2, ActorRef.noSender());
@@ -677,7 +675,7 @@ public class SourceTest extends StreamTest {
                   };
                 });
 
-    ints.runFold("", (acc, elem) -> acc + elem, materializer)
+    ints.runFold("", (acc, elem) -> acc + elem, system)
         .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
 
     probe.expectMsgEquals("2334445555");
@@ -691,7 +689,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgEquals("[");
     probe.expectMsgEquals("0");
@@ -714,8 +712,7 @@ public class SourceTest extends StreamTest {
     final CompletionStage<Done> future =
         Source.single(">> ")
             .concat(source)
-            .runWith(
-                Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            .runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgEquals(">> ");
     probe.expectMsgEquals("0");
@@ -742,7 +739,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgEquals(2);
     probe.expectMsgEquals(3);
@@ -763,7 +760,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
@@ -790,7 +787,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
     final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
     s.sendNext(0);
     probe.expectMsgEquals(0);
@@ -815,7 +812,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgAllOf(0, 1, 2, 3);
 
@@ -842,7 +839,7 @@ public class SourceTest extends StreamTest {
         combined
             .toMat(
                 Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), Keep.left())
-            .run(materializer);
+            .run(system);
 
     queue.offer(0);
     queue.offer(1);
@@ -866,7 +863,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgAllOf(Arrays.asList(0, 2), Arrays.asList(1, 3));
 
@@ -886,7 +883,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future =
         source.runWith(
-            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+            Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), system);
 
     probe.expectMsgAllOf(Boolean.TRUE, Boolean.FALSE);
 
@@ -911,7 +908,7 @@ public class SourceTest extends StreamTest {
               }
             });
     Source<Pair<String, Integer>, NotUsed> zippedSrc = src1.zipAll(src2, "MISSING", -1);
-    zippedSrc.runWith(sink, materializer);
+    zippedSrc.runWith(sink, system);
 
     List<Object> output = probe.receiveN(6);
     List<Pair<String, Integer>> expected =
@@ -928,7 +925,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void createEmptySource() throws Exception {
     List<Integer> actual =
-        Source.empty(Integer.class).runWith(Sink.seq(), materializer).toCompletableFuture().get();
+        Source.empty(Integer.class).runWith(Sink.seq(), system).toCompletableFuture().get();
     assertThat(actual, is(Collections.emptyList()));
   }
 
@@ -936,7 +933,7 @@ public class SourceTest extends StreamTest {
   public void cycleSourceMustGenerateSameSequenceInRepeatedFashion() throws Exception {
     // #cycle
     final Source<Integer, NotUsed> source = Source.cycle(() -> Arrays.asList(1, 2, 3).iterator());
-    CompletionStage<List<Integer>> result = source.grouped(9).runWith(Sink.head(), materializer);
+    CompletionStage<List<Integer>> result = source.grouped(9).runWith(Sink.head(), system);
     List<Integer> emittedValues = result.toCompletableFuture().get();
     assertThat(emittedValues, is(Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3)));
     // #cycle
@@ -949,7 +946,7 @@ public class SourceTest extends StreamTest {
       // #cycle-error
       Iterator<Integer> emptyIterator = Collections.<Integer>emptyList().iterator();
       Source.cycle(() -> emptyIterator)
-          .runWith(Sink.head(), materializer)
+          .runWith(Sink.head(), system)
           // stream will be terminated with IllegalArgumentException
           // #cycle-error
           .toCompletableFuture()
@@ -973,7 +970,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
   }
@@ -998,7 +995,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     probe.expectMsgEquals("A-D");
     probe.expectMsgEquals("B-E");
@@ -1019,7 +1016,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     probe.expectMsgEquals(new Pair<String, String>("A", "D"));
     probe.expectMsgEquals(new Pair<String, String>("B", "E"));
@@ -1040,7 +1037,7 @@ public class SourceTest extends StreamTest {
                 probe.getRef().tell(elem, ActorRef.noSender());
               }
             },
-            materializer);
+            system);
 
     probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
   }
@@ -1051,7 +1048,7 @@ public class SourceTest extends StreamTest {
       try {
         Source.maybe()
             .initialTimeout(Duration.ofSeconds(1))
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
@@ -1069,7 +1066,7 @@ public class SourceTest extends StreamTest {
       try {
         Source.maybe()
             .completionTimeout(Duration.ofSeconds(1))
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
@@ -1087,7 +1084,7 @@ public class SourceTest extends StreamTest {
       try {
         Source.maybe()
             .idleTimeout(Duration.ofSeconds(1))
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
@@ -1105,7 +1102,7 @@ public class SourceTest extends StreamTest {
         Source.<Integer>maybe()
             .keepAlive(Duration.ofSeconds(1), () -> 0)
             .takeWithin(Duration.ofMillis(1500))
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
 
@@ -1127,7 +1124,7 @@ public class SourceTest extends StreamTest {
         Source.from(Arrays.asList(0, 1, 2))
             .throttle(10, Duration.ofSeconds(1), 10, ThrottleMode.shaping())
             .throttle(10, Duration.ofSeconds(1), 10, ThrottleMode.enforcing())
-            .runWith(Sink.head(), materializer)
+            .runWith(Sink.head(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);
 
@@ -1151,7 +1148,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUsePreMaterialize() {
     final Pair<NotUsed, Source<Integer, NotUsed>> p =
-        Source.<Integer>empty().preMaterialize(materializer);
+        Source.<Integer>empty().preMaterialize(system);
   }
 
   @Test

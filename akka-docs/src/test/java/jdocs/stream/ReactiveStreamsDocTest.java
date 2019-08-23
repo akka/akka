@@ -8,7 +8,6 @@ import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.function.Creator;
-import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.TestProbe;
 import jdocs.AbstractJavaTest;
@@ -34,14 +33,12 @@ import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
   static TestProbe storageProbe;
   static TestProbe alertProbe;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("ReactiveStreamsDocTest");
-    mat = ActorMaterializer.create(system);
     storageProbe = new TestProbe(system);
     alertProbe = new TestProbe(system);
   }
@@ -50,7 +47,6 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
     storageProbe = null;
     alertProbe = null;
   }
@@ -86,7 +82,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
         @Override
         public Publisher<Tweet> tweets() {
           return TwitterStreamQuickstartDocTest.Model.tweets.runWith(
-              Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
+              Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), system);
         }
 
         /**
@@ -155,7 +151,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
       {
         // #flow-publisher-subscriber
-        final Processor<Tweet, Author> processor = authors.toProcessor().run(mat);
+        final Processor<Tweet, Author> processor = authors.toProcessor().run(system);
 
         rs.tweets().subscribe(processor);
         processor.subscribe(rs.storage());
@@ -176,7 +172,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
         final Publisher<Author> authorPublisher =
             Source.fromPublisher(rs.tweets())
                 .via(authors)
-                .runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
+                .runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), system);
 
         authorPublisher.subscribe(rs.storage());
         // #source-publisher
@@ -196,7 +192,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
         final Publisher<Author> authorPublisher =
             Source.fromPublisher(rs.tweets())
                 .via(authors)
-                .runWith(Sink.asPublisher(AsPublisher.WITH_FANOUT), mat);
+                .runWith(Sink.asPublisher(AsPublisher.WITH_FANOUT), system);
 
         authorPublisher.subscribe(rs.storage());
         authorPublisher.subscribe(rs.alert());
@@ -217,7 +213,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
         final Subscriber<Author> storage = rs.storage();
 
         final Subscriber<Tweet> tweetSubscriber =
-            authors.to(Sink.fromSubscriber(storage)).runWith(Source.asSubscriber(), mat);
+            authors.to(Sink.fromSubscriber(storage)).runWith(Source.asSubscriber(), system);
 
         rs.tweets().subscribe(tweetSubscriber);
         // #sink-subscriber
@@ -236,7 +232,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
         final Creator<Processor<Integer, Integer>> factory =
             new Creator<Processor<Integer, Integer>>() {
               public Processor<Integer, Integer> create() {
-                return Flow.of(Integer.class).toProcessor().run(mat);
+                return Flow.of(Integer.class).toProcessor().run(system);
               }
             };
 

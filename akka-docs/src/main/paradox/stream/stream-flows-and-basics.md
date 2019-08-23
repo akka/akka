@@ -266,7 +266,7 @@ and `runWith()` methods defined on `Source` and `Flow` elements as well as a sma
 well-known sinks, such as @scala[`runForeach(el => ...)`]@java[`runForeach(el -> ...)`]
 (being an alias to @scala[`runWith(Sink.foreach(el => ...))`]@java[`runWith(Sink.foreach(el -> ...))`]).
 
-Materialization is currently performed synchronously on the materializing thread.
+Materialization is performed synchronously on the materializing thread by an `ActorSystem` global `Materializer`.
 The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
 `MaterializationSettings` while constructing the `ActorMaterializer`.
@@ -376,20 +376,25 @@ merge is performed.
 
 ## Actor Materializer Lifecycle
 
+The `Materializer` is a component that is responsible for turning the stream blueprint into a running stream
+and emitting the "materialized value". An `ActorSystem` wide `Materializer` is provided by the Akka `Extension` 
+`SystemMaterializer` by @scala[having an implicit `ActorSystem` in scope]@java[passing the `ActorSystem` to the 
+various `run` methods] this way there is no need to worry about the `Materializer` unless there are special requirements.
+
+The use cases that may require a custom instance of `Materializer` are:
+
+ * When wanting to change some specific default settings for a set of streams (FIXME we should phase this out)
+ * When all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
+
+Currently the `Materializer` has one concrete implementation, the `ActorMaterializer`. 
+
 An important aspect of working with streams and actors is understanding an `ActorMaterializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
-be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`).
+be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`). 
 
-The usual way of creating an `ActorMaterializer` is to create it next to your `ActorSystem`,
-which likely is in a "main" class of your application:
+Tying it to the `ActorSystem` should be replaced with using the system materializer from Akka 2.6 and on.
 
-Scala
-:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system }
-
-Java
-:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system }
-
-In this case the streams run by the materializer will run until it is shut down. When the materializer is shut down
+When run by the system materializer the streams will run until the `ActorSystem` is shut down. When the materializer is shut down
 *before* the streams have run to completion, they will be terminated abruptly. This is a little different than the
 usual way to terminate streams, which is by cancelling/completing them. The stream lifecycles are bound to the materializer
 like this to prevent leaks, and in normal operations you should not rely on the mechanism and rather use `KillSwitch` or

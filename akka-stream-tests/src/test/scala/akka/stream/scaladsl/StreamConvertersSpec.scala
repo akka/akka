@@ -5,27 +5,33 @@
 package akka.stream.scaladsl
 
 import java.util
-import java.util.function.{ BiConsumer, BinaryOperator, Supplier, ToIntFunction }
+import java.util.function.BiConsumer
+import java.util.function.BinaryOperator
+import java.util.function.Supplier
+import java.util.function.ToIntFunction
 import java.util.stream.Collector.Characteristics
-import java.util.stream.{ BaseStream, Collector, Collectors }
+import java.util.stream.BaseStream
+import java.util.stream.Collector
+import java.util.stream.Collectors
 
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Millis, Span }
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Java Stream source" must {
+    import java.util.stream.IntStream
+    import java.util.stream.Stream
+
     import scala.compat.java8.FunctionConverters._
-    import java.util.stream.{ IntStream, Stream }
 
     def javaStreamInts =
       IntStream.iterate(1, { i: Int =>

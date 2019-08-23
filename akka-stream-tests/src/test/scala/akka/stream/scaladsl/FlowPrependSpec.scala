@@ -4,7 +4,6 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.testkit.AkkaSpec
 import com.github.ghik.silencer.silent
 
@@ -12,14 +11,8 @@ import com.github.ghik.silencer.silent
 class FlowPrependSpec extends AkkaSpec {
 
 //#prepend
-  import akka.stream.scaladsl.Source
-  import akka.stream.scaladsl.Sink
 
 //#prepend
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "An Prepend flow" should {
 

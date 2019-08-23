@@ -9,8 +9,6 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.japi.function.Function;
 import akka.japi.function.Function2;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -30,19 +28,16 @@ import java.util.stream.Collectors;
 
 public class RecipeReduceByKeyTest extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeReduceByKey");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -68,7 +63,7 @@ public class RecipeReduceByKeyTest extends RecipeTest {
         // #word-count
 
         final CompletionStage<List<Pair<String, Integer>>> f =
-            counts.grouped(10).runWith(Sink.head(), mat);
+            counts.grouped(10).runWith(Sink.head(), system);
         final Set<Pair<String, Integer>> result =
             f.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
         final Set<Pair<String, Integer>> expected = new HashSet<>();
@@ -117,7 +112,7 @@ public class RecipeReduceByKeyTest extends RecipeTest {
 
         // #reduce-by-key-general2
         final CompletionStage<List<Pair<String, Integer>>> f =
-            counts.grouped(10).runWith(Sink.head(), mat);
+            counts.grouped(10).runWith(Sink.head(), system);
         final Set<Pair<String, Integer>> result =
             f.toCompletableFuture().get(3, TimeUnit.SECONDS).stream().collect(Collectors.toSet());
         final Set<Pair<String, Integer>> expected = new HashSet<>();

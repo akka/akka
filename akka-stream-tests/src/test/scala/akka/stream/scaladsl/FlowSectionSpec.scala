@@ -4,11 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.Attributes._
-import akka.stream.ActorAttributes._
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.StreamSpec
 import akka.actor.ActorRef
+import akka.stream.ActorAttributes._
+import akka.stream.Attributes._
+import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
 object FlowSectionSpec {
@@ -20,8 +19,6 @@ object FlowSectionSpec {
 }
 
 class FlowSectionSpec extends StreamSpec(FlowSectionSpec.config) {
-
-  implicit val materializer = ActorMaterializer()
 
   "A flow".can {
 

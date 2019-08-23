@@ -22,8 +22,6 @@ import scala.concurrent.duration._
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 class ActorGraphInterpreterSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
-
   "ActorGraphInterpreter" must {
 
     "be able to interpret a simple identity graph stage" in assertAllStagesStopped {

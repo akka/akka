@@ -287,6 +287,9 @@ final class Flow[-In, +Out, +Mat](
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
    * and `Publisher` of a [[Sink#publisher]].
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(
       implicit materializer: Materializer): (Mat1, Mat2) =
@@ -622,6 +625,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
 
   /**
    * Run this flow and return the materialized instance from the flow.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 

@@ -17,7 +17,6 @@ import scala.concurrent.Future
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
   implicit val ec = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   // silence sysout
   def println(s: String) = ()

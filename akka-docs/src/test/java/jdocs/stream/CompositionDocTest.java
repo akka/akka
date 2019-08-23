@@ -27,19 +27,16 @@ import akka.util.ByteString;
 public class CompositionDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("CompositionDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test

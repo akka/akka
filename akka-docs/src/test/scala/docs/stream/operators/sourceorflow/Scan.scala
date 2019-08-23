@@ -11,7 +11,6 @@ object Scan {
     import akka.stream.ActorMaterializer
 
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     //#scan
     val source = Source(1 to 5)

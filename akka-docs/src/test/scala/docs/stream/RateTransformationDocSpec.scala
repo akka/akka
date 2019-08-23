@@ -4,7 +4,6 @@
 
 package docs.stream
 
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl._
 
@@ -17,8 +16,6 @@ import akka.testkit.{ AkkaSpec, TestLatch }
 import scala.concurrent.Await
 
 class RateTransformationDocSpec extends AkkaSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "conflate should summarize" in {
     //#conflate-summarize

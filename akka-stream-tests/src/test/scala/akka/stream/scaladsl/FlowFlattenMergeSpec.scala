@@ -5,24 +5,25 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream._
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.testkit.TestLatch
+import akka.util.OptionVal
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent._
 import scala.concurrent.duration._
 
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import org.scalatest.exceptions.TestFailedException
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.TestLatch
-import akka.util.OptionVal
-
 class FlowFlattenMergeSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   def src10(i: Int) = Source(i until (i + 10))

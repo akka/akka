@@ -28,19 +28,16 @@ import static org.junit.Assert.assertEquals;
 public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamPartialGraphDSLDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -78,7 +75,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
                   return ClosedShape.getInstance();
                 }));
 
-    final CompletionStage<Integer> max = g.run(mat);
+    final CompletionStage<Integer> max = g.run(system);
     // #simple-partial-graph-dsl
     assertEquals(Integer.valueOf(3), max.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -119,7 +116,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
                 }));
 
     final CompletionStage<Pair<Integer, Integer>> firstPair =
-        pairs.runWith(Sink.<Pair<Integer, Integer>>head(), mat);
+        pairs.runWith(Sink.<Pair<Integer, Integer>>head(), system);
     // #source-from-partial-graph-dsl
     assertEquals(new Pair<>(0, 1), firstPair.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -146,7 +143,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
     // #flow-from-partial-graph-dsl
     final CompletionStage<Pair<Integer, String>> matSink =
         // #flow-from-partial-graph-dsl
-        Source.single(1).via(pairs).runWith(Sink.<Pair<Integer, String>>head(), mat);
+        Source.single(1).via(pairs).runWith(Sink.<Pair<Integer, String>>head(), system);
     // #flow-from-partial-graph-dsl
 
     assertEquals(new Pair<>(1, "1"), matSink.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -163,7 +160,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
     // #source-combine
     final CompletionStage<Integer> result =
         // #source-combine
-        sources.runWith(Sink.<Integer, Integer>fold(0, (a, b) -> a + b), mat);
+        sources.runWith(Sink.<Integer, Integer>fold(0, (a, b) -> a + b), system);
     // #source-combine
 
     assertEquals(Integer.valueOf(3), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
@@ -184,7 +181,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
     Sink<Integer, NotUsed> sinks =
         Sink.combine(sendRemotely, localProcessing, new ArrayList<>(), a -> Broadcast.create(a));
 
-    Source.<Integer>from(Arrays.asList(new Integer[] {0, 1, 2})).runWith(sinks, mat);
+    Source.<Integer>from(Arrays.asList(new Integer[] {0, 1, 2})).runWith(sinks, system);
     // #sink-combine
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);

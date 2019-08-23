@@ -4,22 +4,15 @@
 
 package akka.stream.scaladsl
 
-//#or-else
-
-//#or-else
-import scala.concurrent.duration._
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.AkkaSpec
 
 import scala.collection.immutable.Seq
+import scala.concurrent.duration._
 
 class FlowOrElseSpec extends AkkaSpec {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "An OrElse flow" should {
 

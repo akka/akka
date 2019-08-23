@@ -5,21 +5,32 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.actor.Actor
+import akka.actor.ActorIdentity
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
+import akka.actor.Identify
+import akka.actor.Props
 import akka.actor.Status.Failure
-import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.pattern._
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.scaladsl._
 import akka.stream._
 import akka.stream.impl.streamref.SinkRefImpl
 import akka.stream.impl.streamref.SourceRefImpl
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.scaladsl._
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
+import akka.testkit.TestKit
+import akka.testkit.TestProbe
 import akka.util.ByteString
 import com.typesafe.config._
 
 import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
@@ -30,7 +41,8 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
-    implicit val mat = ActorMaterializer()
+
+    import context.system
 
     def receive = {
       case "give" =>
@@ -177,7 +189,6 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
   import StreamRefsSpec._
 
   val remoteSystem = ActorSystem("RemoteSystem", StreamRefsSpec.config())
-  implicit val mat = ActorMaterializer()
 
   override protected def beforeTermination(): Unit =
     TestKit.shutdownActorSystem(remoteSystem)

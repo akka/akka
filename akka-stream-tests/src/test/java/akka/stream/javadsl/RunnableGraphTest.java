@@ -6,6 +6,7 @@ package akka.stream.javadsl;
 
 import akka.NotUsed;
 import akka.stream.StreamTest;
+import akka.stream.SystemMaterializer;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import org.junit.ClassRule;
@@ -26,7 +27,8 @@ public class RunnableGraphTest extends StreamTest {
   public void beAbleToConvertFromJavaToScala() {
     final RunnableGraph<NotUsed> javaRunnable = Source.empty().to(Sink.ignore());
     final akka.stream.scaladsl.RunnableGraph<NotUsed> scalaRunnable = javaRunnable.asScala();
-    assertEquals(NotUsed.getInstance(), scalaRunnable.run(materializer));
+    assertEquals(
+        NotUsed.getInstance(), scalaRunnable.run(SystemMaterializer.get(system).materializer()));
   }
 
   @Test
@@ -34,6 +36,6 @@ public class RunnableGraphTest extends StreamTest {
     final akka.stream.scaladsl.RunnableGraph<NotUsed> scalaRunnable =
         akka.stream.scaladsl.Source.empty().to(akka.stream.scaladsl.Sink.ignore());
     final RunnableGraph<NotUsed> javaRunnable = scalaRunnable.asJava();
-    assertEquals(NotUsed.getInstance(), javaRunnable.run(materializer));
+    assertEquals(NotUsed.getInstance(), javaRunnable.run(system));
   }
 }

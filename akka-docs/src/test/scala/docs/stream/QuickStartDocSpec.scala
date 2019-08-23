@@ -23,6 +23,7 @@ import org.scalatest.concurrent._
 
 //#main-app
 object Main extends App {
+  implicit val system = ActorSystem("QuickStart")
   // Code here
 }
 //#main-app
@@ -33,17 +34,14 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
   def println(any: Any) = () // silence printing stuff
 
   "demonstrate Source" in {
-    //#create-materializer
     implicit val system = ActorSystem("QuickStart")
-    implicit val materializer = ActorMaterializer()
-    //#create-materializer
 
     //#create-source
     val source: Source[Int, NotUsed] = Source(1 to 100)
     //#create-source
 
     //#run-source
-    source.runForeach(i => println(i))(materializer)
+    source.runForeach(i => println(i))
     //#run-source
 
     //#transform-source
@@ -68,7 +66,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     //#add-streams
 
     //#run-source-and-terminate
-    val done: Future[Done] = source.runForeach(i => println(i))(materializer)
+    val done: Future[Done] = source.runForeach(i => println(i))
 
     implicit val ec = system.dispatcher
     done.onComplete(_ => system.terminate())

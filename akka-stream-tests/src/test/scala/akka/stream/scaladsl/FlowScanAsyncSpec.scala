@@ -5,23 +5,25 @@
 package akka.stream.scaladsl
 
 import akka.pattern
-import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import org.scalatest.Matchers
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.util.Failure
 
 class FlowScanAsyncSpec extends StreamSpec with Matchers {
 
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val executionContext = materializer.executionContext
+  implicit val executionContext = system.dispatcher
 
   "A ScanAsync" must {
 

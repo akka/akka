@@ -35,7 +35,8 @@ Scala
 Java
 :   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #other-imports }
 
-And @scala[an object]@java[a class] to hold your code, for example:
+And @scala[an object]@java[a class] to start an Akka `ActorSystem` and hold your code @scala[. Making the `ActorSystem`
+implicit makes it available to the streams without manually passing it when running them]:
 
 Scala
 :   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #main-app }
@@ -52,11 +53,12 @@ Java
 :   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #create-source }
 
 The `Source` type is parameterized with two types: the first one is the
-type of element that this source emits and the second one may signal that
-running the source produces some auxiliary value (e.g. a network source may
+type of element that this source emits and the second one, the "materialized value", allows
+running the source to produce some auxiliary value (e.g. a network source may
 provide information about the bound port or the peer’s address). Where no
-auxiliary information is produced, the type `akka.NotUsed` is used—and a
-simple range of integers surely falls into this category.
+auxiliary information is produced, the type `akka.NotUsed` is used. A
+simple range of integers falls into this category - running our stream produces
+a `NotUsed`.
 
 Having created this source means that we have a description of how to emit the
 first 100 natural numbers, but this source is not yet active. In order to get
@@ -83,24 +85,6 @@ Scala
 
 Java
 :   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #run-source-and-terminate }
-
-You may wonder where the Actor gets created that runs the stream, and you are
-probably also asking yourself what this `materializer` means. In order to get
-this value we first need to create an Actor system:
-
-Scala
-:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #create-materializer }
-
-Java
-:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #create-materializer }
-
-There are other ways to create a materializer, e.g. from an
-`ActorContext` when using streams from within Actors. The
-`Materializer` is a factory for stream execution engines, it is the
-thing that makes streams run—you don’t need to worry about any of the details
-right now apart from that you need one for calling any of the `run` methods on
-a `Source`. @scala[The materializer is picked up implicitly if it is omitted
-from the `run` method call arguments, which we will do in the following.]
 
 The nice thing about Akka Streams is that the `Source` is a
 description of what you want to run, and like an architect’s blueprint it can
@@ -129,6 +113,8 @@ whether the stream terminated normally or exceptionally.
 
 ### Browser-embedded example
 
+FIXME: fiddle won't work until Akka 2.6 is released and fiddle updated with that [#27510](https://github.com/akka/akka/issues/27510)
+ 
 <a name="here-is-another-example-that-you-can-edit-and-run-in-the-browser-"></a>
 Here is another example that you can edit and run in the browser:
 
@@ -243,14 +229,13 @@ sections of the docs, and then come back to this quickstart to see it all pieced
 The example application we will be looking at is a simple Twitter feed stream from which we'll want to extract certain information,
 like for example finding all twitter handles of users who tweet about `#akka`.
 
-In order to prepare our environment by creating an `ActorSystem` and `ActorMaterializer`,
-which will be responsible for materializing and running the streams we are about to create:
+In order to prepare our environment by creating an `ActorSystem` which will be responsible for running the streams we are about to create:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #materializer-setup }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #system-setup }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #materializer-setup }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #system-setup }
 
 The `ActorMaterializer` can optionally take `ActorMaterializerSettings` which can be used to define
 materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)), the dispatcher to

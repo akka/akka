@@ -6,7 +6,6 @@ package docs.stream.io
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.stream._
 import akka.stream.scaladsl.Tcp._
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
@@ -19,7 +18,6 @@ import akka.testkit.SocketUtil
 class StreamTcpDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   // silence sysout
   def println(s: String) = ()

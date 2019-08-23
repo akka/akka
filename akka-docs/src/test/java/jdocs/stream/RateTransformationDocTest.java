@@ -8,8 +8,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.japi.tuple.Tuple3;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -42,19 +40,16 @@ import static org.junit.Assert.assertEquals;
 public class RateTransformationDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RateTransformationDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   final Random r = new Random();
@@ -84,7 +79,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
             .map(i -> r.nextGaussian())
             .via(statsFlow)
             .grouped(10)
-            .runWith(Sink.head(), mat);
+            .runWith(Sink.head(), system);
 
     fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
@@ -110,7 +105,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
     final CompletionStage<Double> fut =
         Source.from(new ArrayList<Double>(Collections.nCopies(1000, 1.0)))
             .via(sampleFlow)
-            .runWith(Sink.fold(0.0, (agg, next) -> agg + next), mat);
+            .runWith(Sink.fold(0.0, (agg, next) -> agg + next), system);
 
     final Double count = fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
@@ -127,7 +122,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
             .via(lastFlow)
             .grouped(10)
             .toMat(Sink.head(), Keep.both())
-            .run(mat);
+            .run(system);
 
     final TestPublisher.Probe<Double> probe = probeFut.first();
     final CompletionStage<List<Double>> fut = probeFut.second();
@@ -150,7 +145,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
             .via(lastFlow)
             .grouped(10)
             .toMat(Sink.head(), Keep.right())
-            .run(mat);
+            .run(system);
 
     final List<Double> extrapolated = fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(extrapolated.size(), 10);
@@ -187,7 +182,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
         TestSource.<Double>probe(system)
             .via(realDriftFlow)
             .toMat(TestSink.<Pair<Double, Integer>>probe(system), Keep.both())
-            .run(mat);
+            .run(system);
 
     final TestPublisher.Probe<Double> pub = pubSub.first();
     final TestSubscriber.Probe<Pair<Double, Integer>> sub = pubSub.second();
@@ -225,7 +220,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
         TestSource.<Double>probe(system)
             .via(realDriftFlow)
             .toMat(TestSink.<Pair<Double, Integer>>probe(system), Keep.both())
-            .run(mat);
+            .run(system);
 
     final TestPublisher.Probe<Double> pub = pubSub.first();
     final TestSubscriber.Probe<Pair<Double, Integer>> sub = pubSub.second();

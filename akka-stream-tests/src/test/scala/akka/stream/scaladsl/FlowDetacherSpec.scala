@@ -4,16 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class FlowDetacherSpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A Detacher" must {
 

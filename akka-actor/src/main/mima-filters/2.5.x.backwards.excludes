@@ -82,3 +82,7 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker
 
 # streamref serialization #27304
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.DynamicAccess.classIsOnClasspath")
+
+# system wide materializer #25559
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ExtendedActorSystem.classicSystem")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ActorSystem.classicSystem")

@@ -6,13 +6,11 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import com.github.ghik.silencer.silent
 
 @silent // unused vars are used in shouldNot compile tests
 class FlowCompileSpec extends StreamSpec {
@@ -22,7 +20,6 @@ class FlowCompileSpec extends StreamSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
   val intFut = Source.fromFuture(Future { 3 })
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
   "Flow" should {
     "not run" in {

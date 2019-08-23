@@ -4,9 +4,11 @@
 
 package docs.stream
 
-import akka.{ Done, NotUsed }
+import akka.NotUsed
 import akka.actor.{ Actor, ActorSystem, Cancellable }
-import akka.stream.{ ActorMaterializer, ClosedShape, FlowShape, Materializer, OverflowStrategy }
+import akka.stream.ActorMaterializer
+import akka.stream.Materializer
+import akka.stream.{ ClosedShape, FlowShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -17,12 +19,6 @@ import scala.util.{ Failure, Success }
 class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
   implicit val ec = system.dispatcher
-
-  //#imports
-  import akka.stream.ActorMaterializer
-  //#imports
-
-  implicit val materializer = ActorMaterializer()
 
   "source is immutable" in {
     //#source-immutable
@@ -246,14 +242,6 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 }
 
 object FlowDocSpec {
-
-  {
-    //#materializer-from-system
-    implicit val system = ActorSystem("ExampleSystem")
-
-    implicit val mat = ActorMaterializer() // created from `system`
-    //#materializer-from-system
-  }
 
   //#materializer-from-actor-context
   final class RunWithMyself extends Actor {

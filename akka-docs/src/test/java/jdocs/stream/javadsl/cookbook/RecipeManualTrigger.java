@@ -23,19 +23,16 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeManualTrigger extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeManualTrigger");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   class Trigger {}
@@ -75,7 +72,7 @@ public class RecipeManualTrigger extends RecipeTest {
                         }));
         // #manually-triggered-stream
 
-        Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>> pubSub = g.run(mat);
+        Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>> pubSub = g.run(system);
         TestPublisher.Probe<Trigger> pub = pubSub.first();
         TestSubscriber.Probe<Message> sub = pubSub.second();
 
@@ -130,7 +127,7 @@ public class RecipeManualTrigger extends RecipeTest {
                         }));
         // #manually-triggered-stream-zipwith
 
-        Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>> pubSub = g.run(mat);
+        Pair<TestPublisher.Probe<Trigger>, TestSubscriber.Probe<Message>> pubSub = g.run(system);
         TestPublisher.Probe<Trigger> pub = pubSub.first();
         TestSubscriber.Probe<Message> sub = pubSub.second();
 

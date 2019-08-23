@@ -4,16 +4,12 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.TestSink
 
 case class Message(data: String, offset: Long)
 
 class SourceWithContextSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   "A SourceWithContext" must {
 

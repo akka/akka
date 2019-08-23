@@ -51,7 +51,6 @@ object ActorRefBackpressureSinkSpec {
 
 class ActorRefBackpressureSinkSpec extends StreamSpec {
   import ActorRefBackpressureSinkSpec._
-  implicit val mat = ActorMaterializer()
 
   def createActor[T](c: Class[T]) =
     system.actorOf(Props(c, testActor).withDispatcher("akka.test.stream-dispatcher"))

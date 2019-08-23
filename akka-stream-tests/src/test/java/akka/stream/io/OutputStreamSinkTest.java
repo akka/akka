@@ -53,7 +53,7 @@ public class OutputStreamSinkTest extends StreamTest {
         };
     final CompletionStage<IOResult> resultFuture =
         Source.single(ByteString.fromString("123456"))
-            .runWith(StreamConverters.fromOutputStream(() -> os), materializer);
+            .runWith(StreamConverters.fromOutputStream(() -> os), system);
     try {
       resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
       Assert.fail("expected IOIncompleteException");

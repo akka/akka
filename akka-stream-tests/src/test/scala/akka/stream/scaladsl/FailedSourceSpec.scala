@@ -4,15 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.DefaultTimeout
 
 import scala.util.control.NoStackTrace
 
 class FailedSourceSpec extends StreamSpec with DefaultTimeout {
-
-  implicit val materializer = ActorMaterializer()
 
   "The Failed Source" must {
     "emit error immediately" in {

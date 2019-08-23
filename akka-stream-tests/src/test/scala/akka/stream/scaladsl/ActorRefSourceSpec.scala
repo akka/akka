@@ -17,7 +17,6 @@ import akka.actor.ActorRef
 import org.reactivestreams.Publisher
 
 class ActorRefSourceSpec extends StreamSpec {
-  private implicit val materializer = ActorMaterializer()
 
   "A ActorRefSource" must {
 

@@ -4,15 +4,18 @@
 
 package akka.stream.javadsl
 
-import akka.japi.{ function, Pair, Util }
-import akka.stream._
-import akka.event.LoggingAdapter
-import akka.util.ConstantFun
-
-import scala.annotation.unchecked.uncheckedVariance
-import akka.util.ccompat.JavaConverters._
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ClassicActorSystemProvider
+import akka.event.LoggingAdapter
+import akka.japi.Pair
+import akka.japi.Util
+import akka.japi.function
+import akka.stream._
+import akka.util.ConstantFun
+import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
 object SourceWithContext {
@@ -229,6 +232,17 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]] and run it.
    * The returned value is the materialized value of the `Sink`.
+   */
+  def runWith[M](
+      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M],
+      systemProvider: ClassicActorSystemProvider): M =
+    toMat(sink, Keep.right[Mat, M]).run(systemProvider.classicSystem)
+
+  /**
+   * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]] and run it.
+   * The returned value is the materialized value of the `Sink`.
+   *
+   * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def runWith[M](
       sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M],

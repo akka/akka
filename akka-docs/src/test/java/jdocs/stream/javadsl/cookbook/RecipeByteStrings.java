@@ -30,19 +30,16 @@ import static org.junit.Assert.assertTrue;
 
 public class RecipeByteStrings extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeByteStrings");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   final Source<ByteString, NotUsed> rawBytes =
@@ -142,7 +139,7 @@ public class RecipeByteStrings extends RecipeTest {
         // #bytestring-chunker2
 
         CompletionStage<List<ByteString>> chunksFuture =
-            chunksStream.limit(10).runWith(Sink.seq(), mat);
+            chunksStream.limit(10).runWith(Sink.seq(), system);
 
         List<ByteString> chunks = chunksFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -242,7 +239,7 @@ public class RecipeByteStrings extends RecipeTest {
             bytes1
                 .via(limiter)
                 .limit(10)
-                .runWith(Sink.seq(), mat)
+                .runWith(Sink.seq(), system)
                 .toCompletableFuture()
                 .get(3, TimeUnit.SECONDS);
         ByteString acc = emptyByteString();
@@ -256,7 +253,7 @@ public class RecipeByteStrings extends RecipeTest {
           bytes2
               .via(limiter)
               .limit(10)
-              .runWith(Sink.seq(), mat)
+              .runWith(Sink.seq(), system)
               .toCompletableFuture()
               .get(3, TimeUnit.SECONDS);
         } catch (ExecutionException ex) {
@@ -287,7 +284,7 @@ public class RecipeByteStrings extends RecipeTest {
         List<ByteString> got =
             compacted
                 .limit(10)
-                .runWith(Sink.seq(), mat)
+                .runWith(Sink.seq(), system)
                 .toCompletableFuture()
                 .get(3, TimeUnit.SECONDS);
 

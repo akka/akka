@@ -5,7 +5,6 @@
 package docs.stream.operators
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestProbe
 
 object SourceOperators {
@@ -21,7 +20,6 @@ object SourceOperators {
     import scala.concurrent.Future
 
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     val source: Source[Int, NotUsed] = Source.fromFuture(Future.successful(10))
     val sink: Sink[Int, Future[Done]] = Sink.foreach((i: Int) => println(i))
@@ -40,7 +38,6 @@ object SourceOperators {
     import akka.stream.scaladsl._
 
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     val bufferSize = 100
 
     val source: Source[Any, ActorRef] = Source.actorRef[Any](bufferSize, OverflowStrategy.dropHead)
@@ -63,7 +60,6 @@ object SourceOperators {
     import akka.stream.scaladsl._
 
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     val probe = TestProbe()
 
     val source: Source[Any, ActorRef] = Source.actorRefWithAck[Any]("ack")

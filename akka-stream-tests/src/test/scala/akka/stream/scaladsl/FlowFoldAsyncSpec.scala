@@ -6,22 +6,23 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.ActorMaterializer
-import akka.stream.Supervision.{ restartingDecider, resumingDecider }
+import akka.stream.Supervision.restartingDecider
+import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.LongRunningTest
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.util.control.NoStackTrace
-import akka.testkit.LongRunningTest
 
 class FlowFoldAsyncSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
-  implicit def ec = materializer.executionContext
+
+  implicit def ec = system.dispatcher
   val timeout = Timeout(3.seconds)
 
   "A FoldAsync" must {
