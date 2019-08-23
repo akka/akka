@@ -93,7 +93,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      *
-     * Prefer the method taking an `ActorSystemProvider` unless you have special requirements.
+     * Prefer the method taking an `ActorSystem` unless you have special requirements
      */
     def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], materializer: Materializer): Mat =
       delegate.handleWith(handler.asScala)(materializer)

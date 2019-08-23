@@ -382,7 +382,7 @@ object Source {
       second: Source[T, _ <: Any],
       rest: java.util.List[Source[T, _ <: Any]],
       strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]])
-      : Source[U, NotUsed] = {
+    : Source[U, NotUsed] = {
     val seq = if (rest != null) Util.immutableSeq(rest).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num => strategy.apply(num)))
   }
@@ -571,7 +571,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
   def preMaterialize(systemProvider: ClassicActorSystemProvider)
-      : Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
+    : Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
     val (mat, src) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
     Pair(mat, new Source(src))
   }
@@ -580,7 +580,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
    * that can be used to consume elements from the newly materialized Source.
    *
-   * Prefer the method taking an `ActorSystem`/`ClassicActorSystemProvider` unless you have special requirements.
+   * Prefer the method taking an `ActorSystem` unless you have special requirements.
    */
   def preMaterialize(
       materializer: Materializer): Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
@@ -687,7 +687,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a `Sink.asPublisher`.
    *
-   * Prefer the method taking an `ActorSystemProvider` unless you have special requirements.
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runWith[M](sink: Graph[SinkShape[Out], M], materializer: Materializer): M =
     delegate.runWith(sink)(materializer)
@@ -744,7 +744,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    *
-   * Prefer the method taking an `ActorSystemProvider` unless you have special requirements.
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runFoldAsync[U](
       zero: U,
@@ -784,7 +784,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
    *
-   * Prefer the method taking an `ActorSystemProvider` unless you have special requirements.
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runReduce(f: function.Function2[Out, Out, Out], materializer: Materializer): CompletionStage[Out] =
     runWith(Sink.reduce(f), materializer)
@@ -1483,7 +1483,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * normal end of the stream, or completed exceptionally if there is a failure is signaled in
    * the stream.
    *
-   * Prefer the method taking an `ActorSystemProvider` unless you have special requirements.
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runForeach(f: function.Procedure[Out], materializer: Materializer): CompletionStage[Done] =
     runWith(Sink.foreach(f), materializer)
@@ -1758,7 +1758,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def statefulMapConcat[T](f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]): javadsl.Source[T, Mat] =
     new Source(delegate.statefulMapConcat { () =>
       val fun = f.create()
-      elem => Util.immutableSeq(fun(elem))
+      elem =>
+        Util.immutableSeq(fun(elem))
     })
 
   /**
@@ -2750,7 +2751,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @see [[#expand]]
    */
   def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]])
-      : Source[Out, Mat] =
+    : Source[Out, Mat] =
     new Source(delegate.extrapolate(in => extrapolator(in).asScala))
 
   /**
