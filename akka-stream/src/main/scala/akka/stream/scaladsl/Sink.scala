@@ -52,6 +52,9 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: Materializer): Mat2 =
     Source.fromGraph(source).to(this).run()

@@ -382,7 +382,7 @@ object Source {
       second: Source[T, _ <: Any],
       rest: java.util.List[Source[T, _ <: Any]],
       strategy: function.Function[java.lang.Integer, _ <: Graph[UniformFanInShape[T, U], NotUsed]])
-    : Source[U, NotUsed] = {
+      : Source[U, NotUsed] = {
     val seq = if (rest != null) Util.immutableSeq(rest).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.combine(first.asScala, second.asScala, seq: _*)(num => strategy.apply(num)))
   }
@@ -571,7 +571,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
   def preMaterialize(systemProvider: ClassicActorSystemProvider)
-    : Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
+      : Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
     val (mat, src) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
     Pair(mat, new Source(src))
   }
@@ -1758,8 +1758,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def statefulMapConcat[T](f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]): javadsl.Source[T, Mat] =
     new Source(delegate.statefulMapConcat { () =>
       val fun = f.create()
-      elem =>
-        Util.immutableSeq(fun(elem))
+      elem => Util.immutableSeq(fun(elem))
     })
 
   /**
@@ -2751,7 +2750,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @see [[#expand]]
    */
   def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]])
-    : Source[Out, Mat] =
+      : Source[Out, Mat] =
     new Source(delegate.extrapolate(in => extrapolator(in).asScala))
 
   /**
