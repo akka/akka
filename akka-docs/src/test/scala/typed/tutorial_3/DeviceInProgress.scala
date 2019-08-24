@@ -4,9 +4,9 @@
 
 package typed.tutorial_3
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
 import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.LoggerOps
 
 object DeviceInProgress1 {
 
@@ -48,7 +48,7 @@ object DeviceInProgress2 {
 
     var lastTemperatureReading: Option[Double] = None
 
-    context.log.info("Device actor {}-{} started", groupId, deviceId)
+    context.log.info2("Device actor {}-{} started", groupId, deviceId)
 
     override def onMessage(msg: Command): Behavior[Command] = {
       msg match {
@@ -60,7 +60,7 @@ object DeviceInProgress2 {
 
     override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
       case PostStop =>
-        context.log.info("Device actor {}-{} stopped", groupId, deviceId)
+        context.log.info2("Device actor {}-{} stopped", groupId, deviceId)
         this
     }
 

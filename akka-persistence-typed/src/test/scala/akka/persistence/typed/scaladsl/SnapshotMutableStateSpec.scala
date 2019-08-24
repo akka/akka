@@ -117,7 +117,10 @@ object SnapshotMutableStateSpec {
 
 }
 
-class SnapshotMutableStateSpec extends ScalaTestWithActorTestKit(SnapshotMutableStateSpec.conf) with WordSpecLike {
+class SnapshotMutableStateSpec
+    extends ScalaTestWithActorTestKit(SnapshotMutableStateSpec.conf)
+    with WordSpecLike
+    with LogCapturing {
 
   import SnapshotMutableStateSpec._
 

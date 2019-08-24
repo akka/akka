@@ -5,10 +5,12 @@
 package jdocs.akka.typed;
 
 import akka.Done;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -21,6 +23,8 @@ import static jdocs.akka.typed.StashDocSample.DataAccess;
 public class StashDocTest extends JUnitSuite {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void stashingExample() throws Exception {

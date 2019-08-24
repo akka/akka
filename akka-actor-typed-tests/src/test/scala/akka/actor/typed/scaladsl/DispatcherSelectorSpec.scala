@@ -9,6 +9,7 @@ import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -39,7 +40,10 @@ object DispatcherSelectorSpec {
 
 }
 
-class DispatcherSelectorSpec extends ScalaTestWithActorTestKit(DispatcherSelectorSpec.config) with WordSpecLike {
+class DispatcherSelectorSpec
+    extends ScalaTestWithActorTestKit(DispatcherSelectorSpec.config)
+    with WordSpecLike
+    with LogCapturing {
   import DispatcherSelectorSpec.PingPong
   import DispatcherSelectorSpec.PingPong._
 

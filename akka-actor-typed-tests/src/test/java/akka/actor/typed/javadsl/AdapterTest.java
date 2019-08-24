@@ -4,7 +4,9 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -239,6 +241,8 @@ public class AdapterTest extends JUnitSuite {
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
       new AkkaJUnitActorSystemResource("ActorSelectionTest", AkkaSpec.testConf());
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   private final ActorSystem system = actorSystemResource.getSystem();
 

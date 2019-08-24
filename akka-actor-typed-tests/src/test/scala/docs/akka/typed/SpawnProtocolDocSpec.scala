@@ -7,8 +7,10 @@ package docs.akka.typed
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import docs.akka.typed.IntroSpec.HelloWorld
 import org.scalatest.WordSpecLike
 import com.github.ghik.silencer.silent
@@ -17,6 +19,7 @@ import com.github.ghik.silencer.silent
 import akka.actor.typed.Behavior
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 
 //#imports1
 
@@ -46,7 +49,7 @@ object SpawnProtocolDocSpec {
   //#main
 }
 
-class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import SpawnProtocolDocSpec._
 
@@ -67,7 +70,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty, _))
 
       val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
-        context.log.info("Greeting for {} from {}", Array(message.whom, message.from): _*)
+        context.log.info2("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
 

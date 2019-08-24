@@ -6,17 +6,23 @@ package docs.akka.typed
 
 import java.net.URI
 
-import akka.NotUsed
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
-import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
+import scala.util.Failure
+import scala.util.Success
+
+import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.typed.scaladsl.TimerScheduler
 import org.scalatest.WordSpecLike
 
-class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "The interaction patterns docs" must {
 
@@ -120,10 +126,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
                       context.log.info("Started {}", taskId)
                       Behaviors.same
                     case Backend.JobProgress(taskId, progress) =>
-                      context.log.info("Progress {}: {}", taskId, progress)
+                      context.log.info2("Progress {}: {}", taskId, progress)
                       Behaviors.same
                     case Backend.JobCompleted(taskId, result) =>
-                      context.log.info("Completed {}: {}", taskId, result)
+                      context.log.info2("Completed {}: {}", taskId, result)
                       inProgress(taskId) ! result
                       active(inProgress - taskId, count)
                   }

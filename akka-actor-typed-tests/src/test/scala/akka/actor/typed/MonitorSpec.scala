@@ -6,10 +6,11 @@ package akka.actor.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
 
-class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "The monitor behavior" should {
 

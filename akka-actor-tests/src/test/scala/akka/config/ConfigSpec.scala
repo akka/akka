@@ -12,8 +12,9 @@ import akka.event.Logging.DefaultLogger
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Assertions
-
 import scala.concurrent.duration._
+
+import akka.actor.ExtendedActorSystem
 
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) with Assertions {
 
@@ -162,6 +163,26 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           c.getString("mailbox-type") should ===("akka.dispatch.UnboundedMailbox")
         }
       }
+    }
+  }
+
+  "SLF4J Settings" must {
+    "not be amended for default reference in akka-actor" in {
+      val dynamicAccess = system.asInstanceOf[ExtendedActorSystem].dynamicAccess
+      val config = ActorSystem.Settings.amendSlf4jConfig(ConfigFactory.defaultReference(), dynamicAccess)
+      config.getStringList("akka.loggers").size() should ===(1)
+      config.getStringList("akka.loggers").get(0) should ===(classOf[DefaultLogger].getName)
+      config.getString("akka.logging-filter") should ===(classOf[DefaultLoggingFilter].getName)
+    }
+
+    "not be amended when akka-slf4j is not in classpath" in {
+      val dynamicAccess = system.asInstanceOf[ExtendedActorSystem].dynamicAccess
+      val config = ActorSystem.Settings.amendSlf4jConfig(
+        ConfigFactory.parseString("akka.use-slf4j = on").withFallback(ConfigFactory.defaultReference()),
+        dynamicAccess)
+      config.getStringList("akka.loggers").size() should ===(1)
+      config.getStringList("akka.loggers").get(0) should ===(classOf[DefaultLogger].getName)
+      config.getString("akka.logging-filter") should ===(classOf[DefaultLoggingFilter].getName)
     }
   }
 }

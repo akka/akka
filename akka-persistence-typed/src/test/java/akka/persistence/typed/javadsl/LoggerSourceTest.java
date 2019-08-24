@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -12,25 +14,27 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class LoggerSourceTest extends JUnitSuite {
 
   private static final Config config =
       ConfigFactory.parseString(
-          "akka.loggers = [akka.testkit.TestEventListener] \n"
-              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
+          "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
               + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   private static final AtomicInteger idCounter = new AtomicInteger(0);
 
@@ -94,26 +98,58 @@ public class LoggerSourceTest extends JUnitSuite {
             return new LoggingBehavior(nextId(), ctx);
           });
 
-  public LoggerSourceTest() {
-    // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {
-                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
-                    })));
-  }
-
   @Test
-  public void verifyLoggerClass() {
-    ActorRef<String> ref = testKit.spawn(behavior);
-    ref.tell("command");
-    // no Java testkit support for custom event filters to look at the logger class
-    // so this is a manual-occular test for now (additionally it requires a small change to
-    // stdoutlogger to print log event class name)
-    // FIXME #24348: eventfilter support in typed testkit
+  public void verifyLogging() {
+    Map<String, String> expectedMdc1 = new HashMap<>();
+    expectedMdc1.put("persistenceId", "1");
+    expectedMdc1.put("persistencePhase", "replay-evt");
+
+    ActorRef<String> ref =
+        LoggingEventFilter.info("recovery-completed")
+            .withMdc(expectedMdc1)
+            .withCustom(event -> event.loggerName().equals(LoggingBehavior.class.getName()))
+            .intercept(
+                testKit.system(),
+                () -> {
+                  return testKit.spawn(behavior);
+                });
+
+    // MDC persistenceId ajd persistencePhase for the "command-received" not included in the
+    // "command-received" logging, because that is via ActorContext.log directly and
+    // EventSourcedBehaviorImpl
+    // isn't involved.
+
+    LoggingEventFilter.info("command-received")
+        .withCustom(
+            event -> {
+              return event.loggerName().equals(LoggingBehavior.class.getName())
+                  && event.getMdc().get("akkaSource").equals(ref.path().toString());
+            })
+        .intercept(
+            testKit.system(),
+            () -> {
+              ref.tell("command");
+              return null;
+            });
+
+    Map<String, String> expectedMdc3 = new HashMap<>();
+    expectedMdc3.put("persistenceId", "1");
+    expectedMdc3.put("persistencePhase", "running-cmd");
+
+    LoggingEventFilter.info("event-received")
+        .withMdc(expectedMdc3)
+        .withCustom(
+            event -> {
+              return event.loggerName().equals(LoggingBehavior.class.getName())
+                  && event.getMdc().get("akkaSource").equals(ref.path().toString());
+            })
+        .intercept(
+            testKit.system(),
+            () -> {
+              ref.tell("command");
+              return null;
+            });
+
     TestProbe<Object> probe = testKit.createTestProbe();
     ref.tell("stop");
     probe.expectTerminated(ref);

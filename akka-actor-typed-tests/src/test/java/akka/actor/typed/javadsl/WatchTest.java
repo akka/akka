@@ -8,8 +8,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.Done;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.scalatest.junit.JUnitSuite;
 import org.junit.Test;
 
@@ -23,6 +25,8 @@ import static akka.actor.typed.javadsl.Behaviors.*;
 public class WatchTest extends JUnitSuite {
 
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   interface Message {}
 

@@ -476,12 +476,17 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * To align with the Akka Typed style guide `SpawnProtocol` is now created through @scala[`SpawnProtocol()`]@java[`SpawnProtocol.create()`], the special `Spawn` message
   factories has been removed and the top level of the actor protocol is now `SpawnProtocol.Command`
 * `Future` removed from `ActorSystem.systemActorOf`.
+* `toUntyped` has been renamed to `toClassic`.
+* Akka Typed is now using SLF4J as the logging API. @scala[`ActorContext.log`]@java[`ActorContext.getLog`] returns
+  an `org.slf4j.Logger`. MDC has been changed to only support `String` values.
+* `setLoggerClass` in `ActorContext` has been renamed to `setLoggerName`.
 
 #### Akka Typed Stream API changes
 
 * `ActorSource.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
-* `toUntyped` has been renamed to `toClassic`.
-
+* Factories for creating a materializer from an `akka.actor.typed.ActorSystem` have been removed.
+  A stream can be run with an `akka.actor.typed.ActorSystem` @scala[in implicit scope]@java[parameter]
+  and therefore the need for creating a materializer has been reduced.
 
 ## Akka Stream changes
 

@@ -16,10 +16,11 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 class RemoteContextAskSpecSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -83,7 +84,10 @@ object RemoteContextAskSpec {
 
 }
 
-class RemoteContextAskSpec extends ScalaTestWithActorTestKit(RemoteContextAskSpec.config) with WordSpecLike {
+class RemoteContextAskSpec
+    extends ScalaTestWithActorTestKit(RemoteContextAskSpec.config)
+    with WordSpecLike
+    with LogCapturing {
 
   import RemoteContextAskSpec._
 

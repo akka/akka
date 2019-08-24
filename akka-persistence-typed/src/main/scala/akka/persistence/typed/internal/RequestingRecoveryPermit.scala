@@ -23,7 +23,7 @@ import akka.annotation.InternalApi
 private[akka] object RequestingRecoveryPermit {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S]): Behavior[InternalProtocol] =
-    new RequestingRecoveryPermit(setup.setMdc(MDC.AwaitingPermit)).createBehavior()
+    new RequestingRecoveryPermit(setup.setMdcPhase(PersistenceMdc.AwaitingPermit)).createBehavior()
 
 }
 

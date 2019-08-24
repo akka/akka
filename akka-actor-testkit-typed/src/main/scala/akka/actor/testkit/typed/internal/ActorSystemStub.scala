@@ -21,14 +21,15 @@ import akka.annotation.InternalApi
 import akka.{ actor => classic }
 import akka.Done
 import com.typesafe.config.ConfigFactory
-
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
+
 import akka.actor.ActorRefProvider
+import akka.actor.ReflectiveDynamicAccess
 import akka.actor.typed.internal.InternalRecipientRef
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
-import org.slf4j.helpers.SubstituteLoggerFactory
+import org.slf4j.LoggerFactory
 
 /**
  * INTERNAL API
@@ -42,7 +43,14 @@ import org.slf4j.helpers.SubstituteLoggerFactory
 
   override val path: classic.ActorPath = classic.RootActorPath(classic.Address("akka", name)) / "user"
 
-  override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
+  override val settings: Settings = {
+    val classLoader = getClass.getClassLoader
+    val dynamicAccess = new ReflectiveDynamicAccess(classLoader)
+    val config =
+      classic.ActorSystem.Settings.amendSlf4jConfig(ConfigFactory.defaultReference(classLoader), dynamicAccess)
+    val untypedSettings = new classic.ActorSystem.Settings(classLoader, config, name)
+    new Settings(untypedSettings)
+  }
 
   override def tell(message: Nothing): Unit =
     throw new UnsupportedOperationException("must not send message to ActorSystemStub")
@@ -104,7 +112,5 @@ import org.slf4j.helpers.SubstituteLoggerFactory
   override def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
     throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
 
-  val loggerFactory = new SubstituteLoggerFactory()
-
-  override def log: Logger = loggerFactory.getLogger("StubbedLogger")
+  override def log: Logger = LoggerFactory.getLogger(getClass)
 }

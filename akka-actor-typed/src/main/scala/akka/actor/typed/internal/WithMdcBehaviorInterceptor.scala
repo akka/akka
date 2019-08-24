@@ -7,9 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
 import org.slf4j.MDC
-import scala.collection.JavaConverters._
 
-import scala.collection.immutable.HashMap
 import scala.reflect.ClassTag
 
 /**
@@ -74,34 +72,30 @@ import scala.reflect.ClassTag
   }
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
-    val mdc = merge(staticMdc, mdcForMessage(msg))
-    MDC.getMDCAdapter.setContextMap(mdc.asJava)
-    val next =
-      try {
-        target(ctx, msg)
-      } finally {
-        MDC.clear()
-      }
-    next
+    try {
+      setMdcValues(mdcForMessage(msg))
+      target(ctx, msg)
+    } finally {
+      MDC.clear()
+    }
   }
 
   override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    MDC.getMDCAdapter.setContextMap(staticMdc.asJava)
     try {
+      setMdcValues(Map.empty)
       target(ctx, signal)
     } finally {
       MDC.clear()
     }
   }
 
-  private def merge(staticMdc: Map[String, String], mdcForMessage: Map[String, String]): Map[String, String] = {
-    if (staticMdc.isEmpty) mdcForMessage
-    else if (mdcForMessage.isEmpty) staticMdc
-    else if (staticMdc.isInstanceOf[HashMap[String, String]] && mdcForMessage.isInstanceOf[HashMap[String, String]]) {
-      // merged is more efficient than ++
-      mdcForMessage.asInstanceOf[HashMap[String, String]].merged(staticMdc.asInstanceOf[HashMap[String, String]])(null)
-    } else {
-      staticMdc ++ mdcForMessage
+  private def setMdcValues(dynamicMdc: Map[String, String]): Unit = {
+    val mdcAdapter = MDC.getMDCAdapter
+    if (staticMdc.nonEmpty) staticMdc.foreach {
+      case (key, value) => mdcAdapter.put(key, value)
+    }
+    if (dynamicMdc.nonEmpty) dynamicMdc.foreach {
+      case (key, value) => mdcAdapter.put(key, value)
     }
   }
 

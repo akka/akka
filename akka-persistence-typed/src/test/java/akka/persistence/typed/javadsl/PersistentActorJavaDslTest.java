@@ -5,6 +5,8 @@
 package akka.persistence.typed.javadsl;
 
 import akka.Done;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
@@ -31,8 +33,11 @@ import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import org.slf4j.event.Level;
 
 import java.time.Duration;
 import java.util.*;
@@ -44,10 +49,11 @@ import static org.junit.Assert.assertEquals;
 public class PersistentActorJavaDslTest extends JUnitSuite {
 
   public static final Config config =
-      ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]")
-          .withFallback(EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load()));
+      EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load());
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   private LeveldbReadJournal queries =
       PersistenceQuery.get(Adapter.toClassic(testKit.system()))
@@ -697,13 +703,15 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         testKit.spawn(
             new IncorrectExpectedStateForThenRun(probe.getRef(), new PersistenceId("foiesftr")));
 
-    probe.expectMessage("started!"); // workaround for #26256
+    probe.expectMessage("started!");
 
-    new EventFilter(Logging.Error.class, Adapter.toClassic(testKit.system()))
-        .occurrences(1)
+    LoggingEventFilter.empty()
+        .withLogLevel(Level.ERROR)
         // the error messages slightly changed in later JDKs
-        .matches("(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
+        .withMessageRegex(
+            "(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
         .intercept(
+            testKit.system(),
             () -> {
               c.tell("expect wrong type");
               return null;

@@ -9,10 +9,12 @@ import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
@@ -179,7 +181,10 @@ object ClusterShardingSpec {
   }
 }
 
-class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.config) with WordSpecLike {
+class ClusterShardingSpec
+    extends ScalaTestWithActorTestKit(ClusterShardingSpec.config)
+    with WordSpecLike
+    with LogCapturing {
 
   import ClusterShardingSpec._
 

@@ -6,12 +6,14 @@ package akka.cluster.ddata.typed.javadsl;
 
 // FIXME move to doc package
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.cluster.ddata.*;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -178,6 +180,8 @@ public class ReplicatorTest extends JUnitSuite {
               + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n");
 
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource(config);
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void shouldHaveApiForUpdateAndGet() {

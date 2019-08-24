@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
@@ -56,7 +56,7 @@ private[akka] object ReplayingEvents {
     Behaviors.setup { _ =>
       // protect against event recovery stalling forever because of journal overloaded and such
       setup.startRecoveryTimer(snapshot = false)
-      new ReplayingEvents[C, E, S](setup.setMdc(MDC.ReplayingEvents), state)
+      new ReplayingEvents[C, E, S](setup.setMdcPhase(PersistenceMdc.ReplayingEvents), state)
     }
 
 }
@@ -181,7 +181,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     setup.log
-      .warning("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
+      .warn("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
     Behaviors.unhandled // ignore the response
   }
 
@@ -199,7 +199,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
     if (setup.log.isDebugEnabled) {
-      setup.log.debug(
+      setup.log.debug2(
         "Recovery failure for persistenceId [{}] after {}",
         setup.persistenceId,
         (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
@@ -209,10 +209,10 @@ private[akka] final class ReplayingEvents[C, E, S](
     val msg = event match {
       case Some(_: Message) | None =>
         s"Exception during recovery. Last known sequence number [$sequenceNr]. " +
-        s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
+        s"PersistenceId [${setup.persistenceId.id}], due to: ${cause.getMessage}"
       case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
-        s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
+        s"PersistenceId [${setup.persistenceId.id}], due to: ${cause.getMessage}"
     }
 
     throw new JournalFailureException(msg, cause)
@@ -223,7 +223,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.log.isDebugEnabled) {
-        setup.log.debug(
+        setup.log.debug2(
           "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
           (System.nanoTime() - state.recoveryStartTime).nanos.pretty)

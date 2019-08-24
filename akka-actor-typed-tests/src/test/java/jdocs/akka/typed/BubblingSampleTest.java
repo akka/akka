@@ -4,10 +4,12 @@
 
 package jdocs.akka.typed;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -21,6 +23,8 @@ public class BubblingSampleTest extends JUnitSuite {
   @ClassRule
   public static final TestKitJunitResource testKit =
       new TestKitJunitResource("akka.loglevel = off");
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void testBubblingSample() throws Exception {

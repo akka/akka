@@ -13,6 +13,7 @@ import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -25,7 +26,13 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Span
 
-class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
+class ActorSystemSpec
+    extends WordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with Eventually
+    with LogCapturing {
 
   implicit val patience: PatienceConfig = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
 
