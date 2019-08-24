@@ -4,13 +4,13 @@
 
 package akka.actor.typed
 
-import akka.testkit.EventFilter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
-
 import scala.util.control.NoStackTrace
+
 import akka.actor.ActorInitializationException
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object DeferredSpec {
@@ -31,15 +31,11 @@ object DeferredSpec {
 }
 
 class DeferredSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.testkit.TestEventListener]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     """) with WordSpecLike {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
 
   "Deferred behavior" must {
     "must create underlying" in {
@@ -68,7 +64,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit("""
             Behaviors.stopped
         }
       }
-      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
         spawn(behv)
         probe.expectMessage(Started)
         probe.expectMessage(Pong)
@@ -144,7 +140,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit("""
           Behaviors.same
         }
       }
-      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
         val ref = spawn(behv)
         probe.expectTerminated(ref, probe.remainingOrDefault)
       }

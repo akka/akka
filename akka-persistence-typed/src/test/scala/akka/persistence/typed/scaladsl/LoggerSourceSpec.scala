@@ -5,16 +5,14 @@
 package akka.persistence.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
-import akka.event.Logging.LogEvent
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
@@ -23,11 +21,9 @@ import org.scalatest.WordSpecLike
 class LoggerSourceSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory
-        .parseString("akka.loggers = [akka.testkit.TestEventListener]")
+        .parseString("akka.loggers = [akka.event.slf4j.Slf4jLogger]")
         .withFallback(EventSourcedBehaviorSpec.conf))
     with WordSpecLike {
-
-  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
 
   private val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
@@ -53,7 +49,7 @@ class LoggerSourceSpec
     // one test case leaks to another, the actual log class is what is tested in each individual case
 
     "log from setup" in {
-      EventFilter.info("recovery-completed", occurrences = 1).intercept {
+      LoggingEventFilter.info("recovery-completed", occurrences = 1).intercept {
         eventFilterFor("setting-up-behavior").intercept {
           spawn(behavior)
         }
@@ -62,7 +58,7 @@ class LoggerSourceSpec
     }
 
     "log from recovery completed" in {
-      EventFilter.info("setting-up-behavior", occurrences = 1).intercept {
+      LoggingEventFilter.info("setting-up-behavior", occurrences = 1).intercept {
         eventFilterFor("recovery-completed").intercept {
           spawn(behavior)
         }
@@ -70,15 +66,17 @@ class LoggerSourceSpec
     }
 
     "log from command handler" in {
-      EventFilter.info(pattern = "(setting-up-behavior|recovery-completed|event-received)", occurrences = 3).intercept {
-        eventFilterFor("command-received").intercept {
-          spawn(behavior) ! "cmd"
+      LoggingEventFilter
+        .info(pattern = "(setting-up-behavior|recovery-completed|event-received)", occurrences = 3)
+        .intercept {
+          eventFilterFor("command-received").intercept {
+            spawn(behavior) ! "cmd"
+          }
         }
-      }
     }
 
     "log from event handler" in {
-      EventFilter
+      LoggingEventFilter
         .info(pattern = "(setting-up-behavior|recovery-completed|command-received)", occurrences = 3)
         .intercept {
           eventFilterFor("event-received").intercept {
@@ -89,11 +87,11 @@ class LoggerSourceSpec
   }
 
   def eventFilterFor(logMsg: String) =
-    EventFilter.custom(
+    LoggingEventFilter.custom(
       {
-        case l: LogEvent if l.message == logMsg =>
-          if (l.logClass == classOf[LoggerSourceSpec]) true
-          else fail(s"Unexpected log source: ${l.logClass} for message ${l.message}")
+        case logEvent if logEvent.message == logMsg =>
+          if (logEvent.loggerName == classOf[LoggerSourceSpec].getName) true
+          else fail(s"Unexpected logger name: ${logEvent.loggerName} for message ${logEvent.message}")
         case _ => false
       },
       occurrences = 1)

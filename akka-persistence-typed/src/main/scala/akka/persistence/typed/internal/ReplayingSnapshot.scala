@@ -32,7 +32,7 @@ import akka.util.unused
 private[akka] object ReplayingSnapshot {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] =
-    new ReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior(receivedPoisonPill)
+    new ReplayingSnapshot(setup.setMdcPhase(PersistenceMdc.ReplayingSnapshot)).createBehavior(receivedPoisonPill)
 
 }
 
@@ -86,7 +86,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
     onRecoveryFailed(setup.context, cause)
     setup.cancelRecoveryTimer()
-    setup.log.error(cause, s"Persistence failure when replaying snapshot. ${cause.getMessage}")
+    setup.log.error(s"Persistence failure when replaying snapshot, due to: ${cause.getMessage}", cause)
     Behaviors.stopped
   }
 

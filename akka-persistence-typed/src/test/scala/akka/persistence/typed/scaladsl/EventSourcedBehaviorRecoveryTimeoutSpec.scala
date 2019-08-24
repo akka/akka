@@ -17,8 +17,6 @@ import akka.persistence.journal.SteppingInmemJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -35,7 +33,7 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
         """))
       .withFallback(ConfigFactory.parseString(s"""
         akka.loglevel = INFO
-        akka.loggers = [akka.testkit.TestEventListener]
+        akka.loggers = [akka.event.slf4j.Slf4jLogger]
         """))
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[AnyRef]): Behavior[String] =
@@ -65,8 +63,6 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
   // needed for SteppingInmemJournal.step
   private implicit val untypedSystem: akka.actor.ActorSystem = system.toUntyped
 
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
-
   "The recovery timeout" must {
 
     "fail recovery if timeout is not met when recovering" in {
@@ -89,16 +85,17 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      EventFilter[JournalFailureException](pattern = "Exception during recovery.*Replay timed out", occurrences = 1)
-        .intercept {
-          val replaying = spawn(testBehavior(pid, probe.ref))
+      LoggingEventFilter[JournalFailureException](
+        pattern = "Exception during recovery.*Replay timed out",
+        occurrences = 1).intercept {
+        val replaying = spawn(testBehavior(pid, probe.ref))
 
-          // initial read highest
-          SteppingInmemJournal.step(journal)
+        // initial read highest
+        SteppingInmemJournal.step(journal)
 
-          probe.expectMessageType[RecoveryTimedOut]
-          probe.expectTerminated(replaying)
-        }
+        probe.expectMessageType[RecoveryTimedOut]
+        probe.expectTerminated(replaying)
+      }
 
       // avoid having it stuck in the next test from the
       // last read request above

@@ -14,8 +14,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -26,7 +24,7 @@ object EventSourcedBehaviorTimersSpec {
 
   def config: Config = ConfigFactory.parseString(s"""
         akka.loglevel = INFO
-        akka.loggers = [akka.testkit.TestEventListener]
+        akka.loggers = [akka.event.slf4j.Slf4jLogger]
         akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
         akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
         """)
@@ -83,12 +81,6 @@ class EventSourcedBehaviorTimersSpec
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-
-  import akka.actor.typed.scaladsl.adapter._
-  // needed for the untyped event filter
-  private implicit val untypedSystem: akka.actor.ActorSystem = system.toUntyped
-
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   "EventSourcedBehavior withTimers" must {
 

@@ -59,7 +59,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
         this
 
       case RequestTrackDevice(gId, _, _) =>
-        context.log.warning("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId)
+        context.log.warn("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId: Any)
         this
 
       case RequestDeviceList(requestId, gId, replyTo) =>

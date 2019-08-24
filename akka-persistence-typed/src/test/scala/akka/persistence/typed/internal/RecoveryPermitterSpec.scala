@@ -13,14 +13,13 @@ import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
-import akka.testkit.EventFilter
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.testkit.TestEvent.Mute
 import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
@@ -68,7 +67,7 @@ object RecoveryPermitterSpec {
 }
 
 class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
-      akka.loggers = [akka.testkit.TestEventListener]
+      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
@@ -78,8 +77,6 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
   import RecoveryPermitterSpec._
 
   implicit val untypedSystem = system.toUntyped
-
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   private val permitter = Persistence(untypedSystem).recoveryPermitter
 
@@ -192,7 +189,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
 
       val stopProbe = createTestProbe[ActorRef[Command]]()
       val parent =
-        EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
+        LoggingEventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
           spawn(Behaviors.setup[Command](ctx => {
             val persistentActor =
               ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))

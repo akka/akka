@@ -16,6 +16,7 @@ import akka.actor.typed.Terminated
 import akka.testkit._
 import akka.Done
 import akka.NotUsed
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.{ actor => untyped }
 
 object AdapterSpec {
@@ -162,7 +163,7 @@ object AdapterSpec {
 }
 
 class AdapterSpec extends AkkaSpec("""
-   akka.loggers = [akka.testkit.TestEventListener]
+   akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) {
   import AdapterSpec._
 
@@ -278,10 +279,10 @@ class AdapterSpec extends AkkaSpec("""
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
 
       // only stop supervisorStrategy
-      EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
+      LoggingEventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
         typedRef ! "supervise-restart"
         probe.expectMsg("ok")
-      }
+      }(system.toTyped)
     }
 
     "stop typed child from untyped parent" in {
@@ -302,10 +303,12 @@ class AdapterSpec extends AkkaSpec("""
 
     "log exception if not by handled typed supervisor" in {
       val throwMsg = "sad panda"
-      EventFilter.warning(pattern = ".*sad panda.*").intercept {
-        system.spawnAnonymous(unhappyTyped(throwMsg))
-        Thread.sleep(1000)
-      }
+      LoggingEventFilter
+        .warning(pattern = ".*sad panda.*")
+        .intercept {
+          system.spawnAnonymous(unhappyTyped(throwMsg))
+          Thread.sleep(1000)
+        }(system.toTyped)
     }
   }
 }

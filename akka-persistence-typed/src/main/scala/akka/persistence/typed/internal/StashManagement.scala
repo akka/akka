@@ -45,12 +45,12 @@ private[akka] trait StashManagement[C, E, S] {
       case e: StashOverflowException =>
         setup.settings.stashOverflowStrategy match {
           case StashOverflowStrategy.Drop =>
-            if (context.log.isWarningEnabled) {
+            if (context.log.isWarnEnabled) {
               val dropName = msg match {
                 case InternalProtocol.IncomingCommand(actual) => actual.getClass.getName
                 case other                                    => other.getClass.getName
               }
-              context.log.warning("Stash buffer is full, dropping message [{}]", dropName)
+              context.log.warn("Stash buffer is full, dropping message [{}]", dropName)
             }
             context.system.toUntyped.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toUntyped))
           case StashOverflowStrategy.Fail =>
@@ -100,7 +100,7 @@ private[akka] trait StashManagement[C, E, S] {
       setup.log.debug(
         "Stashing message to {} stash: [{}] ",
         if (buffer eq stashState.internalStashBuffer) "internal" else "user",
-        msg)
+        msg: Any)
   }
 
   private def logUnstashMessage(buffer: StashBuffer[InternalProtocol]): Unit = {
@@ -108,7 +108,7 @@ private[akka] trait StashManagement[C, E, S] {
       setup.log.debug(
         "Unstashing message from {} stash: [{}]",
         if (buffer eq stashState.internalStashBuffer) "internal" else "user",
-        buffer.head)
+        buffer.head: Any)
   }
 
   private def logUnstashAll(): Unit = {

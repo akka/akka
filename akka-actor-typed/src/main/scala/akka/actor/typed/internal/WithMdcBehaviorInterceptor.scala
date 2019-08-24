@@ -7,7 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
 import org.slf4j.MDC
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 import scala.collection.immutable.HashMap
 import scala.reflect.ClassTag
@@ -74,6 +74,8 @@ import scala.reflect.ClassTag
   }
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+    // FIXME #26537 performance improvement could be to loop over the entries in staticMdc and mdcForMessage
+    // and directly put them on the MDC.getMDCAdapter
     val mdc = merge(staticMdc, mdcForMessage(msg))
     MDC.getMDCAdapter.setContextMap(mdc.asJava)
     val next =
@@ -86,6 +88,7 @@ import scala.reflect.ClassTag
   }
 
   override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+    // FIXME #26537 performance improvement, see aroundReceive
     MDC.getMDCAdapter.setContextMap(staticMdc.asJava)
     try {
       target(ctx, signal)

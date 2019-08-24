@@ -29,8 +29,6 @@ import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import akka.util.unused
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -40,7 +38,7 @@ object EventSourcedBehaviorRetentionSpec {
 
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.loggers = [akka.testkit.TestEventListener]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -150,16 +148,9 @@ class EventSourcedBehaviorRetentionSpec
     with WordSpecLike {
 
   import EventSourcedBehaviorRetentionSpec._
-  import akka.actor.typed.scaladsl.adapter._
-
-  // needed for the untyped event filter
-  implicit val actorSystem = system.toUntyped
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-
-  actorSystem.eventStream.publish(Mute(EventFilter.info(pattern = ".*was not delivered.*", occurrences = 100)))
-  actorSystem.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 100)))
 
   "EventSourcedBehavior with retention" must {
 

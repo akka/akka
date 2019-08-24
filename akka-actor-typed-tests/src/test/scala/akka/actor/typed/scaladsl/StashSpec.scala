@@ -10,10 +10,13 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.DeadLetter
 import scala.concurrent.duration._
+
+import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.testkit.EventFilter
+import akka.actor.typed.eventstream.EventStream
 import org.scalatest.WordSpecLike
 
 object AbstractStashSpec {
@@ -253,14 +256,8 @@ abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpec
 }
 
 class UnstashingSpec extends ScalaTestWithActorTestKit("""
-  akka.loggers = ["akka.testkit.TestEventListener"]
+  akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
-
-  // needed for EventFilter
-  private implicit val untypedSys: akka.actor.ActorSystem = {
-    import akka.actor.typed.scaladsl.adapter._
-    system.toUntyped
-  }
 
   private def slowStoppingChild(latch: CountDownLatch): Behavior[String] =
     Behaviors.receiveSignal {
@@ -422,13 +419,13 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      EventFilter[TestException](start = "unstash-fail", occurrences = 1).intercept {
+      LoggingEventFilter[TestException](start = "unstash-fail", occurrences = 1).intercept {
         ref ! "unstash"
         probe.expectMessage("unstashing-0")
         probe.expectMessage("unstashing-1")
         probe.expectMessage("stash-fail-2")
         probe.expectMessage("post-stop-2")
-      }
+      }(system)
     }
 
     "signal PostStop to the latest unstashed behavior on failure" in {
@@ -449,24 +446,25 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      EventFilter[TestException](start = "Supervisor RestartSupervisor saw failure: unstash-fail", occurrences = 1)
-        .intercept {
-          ref ! "unstash"
-          // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
-          // because it's waiting for child to stop
-          ref ! "get-current"
+      LoggingEventFilter[TestException](
+        start = "Supervisor RestartSupervisor saw failure: unstash-fail",
+        occurrences = 1).intercept {
+        ref ! "unstash"
+        // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
+        // because it's waiting for child to stop
+        ref ! "get-current"
 
-          probe.expectMessage("unstashing-0")
-          probe.expectMessage("unstashing-1")
-          probe.expectMessage("stash-fail-2")
-          probe.expectMessage("pre-restart-2")
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("unstashing-1")
+        probe.expectMessage("stash-fail-2")
+        probe.expectMessage("pre-restart-2")
 
-          childLatch.foreach(_.countDown())
-          probe.expectMessage("current-00")
+        childLatch.foreach(_.countDown())
+        probe.expectMessage("current-00")
 
-          ref ! "get-stash-size"
-          probe.expectMessage("stash-size-0")
-        }
+        ref ! "get-stash-size"
+        probe.expectMessage("stash-size-0")
+      }(system)
     }
 
     "signal PreRestart to the latest unstashed behavior on failure with restart supervision" in {
@@ -530,18 +528,19 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      EventFilter[TestException](start = "Supervisor ResumeSupervisor saw failure: unstash-fail", occurrences = 1)
-        .intercept {
-          ref ! "unstash"
-          ref ! "get-current"
+      LoggingEventFilter[TestException](
+        start = "Supervisor ResumeSupervisor saw failure: unstash-fail",
+        occurrences = 1).intercept {
+        ref ! "unstash"
+        ref ! "get-current"
 
-          probe.expectMessage("unstashing-0")
-          probe.expectMessage("unstashing-1")
-          probe.expectMessage("stash-fail-2")
-          probe.expectMessage("current-2")
-          ref ! "get-stash-size"
-          probe.expectMessage("stash-size-5")
-        }
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("unstashing-1")
+        probe.expectMessage("stash-fail-2")
+        probe.expectMessage("current-2")
+        ref ! "get-stash-size"
+        probe.expectMessage("stash-size-5")
+      }(system)
 
       ref ! "unstash"
       ref ! "get-current"
@@ -609,11 +608,14 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
         }
       })
 
-      EventFilter.warning(start = "unhandled message from", occurrences = 2).intercept {
-        ref ! "unstash"
-      }
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      ref ! "unstash"
+
+      unhandledProbe.receiveMessage()
       probe.expectMessage("handled 1")
       probe.expectMessage("handled 2")
+      unhandledProbe.receiveMessage()
       probe.expectMessage("handled 3")
 
       ref ! "handled"
@@ -637,8 +639,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
 
     "deal with stop" in {
       val probe = TestProbe[Any]
-      import akka.actor.typed.scaladsl.adapter._
-      untypedSys.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      system.eventStream ! EventStream.Subscribe(probe.ref.narrow[DeadLetter])
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
         stash.stash("two")

@@ -6,13 +6,12 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
@@ -42,7 +41,7 @@ object OptionalSnapshotStoreSpec {
 }
 
 class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
-    akka.loggers = [akka.testkit.TestEventListener]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.inmem.test-serialization = on
@@ -53,12 +52,9 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
 
   import OptionalSnapshotStoreSpec._
 
-  // Needed for the untyped event filter
-  implicit val untyped = system.toUntyped
-
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {
-      EventFilter.warning(start = "No default snapshot store configured", occurrences = 1).intercept {
+      LoggingEventFilter.warning(start = "No default snapshot store configured", occurrences = 1).intercept {
         val stateProbe = TestProbe[State]()
         spawn(persistentBehavior(stateProbe))
         stateProbe.expectNoMessage()
@@ -66,8 +62,8 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "fail if PersistentActor tries to saveSnapshot without snapshot-store available" in {
-      EventFilter.error(pattern = ".*No snapshot store configured.*", occurrences = 1).intercept {
-        EventFilter.warning(pattern = ".*Failed to save snapshot.*", occurrences = 1).intercept {
+      LoggingEventFilter.error(pattern = ".*No snapshot store configured.*", occurrences = 1).intercept {
+        LoggingEventFilter.warning(pattern = ".*Failed to save snapshot.*", occurrences = 1).intercept {
           val stateProbe = TestProbe[State]()
           val persistentActor = spawn(persistentBehavior(stateProbe))
           persistentActor ! AnyCommand

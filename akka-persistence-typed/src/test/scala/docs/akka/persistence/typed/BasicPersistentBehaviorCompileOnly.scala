@@ -123,7 +123,7 @@ object BasicPersistentBehaviorCompileOnly {
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup { context =>
     samplePersistentBehavior.snapshotWhen((state, _, _) => {
-      context.log.info("Snapshot actor {} => state: {}", context.self.path.name, state)
+      context.log.info("Snapshot actor {} => state: {}", context.self.path.name, state: Any)
       true
     })
   }

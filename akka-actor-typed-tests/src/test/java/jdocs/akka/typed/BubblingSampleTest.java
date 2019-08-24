@@ -25,6 +25,8 @@ public class BubblingSampleTest extends JUnitSuite {
             ConfigFactory.parseString(
                 "akka.loggers = [ akka.testkit.TestEventListener ]\n" + "akka.loglevel=warning"));
 
+    // FIXME #26537 use javadsl.LoggingEventFilter
+
     // actual exception and then the deathpacts
     new EventFilter(Exception.class, ActorSystemAdapter.toUntyped(system))
         .occurrences(4)

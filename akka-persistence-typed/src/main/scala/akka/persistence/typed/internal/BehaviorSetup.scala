@@ -6,8 +6,8 @@ package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
+
 import akka.actor.Cancellable
-import akka.actor.typed.Logger
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.ActorRef
 import akka.actor.typed.Signal
@@ -18,6 +18,8 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.ConstantFun
 import akka.util.OptionVal
+import org.slf4j.Logger
+import org.slf4j.MDC
 
 /**
  * INTERNAL API
@@ -62,29 +64,32 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   def selfUntyped = context.self.toUntyped
 
-  private var mdc: Map[String, Any] = Map.empty
+  private var mdcPhase = PersistenceMdc.Initializing
   private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed
   def log: Logger = {
     _log match {
       case OptionVal.Some(l) => l
       case OptionVal.None    =>
         // lazy init if mdc changed
-        val l = context.log.withMdc(mdc)
+        val l = context.log
         _log = OptionVal.Some(l)
+        // those MDC values are cleared in interceptor in EventSourcedBehaviorImpl
+        PersistenceMdc.setMdc(persistenceId, mdcPhase)
         l
     }
   }
 
-  def setMdc(newMdc: Map[String, Any]): BehaviorSetup[C, E, S] = {
-    mdc = newMdc
+  def setMdcPhase(phaseName: String): BehaviorSetup[C, E, S] = {
+    mdcPhase = phaseName
     // mdc is changed often, for each persisted event, but logging is rare, so lazy init of Logger
+    clearMdc()
     _log = OptionVal.None
     this
   }
 
-  def setMdc(phaseName: String): BehaviorSetup[C, E, S] = {
-    setMdc(MDC.create(persistenceId, phaseName))
-    this
+  def clearMdc(): Unit = {
+    if (_log.isDefined)
+      PersistenceMdc.clearMdc()
   }
 
   private var recoveryTimer: OptionVal[Cancellable] = OptionVal.None
@@ -121,9 +126,10 @@ private[akka] final class BehaviorSetup[C, E, S](
     } catch {
       case NonFatal(ex) =>
         if (catchAndLog)
-          log.error(ex, s"Error while processing signal [{}]", signal)
+          log.error(s"Error while processing signal [$signal]: $ex", ex)
         else {
-          log.debug(s"Error while processing signal [{}]: {}", signal, ex)
+          if (log.isDebugEnabled)
+            log.debug(s"Error while processing signal [$signal]: $ex", ex)
           throw ex
         }
     }
@@ -147,17 +153,29 @@ private[akka] final class BehaviorSetup[C, E, S](
  * INTERNAL API
  */
 @InternalApi
-private[akka] object MDC {
+private[akka] object PersistenceMdc {
   // format: OFF
+  val Initializing      = "initializing"
   val AwaitingPermit    = "get-permit"
-  val ReplayingSnapshot = "replay-snap"
-  val ReplayingEvents   = "replay-evts"
-  val RunningCmds       = "running-cmnds"
-  val PersistingEvents  = "persist-evts"
-  val StoringSnapshot   = "storing-snapshot"
+  val ReplayingSnapshot = "load-snap"
+  val ReplayingEvents   = "replay-evt"
+  val RunningCmds       = "running-cmd"
+  val PersistingEvents  = "persist-evt"
+  val StoringSnapshot   = "storing-snap"
   // format: ON
 
-  def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {
-    Map("persistenceId" -> persistenceId.id, "phase" -> phaseName)
+  val PersistencePhaseKey = "persistencePhase"
+  val PersistenceIdKey = "persistenceId"
+
+  def setMdc(persistenceId: PersistenceId, phase: String): Unit = {
+    val mdcAdpater = MDC.getMDCAdapter
+    mdcAdpater.put(PersistenceIdKey, persistenceId.id)
+    mdcAdpater.put(PersistencePhaseKey, phase)
+  }
+
+  def clearMdc(): Unit = {
+    val mdcAdpater = MDC.getMDCAdapter
+    mdcAdpater.remove(PersistenceIdKey)
+    mdcAdpater.remove(PersistencePhaseKey)
   }
 }

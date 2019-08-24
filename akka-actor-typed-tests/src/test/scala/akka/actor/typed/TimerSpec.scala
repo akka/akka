@@ -13,19 +13,17 @@ import scala.util.control.NoStackTrace
 
 import akka.actor.DeadLetter
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.testkit.{ EventFilter, TimingTest }
+import akka.testkit.TimingTest
 import org.scalatest.WordSpecLike
 
 class TimerSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [ akka.testkit.TestEventListener ]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -179,7 +177,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(Tock(1))
 
       val latch = new CountDownLatch(1)
-      EventFilter[Exc](occurrences = 1).intercept {
+      LoggingEventFilter[Exc](occurrences = 1).intercept {
         // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
 
@@ -209,7 +207,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
 
       probe.expectMessage(Tock(2))
 
-      EventFilter[Exc](occurrences = 1).intercept {
+      LoggingEventFilter[Exc](occurrences = 1).intercept {
         val latch = new CountDownLatch(1)
         // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
@@ -230,7 +228,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
-      EventFilter[Exc](occurrences = 1).intercept {
+      LoggingEventFilter[Exc](occurrences = 1).intercept {
         ref ! Throw(new Exc)
         probe.expectMessage(GotPostStop(false))
       }
@@ -300,7 +298,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     }
 
     "not leak timers when PostStop is used" in {
-      val probe = TestProbe[Any]()
+      val probe = TestProbe[DeadLetter]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>
           timers.startTimerWithFixedDelay("test", "test", 250.millis)
@@ -309,11 +307,11 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
           }
         }
       })
-      EventFilter.info("stopping").intercept {
+      LoggingEventFilter.info("stopping").intercept {
         ref ! "stop"
       }
       probe.expectTerminated(ref)
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      system.eventStream ! EventStream.Subscribe(probe.ref)
       probe.expectNoMessage(1.second)
     }
   }
@@ -348,7 +346,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
           Behaviors.unhandled
       }
 
-    EventFilter[TestException](occurrences = 1).intercept {
+    LoggingEventFilter[TestException](occurrences = 1).intercept {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))
@@ -383,7 +381,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
         Behaviors.unhandled
     }
 
-    EventFilter[TestException](occurrences = 1).intercept {
+    LoggingEventFilter[TestException](occurrences = 1).intercept {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))

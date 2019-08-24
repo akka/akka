@@ -4,7 +4,11 @@
 
 package akka.actor.typed
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorCell
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.scaladsl.AskPattern._
@@ -13,24 +17,15 @@ import akka.dispatch.BoundedMessageQueueSemantics
 import akka.dispatch.BoundedNodeMessageQueue
 import akka.dispatch.MessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
-import akka.testkit.EventFilter
-import akka.testkit.TestLatch
 import org.scalatest.WordSpecLike
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
     specific-mailbox {
       mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
       mailbox-capacity = 4 
     }
-    akka.loggers = [ akka.testkit.TestEventListener ]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
 
   case class WhatsYourMailbox(replyTo: ActorRef[MessageQueue])
   private def behavior: Behavior[WhatsYourMailbox] =
@@ -65,24 +60,24 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
     }
 
     "set capacity on a bounded mailbox" in {
-      val latch = TestLatch(1)
+      val latch = new CountDownLatch(1)
       val actor = spawn(Behaviors.receiveMessage[String] {
         case "one" =>
           // block here so we can fill mailbox up
-          Await.ready(latch, 10.seconds)
+          latch.await(10, TimeUnit.SECONDS)
           Behaviors.same
         case _ =>
           Behaviors.same
       }, MailboxSelector.bounded(2))
       actor ! "one" // actor will block here
       actor ! "two"
-      EventFilter.warning(start = "received dead letter:", occurrences = 1).intercept {
+      LoggingEventFilter.deadLetters(occurrences = 1).intercept {
         // one or both of these doesn't fit in mailbox
         // depending on race with how fast actor consumes
         actor ! "three"
         actor ! "four"
       }
-      latch.open()
+      latch.countDown()
     }
 
     "select an arbitrary mailbox from config" in {

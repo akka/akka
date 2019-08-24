@@ -84,7 +84,7 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def setLoggerClass(clazz: Class[_]): Unit
+  def setLoggerClass(clazz: Class[_]): Unit // FIXME #26537 rename this to setLoggerName (could have class as convenience param), see ClusterReceptionist that doesn't have a class
 
   /**
    * The list of child Actors created by this Actor during its lifetime that

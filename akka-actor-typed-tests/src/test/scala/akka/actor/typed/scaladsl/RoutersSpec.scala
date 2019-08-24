@@ -6,21 +6,22 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.Dropped
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.routing.GroupRouterImpl
 import akka.actor.typed.internal.routing.RoutingLogics
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.EventFilter
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     akka.loglevel=debug
   """) with WordSpecLike with Matchers {
 
@@ -84,7 +85,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
         }))
 
-      EventFilter.debug(start = "Pool child stopped", occurrences = 2).intercept {
+      LoggingEventFilter.debug(start = "Pool child stopped", occurrences = 2).intercept {
         pool ! "stop"
         pool ! "stop"
       }
@@ -109,7 +110,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
           Behaviors.stopped
         }))
 
-      EventFilter.info(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
+      LoggingEventFilter.info(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
         (0 to 3).foreach { _ =>
           pool ! "stop"
         }
@@ -152,18 +153,12 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val serviceKey = ServiceKey[String]("group-routing-2")
       val group = spawn(Routers.group(serviceKey), "group-router-2")
       val probe = TestProbe[Dropped]()
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
+      system.eventStream ! EventStream.Subscribe(probe.ref)
 
       (0 to 3).foreach { n =>
         val msg = s"message-$n"
-//         EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
-        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
-          EventFilter.info(pattern = ".*was dropped. No routees in group router", occurrences = 1).intercept {
-            group ! msg
-            probe.expectMessageType[Dropped]
-          }
-        }
-      /* } */
+        group ! msg
+        probe.expectMessageType[Dropped]
       }
 
       testKit.stop(group)

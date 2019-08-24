@@ -120,9 +120,8 @@ private[akka] object ActorContextAdapter {
   }
 
   private def initLoggerWithClass(logClass: Class[_]): Logger = {
+    // FIXME #26537 logSource should be included in MDC (but not here)
     val logger = LoggerFactory.getLogger(logClass)
-    //TODO remove it from MDC. Under discussion
-    org.slf4j.MDC.put("actorPath", self.path.name)
     actorLogger = OptionVal.Some(logger)
     logger
   }
