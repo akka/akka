@@ -93,19 +93,19 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       case (_, SnapshotCompleted(meta)) =>
         ctx.log.debug("Save snapshot successful, snapshot metadata [{}].", meta)
       case (_, SnapshotFailed(meta, failure)) =>
-        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}].", meta)
+        ctx.log.error(s"Save snapshot failed, snapshot metadata [$meta] due to: ${failure.getMessage}", failure)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Individual(meta))) =>
         ctx.log.debug("Persistent snapshot [{}] deleted successfully.", meta)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria))) =>
         ctx.log.debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure)) =>
-        ctx.log.warning("Failed to delete snapshot with meta [{}] due to [{}].", meta, failure)
+        ctx.log.warn("Failed to delete snapshot with meta [{}] due to: {}", meta, failure.getMessage: Any)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure)) =>
-        ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure)
+        ctx.log.warn("Failed to delete snapshots given criteria [{}] due to: {}", criteria, failure.getMessage: Any)
       case (_, DeleteEventsCompleted(toSequenceNr)) =>
         ctx.log.debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
       case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
-        ctx.log.warning("Failed to delete events to sequence number [{}] due to [{}].", toSequenceNr, failure)
+        ctx.log.warn("Failed to delete events to sequence number [{}] due to: {}", toSequenceNr, failure.getMessage)
     }
 
     // do this once, even if the actor is restarted
@@ -141,26 +141,34 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
                 ctx: typed.TypedActorContext[Any],
                 msg: Any,
                 target: ReceiveTarget[InternalProtocol]): Behavior[InternalProtocol] = {
-              val innerMsg = msg match {
-                case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
-                case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
-                case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
-                case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-                case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
+              try {
+                val innerMsg = msg match {
+                  case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
+                  case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
+                  case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
+                  case internal: InternalProtocol              => internal // such as RecoveryTickEvent
+                  case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
+                }
+                target(ctx, innerMsg)
+              } finally {
+                eventSourcedSetup.clearMdc()
               }
-              target(ctx, innerMsg)
             }
 
             override def aroundSignal(
                 ctx: typed.TypedActorContext[Any],
                 signal: Signal,
                 target: SignalTarget[InternalProtocol]): Behavior[InternalProtocol] = {
-              if (signal == PostStop) {
-                eventSourcedSetup.cancelRecoveryTimer()
-                // clear stash to be GC friendly
-                stashState.clearStashBuffers()
+              try {
+                if (signal == PostStop) {
+                  eventSourcedSetup.cancelRecoveryTimer()
+                  // clear stash to be GC friendly
+                  stashState.clearStashBuffers()
+                }
+                target(ctx, signal)
+              } finally {
+                eventSourcedSetup.clearMdc()
               }
-              target(ctx, signal)
             }
 
             override def toString: String = "EventSourcedBehaviorInterceptor"

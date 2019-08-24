@@ -12,8 +12,6 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -26,7 +24,7 @@ public class LoggerSourceTest extends JUnitSuite {
 
   private static final Config config =
       ConfigFactory.parseString(
-          "akka.loggers = [akka.testkit.TestEventListener] \n"
+          "akka.loggers = [akka.event.slf4j.Slf4jLogger] \n"
               + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
               + "akka.persistence.journal.inmem.test-serialization = on \n");
 
@@ -95,25 +93,25 @@ public class LoggerSourceTest extends JUnitSuite {
           });
 
   public LoggerSourceTest() {
-    // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {
-                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
-                    })));
+    // FIXME #26537 #24348 silence logging in a proper way
+    //    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+    //        .eventStream()
+    //        .publish(
+    //            new TestEvent.Mute(
+    //                akka.japi.Util.immutableSeq(
+    //                    new EventFilter[] {
+    //                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
+    //                    })));
   }
 
   @Test
   public void verifyLoggerClass() {
     ActorRef<String> ref = testKit.spawn(behavior);
     ref.tell("command");
+    // FIXME #26537 use javadsl.LoggingEventFilter when ready
     // no Java testkit support for custom event filters to look at the logger class
     // so this is a manual-occular test for now (additionally it requires a small change to
     // stdoutlogger to print log event class name)
-    // FIXME #24348: eventfilter support in typed testkit
     TestProbe<Object> probe = testKit.createTestProbe();
     ref.tell("stop");
     probe.expectTerminated(ref);

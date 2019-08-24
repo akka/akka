@@ -5,6 +5,7 @@
 package docs.akka.typed
 
 //#imports
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorSystem, PostStop }
 

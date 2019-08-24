@@ -7,12 +7,14 @@ package akka.actor.typed
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.scaladsl.TestProbe
-
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
+import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.testkit.EventFilter
+import akka.actor.typed.eventstream.EventStream
 import org.scalatest.WordSpecLike
 
 object ActorSpecMessages {
@@ -64,12 +66,8 @@ object ActorSpecMessages {
 }
 
 abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.testkit.TestEventListener]
+    akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val classicSystem = system.toClassic
 
   import ActorSpecMessages._
 
@@ -112,11 +110,15 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(Pong)
-      // unhandled gives warning from EventFilter
-      EventFilter.warning(occurrences = 1).intercept {
-        actor ! Miss
-        probe.expectMessage(Missed)
-      }
+
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+
+      actor ! Miss
+      probe.expectMessage(Missed)
+      // FIXME #26537 why no UnhandledMessage?
+      //unhandledProbe.receiveMessage()
+
       actor ! Renew(probe.ref)
       probe.expectMessage(Renewed)
       actor ! Ping
@@ -140,7 +142,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
 
       val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
       val actor = spawn(behavior)
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         actor ! Fail
       }
       probe.expectMessage(ReceivedSignal(PreRestart))
@@ -204,7 +206,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
 
       val parentRef = spawn(parent)
       val childRef = probe.expectMessageType[ChildMade].ref
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         childRef ! Fail
       }
       probe.expectMessage(GotChildSignal(PreRestart))
@@ -261,7 +263,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         actor ! Fail
       }
       actor ! Ping
@@ -287,7 +289,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         actor ! Fail
       }
       actor ! Ping
@@ -329,7 +331,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(Pong)
       watcher ! Ping
       probe.expectMessage(Pong)
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         actorToWatch ! Fail
       }
       probe.expectMessage(ReceivedSignal(PostStop))
@@ -514,7 +516,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
       val childRef = probe.expectMessageType[ChildMade].ref
       actor ! Inert
       probe.expectMessage(InertEvent)
-      EventFilter[DeathPactException](occurrences = 1).intercept {
+      LoggingEventFilter[DeathPactException](occurrences = 1).intercept {
         childRef ! Stop
         probe.expectMessage(GotChildSignal(PostStop))
         probe.expectMessage(ReceivedSignal(PostStop))

@@ -326,7 +326,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                   ctx.log.debug(
                     "ClusterReceptionist [{}] - Saw ActorRefs that were tomstoned [{}], re-removing.",
                     cluster.selfAddress,
-                    tombstonedButReAdded.mkString(", "))
+                    tombstonedButReAdded.mkString(", "): Any)
 
                 replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
                   tombstonedButReAdded
@@ -358,7 +358,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               ctx.log.debug(
                 "ClusterReceptionist [{}] - Leader node observed removed node [{}]",
                 cluster.selfAddress,
-                uniqueAddress)
+                uniqueAddress: Any)
               nodesRemoved(Set(uniqueAddress))
             }
 
@@ -372,7 +372,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             ctx.log.debug(
               "ClusterReceptionist [{}] - Node with registered services unreachable [{}]",
               cluster.selfAddress,
-              uniqueAddress)
+              uniqueAddress: Any)
             reachabilityChanged(keysForNode, newRegistry)
           }
           next(newRegistry)
@@ -384,7 +384,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             ctx.log.debug(
               "ClusterReceptionist [{}] - Node with registered services reachable again [{}]",
               cluster.selfAddress,
-              uniqueAddress)
+              uniqueAddress: Any)
             reachabilityChanged(keysForNode, newRegistry)
           }
           next(newRegistry)
@@ -401,7 +401,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 ctx.log.debug(
                   "ClusterReceptionist [{}] - Leader node cleanup tick, removed nodes: [{}]",
                   cluster.selfAddress,
-                  notInCluster.mkString(","))
+                  notInCluster.mkString(","): Any)
               nodesRemoved(notInCluster)
             }
           }

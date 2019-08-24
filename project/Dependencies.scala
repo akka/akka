@@ -97,6 +97,8 @@ object Dependencies {
 
     val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0"
 
+    val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" // EPL 1.0
+
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
@@ -107,7 +109,7 @@ object Dependencies {
       val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
       val commonsCodec = "commons-codec" % "commons-codec" % "1.11" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
-      val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" % "test" // EPL 1.0 / LGPL 2.1
+      val logback = Compile.logback % "test" // EPL 1.0
       val mockito = "org.mockito" % "mockito-core" % "2.19.1" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
@@ -154,6 +156,8 @@ object Dependencies {
 
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "optional;provided;test" } // ApacheV2
 
+      val logback = Compile.logback % "optional;provided;test" // EPL 1.0
+
     }
 
   }
@@ -183,7 +187,7 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
+  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest.value)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")

@@ -8,17 +8,19 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
-
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, TimeoutException }
 import scala.util.Success
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
-
 import scala.concurrent.Future
+
+import akka.actor.UnhandledMessage
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.typed.eventstream.EventStream
 
 object AskSpec {
   sealed trait Msg
@@ -28,15 +30,10 @@ object AskSpec {
 
 class AskSpec extends ScalaTestWithActorTestKit("""
   akka.loglevel=warning
-  akka.loggers = [ akka.testkit.TestEventListener ]
+  akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
 
-  // FIXME #24348: eventfilter support in typed testkit
   import AskSpec._
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val classicSystem = system.toClassic
 
   implicit def executor: ExecutionContext =
     system.executionContext
@@ -58,10 +55,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
       val probe = createTestProbe()
       probe.expectTerminated(ref, probe.remainingOrDefault)
-      val answer: Future[String] =
-        EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
-          ref.ask(Foo("bar", _))
-        }
+      val answer: Future[String] = ref.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated.")
@@ -82,12 +76,16 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     "fail the future if the actor doesn't reply in time" in {
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
-      EventFilter.warning(pattern = ".*unhandled message.*", occurrences = 1).intercept {
-        val answer: Future[String] = actor.ask(Foo("bar", _))
-        val result = answer.failed.futureValue
-        result shouldBe a[TimeoutException]
-        result.getMessage should startWith("Ask timed out on")
-      }
+
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+
+      val answer: Future[String] = actor.ask(Foo("bar", _))
+      // FIXME #26537 why no UnhandledMessage?
+      //unhandledProbe.receiveMessage()
+      val result = answer.failed.futureValue
+      result shouldBe a[TimeoutException]
+      result.getMessage should startWith("Ask timed out on")
     }
 
     /** See issue #19947 (MatchError with adapted ActorRef) */
@@ -100,10 +98,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
-      val answer: Future[String] =
-        EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
-          noSuchActor.ask(Foo("bar", _))
-        }
+      val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated")
@@ -127,6 +122,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
         val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
         import scaladsl.AskPattern._
+        import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
         implicit val scheduler = classicSystem.toTyped.scheduler
         val typedLegacy: ActorRef[AnyRef] = legacyActor
@@ -172,10 +168,11 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       ref ! "start-ask"
       val Question(replyRef2) = probe.expectMessageType[Question]
 
-      EventFilter[RuntimeException](message = "Exception thrown out of adapter. Stopping myself.", occurrences = 1)
-        .intercept {
-          replyRef2 ! 42L
-        }(system.toClassic)
+      LoggingEventFilter[RuntimeException](
+        message = "Exception thrown out of adapter. Stopping myself.",
+        occurrences = 1).intercept {
+        replyRef2 ! 42L
+      }(system)
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }

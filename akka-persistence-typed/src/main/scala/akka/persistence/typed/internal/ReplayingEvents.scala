@@ -56,7 +56,7 @@ private[akka] object ReplayingEvents {
     Behaviors.setup { _ =>
       // protect against event recovery stalling forever because of journal overloaded and such
       setup.startRecoveryTimer(snapshot = false)
-      new ReplayingEvents[C, E, S](setup.setMdc(MDC.ReplayingEvents), state)
+      new ReplayingEvents[C, E, S](setup.setMdcPhase(PersistenceMdc.ReplayingEvents), state)
     }
 
 }
@@ -181,7 +181,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     setup.log
-      .warning("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
+      .warn("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
     Behaviors.unhandled // ignore the response
   }
 
@@ -202,17 +202,17 @@ private[akka] final class ReplayingEvents[C, E, S](
       setup.log.debug(
         "Recovery failure for persistenceId [{}] after {}",
         setup.persistenceId,
-        (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
+        (System.nanoTime() - state.recoveryStartTime).nanos.pretty: Any)
     }
     val sequenceNr = state.seqNr
 
     val msg = event match {
       case Some(_: Message) | None =>
         s"Exception during recovery. Last known sequence number [$sequenceNr]. " +
-        s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
+        s"PersistenceId [${setup.persistenceId.id}], due to: ${cause.getMessage}"
       case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
-        s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
+        s"PersistenceId [${setup.persistenceId.id}], due to: ${cause.getMessage}"
     }
 
     throw new JournalFailureException(msg, cause)
@@ -226,7 +226,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         setup.log.debug(
           "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
-          (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
+          (System.nanoTime() - state.recoveryStartTime).nanos.pretty: Any)
       }
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 

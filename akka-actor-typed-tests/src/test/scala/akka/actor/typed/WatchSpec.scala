@@ -8,19 +8,19 @@ import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
-
 import scala.concurrent._
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object WatchSpec {
   val config = ConfigFactory.parseString("""
-       akka.loggers = ["akka.testkit.TestEventListener"]
+       akka.loggers = [akka.event.slf4j.Slf4jLogger]
     """.stripMargin)
 
   case object Stop
@@ -110,7 +110,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
         },
         "supervised-child-parent")
 
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -145,7 +145,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       }
       val parent = spawn(behavior, "parent")
 
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -184,8 +184,8 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
           },
           "grosso-bosso")
 
-      EventFilter[TestException](occurrences = 1).intercept {
-        EventFilter[DeathPactException](occurrences = 1).intercept {
+      LoggingEventFilter[TestException](occurrences = 1).intercept {
+        LoggingEventFilter[DeathPactException](occurrences = 1).intercept {
           grossoBosso ! "boom"
         }
       }
@@ -325,10 +325,11 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
     "fail when watch is used after watchWith on same subject" in new ErrorTestSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
 
-      EventFilter[IllegalStateException](pattern = ".*termination message was not overwritten.*", occurrences = 1)
-        .intercept {
-          watcher ! StartWatching(terminator)
-        }
+      LoggingEventFilter[IllegalStateException](
+        pattern = ".*termination message was not overwritten.*",
+        occurrences = 1).intercept {
+        watcher ! StartWatching(terminator)
+      }
       // supervisor should have stopped the actor
       expectStopped()
     }
@@ -336,20 +337,22 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
     "fail when watchWitch is used after watchWith with different termination message" in new ErrorTestSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
 
-      EventFilter[IllegalStateException](pattern = ".*termination message was not overwritten.*", occurrences = 1)
-        .intercept {
-          watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
-        }
+      LoggingEventFilter[IllegalStateException](
+        pattern = ".*termination message was not overwritten.*",
+        occurrences = 1).intercept {
+        watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
+      }
       // supervisor should have stopped the actor
       expectStopped()
     }
     "fail when watchWith is used after watch on same subject" in new ErrorTestSetup {
       watcher ! StartWatching(terminator)
 
-      EventFilter[IllegalStateException](pattern = ".*termination message was not overwritten.*", occurrences = 1)
-        .intercept {
-          watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
-        }
+      LoggingEventFilter[IllegalStateException](
+        pattern = ".*termination message was not overwritten.*",
+        occurrences = 1).intercept {
+        watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
+      }
       // supervisor should have stopped the actor
       expectStopped()
     }

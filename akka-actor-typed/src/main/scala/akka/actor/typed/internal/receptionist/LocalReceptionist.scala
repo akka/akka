@@ -98,7 +98,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
     def onCommand(ctx: ActorContext[Any], cmd: Command): Behavior[Any] = cmd match {
       case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
-        ctx.log.debug("Actor was registered: {} {}", Array(key, serviceInstance))
+        ctx.log.debug("Actor was registered: {} {}", key, serviceInstance: Any)
         watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
         maybeReplyTo match {
           case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
@@ -121,7 +121,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
     def onInternal(ctx: ActorContext[Any], cmd: InternalCommand): Behavior[Any] = cmd match {
       case RegisteredActorTerminated(key, serviceInstance) =>
-        ctx.log.debug("Registered actor terminated: {} {}", Array(key, serviceInstance))
+        ctx.log.debug("Registered actor terminated: {} {}", key, serviceInstance: Any)
         updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
       case SubscriberTerminated(key, subscriber) =>

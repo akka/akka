@@ -13,8 +13,6 @@ import akka.actor.typed.SupervisorStrategy;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.RecoveryFailed;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -96,21 +94,22 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
   }
 
   public EventSourcedActorFailureTest() {
-    // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {
-                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
-                    })));
-    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {EventFilter.error(null, null, "", ".*saw failure.*", 1)})));
+    // FIXME #26537 #24348 silence logging in a proper way
+    //    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+    //        .eventStream()
+    //        .publish(
+    //            new TestEvent.Mute(
+    //                akka.japi.Util.immutableSeq(
+    //                    new EventFilter[] {
+    //                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
+    //                    })));
+    //    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+    //        .eventStream()
+    //        .publish(
+    //            new TestEvent.Mute(
+    //                akka.japi.Util.immutableSeq(
+    //                    new EventFilter[] {EventFilter.error(null, null, "", ".*saw failure.*",
+    // 1)})));
   }
 
   @Test

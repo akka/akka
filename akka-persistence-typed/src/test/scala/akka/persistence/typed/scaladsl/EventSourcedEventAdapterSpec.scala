@@ -20,16 +20,14 @@ import akka.persistence.typed.EventSeq
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
-import akka.testkit.EventFilter
 import akka.testkit.JavaSerializable
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedEventAdapterSpec {
 
   private val conf = ConfigFactory.parseString(s"""
-      akka.loggers = [akka.testkit.TestEventListener]
+      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     """)
@@ -98,7 +96,6 @@ class EventSourcedEventAdapterSpec
   }
 
   import akka.actor.typed.scaladsl.adapter._
-  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")

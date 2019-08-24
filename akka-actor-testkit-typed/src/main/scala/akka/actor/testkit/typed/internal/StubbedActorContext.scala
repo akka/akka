@@ -17,9 +17,11 @@ import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorRefProvider
 import org.slf4j.Logger
-import org.slf4j.helpers.{ SubstituteLogger, SubstituteLoggerFactory }
+import org.slf4j.helpers.MessageFormatter
+import org.slf4j.helpers.SubstituteLoggerFactory
 
 /**
  * INTERNAL API
@@ -76,8 +78,8 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override val system = new ActorSystemStub("StubbedActorContext")
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
-  private val loggingAdapter: SubstituteLogger =
-    new SubstituteLoggerFactory().getLogger("StubbedLoggingAdapter").asInstanceOf[SubstituteLogger]
+  private val substituteLoggerFactory = new SubstituteLoggerFactory
+  private val logger: Logger = substituteLoggerFactory.getLogger("StubbedLogger")
   private var unhandled: List[T] = Nil
 
   private[akka] def classicActorContext =
@@ -183,20 +185,34 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
   override def toString: String = s"Inbox($self)"
 
-  override def log: Logger = loggingAdapter
+  override def log: Logger = logger
 
-  override def setLoggerClass(clazz: Class[_]): Unit = () // nop as we dont track logger class
+  override def setLoggerClass(clazz: Class[_]): Unit = () // nop as we don't track logger class
 
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through
    * this method.
    */
-  def logEntries: List[CapturedLogEvent] = ???
+  def logEntries: List[CapturedLogEvent] = {
+    import akka.util.ccompat.JavaConverters._
+    substituteLoggerFactory.getEventQueue
+      .iterator()
+      .asScala
+      .map { evt =>
+        CapturedLogEvent(
+          level = evt.getLevel,
+          message = MessageFormatter.arrayFormat(evt.getMessage, evt.getArgumentArray).getMessage,
+          cause = Option(evt.getThrowable),
+          marker = Option(evt.getMarker))
+      }
+      .toList
+  }
 
   /**
    * Clear the log entries.
    */
-  def clearLog(): Unit = ???
+  def clearLog(): Unit =
+    substituteLoggerFactory.getEventQueue.clear()
 
   override private[akka] def onUnhandled(msg: T): Unit =
     unhandled = msg :: unhandled
