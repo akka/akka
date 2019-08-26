@@ -27,7 +27,7 @@ For advanced use cases it is also possible to defer mailbox selection to config 
 
 ### Selecting a Mailbox Type for an Actor
 
-To select mailbox for an actor use `MailboxSelector` to create a `Props` instance for spawning your actor:
+To select a specific mailbox for an actor use `MailboxSelector` to create a `Props` instance for spawning your actor:
 
 Scala
 :  @@snip [MailboxDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/MailboxDocSpec.scala) { #select-mailbox }
@@ -81,8 +81,8 @@ be used.
 
 ### Default Mailbox
 
-When the mailbox is not specified as described above the default mailbox
-is used. By default it is an unbounded mailbox, which is backed by a
+The default mailbox is used when the mailbox is not specified.
+This is an unbounded mailbox, backed by a
 `java.util.concurrent.ConcurrentLinkedQueue`.
 
 `SingleConsumerOnlyUnboundedMailbox` is an even more efficient mailbox, and
@@ -101,13 +101,13 @@ akka.actor.default-mailbox {
 Each mailbox type is implemented by a class which extends `MailboxType`
 and takes two constructor arguments: a `ActorSystem.Settings` object and
 a `Config` section. The latter is computed by obtaining the named
-configuration section from the actor system’s configuration, overriding its
+configuration section from the `ActorSystem` configuration, overriding its
 `id` key with the configuration path of the mailbox type and adding a
 fall-back to the default mailbox configuration section.
 
-## Builtin Mailbox Implementations
+## Mailbox Implementations
 
-Akka comes shipped with a number of mailbox implementations:
+Akka ships with a number of mailbox implementations:
 
  * 
    **UnboundedMailbox** (default)
@@ -184,9 +184,9 @@ The following mailboxes should only be used with zero `mailbox-push-timeout-time
     * Bounded: Yes
     * Configuration name: "akka.dispatch.BoundedControlAwareMailbox"
 
-## Creating your own Mailbox type
+## Custom Mailbox type
 
-An example is worth a thousand quacks:
+The best way to show how to create your own Mailbox type is by example:
 
 Scala
 :   @@snip [MyUnboundedMailbox.scala](/akka-docs/src/test/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-marker-interface }
