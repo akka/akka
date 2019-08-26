@@ -5,31 +5,30 @@
 package akka.stream.javadsl
 
 import java.util
+import java.util.Optional
 
 import akka.NotUsed
 import akka.japi.Pair
 import akka.stream.scaladsl.RetryFlow.withBackoffAndContext
-
 import akka.util.ccompat.JavaConverters._
+
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
-import scala.runtime.AbstractPartialFunction
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object RetryFlow {
 
   /**
    * Allows retrying individual elements in the stream with exponential backoff.
    *
-   * The retry condition is controlled by the `retryWith` partial function. It takes an output element of the wrapped
-   * flow and should return one or more requests to be retried.
+   * The retry condition is controlled by the `retrySuccess` and `retryFailure` functions. These functions take a
+   * successful response or an exception respectively and should return one or more requests to be retried.
    *
-   * A successful or failed response will be propagated downstream if it is not matched by the `retryFlow` function.
-   *
-   * If a successful response is matched and issued a retry, the response is still propagated downstream.
+   * If a successful response is issued a retry, the response is still propagated downstream.
    *
    * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
    *
-   * The wrapped `flow` and `retryWith` takes an additional `State` parameter which can be used to correlate a request
+   * The `flow`, `retrySuccess` and `retryFailure` arguments take an additional `State` parameter which can be used to correlate a request
    * with a response.
    *
    * Backoff state is tracked separately per-element coming into the wrapped `flow`.
@@ -39,7 +38,8 @@ object RetryFlow {
    * @param maxBackoff maximum duration to backoff between issuing retries
    * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
    * @param flow a flow to retry elements from
-   * @param retryWith retry condition decision partial function
+   * @param retrySuccess retry condition decision function on success
+   * @param retryFailure retry condition decision function on failure
    */
   def withBackoff[In, Out, State, Mat](
       parallelism: Int,
@@ -47,16 +47,20 @@ object RetryFlow {
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       flow: Flow[Pair[In, State], Pair[Try[Out], State], Mat],
-      retryWith: AbstractPartialFunction[Pair[Try[Out], State], akka.japi.Option[util.Collection[Pair[In, State]]]])
+      retrySuccess: java.util.function.Function[Pair[Out, State], Optional[util.Collection[Pair[In, State]]]],
+      retryFailure: java.util.function.Function[Pair[Throwable, State], Optional[util.Collection[Pair[In, State]]]])
       : Flow[akka.japi.Pair[In, State], akka.japi.Pair[Try[Out], State], Mat] = {
     val retryFlow = withBackoffAndContext(
       parallelism,
       Duration.fromNanos(minBackoff.toNanos),
       Duration.fromNanos(maxBackoff.toNanos),
       randomFactor,
-      FlowWithContext.fromPairs(flow).asScala) {
-      case (t, s) =>
-        retryWith(Pair.create(t, s)).map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
+      FlowWithContext.fromPairs(flow).asScala) { case result =>
+        val retryAttempt = result match {
+          case (Success(value), s) => retrySuccess(Pair.create(value, s))
+          case (Failure(exception), s) => retryFailure(Pair.create(exception, s))
+        }
+        retryAttempt.asScala.map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
     }.asFlow
 
     Flow
