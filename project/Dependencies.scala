@@ -16,7 +16,6 @@ object Dependencies {
 
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.25"
-  val scalaXmlVersion = "1.0.6"
   // check agrona version when updating this
   val aeronVersion = "1.19.1"
   // needs to be inline with the aeron version
@@ -55,7 +54,6 @@ object Dependencies {
     val config = "com.typesafe" % "config" % "1.3.4" // ApacheV2
     val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
-    val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
@@ -115,7 +113,6 @@ object Dependencies {
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
-      val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion % "test"
 
       // in-memory filesystem for file related tests
       val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2
@@ -190,7 +187,7 @@ object Dependencies {
 
   val remote = l ++= Seq(agrona, Test.junit, Test.scalatest.value, Test.jimfs, Test.protobufRuntime) ++ remoteOptionalDependencies
 
-  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml) ++ remoteDependencies
+  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value) ++ remoteDependencies
 
   val multiNodeTestkit = l ++= Seq(netty)
 
@@ -217,8 +214,7 @@ object Dependencies {
         Test.scalatest.value,
         Test.junit,
         Test.commonsIo,
-        Test.commonsCodec,
-        Test.scalaXml)
+        Test.commonsCodec)
 
   val persistenceQuery = l ++= Seq(
         Test.scalatest.value,
