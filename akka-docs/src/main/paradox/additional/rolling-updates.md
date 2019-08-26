@@ -23,11 +23,8 @@ When some message loss during a rolling upgrade is acceptable versus a full shut
 * If a `java.io.NotSerializableException` is thrown in `fromBinary` this is treated as a transient problem, the issue logged and the message is dropped
 * If other exceptions are thrown it can be an indication of corrupt bytes from the underlying transport, and the connection is broken
 
-For more zero-impact rolling upgrades, it is important to consider a strategy for serialization that can be evolved. 
-One approach to retiring a serializer without downtime is described in @ref:[two rolling upgrade steps to switch to the new serializer](../serialization.md#rolling-upgrades). 
-Additionally you can find advice on @ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md) which also applies to remote messages when deploying with rolling updates.
-
-
+For more zero-impact rolling upgrades it is critical to consider a [Schema Evolution](schema-evolution.md) strategy for serialization.
+ 
 ## Cluster Sharding
 
 During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../cluster-sharding.md#shard-rebalancing), 

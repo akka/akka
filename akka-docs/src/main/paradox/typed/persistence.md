@@ -4,7 +4,7 @@
 
 * [Persistence coding style](persistence-style.md)
 * [Persistence snapshotting](persistence-snapshot.md)
-* [Persistence schema evolution](../persistence-schema-evolution.md)
+* [Persistence schema evolution](../additional/schema-evolution.md#event-sourced-actors)
 * [Persistence query](../persistence-query.md)
 * [Persistence query LevelDB](../persistence-query-leveldb.md)
 * [Persistence Journals](../persistence-journals.md)
@@ -24,7 +24,7 @@ To use Akka Persistence Typed, add the module to your project:
 ## Introduction
 
 Akka Persistence is a library for building event sourced actors. For background about how it works
-see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
+see the @ref:[Akka Persistence Classic section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
 
 ## Example
@@ -326,7 +326,7 @@ command or the reply will be sent later, perhaps after some asynchronous interac
 The same @ref:[serialization](../serialization.md) mechanism as for untyped
 actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events
 you should also consider that it must be possible read old events when the application has evolved.
-Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
+Strategies for that can be found in the @ref:[schema evolution](../additional/schema-evolution.md#event-sourced-actors).
 
 You need to enable @ref:[serialization](../serialization.md) for your commands (messages), events, and state (snapshot).
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our

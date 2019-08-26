@@ -882,7 +882,7 @@ adaptation simply return `EventSeq.empty`. The adapted events are then delivered
 
 @@@ note
 
-For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
+For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](additional/schema-evolution.md#event-sourced-actors) documentation.
 
 @@@
 
@@ -1093,7 +1093,7 @@ it must add
 
 to the application configuration. If not specified, an exception will be throw when trying to persist events or snapshots.
 
-For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
+For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](additional/schema-evolution.md#event-sourced-actors) documentation.
 
 ## Testing
 

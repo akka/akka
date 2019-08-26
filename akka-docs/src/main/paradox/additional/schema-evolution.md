@@ -1,32 +1,18 @@
-# Schema Evolution for Event Sourced Actors
+# Schema Evolution
 
-## Dependency
+Schema evolution is a cross-cutting concern for many reasons including 
+rolling updates, serialization, and persistence with event sourcing, and is an important aspect of developing application over time. 
+Both the technical and business domain requirements will change over time.
 
-This documentation page touches upon @ref[Akka Persitence](persistence.md), so to follow those examples you will want to depend on:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
-  version="$akka.version$"
-}
-
-## Introduction
-
-When working on long running projects using @ref:[Persistence](persistence.md), or any kind of [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) architectures,
-schema evolution becomes one of the more important technical aspects of developing your application.
-The requirements as well as our own understanding of the business domain may (and will) change in time.
-
-In fact, if a project matures to the point where you need to evolve its schema to adapt to changing business
-requirements you can view this as first signs of its success – if you wouldn't need to adapt anything over an apps
-lifecycle that could mean that no-one is really using it actively.
-
-In this chapter we will investigate various schema evolution strategies and techniques from which you can pick and
-choose the ones that match your domain and challenge at hand.
+For rolling updates, version upgrades and event replay to re-run historical events against
+updated logic or for recovery, it is important to consider a strategy for serialization that can be evolved. 
+In this chapter we will investigate various schema evolution strategies and techniques to consider in selecting
+what best fits your domain and particular challenge at hand.
 
 @@@ note
 
 This page proposes a number of possible solutions to the schema evolution problem and explains how some of the
-utilities Akka provides can be used to achieve this, it is by no means a complete (closed) set of solutions.
+utilities Akka provides can be used to achieve this, it is by no means a complete set of solutions.
 
 Sometimes, based on the capabilities of your serialization formats, you may be able to evolve your schema in
 different ways than outlined in the sections below. If you discover useful patterns or techniques for schema
@@ -34,46 +20,19 @@ evolution feel free to submit Pull Requests to this page to extend it.
 
 @@@
 
-## Schema evolution in event-sourced systems
+## Types of schema evolution
 
-In recent years we have observed a tremendous move towards immutable append-only datastores, with event-sourcing being
-the prime technique successfully being used in these settings. For an excellent overview why and how immutable data makes scalability
-and systems design much simpler you may want to read Pat Helland's excellent [Immutability Changes Everything](http://cidrdb.org/cidr2015/Papers/CIDR15_Paper16.pdf) whitepaper.
+There are many techniques to safely evolve a schema of events
+over time, but we first need to define what the actual problem is, and what the typical styles of changes are.
 
-Since with [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) the **events are immutable** and usually never deleted – the way schema evolution is handled
-differs from how one would go about it in a mutable database setting (e.g. in typical CRUD database applications).
+Most systems need a way to replay (read) old events, in a way that does not force the reading entity 
+(stream, actor, etc.) to be aware of multiple event versions persisted in the past. Instead, we want 
+to work on a "latest" version of the event while providing a means of either converting old "versions"
+of stored events into this "latest" event type, or constantly evolve the event definition - 
+in a backwards compatible way - such that the new deserialization code can still read old events.
 
-The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema.
-We also want to limit complexity in the business logic layer, exposing a consistent view over all of the events of a given
-type to `PersistentActor` s and @ref:[persistence queries](persistence-query.md). This allows the business logic layer to focus on solving business problems
-instead of having to explicitly deal with different schemas.
-
-In summary, schema evolution in event sourced systems exposes the following characteristics:
- 
- * Allow the system to continue operating without large scale migrations to be applied,
- * Allow the system to read "old" events from the underlying storage, however present them in a "new" view to the application logic,
- * Transparently promote events to the latest versions during recovery (or queries) such that the business logic need not consider multiple versions of events
-
-
-### Types of schema evolution
-
-Before we explain the various techniques that can be used to safely evolve the schema of your persistent events
-over time, we first need to define what the actual problem is, and what the typical styles of changes are.
-
-Since events are never deleted, we need to have a way to be able to replay (read) old events, in such way
-that does not force the `PersistentActor` to be aware of all possible versions of an event that it may have
-persisted in the past. Instead, we want the Actors to work on some form of "latest" version of the event and provide some
-means of either converting old "versions" of stored events into this "latest" event type, or constantly evolve the event
-definition - in a backwards compatible way - such that the new deserialization code can still read old events.
-
-The most common schema changes you will likely are:
-
- * [adding a field to an event type](#add-field),
- * [remove or rename field in event type](#rename-field),
- * [remove event type](#remove-event-class),
- * [split event into multiple smaller events](#split-large-event-into-smaller).
-
-The following sections will explain some patterns which can be used to safely evolve your schema when facing those changes.
+Detailed in the following sections are common schema changes including adding or removing a field,
+renaming a field, removing a data type all together, or structural changes like splitting one event into multiple.
 
 ## Picking the right serialization format
 
@@ -95,13 +54,245 @@ Users who want their data to be human-readable directly in the write-side
 datastore may opt to use plain-old [JSON](http://json.org) as the storage format, though that comes at a cost of lacking support for schema
 evolution and relatively large marshalling latency.
 
-There are plenty excellent blog posts explaining the various trade-offs between popular serialization formats,
+There are excellent blog posts explaining the various trade-offs between popular serialization formats,
 one post we would like to highlight is the very well illustrated [Schema evolution in Avro, Protocol Buffers and Thrift](http://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html)
 by Martin Kleppmann.
+ 
+## Serializer evolution without downtime
+
+A serialized remote message (or persistent event) consists of serializer-id, the manifest, and the binary payload.
+When deserializing it is only looking at the serializer-id to pick which `Serializer` to use for `fromBinary`.
+The message class (the binding) is not used for deserialization. The manifest is only used within the
+`Serializer` to decide how to deserialize the payload, so one `Serializer` can handle many classes.
+
+Thus it is possible to update serialization for a message by performing two rolling upgrade steps to
+switch to the new serializer.
+
+1. Add the `Serializer` class and define it in `akka.actor.serializers` config section, but not in
+  `akka.actor.serialization-bindings`. Perform a rolling upgrade for this change. This means that the
+  serializer class exists on all nodes and is registered, but it is still not used for serializing any
+  messages. That is important because during the rolling upgrade the old nodes still don't know about
+  the new serializer and would not be able to deserialize messages with that format.
+
+1. The second change is to register that the serializer is to be used for certain classes by defining
+   those in the `akka.actor.serialization-bindings` config section. Perform a rolling upgrade for this
+   change. This means that new nodes will use the new serializer when sending messages and old nodes will
+   be able to deserialize the new format. Old nodes will continue to use the old serializer when sending
+   messages and new nodes will be able to deserialize the old format.
+
+As an optional third step the old serializer can be completely removed if it was not used for persistent events.
+It must still be possible to deserialize the events that were stored with the old serializer.
+
+## Jackson serializer
+
+The @ref:[Jackson serializer](../serialization-jackson.md) provides a way to perform transformations of the JSON tree model during deserialization.
+This is working in the same way for the textual and binary formats.
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-serialization-jackson_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+Here are a few scenarios of how the classes may be evolved.
+
+### Remove Field
+
+Removing a field can be done without any migration code. The Jackson serializer will ignore properties that does
+not exist in the class.
+
+### Add Field
+
+Adding an optional field can be done without any migration code. The default value will be @scala[None]@java[`Optional.empty`].
+
+Old class:
+
+Scala
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/ItemAdded.scala) { #add-optional }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/ItemAdded.java) { #add-optional }
+
+
+New class with a new optional `discount` property and a new `note` field with default value:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/ItemAdded.scala) { #add-optional }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/ItemAdded.java) { #add-optional }
+
+Let's say we want to have a mandatory `discount` property without default value instead:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2b/ItemAdded.scala) { #add-mandatory }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2b/ItemAdded.java) { #add-mandatory }
+
+To add a new mandatory field we have to use a `JacksonMigration` class and set the default value in the migration code.
+
+This is how a migration class would look like for adding a `discount` field:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2b/ItemAddedMigration.scala) { #add-mandatory }
+
+Java
+:  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2b/ItemAddedMigration.java) { #add-mandatory }
+
+Override the `currentVersion` method to define the version number of the current (latest) version. The first version,
+when no migration was used, is always 1. Increase this version number whenever you perform a change that is not
+backwards compatible without migration code.
+
+Implement the transformation of the old JSON structure to the new JSON structure in the `transform` method.
+The [JsonNode](https://fasterxml.github.io/jackson-databind/javadoc/2.9/com/fasterxml/jackson/databind/JsonNode.html)
+is mutable so you can add and remove fields, or change values. Note that you have to cast to specific sub-classes
+such as [ObjectNode](https://fasterxml.github.io/jackson-databind/javadoc/2.9/com/fasterxml/jackson/databind/node/ObjectNode.html)
+and [ArrayNode](https://fasterxml.github.io/jackson-databind/javadoc/2.9/com/fasterxml/jackson/databind/node/ArrayNode.html)
+to get access to mutators.
+
+The migration class must be defined in configuration file:
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #migrations-conf }
+
+The same thing could have been done for the `note` field, adding a default value of `""` in the `ItemAddedMigration`.
+
+### Rename Field
+
+Let's say that we want to rename the `productId` field to `itemId` in the previous example.
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAdded.scala) { #rename }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAdded.java) { #rename }
+
+The migration code would look like:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAddedMigration.scala) { #rename }
+
+Java
+:  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAddedMigration.java) { #rename }
+
+### Structural Changes
+
+In a similar way we can do arbitrary structural changes.
+
+Old class:
+
+Scala
+:  @@snip [Customer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/Customer.scala) { #structural }
+
+Java
+:  @@snip [Customer.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/Customer.java) { #structural }
+
+New class:
+
+Scala
+:  @@snip [Customer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/Customer.scala) { #structural }
+
+Java
+:  @@snip [Customer.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/Customer.java) { #structural }
+
+with the `Address` class:
+
+Scala
+:  @@snip [Address.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/Address.scala) { #structural }
+
+Java
+:  @@snip [Address.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/Address.java) { #structural }
+
+The migration code would look like:
+
+Scala
+:  @@snip [CustomerMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/CustomerMigration.scala) { #structural }
+
+Java
+:  @@snip [CustomerMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/CustomerMigration.java) { #structural }
+
+### Rename Class
+
+It is also possible to rename the class. For example, let's rename `OrderAdded` to `OrderPlaced`.
+
+Old class:
+
+Scala
+:  @@snip [OrderAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/OrderAdded.scala) { #rename-class }
+
+Java
+:  @@snip [OrderAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/OrderAdded.java) { #rename-class }
+
+New class:
+
+Scala
+:  @@snip [OrderPlaced.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/OrderPlaced.scala) { #rename-class }
+
+Java
+:  @@snip [OrderPlaced.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/OrderPlaced.java) { #rename-class }
+
+The migration code would look like:
+
+Scala
+:  @@snip [OrderPlacedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/OrderPlacedMigration.scala) { #rename-class }
+
+Java
+:  @@snip [OrderPlacedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/OrderPlacedMigration.java) { #rename-class }
+
+Note the override of the `transformClassName` method to define the new class name.
+
+That type of migration must be configured with the old class name as key. The actual class can be removed.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #migrations-conf-rename }
+
+### Remove from serialization-bindings
+
+When a class is not used for serialization any more it can be removed from `serialization-bindings` but to still
+allow deserialization it must then be listed in the `whitelist-class-prefix` configuration. This is useful for example
+during rolling update with serialization changes, or when reading old stored data. It can also be used
+when changing from Jackson serializer to another serializer (e.g. Protobuf) and thereby changing the serialization
+binding, but it should still be possible to deserialize old data with Jackson.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #whitelist-class-prefix }
+
+It's a list of class names or prefixes of class names.
+
+## Event Sourced Actors
+
+The schema evolution in this section relates to @ref:[Akka Persitence](../persistence.md)
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+### Schema evolution in event-sourced systems
+
+Since with [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) the **events are immutable** and usually never deleted – the way schema evolution is handled
+differs from how one would go about it in a mutable database setting (e.g. in typical CRUD database applications).
+
+Systems leveraging immutable append-only datastores with event-sourcing is a common technique.
+For an excellent overview on why and how immutable data makes scalability and systems design much 
+simpler you may want to read Pat Helland's excellent paper, [Immutability Changes Everything](http://cidrdb.org/cidr2015/Papers/CIDR15_Paper16.pdf).
+
+In these systems, events are never deleted. The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema.
+We also want to limit complexity in the business logic layer, exposing a consistent view over all of the events of a given
+type to `PersistentActor` s and @ref:[persistence queries](../persistence-query.md). This allows the business logic layer to focus on solving business problems
+instead of having to explicitly deal with different schemas. Eventually, old events (TTL) 
+may be expired, compressed and moved to cold storage for future historical data analysis or use.
+
+In summary, schema evolution in event sourced systems exposes the following characteristics:
+ 
+ * Allow the system to continue operating without large scale migrations to be applied,
+ * Allow the system to read "old" events from the underlying storage, however present them in a "new" view to the application logic,
+ * Transparently promote events to the latest versions during recovery (or queries) such that the business logic need not consider multiple versions of events
+
+These sections will explain some patterns which can be used to safely evolve your schema when facing those changes.
 
 ### Provided default serializers
 
-Akka Persistence provides [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) based serializers (using @ref:[Akka Serialization](serialization.md))
+Akka Persistence provides [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) based serializers (using @ref:[Akka Serialization](../serialization.md))
 for it's own message types such as `PersistentRepr`, `AtomicWrite` and snapshots. Journal plugin implementations
 *may* choose to use those provided serializers, or pick a serializer which suits the underlying database better.
 
@@ -111,7 +302,7 @@ Serialization is **NOT** handled automatically by Akka Persistence itself. Inste
 serializers, and in case a `AsyncWriteJournal` plugin implementation chooses to use them directly, the above serialization
 scheme will be used.
 
-Please refer to your write journal's documentation to learn more about how it handles serialization!
+Please refer to your write journal's documentation to learn more about how it handles serialization.
 
 For example, some journals may choose to not use Akka Serialization *at all* and instead store the data in a format
 that is more "native" for the underlying datastore, e.g. using JSON or some other kind of format that the target
@@ -151,13 +342,13 @@ and its performance is also not very high (it never was designed for high-throug
 
 ### Configuring payload serializers
 
-This section aims to highlight the complete basics on how to define custom serializers using @ref:[Akka Serialization](serialization.md).
+This section aims to highlight the complete basics on how to define custom serializers using @ref:[Akka Serialization](../serialization.md).
 Many journal plugin implementations use Akka Serialization, thus it is tremendously important to understand how to configure
 it to work with your event classes.
 
 @@@ note
 
-Read the @ref:[Akka Serialization](serialization.md) docs to learn more about defining custom serializers,
+Read the @ref:[Akka Serialization](../serialization.md) docs to learn more about defining custom serializers,
 to improve performance and maintainability of your system. Do not depend on Java serialization for production deployments.
 
 @@@
@@ -188,27 +379,32 @@ And finally we register the serializer and bind it to handle the `docs.persisten
 Deserialization will be performed by the same serializer which serialized the message initially
 because of the `identifier` being stored together with the message.
 
-Please refer to the @ref:[Akka Serialization](serialization.md) documentation for more advanced use of serializers,
-especially the @ref:[Serializer with String Manifest](serialization.md#string-manifest-serializer) section since it is very useful for Persistence based applications
+Please refer to the @ref:[Akka Serialization](../serialization.md) documentation for more advanced use of serializers,
+especially the @ref:[Serializer with String Manifest](../serialization.md#string-manifest-serializer) section since it is very useful for Persistence based applications
 dealing with schema evolutions, as we will see in some of the examples below.
 
-## Schema evolution in action
+### Schema evolution in action
 
-In this section we will discuss various schema evolution techniques using concrete examples and explaining
-some of the various options one might go about handling the described situation. The list below is by no means
+In this section we will discuss various schema evolution techniques using concrete examples, and explain
+some of the options for handling the described situation. The list below is by no means
 a complete guide, so feel free to adapt these techniques depending on your serializer's capabilities
 and/or other domain specific limitations.
 
+ * [adding a field to an event type](#add-field)
+ * [remove or rename field in event type](#rename-field)
+ * [remove event type](#remove-event-class)
+ * [split event into multiple smaller events](#split-large-event-into-smaller)
+
 <a id="add-field"></a>
-### Add fields
+#### Add fields
 
 **Situation:**
 You need to add a field to an existing message type. For example, a @scala[`SeatReserved(letter:String, row:Int)`]@java[`SeatReserved(String letter, int row)`] now
 needs to have an associated code which indicates if it is a window or aisle seat.
 
 **Solution:**
-Adding fields is the most common change you'll need to apply to your messages so make sure the serialization format
-you picked for your payloads can handle it apropriately, i.e. such changes should be *binary compatible*.
+Adding fields is the most common change you'll need to apply to your messages, so make sure the serialization format
+for your payloads can handle this appropriately, for example such changes should be *binary compatible*.
 This is achieved using the right serializer toolkit – we recommend something like [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or
 [Apache Thrift](https://thrift.apache.org/) however other tools may fit your needs just as well – picking a serializer backend is something
 you should research before picking one to run with. In the following examples we will be using protobuf, mostly because
@@ -225,7 +421,7 @@ Java
 :  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional-model }
 
 Next we prepare an protocol definition using the protobuf Interface Description Language, which we'll use to generate
-the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to rename
+the serializer code to be used on the Akka Serialization layer (notice that the schema approach allows us to rename
 fields, as long as the numeric identifiers of the fields do not change):
 
 @@snip [FlightAppModels.proto](/akka-docs/src/test/../main/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
@@ -242,7 +438,7 @@ Java
 :  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional }
 
 <a id="rename-field"></a>
-### Rename fields
+#### Rename fields
 
 **Situation:**
 When first designing the system the `SeatReserved` event featured a `code` field.
@@ -272,7 +468,7 @@ swiftly and refactor your models fearlessly as you go on with the project.
 
 @@@ note
 
-Learn in-depth about the serialization engine you're using as it will impact how you can aproach schema evolution.
+Learn in-depth about the serialization engine you're using as it will impact how you can approach schema evolution.
 
 Some operations are "free" in certain serialization formats (more often than not: removing/adding optional fields,
 sometimes renaming fields etc.), while some other operations are strictly not possible.
@@ -312,7 +508,7 @@ changes in the message format.
 @@@
 
 <a id="remove-event-class"></a>
-### Remove event class and ignore events
+#### Remove event class and ignore events
 
 **Situation:**
 While investigating app performance you notice that insane amounts of `CustomerBlinked` events are being stored
@@ -323,7 +519,7 @@ and should be deleted. You still have to be able to replay from a journal which 
 
 The problem of removing an event type from the domain model is not as much its removal, as the implications
 for the recovery mechanisms that this entails. For example, a naive way of filtering out certain kinds of events from
-being delivered to a recovering `PersistentActor` is pretty simple, as one can filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
+being delivered to a recovering `PersistentActor` is pretty simple, as one can filter them out in an @ref:[EventAdapter](../persistence.md#event-adapters):
 
 ![persistence-drop-event.png](./images/persistence-drop-event.png)
  
@@ -349,9 +545,9 @@ the actual instance of it, as it does not know it will not be used.
 The solution to these problems is to use a serializer that is aware of that event being no longer needed, and can notice
 this before starting to deserialize the object.
 
-This aproach allows us to *remove the original class from our classpath*, which makes for less "old" classes lying around in the project.
+This approach allows us to *remove the original class from our classpath*, which makes for less "old" classes lying around in the project.
 This can for example be implemented by using an `SerializerWithStringManifest`
-(documented in depth in @ref:[Serializer with String Manifest](serialization.md#string-manifest-serializer)). By looking at the string manifest, the serializer can notice
+(documented in depth in @ref:[Serializer with String Manifest](../serialization.md#string-manifest-serializer)). By looking at the string manifest, the serializer can notice
 that the type is no longer needed, and skip the deserialization all-together:
 
 ![persistence-drop-event-serializer.png](./images/persistence-drop-event-serializer.png)
@@ -378,7 +574,7 @@ Java
 :  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #string-serializer-skip-deleved-event-by-manifest-adapter }
 
 <a id="detach-domain-from-data-model"></a>
-### Detach domain model from data model
+#### Detach domain model from data model
 
 **Situation:**
 You want to separate the application model (often called the "*domain model*") completely from the models used to
@@ -424,7 +620,7 @@ The same technique could also be used directly in the Serializer if the end resu
 Then the serializer can simply convert the bytes do the domain object by using the generated protobuf builders.
 
 <a id="store-human-readable"></a>
-### Store events as human-readable data model
+#### Store events as human-readable data model
 
 **Situation:**
 You want to keep your persisted events in a human-readable format, for example JSON.
@@ -436,7 +632,7 @@ from the Journal implementation to achieve this.
 An example of a Journal which may implement this pattern is MongoDB, however other databases such as PostgreSQL
 and Cassandra could also do it because of their built-in JSON capabilities.
 
-In this aproach, the `EventAdapter` is used as the marshalling layer: it serializes the events to/from JSON.
+In this approach, the `EventAdapter` is used as the marshalling layer: it serializes the events to/from JSON.
 The journal plugin notices that the incoming event type is JSON (for example by performing a `match` on the incoming
 event) and stores the incoming object directly.
 
@@ -466,7 +662,7 @@ from JSON.
 @@@ note
 
 If in need of human-readable events on the *write-side* of your application reconsider whether preparing materialized views
-using @ref:[Persistence Query](persistence-query.md) would not be an efficient way to go about this, without compromising the
+using @ref:[Persistence Query](../persistence-query.md) would not be an efficient way to go about this, without compromising the
 write-side's throughput characteristics.
 
 If indeed you want to use a human-readable representation on the write-side, pick a Persistence plugin
@@ -475,7 +671,7 @@ that provides that functionality, or – implement one yourself.
 @@@
 
 <a id="split-large-event-into-smaller"></a>
-### Split large event into fine-grained events
+#### Split large event into fine-grained events
 
 **Situation:**
 While refactoring your domain events, you find that one of the events has become too large (coarse-grained)
@@ -507,3 +703,5 @@ Java
 
 By returning an `EventSeq` from the event adapter, the recovered event can be converted to multiple events before
 being delivered to the persistent actor.
+ 
+
