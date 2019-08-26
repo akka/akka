@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
@@ -38,15 +39,24 @@ public class ActorTestKitApiTest {
   public void testProbeCompileOnlyTestCase() {
     TestProbe<String> probe = null;
 
-    String awaitAssertSupplied1 = probe.awaitAssert(() -> {
-      return "supplied";
-    });
-    String awaitAssertSupplied2 = probe.awaitAssert(Duration.ofSeconds(3), () -> {
-      return "supplied";
-    });
-    String awaitAssertSupplied3 = probe.awaitAssert(Duration.ofSeconds(3), Duration.ofMillis(200), () -> {
-      return "supplied";
-    });
+    String awaitAssertSupplied1 =
+        probe.awaitAssert(
+            () -> {
+              return "supplied";
+            });
+    String awaitAssertSupplied2 =
+        probe.awaitAssert(
+            Duration.ofSeconds(3),
+            () -> {
+              return "supplied";
+            });
+    String awaitAssertSupplied3 =
+        probe.awaitAssert(
+            Duration.ofSeconds(3),
+            Duration.ofMillis(200),
+            () -> {
+              return "supplied";
+            });
 
     String expectMessage1 = probe.expectMessage("message-1");
     String expectMessage2 = probe.expectMessage(Duration.ofSeconds(3), "message-2");
@@ -58,19 +68,25 @@ public class ActorTestKitApiTest {
     probe.expectMessageClass(String.class);
     probe.expectMessageClass(String.class, Duration.ofSeconds(3));
 
-    List<String> fishedMessages1 = probe.fishForMessage(Duration.ofSeconds(3), (message) -> {
-      return FishingOutcomes.complete();
-    });
-    List<String> fishedMessages2 = probe.fishForMessage(Duration.ofSeconds(3), "hint", (message) -> {
-      return FishingOutcomes.complete();
-    });
+    List<String> fishedMessages1 =
+        probe.fishForMessage(
+            Duration.ofSeconds(3),
+            (message) -> {
+              return FishingOutcomes.complete();
+            });
+    List<String> fishedMessages2 =
+        probe.fishForMessage(
+            Duration.ofSeconds(3),
+            "hint",
+            (message) -> {
+              return FishingOutcomes.complete();
+            });
 
     probe.expectNoMessage();
     probe.expectNoMessage(Duration.ofSeconds(3));
 
     List<String> tenMessages1 = probe.receiveSeveralMessages(10);
     List<String> tenMessages2 = probe.receiveSeveralMessages(10, Duration.ofSeconds(3));
-
 
     ActorRef<String> ref = probe.getRef();
     Duration remaining = probe.getRemaining();
@@ -80,7 +96,5 @@ public class ActorTestKitApiTest {
     ActorRef<Object> actorRef = null;
     probe.expectTerminated(actorRef);
     probe.expectTerminated(actorRef, Duration.ofSeconds(3));
-
-
   }
 }
