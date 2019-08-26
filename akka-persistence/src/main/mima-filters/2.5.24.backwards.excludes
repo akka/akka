@@ -1,3 +1,2 @@
 # #27411 changes not caught by previous mima versions
 ProblemFilters.exclude[IncompatibleSignatureProblem]("*")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.TypedActor.apply")

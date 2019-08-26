@@ -68,6 +68,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorAttributes#
 # #24372 No Future/CompletionStage in StreamRefs
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.StreamRefs.sinkRef")
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.StreamRefs.sourceRef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.StreamRefs.sinkRef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.StreamRefs.sourceRef")
 
 # 26188 remove Timed
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedFlowContext")
