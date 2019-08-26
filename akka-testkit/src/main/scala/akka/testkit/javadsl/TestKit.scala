@@ -562,7 +562,7 @@ class TestKit(system: ActorSystem) {
    * Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
   @varargs
-  def expectMsgAnyOf[T](objs: T*): T = tp.expectMsgAnyOf(objs: _*)
+  def expectMsgAnyOf[T](first: T, objs: T*): T = tp.expectMsgAnyOf((first +: objs): _*)
 
   /**
    * Receive one message from the test actor and assert that it equals one of
@@ -579,7 +579,8 @@ class TestKit(system: ActorSystem) {
    * the given objects. Wait time is bounded by the given duration, with an
    * AssertionFailure being thrown in case of timeout.
    */
-  def expectMsgAnyOf[T](max: java.time.Duration, objs: T*): T = tp.expectMsgAnyOf(max.asScala, objs: _*)
+  @varargs
+  def expectMsgAnyOfWithin[T](max: java.time.Duration, objs: T*): T = tp.expectMsgAnyOf(max.asScala, objs: _*)
 
   /**
    * Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
@@ -606,7 +607,9 @@ class TestKit(system: ActorSystem) {
    * which the objects are received is not fixed. Wait time is bounded by the
    * given duration, with an AssertionFailure being thrown in case of timeout.
    */
-  def expectMsgAllOf[T](max: java.time.Duration, objs: T*): JList[T] = tp.expectMsgAllOf(max.asScala, objs: _*).asJava
+  @varargs
+  def expectMsgAllOfWithin[T](max: java.time.Duration, objs: T*): JList[T] =
+    tp.expectMsgAllOf(max.asScala, objs: _*).asJava
 
   /**
    * Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.

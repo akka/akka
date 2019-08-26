@@ -149,11 +149,9 @@ public class TestKitApiTest {
     testKit.ignoreNoMsg();
 
     testKit.expectMsgAllOf("one", "two");
-    // FIXME this one will actually have the first param fall into the all-varargs signature - unreachable overload
-    testKit.expectMsgAllOf(Duration.ofSeconds(3), "one", "two");
+    testKit.expectMsgAllOfWithin(Duration.ofSeconds(3), "one", "two");
     testKit.expectMsgAnyOf("one", "two");
-    // FIXME this one will actually have the first param fall into the all-varargs signature - unreachable overload
-    testKit.expectMsgAnyOf(Duration.ofSeconds(3), "one", "two");
+    testKit.expectMsgAnyOfWithin(Duration.ofSeconds(3), "one", "two");
     testKit.expectMsgAnyClassOf(String.class, Integer.class);
     testKit.expectMsgAnyClassOf(Duration.ofSeconds(3), String.class, Integer.class);
 
