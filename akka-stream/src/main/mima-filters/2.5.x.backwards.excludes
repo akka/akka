@@ -66,8 +66,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorAttributes#Dispatcher.resolve")
 
 # #24372 No Future/CompletionStage in StreamRefs
-# no filter because MiMa doesn't check the generic signature
-# https://github.com/lightbend/mima/issues/40
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.StreamRefs.sinkRef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.StreamRefs.sourceRef")
 
 # 26188 remove Timed
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedFlowContext")

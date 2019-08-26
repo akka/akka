@@ -35,7 +35,9 @@ object MiMa extends AutoPlugin {
         else 0
     
       if (!projectName.contains("typed")) {
-        expandVersions(2, 5, firstPatchOf25 to latestPatchOf25)
+        // It appears something went wrong while releasing 2.5.18 which caused
+        // many unexpected static methods
+        expandVersions(2, 5, ((firstPatchOf25 to latestPatchOf25).toSet - 18).toList)
       } else {
         Nil
       } ++ expandVersions(2, 6, 0 to latestPatchOf26)

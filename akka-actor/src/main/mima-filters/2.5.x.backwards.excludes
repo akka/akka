@@ -55,8 +55,8 @@ ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorWithStash")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorWithUnrestrictedStash")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorContext")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.ExtensionKey")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.LoggingReceive.create")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.Logging.getLogger")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.LoggingReceive.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.Logging.getLogger")
 ProblemFilters.exclude[MissingTypesProblem]("akka.routing.RoutedActorCell")
 ProblemFilters.exclude[MissingTypesProblem]("akka.routing.ResizablePoolCell")
 
@@ -76,9 +76,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.TimerScheduler.
 # Remove deprecated features
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getChild")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorIdentity.getRef")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onClose")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onOpen")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker.onHalfOpen")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.CircuitBreaker.onClose")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.CircuitBreaker.onOpen")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.CircuitBreaker.onHalfOpen")
 
 # streamref serialization #27304
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.DynamicAccess.classIsOnClasspath")

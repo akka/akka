@@ -1,3 +1,10 @@
 # #25742 zip/unzip 22 parameters support
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.ZipWithApply.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.UnzipWithApply.apply")
+
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("com.typesafe.sslconfig.akka.AkkaSSLConfig.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("com.typesafe.sslconfig.akka.AkkaSSLConfig.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Tcp.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.apply")
