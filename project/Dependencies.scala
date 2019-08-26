@@ -69,7 +69,7 @@ object Dependencies {
     val jctools = "org.jctools" % "jctools-core" % "2.1.2" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.3" // CC0
 
     // ssl-config
     val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
