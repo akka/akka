@@ -210,7 +210,7 @@ you can not roll back as the PersistentFSM will not be able to read data written
 
 @@@ note 
 
-There is one case where @ref:[a full shutdown and startup is required](additional/deploying.md#migrating-from-persistentfsm-to-eventsourcedbehavior).
+There is one case where @ref:[a full shutdown and startup is required](additional/rolling-updates.md#migrating-from-persistentfsm-to-eventsourcedbehavior).
 
 @@@
 

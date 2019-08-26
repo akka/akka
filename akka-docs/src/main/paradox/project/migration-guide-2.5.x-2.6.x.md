@@ -153,7 +153,7 @@ The configuration for Artery is different, so you might have to revisit any cust
 
 @@@ note
 
-For more details on rolling updates with this migration see the @ref:[shutdown and startup](../additional/deploying.md#migrating-from-classic-remoting-to-artery) section.
+For more details on rolling updates with this migration see the @ref:[shutdown and startup](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) section.
 
 @@@
 
@@ -427,7 +427,9 @@ The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no
 The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
 instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`.
 
-@ref:[A full cluster shutdown and startup is required](../additional/deploying.md#akka-typed-with-receptionist-or-cluster-receptionist).
+The path change means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
+it will work properly again.
 
 ### Cluster Receptionist using own Distributed Data
 
@@ -436,7 +438,10 @@ undesired configuration changes if the application was also using that and chang
 configuration.
 
 In 2.6 the Cluster Receptionist is using it's own independent instance of Distributed Data.
-@ref:[A full cluster shutdown and startup is required](../additional/deploying.md#akka-typed-with-receptionist-or-cluster-receptionist).
+
+This means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
+it will work properly again.
 
 ### Akka Typed API changes
 

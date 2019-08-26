@@ -1,5 +1,12 @@
 # Rolling Updates
 
+@@@ note
+
+There are a few instances [when a full cluster restart is required](deploying.md#when-shutdownstartup-is-required)
+versus being able to do a rolling update.
+
+@@@
+
 A rolling update is the process of replacing one version of the system with another without downtime.
 The changes can be new code, changed dependencies such as new Akka version, or modified configuration.
 
@@ -33,9 +40,9 @@ During a rolling upgrade, sharded entities receiving traffic may be moved during
 to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
 When an old node is stopped the shards that were running on it are moved to one of the
 other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 
-To minimize downtime of the shard coordinator, see the strategies about  @ref[ClusterSingleton](#cluster-singleton) rolling upgrades below.
+To minimize downtime of the shard coordinator, see the strategies about @ref[ClusterSingleton](#cluster-singleton) rolling upgrades below.
 
-Some changes to sharding configuration require @ref:[a full cluster restart](../cluster-sharding.md#rolling-upgrades).
+A few specific changes to sharding configuration require @ref:[a full cluster restart](#cluster-sharding).
 
 ## Cluster Singleton
 
@@ -74,14 +81,11 @@ and ensure all nodes are in this state
 Full documentation about enforcing these checks on joining nodes and optionally adding custom checks can be found in  
 @ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check).
 
-
 ## Rolling Updates and Migrating Akka
 
-### From Akka 2.5 to Akka 2.6
-
-#### From Java serialization to Jackson
-
-If you use Java serialization you can replace it with, for example, the new
+### From Java serialization to Jackson
+ 
+If you are migrating from Akka 2.5 to 2.6, and use Java serialization you can replace it with, for example, the new
 @ref:[Serialization with Jackson](../serialization-jackson.md) and still be able to perform a rolling updates
 without bringing down the entire cluster.
 
@@ -111,4 +115,33 @@ The procedure for changing from Java serialization to Jackson would look like:
     * Remove `.warn-about-java-serializer-usage` config if you had changed that, to use the default `.warn-about-java-serializer-usage=on`.
     * Roll out the change.
     
-   
+A similar approach can be used when changing between other serializers, for example between Jackson and Protobuf.    
+
+## When Shutdown/Startup Is Required
+ 
+There are a few instances when a full shutdown and startup is required versus being able to do a rolling update.
+
+### Cluster Sharding
+
+If you need to change any of the following aspects of sharding it will require a full cluster restart versus a rolling update:
+
+ * The `extractShardId` function
+ * The role that the shard regions run on
+ * The persistence mode - It's important to use the same mode on all nodes in the cluster 
+ 
+### Migrating from PersistentFSM to EventSourcedBehavior
+
+If you've [migrated from `PersistentFSM` to `EventSourcedBehavior`](../persistence-fsm.md#migration-to-eventsourcedbehavior)
+and are using PersistenceFSM with Cluster Sharding, a full shutdown is required as shards can move between new and old nodes.
+  
+### Migrating from classic remoting to Artery
+
+If you've migrated from classic remoting to Artery
+which has a completely different protocol, a rolling update is not supported.
+For more details on this migration
+see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
+
+### Akka Typed with Receptionist or Cluster Receptionist
+
+If you are migrating from Akka 2.5 to 2.6, using the `Receptionist` or `Cluster Receptionist` with Akka Typed, information will not be disseminated between 2.5 and 2.6 nodes during a
+rolling update from 2.5 to 2.6. When all old nodes have been shutdown it will work properly again.
