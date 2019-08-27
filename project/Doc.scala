@@ -44,7 +44,7 @@ object Scaladoc extends AutoPlugin {
   }
 
   def scaladocOptions(ver: String, base: File): List[String] = {
-    val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
+    val urlString = GitHub.url(ver) + "/€{FILE_PATH_EXT}#L€{FILE_LINE}"
     val opts = List(
       "-implicits",
       "-groups",
@@ -55,7 +55,10 @@ object Scaladoc extends AutoPlugin {
       "-doc-title",
       "Akka",
       "-doc-version",
-      ver)
+      ver,
+      "-doc-canonical-base-url",
+      "https://doc.akka.io/api/akka/current/"
+    )
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
