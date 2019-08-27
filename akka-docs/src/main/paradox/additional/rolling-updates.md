@@ -2,7 +2,7 @@
 
 @@@ note
 
-There are a few instances [when a full cluster restart is required](deploying.md#when-shutdownstartup-is-required)
+There are a few instances @ref:[when a full cluster restart is required](#when-shutdown-startup-is-required)
 versus being able to do a rolling update.
 
 @@@
@@ -42,7 +42,7 @@ When an old node is stopped the shards that were running on it are moved to one 
 other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 
 To minimize downtime of the shard coordinator, see the strategies about @ref[ClusterSingleton](#cluster-singleton) rolling upgrades below.
 
-A few specific changes to sharding configuration require @ref:[a full cluster restart](#cluster-sharding).
+A few specific changes to sharding configuration require @ref:[a full cluster restart](#cluster-sharding-configuration-change).
 
 ## Cluster Singleton
 
@@ -117,11 +117,11 @@ The procedure for changing from Java serialization to Jackson would look like:
     
 A similar approach can be used when changing between other serializers, for example between Jackson and Protobuf.    
 
-## When Shutdown/Startup Is Required
+## When Shutdown Startup Is Required
  
 There are a few instances when a full shutdown and startup is required versus being able to do a rolling update.
 
-### Cluster Sharding
+### Cluster Sharding configuration change
 
 If you need to change any of the following aspects of sharding it will require a full cluster restart versus a rolling update:
 
