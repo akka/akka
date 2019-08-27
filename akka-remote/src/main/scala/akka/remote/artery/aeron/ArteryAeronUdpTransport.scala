@@ -318,24 +318,21 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         settings.Advanced.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
     else 50 * settings.Advanced.IdleCpuLevel - 240
 
-  override protected def runInboundStreams(): Int = {
-    val bindPort =
-      (settings.Canonical.Port, settings.Bind.Port) match {
-        case (0, 0) =>
-          localAddress.address.port match {
-            case Some(n) if n != 0 => n
-            case _                 => ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp = true)
-          }
-        case (0, n) => n
-        case (_, 0) => ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp = true)
-        case (_, n) => n
-      }
-    if (settings.Bind.Port == 0)
-      localAddress.address.port match {
-        case Some(n) if n != 0 => n
-        case _                 => ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp = true)
-      } else settings.Bind.Port
+  override protected def bindInboundStreams(): (Int, Int) = {
+    (settings.Canonical.Port, settings.Bind.Port) match {
+      case (0, 0) =>
+        val p = autoSelectPort(settings.Bind.Hostname)
+        (p, p)
+      case (0, _) =>
+        (settings.Bind.Port, settings.Bind.Port)
+      case (_, 0) =>
+        (settings.Canonical.Port, autoSelectPort(settings.Bind.Hostname))
+      case _ =>
+        (settings.Canonical.Port, settings.Bind.Port)
+    }
+  }
 
+  override protected def runInboundStreams(port: Int, bindPort: Int): Unit = {
     val inboundChannel = s"aeron:udp?endpoint=${settings.Bind.Hostname}:$bindPort"
 
     runInboundControlStream(inboundChannel)
@@ -345,8 +342,6 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       runInboundLargeMessagesStream(inboundChannel)
     }
     blockUntilChannelActive()
-
-    bindPort
   }
 
   private def runInboundControlStream(inboundChannel: String): Unit = {
@@ -464,4 +459,14 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     }
   }
 
+  def autoSelectPort(hostname: String): Int = {
+    import java.nio.channels.DatagramChannel
+    import java.net.InetSocketAddress
+
+    val socket = DatagramChannel.open().socket()
+    socket.bind(new InetSocketAddress(hostname, 0))
+    val port = socket.getLocalPort
+    socket.close()
+    port
+  }
 }
