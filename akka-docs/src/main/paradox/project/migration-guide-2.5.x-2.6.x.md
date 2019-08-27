@@ -428,8 +428,7 @@ The receptionist had a name clash with the default Cluster Client Receptionist a
 instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`.
 
 The path change means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
-it will work properly again.
+rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates with typed Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
 
 ### Cluster Receptionist using own Distributed Data
 
@@ -440,8 +439,7 @@ configuration.
 In 2.6 the Cluster Receptionist is using it's own independent instance of Distributed Data.
 
 This means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
-it will work properly again.
+rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates with typed Cluster Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
 
 ### Akka Typed API changes
 

@@ -117,6 +117,12 @@ The procedure for changing from Java serialization to Jackson would look like:
     
 A similar approach can be used when changing between other serializers, for example between Jackson and Protobuf.    
 
+### Akka Typed with Receptionist or Cluster Receptionist
+
+If you are migrating from Akka 2.5 to 2.6, and use the `Receptionist` or `Cluster Receptionist` with Akka Typed, 
+during a rolling update information will not be disseminated between 2.5 and 2.6 nodes.
+However once all old nodes have been phased out during the rolling update it will work properly again.
+
 ## When Shutdown Startup Is Required
  
 There are a few instances when a full shutdown and startup is required versus being able to do a rolling update.
@@ -140,8 +146,3 @@ If you've migrated from classic remoting to Artery
 which has a completely different protocol, a rolling update is not supported.
 For more details on this migration
 see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
-
-### Akka Typed with Receptionist or Cluster Receptionist
-
-If you are migrating from Akka 2.5 to 2.6, using the `Receptionist` or `Cluster Receptionist` with Akka Typed, information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6. When all old nodes have been shutdown it will work properly again.
