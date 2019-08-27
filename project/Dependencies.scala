@@ -176,7 +176,6 @@ object Dependencies {
         Test.scalatest.value,
         Test.commonsCodec,
         Test.commonsMath,
-        Test.mockito,
         Test.scalacheck.value,
         Test.jimfs,
         Test.dockerClient,
