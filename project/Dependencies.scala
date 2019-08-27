@@ -27,6 +27,8 @@ object Dependencies {
   val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
 
+  val reactiveStreamsVersion = "1.0.3"
+
   val sslConfigVersion = "0.3.8"
 
   val Versions = Seq(
@@ -67,7 +69,7 @@ object Dependencies {
     val jctools = "org.jctools" % "jctools-core" % "2.1.2" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
     val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
@@ -132,7 +134,7 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % "test" // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.3-RC1" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % "test" // CC0
 
       val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
     }
