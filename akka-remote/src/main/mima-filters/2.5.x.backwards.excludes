@@ -37,6 +37,9 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.Th
 ProblemFilters.exclude[Problem]("akka.remote.serialization.ArteryMessageSerializer*")
 ProblemFilters.exclude[Problem]("akka.remote.*Formats*")
 
-# #27455 Bind to arbitrary port in Artery TCP
+# #27455, #27525 Bind to arbitrary port in Artery TCP
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.artery.*.runInboundStreams")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.*.runInboundStreams")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.*.runInboundStreams")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.ArteryTransport.bindInboundStreams")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.autoSelectPort")
