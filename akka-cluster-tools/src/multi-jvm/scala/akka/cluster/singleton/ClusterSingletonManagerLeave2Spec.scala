@@ -178,7 +178,7 @@ class ClusterSingletonManagerLeave2Spec
       enterBarrier("stopped")
 
       runOn(third) {
-        expectMsg("preStart")
+        expectMsg(10.seconds, "preStart")
       }
       enterBarrier("third-started")
 
