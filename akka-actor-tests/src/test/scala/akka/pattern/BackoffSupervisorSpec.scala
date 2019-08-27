@@ -221,8 +221,10 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           expectMsg(BackoffSupervisor.RestartCount(1))
         }
 
-        supervisor ! "boom" //this will be sent to deadLetters
-        expectNoMessage(500.milliseconds)
+        EventFilter.warning(pattern = ".*boom.*", occurrences = 1).intercept {
+          supervisor ! "boom" //this will be sent to deadLetters
+          expectNoMessage(500.milliseconds)
+        }
       }
     }
 
@@ -273,18 +275,22 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       c1 ! PoisonPill
       expectTerminated(c1)
 
-      supervisor ! BackoffSupervisor.GetRestartCount
-      expectMsg(BackoffSupervisor.RestartCount(1))
-
+      // that we saw c1 terminated does not mean the supervisor did yet
+      awaitAssert {
+        supervisor ! BackoffSupervisor.GetRestartCount
+        expectMsg(BackoffSupervisor.RestartCount(1))
+      }
       val c2 = waitForChild.get
       awaitAssert(c2 should !==(c1))
       watch(c2)
       c2 ! PoisonPill
       expectTerminated(c2)
 
-      supervisor ! BackoffSupervisor.GetRestartCount
-      expectMsg(BackoffSupervisor.RestartCount(2))
-
+      // that we saw c2 terminated does not mean the supervisor did yet
+      awaitAssert {
+        supervisor ! BackoffSupervisor.GetRestartCount
+        expectMsg(BackoffSupervisor.RestartCount(2))
+      }
       val c3 = waitForChild.get
       awaitAssert(c3 should !==(c2))
       watch(c3)
@@ -319,17 +325,22 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         c1 ! "boom"
         expectTerminated(c1)
 
-        supervisor ! BackoffSupervisor.GetRestartCount
-        expectMsg(BackoffSupervisor.RestartCount(1))
-
+        // that we saw c1 terminated does not mean the supervisor did yet
+        awaitAssert {
+          supervisor ! BackoffSupervisor.GetRestartCount
+          expectMsg(BackoffSupervisor.RestartCount(1))
+        }
         val c2 = waitForChild.get
         awaitAssert(c2 should !==(c1))
         watch(c2)
         c2 ! "boom"
         expectTerminated(c2)
 
-        supervisor ! BackoffSupervisor.GetRestartCount
-        expectMsg(BackoffSupervisor.RestartCount(2))
+        // that we saw c2 terminated does not mean the supervisor did yet
+        awaitAssert {
+          supervisor ! BackoffSupervisor.GetRestartCount
+          expectMsg(BackoffSupervisor.RestartCount(2))
+        }
 
         val c3 = waitForChild.get
         awaitAssert(c3 should !==(c2))
@@ -369,11 +380,14 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
       c1 ! PoisonPill
       expectTerminated(c1)
-      supervisor ! "ping"
-      supervisorWatcher.expectNoMessage(20.millis) // supervisor must not terminate
+      // since actor stopped we can expect the two messages to end up in dead letters
+      EventFilter.warning(pattern = ".*(ping|stop).*", occurrences = 2).intercept {
+        supervisor ! "ping"
+        supervisorWatcher.expectNoMessage(20.millis) // supervisor must not terminate
 
-      supervisor ! stopMessage
-      expectTerminated(supervisor)
+        supervisor ! stopMessage
+        expectTerminated(supervisor)
+      }
     }
   }
 }
