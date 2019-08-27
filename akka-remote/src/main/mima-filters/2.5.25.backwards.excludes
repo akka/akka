@@ -1,0 +1,5 @@
+# #27455, #27525 Bind to arbitrary port in Artery TCP
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.ArteryTransport.runInboundStreams")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.*.runInboundStreams")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.ArteryTransport.bindInboundStreams")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.autoSelectPort")

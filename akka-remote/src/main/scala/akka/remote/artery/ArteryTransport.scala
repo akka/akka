@@ -4,10 +4,7 @@
 
 package akka.remote.artery
 
-import java.net.InetSocketAddress
-import java.nio.channels.DatagramChannel
 import java.nio.channels.FileChannel
-import java.nio.channels.ServerSocketChannel
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -442,21 +439,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     startTransport()
     topLevelFlightRecorder.loFreq(Transport_Started, NoMetaData)
 
-    val udp = settings.Transport == ArterySettings.AeronUpd
-    val port =
-      if (settings.Canonical.Port == 0) {
-        if (settings.Bind.Port != 0) settings.Bind.Port // if bind port is set, use bind port instead of random
-        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname, udp)
-      } else settings.Canonical.Port
-
-    _localAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
-      AddressUidExtension(system).longAddressUid)
-    _addresses = Set(_localAddress.address)
-
-    // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
-    topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
-
     materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
     controlMaterializer =
       ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remoteControl", system)
@@ -464,10 +446,20 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
 
-    val boundPort = runInboundStreams()
+    val (port, boundPort) = bindInboundStreams()
+
+    _localAddress = UniqueAddress(
+      Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
+      AddressUidExtension(system).longAddressUid)
+    _addresses = Set(_localAddress.address)
+
     _bindAddress = UniqueAddress(
       Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort),
       AddressUidExtension(system).longAddressUid)
+
+    topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
+
+    runInboundStreams(port, boundPort)
 
     topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
 
@@ -490,7 +482,21 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   protected def startTransport(): Unit
 
-  protected def runInboundStreams(): Int
+  /**
+   * Bind to the ports for inbound streams. If '0' is specified, this will also select an
+   * arbitrary free local port. For UDP, we only select the port and leave the actual
+   * binding to Aeron when running the inbound stream.
+   *
+   * After calling this method the 'localAddress' and 'bindAddress' fields can be set.
+   */
+  protected def bindInboundStreams(): (Int, Int)
+
+  /**
+   * Run the inbound streams that have been previously bound.
+   *
+   * Before calling this method the 'localAddress' and 'bindAddress' should have been set.
+   */
+  protected def runInboundStreams(port: Int, bindPort: Int): Unit
 
   private def startRemoveQuarantinedAssociationTask(): Unit = {
     val removeAfter = settings.Advanced.RemoveQuarantinedAssociationAfter
@@ -998,22 +1004,6 @@ private[remote] object ArteryTransport {
   object ShuttingDown extends RuntimeException with NoStackTrace
 
   final case class InboundStreamMatValues[LifeCycle](lifeCycle: LifeCycle, completed: Future[Done])
-
-  def autoSelectPort(hostname: String, udp: Boolean): Int = {
-    if (udp) {
-      val socket = DatagramChannel.open().socket()
-      socket.bind(new InetSocketAddress(hostname, 0))
-      val port = socket.getLocalPort
-      socket.close()
-      port
-    } else {
-      val socket = ServerSocketChannel.open().socket()
-      socket.bind(new InetSocketAddress(hostname, 0))
-      val port = socket.getLocalPort
-      socket.close()
-      port
-    }
-  }
 
   val ControlStreamId = 1
   val OrdinaryStreamId = 2
