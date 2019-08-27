@@ -17,12 +17,6 @@ public class DispatcherDocTest {
   private final ActorSystem<Void> system = null;
   private final ActorContext<Void> context = null;
 
-  public void defineDispatcherInConfig() {
-    // #defining-dispatcher-in-config
-    ActorRef<Integer> myActor = context.spawn(new PrintActor(), "PrintActor");
-    // #defining-dispatcher-in-config
-  }
-
   public void defineDispatcherInCode() {
     // #defining-dispatcher-in-code
     ActorRef<Integer> myActor =

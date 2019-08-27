@@ -135,7 +135,7 @@ Scala
 Java
 :   @@snip [BlockingActor.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingActor.java)
 
-Without any further configuration this actor is ran on the default dispatcher along
+Without any further configuration the default dispatcher runs this actor along
 with all other actors. This is very efficient when all actor message processing is
 non-blocking. If all of the available threads are blocked, however, then all the actors on the same dispatcher will starve for threads and
 will not be able to process incoming messages.

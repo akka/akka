@@ -11,12 +11,6 @@ object DispatcherDocSpec {
   val context: ActorContext[Integer] = ???
 
   {
-    //#defining-dispatcher-in-config
-    val myActor = context.spawn(PrintActor.behavior, "PrintActor")
-    //#defining-dispatcher-in-config
-  }
-
-  {
     //#defining-dispatcher-in-code
     import akka.actor.typed.DispatcherSelector
     val myActor =
