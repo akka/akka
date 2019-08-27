@@ -206,7 +206,11 @@ Java
 :  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #snapshot-adapter }
 
 That concludes all the steps to allow an @apidoc[EventSourcedBehavior] to read a `PersistentFSM`'s data. Once the new code has been running
-you can not roll back as the PersistentFSM will not be able to read data written by Persistence Typed. This means that if using persistence
-with Cluster Sharding a full shutdown is required as shards can move between new and old nodes.
+you can not roll back as the PersistentFSM will not be able to read data written by Persistence Typed. 
 
+@@@ note 
+
+There is one case where @ref:[a full shutdown and startup is required](additional/rolling-updates.md#migrating-from-persistentfsm-to-eventsourcedbehavior).
+
+@@@
 

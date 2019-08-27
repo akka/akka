@@ -151,13 +151,16 @@ The configuration for Artery is different, so you might have to revisit any cust
 @ref:[reference configuration for Artery](../general/configuration.md#config-akka-remote-artery) and
 @ref:[reference configuration for classic remoting](../general/configuration.md#config-akka-remote).
 
+@@@ note
+
+For more details on rolling updates with this migration see the @ref:[shutdown and startup](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) section.
+
+@@@
+
 Configuration that is likely required to be ported:
 
 * `akka.remote.netty.tcp.hostname` => `akka.remote.artery.canonical.hostname`
 * `akka.remote.netty.tcp.port`=> `akka.remote.artery.canonical.port`
-
-One thing to be aware of is that rolling update from classic remoting to Artery is not supported since the protocol
-is completely different. It will require a full cluster shutdown and new startup.
 
 If using SSL then `tcp-tls` needs to be enabled and setup. See @ref[Artery docs for SSL](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting)
 for how to do this.
@@ -222,35 +225,7 @@ akka.actor.warn-about-java-serializer-usage = off
 
 ### Rolling update
 
-You can replace Java serialization, if you use that, with for example the new
-@ref:[Serialization with Jackson](../serialization-jackson.md) and still be able to perform a rolling updates
-without bringing down the entire cluster.
-
-The procedure for changing from Java serialization to Jackson would look like:
-
-1. Rolling update from 2.5.24 (or later) to 2.6.0
-    * Use config `allow-java-serialization=on`.
-    * Roll out the change.
-    * Java serialization will be used as before.
-    * This step is optional and you could combine it with next step if you like, but could be good to
-      make one change at a time.
-1. Rolling update to support deserialization but not enable serialization
-    * Change message classes by adding the marker interface and possibly needed annotations as
-      described in @ref:[Serialization with Jackson](../serialization-jackson.md).
-    * Test the system with the new serialization in a new test cluster (no rolling update).
-    * Remove the binding for the marker interface, so that Jackson is not used for serialization yet.
-    * Roll out the change.
-    * Java serialization is still used, but this version is prepared for next roll out.
-1. Rolling update to enable serialization with Jackson.
-    * Add the binding to the marker interface to the Jackson serializer.
-    * Roll out the change.
-    * Old nodes will still send messages with Java serialization, and that can still be deserialized by new nodes.
-    * New nodes will send messages with Jackson serialization, and old node can deserialize those because they were
-      prepared in previous roll out.
-1. Rolling update to disable Java serialization
-    * Remove `allow-java-serialization` config, to use the default `allow-java-serialization=off`.
-    * Remove `.warn-about-java-serializer-usage` config if you had changed that, to use the default `.warn-about-java-serializer-usage=on`.
-    * Roll out the change.
+Please see the @ref:[rolling update procedure from Java serialization to Jackson](../additional/rolling-updates.md#from-java-serialization-to-jackson).
 
 ### Java serialization in consistent hashing
 
@@ -353,8 +328,8 @@ the default dispatcher has been adjusted down to `1.0` which means the number of
 #### waiting-for-state-timeout reduced to 2s
 
 This has been reduced to speed up ShardCoordinator initialization in smaller clusters.
-The read from ddata is a ReadMajority, for small clusters (< majority-min-cap) every node needs to respond
-so is more likely to timeout if there are nodes restarting e.g. when there is a rolling re-deploy happening.
+The read from ddata is a ReadMajority. For small clusters (< majority-min-cap) every node needs to respond
+so it is more likely to timeout if there are nodes restarting, for example when there is a rolling re-deploy happening.
 
 #### Passivate idle entity
 
@@ -453,8 +428,7 @@ The receptionist had a name clash with the default Cluster Client Receptionist a
 instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`.
 
 The path change means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
-it will work properly again.
+rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates with typed Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
 
 ### Cluster Receptionist using own Distributed Data
 
@@ -465,8 +439,7 @@ configuration.
 In 2.6 the Cluster Receptionist is using it's own independent instance of Distributed Data.
 
 This means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6 if you use Akka Typed. When all old nodes have been shutdown
-it will work properly again.
+rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates with typed Cluster Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
 
 ### Akka Typed API changes
 

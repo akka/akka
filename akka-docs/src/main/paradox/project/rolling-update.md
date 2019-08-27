@@ -11,7 +11,7 @@ update completely before starting next update.
 
 @@@ note
 
-Rolling update from classic remoting to Artery is not supported since the protocol
+[Rolling update from classic remoting to Artery](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) is not supported since the protocol
 is completely different. It will require a full cluster shutdown and new startup.
 
 @@@

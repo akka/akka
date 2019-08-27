@@ -285,8 +285,7 @@ themselves it is more convenient to use the Distributed Data mode, since then yo
 setup and operate a separate data store (e.g. Cassandra) for persistence. Aside from that, there are
 no major reasons for using one mode over the the other.
 
-It's important to use the same mode on all nodes in the cluster, i.e. it's not possible to perform
-a rolling upgrade to change this setting.
+Changing persistence mode requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
 
 ### Distributed Data Mode
 
@@ -308,6 +307,7 @@ Cluster Sharding is using its own Distributed Data `Replicator` per node role. I
 all nodes for some entity types and another subset for other entity types. Each such replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
 cluster, i.e. you can't change the roles when performing a rolling upgrade.
+Changing roles requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
 
 The settings for Distributed Data is configured in the the section
 `akka.cluster.sharding.distributed-data`. It's not possible to have different
@@ -531,17 +531,6 @@ The type names of all started shards can be acquired via @scala[`ClusterSharding
 
 The purpose of these messages is testing and monitoring, they are not provided to give access to
 directly sending messages to the individual entities.
-
-## Rolling upgrades
-
-When doing rolling upgrades special care must be taken to not change any of the following aspects of sharding:
-
- * the `extractShardId` function
- * the role that the shard regions run on
- * the persistence mode
-
- If any one of these needs a change it will require a full cluster restart.
- 
 
 ## Lease
 
