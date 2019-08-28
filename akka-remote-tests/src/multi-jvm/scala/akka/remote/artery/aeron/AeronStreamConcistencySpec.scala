@@ -8,9 +8,6 @@ package aeron
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
@@ -18,7 +15,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Source
@@ -28,6 +24,9 @@ import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import org.agrona.IoUtil
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object AeronStreamConsistencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -73,7 +72,6 @@ abstract class AeronStreamConsistencySpec
 
   val pool = new EnvelopeBufferPool(1024 * 1024, 128)
 
-  lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher
 
   override def initialParticipants = roles.size

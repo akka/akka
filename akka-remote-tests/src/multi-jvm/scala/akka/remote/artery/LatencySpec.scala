@@ -14,7 +14,7 @@ import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
-import akka.stream.{ ActorMaterializer, ThrottleMode }
+import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
@@ -189,7 +189,6 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
 
   var plots = LatencyPlots()
 
-  lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher
 
   override def initialParticipants = roles.size
