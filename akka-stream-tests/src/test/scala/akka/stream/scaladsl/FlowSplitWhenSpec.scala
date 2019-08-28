@@ -13,7 +13,6 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
 import scala.concurrent.Await
@@ -264,16 +263,13 @@ class FlowSplitWhenSpec extends StreamSpec("""
     }
 
     "fail substream if materialized twice" in assertAllStagesStopped {
-      @silent("deprecated")
-      implicit val mat =
-        ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1))
 
       import system.dispatcher
       val stream = Source(1 to 5)
         .splitWhen(_ => true)
         .lift
         .map { src =>
-          src.runWith(Sink.ignore)(mat).flatMap(_ => src.runWith(Sink.ignore)(mat))
+          src.runWith(Sink.ignore).flatMap(_ => src.runWith(Sink.ignore))
         }
         .toMat(TestSink.probe[Future[Done]])(Keep.right)
       val probe = stream.withAttributes(Attributes.inputBuffer(1, 1)).run()
