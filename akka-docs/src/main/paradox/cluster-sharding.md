@@ -283,7 +283,7 @@ can be used for the storage. Distributed Data is used by default.
 The functionality when using the two modes is the same. If your sharded entities are not using Akka Persistence
 themselves it is more convenient to use the Distributed Data mode, since then you don't have to
 setup and operate a separate data store (e.g. Cassandra) for persistence. Aside from that, there are
-no major reasons for using one mode over the the other.
+no major reasons for using one mode over the other.
 
 Changing persistence mode requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
 
@@ -309,7 +309,7 @@ that contains the node role and therefore the role configuration must be the sam
 cluster, for example you can't change the roles when performing a rolling upgrade.
 Changing roles requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
 
-The settings for Distributed Data are configured in the the section
+The settings for Distributed Data are configured in the section
 `akka.cluster.sharding.distributed-data`. It's not possible to have different
 `distributed-data` settings for different sharding entity types.
 
