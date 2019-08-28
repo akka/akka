@@ -273,8 +273,8 @@ private[stream] object Collect {
         }
       }
 
-      override def onUpstreamFailure(ex: Throwable): Unit = {
-        pf.applyOrElse(ex, NotApplied) match {
+      override def onUpstreamFailure(ex: Throwable): Unit =
+        try pf.applyOrElse(ex, NotApplied) match {
           case NotApplied => failStage(ex)
           case result: T @unchecked => {
             if (isAvailable(out)) {
@@ -284,8 +284,9 @@ private[stream] object Collect {
               recovered = Some(result)
             }
           }
+        } catch {
+          case NonFatal(ex) => failStage(ex)
         }
-      }
 
       setHandlers(in, out, this)
     }
