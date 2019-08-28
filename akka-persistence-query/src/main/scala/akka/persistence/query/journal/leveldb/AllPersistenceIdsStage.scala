@@ -34,10 +34,10 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
 
   override private[akka] def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, NotUsed) = {
+      eagerMaterializer: Materializer): (GraphStageLogic, NotUsed) = {
     val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
       setHandler(out, this)
-      val journal: ActorRef = Persistence(materializer.system).journalFor(writeJournalPluginId)
+      val journal: ActorRef = Persistence(eagerMaterializer.system).journalFor(writeJournalPluginId)
       var initialResponseReceived = false
 
       override def preStart(): Unit = {

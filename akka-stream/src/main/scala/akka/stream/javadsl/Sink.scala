@@ -395,6 +395,8 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
 
   /**
    * Connect this `Sink` to a `Source` and run it.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
   def runWith[M](source: Graph[SourceShape[In], M], systemProvider: ClassicActorSystemProvider): M =
     asScala.runWith(source)(SystemMaterializer(systemProvider.classicSystem).materializer)

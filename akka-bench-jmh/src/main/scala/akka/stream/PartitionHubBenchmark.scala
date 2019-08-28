@@ -4,12 +4,16 @@
 
 package akka.stream
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.remote.artery.{ BenchTestSource, FixedSizePartitionHub, LatchSink }
-import akka.stream.scaladsl.{ PartitionHub, _ }
+import akka.remote.artery.BenchTestSource
+import akka.remote.artery.FixedSizePartitionHub
+import akka.remote.artery.LatchSink
+import akka.stream.scaladsl.PartitionHub
+import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
@@ -100,7 +104,7 @@ class PartitionHubBenchmark {
 
   private def dumpMaterializer(): Unit = {
     implicit val ec = system.dispatcher
-    StreamTestKit.printDebugDump(ActorMaterializerHelper.downcast(SystemMaterializer(system).materializer).supervisor)
+    StreamTestKit.printDebugDump(SystemMaterializer(system).materializer.supervisor)
   }
 
 }

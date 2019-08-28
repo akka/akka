@@ -101,7 +101,6 @@ class FusedGraphsBenchmark {
     ConfigFactory.parseString(s"""
       akka.stream.materializer.sync-processing-limit = ${Int.MaxValue}
     """))
-  var materializer: ActorMaterializer = _
   var testElements: Array[MutableElement] = _
 
   var singleIdentity: RunnableGraph[CountDownLatch] = _
@@ -225,70 +224,70 @@ class FusedGraphsBenchmark {
   @OperationsPerInvocation(100 * 1000)
   def single_identity(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    singleIdentity.run()(materializer).await()
+    singleIdentity.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def chain_of_identities(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    chainOfIdentities.run()(materializer).await()
+    chainOfIdentities.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def single_map(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    singleMap.run()(materializer).await()
+    singleMap.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def chain_of_maps(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    chainOfMaps.run()(materializer).await()
+    chainOfMaps.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def repeat_take_map_and_fold(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    repeatTakeMapAndFold.run()(materializer).await()
+    repeatTakeMapAndFold.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def single_buffer(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    singleBuffer.run()(materializer).await()
+    singleBuffer.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def chain_of_buffers(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    chainOfBuffers.run()(materializer).await()
+    chainOfBuffers.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def broadcast_zip(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    broadcastZip.run()(materializer).await()
+    broadcastZip.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def balance_merge(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    balanceMerge.run()(materializer).await()
+    balanceMerge.run().await()
   }
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
   def broadcast_zip_balance_merge(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
-    broadcastZipBalanceMerge.run()(materializer).await()
+    broadcastZipBalanceMerge.run().await()
   }
 
   @TearDown

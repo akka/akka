@@ -7,14 +7,14 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 
-class OnMaterializationSpec extends StreamSpec {
+class FromMaterializerSpec extends StreamSpec {
 
   import system.dispatcher
 
-  "Source.onMaterialization" should {
+  "Source.fromMaterializer" should {
 
     "expose materializer" in {
-      val source = Source.onMaterialization { (mat, _) =>
+      val source = Source.fromMaterializer { (mat, _) =>
         Source.single(mat.isShutdown)
       }
 
@@ -22,7 +22,7 @@ class OnMaterializationSpec extends StreamSpec {
     }
 
     "expose attributes" in {
-      val source = Source.onMaterialization { (_, attr) =>
+      val source = Source.fromMaterializer { (_, attr) =>
         Source.single(attr.attributeList)
       }
 
@@ -30,7 +30,7 @@ class OnMaterializationSpec extends StreamSpec {
     }
 
     "propagate materialized value" in {
-      val source = Source.onMaterialization { (_, _) =>
+      val source = Source.fromMaterializer { (_, _) =>
         Source.maybe[NotUsed]
       }
 
@@ -41,7 +41,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "propagate attributes" in {
       val source = Source
-        .onMaterialization { (_, attr) =>
+        .fromMaterializer { (_, attr) =>
           Source.single(attr.nameLifted)
         }
         .named("my-name")
@@ -51,8 +51,8 @@ class OnMaterializationSpec extends StreamSpec {
 
     "propagate attributes when nested" in {
       val source = Source
-        .onMaterialization { (_, _) =>
-          Source.onMaterialization { (_, attr) =>
+        .fromMaterializer { (_, _) =>
+          Source.fromMaterializer { (_, attr) =>
             Source.single(attr.nameLifted)
           }
         }
@@ -63,7 +63,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
-      val source = Source.onMaterialization { (_, _) =>
+      val source = Source.fromMaterializer { (_, _) =>
         throw error
       }
 
@@ -74,7 +74,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "handle materialization failure" in {
       val error = new Error("boom")
-      val source = Source.onMaterialization { (_, _) =>
+      val source = Source.fromMaterializer { (_, _) =>
         Source.empty.mapMaterializedValue(_ => throw error)
       }
 
@@ -85,10 +85,10 @@ class OnMaterializationSpec extends StreamSpec {
 
   }
 
-  "Flow.onMaterialization" should {
+  "Flow.fromMaterializer" should {
 
     "expose materializer" in {
-      val flow = Flow.onMaterialization { (mat, _) =>
+      val flow = Flow.fromMaterializer { (mat, _) =>
         Flow.fromSinkAndSource(Sink.ignore, Source.single(mat.isShutdown))
       }
 
@@ -96,7 +96,7 @@ class OnMaterializationSpec extends StreamSpec {
     }
 
     "expose attributes" in {
-      val flow = Flow.onMaterialization { (_, attr) =>
+      val flow = Flow.fromMaterializer { (_, attr) =>
         Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.attributeList))
       }
 
@@ -104,7 +104,7 @@ class OnMaterializationSpec extends StreamSpec {
     }
 
     "propagate materialized value" in {
-      val flow = Flow.onMaterialization { (_, _) =>
+      val flow = Flow.fromMaterializer { (_, _) =>
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.maybe[NotUsed])(Keep.right)
       }
 
@@ -115,7 +115,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "propagate attributes" in {
       val flow = Flow
-        .onMaterialization { (_, attr) =>
+        .fromMaterializer { (_, attr) =>
           Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
         }
         .named("my-name")
@@ -125,8 +125,8 @@ class OnMaterializationSpec extends StreamSpec {
 
     "propagate attributes when nested" in {
       val flow = Flow
-        .onMaterialization { (_, _) =>
-          Flow.onMaterialization { (_, attr) =>
+        .fromMaterializer { (_, _) =>
+          Flow.fromMaterializer { (_, attr) =>
             Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
           }
         }
@@ -137,7 +137,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
-      val flow = Flow.onMaterialization { (_, _) =>
+      val flow = Flow.fromMaterializer { (_, _) =>
         throw error
       }
 
@@ -148,7 +148,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "handle materialization failure" in {
       val error = new Error("boom")
-      val flow = Flow.onMaterialization { (_, _) =>
+      val flow = Flow.fromMaterializer { (_, _) =>
         Flow[NotUsed].mapMaterializedValue(_ => throw error)
       }
 
@@ -159,10 +159,10 @@ class OnMaterializationSpec extends StreamSpec {
 
   }
 
-  "Sink.onMaterialization" should {
+  "Sink.fromMaterializer" should {
 
     "expose materializer" in {
-      val sink = Sink.onMaterialization { (mat, _) =>
+      val sink = Sink.fromMaterializer { (mat, _) =>
         Sink.fold(mat.isShutdown)(Keep.left)
       }
 
@@ -170,7 +170,7 @@ class OnMaterializationSpec extends StreamSpec {
     }
 
     "expose attributes" in {
-      val sink = Sink.onMaterialization { (_, attr) =>
+      val sink = Sink.fromMaterializer { (_, attr) =>
         Sink.fold(attr.attributeList)(Keep.left)
       }
 
@@ -178,7 +178,7 @@ class OnMaterializationSpec extends StreamSpec {
     }
 
     "propagate materialized value" in {
-      val sink = Sink.onMaterialization { (_, _) =>
+      val sink = Sink.fromMaterializer { (_, _) =>
         Sink.fold(NotUsed)(Keep.left)
       }
 
@@ -187,7 +187,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "propagate attributes" in {
       val sink = Sink
-        .onMaterialization { (_, attr) =>
+        .fromMaterializer { (_, attr) =>
           Sink.fold(attr.nameLifted)(Keep.left)
         }
         .named("my-name")
@@ -197,8 +197,8 @@ class OnMaterializationSpec extends StreamSpec {
 
     "propagate attributes when nested" in {
       val sink = Sink
-        .onMaterialization { (_, _) =>
-          Sink.onMaterialization { (_, attr) =>
+        .fromMaterializer { (_, _) =>
+          Sink.fromMaterializer { (_, attr) =>
             Sink.fold(attr.nameLifted)(Keep.left)
           }
         }
@@ -209,7 +209,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
-      val sink = Sink.onMaterialization { (_, _) =>
+      val sink = Sink.fromMaterializer { (_, _) =>
         throw error
       }
 
@@ -218,7 +218,7 @@ class OnMaterializationSpec extends StreamSpec {
 
     "handle materialization failure" in {
       val error = new Error("boom")
-      val sink = Sink.onMaterialization { (_, _) =>
+      val sink = Sink.fromMaterializer { (_, _) =>
         Sink.ignore.mapMaterializedValue(_ => throw error)
       }
 

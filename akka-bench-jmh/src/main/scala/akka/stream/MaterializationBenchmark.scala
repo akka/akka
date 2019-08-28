@@ -5,14 +5,16 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+
+import akka.Done
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.concurrent.Future
-import akka.Done
+import scala.concurrent.duration._
 
 object MaterializationBenchmark {
 
@@ -95,7 +97,6 @@ class MaterializationBenchmark {
   import MaterializationBenchmark._
 
   implicit val system = ActorSystem("MaterializationBenchmark")
-  implicit val materializer = ActorMaterializer()
 
   var flowWithMap: RunnableGraph[NotUsed] = _
   var graphWithJunctionsGradual: RunnableGraph[NotUsed] = _

@@ -57,10 +57,10 @@ final private[leveldb] class EventsByTagStage(
 
   override private[akka] def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, NotUsed) = {
+      eagerMaterializer: Materializer): (GraphStageLogic, NotUsed) = {
 
     val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
-      val journal: ActorRef = Persistence(materializer.system).journalFor(writeJournalPluginId)
+      val journal: ActorRef = Persistence(eagerMaterializer.system).journalFor(writeJournalPluginId)
       var currOffset: Long = fromOffset
       var toOffset: Long = initialTooOffset
       var stageActorRef: ActorRef = null
