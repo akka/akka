@@ -32,9 +32,7 @@ object TransformMessagesSpec {
       }
 }
 
-class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
-    """) with WordSpecLike {
+class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   implicit val untypedSystem = system.toUntyped
 

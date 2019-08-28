@@ -38,7 +38,6 @@ object EventSourcedBehaviorRetentionSpec {
 
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"

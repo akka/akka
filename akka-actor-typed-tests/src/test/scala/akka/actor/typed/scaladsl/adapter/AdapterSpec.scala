@@ -162,9 +162,7 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends AkkaSpec("""
-   akka.loggers = [akka.event.slf4j.Slf4jLogger]
-  """) {
+class AdapterSpec extends AkkaSpec {
   import AdapterSpec._
 
   "ActorSystem adaption" must {

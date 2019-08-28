@@ -46,8 +46,7 @@ import static org.junit.Assert.assertEquals;
 public class PersistentActorJavaDslTest extends JUnitSuite {
 
   public static final Config config =
-      ConfigFactory.parseString("akka.loggers = [akka.event.slf4j.Slf4jLogger]")
-          .withFallback(EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load()));
+      EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load());
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 

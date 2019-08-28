@@ -72,7 +72,6 @@ object EventSourcedBehaviorFailureSpec {
 
   val conf: Config = ConfigFactory.parseString(s"""
       akka.loglevel = INFO
-      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       akka.persistence.journal.plugin = "failure-journal"
       failure-journal = $${akka.persistence.journal.inmem}
       failure-journal {

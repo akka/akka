@@ -28,7 +28,6 @@ import org.scalatest.WordSpecLike
 object EventSourcedEventAdapterSpec {
 
   private val conf = ConfigFactory.parseString(s"""
-      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     """)

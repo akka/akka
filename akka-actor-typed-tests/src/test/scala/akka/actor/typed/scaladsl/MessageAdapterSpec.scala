@@ -19,7 +19,6 @@ import org.scalatest.WordSpecLike
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
-      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       akka.log-dead-letters = off
       ping-pong-dispatcher {
         executor = thread-pool-executor

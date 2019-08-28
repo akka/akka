@@ -16,7 +16,6 @@ import org.scalatest.WordSpecLike
 object NullEmptyStateSpec {
 
   private val conf = ConfigFactory.parseString(s"""
-      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
     """)
