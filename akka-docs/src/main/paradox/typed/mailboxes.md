@@ -35,7 +35,7 @@ Scala
 Java
 :  @@snip [MailboxDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/MailboxDocTest.java) { #select-mailbox }
 
-`fromConfig` takes an absolute config path to a block defining the dispatcher in the config file like this:
+`fromConfig` takes an absolute config path to a block defining the dispatcher in the config file:
 
 @@snip [MailboxDocSpec.scala](/akka-actor-typed-tests/src/test/resources/mailbox-config-sample.conf) { }
 
@@ -44,8 +44,7 @@ Java
 A dispatcher may also have a requirement for the mailbox type used by the
 actors running on it. An example is the @apidoc[BalancingDispatcher] which requires a
 message queue that is thread-safe for multiple concurrent consumers. Such a
-requirement is formulated within the dispatcher configuration section like
-this:
+requirement is formulated within the dispatcher configuration section:
 
 ```
 my-dispatcher {
