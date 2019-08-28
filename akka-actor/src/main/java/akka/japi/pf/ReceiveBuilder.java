@@ -10,27 +10,29 @@ import akka.actor.AbstractActor;
 import akka.actor.AbstractActor.Receive;
 
 /**
- * Used for building a partial function for {@link akka.actor.Actor#receive() Actor.receive()}.
+ * Used for building a partial function for {@link akka.actor.AbstractActor#createReceive()
+ * AbstractActor.createReceive()}.
  *
  * <p>There is both a match on type only, and a match on type and predicate.
  *
- * <p>Inside an actor you can use it like this with Java 8 to define your receive method.
+ * <p>Inside an actor you can use it like this:
  *
  * <p>Example:
  *
  * <pre>
  * &#64;Override
- * public Actor() {
- *   receive(ReceiveBuilder.
- *     match(Double.class, d -&gt; {
+ * public Receive createReceive() {
+ *   return receiveBuilder()
+ *     .match(Double.class, d -&gt; {
  *       getSender().tell(d.isNaN() ? 0 : d, self());
- *     }).
- *     match(Integer.class, i -&gt; {
+ *     })
+ *     .match(Integer.class, i -&gt; {
  *       getSender().tell(i * 10, self());
- *     }).
- *     match(String.class, s -&gt; s.startsWith("foo"), s -&gt; {
+ *     })
+ *     .match(String.class, s -&gt; s.startsWith("foo"), s -&gt; {
  *       getSender().tell(s.toUpperCase(), self());
- *     }).build()
+ *     })
+ *     .build()
  *   );
  * }
  * </pre>
