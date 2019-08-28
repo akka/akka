@@ -63,9 +63,8 @@ requirement—then actor creation will fail.
 When an actor is created, the `ActorRefProvider` first determines the
 dispatcher which will execute it. Then the mailbox is determined as follows:
 
- 1. If the actor's deployment configuration section contains a `mailbox` key
-then that names a configuration section describing the mailbox type to be
-used.
+ 1. If the actor's deployment configuration section contains a `mailbox` key,
+this refers to a configuration section describing the mailbox type.
  2. If the actor's `Props` contains a mailbox selection then that names a configuration section describing the
 mailbox type to be used. This needs to be an absolute config path,
 for example `myapp.special-mailbox`, and is not nested inside the `akka` namespace.
