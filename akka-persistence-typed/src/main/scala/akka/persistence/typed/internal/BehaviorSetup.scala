@@ -65,31 +65,16 @@ private[akka] final class BehaviorSetup[C, E, S](
   def selfUntyped = context.self.toUntyped
 
   private var mdcPhase = PersistenceMdc.Initializing
-  private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed
   def log: Logger = {
-    _log match {
-      case OptionVal.Some(l) => l
-      case OptionVal.None    =>
-        // lazy init if mdc changed
-        val l = context.log
-        _log = OptionVal.Some(l)
-        // those MDC values are cleared in interceptor in EventSourcedBehaviorImpl
-        PersistenceMdc.setMdc(persistenceId, mdcPhase)
-        l
-    }
+    // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
+    // but important to call `context.log` to mark MDC as used
+    PersistenceMdc.setMdc(persistenceId, mdcPhase)
+    context.log
   }
 
   def setMdcPhase(phaseName: String): BehaviorSetup[C, E, S] = {
     mdcPhase = phaseName
-    // mdc is changed often, for each persisted event, but logging is rare, so lazy init of Logger
-    clearMdc()
-    _log = OptionVal.None
     this
-  }
-
-  def clearMdc(): Unit = {
-    if (_log.isDefined)
-      PersistenceMdc.clearMdc()
   }
 
   private var recoveryTimer: OptionVal[Cancellable] = OptionVal.None
@@ -167,15 +152,12 @@ private[akka] object PersistenceMdc {
   val PersistencePhaseKey = "persistencePhase"
   val PersistenceIdKey = "persistenceId"
 
+  // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
+  // but important to call `context.log` to mark MDC as used
   def setMdc(persistenceId: PersistenceId, phase: String): Unit = {
     val mdcAdpater = MDC.getMDCAdapter
     mdcAdpater.put(PersistenceIdKey, persistenceId.id)
     mdcAdpater.put(PersistencePhaseKey, phase)
   }
 
-  def clearMdc(): Unit = {
-    val mdcAdpater = MDC.getMDCAdapter
-    mdcAdpater.remove(PersistenceIdKey)
-    mdcAdpater.remove(PersistencePhaseKey)
-  }
 }
