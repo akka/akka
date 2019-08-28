@@ -27,7 +27,7 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
 
   private val afr = IgnoreEventSink
 
-  private val framingFlow = Flow[ByteString].via(new TcpFraming(afr))
+  private val framingFlow = Flow[ByteString].via(new TcpFraming(() => afr))
 
   private val payload5 = ByteString((1 to 5).map(_.toByte).toArray)
 
