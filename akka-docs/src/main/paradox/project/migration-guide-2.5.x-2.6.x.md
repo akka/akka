@@ -201,7 +201,7 @@ are specific to classic search for them in: [`akka-remote/reference.conf`](/akka
 
 ### akka-protobuf
 
-`akka-protobuf` was never intended to be used by end users but this was maybe not well documented.
+`akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
 Applications should use standard Protobuf dependency instead of `akka-protobuf`. The artifact is still
 published, but the transitive dependency to `akka-protobuf` has been removed.
 
