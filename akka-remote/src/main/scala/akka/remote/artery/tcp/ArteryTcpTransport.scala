@@ -312,11 +312,10 @@ private[remote] class ArteryTcpTransport(
     // If something in the inboundConnectionFlow fails, e.g. framing, the connection will be teared down,
     // but other parts of the inbound streams don't have to restarted.
     val newInboundConnectionFlow = {
-      // must create new Flow for each connection because of the FlightRecorder that can't be shared
-      val afr = createFlightRecorderEventSink()
       Flow[ByteString]
         .via(inboundKillSwitch.flow)
-        .via(new TcpFraming(afr))
+        // must create new Flow for each connection because of the FlightRecorder that can't be shared
+        .via(new TcpFraming(() => createFlightRecorderEventSink(false)))
         .alsoTo(inboundStream)
         .filter(_ => false) // don't send back anything in this TCP socket
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again
