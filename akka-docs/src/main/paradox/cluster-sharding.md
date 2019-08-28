@@ -295,18 +295,18 @@ This mode is enabled with configuration (enabled by default):
 akka.cluster.sharding.state-store-mode = ddata
 ```
 
-The state of the `ShardCoordinator` will be replicated inside a cluster by the
-@ref:[Distributed Data](distributed-data.md) module with `WriteMajority`/`ReadMajority` consistency.
-The state of the coordinator is not durable, it's not stored to disk. When all nodes in
-the cluster have been stopped the state is lost and not needed any more.
+The state of the `ShardCoordinator` is replicated across the cluster but is not durable, not stored to disk.
+The `ShardCoordinator` state replication is handled by @ref:[Distributed Data](distributed-data.md) with `WriteMajority`/`ReadMajority` consistency.
+When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
 
-The state of [Remembering Entities](#cluster-sharding-remembering) is also durable, i.e. it is stored to
-disk. The stored entities are started also after a complete cluster restart.
+The state of [Remembering Entities](#cluster-sharding-remembering) is durable and stored to
+disk. Thus stored entities are restarted after a complete cluster restart.
 
-Cluster Sharding is using its own Distributed Data `Replicator` per node role. In this way you can use a subset of
+Cluster Sharding is using its own Distributed Data `Replicator` per node. 
+If using roles with sharding, the `Replicator` is per node role which enables a subset of
 all nodes for some entity types and another subset for other entity types. Each such replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
-cluster, i.e. you can't change the roles when performing a rolling upgrade.
+cluster, for example you can't change the roles when performing a rolling upgrade.
 Changing roles requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
 
 The settings for Distributed Data is configured in the the section
