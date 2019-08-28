@@ -314,7 +314,7 @@ private[remote] class ArteryTcpTransport(
     val newInboundConnectionFlow = {
       Flow[ByteString]
         .via(inboundKillSwitch.flow)
-        // must create new Flow for each connection because of the FlightRecorder that can't be shared
+        // must create new FlightRecorder event sink for each connection because they can't be shared
         .via(new TcpFraming(() => createFlightRecorderEventSink(false)))
         .alsoTo(inboundStream)
         .filter(_ => false) // don't send back anything in this TCP socket
