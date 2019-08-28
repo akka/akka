@@ -175,7 +175,6 @@ object Dependencies {
         Test.scalatest.value,
         Test.commonsCodec,
         Test.commonsMath,
-        Test.mockito,
         Test.scalacheck.value,
         Test.jimfs,
         Test.dockerClient,
@@ -202,7 +201,8 @@ object Dependencies {
         Provided.levelDBNative,
         Test.junit,
         Test.scalatest.value,
-        Test.commonsIo)
+        Test.commonsIo,
+        Test.mockito)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
