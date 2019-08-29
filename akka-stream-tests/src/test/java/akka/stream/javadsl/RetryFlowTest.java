@@ -48,7 +48,7 @@ public class RetryFlowTest extends StreamTest {
               return Pair.create(Success.apply(request / 2), notUsed());
             });
 
-    //#retry-success
+    // #retry-success
     final Flow<Pair<Integer, NotUsed>, Pair<Try<Integer>, NotUsed>, NotUsed> retryFlow =
         RetryFlow.withBackoff(
             parallelism,
@@ -65,7 +65,7 @@ public class RetryFlowTest extends StreamTest {
               }
               return Optional.empty();
             });
-    //#retry-success
+    // #retry-success
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, NotUsed>>>
         probes =
@@ -105,7 +105,7 @@ public class RetryFlowTest extends StreamTest {
               else return Pair.create(Success.apply(request), request);
             });
 
-    //#retry-failure
+    // #retry-failure
     final Flow<Pair<Integer, Integer>, Pair<Try<Integer>, Integer>, NotUsed> retryFlow =
         RetryFlow.withBackoff(
             parallelism,
@@ -122,7 +122,7 @@ public class RetryFlowTest extends StreamTest {
               }
               return Optional.empty();
             });
-    //#retry-failure
+    // #retry-failure
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, Integer>>>
         probes =
