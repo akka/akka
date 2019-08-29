@@ -55,15 +55,15 @@ public class RetryFlowTest extends StreamTest {
             maxBackoff,
             randomFactor,
             flow,
-            r -> {
-              final Integer result = r.first();
-              if (result > 0) {
-                return Optional.of(Collections.singleton(Pair.create(result, notUsed())));
-              } else {
-                return Optional.empty();
+            (success, failure) -> {
+              if (success != null) {
+                final Integer result = success.first();
+                if (result > 0) {
+                  return Optional.of(Collections.singleton(Pair.create(result, notUsed())));
+                }
               }
-            },
-            r -> Optional.empty());
+              return Optional.empty();
+            });
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, NotUsed>>>
         probes =
@@ -110,14 +110,14 @@ public class RetryFlowTest extends StreamTest {
             maxBackoff,
             randomFactor,
             flow,
-            r -> Optional.empty(),
-            r -> {
-              final Integer state = r.second();
-              if (state > 0) {
-                return Optional.of(Collections.singleton(Pair.create(state / 2, state / 2)));
-              } else {
-                return Optional.empty();
+            (success, failure) -> {
+              if (failure != null) {
+                final Integer state = failure.second();
+                if (state > 0) {
+                  return Optional.of(Collections.singleton(Pair.create(state / 2, state / 2)));
+                }
               }
+              return Optional.empty();
             });
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, Integer>>>
@@ -136,7 +136,7 @@ public class RetryFlowTest extends StreamTest {
 
     Pair<Try<Integer>, Integer> response = sink.expectNext();
     assertEquals(0, response.first().get().intValue());
-    assertEquals(4, response.second().intValue());
+    assertEquals(0, response.second().intValue());
 
     source.sendComplete();
     sink.expectComplete();
