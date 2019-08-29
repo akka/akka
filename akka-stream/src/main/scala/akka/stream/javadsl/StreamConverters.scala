@@ -128,7 +128,9 @@ object StreamConverters {
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
-   * It materializes a [[CompletionStage]] containing the number of bytes read from the source file upon completion.
+   * It materializes a [[CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * The created [[InputStream]] will be closed when the [[Source]] is cancelled.
    */
