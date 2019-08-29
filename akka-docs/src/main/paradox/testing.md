@@ -580,6 +580,9 @@ responsible for the Actor creation, but @scala[the]@java[using `TestProbe` or ha
 
 ## CallingThreadDispatcher
 
+The `CallingThreadDispatcher` runs invocations on the current thread only. This
+dispatcher does not create any new threads.
+
 It is possible to use the `CallingThreadDispatcher` in unit testing, as
 described above, but originally it was conceived in order to allow contiguous
 stack traces to be generated in case of an error. As this special dispatcher
