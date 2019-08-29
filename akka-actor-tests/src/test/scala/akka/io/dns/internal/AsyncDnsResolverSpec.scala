@@ -141,6 +141,8 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
           resolve-timeout = 300ms
           search-domains = []
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
     system.actorOf(Props(new AsyncDnsResolver(settings, new AsyncDnsCache(), (_, _) => {
       clients
