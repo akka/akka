@@ -5,3 +5,8 @@ ProblemFilters.exclude[MissingClassProblem]("akka.testkit.CachingPartialFunction
 
 # #22333 Disable Java serialization
 ProblemFilters.exclude[MissingClassProblem]("akka.testkit.TestMessageSerializer")
+
+# Some TestKit methods unaccessible from Java
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.javadsl.TestKit.expectMsgAnyOf")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.javadsl.TestKit.expectMsgAllOf")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.javadsl.TestKit.expectMsgAnyOf")
