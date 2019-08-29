@@ -21,13 +21,16 @@ Dispatchers are part of core Akka, which means that they are part of the akka-ac
   version="$akka.version$"
 }
 
-## Introduction
+<a id="dispatcher-lookup"></a>
+## Looking up a Dispatcher
 
-An Akka `MessageDispatcher` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
-All `MessageDispatcher` implementations are also an `ExecutionContext`, which means that they can be used
-to execute arbitrary code.
+Dispatchers implement the @scala[`ExecutionContext`]@java[`Executor`] interface and can thus be used to run @scala[`Future`]@java[`CompletableFuture`] invocations etc.
 
-For full details on how to work with dispatchers see the @ref:[main dispatcher docs](typed/dispatchers.md#types-of-dispatchers).
+Scala
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #lookup }
+
+Java
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
 
 ## Setting the dispatcher for an Actor
 
