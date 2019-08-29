@@ -311,6 +311,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 |RestartSource|<a name="withbackoff"></a>@ref[withBackoff](RestartSource/withBackoff.md)|Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails or complete using an exponential backoff.|
 |RestartFlow|<a name="withbackoff"></a>@ref[withBackoff](RestartFlow/withBackoff.md)|Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails or complete using an exponential backoff.|
 |RestartSink|<a name="withbackoff"></a>@ref[withBackoff](RestartSink/withBackoff.md)|Wrap the given @apidoc[Sink] with a @apidoc[Sink] that will restart it when it fails or complete using an exponential backoff.|
+|RetryFlow|<a name="withbackoffandcontext"></a>@ref[withBackoffAndContext](RetryFlow/withBackoffAndContext.md)|Wrap the given @apidoc[FlowWithContext] with a @apidoc[FlowWithContext] that will retry individual elements in the stream with an exponential backoff.|
 
 @@@ index
 
@@ -466,6 +467,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [withBackoff](RestartFlow/withBackoff.md)
 * [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
 * [withBackoff](RestartSink/withBackoff.md)
+* [withBackoffAndContext](RetryFlow/withBackoffAndContext.md)
 * [actorRef](ActorSource/actorRef.md)
 * [actorRefWithBackpressure](ActorSource/actorRefWithBackpressure.md)
 * [ask](ActorFlow/ask.md)
