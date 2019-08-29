@@ -4,12 +4,10 @@
 
 package akka.cluster.sharding
 
-import akka.util.Timeout
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.cluster.Cluster
@@ -26,6 +24,7 @@ import akka.cluster.ddata.GSetKey
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.util.Timeout
 import com.github.ghik.silencer.silent
 
 /**

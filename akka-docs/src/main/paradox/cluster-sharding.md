@@ -251,7 +251,7 @@ the number of shards (and therefore load) between different nodes may be signifi
 ### ShardCoordinator State
 
 The state of shard locations in the `ShardCoordinator` is persistent (durable) with
-@ref:[Distributed Data](distributed-data.md) or @ref:[Persistence](persistence.md) to survive failures. 
+@ref:[Distributed Data](distributed-data.md) to survive failures. 
 
 When a crashed or
 unreachable coordinator node has been removed (via down) from the cluster a new `ShardCoordinator` singleton
@@ -276,7 +276,7 @@ shard resolution, e.g. to avoid too fine grained shards. Once a shard's location
 the only overhead is sending a message via the `ShardRegion` rather than directly.
 
 <a id="cluster-sharding-mode"></a>
-## Sharding State Store Modes
+## Sharding State Store Mode
 
 There are two cluster sharding states managed:
 1. @ref:[ShardCoordinator State](#shardcoordinator-state) - the `Shard` locations
@@ -284,13 +284,15 @@ There are two cluster sharding states managed:
  
 For these, there are currently two modes which define how these states are stored:
 * @ref:[Distributed Data Mode](#distributed-data-mode) - uses Akka @ref:[Distributed Data](distributed-data.md) (CRDTs) (the default)
-* @ref:[Persistence Mode](#persistence-mode) - uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
+* @ref:[Persistence Mode](#persistence-mode) - (deprecated) uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
 
-Functionally the two modes are the same. If your sharded entities are not using Akka Persistence
-themselves it is more convenient to use Distributed Data mode to not additionally
-connect a separate data store (e.g. Cassandra) for persistence.
+@@@ warning
 
-Changing persistence mode requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
+Persistence for state store mode is deprecated. 
+
+@@@
+ 
+Changing the mode requires @ref:[a full cluster restart](additional/rolling-updates.md#cluster-sharding-configuration-change).
 
 ### Distributed Data Mode
 
@@ -330,9 +332,9 @@ Since it is running in a cluster @ref:[Persistence](persistence.md) must be conf
 
 @@@ note
 
-Persistence mode will be replaced by a pluggable data access API with storage implementations.
+Persistence mode for @ref:[Remembering Entities](#remembering-entities) will be replaced by a pluggable data access API with storage implementations.
 New sharding applications should no longer choose persistence mode. Existing users of persistence mode
-can eventually migrate to the replacement options. 
+[can eventually migrate to the replacement options](https://github.com/akka/akka/issues/26177). 
 
 @@@
 
@@ -382,11 +384,14 @@ It is always disabled if @ref:[Remembering Entities](#remembering-entities) is e
 ## Remembering Entities
 
 Remembering entities pertains to restarting entities after a rebalance or recovering from a crash.
-Enabling or disabling it (the default) drives the behavior of the restart. Note that the state of
-the entities themselves will not be restored unless they have been made persistent,
+Enabling or disabling (the default) this feature drives the behavior of the restarts:
+* enabled: entities are restarted, even though no new messages are sent to them 
+* disabled: entities are restarted, on demand when a new message arrives
+
+Note that the state of the entities themselves will not be restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).
 
-The list of entities in each `Shard` can be made persistent (durable) by setting
+To make the list of entities in each `Shard` persistent (durable), set 
 the `rememberEntities` flag to true in `ClusterShardingSettings` when calling
 `ClusterSharding.start` and making sure the `shardIdExtractor` handles
 `Shard.StartEntity(EntityId)` which implies that a `ShardId` must be possible to
@@ -431,8 +436,7 @@ akka.cluster.sharding.distributed-data.durable.keys = []
 
 When `rememberEntities` is disabled (the default), a `Shard` will not automatically restart any entities
 after a rebalance or recovering from a crash. Instead, entities are started once the first message
-for that entity has been received in the `Shard`. Entities will not be restarted if they stop without
-using a `Passivate`.
+for that entity has been received in the `Shard`.
 
 ## Supervision
 

@@ -36,7 +36,6 @@ import akka.persistence._
 import akka.util.MessageBufferMap
 import akka.util.PrettyDuration._
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -125,27 +124,28 @@ private[akka] object Shard {
       handOffStopMessage: Any,
       replicator: ActorRef,
       majorityMinCap: Int): Props = {
-
     (if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
-       DDataShard.props(
-         typeName,
-         shardId,
-         entityProps,
-         settings,
-         extractEntityId,
-         extractShardId,
-         handOffStopMessage,
-         replicator,
-         majorityMinCap)
+       Props(
+         new DDataShard(
+           typeName,
+           shardId,
+           entityProps,
+           settings,
+           extractEntityId,
+           extractShardId,
+           handOffStopMessage,
+           replicator,
+           majorityMinCap))
      } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
-       PersistentShard.props(
-         typeName,
-         shardId,
-         entityProps,
-         settings,
-         extractEntityId,
-         extractShardId,
-         handOffStopMessage)
+       Props(
+         new PersistentShard(
+           typeName,
+           shardId,
+           entityProps,
+           settings,
+           extractEntityId,
+           extractShardId,
+           handOffStopMessage))
      else {
        Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
      }).withDeploy(Deploy.local)
@@ -649,29 +649,6 @@ private[akka] trait RememberingShard {
   }
 }
 
-/** INTERNAL API */
-private[akka] object PersistentShard {
-
-  @silent("deprecated")
-  def props(
-      typeName: String,
-      shardId: ShardRegion.ShardId,
-      entityProps: String => Props,
-      settings: ClusterShardingSettings,
-      extractEntityId: ShardRegion.ExtractEntityId,
-      extractShardId: ShardRegion.ExtractShardId,
-      handOffStopMessage: Any): Props =
-    Props(
-      new PersistentShard(
-        typeName,
-        shardId,
-        entityProps,
-        settings,
-        extractEntityId,
-        extractShardId,
-        handOffStopMessage))
-}
-
 /**
  * INTERNAL API
  *
@@ -681,7 +658,6 @@ private[akka] object PersistentShard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-@deprecated("Use `ddata` mode, persistence mode is deprecated.", "2.6.0")
 private[akka] class PersistentShard(
     typeName: String,
     shardId: ShardRegion.ShardId,
@@ -769,32 +745,6 @@ private[akka] class PersistentShard(
 
     }: Receive).orElse(super.receiveCommand)
 
-}
-
-/** INTERNAL API */
-private[akka] object DDataShard {
-
-  def props(
-      typeName: String,
-      shardId: ShardRegion.ShardId,
-      entityProps: String => Props,
-      settings: ClusterShardingSettings,
-      extractEntityId: ShardRegion.ExtractEntityId,
-      extractShardId: ShardRegion.ExtractShardId,
-      handOffStopMessage: Any,
-      replicator: ActorRef,
-      majorityMinCap: Int): Props =
-    Props(
-      new DDataShard(
-        typeName,
-        shardId,
-        entityProps,
-        settings,
-        extractEntityId,
-        extractShardId,
-        handOffStopMessage,
-        replicator,
-        majorityMinCap))
 }
 
 /**
