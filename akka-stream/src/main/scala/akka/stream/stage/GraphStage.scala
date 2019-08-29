@@ -648,7 +648,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
-  final def completeStage(): Unit = cancelStage(SubscriptionWithCancelException.StageWasCompleted)
+  final def completeStage(): Unit =
+    internalCompleteStage(SubscriptionWithCancelException.StageWasCompleted, OptionVal.None)
 
   // Variable used from `OutHandler.onDownstreamFinish` to carry over cancellation cause in cases where
   // `OutHandler` implementations call `super.onDownstreamFinished()`.
@@ -661,36 +662,30 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the stage as stopped.
    */
-  final def cancelStage(cause: Throwable): Unit = {
-    // TODO: It's debatable if completing the stage if one output is cancelled is the right way to do things.
-    //       At least optionally it might be more reasonable to fail the stage with the given cause. That
-    //       would mean that all other *outputs* are failed, i.e. it would only concern stages with more that one
-    //       output anyway.
-    var i = 0
-    while (i < portToConn.length) {
-      if (i < inCount)
-        interpreter.cancel(portToConn(i), cause)
-      else
-        handlers(i) match {
-          case e: Emitting[_] => e.addFollowUp(new EmittingCompletion(e.out, e.previous))
-          case _              => interpreter.complete(portToConn(i))
-        }
-      i += 1
-    }
-    setKeepGoing(false)
-  }
+  final def cancelStage(cause: Throwable): Unit = internalCompleteStage(cause, OptionVal.None)
 
   /**
    * Automatically invokes [[cancel]] or [[fail]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
-  final def failStage(ex: Throwable): Unit = {
+  final def failStage(ex: Throwable): Unit = internalCompleteStage(ex, OptionVal.Some(ex))
+
+  /**
+   * Cancels all incoming ports with the given cause. Then, depending on whether `optionalFailureCause` is
+   * defined, completes or fails the outgoing ports.
+   */
+  private def internalCompleteStage(cancelCause: Throwable, optionalFailureCause: OptionVal[Throwable]): Unit = {
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i), ex)
+        interpreter.cancel(portToConn(i), cancelCause)
+      else if (optionalFailureCause.isDefined)
+        interpreter.fail(portToConn(i), optionalFailureCause.get)
       else
-        interpreter.fail(portToConn(i), ex)
+        handlers(i) match {
+          case e: Emitting[_] => e.addFollowUp(new EmittingCompletion(e.out, e.previous))
+          case _              => interpreter.complete(portToConn(i))
+        }
       i += 1
     }
     setKeepGoing(false)
