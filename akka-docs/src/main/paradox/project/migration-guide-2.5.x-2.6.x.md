@@ -202,6 +202,14 @@ Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Arte
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
 
+### akka-protobuf
+
+`akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
+Applications should use standard Protobuf dependency instead of `akka-protobuf`. The artifact is still
+published, but the transitive dependency to `akka-protobuf` has been removed.
+
+Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
+
 ## Java Serialization
 
 Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)

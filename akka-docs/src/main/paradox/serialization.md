@@ -234,6 +234,13 @@ Java
 
 The recommended approach to do deep serialization of internal actor state is to use Akka @ref:[Persistence](persistence.md).
 
+## Serialization of Akka's messages
+
+Akka is using a Protobuf 3 for serialization of messages defined by Akka. This dependency is
+shaded in the `akka-protobuf-v3` artifact so that applications can use another version of Protobuf.
+
+Applications should use standard Protobuf dependency and not `akka-protobuf-v3`.
+
 ## Java serialization
 
 Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
