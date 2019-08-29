@@ -24,9 +24,20 @@ import com.github.ghik.silencer.silent
 private final case class SchedulerException(msg: String) extends akka.AkkaException(msg) with NoStackTrace
 
 /**
- * An Akka scheduler service. This one needs one special behavior: if
- * Closeable, it MUST execute all outstanding tasks upon .close() in order
- * to properly shutdown all dispatchers.
+ * An Akka scheduler service.
+ *
+ * For scheduling within actors `with Timers` should be preferred.
+ *
+ * Please note that this scheduler implementation is highly optimised for high-throughput
+ * and high-frequency events. It is not to be confused with long-term schedulers such as
+ * Quartz. The scheduler will throw an exception if attempts are made to schedule too far
+ * into the future (which by default is around 8 months (`Int.MaxValue` seconds).
+ *
+ * It's possible to implement a custom `Scheduler`, although that should rarely be needed.
+ *
+ * A `Scheduler` implementation needs one special behavior: if
+ * Closeable, it MUST execute all outstanding tasks that implement [[Scheduler.TaskRunOnClose]]
+ * upon .close() in order to properly shutdown all dispatchers.
  *
  * Furthermore, this timer service MUST throw IllegalStateException if it
  * cannot schedule a task. Once scheduled, the task MUST be executed. If
@@ -37,11 +48,6 @@ private final case class SchedulerException(msg: String) extends akka.AkkaExcept
  *  1) the system’s com.typesafe.config.Config (from system.settings.config)
  *  2) a akka.event.LoggingAdapter
  *  3) a java.util.concurrent.ThreadFactory
- *
- * Please note that this scheduler implementation is highly optimised for high-throughput
- * and high-frequency events. It is not to be confused with long-term schedulers such as
- * Quartz. The scheduler will throw an exception if attempts are made to schedule too far
- * into the future (which by default is around 8 months (`Int.MaxValue` seconds).
  */
 trait Scheduler {
 
@@ -542,4 +548,15 @@ object Cancellable {
     def cancel(): Boolean = false
     def isCancelled: Boolean = false
   }
+}
+
+object Scheduler {
+
+  /**
+   * If a `TaskRunOnClose` is used in `scheduleOnce` it will be run when the `Scheduler` is
+   * closed (`ActorSystem` shutdown). This is needed for the internal shutdown of dispatchers
+   * in Akka and is not intended to be used by end user applications, but it's public because
+   * a custom implementation of `Scheduler` must also implement this.
+   */
+  trait TaskRunOnClose extends Runnable
 }

@@ -474,7 +474,9 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           val counter = new AtomicInteger
           val terminated = Future {
             var rounds = 0
-            while (Try(sched.scheduleOnce(Duration.Zero)(())(localEC)).isSuccess) {
+            while (Try(sched.scheduleOnce(Duration.Zero, new Scheduler.TaskRunOnClose {
+                     override def run(): Unit = ()
+                   })(localEC)).isSuccess) {
               Thread.sleep(1)
               driver.wakeUp(step)
               rounds += 1
@@ -483,10 +485,13 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           }
           def delay = if (ThreadLocalRandom.current.nextBoolean) step * 2 else step
           val N = 1000000
-          (1 to N).foreach(_ => sched.scheduleOnce(delay)(counter.incrementAndGet()))
+          (1 to N).foreach(_ =>
+            sched.scheduleOnce(delay, new Scheduler.TaskRunOnClose {
+              override def run(): Unit = counter.incrementAndGet()
+            }))
           sched.close()
           Await.result(terminated, 3.seconds.dilated) should be > 10
-          awaitCond(counter.get == N)
+          awaitAssert(counter.get should ===(N))
         }
       }
 
@@ -610,7 +615,9 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           var overrun = headroom
           val cap = 1000000
           val (success, failure) = Iterator
-            .continually(Try(sched.scheduleOnce(100.millis)(counter.incrementAndGet())))
+            .continually(Try(sched.scheduleOnce(100.millis, new Scheduler.TaskRunOnClose {
+              override def run(): Unit = counter.incrementAndGet()
+            })))
             .take(cap)
             .takeWhile(_.isSuccess || { overrun -= 1; overrun >= 0 })
             .partition(_.isSuccess)
@@ -618,6 +625,20 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           s should be < cap
           awaitCond(s == counter.get, message = s"$s was not ${counter.get}")
           failure.size should ===(headroom)
+        }
+      }
+
+      "run TaskRunOnClose when Scheduler is closed" in {
+        withScheduler() { (sched, driver) =>
+          import system.dispatcher
+          val counter = new AtomicInteger()
+          sched.scheduleOnce(10.seconds)(counter.incrementAndGet())
+          sched.scheduleOnce(10.seconds, new Scheduler.TaskRunOnClose {
+            override def run(): Unit = counter.incrementAndGet()
+          })
+          driver.close()
+          sched.close()
+          counter.get should ===(1)
         }
       }
     }

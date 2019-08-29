@@ -377,6 +377,15 @@ and then it will behave as in Akka 2.5.x:
 akka.coordinated-shutdown.run-by-actor-system-terminate = off
 ```
 
+### Scheduler not running tasks when shutdown
+
+When the `ActorSystem` was shutting down and the `Scheduler` was closed all outstanding scheduled tasks were run,
+which was needed for some internals in Akka but a surprising behavior for end users. Therefore this behavior has
+changed in Akka 2.6.x and outstanding tasks are not run when the system is terminated.
+
+Instead, `system.registerOnTermination` or `CoordinatedShutdown` can be used for running such tasks when the shutting
+down.
+
 ### IOSources & FileIO
 
 `FileIO.toPath`, `StreamConverters.fromInputStream`, and `StreamConverters.fromOutputStream` now always fail the materialized value in case of failure. 
