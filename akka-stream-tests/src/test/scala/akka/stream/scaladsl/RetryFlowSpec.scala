@@ -78,13 +78,17 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     }
 
     "tolerate killswitch abort after start" in {
+      //#retry-failure
+      val retryFlow = RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
+        case (Failure(_), x) => Some(List((x + 1, x)))
+      }
+      //#retry-failure
+
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .viaMat(KillSwitches.single[Int])(Keep.both)
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow[Int]) {
-          case (Failure(_), x) => Some(List((x + 1, x)))
-        })
+        .via(retryFlow)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
@@ -319,12 +323,16 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         case (i, _) => (Success(i / 2), ())
       }
 
+      //#retry-success
+      val retryFlow = RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow) {
+        case (Success(i), _) if i > 0 => Some(List((i, ())))
+      }
+      //#retry-success
+
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, ()))
-        .via(RetryFlow.withBackoff(8, 10.millis, 5.second, 0, flow) {
-          case (Success(i), _) if i > 0 => Some(List((i, ())))
-        })
+        .via(retryFlow)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 

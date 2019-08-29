@@ -16,7 +16,7 @@ import scala.util.Try
 object RetryFlow {
 
   /**
-   * Allows retrying individual elements in the stream with exponential backoff.
+   * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `retryWith` partial function. It takes an output element of the wrapped
    * flow and should return one or more requests to be retried. For example:
@@ -59,7 +59,7 @@ object RetryFlow {
       retryWith).asFlow
 
   /**
-   * Allows retrying individual elements in the stream with exponential backoff.
+   * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `retryWith` partial function. It takes an output element of the wrapped
    * flow and should return one or more requests to be retried. For example:

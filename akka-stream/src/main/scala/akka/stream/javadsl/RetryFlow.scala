@@ -19,7 +19,7 @@ import scala.util.{ Failure, Success, Try }
 object RetryFlow {
 
   /**
-   * Allows retrying individual elements in the stream with exponential backoff.
+   * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `retryWith` bi-function. On a successful response, this function is
    * passed the response as the first argument. On a failed response, the exception is passed as the second argument.
@@ -54,7 +54,7 @@ object RetryFlow {
   }
 
   /**
-   * Allows retrying individual elements in the stream with exponential backoff.
+   * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `retryWith` bi-function. On a successful response, this function is
    * passed the response as the first argument. On a failed response, the exception is passed as the second argument.

@@ -153,6 +153,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/javadsl/RestartFlow.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/RestartSink.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/RestartSink.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RetryFlow.scala",
 
         // akka-stream-typed
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSource.scala",
