@@ -144,8 +144,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
       }
 
       public Set<Hashtag> hashtags() {
-        return Arrays.asList(body.split(" "))
-            .stream()
+        return Arrays.asList(body.split(" ")).stream()
             .filter(a -> a.startsWith("#"))
             .map(a -> new Hashtag(a))
             .collect(Collectors.toSet());
