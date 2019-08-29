@@ -166,8 +166,6 @@ private[akka] final class ArterySettings private (config: Config) {
         .getMillisDuration("outbound-restart-timeout")
         .requiring(interval => interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts: Int = getInt("outbound-max-restarts")
-    val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
-    val FlightRecorderDestination: String = getString("flight-recorder.destination")
     val Compression = new Compression(getConfig("compression"))
 
     final val MaximumFrameSize: Int = math

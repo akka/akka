@@ -6,8 +6,8 @@ package akka.remote.artery
 package tcp
 
 import akka.stream.impl.io.ByteStringParser.ParsingException
-import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec

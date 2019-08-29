@@ -8,20 +8,19 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.locks.LockSupport
 
-import scala.concurrent.duration._
-
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, ThrottleMode }
+import akka.stream.scaladsl.Source
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.HdrHistogram.Histogram
-import akka.stream.scaladsl.Source
-import akka.stream.ThrottleMode
+
+import scala.concurrent.duration._
 
 object LatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -109,7 +108,6 @@ object LatencySpec extends MultiNodeConfig {
 
     var count = 0
     var startTime = System.nanoTime()
-    val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
     var reportedArrayOOB = false
 
     def receive = {
@@ -160,8 +158,6 @@ object LatencySpec extends MultiNodeConfig {
         f"rate: ${throughput}%,.0f msg/s")
       println("Histogram of RTT latencies in microseconds.")
       histogram.outputPercentileDistribution(System.out, 1000.0)
-
-      taskRunnerMetrics.printHistograms()
 
       val plots = LatencyPlots(
         PlotResult().add(testName, percentile(50.0)),

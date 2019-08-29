@@ -789,45 +789,6 @@ to be noted though that during a continuously high-throughput period this settin
 as the thread mostly has tasks to execute. This also means that under high throughput (but below maximum capacity)
 the system might have less latency than at low message rates.
 
-## Internal Event Log for Debugging (Flight Recorder)
-
-@@@ note
-
-In this version ($akka.version$) the flight-recorder is disabled by default because there is no automatic
-file name and path calculation implemented to make it possible to reuse the same file for every restart of
-the same actor system without clashing with files produced by other systems (possibly running on the same machine).
-Currently, you have to set the path and file names yourself to avoid creating an unbounded number
-of files and enable flight recorder manually by adding *akka.remote.artery.advanced.flight-recorder.enabled=on* to
-your configuration file. This a limitation of the current version and will not be necessary in the future.
-
-@@@
-
-Emitting event information (logs) from internals is always a trade off. The events that are usable for
-the Akka developers are usually too low level to be of any use for users and usually need to be fine-grained enough
-to provide enough information to be able to debug issues in the internal implementation. This usually means that
-these logs are hidden behind special flags and emitted at low log levels to not clutter the log output of the user
-system. Unfortunately this means that during production or integration testing these flags are usually off and
-events are not available when an actual failure happens - leaving maintainers in the dark about details of the event.
-To solve this contradiction, remoting has an internal, high-performance event store for debug events which is always on.
-This log and the events that it contains are highly specialized and not directly exposed to users, their primary purpose
-is to help the maintainers of Akka to identify and solve issues discovered during daily usage. When you encounter
-production issues involving remoting, you can include the flight recorder log file in your bug report to give us
-more insight into the nature of the failure.
-
-There are various important features of this event log:
-
- * Flight Recorder produces a fixed size file completely encapsulating log rotation. This means that this
-file will never grow in size and will not cause any unexpected disk space shortage in production.
- * This file is crash resistant, i.e. its contents can be recovered even if the JVM hosting the `ActorSystem`
-crashes unexpectedly.
- * Very low overhead, specialized, binary logging that has no significant overhead and can be safely left enabled
-for production systems.
-
-The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recorder.destination* setting (see
-@ref:[akka-remote (artery)](general/configuration.md#config-akka-remote-artery) for details). By default, a file with the *.afr* extension is produced in the temporary
-directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
-setting *akka.remote.artery.advanced.flight-recorder.enabled=off*, although this is not recommended.
-
 <a id="remote-configuration-artery"></a>
 ## Remote Configuration
 

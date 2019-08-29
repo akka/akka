@@ -4,26 +4,11 @@
 
 package akka.remote.artery
 
-import java.nio.channels.FileChannel
-import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
-
-import akka.Done
-import akka.NotUsed
 import akka.actor.Actor
 import akka.actor.Props
 import akka.actor._
@@ -31,11 +16,7 @@ import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.remote.AddressUidExtension
-import akka.remote.RemoteActorRef
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteTransport
-import akka.remote.UniqueAddress
+import akka.remote._
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -46,16 +27,27 @@ import akka.remote.artery.compress._
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
-import akka.stream.AbruptTerminationException
-import akka.stream.ActorMaterializer
-import akka.stream.KillSwitches
-import akka.stream.Materializer
-import akka.stream.SharedKillSwitch
+import akka.stream._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.util.{ unused, OptionVal, WildcardIndex }
+import akka.util.OptionVal
+import akka.util.WildcardIndex
+import akka.util.unused
+import akka.Done
+import akka.NotUsed
 import com.github.ghik.silencer.silent
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -332,11 +324,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   override val log: LoggingAdapter = Logging(system, getClass.getName)
 
-  val (afrFileChannel, afrFile, flightRecorder) = initializeFlightRecorder() match {
-    case None            => (None, None, None)
-    case Some((c, f, r)) => (Some(c), Some(f), Some(r))
-  }
-
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.
    * However are the InboundCompressions are owned by the Decoder operator, and any call into them must be looped through the Decoder!
@@ -345,7 +332,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
    */
   protected val _inboundCompressions = {
     if (settings.Advanced.Compression.Enabled) {
-      val eventSink = createFlightRecorderEventSink(synchr = false)
+      val eventSink = IgnoreEventSink
       new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
     } else NoInboundCompressions
   }
@@ -404,22 +391,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     capacity =
       settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  /**
-   * Thread-safe flight recorder for top level events.
-   */
-  val topLevelFlightRecorder: EventSink =
-    createFlightRecorderEventSink(synchr = true)
-
-  def createFlightRecorderEventSink(synchr: Boolean = false): EventSink = {
-    flightRecorder match {
-      case Some(f) =>
-        val eventSink = f.createEventSink()
-        if (synchr) new SynchronizedEventSink(eventSink)
-        else eventSink
-      case None =>
-        IgnoreEventSink
-    }
-  }
+  val topLevelFlightRecorder: EventSink = IgnoreEventSink
 
   private val associationRegistry = new AssociationRegistry(
     remoteAddress =>
@@ -709,9 +681,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       _inboundCompressionAccess = OptionVal.None
 
       topLevelFlightRecorder.loFreq(Transport_FlightRecorderClose, NoMetaData)
-      flightRecorder.foreach(_.close())
-      afrFileChannel.foreach(_.force(true))
-      afrFileChannel.foreach(_.close())
       Done
     }
   }
@@ -963,17 +932,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       .viaMat(new InboundControlJunction)(Keep.right)
       .via(new SystemMessageAcker(this))
       .toMat(messageDispatcherSink)(Keep.both)
-  }
-
-  private def initializeFlightRecorder(): Option[(FileChannel, Path, FlightRecorder)] = {
-    if (settings.Advanced.FlightRecorderEnabled) {
-      val afrFile = FlightRecorder.createFlightRecorderFile(settings.Advanced.FlightRecorderDestination)
-      log.info("Flight recorder enabled, output can be found in '{}'", afrFile)
-
-      val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)
-      Some((fileChannel, afrFile, new FlightRecorder(fileChannel)))
-    } else
-      None
   }
 
   def outboundTestFlow(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] =

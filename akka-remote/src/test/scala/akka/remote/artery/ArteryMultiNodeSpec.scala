@@ -4,21 +4,19 @@
 
 package akka.remote.artery
 
-import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
+import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
 import akka.remote.RARP
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.Outcome
-import org.scalatest.Pending
+import org.scalatest.{ Outcome, Pending }
 
 /**
  * Base class for remoting tests what needs to test interaction between a "local" actor system
  * which is always created (the usual AkkaSpec system), and multiple additional actor systems over artery
  */
 abstract class ArteryMultiNodeSpec(config: Config)
-    extends AkkaSpec(config.withFallback(ArterySpecSupport.defaultConfig))
-    with FlightRecorderSpecIntegration {
+    extends AkkaSpec(config.withFallback(ArterySpecSupport.defaultConfig)) {
 
   def this() = this(ConfigFactory.empty())
   def this(extraConfig: String) = this(ConfigFactory.parseString(extraConfig))
@@ -58,8 +56,8 @@ abstract class ArteryMultiNodeSpec(config: Config)
       name: Option[String] = None,
       setup: Option[ActorSystemSetup] = None): ActorSystem = {
     val config =
-      ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(localSystem.settings.config)(str =>
-        ConfigFactory.parseString(str).withFallback(localSystem.settings.config)))
+      extraConfig.fold(localSystem.settings.config)(str =>
+        ConfigFactory.parseString(str).withFallback(localSystem.settings.config))
     val sysName = name.getOrElse(nextGeneratedSystemName)
 
     val remoteSystem = setup match {
@@ -74,7 +72,6 @@ abstract class ArteryMultiNodeSpec(config: Config)
 
   override def afterTermination(): Unit = {
     remoteSystems.foreach(sys => shutdown(sys))
-    (system +: remoteSystems).foreach(handleFlightRecorderFile)
     remoteSystems = Vector.empty
     super.afterTermination()
   }
