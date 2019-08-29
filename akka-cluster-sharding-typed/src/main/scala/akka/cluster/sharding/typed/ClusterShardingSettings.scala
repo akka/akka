@@ -106,6 +106,7 @@ object ClusterShardingSettings {
         throw new IllegalArgumentException(
           "Not recognized StateStoreMode, only 'persistence' and 'ddata' are supported.")
   }
+
   final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
   final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 

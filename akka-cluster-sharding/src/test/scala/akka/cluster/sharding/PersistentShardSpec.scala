@@ -30,11 +30,11 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with Word
 
     "remember entities started with StartEntity" in {
       val props =
-        Props(new PersistentShard("cats", "shard-1", _ => Props(new EntityActor), ClusterShardingSettings(system), {
+        PersistentShard.props("cats", "shard-1", _ => Props(new EntityActor), ClusterShardingSettings(system), {
           case _ => ("entity-1", "msg")
         }, { _ =>
           "shard-1"
-        }, PoisonPill))
+        }, PoisonPill)
       val persistentShard = system.actorOf(props)
       watch(persistentShard)
 

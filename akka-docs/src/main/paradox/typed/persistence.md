@@ -132,20 +132,6 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #behavior }
 
-## Cluster Sharding and persistence
-
-In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
-where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
-resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
-cluster and address them by id.
-
-The `EventSourcedBehavior` can then be run as with any plain typed actor as described in @ref:[actors documentation](actors.md),
-but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
-with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
-If multiple instances were to persist events at the same time, the events would be interleaved and might not be
-interpreted correctly on replay. Cluster Sharding ensures that there is only one active entity for each id. The
-@ref:[Cluster Sharding example](cluster-sharding.md#persistence-example) illustrates this common combination.
-
 ## Accessing the ActorContext
 
 If the @apidoc[EventSourcedBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
