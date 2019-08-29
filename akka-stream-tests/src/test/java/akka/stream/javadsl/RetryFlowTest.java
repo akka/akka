@@ -141,4 +141,57 @@ public class RetryFlowTest extends StreamTest {
     source.sendComplete();
     sink.expectComplete();
   }
+
+  @Test
+  public void supportFlowWithContext() {
+    final Integer parallelism = 8;
+    final Duration minBackoff = Duration.ofMillis(10);
+    final Duration maxBackoff = Duration.ofSeconds(5);
+    final Integer randomFactor = 0;
+    final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> flow =
+        Flow.<Integer>create()
+            .<Integer, Integer, Integer>asFlowWithContext((el, ctx) -> el, ctx -> ctx)
+            .map(
+                i -> {
+                  if (i > 0) return Failure.apply(new Error("i is larger than 0"));
+                  else return Success.apply(i);
+                });
+
+    final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, Integer>>>
+        probes =
+            TestSource.<Integer>probe(system)
+                .asSourceWithContext(ctx -> ctx)
+                .via(
+                    RetryFlow.withBackoffAndContext(
+                        parallelism,
+                        minBackoff,
+                        maxBackoff,
+                        randomFactor,
+                        flow,
+                        (success, failure) -> {
+                          if (failure != null) {
+                            final Integer state = failure.second();
+                            if (state > 0) {
+                              return Optional.of(
+                                  Collections.singleton(Pair.create(state / 2, state / 2)));
+                            }
+                          }
+                          return Optional.empty();
+                        }))
+                .toMat(TestSink.probe(system), Keep.both())
+                .run(materializer);
+
+    final TestPublisher.Probe<Integer> source = probes.first();
+    final TestSubscriber.Probe<Pair<Try<Integer>, Integer>> sink = probes.second();
+
+    sink.request(1);
+    source.sendNext(8);
+
+    Pair<Try<Integer>, Integer> response = sink.expectNext();
+    assertEquals(0, response.first().get().intValue());
+    assertEquals(0, response.second().intValue());
+
+    source.sendComplete();
+    sink.expectComplete();
+  }
 }
