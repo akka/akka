@@ -73,7 +73,7 @@ public class RetryFlowTest extends StreamTest {
                 .map(i -> Pair.create(i, notUsed()))
                 .via(retryFlow)
                 .toMat(TestSink.probe(system), Keep.both())
-                .run(materializer);
+                .run(system);
 
     final TestPublisher.Probe<Integer> source = probes.first();
     final TestSubscriber.Probe<Pair<Try<Integer>, NotUsed>> sink = probes.second();
@@ -130,7 +130,7 @@ public class RetryFlowTest extends StreamTest {
                 .map(i -> Pair.create(i, i))
                 .via(retryFlow)
                 .toMat(TestSink.probe(system), Keep.both())
-                .run(materializer);
+                .run(system);
 
     final TestPublisher.Probe<Integer> source = probes.first();
     final TestSubscriber.Probe<Pair<Try<Integer>, Integer>> sink = probes.second();
@@ -183,7 +183,7 @@ public class RetryFlowTest extends StreamTest {
                           return Optional.empty();
                         }))
                 .toMat(TestSink.probe(system), Keep.both())
-                .run(materializer);
+                .run(system);
 
     final TestPublisher.Probe<Integer> source = probes.first();
     final TestSubscriber.Probe<Pair<Try<Integer>, Integer>> sink = probes.second();
