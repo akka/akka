@@ -126,7 +126,7 @@ class FlowGroupBySpec extends StreamSpec("""
       }
     }
 
-    "work in normal user scenario" in {
+    "work in normal user scenario" in assertAllStagesStopped {
       Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, _.substring(0, 1))
         .grouped(10)
@@ -137,7 +137,7 @@ class FlowGroupBySpec extends StreamSpec("""
         .sortBy(_.head) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
     }
 
-    "fail when key function return null" in {
+    "fail when key function return null" in assertAllStagesStopped {
       val down = Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, e => if (e.startsWith("A")) null else e.substring(0, 1))
         .grouped(10)
@@ -266,7 +266,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstreamSubscription.expectCancellation()
     }
 
-    "resume stream when groupBy function throws" in {
+    "resume stream when groupBy function throws" in assertAllStagesStopped {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source
@@ -340,9 +340,10 @@ class FlowGroupBySpec extends StreamSpec("""
       val ex = down.expectError()
       ex.getMessage should include("too many substreams")
       s1.expectError(ex)
+      up.expectCancellation()
     }
 
-    "resume when exceeding maxSubstreams" in {
+    "resume when exceeding maxSubstreams" in assertAllStagesStopped {
       val (up, down) = Flow[Int]
         .groupBy(0, identity)
         .mergeSubstreams
@@ -353,6 +354,8 @@ class FlowGroupBySpec extends StreamSpec("""
 
       up.sendNext(1)
       down.expectNoMessage(1.second)
+      up.sendComplete()
+      down.expectComplete()
     }
 
     "emit subscribe before completed" in assertAllStagesStopped {
