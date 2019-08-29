@@ -5,13 +5,13 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ActorMaterializer, KillSwitches}
+import akka.stream.{ ActorMaterializer, KillSwitches }
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.{TestSink, TestSource}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import org.scalatest.matchers.{ MatchResult, Matcher }
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
@@ -20,7 +20,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
   val failedElem: Try[Int] = Failure(new Exception("cooked failure"))
   def flow[T]: Flow[(Int, T), (Try[Int], T), NotUsed] = Flow.fromFunction {
     case (i, j) if i % 2 == 0 => (failedElem, j)
-    case (i, j) => (Success(i + 1), j)
+    case (i, j)               => (Success(i + 1), j)
   }
 
   "RetryFlow.withBackoff" should {
@@ -199,7 +199,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       case (_, j) => (failedElem, j)
     }
 
-    val alwaysRecoveringFunc: PartialFunction[(Try[Int], Int), Option[List[(Int, Int)]]] = { case (Failure(_), i) => Some(List(i -> i)) }
+    val alwaysRecoveringFunc: PartialFunction[(Try[Int], Int), Option[List[(Int, Int)]]] = {
+      case (Failure(_), i) => Some(List(i -> i))
+    }
 
     val stuckForeverRetrying = RetryFlow.withBackoff(8, 10.millis, 5.second, 0, alwaysFailingFlow)(alwaysRecoveringFunc)
 
@@ -226,9 +228,13 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         .probe[Int]
         .map(i => (i, i))
         .viaMat(
-          RetryFlow.withBackoff(8, 10.millis, 5.second, 0,
-            alwaysFailingFlow.viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right))(alwaysRecoveringFunc)
-        )(Keep.both)
+          RetryFlow.withBackoff(
+            8,
+            10.millis,
+            5.second,
+            0,
+            alwaysFailingFlow.viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right))(alwaysRecoveringFunc))(
+          Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
@@ -289,7 +295,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       case class State(counter: Int, retriedAt: List[Long])
 
       val flow = Flow.fromFunction[(Int, State), (Try[Int], State)] {
-        case (i, j) if i % NumRetries == 0 => (Success(i), j)
+        case (i, j) if i % NumRetries == 0  => (Success(i), j)
         case (_, State(counter, retriedAt)) => (failedElem, State(counter + 1, System.currentTimeMillis() :: retriedAt))
       }
 
@@ -308,9 +314,12 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val (result, State(_, retriedAt)) = sink.expectNext()
 
       result shouldBe Success(NumRetries)
-      val timesBetweenRetries = retriedAt.sliding(2).collect {
-        case before :: after :: Nil => before - after
-      }.toIndexedSeq
+      val timesBetweenRetries = retriedAt
+        .sliding(2)
+        .collect {
+          case before :: after :: Nil => before - after
+        }
+        .toIndexedSeq
 
       timesBetweenRetries.reverse should strictlyIncrease
 
@@ -329,12 +338,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       }
       //#retry-success
 
-      val (source, sink) = TestSource
-        .probe[Int]
-        .map(i => (i, ()))
-        .via(retryFlow)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+      val (source, sink) = TestSource.probe[Int].map(i => (i, ())).via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 
       sink.request(4)
 
@@ -351,7 +355,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     "support flow with context" in {
       val flow = Flow[Int].asFlowWithContext((i: Int, _: Int) => i)(identity).map {
         case i if i > 0 => Failure(new Error("i is larger than 0"))
-        case i => Success(i)
+        case i          => Success(i)
       }
 
       val (source, sink) = TestSource
@@ -385,8 +389,7 @@ trait CustomMatchers {
       MatchResult(
         result,
         s"""Collection $left elements are not increasing strictly""",
-        s"""Collection $left elements are increasing strictly"""
-      )
+        s"""Collection $left elements are increasing strictly""")
     }
   }
 
