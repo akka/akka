@@ -5,9 +5,7 @@
 @@@ index
 
 * [actors](actors.md)
-* [dispatchers](dispatchers.md)
-* [mailboxes](mailboxes.md)
-* [coexisting](coexisting.md)
+
 * [actor-lifecycle](actor-lifecycle.md)
 * [interaction patterns](interaction-patterns.md)
 * [fault-tolerance](fault-tolerance.md)
@@ -16,7 +14,10 @@
 * [stash](stash.md)
 * [stream](stream.md)
 * [fsm](fsm.md)
+* [dispatchers](dispatchers.md)
+* [mailboxes](mailboxes.md)
 * [testing](testing.md)
+* [coexisting](coexisting.md)
 * [style-guide](style-guide.md)
 
 @@@

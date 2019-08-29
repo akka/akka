@@ -67,7 +67,7 @@ The final example shows how to load a custom dispatcher from configuration and r
 
 ## Types of dispatchers
 
-There are 3 different types of message dispatchers:
+There are 2 different types of message dispatchers:
 
 * **Dispatcher**
 
@@ -92,18 +92,29 @@ There are 3 different types of message dispatchers:
     * Driven by: Any `akka.dispatch.ThreadPoolExecutorConfigurator`.
       By default a "thread-pool-executor".
 
-* **CallingThreadDispatcher**
+Here is an example configuration of a Fork Join Pool dispatcher:
 
-    This dispatcher runs invocations on the current thread only. This
-    dispatcher does not create any new threads, but it can be used from
-    different threads concurrently for the same actor.
-    See @ref:[CallingThreadDispatcher](../testing.md#callingthreaddispatcher)
-    for details and restrictions.
+<!--same config text for Scala & Java-->
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
 
-    * Sharability: Unlimited
-    * Mailboxes: Any, creates one per Actor per Thread (on demand)
-    * Use cases: Debugging and testing
-    * Driven by: The calling thread (duh)
+For more configuration options, see the @ref:[More dispatcher configuration examples](#more-dispatcher-configuration-examples)
+section and the `default-dispatcher` section of the @ref:[configuration](../general/configuration.md).
+
+@@@ note
+
+The `parallelism-max` for the `fork-join-executor` does not set the upper bound on the total number of threads
+allocated by the ForkJoinPool. It is a setting specifically talking about the number of *hot*
+threads the pool will keep running in order to reduce the latency of handling a new incoming task.
+You can read more about parallelism in the JDK's [ForkJoinPool documentation](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html).
+
+@@@
+
+@@@ note
+
+The `thread-pool-executor` dispatcher is implemented using by a `java.util.concurrent.ThreadPoolExecutor`.
+You can read more about it in the JDK's [ThreadPoolExecutor documentation](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadPoolExecutor.html).
+
+@@@
 
 ## Dispatcher aliases
 
@@ -330,3 +341,28 @@ it in `application.conf` and instantiate through an
 @ref:[`ActorSystem`](#dispatcher-lookup)
 
 @@@
+
+## More dispatcher configuration examples
+
+Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
+
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+
+Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
+
+<!--same config text for Scala & Java-->
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
+
+Configuring a `PinnedDispatcher`:
+
+<!--same config text for Scala & Java-->
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-pinned-dispatcher-config }
+
+Note that `thread-pool-executor` configuration as per the above `my-thread-pool-dispatcher` example is
+NOT applicable. This is because every actor will have its own thread pool when using `PinnedDispatcher`,
+and that pool will have only one thread.
+
+Note that it's not guaranteed that the *same* thread is used over time, since the core pool timeout
+is used for `PinnedDispatcher` to keep resource usage down in case of idle actors. To use the same
+thread all the time you need to add `thread-pool-executor.allow-core-timeout=off` to the
+configuration of the `PinnedDispatcher`.
