@@ -750,6 +750,7 @@ private final case class SavedIslandData(
     val boundary = new ActorOutputBoundary(shell, out.toString)
     logics.add(boundary)
     boundary.stageId = logics.size() - 1
+    boundary.attributes = logic.attributes
 
     val connection = outConn()
     boundary.portToConn(boundary.in.id) = connection
