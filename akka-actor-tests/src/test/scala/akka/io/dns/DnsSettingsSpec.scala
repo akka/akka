@@ -9,7 +9,7 @@ import java.net.InetAddress
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
-
+import scala.concurrent.duration._
 class DnsSettingsSpec extends AkkaSpec {
 
   val eas = system.asInstanceOf[ExtendedActorSystem]
@@ -24,6 +24,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = []
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       // Will differ based on name OS DNS servers so just validating it does not throw
@@ -38,6 +40,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = []
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       dnsSettings.NameServers.map(_.getAddress) shouldEqual List(InetAddress.getByName("127.0.0.1"))
@@ -51,6 +55,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = []
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       dnsSettings.NameServers.map(_.getAddress) shouldEqual List(
@@ -66,6 +72,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = "default"
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       // Will differ based on name OS DNS servers so just validating it does not throw
@@ -80,6 +88,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = "example.com"
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       dnsSettings.SearchDomains shouldEqual List("example.com")
@@ -93,6 +103,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = [ "example.com", "example.net" ]
           ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       dnsSettings.SearchDomains shouldEqual List("example.com", "example.net")
@@ -106,6 +118,8 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = "example.com"
           ndots = "default"
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       // Will differ based on name OS DNS servers so just validating it does not throw
@@ -120,11 +134,41 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
           search-domains = "example.com"
           ndots = 5
+          positive-ttl = forever
+          negative-ttl = never
         """))
 
       dnsSettings.NDots shouldEqual 5
     }
 
+    "parse ttl" in {
+      val dnsSettingsNeverForever = new DnsSettings(
+        eas,
+        ConfigFactory.parseString("""
+          nameservers = "default"
+          resolve-timeout = 1s
+          search-domains = []
+          ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
+        """))
+
+      dnsSettingsNeverForever.positiveCachePolicy shouldEqual CachePolicy.Forever
+      dnsSettingsNeverForever.negativeCachePolicy shouldEqual CachePolicy.Never
+
+      val dnsSettingsDuration = new DnsSettings(
+        eas,
+        ConfigFactory.parseString("""
+          nameservers = "default"
+          resolve-timeout = 1s
+          search-domains = []
+          ndots = 1
+          positive-ttl = 10 s
+          negative-ttl = 10 d
+        """))
+      dnsSettingsDuration.positiveCachePolicy shouldEqual CachePolicy.Ttl.fromPositive(10.seconds)
+      dnsSettingsDuration.negativeCachePolicy shouldEqual CachePolicy.Ttl.fromPositive(10.days)
+    }
   }
 
 }
