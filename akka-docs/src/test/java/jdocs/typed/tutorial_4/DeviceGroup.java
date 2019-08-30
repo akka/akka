@@ -20,14 +20,14 @@ import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
 // #device-group-full
 // #device-group-remove
 // #device-group-register
-public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
+public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
 
-  public static Behavior<DeviceGroupMessage> createBehavior(String groupId) {
+  public static Behavior<DeviceGroupCommand> createBehavior(String groupId) {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
   // #device-terminated
-  private class DeviceTerminated implements DeviceGroupMessage {
+  private class DeviceTerminated implements DeviceGroupCommand {
     public final ActorRef<Device.Command> device;
     public final String groupId;
     public final String deviceId;
@@ -40,11 +40,11 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
   }
   // #device-terminated
 
-  private final ActorContext<DeviceGroupMessage> context;
+  private final ActorContext<DeviceGroupCommand> context;
   private final String groupId;
   private final Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
 
-  public DeviceGroup(ActorContext<DeviceGroupMessage> context, String groupId) {
+  public DeviceGroup(ActorContext<DeviceGroupCommand> context, String groupId) {
     this.context = context;
     this.groupId = groupId;
     context.getLog().info("DeviceGroup {} started", groupId);
@@ -95,7 +95,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
   // #device-group-register
 
   @Override
-  public Receive<DeviceGroupMessage> createReceive() {
+  public Receive<DeviceGroupCommand> createReceive() {
     return newReceiveBuilder()
         .onMessage(RequestTrackDevice.class, this::onTrackDevice)
         // #device-group-register

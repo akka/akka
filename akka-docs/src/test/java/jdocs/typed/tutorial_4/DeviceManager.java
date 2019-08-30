@@ -19,13 +19,13 @@ import java.util.Map;
 import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
 
 // #device-manager-full
-public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
+public class DeviceManager extends AbstractBehavior<DeviceManagerCommand> {
 
-  public static Behavior<DeviceManagerMessage> createBehavior() {
+  public static Behavior<DeviceManagerCommand> createBehavior() {
     return Behaviors.setup(DeviceManager::new);
   }
 
-  private static class DeviceGroupTerminated implements DeviceManagerMessage {
+  private static class DeviceGroupTerminated implements DeviceManagerCommand {
     public final String groupId;
 
     DeviceGroupTerminated(String groupId) {
@@ -33,22 +33,22 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
     }
   }
 
-  private final ActorContext<DeviceManagerMessage> context;
-  private final Map<String, ActorRef<DeviceGroupMessage>> groupIdToActor = new HashMap<>();
+  private final ActorContext<DeviceManagerCommand> context;
+  private final Map<String, ActorRef<DeviceGroupCommand>> groupIdToActor = new HashMap<>();
 
-  public DeviceManager(ActorContext<DeviceManagerMessage> context) {
+  public DeviceManager(ActorContext<DeviceManagerCommand> context) {
     this.context = context;
     context.getLog().info("DeviceManager started");
   }
 
   private DeviceManager onTrackDevice(RequestTrackDevice trackMsg) {
     String groupId = trackMsg.groupId;
-    ActorRef<DeviceGroupMessage> ref = groupIdToActor.get(groupId);
+    ActorRef<DeviceGroupCommand> ref = groupIdToActor.get(groupId);
     if (ref != null) {
       ref.tell(trackMsg);
     } else {
       context.getLog().info("Creating device group actor for {}", groupId);
-      ActorRef<DeviceGroupMessage> groupActor =
+      ActorRef<DeviceGroupCommand> groupActor =
           context.spawn(DeviceGroup.createBehavior(groupId), "group-" + groupId);
       context.watchWith(groupActor, new DeviceGroupTerminated(groupId));
       groupActor.tell(trackMsg);
@@ -58,7 +58,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
   }
 
   private DeviceManager onRequestDeviceList(RequestDeviceList request) {
-    ActorRef<DeviceGroupMessage> ref = groupIdToActor.get(request.groupId);
+    ActorRef<DeviceGroupCommand> ref = groupIdToActor.get(request.groupId);
     if (ref != null) {
       ref.tell(request);
     } else {
@@ -73,7 +73,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
     return this;
   }
 
-  public Receive<DeviceManagerMessage> createReceive() {
+  public Receive<DeviceManagerCommand> createReceive() {
     return newReceiveBuilder()
         .onMessage(RequestTrackDevice.class, this::onTrackDevice)
         .onMessage(RequestDeviceList.class, this::onRequestDeviceList)

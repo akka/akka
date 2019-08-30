@@ -21,7 +21,7 @@ public class DeviceManagerTest extends JUnitSuite {
   @Test
   public void testReplyToRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceManagerMessage> managerActor = testKit.spawn(DeviceManager.createBehavior());
+    ActorRef<DeviceManagerCommand> managerActor = testKit.spawn(DeviceManager.createBehavior());
 
     managerActor.tell(new RequestTrackDevice("group1", "device", probe.getRef()));
     DeviceRegistered registered1 = probe.receiveMessage();

@@ -13,11 +13,11 @@ abstract class DeviceManagerProtocol {
   // no instances of DeviceManagerProtocol class
   private DeviceManagerProtocol() {}
 
-  interface DeviceManagerMessage {}
+  interface DeviceManagerCommand {}
 
-  interface DeviceGroupMessage {}
+  interface DeviceGroupCommand {}
 
-  public static final class RequestTrackDevice implements DeviceManagerMessage, DeviceGroupMessage {
+  public static final class RequestTrackDevice implements DeviceManagerCommand, DeviceGroupCommand {
     public final String groupId;
     public final String deviceId;
     public final ActorRef<DeviceRegistered> replyTo;
@@ -37,7 +37,7 @@ abstract class DeviceManagerProtocol {
     }
   }
 
-  public static final class RequestDeviceList implements DeviceManagerMessage, DeviceGroupMessage {
+  public static final class RequestDeviceList implements DeviceManagerCommand, DeviceGroupCommand {
     final long requestId;
     final String groupId;
     final ActorRef<ReplyDeviceList> replyTo;
@@ -63,7 +63,7 @@ abstract class DeviceManagerProtocol {
   interface DeviceGroupQueryMessage {}
 
   public static final class RequestAllTemperatures
-      implements DeviceGroupQueryMessage, DeviceGroupMessage, DeviceManagerMessage {
+      implements DeviceGroupQueryMessage, DeviceGroupCommand, DeviceManagerCommand {
 
     final long requestId;
     final String groupId;
