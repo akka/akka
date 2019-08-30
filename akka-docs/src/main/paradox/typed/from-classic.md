@@ -1,11 +1,18 @@
 # Learning Akka Typed from Classic
 
-This is a good reference if you already know the classic actor APIs and would like to learn Akka Typed.
+Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs,
+known as Akka Typed.
+
+If you already know the classic actor APIs and would like to learn Akka Typed, this reference is a good resource.
 Many concepts are the same and this page tries to highlight differences and how to do certain things
 in Typed compared to classic.
 
-Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs,
-known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use
+You should probably learn some of the basics of Akka Typed to see how it looks like before diving into
+the differences and details described here. A good starting point for that is the
+@ref:[IoT example](guide/tutorial_3.md) in the Getting Started Guide or the examples shown in
+@ref:[Introduction to Actors](actors.md).
+
+Note that Akka Classic is still fully supported and existing applications can continue to use
 the classic APIs. It is also possible to use Akka Typed together with classic actors within the same
 ActorSystem, see @ref[coexistence](coexisting.md). For new projects we recommend using the new Actor APIs.
 
@@ -206,10 +213,13 @@ Links to reference documentation:
 Classic actors have methods `preStart`, `preRestart`, `postRestart` and `postStop` that can be overridden
 to act on changes to the actor's lifecycle.
 
-This is supported with corresponding signal messages in Typed. There is no `PreStart` signal because such action
-can be done from `Behaviors.setup` or the constructor of the `AbstractBehavior` class.
+This is supported with corresponding `PreRestart` and `PostStop` signal messages in Typed. There are no
+`PreStart` and `PostRestart` signals because such action can be done from `Behaviors.setup` or the
+constructor of the `AbstractBehavior` class.
 
-Note that classic `postStop` is called also when the actor is restarted. That is not the case in Typed.
+Note that classic `postStop` is called also when the actor is restarted. That is not the case in Typed, only the
+`PreRestart` signal is emitted. If you need to do resource cleanup on both restart and stop you have to do
+that for both `PreRestart` and `PostStop`.
 
 Links to reference documentation:
 
