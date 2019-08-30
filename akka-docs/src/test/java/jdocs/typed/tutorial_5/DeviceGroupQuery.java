@@ -24,7 +24,7 @@ import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 // #query-outline
 public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> {
 
-  public static Behavior<DeviceGroupQueryMessage> createBehavior(
+  public static Behavior<DeviceGroupQueryMessage> create(
       Map<String, ActorRef<Device.Command>> deviceIdToActor,
       long requestId,
       ActorRef<RespondAllTemperatures> requester,

@@ -41,7 +41,7 @@ public class Device extends AbstractBehavior<Device.Command> {
   }
   // #read-protocol-2
 
-  public static Behavior<Command> createBehavior(String groupId, String deviceId) {
+  public static Behavior<Command> create(String groupId, String deviceId) {
     return Behaviors.setup(context -> new Device(context, groupId, deviceId));
   }
 
@@ -62,17 +62,17 @@ public class Device extends AbstractBehavior<Device.Command> {
   @Override
   public Receive<Command> createReceive() {
     return newReceiveBuilder()
-        .onMessage(ReadTemperature.class, this::readTemperature)
-        .onSignal(PostStop.class, signal -> postStop())
+        .onMessage(ReadTemperature.class, this::onReadTemperature)
+        .onSignal(PostStop.class, signal -> onPostStop())
         .build();
   }
 
-  private Behavior<Command> readTemperature(ReadTemperature r) {
+  private Behavior<Command> onReadTemperature(ReadTemperature r) {
     r.replyTo.tell(new RespondTemperature(r.requestId, lastTemperatureReading));
     return this;
   }
 
-  private Device postStop() {
+  private Device onPostStop() {
     context.getLog().info("Device actor {}-{} stopped", groupId, deviceId);
     return this;
   }

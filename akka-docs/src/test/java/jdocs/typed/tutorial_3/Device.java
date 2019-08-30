@@ -62,7 +62,7 @@ public class Device extends AbstractBehavior<Device.Command> {
     }
   }
 
-  public static Behavior<Command> createBehavior(String groupId, String deviceId) {
+  public static Behavior<Command> create(String groupId, String deviceId) {
     return Behaviors.setup(context -> new Device(context, groupId, deviceId));
   }
 
@@ -83,25 +83,25 @@ public class Device extends AbstractBehavior<Device.Command> {
   @Override
   public Receive<Command> createReceive() {
     return newReceiveBuilder()
-        .onMessage(RecordTemperature.class, this::recordTemperature)
-        .onMessage(ReadTemperature.class, this::readTemperature)
-        .onSignal(PostStop.class, signal -> postStop())
+        .onMessage(RecordTemperature.class, this::onRecordTemperature)
+        .onMessage(ReadTemperature.class, this::onReadTemperature)
+        .onSignal(PostStop.class, signal -> onPostStop())
         .build();
   }
 
-  private Behavior<Command> recordTemperature(RecordTemperature r) {
+  private Behavior<Command> onRecordTemperature(RecordTemperature r) {
     context.getLog().info("Recorded temperature reading {} with {}", r.value, r.requestId);
     lastTemperatureReading = Optional.of(r.value);
     r.replyTo.tell(new TemperatureRecorded(r.requestId));
     return this;
   }
 
-  private Behavior<Command> readTemperature(ReadTemperature r) {
+  private Behavior<Command> onReadTemperature(ReadTemperature r) {
     r.replyTo.tell(new RespondTemperature(r.requestId, lastTemperatureReading));
     return this;
   }
 
-  private Behavior<Command> postStop() {
+  private Behavior<Command> onPostStop() {
     context.getLog().info("Device actor {}-{} stopped", groupId, deviceId);
     return Behaviors.stopped();
   }

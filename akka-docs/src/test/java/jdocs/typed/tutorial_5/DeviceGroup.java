@@ -21,7 +21,7 @@ import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 // #query-added
 public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
 
-  public static Behavior<DeviceGroupCommand> createBehavior(String groupId) {
+  public static Behavior<DeviceGroupCommand> create(String groupId) {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
@@ -56,8 +56,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
       } else {
         context.getLog().info("Creating device actor for {}", trackMsg.deviceId);
         deviceActor =
-            context.spawn(
-                Device.createBehavior(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+            context.spawn(Device.create(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
         context.watchWith(
             deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
         deviceIdToActor.put(trackMsg.deviceId, deviceActor);
@@ -85,7 +84,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
     return this;
   }
 
-  private DeviceGroup postStop() {
+  private DeviceGroup onPostStop() {
     context.getLog().info("DeviceGroup {} stopped", groupId);
     return this;
   }
@@ -103,7 +102,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
     Map<String, ActorRef<Device.Command>> deviceIdToActorCopy = new HashMap<>(this.deviceIdToActor);
 
     context.spawnAnonymous(
-        DeviceGroupQuery.createBehavior(
+        DeviceGroupQuery.create(
             deviceIdToActorCopy, r.requestId, r.replyTo, Duration.ofSeconds(3)));
 
     return this;
@@ -116,7 +115,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
         .onMessage(RequestTrackDevice.class, this::onTrackDevice)
         .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)
         .onMessage(DeviceTerminated.class, this::onTerminated)
-        .onSignal(PostStop.class, signal -> postStop())
+        .onSignal(PostStop.class, signal -> onPostStop())
         // #query-added
         // ... other cases omitted
         .onMessage(

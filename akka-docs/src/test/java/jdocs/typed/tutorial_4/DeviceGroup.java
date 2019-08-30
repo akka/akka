@@ -22,7 +22,7 @@ import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
 // #device-group-register
 public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
 
-  public static Behavior<DeviceGroupCommand> createBehavior(String groupId) {
+  public static Behavior<DeviceGroupCommand> create(String groupId) {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
@@ -58,8 +58,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
       } else {
         context.getLog().info("Creating device actor for {}", trackMsg.deviceId);
         deviceActor =
-            context.spawn(
-                Device.createBehavior(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+            context.spawn(Device.create(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
         // #device-group-register
         context.watchWith(
             deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
@@ -103,12 +102,12 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
         .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)
         // #device-group-remove
         .onMessage(DeviceTerminated.class, this::onTerminated)
-        .onSignal(PostStop.class, signal -> postStop())
+        .onSignal(PostStop.class, signal -> onPostStop())
         // #device-group-register
         .build();
   }
 
-  private DeviceGroup postStop() {
+  private DeviceGroup onPostStop() {
     context.getLog().info("DeviceGroup {} stopped", groupId);
     return this;
   }

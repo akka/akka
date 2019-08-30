@@ -37,7 +37,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     ActorRef<DeviceGroupQueryMessage> queryActor =
         testKit.spawn(
-            DeviceGroupQuery.createBehavior(
+            DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     device1.expectMessageClass(Device.ReadTemperature.class);
@@ -76,7 +76,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     ActorRef<DeviceGroupQueryMessage> queryActor =
         testKit.spawn(
-            DeviceGroupQuery.createBehavior(
+            DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
@@ -115,7 +115,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     ActorRef<DeviceGroupQueryMessage> queryActor =
         testKit.spawn(
-            DeviceGroupQuery.createBehavior(
+            DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
@@ -152,7 +152,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     ActorRef<DeviceGroupQueryMessage> queryActor =
         testKit.spawn(
-            DeviceGroupQuery.createBehavior(
+            DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
@@ -193,7 +193,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     ActorRef<DeviceGroupQueryMessage> queryActor =
         testKit.spawn(
-            DeviceGroupQuery.createBehavior(
+            DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofMillis(200)));
 
     assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);

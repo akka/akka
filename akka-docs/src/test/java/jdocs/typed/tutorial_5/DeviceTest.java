@@ -24,7 +24,7 @@ public class DeviceTest extends JUnitSuite {
   public void testReplyWithEmptyReadingIfNoTemperatureIsKnown() {
     TestProbe<Device.RespondTemperature> probe =
         testKit.createTestProbe(Device.RespondTemperature.class);
-    ActorRef<Device.Command> deviceActor = testKit.spawn(Device.createBehavior("group", "device"));
+    ActorRef<Device.Command> deviceActor = testKit.spawn(Device.create("group", "device"));
     deviceActor.tell(new Device.ReadTemperature(42L, probe.getRef()));
     Device.RespondTemperature response = probe.receiveMessage();
     assertEquals(42L, response.requestId);
@@ -37,7 +37,7 @@ public class DeviceTest extends JUnitSuite {
         testKit.createTestProbe(Device.TemperatureRecorded.class);
     TestProbe<Device.RespondTemperature> readProbe =
         testKit.createTestProbe(Device.RespondTemperature.class);
-    ActorRef<Device.Command> deviceActor = testKit.spawn(Device.createBehavior("group", "device"));
+    ActorRef<Device.Command> deviceActor = testKit.spawn(Device.create("group", "device"));
 
     deviceActor.tell(new Device.RecordTemperature(1L, 24.0, recordProbe.getRef()));
     assertEquals(1L, recordProbe.receiveMessage().requestId);

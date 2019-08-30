@@ -26,7 +26,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testReplyToRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device", probe.getRef()));
     DeviceRegistered registered1 = probe.receiveMessage();
@@ -48,7 +48,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testIgnoreWrongRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.create("group"));
     groupActor.tell(new RequestTrackDevice("wrongGroup", "device1", probe.getRef()));
     probe.expectNoMessage();
   }
@@ -58,7 +58,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testReturnSameActorForSameDeviceId() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device", probe.getRef()));
     DeviceRegistered registered1 = probe.receiveMessage();
@@ -74,7 +74,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testListActiveDevices() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device1", registeredProbe.getRef()));
     registeredProbe.receiveMessage();
@@ -93,7 +93,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testListActiveDevicesAfterOneShutsDown() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroupCommand> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device1", registeredProbe.getRef()));
     DeviceRegistered registered1 = registeredProbe.receiveMessage();
