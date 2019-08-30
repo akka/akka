@@ -281,6 +281,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       allocationStrategy: ShardAllocationStrategy,
       handOffStopMessage: Any): ActorRef = {
 
+    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+      log.warning("Cluster Sharding has been set to use the deprecated `persistence` state store mode.")
+
     if (settings.shouldHostShard(cluster)) {
       regions.get(typeName) match {
         case null =>

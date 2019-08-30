@@ -4,16 +4,17 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import com.typesafe.config.Config
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
 
 object ClusterShardingSettings {
 
@@ -299,7 +300,8 @@ final class ClusterShardingSettings(
       tuningParameters,
       coordinatorSingletonSettings)
 
-  import ClusterShardingSettings.{ StateStoreModeDData, StateStoreModePersistence }
+  import ClusterShardingSettings.StateStoreModeDData
+  import ClusterShardingSettings.StateStoreModePersistence
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
     s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")

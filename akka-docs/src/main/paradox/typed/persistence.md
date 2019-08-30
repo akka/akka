@@ -132,7 +132,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #behavior }
 
-## Cluster Sharding and persistence
+## Cluster Sharding and EventSourcedBehavior
 
 In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
 where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can

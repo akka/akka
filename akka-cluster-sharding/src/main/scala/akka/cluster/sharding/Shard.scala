@@ -124,31 +124,31 @@ private[akka] object Shard {
       handOffStopMessage: Any,
       replicator: ActorRef,
       majorityMinCap: Int): Props = {
-    if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
-      Props(
-        new DDataShard(
-          typeName,
-          shardId,
-          entityProps,
-          settings,
-          extractEntityId,
-          extractShardId,
-          handOffStopMessage,
-          replicator,
-          majorityMinCap)).withDeploy(Deploy.local)
-    } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
-      Props(
-        new PersistentShard(
-          typeName,
-          shardId,
-          entityProps,
-          settings,
-          extractEntityId,
-          extractShardId,
-          handOffStopMessage)).withDeploy(Deploy.local)
-    else
-      Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
-        .withDeploy(Deploy.local)
+    (if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
+       Props(
+         new DDataShard(
+           typeName,
+           shardId,
+           entityProps,
+           settings,
+           extractEntityId,
+           extractShardId,
+           handOffStopMessage,
+           replicator,
+           majorityMinCap))
+     } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+       Props(
+         new PersistentShard(
+           typeName,
+           shardId,
+           entityProps,
+           settings,
+           extractEntityId,
+           extractShardId,
+           handOffStopMessage))
+     else {
+       Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
+     }).withDeploy(Deploy.local)
   }
 
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
@@ -1019,6 +1019,6 @@ final class ConstantRateEntityRecoveryStrategy(
       }
       ._2
 
-  private def scheduleEntities(interval: FiniteDuration, entityIds: Set[EntityId]) =
+  private def scheduleEntities(interval: FiniteDuration, entityIds: Set[EntityId]): Future[Set[EntityId]] =
     after(interval, actorSystem.scheduler)(Future.successful[Set[EntityId]](entityIds))
 }

@@ -4,8 +4,6 @@
 
 package akka.cluster.sharding
 
-import akka.util.Timeout
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -26,6 +24,8 @@ import akka.cluster.ddata.GSetKey
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -38,6 +38,7 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
+  @silent("deprecated")
   private[akka] def props(
       typeName: String,
       settings: ClusterShardingSettings,
@@ -920,6 +921,7 @@ abstract class ShardCoordinator(
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
+@deprecated("Use `ddata` mode, persistence mode is deprecated.", "2.6.0")
 class PersistentShardCoordinator(
     typeName: String,
     settings: ClusterShardingSettings,

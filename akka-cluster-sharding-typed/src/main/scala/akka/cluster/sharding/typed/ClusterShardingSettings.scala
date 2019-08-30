@@ -103,8 +103,7 @@ object ClusterShardingSettings {
       if (name == StateStoreModePersistence.name) StateStoreModePersistence
       else if (name == StateStoreModeDData.name) StateStoreModeDData
       else
-        throw new IllegalArgumentException(
-          "Not recognized StateStoreMode, only 'persistence' and 'ddata' are supported.")
+        throw new IllegalArgumentException("Not recognized StateStoreMode, only 'ddata' is supported.")
   }
   final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
   final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
