@@ -188,7 +188,7 @@ final class Flow[-In, +Out, +Mat](
    * | Resulting Flow            |
    * |                           |
    * | +------+        +------+  |
-   * | |      | ~Out~> |      | ~~> O2
+   * | |      | ~Out~> |      | ~~> O1
    * | | flow |        | bidi |  |
    * | |      | <~In~  |      | <~~ I2
    * | +------+        +------+  |
@@ -198,7 +198,7 @@ final class Flow[-In, +Out, +Mat](
    * value of the current flow (ignoring the [[BidiFlow]]’s value), use
    * [[Flow#joinMat[I2* joinMat]] if a different strategy is needed.
    */
-  def join[I2, O2, Mat2](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2]): Flow[I2, O2, Mat] = joinMat(bidi)(Keep.left)
+  def join[I2, O1, Mat2](bidi: Graph[BidiShape[Out, O1, I2, In], Mat2]): Flow[I2, O1, Mat] = joinMat(bidi)(Keep.left)
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -207,7 +207,7 @@ final class Flow[-In, +Out, +Mat](
    * | Resulting Flow            |
    * |                           |
    * | +------+        +------+  |
-   * | |      | ~Out~> |      | ~~> O2
+   * | |      | ~Out~> |      | ~~> O1
    * | | flow |        | bidi |  |
    * | |      | <~In~  |      | <~~ I2
    * | +------+        +------+  |
@@ -219,8 +219,8 @@ final class Flow[-In, +Out, +Mat](
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def joinMat[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2])(
-      combine: (Mat, Mat2) => M): Flow[I2, O2, M] = {
+  def joinMat[I2, O1, Mat2, M](bidi: Graph[BidiShape[Out, O1, I2, In], Mat2])(
+      combine: (Mat, Mat2) => M): Flow[I2, O1, M] = {
     val newBidiShape = bidi.shape.deepCopy()
     val newFlowShape = shape.deepCopy()
 

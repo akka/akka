@@ -454,7 +454,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * | Resulting Flow            |
    * |                           |
    * | +------+        +------+  |
-   * | |      | ~Out~> |      | ~~> O2
+   * | |      | ~Out~> |      | ~~> O1
    * | | flow |        | bidi |  |
    * | |      | <~In~  |      | <~~ I2
    * | +------+        +------+  |
@@ -464,7 +464,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * value of the current flow (ignoring the [[BidiFlow]]’s value), use
    * [[Flow#joinMat[I2* joinMat]] if a different strategy is needed.
    */
-  def join[I2, O2, Mat2](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2]): Flow[I2, O2, Mat] =
+  def join[I2, O1, Mat2](bidi: Graph[BidiShape[Out, O1, I2, In], Mat2]): Flow[I2, O1, Mat] =
     new Flow(delegate.join(bidi))
 
   /**
@@ -474,7 +474,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * | Resulting Flow            |
    * |                           |
    * | +------+        +------+  |
-   * | |      | ~Out~> |      | ~~> O2
+   * | |      | ~Out~> |      | ~~> O1
    * | | flow |        | bidi |  |
    * | |      | <~In~  |      | <~~ I2
    * | +------+        +------+  |
@@ -488,9 +488,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * See also [[viaMat]] when access to materialized values of the parameter is needed.
    */
-  def joinMat[I2, O2, Mat2, M](
-      bidi: Graph[BidiShape[Out, O2, I2, In], Mat2],
-      combine: function.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
+  def joinMat[I2, O1, Mat2, M](
+      bidi: Graph[BidiShape[Out, O1, I2, In], Mat2],
+      combine: function.Function2[Mat, Mat2, M]): Flow[I2, O1, M] =
     new Flow(delegate.joinMat(bidi)(combinerToScala(combine)))
 
   /**
