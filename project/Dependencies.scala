@@ -30,7 +30,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.4.0"
+  val sslConfigVersion = "0.3.8"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
@@ -61,7 +61,7 @@ object Dependencies {
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
 
-    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/2.5/akka-sample-osgi-dining-hakkers
+    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/2.6/akka-sample-osgi-dining-hakkers
     val osgiCore = "org.osgi" % "org.osgi.core" % "6.0.0" // ApacheV2
     val osgiCompendium = "org.osgi" % "org.osgi.compendium" % "5.0.0" // ApacheV2
 
@@ -144,7 +144,7 @@ object Dependencies {
 
     object Provided {
       // TODO remove from "test" config
-      val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6" % "optional;provided;test" // ApacheV2
+      val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
       val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
