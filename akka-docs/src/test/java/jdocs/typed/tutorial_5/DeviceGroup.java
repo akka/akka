@@ -16,12 +16,12 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
-
 // #query-added
-public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
+public class DeviceGroup extends AbstractBehavior<DeviceGroup.Command> {
 
-  private class DeviceTerminated implements DeviceGroupCommand {
+  public interface Command {}
+
+  private class DeviceTerminated implements Command {
     public final ActorRef<Device.Command> device;
     public final String groupId;
     public final String deviceId;
@@ -33,26 +33,26 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
     }
   }
 
-  public static Behavior<DeviceGroupCommand> create(String groupId) {
+  public static Behavior<Command> create(String groupId) {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
-  private final ActorContext<DeviceGroupCommand> context;
+  private final ActorContext<Command> context;
   private final String groupId;
   private final Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
 
-  private DeviceGroup(ActorContext<DeviceGroupCommand> context, String groupId) {
+  private DeviceGroup(ActorContext<Command> context, String groupId) {
     this.context = context;
     this.groupId = groupId;
     context.getLog().info("DeviceGroup {} started", groupId);
   }
 
   // #query-added
-  private DeviceGroup onTrackDevice(RequestTrackDevice trackMsg) {
+  private DeviceGroup onTrackDevice(DeviceManager.RequestTrackDevice trackMsg) {
     if (this.groupId.equals(trackMsg.groupId)) {
       ActorRef<Device.Command> deviceActor = deviceIdToActor.get(trackMsg.deviceId);
       if (deviceActor != null) {
-        trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
+        trackMsg.replyTo.tell(new DeviceManager.DeviceRegistered(deviceActor));
       } else {
         context.getLog().info("Creating device actor for {}", trackMsg.deviceId);
         deviceActor =
@@ -60,7 +60,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
         context.watchWith(
             deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
         deviceIdToActor.put(trackMsg.deviceId, deviceActor);
-        trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
+        trackMsg.replyTo.tell(new DeviceManager.DeviceRegistered(deviceActor));
       }
     } else {
       context
@@ -73,8 +73,8 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
     return this;
   }
 
-  private DeviceGroup onDeviceList(RequestDeviceList r) {
-    r.replyTo.tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()));
+  private DeviceGroup onDeviceList(DeviceManager.RequestDeviceList r) {
+    r.replyTo.tell(new DeviceManager.ReplyDeviceList(r.requestId, deviceIdToActor.keySet()));
     return this;
   }
 
@@ -91,7 +91,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
 
   // #query-added
 
-  private DeviceGroup onAllTemperatures(RequestAllTemperatures r) {
+  private DeviceGroup onAllTemperatures(DeviceManager.RequestAllTemperatures r) {
     // since Java collections are mutable, we want to avoid sharing them between actors (since
     // multiple Actors (threads)
     // modifying the same mutable data-structure is not safe), and perform a defensive copy of the
@@ -109,17 +109,22 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
   }
 
   @Override
-  public Receive<DeviceGroupCommand> createReceive() {
+  public Receive<Command> createReceive() {
     return newReceiveBuilder()
         // #query-added
-        .onMessage(RequestTrackDevice.class, this::onTrackDevice)
-        .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)
+        .onMessage(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+        .onMessage(
+            DeviceManager.RequestDeviceList.class,
+            r -> r.groupId.equals(groupId),
+            this::onDeviceList)
         .onMessage(DeviceTerminated.class, this::onTerminated)
         .onSignal(PostStop.class, signal -> onPostStop())
         // #query-added
         // ... other cases omitted
         .onMessage(
-            RequestAllTemperatures.class, r -> r.groupId.equals(groupId), this::onAllTemperatures)
+            DeviceManager.RequestAllTemperatures.class,
+            r -> r.groupId.equals(groupId),
+            this::onAllTemperatures)
         .build();
   }
 }

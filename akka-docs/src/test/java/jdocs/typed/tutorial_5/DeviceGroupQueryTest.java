@@ -16,8 +16,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 import static org.junit.Assert.assertEquals;
+
+import static jdocs.typed.tutorial_5.DeviceManager.RespondAllTemperatures;
+import static jdocs.typed.tutorial_5.DeviceManager.TemperatureReading;
+import static jdocs.typed.tutorial_5.DeviceManager.Temperature;
+import static jdocs.typed.tutorial_5.DeviceManager.TemperatureNotAvailable;
+import static jdocs.typed.tutorial_5.DeviceManager.DeviceTimedOut;
+import static jdocs.typed.tutorial_5.DeviceManager.DeviceNotAvailable;
 
 public class DeviceGroupQueryTest extends JUnitSuite {
 
@@ -35,7 +41,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor =
+    ActorRef<DeviceGroupQuery.Command> queryActor =
         testKit.spawn(
             DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
@@ -74,7 +80,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor =
+    ActorRef<DeviceGroupQuery.Command> queryActor =
         testKit.spawn(
             DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
@@ -113,7 +119,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor =
+    ActorRef<DeviceGroupQuery.Command> queryActor =
         testKit.spawn(
             DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
@@ -150,7 +156,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor =
+    ActorRef<DeviceGroupQuery.Command> queryActor =
         testKit.spawn(
             DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
@@ -191,7 +197,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor =
+    ActorRef<DeviceGroupQuery.Command> queryActor =
         testKit.spawn(
             DeviceGroupQuery.create(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofMillis(200)));

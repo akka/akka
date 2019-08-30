@@ -70,7 +70,7 @@ Scala
 :   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/DeviceManager.scala) { #device-registration-msgs }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManagerProtocol.java) { #device-registration-msgs }
+:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManager.java) { #device-registration-msgs }
 
 In this case we have not included a request ID field in the messages. Since registration happens once, when the component connects the system to some network protocol, the ID is not important. However, it is usually a best practice to include a request ID.
 
@@ -141,7 +141,7 @@ Scala
 :   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/DeviceManager.scala) { #device-list-msgs }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManagerProtocol.java) { #device-list-msgs }
+:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManager.java) { #device-list-msgs }
 
 
 Scala

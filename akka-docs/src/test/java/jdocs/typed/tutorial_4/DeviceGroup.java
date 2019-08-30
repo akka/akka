@@ -15,15 +15,15 @@ import akka.actor.typed.javadsl.Receive;
 import java.util.HashMap;
 import java.util.Map;
 
-import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
-
 // #device-group-full
 // #device-group-remove
 // #device-group-register
-public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
+public class DeviceGroup extends AbstractBehavior<DeviceGroup.Command> {
+
+  public interface Command {}
 
   // #device-terminated
-  private class DeviceTerminated implements DeviceGroupCommand {
+  private class DeviceTerminated implements Command {
     public final ActorRef<Device.Command> device;
     public final String groupId;
     public final String deviceId;
@@ -36,25 +36,25 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
   }
   // #device-terminated
 
-  public static Behavior<DeviceGroupCommand> create(String groupId) {
+  public static Behavior<Command> create(String groupId) {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
-  private final ActorContext<DeviceGroupCommand> context;
+  private final ActorContext<Command> context;
   private final String groupId;
   private final Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
 
-  private DeviceGroup(ActorContext<DeviceGroupCommand> context, String groupId) {
+  private DeviceGroup(ActorContext<Command> context, String groupId) {
     this.context = context;
     this.groupId = groupId;
     context.getLog().info("DeviceGroup {} started", groupId);
   }
 
-  private DeviceGroup onTrackDevice(RequestTrackDevice trackMsg) {
+  private DeviceGroup onTrackDevice(DeviceManager.RequestTrackDevice trackMsg) {
     if (this.groupId.equals(trackMsg.groupId)) {
       ActorRef<Device.Command> deviceActor = deviceIdToActor.get(trackMsg.deviceId);
       if (deviceActor != null) {
-        trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
+        trackMsg.replyTo.tell(new DeviceManager.DeviceRegistered(deviceActor));
       } else {
         context.getLog().info("Creating device actor for {}", trackMsg.deviceId);
         deviceActor =
@@ -64,7 +64,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
             deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
         // #device-group-register
         deviceIdToActor.put(trackMsg.deviceId, deviceActor);
-        trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
+        trackMsg.replyTo.tell(new DeviceManager.DeviceRegistered(deviceActor));
       }
     } else {
       context
@@ -80,8 +80,8 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
   // #device-group-register
   // #device-group-remove
 
-  private DeviceGroup onDeviceList(RequestDeviceList r) {
-    r.replyTo.tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()));
+  private DeviceGroup onDeviceList(DeviceManager.RequestDeviceList r) {
+    r.replyTo.tell(new DeviceManager.ReplyDeviceList(r.requestId, deviceIdToActor.keySet()));
     return this;
   }
   // #device-group-remove
@@ -94,12 +94,15 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
   // #device-group-register
 
   @Override
-  public Receive<DeviceGroupCommand> createReceive() {
+  public Receive<Command> createReceive() {
     return newReceiveBuilder()
-        .onMessage(RequestTrackDevice.class, this::onTrackDevice)
+        .onMessage(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
         // #device-group-register
         // #device-group-remove
-        .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)
+        .onMessage(
+            DeviceManager.RequestDeviceList.class,
+            r -> r.groupId.equals(groupId),
+            this::onDeviceList)
         // #device-group-remove
         .onMessage(DeviceTerminated.class, this::onTerminated)
         .onSignal(PostStop.class, signal -> onPostStop())
