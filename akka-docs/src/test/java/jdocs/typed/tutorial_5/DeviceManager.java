@@ -20,10 +20,6 @@ import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 
 public class DeviceManager extends AbstractBehavior<DeviceManagerCommand> {
 
-  public static Behavior<DeviceManagerCommand> create() {
-    return Behaviors.setup(DeviceManager::new);
-  }
-
   private static class DeviceGroupTerminated implements DeviceManagerCommand {
     public final String groupId;
 
@@ -35,7 +31,11 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerCommand> {
   private final ActorContext<DeviceManagerCommand> context;
   private final Map<String, ActorRef<DeviceGroupCommand>> groupIdToActor = new HashMap<>();
 
-  public DeviceManager(ActorContext<DeviceManagerCommand> context) {
+  public static Behavior<DeviceManagerCommand> create() {
+    return Behaviors.setup(DeviceManager::new);
+  }
+
+  private DeviceManager(ActorContext<DeviceManagerCommand> context) {
     this.context = context;
     context.getLog().info("DeviceManager started");
   }

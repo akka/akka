@@ -11,7 +11,7 @@ import java.util.Optional;
 // #read-protocol-1
 public class Device {
 
-  interface Command {}
+  public interface Command {}
 
   public static final class ReadTemperature implements Command {
     final ActorRef<RespondTemperature> replyTo;

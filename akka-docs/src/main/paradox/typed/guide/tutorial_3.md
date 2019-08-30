@@ -132,7 +132,7 @@ Java
 
 Note in the code that:
 
-* The @scala[apply method in the companion object]@java[static method] defines how to construct the `Behavior` for the `Device` actor. The parameters include an ID for the device and the group to which it belongs, which we will use later.
+* The @scala[`apply` method in the companion object]@java[static `create` method] defines how to construct the `Behavior` for the `Device` actor. The parameters include an ID for the device and the group to which it belongs, which we will use later.
 * The messages we reasoned about previously are defined in @scala[the companion object.]@java[Device class that was shown earlier.]
 * In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will report it back if queried.
 

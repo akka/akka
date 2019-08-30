@@ -24,19 +24,6 @@ import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 // #query-outline
 public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> {
 
-  public static Behavior<DeviceGroupQueryMessage> create(
-      Map<String, ActorRef<Device.Command>> deviceIdToActor,
-      long requestId,
-      ActorRef<RespondAllTemperatures> requester,
-      Duration timeout) {
-    return Behaviors.setup(
-        context ->
-            Behaviors.withTimers(
-                timers ->
-                    new DeviceGroupQuery(
-                        deviceIdToActor, requestId, requester, timeout, context, timers)));
-  }
-
   private static enum CollectionTimeout implements DeviceGroupQueryMessage {
     INSTANCE
   }
@@ -57,6 +44,19 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
     }
   }
 
+  public static Behavior<DeviceGroupQueryMessage> create(
+      Map<String, ActorRef<Device.Command>> deviceIdToActor,
+      long requestId,
+      ActorRef<RespondAllTemperatures> requester,
+      Duration timeout) {
+    return Behaviors.setup(
+        context ->
+            Behaviors.withTimers(
+                timers ->
+                    new DeviceGroupQuery(
+                        deviceIdToActor, requestId, requester, timeout, context, timers)));
+  }
+
   private final long requestId;
   private final ActorRef<RespondAllTemperatures> requester;
   // #query-outline
@@ -67,7 +67,7 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
   // #query-state
   // #query-outline
 
-  public DeviceGroupQuery(
+  private DeviceGroupQuery(
       Map<String, ActorRef<Device.Command>> deviceIdToActor,
       long requestId,
       ActorRef<RespondAllTemperatures> requester,

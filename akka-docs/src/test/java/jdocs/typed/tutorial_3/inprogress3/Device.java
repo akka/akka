@@ -6,7 +6,7 @@ package jdocs.typed.tutorial_3.inprogress3;
 
 public class Device {
 
-  interface Command {}
+  public interface Command {}
 
   // #write-protocol-1
   public static final class RecordTemperature implements Command {

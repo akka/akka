@@ -18,7 +18,7 @@ import akka.actor.typed.javadsl.Receive;
 
 public class Device extends AbstractBehavior<Device.Command> {
 
-  interface Command {}
+  public interface Command {}
 
   public static final class RecordTemperature implements Command {
     final long requestId;
@@ -76,7 +76,7 @@ public class Device extends AbstractBehavior<Device.Command> {
 
   private Optional<Double> lastTemperatureReading = Optional.empty();
 
-  public Device(ActorContext<Command> context, String groupId, String deviceId) {
+  private Device(ActorContext<Command> context, String groupId, String deviceId) {
     this.context = context;
     this.groupId = groupId;
     this.deviceId = deviceId;

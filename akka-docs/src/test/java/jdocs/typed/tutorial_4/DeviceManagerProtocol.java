@@ -13,9 +13,9 @@ abstract class DeviceManagerProtocol {
   // no instances of DeviceManagerProtocol class
   private DeviceManagerProtocol() {}
 
-  interface DeviceManagerCommand {}
+  public interface DeviceManagerCommand {}
 
-  interface DeviceGroupCommand {}
+  public interface DeviceGroupCommand {}
 
   public static final class RequestTrackDevice implements DeviceManagerCommand, DeviceGroupCommand {
     public final String groupId;

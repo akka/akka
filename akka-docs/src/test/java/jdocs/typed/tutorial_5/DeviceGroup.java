@@ -21,10 +21,6 @@ import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 // #query-added
 public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
 
-  public static Behavior<DeviceGroupCommand> create(String groupId) {
-    return Behaviors.setup(context -> new DeviceGroup(context, groupId));
-  }
-
   private class DeviceTerminated implements DeviceGroupCommand {
     public final ActorRef<Device.Command> device;
     public final String groupId;
@@ -37,11 +33,15 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupCommand> {
     }
   }
 
+  public static Behavior<DeviceGroupCommand> create(String groupId) {
+    return Behaviors.setup(context -> new DeviceGroup(context, groupId));
+  }
+
   private final ActorContext<DeviceGroupCommand> context;
   private final String groupId;
   private final Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
 
-  public DeviceGroup(ActorContext<DeviceGroupCommand> context, String groupId) {
+  private DeviceGroup(ActorContext<DeviceGroupCommand> context, String groupId) {
     this.context = context;
     this.groupId = groupId;
     context.getLog().info("DeviceGroup {} started", groupId);
