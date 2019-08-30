@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
-import static jdocs.typed.tutorial_5.DeviceProtocol.*;
 import static org.junit.Assert.assertEquals;
 
 public class DeviceGroupQueryTest extends JUnitSuite {
@@ -29,10 +28,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
   public void testReturnTemperatureValueForWorkingDevices() {
     TestProbe<RespondAllTemperatures> requester =
         testKit.createTestProbe(RespondAllTemperatures.class);
-    TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
-    TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
+    TestProbe<Device.Command> device1 = testKit.createTestProbe(Device.Command.class);
+    TestProbe<Device.Command> device2 = testKit.createTestProbe(Device.Command.class);
 
-    Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor = new HashMap<>();
+    Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
@@ -41,16 +40,16 @@ public class DeviceGroupQueryTest extends JUnitSuite {
             DeviceGroupQuery.createBehavior(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
-    device1.expectMessageClass(ReadTemperature.class);
-    device2.expectMessageClass(ReadTemperature.class);
+    device1.expectMessageClass(Device.ReadTemperature.class);
+    device2.expectMessageClass(Device.ReadTemperature.class);
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device1", Optional.of(1.0))));
+            new Device.RespondTemperature(0L, "device1", Optional.of(1.0))));
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device2", Optional.of(2.0))));
+            new Device.RespondTemperature(0L, "device2", Optional.of(2.0))));
 
     RespondAllTemperatures response = requester.receiveMessage();
     assertEquals(1L, response.requestId);
@@ -68,10 +67,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
   public void testReturnTemperatureNotAvailableForDevicesWithNoReadings() {
     TestProbe<RespondAllTemperatures> requester =
         testKit.createTestProbe(RespondAllTemperatures.class);
-    TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
-    TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
+    TestProbe<Device.Command> device1 = testKit.createTestProbe(Device.Command.class);
+    TestProbe<Device.Command> device2 = testKit.createTestProbe(Device.Command.class);
 
-    Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor = new HashMap<>();
+    Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
@@ -80,16 +79,16 @@ public class DeviceGroupQueryTest extends JUnitSuite {
             DeviceGroupQuery.createBehavior(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
-    assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
-    assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
+    assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
+    assertEquals(0L, device2.expectMessageClass(Device.ReadTemperature.class).requestId);
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device1", Optional.empty())));
+            new Device.RespondTemperature(0L, "device1", Optional.empty())));
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device2", Optional.of(2.0))));
+            new Device.RespondTemperature(0L, "device2", Optional.of(2.0))));
 
     RespondAllTemperatures response = requester.receiveMessage();
     assertEquals(1L, response.requestId);
@@ -107,10 +106,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
   public void testReturnDeviceNotAvailableIfDeviceStopsBeforeAnswering() {
     TestProbe<RespondAllTemperatures> requester =
         testKit.createTestProbe(RespondAllTemperatures.class);
-    TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
-    TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
+    TestProbe<Device.Command> device1 = testKit.createTestProbe(Device.Command.class);
+    TestProbe<Device.Command> device2 = testKit.createTestProbe(Device.Command.class);
 
-    Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor = new HashMap<>();
+    Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
@@ -119,12 +118,12 @@ public class DeviceGroupQueryTest extends JUnitSuite {
             DeviceGroupQuery.createBehavior(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
-    assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
-    assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
+    assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
+    assertEquals(0L, device2.expectMessageClass(Device.ReadTemperature.class).requestId);
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device1", Optional.of(1.0))));
+            new Device.RespondTemperature(0L, "device1", Optional.of(1.0))));
 
     device2.stop();
 
@@ -144,10 +143,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
   public void testReturnTemperatureReadingEvenIfDeviceStopsAfterAnswering() {
     TestProbe<RespondAllTemperatures> requester =
         testKit.createTestProbe(RespondAllTemperatures.class);
-    TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
-    TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
+    TestProbe<Device.Command> device1 = testKit.createTestProbe(Device.Command.class);
+    TestProbe<Device.Command> device2 = testKit.createTestProbe(Device.Command.class);
 
-    Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor = new HashMap<>();
+    Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
@@ -156,16 +155,16 @@ public class DeviceGroupQueryTest extends JUnitSuite {
             DeviceGroupQuery.createBehavior(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
-    assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
-    assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
+    assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
+    assertEquals(0L, device2.expectMessageClass(Device.ReadTemperature.class).requestId);
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device1", Optional.of(1.0))));
+            new Device.RespondTemperature(0L, "device1", Optional.of(1.0))));
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device2", Optional.of(2.0))));
+            new Device.RespondTemperature(0L, "device2", Optional.of(2.0))));
 
     device2.stop();
 
@@ -185,10 +184,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
   public void testReturnDeviceTimedOutIfDeviceDoesNotAnswerInTime() {
     TestProbe<RespondAllTemperatures> requester =
         testKit.createTestProbe(RespondAllTemperatures.class);
-    TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
-    TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
+    TestProbe<Device.Command> device1 = testKit.createTestProbe(Device.Command.class);
+    TestProbe<Device.Command> device2 = testKit.createTestProbe(Device.Command.class);
 
-    Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor = new HashMap<>();
+    Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
@@ -197,12 +196,12 @@ public class DeviceGroupQueryTest extends JUnitSuite {
             DeviceGroupQuery.createBehavior(
                 deviceIdToActor, 1L, requester.getRef(), Duration.ofMillis(200)));
 
-    assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
-    assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
+    assertEquals(0L, device1.expectMessageClass(Device.ReadTemperature.class).requestId);
+    assertEquals(0L, device2.expectMessageClass(Device.ReadTemperature.class).requestId);
 
     queryActor.tell(
         new DeviceGroupQuery.WrappedRespondTemperature(
-            new RespondTemperature(0L, "device1", Optional.of(1.0))));
+            new Device.RespondTemperature(0L, "device1", Optional.of(1.0))));
 
     // no reply from device2
 

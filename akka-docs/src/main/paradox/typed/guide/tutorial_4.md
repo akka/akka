@@ -156,17 +156,17 @@ We are almost ready to test the removal of devices. But, we still need the follo
  * To be notified once the device actor is stopped. We can use the _Death Watch_ facility for this purpose, too.
 
 Scala
-:   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #passivate-msg }
+:   @@snip [Device.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #passivate-msg }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceProtocol.java) { #passivate-msg }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #passivate-msg }
 
 
 Scala
-:   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #device-with-passivate }
+:   @@snip [Device.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #device-with-passivate }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #device-with-passivate }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #device-with-passivate }
 
 
 We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped.  The `TestProbe` has a `expectTerminated` method that we can easily use to assert that the device actor has been terminated.

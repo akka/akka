@@ -25,7 +25,7 @@ import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> {
 
   public static Behavior<DeviceGroupQueryMessage> createBehavior(
-      Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor,
+      Map<String, ActorRef<Device.Command>> deviceIdToActor,
       long requestId,
       ActorRef<RespondAllTemperatures> requester,
       Duration timeout) {
@@ -42,9 +42,9 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
   }
 
   static class WrappedRespondTemperature implements DeviceGroupQueryMessage {
-    final DeviceProtocol.RespondTemperature response;
+    final Device.RespondTemperature response;
 
-    WrappedRespondTemperature(DeviceProtocol.RespondTemperature response) {
+    WrappedRespondTemperature(Device.RespondTemperature response) {
       this.response = response;
     }
   }
@@ -68,7 +68,7 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
   // #query-outline
 
   public DeviceGroupQuery(
-      Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor,
+      Map<String, ActorRef<Device.Command>> deviceIdToActor,
       long requestId,
       ActorRef<RespondAllTemperatures> requester,
       Duration timeout,
@@ -79,14 +79,12 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
 
     timers.startSingleTimer(CollectionTimeout.class, CollectionTimeout.INSTANCE, timeout);
 
-    ActorRef<DeviceProtocol.RespondTemperature> respondTemperatureAdapter =
-        context.messageAdapter(
-            DeviceProtocol.RespondTemperature.class, WrappedRespondTemperature::new);
+    ActorRef<Device.RespondTemperature> respondTemperatureAdapter =
+        context.messageAdapter(Device.RespondTemperature.class, WrappedRespondTemperature::new);
 
-    for (Map.Entry<String, ActorRef<DeviceProtocol.DeviceMessage>> entry :
-        deviceIdToActor.entrySet()) {
+    for (Map.Entry<String, ActorRef<Device.Command>> entry : deviceIdToActor.entrySet()) {
       context.watchWith(entry.getValue(), new DeviceTerminated(entry.getKey()));
-      entry.getValue().tell(new DeviceProtocol.ReadTemperature(0L, respondTemperatureAdapter));
+      entry.getValue().tell(new Device.ReadTemperature(0L, respondTemperatureAdapter));
     }
     stillWaiting = new HashSet<>(deviceIdToActor.keySet());
   }

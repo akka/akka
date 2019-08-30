@@ -30,9 +30,9 @@ abstract class DeviceManagerProtocol {
   }
 
   public static final class DeviceRegistered {
-    public final ActorRef<DeviceProtocol.DeviceMessage> device;
+    public final ActorRef<Device.Command> device;
 
-    public DeviceRegistered(ActorRef<DeviceProtocol.DeviceMessage> device) {
+    public DeviceRegistered(ActorRef<Device.Command> device) {
       this.device = device;
     }
   }

@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
-import static jdocs.typed.tutorial_4.DeviceProtocol.DeviceMessage;
 
 // #device-group-full
 // #device-group-remove
@@ -29,12 +28,11 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
 
   // #device-terminated
   private class DeviceTerminated implements DeviceGroupMessage {
-    public final ActorRef<DeviceProtocol.DeviceMessage> device;
+    public final ActorRef<Device.Command> device;
     public final String groupId;
     public final String deviceId;
 
-    DeviceTerminated(
-        ActorRef<DeviceProtocol.DeviceMessage> device, String groupId, String deviceId) {
+    DeviceTerminated(ActorRef<Device.Command> device, String groupId, String deviceId) {
       this.device = device;
       this.groupId = groupId;
       this.deviceId = deviceId;
@@ -44,7 +42,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
 
   private final ActorContext<DeviceGroupMessage> context;
   private final String groupId;
-  private final Map<String, ActorRef<DeviceMessage>> deviceIdToActor = new HashMap<>();
+  private final Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
 
   public DeviceGroup(ActorContext<DeviceGroupMessage> context, String groupId) {
     this.context = context;
@@ -54,7 +52,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
 
   private DeviceGroup onTrackDevice(RequestTrackDevice trackMsg) {
     if (this.groupId.equals(trackMsg.groupId)) {
-      ActorRef<DeviceMessage> deviceActor = deviceIdToActor.get(trackMsg.deviceId);
+      ActorRef<Device.Command> deviceActor = deviceIdToActor.get(trackMsg.deviceId);
       if (deviceActor != null) {
         trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
       } else {

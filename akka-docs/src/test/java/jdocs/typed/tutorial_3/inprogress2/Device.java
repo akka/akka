@@ -6,6 +6,7 @@ package jdocs.typed.tutorial_3.inprogress2;
 
 // #device-with-read
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
 import akka.actor.typed.javadsl.AbstractBehavior;
@@ -15,28 +16,42 @@ import akka.actor.typed.javadsl.Receive;
 
 import java.util.Optional;
 
-// #device-with-read
-import static jdocs.typed.tutorial_3.inprogress2.DeviceProtocol.*;
-/*
-//#device-with-read
-import static com.lightbend.akka.sample.DeviceProtocol.*;
-//#device-with-read
-*/
-// #device-with-read
+// #read-protocol-2
+public class Device extends AbstractBehavior<Device.Command> {
+  interface Command {}
 
-public class Device extends AbstractBehavior<DeviceMessage> {
+  public static final class ReadTemperature implements Command {
+    final long requestId;
+    final ActorRef<RespondTemperature> replyTo;
 
-  public static Behavior<DeviceMessage> createBehavior(String groupId, String deviceId) {
+    public ReadTemperature(long requestId, ActorRef<RespondTemperature> replyTo) {
+      this.requestId = requestId;
+      this.replyTo = replyTo;
+    }
+  }
+
+  public static final class RespondTemperature {
+    final long requestId;
+    final Optional<Double> value;
+
+    public RespondTemperature(long requestId, Optional<Double> value) {
+      this.requestId = requestId;
+      this.value = value;
+    }
+  }
+  // #read-protocol-2
+
+  public static Behavior<Command> createBehavior(String groupId, String deviceId) {
     return Behaviors.setup(context -> new Device(context, groupId, deviceId));
   }
 
-  private final ActorContext<DeviceMessage> context;
+  private final ActorContext<Command> context;
   private final String groupId;
   private final String deviceId;
 
   private Optional<Double> lastTemperatureReading = Optional.empty();
 
-  public Device(ActorContext<DeviceMessage> context, String groupId, String deviceId) {
+  public Device(ActorContext<Command> context, String groupId, String deviceId) {
     this.context = context;
     this.groupId = groupId;
     this.deviceId = deviceId;
@@ -45,14 +60,14 @@ public class Device extends AbstractBehavior<DeviceMessage> {
   }
 
   @Override
-  public Receive<DeviceMessage> createReceive() {
+  public Receive<Command> createReceive() {
     return newReceiveBuilder()
         .onMessage(ReadTemperature.class, this::readTemperature)
         .onSignal(PostStop.class, signal -> postStop())
         .build();
   }
 
-  private Behavior<DeviceMessage> readTemperature(ReadTemperature r) {
+  private Behavior<Command> readTemperature(ReadTemperature r) {
     r.replyTo.tell(new RespondTemperature(r.requestId, lastTemperatureReading));
     return this;
   }
@@ -61,6 +76,8 @@ public class Device extends AbstractBehavior<DeviceMessage> {
     context.getLog().info("Device actor {}-{} stopped", groupId, deviceId);
     return this;
   }
+  // #read-protocol-2
 }
+// #read-protocol-2
 
 // #device-with-read

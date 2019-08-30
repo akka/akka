@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
-import static jdocs.typed.tutorial_4.DeviceProtocol.*;
 
 public class DeviceGroupTest extends JUnitSuite {
 
@@ -38,10 +37,11 @@ public class DeviceGroupTest extends JUnitSuite {
     assertNotEquals(registered1.device, registered2.device);
 
     // Check that the device actors are working
-    TestProbe<TemperatureRecorded> recordProbe = testKit.createTestProbe(TemperatureRecorded.class);
-    registered1.device.tell(new RecordTemperature(0L, 1.0, recordProbe.getRef()));
+    TestProbe<Device.TemperatureRecorded> recordProbe =
+        testKit.createTestProbe(Device.TemperatureRecorded.class);
+    registered1.device.tell(new Device.RecordTemperature(0L, 1.0, recordProbe.getRef()));
     assertEquals(0L, recordProbe.receiveMessage().requestId);
-    registered2.device.tell(new RecordTemperature(1L, 2.0, recordProbe.getRef()));
+    registered2.device.tell(new Device.RecordTemperature(1L, 2.0, recordProbe.getRef()));
     assertEquals(1L, recordProbe.receiveMessage().requestId);
   }
 
@@ -101,7 +101,7 @@ public class DeviceGroupTest extends JUnitSuite {
     groupActor.tell(new RequestTrackDevice("group", "device2", registeredProbe.getRef()));
     DeviceRegistered registered2 = registeredProbe.receiveMessage();
 
-    ActorRef<DeviceMessage> toShutDown = registered1.device;
+    ActorRef<Device.Command> toShutDown = registered1.device;
 
     TestProbe<ReplyDeviceList> deviceListProbe = testKit.createTestProbe(ReplyDeviceList.class);
 
@@ -110,7 +110,7 @@ public class DeviceGroupTest extends JUnitSuite {
     assertEquals(0L, reply.requestId);
     assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
 
-    toShutDown.tell(Passivate.INSTANCE);
+    toShutDown.tell(Device.Passivate.INSTANCE);
     registeredProbe.expectTerminated(toShutDown, registeredProbe.getRemainingOrDefault());
 
     // using awaitAssert to retry because it might take longer for the groupActor
