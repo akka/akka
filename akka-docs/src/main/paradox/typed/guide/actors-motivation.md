@@ -22,19 +22,19 @@ data, they need to be able to rely on this constraint.
 When we analyze OOP runtime behavior, we sometimes draw a message sequence chart showing the interactions of
 method calls. For example:
 
-![sequence chart](../../guide/diagrams/seq_chart.png)
+![sequence chart](diagrams/seq_chart.png)
 
 Unfortunately, the above diagram does not accurately represent the _lifelines_ of the instances during execution.
 In reality, a _thread_ executes all these calls, and the enforcement of invariants occurs on the same thread from
 which the method was called. Updating the diagram with the thread of execution, it looks like this:
 
-![sequence chart with thread](../../guide/diagrams/seq_chart_thread.png)
+![sequence chart with thread](diagrams/seq_chart_thread.png)
 
 The significance of this clarification becomes clear when you try to model what happens with _multiple threads_.
 Suddenly, our neatly drawn diagram becomes inadequate. We can try to illustrate multiple threads accessing
 the same instance:
 
-![sequence chart with threads interacting](../../guide/diagrams/seq_chart_multi_thread.png)
+![sequence chart with threads interacting](diagrams/seq_chart_multi_thread.png)
 
 There is a section of execution where two threads enter the same method. Unfortunately, the encapsulation model
 of objects does not guarantee anything about what happens in that section. Instructions of the two invocations
@@ -66,12 +66,12 @@ In Object Oriented languages we rarely think about threads or linear execution p
 We often envision a system as a network of object instances that react to method calls, modify their internal state,
 then communicate with each other via method calls driving the whole application state forward:
 
-![network of interacting objects](../../guide/diagrams/object_graph.png)
+![network of interacting objects](diagrams/object_graph.png)
 
 However, in a multi-threaded distributed environment, what actually happens is that threads "traverse" this network of object instances by following method calls.
 As a result, threads are what really drive execution:
 
-![network of interactive objects traversed by threads](../../guide/diagrams/object_graph_snakes.png)
+![network of interactive objects traversed by threads](diagrams/object_graph_snakes.png)
 
 **In summary**:
 
@@ -124,7 +124,7 @@ The first issue is, how can the "caller" be notified of the completion of the ta
 when a task fails with an exception. Where does the exception propagate to? It will propagate to the exception handler
 of the worker thread completely ignoring who the actual "caller" was:
 
-![exceptions cannot propagate between different threads](../../guide/diagrams/exception_prop.png)
+![exceptions cannot propagate between different threads](diagrams/exception_prop.png)
 
 This is a serious problem. How does the worker thread deal with the situation? It likely cannot fix the issue as it is
 usually oblivious of the purpose of the failed task. The "caller" thread needs to be notified somehow,
