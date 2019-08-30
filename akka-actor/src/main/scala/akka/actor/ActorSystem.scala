@@ -943,6 +943,7 @@ private[akka] class ActorSystemImpl(
       "akka-persistence-shared",
       "akka-persistence-typed",
       "akka-protobuf",
+      "akka-protobuf-v3",
       "akka-remote",
       "akka-slf4j",
       "akka-stream",
