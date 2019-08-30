@@ -14,30 +14,30 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 
 object Device {
-  def apply(groupId: String, deviceId: String): Behavior[DeviceMessage] =
+  def apply(groupId: String, deviceId: String): Behavior[Command] =
     Behaviors.setup(context => new Device(context, groupId, deviceId))
 
-  sealed trait DeviceMessage
+  sealed trait Command
 
-  final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends DeviceMessage
+  final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends Command
   final case class RespondTemperature(requestId: Long, value: Option[Double])
 
   //#write-protocol
   final case class RecordTemperature(requestId: Long, value: Double, replyTo: ActorRef[TemperatureRecorded])
-      extends DeviceMessage
+      extends Command
   final case class TemperatureRecorded(requestId: Long)
   //#write-protocol
 }
 
-class Device(context: ActorContext[Device.DeviceMessage], groupId: String, deviceId: String)
-    extends AbstractBehavior[Device.DeviceMessage] {
+class Device(context: ActorContext[Device.Command], groupId: String, deviceId: String)
+    extends AbstractBehavior[Device.Command] {
   import Device._
 
   var lastTemperatureReading: Option[Double] = None
 
   context.log.info("Device actor {}-{} started", groupId, deviceId)
 
-  override def onMessage(msg: DeviceMessage): Behavior[DeviceMessage] = {
+  override def onMessage(msg: Command): Behavior[Command] = {
     msg match {
       case RecordTemperature(id, value, replyTo) =>
         context.log.info("Recorded temperature reading {} with {}", value, id)
@@ -51,7 +51,7 @@ class Device(context: ActorContext[Device.DeviceMessage], groupId: String, devic
     }
   }
 
-  override def onSignal: PartialFunction[Signal, Behavior[DeviceMessage]] = {
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
     case PostStop =>
       context.log.info("Device actor {}-{} stopped", groupId, deviceId)
       this

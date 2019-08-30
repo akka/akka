@@ -14,36 +14,34 @@ import akka.actor.typed.scaladsl.Behaviors
 
 //#device-manager-full
 object DeviceManager {
-  def apply(): Behavior[DeviceManagerMessage] =
+  def apply(): Behavior[Command] =
     Behaviors.setup(context => new DeviceManager(context))
 
   //#device-manager-msgs
-  import DeviceGroup.DeviceGroupMessage
 
-  sealed trait DeviceManagerMessage
+  sealed trait Command
 
   final case class RequestTrackDevice(groupId: String, deviceId: String, replyTo: ActorRef[DeviceRegistered])
-      extends DeviceManagerMessage
-      with DeviceGroupMessage
+      extends DeviceManager.Command
+      with DeviceGroup.Command
 
-  final case class DeviceRegistered(device: ActorRef[Device.DeviceMessage])
+  final case class DeviceRegistered(device: ActorRef[Device.Command])
 
   final case class RequestDeviceList(requestId: Long, groupId: String, replyTo: ActorRef[ReplyDeviceList])
-      extends DeviceManagerMessage
-      with DeviceGroupMessage
+      extends DeviceManager.Command
+      with DeviceGroup.Command
 
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
 
-  private final case class DeviceGroupTerminated(groupId: String) extends DeviceManagerMessage
+  private final case class DeviceGroupTerminated(groupId: String) extends DeviceManager.Command
   //#device-manager-msgs
 
   //#query-protocol
-  import DeviceGroupQuery.DeviceGroupQueryMessage
 
   final case class RequestAllTemperatures(requestId: Long, groupId: String, replyTo: ActorRef[RespondAllTemperatures])
-      extends DeviceGroupQueryMessage
-      with DeviceGroupMessage
-      with DeviceManagerMessage
+      extends DeviceGroupQuery.Command
+      with DeviceGroup.Command
+      with DeviceManager.Command
 
   final case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, TemperatureReading])
 
@@ -55,16 +53,14 @@ object DeviceManager {
   //#query-protocol
 }
 
-class DeviceManager(context: ActorContext[DeviceManager.DeviceManagerMessage])
-    extends AbstractBehavior[DeviceManager.DeviceManagerMessage] {
+class DeviceManager(context: ActorContext[DeviceManager.Command]) extends AbstractBehavior[DeviceManager.Command] {
   import DeviceManager._
-  import DeviceGroup.DeviceGroupMessage
 
-  var groupIdToActor = Map.empty[String, ActorRef[DeviceGroupMessage]]
+  var groupIdToActor = Map.empty[String, ActorRef[DeviceGroup.Command]]
 
   context.log.info("DeviceManager started")
 
-  override def onMessage(msg: DeviceManagerMessage): Behavior[DeviceManagerMessage] =
+  override def onMessage(msg: Command): Behavior[Command] =
     msg match {
       case trackMsg @ RequestTrackDevice(groupId, _, replyTo) =>
         groupIdToActor.get(groupId) match {
@@ -103,7 +99,7 @@ class DeviceManager(context: ActorContext[DeviceManager.DeviceManagerMessage])
         this
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[DeviceManagerMessage]] = {
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
     case PostStop =>
       context.log.info("DeviceManager stopped")
       this

@@ -15,29 +15,29 @@ import akka.actor.typed.scaladsl.Behaviors
 //#device-group-full
 //#device-group-register
 object DeviceGroup {
-  def apply(groupId: String): Behavior[DeviceGroupMessage] =
+  def apply(groupId: String): Behavior[Command] =
     Behaviors.setup(context => new DeviceGroup(context, groupId))
 
-  trait DeviceGroupMessage
+  trait Command
 
-  private final case class DeviceTerminated(device: ActorRef[Device.DeviceMessage], groupId: String, deviceId: String)
-      extends DeviceGroupMessage
+  private final case class DeviceTerminated(device: ActorRef[Device.Command], groupId: String, deviceId: String)
+      extends Command
 
 }
 //#device-group-register
 //#device-group-register
 //#device-group-remove
 
-class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId: String)
-    extends AbstractBehavior[DeviceGroup.DeviceGroupMessage] {
+class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
+    extends AbstractBehavior[DeviceGroup.Command] {
   import DeviceGroup._
-  import DeviceManager._
+  import DeviceManager.{ DeviceRegistered, ReplyDeviceList, RequestDeviceList, RequestTrackDevice }
 
-  private var deviceIdToActor = Map.empty[String, ActorRef[Device.DeviceMessage]]
+  private var deviceIdToActor = Map.empty[String, ActorRef[Device.Command]]
 
   context.log.info("DeviceGroup {} started", groupId)
 
-  override def onMessage(msg: DeviceGroupMessage): Behavior[DeviceGroupMessage] =
+  override def onMessage(msg: Command): Behavior[Command] =
     msg match {
       case trackMsg @ RequestTrackDevice(`groupId`, deviceId, replyTo) =>
         deviceIdToActor.get(deviceId) match {
@@ -76,7 +76,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
       //#device-group-register
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[DeviceGroupMessage]] = {
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
     case PostStop =>
       context.log.info("DeviceGroup {} stopped", groupId)
       this
