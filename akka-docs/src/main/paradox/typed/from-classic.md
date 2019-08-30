@@ -292,6 +292,36 @@ removes the need for `pipeTo`. However, for interactions with other APIs that re
 @scala[`Future`]@java[`CompletionStage`] it is still useful to send the result as a message to the actor.
 For this purpose there is a `pipeToSelf` method in the `ActorContext` in Typed.
 
+## ActorContext.children
+
+The `ActorContext` has methods @scala[`children` and `child`]@java[`getChildren` and `getChild`]
+to retrieve the `ActorRef` of started child actors in both Typed and Classic.
+
+The type of the returned `ActorRef` is unknown, since different types can be used for different
+children. Therefore, this is not a useful way to lookup children when the purpose is to send
+messages to them.
+
+Instead of finding children via the `ActorContext` it's recommended to use an application specific
+collection for bookkeeping of children, such as a @scala[`Map[String, ActorRef[Child.Command]]`]
+@java[`Map<String, ActorRef<Child.Command>>`]. It can look like this:
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/fromclassic/TypedSample.scala) { #children }
+
+Java
+:  @@snip [IntroSpec.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/fromclassic/TypedSample.java) { #children }
+
+Remember to remove entries from the `Map` when the children are terminated. For that purpose it's
+convenient to use `watchWith`, as illustrated in the example above, because then you can include the
+key to the `Map` in the termination message. In that way the name of the actor doesn't have to be
+the same as identifier used for bookkeeping.
+
+Retrieving the children from the `ActorContext` can still be useful for some certain cases, such as:
+
+* see if a child name is in use
+* stopping children
+* the type of the child is well known and `unsafeUpcast` of the `ActorRef` is considered "safe enough"
+
 ## Remote deployment
 
 Starting an actor on a remote node—so called remote deployment—isn't supported in Typed.

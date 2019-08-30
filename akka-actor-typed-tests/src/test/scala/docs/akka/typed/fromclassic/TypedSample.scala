@@ -35,4 +35,43 @@ object TypedSample {
   }
   //#hello-world-actor
 
+  //#children
+  object Parent {
+    sealed trait Command
+    case class DelegateToChild(name: String, message: Child.Command) extends Command
+    private case class ChildTerminated(name: String) extends Command
+
+    def apply(): Behavior[Command] = {
+      def updated(children: Map[String, ActorRef[Child.Command]]): Behavior[Command] = {
+        Behaviors.receive { (context, command) =>
+          command match {
+            case DelegateToChild(name, childCommand) =>
+              children.get(name) match {
+                case Some(ref) =>
+                  ref ! childCommand
+                  context.watchWith(ref, ChildTerminated(name))
+                  Behaviors.same
+                case None =>
+                  val ref = context.spawn(Child(), name)
+                  ref ! childCommand
+                  updated(children + (name -> ref))
+              }
+
+            case ChildTerminated(name) =>
+              updated(children - name)
+          }
+        }
+      }
+
+      updated(Map.empty)
+    }
+  }
+  //#children
+
+  object Child {
+    sealed trait Command
+
+    def apply(): Behavior[Command] = Behaviors.empty
+  }
+
 }

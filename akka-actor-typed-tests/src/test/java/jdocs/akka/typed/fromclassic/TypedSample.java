@@ -12,6 +12,9 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // #hello-world-actor
 
 interface TypedSample {
@@ -61,4 +64,72 @@ interface TypedSample {
     }
   }
   // #hello-world-actor
+
+  // #children
+  public class Parent extends AbstractBehavior<Parent.Command> {
+
+    public interface Command {}
+
+    public static class DelegateToChild implements Command {
+      public final String name;
+      public final Child.Command message;
+
+      public DelegateToChild(String name, Child.Command message) {
+        this.name = name;
+        this.message = message;
+      }
+    }
+
+    private static class ChildTerminated implements Command {
+      final String name;
+
+      ChildTerminated(String name) {
+        this.name = name;
+      }
+    }
+
+    public static Behavior<Command> create() {
+      return Behaviors.setup(Parent::new);
+    }
+
+    private final ActorContext<Command> context;
+    private Map<String, ActorRef<Child.Command>> children = new HashMap<>();
+
+    private Parent(ActorContext<Command> context) {
+      this.context = context;
+    }
+
+    @Override
+    public Receive<Command> createReceive() {
+      return newReceiveBuilder()
+          .onMessage(DelegateToChild.class, this::onDelegateToChild)
+          .onMessage(ChildTerminated.class, this::onChildTerminated)
+          .build();
+    }
+
+    private Behavior<Command> onDelegateToChild(DelegateToChild command) {
+      ActorRef<Child.Command> ref = children.get(command.name);
+      if (ref == null) {
+        ref = context.spawn(Child.create(), command.name);
+        context.watchWith(ref, new ChildTerminated(command.name));
+        children.put(command.name, ref);
+      }
+      ref.tell(command.message);
+      return this;
+    }
+
+    private Behavior<Command> onChildTerminated(ChildTerminated command) {
+      children.remove(command.name);
+      return this;
+    }
+  }
+  // #children
+
+  public class Child {
+    public interface Command {}
+
+    public static Behavior<Command> create() {
+      return Behaviors.empty();
+    }
+  }
 }
