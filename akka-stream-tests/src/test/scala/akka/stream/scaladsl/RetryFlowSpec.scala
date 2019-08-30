@@ -5,13 +5,13 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ActorMaterializer, KillSwitches}
-import akka.stream.testkit.{StreamSpec, Utils}
-import akka.stream.testkit.scaladsl.{TestSink, TestSource}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import akka.stream.{ ActorMaterializer, KillSwitches }
+import akka.stream.testkit.{ StreamSpec, Utils }
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import org.scalatest.matchers.{ MatchResult, Matcher }
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
@@ -142,7 +142,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     }
 
     "tolerate killswitch abort on the inner flow after start" in {
-      val innerFlow = flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
+      val innerFlow =
+        flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -165,7 +166,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     }
 
     "tolerate killswitch abort on the inner flow on start" in {
-      val innerFlow = flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
+      val innerFlow =
+        flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -182,7 +184,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     }
 
     "tolerate killswitch abort on the inner flow before start" in {
-      val innerFlow = flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
+      val innerFlow =
+        flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -237,8 +240,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
             10.millis,
             5.second,
             0,
-            alwaysFailingFlow.via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right))(alwaysRecoveringFunc))(
-          Keep.both)
+            alwaysFailingFlow
+              .via(Utils.delayCancellation(10.seconds))
+              .viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right))(alwaysRecoveringFunc))(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
