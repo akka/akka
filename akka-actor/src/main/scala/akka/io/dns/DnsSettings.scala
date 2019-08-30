@@ -60,12 +60,11 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
     c.getString(path) match {
       case "forever" => Forever
       case "never"   => Never
-      case _ => {
+      case _ =>
         val finiteTtl = c
           .getDuration(path, TimeUnit.SECONDS)
           .requiring(_ > 0, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
         Ttl.fromPositive(finiteTtl.seconds)
-      }
     }
 
   private lazy val resolvConf: Option[ResolvConf] = {
