@@ -200,18 +200,18 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       LoggingEventFilter
         .custom({
           case _ => true // any is fine, we're just after the right count of statements reaching the listener
-        }, occurrences = 34)
+        }, occurrences = 36)
         .intercept({
           spawn(Behaviors.setup[String] {
             context =>
               context.log.debug("message")
               context.log.debug("{}", "arg1")
-              context.log
-                .debug("{} {}", "arg1", "arg2": Any) //using Int to avoid ambiguous reference to overloaded definition
+              // using `: Any` to avoid "ambiguous reference to overloaded definition", see also LoggerOpsSpec
+              context.log.debug("{} {}", "arg1", "arg2": Any)
               context.log.debug("{} {} {}", "arg1", "arg2", "arg3")
               context.log.debug(marker, "message")
               context.log.debug(marker, "{}", "arg1")
-              context.log.debug(marker, "{} {}", "arg1", "arg2": Any) //using Int to avoid ambiguous reference to overloaded definition
+              context.log.debug(marker, "{} {}", "arg1", "arg2": Any)
               context.log.debug(marker, "{} {} {}", "arg1", "arg2", "arg3")
 
               context.log.info("message")
@@ -237,10 +237,13 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
               context.log.error("{}", "arg1")
               context.log.error("{} {}", "arg1", "arg2": Any)
               context.log.error("{} {} {}", "arg1", "arg2", "arg3")
+              // using to avoid vararg problem for primitive type, see also LoggerOpsSpec
+              context.log.error("{} {} {}", "arg1", "arg2", 3.asInstanceOf[AnyRef])
               context.log.error(marker, "message")
               context.log.error(marker, "{}", "arg1")
               context.log.error(marker, "{} {}", "arg1", "arg2": Any)
               context.log.error(marker, "{} {} {}", "arg1", "arg2", "arg3")
+              context.log.error(marker, "{} {} {}", "arg1", "arg2", 3.asInstanceOf[AnyRef])
               context.log.error("message", cause)
 
               Behaviors.stopped

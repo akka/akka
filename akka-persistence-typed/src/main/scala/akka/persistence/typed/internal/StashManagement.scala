@@ -9,6 +9,7 @@ import akka.actor.Dropped
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.StashOverflowException
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.annotation.InternalApi
 import akka.util.ConstantFun
@@ -95,23 +96,23 @@ private[akka] trait StashManagement[C, E, S] {
 
   private def logStashMessage(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug(
+      setup.log.debugN(
         "Stashing message to {} stash: [{}] ",
         if (buffer eq stashState.internalStashBuffer) "internal" else "user",
-        msg: Any)
+        msg)
   }
 
   private def logUnstashMessage(buffer: StashBuffer[InternalProtocol]): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug(
+      setup.log.debugN(
         "Unstashing message from {} stash: [{}]",
         if (buffer eq stashState.internalStashBuffer) "internal" else "user",
-        buffer.head: Any)
+        buffer.head)
   }
 
   private def logUnstashAll(): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug(
+      setup.log.debug2(
         "Unstashing all [{}] messages from user stash, first is: [{}]",
         stashState.userStashBuffer.size,
         stashState.userStashBuffer.head)

@@ -13,6 +13,7 @@ import akka.actor.typed.PreRestart
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 
@@ -100,7 +101,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
-    setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
+    setup.log.debug2("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
     setup.journal ! ReplayMessages(
       fromSeqNr,
       toSeqNr,
@@ -182,7 +183,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
   protected def internalDeleteSnapshots(fromSequenceNr: Long, toSequenceNr: Long): Unit = {
     if (toSequenceNr > 0) {
       val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
-      setup.log.debug("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
+      setup.log.debug2("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
       setup.snapshotStore
         .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
     }

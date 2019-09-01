@@ -10,7 +10,7 @@ import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
@@ -126,11 +126,11 @@ private[akka] object Running {
         effect: Effect[E, S],
         sideEffects: immutable.Seq[SideEffect[S]] = Nil): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
-        setup.log.debug(
+        setup.log.debugN(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName,
           effect,
-          sideEffects.size.toString)
+          sideEffects.size)
 
       effect match {
         case CompositeEffect(eff, currentSideEffects) =>
@@ -254,7 +254,10 @@ private[akka] object Running {
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled) {
-        setup.log.debug("Received Journal response: {} after: {} nanos", response, System.nanoTime() - persistStartTime)
+        setup.log.debug2(
+          "Received Journal response: {} after: {} nanos",
+          response,
+          System.nanoTime() - persistStartTime)
       }
 
       def onWriteResponse(p: PersistentRepr): Behavior[InternalProtocol] = {
@@ -367,14 +370,14 @@ private[akka] object Running {
           Some(SnapshotCompleted(SnapshotMetadata.fromUntyped(meta)))
 
         case SaveSnapshotFailure(meta, error) =>
-          setup.log.warn("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage: Any)
+          setup.log.warn2("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
           Some(SnapshotFailed(SnapshotMetadata.fromUntyped(meta), error))
 
         case _ =>
           None
       }
 
-      setup.log.debug("Received snapshot response [{}], emitting signal [{}].", response, signal: Any)
+      setup.log.debug2("Received snapshot response [{}], emitting signal [{}].", response, signal)
       signal.foreach(setup.onSignal(state.state, _, catchAndLog = false))
     }
 
