@@ -6,16 +6,19 @@ package akka.actor.testkit.typed.internal
 
 import scala.util.control.NonFatal
 
+import akka.annotation.InternalApi
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Outcome
 import org.scalatest.TestSuite
 import org.slf4j.LoggerFactory
 
 /**
+ * INTERNAL API
+ *
  * Mixin this trait to a test to make log lines appear only when the test failed.
  * Requires Logback and configuration of [[CapturingAppender]] in logback-test.xml.
  */
-trait WithLogCapturing extends BeforeAndAfterAll { self: TestSuite =>
+@InternalApi private[akka] trait WithLogCapturing extends BeforeAndAfterAll { self: TestSuite =>
 
   // eager access of CapturingAppender to fail fast if misconfigured
   private val capturingAppender = CapturingAppender.get("")
