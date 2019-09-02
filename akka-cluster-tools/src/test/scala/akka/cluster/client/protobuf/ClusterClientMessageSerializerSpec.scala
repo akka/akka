@@ -7,7 +7,9 @@ package akka.cluster.client.protobuf
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 import akka.cluster.client.ClusterReceptionist.Internal._
+import com.github.ghik.silencer.silent
 
+@silent("deprecated")
 class ClusterClientMessageSerializerSpec extends AkkaSpec {
 
   val serializer = new ClusterClientMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
