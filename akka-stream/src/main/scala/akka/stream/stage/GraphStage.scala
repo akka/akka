@@ -18,12 +18,14 @@ import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
 import akka.{ Done, NotUsed }
+
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future, Promise }
-
 import akka.stream.impl.StreamSupervisor
+
+import scala.util.control.NoStackTrace
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.
@@ -332,9 +334,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
-   *
-   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
-   * handlers.
    */
   private[stream] var attributes: Attributes = Attributes.none
 
@@ -347,8 +346,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
+   * handlers.
    */
-  // Using common array to reduce overhead for small port counts
   private[stream] val handlers = new Array[Any](inCount + outCount)
 
   /**
@@ -668,6 +669,31 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       i += 1
     }
     setKeepGoing(false)
+  }
+
+  private lazy val delayCancellationCallback =
+    getAsyncCallback[(Attributes.CancellationBehavior.Behavior)] {
+      case behavior => internalCancelStage(behavior)
+    }
+
+  /**
+   * Automatically invokes [[cancel()]] on all the input ports and applies the configured CancellationBehavior to output ports.
+   */
+  final def cancelStage(): Unit =
+    internalCancelStage(
+      attributes.get[Attributes.CancellationBehavior](Attributes.CancellationBehavior.Default).behavior)
+
+  private def internalCancelStage(behavior: Attributes.CancellationBehavior.Behavior): Unit = {
+    import Attributes.CancellationBehavior._
+    behavior match {
+      case CompleteStage => completeStage()
+      case FailStage =>
+        failStage(new RuntimeException("Downstream stage cancelled subscription") with NoStackTrace) // FIXME: better exception?
+      case AfterDelay(delay, andThen) =>
+        materializer.scheduleOnce(delay, { () =>
+          delayCancellationCallback.invoke(andThen)
+        })
+    }
   }
 
   /**
@@ -1705,7 +1731,7 @@ trait OutHandler {
    */
   @throws(classOf[Exception])
   def onDownstreamFinish(): Unit = {
-    GraphInterpreter.currentInterpreter.activeStage.completeStage()
+    GraphInterpreter.currentInterpreter.activeStage.cancelStage()
   }
 }
 

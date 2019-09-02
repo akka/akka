@@ -293,6 +293,16 @@ object Attributes {
       extends Attribute
   final case object AsyncBoundary extends Attribute
 
+  final case class CancellationBehavior(behavior: CancellationBehavior.Behavior) extends Attribute
+  object CancellationBehavior {
+    val Default: CancellationBehavior = CancellationBehavior(CompleteStage)
+
+    sealed trait Behavior
+    case object CompleteStage extends Behavior
+    case object FailStage extends Behavior
+    case class AfterDelay(delay: FiniteDuration, behavior: Behavior) extends Behavior
+  }
+
   object LogLevels {
 
     /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */
