@@ -398,9 +398,10 @@ object ShardRegion {
       case ReceiveTimeout =>
         log.warning(
           "HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard, " +
-          "stopping the remaining entities.",
+          "stopping the remaining entities: {}",
           stopMessage.getClass.getName,
-          shard)
+          shard,
+          entities)
 
         remaining.foreach { ref =>
           context.stop(ref)
@@ -408,7 +409,13 @@ object ShardRegion {
 
       case Terminated(ref) =>
         remaining -= ref
+        log.debug(
+          "HandOffStopper of the `{}` shard received Terminated message for the ActorRef {}, the remaining entities: {}",
+          shard,
+          ref,
+          entities)
         if (remaining.isEmpty) {
+          log.debug("HandOffStopper remaining entities are empty, sending ShardStopped message for shard {}", shard)
           replyTo ! ShardStopped(shard)
           context.stop(self)
         }
