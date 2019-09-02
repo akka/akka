@@ -15,7 +15,7 @@ To use Akka Streams Typed, add the module to your project:
 @ref:[Akka Streams](../stream/index.md) make it easy to model type-safe message processing pipelines. With typed actors it is possible to connect streams to actors without losing the type information.
 
 This module contains typed alternatives to the @ref:[already existing `ActorRef` sources and sinks](../stream/stream-integrations.md) together with a factory methods for
-@scala[@scaladoc[`ActorMaterializer`](akka.stream.typed.scaladsl.ActorMaterializer)]@java[@javadoc[`ActorMaterializerFactory`](akka.stream.typed.javadsl.ActorMaterializerFactory)] which takes a typed `ActorSystem`.
+@scala[@scaladoc[`ActorMaterializer`](akka.stream.typed.scaladsl.ActorMaterializer$)]@java[@javadoc[`ActorMaterializerFactory`](akka.stream.typed.javadsl.ActorMaterializerFactory)] which takes a typed `ActorSystem`.
 
 The materializer created from these factory methods and sources together with sinks contained in this module can be mixed and matched with the original Akka Streams building blocks from the original module.
 
