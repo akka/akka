@@ -228,19 +228,59 @@ contacts can be fetched and a new cluster client started.
 
 ## Migration to Akka gRPC
 
+Cluster Client is deprecated and it is not advised to build new applications with Cluster Client.
 We recommend using [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html) over using Cluster Client.
-Before reading the migration guide it is advised to understand Akka gRPC.
 
-### Migration steps
+Cluster Client is convenient to use if you have Akka actors on both client and server side, but
+a more decoupled, and therefore better, solution would be to use Akka gRPC and define
+application specific protocol buffer messages and gRPC service calls. The benefits would be:
 
-The migration sample illustrates an approach to migrate from the deprecated Cluster Client to Akka gRPC, with minimal changes
-to your existing code. It is meant to be further adjusted to your requirements and use case
-(FIXME #26175 add link for scala sample, currently in PR, and a java sample).
+* Easier to update clients and servers independent of each other.
+* More well defined protocol between client and server.
+* More secure solution by using TLS for gRPC (HTTP/2) instead of exposing Akka Remoting outside the Akka Cluster.
+* The clients don't even have to be using Akka.
+* See also [gRPC vs Akka Remoting](https://doc.akka.io/docs/akka-grpc/current/whygrpc.html#grpc-vs-akka-remoting)
 
-#### Cluster Client functions in Akka gRPC:
+Existing users of Cluster Client may migrate directly to plain Akka gRPC, or via a migration
+step that requires less re-write of the application. That migration step is described here but we recommend
+against using the approach for new applications. New applications should use plain Akka gRPC.
 
-* Initial contact points (Akka gRPC Service Discovery)
-* Heartbeat messages and Failure Detection (Akka gRPC connections)
-* Publishing to a named topic (Akka gRPC Send to Receptionist key)
-* Messages and routing, for example one-to-one and one-to-all, are delegated to the Akka gRPC client. Additionally for a simplified migration path,
-@ref[Distributed Pub Sub](distributed-pub-sub.md) is also leveraged. However a better solution is to move fully to Akka gRPC.
+An example is provided to illustrate an approach to migrate from the deprecated Cluster Client to Akka gRPC,
+with minimal changes to your existing code. The example is intended to be copied and adjusted to your needs.
+It will not be provided as a published artifact.
+
+* [akka-samples/akka-sample-cluster-cluster-client-grpc-scala](https://github.com/akka/akka-samples/tree/2.6/akka-sample-cluster-cluster-client-grpc-scala) implemented in Scala
+* [akka-samples/akka-sample-cluster-cluster-client-grpc-java](https://github.com/akka/akka-samples/tree/2.6/akka-sample-cluster-cluster-client-grpc-java) implemented in Java
+
+The example is still using an actor on the client side to have an API that is very close
+to the original Cluster Client. The messages this actor can handle corresponds to the
+@ref:[Distributed Pub Sub](distributed-pub-sub.md) messages on the server side, such as
+`ClusterClient.Send` and `ClusterClient.Publish`.
+
+The `ClusterClient` actor delegates those messages to the gRPC client and on the
+server side those are translated and delegated to the destination actors that
+are registered via the `ClusterClientReceptionist` in the same way as in the original.
+
+The application specific messages are wrapped and serialized with Akka serialization.
+
+### Differences
+
+Apart from that the underlying implementation is using gRPC instead of Actor messages
+and Akka Remoting it's worth pointing out the following differences.
+
+#### Single request-reply
+
+For request-reply interactions when there is only one reply message for each request
+it is more efficient to use the `ClusterClient.AskSend` message instead of
+`ClusterClient.Send` as illustrated in the example. Then it doesn't have to
+setup a full bidirectional gRPC stream for each request but can use the `Future`
+based API.
+
+#### Initial contact points
+
+Instead of configured initial contact points the [Akka gRPC Service Discovery](https://doc.akka.io/docs/akka-grpc/current/client/configuration.html#using-akka-discovery-for-endpoint-discovery) can be used.
+
+#### Failure detection
+
+Heartbeat messages and failure detection of the connections have been removed
+since that should be handled by the gRPC connections.
