@@ -245,24 +245,6 @@ This can be used with any type of `Behavior`, including `receive`, `receiveMessa
 * The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
 * `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from previous incarnation.
 
-## Responding to a sharded actor
-
-The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
-for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply 
-will sent to dead letters.
-
-An alternative is to send the `entityId` in the message and have the reply sent via sharding:
-
-Scala
-:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #sharded-response }
-
-Java
-:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingReplyCompileOnlyTest.java) { #sharded-response }
-
-A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
-could be included in the message if it is not known statically.
-
-
 ### Schedule periodically
 
 Scheduling of recurring messages can have two different characteristics:
@@ -303,5 +285,23 @@ timer that ticks once every second for ten seconds.
 which may in worst case cause undesired load on the system. `scheduleWithFixedDelay` is often preferred.
 
 @@@
+
+## Responding to a sharded actor
+
+The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
+for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply 
+will sent to dead letters.
+
+An alternative is to send the `entityId` in the message and have the reply sent via sharding:
+
+Scala
+:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #sharded-response }
+
+Java
+:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingReplyCompileOnlyTest.java) { #sharded-response }
+
+A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
+could be included in the message if it is not known statically.
+
 
 
