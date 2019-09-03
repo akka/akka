@@ -61,7 +61,7 @@ object DistributedData extends ExtensionId[DistributedData] {
  *
  * This is using the same underlying `Replicator` instance as
  * [[akka.cluster.ddata.DistributedData]] and that means that typed
- * and untyped actors can share the same data.
+ * and classic actors can share the same data.
  */
 class DistributedData(system: ActorSystem[_]) extends Extension {
   import akka.actor.typed.scaladsl.adapter._

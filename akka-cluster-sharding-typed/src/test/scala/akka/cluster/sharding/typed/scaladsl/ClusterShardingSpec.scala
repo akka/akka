@@ -395,8 +395,8 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       exc.getMessage should include("[10 ms]") // timeout
     }
 
-    "handle untyped StartEntity message" in {
-      // it is normally using envelopes, but the untyped StartEntity message can be sent internally,
+    "handle classic StartEntity message" in {
+      // it is normally using envelopes, but the classic StartEntity message can be sent internally,
       // e.g. for remember entities
 
       val totalCountBefore = totalEntityCount1()

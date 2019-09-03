@@ -134,11 +134,11 @@ private[akka] object ActorSystemAdapter {
   }
 
   /**
-   * An untyped extension to load configured typed extensions. It is loaded via
+   * A classic extension to load configured typed extensions. It is loaded via
    * akka.library-extensions. `loadExtensions` cannot be called from the AdapterExtension
    * directly because the adapter is created too early during typed actor system creation.
    *
-   * When on the classpath typed extensions will be loaded for untyped ActorSystems as well.
+   * When on the classpath typed extensions will be loaded for classic ActorSystems as well.
    */
   class LoadTypedExtensions(system: untyped.ExtendedActorSystem) extends untyped.Extension {
     ActorSystemAdapter.AdapterExtension(system).adapter.loadExtensions()
@@ -155,7 +155,7 @@ private[akka] object ActorSystemAdapter {
       case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
       case _ =>
         throw new UnsupportedOperationException(
-          "only adapted untyped ActorSystem permissible " +
+          "Only adapted classic ActorSystem permissible " +
           s"($sys of class ${sys.getClass.getName})")
     }
 }

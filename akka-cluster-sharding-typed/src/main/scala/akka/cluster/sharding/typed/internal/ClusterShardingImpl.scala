@@ -129,7 +129,7 @@ import akka.util.Timeout
 
   require(
     system.isInstanceOf[ActorSystemAdapter[_]],
-    "only adapted untyped actor systems can be used for cluster features")
+    "only adapted classic actor systems can be used for cluster features")
 
   private val cluster = Cluster(system)
   private val untypedSystem: ExtendedActorSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]

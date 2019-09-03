@@ -10,23 +10,23 @@ import akka.actor.typed.internal.adapter.{ PropsAdapter => _, _ }
 import akka.annotation.InternalApi
 
 /**
- * Scala API: Adapters between typed and untyped actors and actor systems.
- * The underlying `ActorSystem` is the untyped [[akka.actor.ActorSystem]]
+ * Scala API: Adapters between typed and classic actors and actor systems.
+ * The underlying `ActorSystem` is the classic [[akka.actor.ActorSystem]]
  * which runs Akka Typed [[akka.actor.typed.Behavior]] on an emulation layer. In this
- * system typed and untyped actors can coexist.
+ * system typed and classic actors can coexist.
  *
  * Use these adapters with `import akka.actor.typed.scaladsl.adapter._`.
  *
- * Implicit extension methods are added to untyped and typed `ActorSystem`,
+ * Implicit extension methods are added to classic and typed `ActorSystem`,
  * `ActorContext`. Such methods make it possible to create typed child actor
- * from untyped parent actor, and the opposite untyped child from typed parent.
+ * from classic parent actor, and the opposite untyped child from typed parent.
  * `watch` is also supported in both directions.
  *
- * There is an implicit conversion from untyped [[akka.actor.ActorRef]] to
+ * There is an implicit conversion from classic [[akka.actor.ActorRef]] to
  * typed [[akka.actor.typed.ActorRef]].
  *
  * There are also converters (`toTyped`, `toUntyped`) from typed
- * [[akka.actor.typed.ActorRef]] to untyped [[akka.actor.ActorRef]], and between untyped
+ * [[akka.actor.typed.ActorRef]] to classic [[akka.actor.ActorRef]], and between classic
  * [[akka.actor.ActorSystem]] and typed [[akka.actor.typed.ActorSystem]].
  */
 package object adapter {
