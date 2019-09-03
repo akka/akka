@@ -51,7 +51,7 @@ interface ShardingReplyCompileOnlyTest {
       }
     }
 
-    public Behavior<Command> create() {
+    public static Behavior<Command> create() {
       return Behaviors.setup(Counter::new);
     }
 

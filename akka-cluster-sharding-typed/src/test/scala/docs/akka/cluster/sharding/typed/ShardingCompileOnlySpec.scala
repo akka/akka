@@ -29,31 +29,26 @@ object ShardingCompileOnlySpec {
     //#sharding-extension
 
     //#counter
-    //#counter-messages
     object Counter {
-      //#counter
       sealed trait Command
       case object Increment extends Command
       final case class GetValue(replyTo: ActorRef[Int]) extends Command
-      //#counter-messages
 
-      //#counter
-
-      def apply(entityId: String): Behavior[Command] =
-        counter(entityId, 0)
-
-      private def counter(entityId: String, value: Int): Behavior[Command] =
-        Behaviors.receiveMessage[Command] {
-          case Increment =>
-            counter(entityId, value + 1)
-          case GetValue(replyTo) =>
-            replyTo ! value
-            Behaviors.same
+      def apply(entityId: String): Behavior[Command] = {
+        def updated(value: Int): Behavior[Command] = {
+          Behaviors.receiveMessage[Command] {
+            case Increment =>
+              updated(value + 1)
+            case GetValue(replyTo) =>
+              replyTo ! value
+              Behaviors.same
+          }
         }
 
-      //#counter-messages
+        updated(0)
+
+      }
     }
-    //#counter-messages
     //#counter
 
     //#init
@@ -87,7 +82,6 @@ object ShardingCompileOnlySpec {
     import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
     //#counter-passivate
-
     object Counter {
       sealed trait Command
       case object Increment extends Command
@@ -97,10 +91,10 @@ object ShardingCompileOnlySpec {
 
       def apply(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[Command] = {
         Behaviors.setup { ctx =>
-          def become(value: Int): Behavior[Command] =
+          def updated(value: Int): Behavior[Command] =
             Behaviors.receiveMessage[Command] {
               case Increment =>
-                become(value + 1)
+                updated(value + 1)
               case GetValue(replyTo) =>
                 replyTo ! value
                 Behaviors.same
@@ -114,17 +108,19 @@ object ShardingCompileOnlySpec {
             }
 
           ctx.setReceiveTimeout(30.seconds, Idle)
-          become(0)
+          updated(0)
         }
       }
     }
+    //#counter-passivate
 
+    //#counter-passivate-init
     val TypeKey = EntityTypeKey[Counter.Command]("Counter")
 
     ClusterSharding(system).init(
       Entity(typeKey = TypeKey, createBehavior = ctx => Counter(ctx.shard, ctx.entityId))
         .withStopMessage(Counter.GoodByeCounter))
-    //#counter-passivate
+    //#counter-passivate-init
 
   }
 
