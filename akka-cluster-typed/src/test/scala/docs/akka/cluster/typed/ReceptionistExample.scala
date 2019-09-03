@@ -8,23 +8,23 @@ package docs.akka.cluster.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.Receptionist.Listing
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 //#import
 
 object PingPongExample {
   //#ping-service
-  val PingServiceKey = ServiceKey[Ping]("pingService")
+  object PingService {
+    val PingServiceKey = ServiceKey[Ping]("pingService")
 
-  final case class Ping(replyTo: ActorRef[Pong.type])
-  final case object Pong
+    final case class Ping(replyTo: ActorRef[Pong.type])
+    final case object Pong
 
-  val pingService: Behavior[Ping] =
-    Behaviors.setup { ctx =>
-      ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self)
-      Behaviors.receive { (context, msg) =>
-        msg match {
+    def apply(): Behavior[Ping] = {
+      Behaviors.setup { context =>
+        context.system.receptionist ! Receptionist.Register(PingServiceKey, context.self)
+
+        Behaviors.receiveMessage {
           case Ping(replyTo) =>
             context.log.info("Pinged by {}", replyTo)
             replyTo ! Pong
@@ -32,41 +32,51 @@ object PingPongExample {
         }
       }
     }
+  }
   //#ping-service
 
   //#pinger
-  def pinger(pingService: ActorRef[Ping]): Behavior[Pong.type] =
-    Behaviors.setup[Pong.type] { ctx =>
-      pingService ! Ping(ctx.self)
-      Behaviors.receive { (context, _) =>
-        context.log.info("{} was ponged!!", context.self)
-        Behaviors.stopped
+  object Pinger {
+    def apply(pingService: ActorRef[PingService.Ping]): Behavior[PingService.Pong.type] = {
+      Behaviors.setup { context =>
+        pingService ! PingService.Ping(context.self)
+
+        Behaviors.receiveMessage { _ =>
+          context.log.info("{} was ponged!!", context.self)
+          Behaviors.stopped
+        }
       }
     }
+  }
   //#pinger
 
   //#pinger-guardian
-  val guardian: Behavior[Nothing] =
-    Behaviors
-      .setup[Listing] { context =>
-        context.spawnAnonymous(pingService)
-        context.system.receptionist ! Receptionist.Subscribe(PingServiceKey, context.self)
-        Behaviors.receiveMessagePartial[Listing] {
-          case PingServiceKey.Listing(listings) =>
-            listings.foreach(ps => context.spawnAnonymous(pinger(ps)))
-            Behaviors.same
+  object Guardian {
+    def apply(): Behavior[Nothing] = {
+      Behaviors
+        .setup[Receptionist.Listing] { context =>
+          context.spawnAnonymous(PingService())
+          context.system.receptionist ! Receptionist.Subscribe(PingService.PingServiceKey, context.self)
+
+          Behaviors.receiveMessagePartial[Receptionist.Listing] {
+            case PingService.PingServiceKey.Listing(listings) =>
+              listings.foreach(ps => context.spawnAnonymous(Pinger(ps)))
+              Behaviors.same
+          }
         }
-      }
-      .narrow
+        .narrow
+    }
+  }
   //#pinger-guardian
 
 }
 
 object ReceptionistExample {
+  import PingPongExample._
   import akka.actor.typed.ActorSystem
 
   def main(args: Array[String]): Unit = {
-    val system = ActorSystem[Nothing](PingPongExample.guardian, "PingPongExample")
+    val system = ActorSystem[Nothing](Guardian(), "PingPongExample")
     Thread.sleep(10000)
     system.terminate()
   }

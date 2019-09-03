@@ -14,19 +14,13 @@ import akka.actor.typed.receptionist.ServiceKey;
 // #import
 import akka.actor.typed.ActorSystem;
 
-public class ReceptionistExample {
+public interface ReceptionistExample {
 
-  public
   // #ping-service
-  static class PingService {
+  public class PingService {
 
-    private final ActorContext<Ping> context;
-
-    static final ServiceKey<Ping> pingServiceKey = ServiceKey.create(Ping.class, "pingService");
-
-    private PingService(ActorContext<Ping> context) {
-      this.context = context;
-    }
+    public static final ServiceKey<Ping> pingServiceKey =
+        ServiceKey.create(Ping.class, "pingService");
 
     public static class Pong {}
 
@@ -38,7 +32,7 @@ public class ReceptionistExample {
       }
     }
 
-    public static Behavior<Ping> createBehavior() {
+    public static Behavior<Ping> create() {
       return Behaviors.setup(
           context -> {
             context
@@ -48,6 +42,12 @@ public class ReceptionistExample {
 
             return new PingService(context).behavior();
           });
+    }
+
+    private final ActorContext<Ping> context;
+
+    private PingService(ActorContext<Ping> context) {
+      this.context = context;
     }
 
     private Behavior<Ping> behavior() {
@@ -62,9 +62,8 @@ public class ReceptionistExample {
   }
   // #ping-service
 
-  public
   // #pinger
-  static class Pinger {
+  public class Pinger {
     private final ActorContext<PingService.Pong> context;
     private final ActorRef<PingService.Ping> pingService;
 
@@ -73,8 +72,7 @@ public class ReceptionistExample {
       this.pingService = pingService;
     }
 
-    public static Behavior<PingService.Pong> createBehavior(
-        ActorRef<PingService.Ping> pingService) {
+    public static Behavior<PingService.Pong> create(ActorRef<PingService.Ping> pingService) {
       return Behaviors.setup(
           ctx -> {
             pingService.tell(new PingService.Ping(ctx.getSelf()));
@@ -96,34 +94,46 @@ public class ReceptionistExample {
   // #pinger
 
   // #pinger-guardian
-  public static Behavior<Void> createGuardianBehavior() {
-    return Behaviors.setup(
-            context -> {
-              context
-                  .getSystem()
-                  .receptionist()
-                  .tell(
-                      Receptionist.subscribe(
-                          PingService.pingServiceKey, context.getSelf().narrow()));
-              context.spawnAnonymous(PingService.createBehavior());
-              return Behaviors.receive(Object.class)
-                  .onMessage(
-                      Receptionist.Listing.class,
-                      msg -> {
-                        msg.getServiceInstances(PingService.pingServiceKey)
-                            .forEach(
-                                pingService ->
-                                    context.spawnAnonymous(Pinger.createBehavior(pingService)));
-                        return Behaviors.same();
-                      })
-                  .build();
-            })
-        .narrow();
+  public class Guardian {
+
+    public static Behavior<Void> create() {
+      return Behaviors.setup(
+              (ActorContext<Receptionist.Listing> context) -> {
+                context
+                    .getSystem()
+                    .receptionist()
+                    .tell(
+                        Receptionist.subscribe(
+                            PingService.pingServiceKey, context.getSelf().narrow()));
+                context.spawnAnonymous(PingService.create());
+
+                return new Guardian(context).behavior();
+              })
+          .unsafeCast(); // Void
+    }
+
+    private final ActorContext<Receptionist.Listing> context;
+
+    private Guardian(ActorContext<Receptionist.Listing> context) {
+      this.context = context;
+    }
+
+    private Behavior<Receptionist.Listing> behavior() {
+      return Behaviors.receive(Receptionist.Listing.class)
+          .onMessage(Receptionist.Listing.class, this::onListing)
+          .build();
+    }
+
+    private Behavior<Receptionist.Listing> onListing(Receptionist.Listing msg) {
+      msg.getServiceInstances(PingService.pingServiceKey)
+          .forEach(pingService -> context.spawnAnonymous(Pinger.create(pingService)));
+      return Behaviors.same();
+    }
   }
   // #pinger-guardian
 
   public static void main(String[] args) throws Exception {
-    ActorSystem<Void> system = ActorSystem.create(createGuardianBehavior(), "ReceptionistExample");
+    ActorSystem<Void> system = ActorSystem.create(Guardian.create(), "ReceptionistExample");
     Thread.sleep(10000);
     system.terminate();
   }
