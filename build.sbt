@@ -241,9 +241,8 @@ lazy val docs = akkaModule("akka-docs")
       // TODO seems like an orphan?
       "fault-tolerance-sample.html",
       // FIXME https://github.com/lightbend/paradox/issues/350
-      // for subdirs you can add an /includes/page.html to add snippets
-      // but from a root page.md it can't resolve a typed/page.html from /subdir/page
-      // other include options are however possible from an /includes
+      // Links in a snippet are interpreted relative to the page the snippet is included in,
+      // instead of relative to the place where the snippet is declared.
       "includes.html"
     ),
     resolvers += Resolver.jcenterRepo,
