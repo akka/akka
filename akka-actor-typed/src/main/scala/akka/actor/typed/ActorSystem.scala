@@ -15,7 +15,6 @@ import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBe
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
-import akka.util.Timeout
 import akka.{ Done, actor => untyped }
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -148,12 +147,10 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * Create an actor in the "/system" namespace. This actor will be shut down
    * during system.terminate only after all user actors have terminated.
    *
-   * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
-   * to which messages can immediately be sent by using the `ActorRef.apply`
-   * method.
+   * This is only intended to be used by libraries (and Akka itself).
+   * Applications should use ordinary `spawn`.
    */
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(
-      implicit timeout: Timeout): Future[ActorRef[U]]
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
 
   /**
    * Return a reference to this system’s [[akka.actor.typed.receptionist.Receptionist]].

@@ -487,6 +487,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `StashBuffer`s are now created with `Behaviors.withStash` rather than instantiating directly
 * To align with the Akka Typed style guide `SpawnProtocol` is now created through @scala[`SpawnProtocol()`]@java[`SpawnProtocol.create()`], the special `Spawn` message
   factories has been removed and the top level of the actor protocol is now `SpawnProtocol.Command`
+* `Future` removed from `ActorSystem.systemActorOf`.
 
 #### Akka Typed Stream API changes
 

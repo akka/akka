@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.Future
 
 import akka.Done
 import akka.actor
@@ -33,7 +32,6 @@ import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.annotation.InternalApi
 import akka.event.LoggingFilterWithMarker
-import akka.util.Timeout
 import akka.{ actor => untyped }
 
 /**
@@ -113,10 +111,9 @@ import akka.{ actor => untyped }
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(
-      implicit timeout: Timeout): Future[ActorRef[U]] = {
+  override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
     val ref = untypedSystem.systemActorOf(PropsAdapter(() => behavior, props), name)
-    Future.successful(ActorRefAdapter(ref))
+    ActorRefAdapter(ref)
   }
 
 }

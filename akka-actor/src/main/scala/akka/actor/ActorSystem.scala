@@ -697,6 +697,9 @@ abstract class ExtendedActorSystem extends ActorSystem {
   /**
    * Create an actor in the "/system" namespace. This actor will be shut down
    * during system.terminate only after all user actors have terminated.
+   *
+   * This is only intended to be used by libraries (and Akka itself).
+   * Applications should use ordinary `actorOf`.
    */
   def systemActorOf(props: Props, name: String): ActorRef
 
