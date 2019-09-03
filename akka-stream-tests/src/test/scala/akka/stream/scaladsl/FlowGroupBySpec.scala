@@ -340,6 +340,7 @@ class FlowGroupBySpec extends StreamSpec("""
       val ex = down.expectError()
       ex.getMessage should include("too many substreams")
       s1.expectError(ex)
+      up.expectCancellation()
     }
 
     "resume when exceeding maxSubstreams" in assertAllStagesStopped {
@@ -353,6 +354,8 @@ class FlowGroupBySpec extends StreamSpec("""
 
       up.sendNext(1)
       down.expectNoMessage(1.second)
+      up.sendComplete()
+      down.expectComplete()
     }
 
     "emit subscribe before completed" in assertAllStagesStopped {
