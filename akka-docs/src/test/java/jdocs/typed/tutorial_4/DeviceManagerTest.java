@@ -11,8 +11,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
 import static org.junit.Assert.assertNotEquals;
+
+import static jdocs.typed.tutorial_4.DeviceManager.DeviceRegistered;
+import static jdocs.typed.tutorial_4.DeviceManager.RequestTrackDevice;
 
 public class DeviceManagerTest extends JUnitSuite {
 
@@ -21,7 +23,7 @@ public class DeviceManagerTest extends JUnitSuite {
   @Test
   public void testReplyToRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceManagerMessage> managerActor = testKit.spawn(DeviceManager.createBehavior());
+    ActorRef<DeviceManager.Command> managerActor = testKit.spawn(DeviceManager.create());
 
     managerActor.tell(new RequestTrackDevice("group1", "device", probe.getRef()));
     DeviceRegistered registered1 = probe.receiveMessage();

@@ -9,13 +9,11 @@ import akka.actor.typed.ActorRef;
 import java.util.Optional;
 
 // #read-protocol-1
-abstract class DeviceProtocol {
-  // no instances of DeviceProtocol class
-  private DeviceProtocol() {}
+public class Device {
 
-  interface DeviceMessage {}
+  public interface Command {}
 
-  public static final class ReadTemperature implements DeviceMessage {
+  public static final class ReadTemperature implements Command {
     final ActorRef<RespondTemperature> replyTo;
 
     public ReadTemperature(ActorRef<RespondTemperature> replyTo) {

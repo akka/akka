@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
-import typed.tutorial_5.Device.DeviceMessage
+import typed.tutorial_5.Device.Command
 import typed.tutorial_5.DeviceGroupQuery.WrappedRespondTemperature
 import typed.tutorial_5.DeviceManager.DeviceNotAvailable
 import typed.tutorial_5.DeviceManager.DeviceTimedOut
@@ -24,8 +24,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "return temperature value for working devices" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
-      val device1 = createTestProbe[DeviceMessage]()
-      val device2 = createTestProbe[DeviceMessage]()
+      val device1 = createTestProbe[Command]()
+      val device2 = createTestProbe[Command]()
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
@@ -49,8 +49,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "return TemperatureNotAvailable for devices with no readings" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
-      val device1 = createTestProbe[DeviceMessage]()
-      val device2 = createTestProbe[DeviceMessage]()
+      val device1 = createTestProbe[Command]()
+      val device2 = createTestProbe[Command]()
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
@@ -74,8 +74,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "return DeviceNotAvailable if device stops before answering" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
-      val device1 = createTestProbe[DeviceMessage]()
-      val device2 = createTestProbe[DeviceMessage]()
+      val device1 = createTestProbe[Command]()
+      val device2 = createTestProbe[Command]()
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
@@ -100,8 +100,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "return temperature reading even if device stops after answering" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
-      val device1 = createTestProbe[DeviceMessage]()
-      val device2 = createTestProbe[DeviceMessage]()
+      val device1 = createTestProbe[Command]()
+      val device2 = createTestProbe[Command]()
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 
@@ -127,8 +127,8 @@ class DeviceGroupQuerySpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "return DeviceTimedOut if device does not answer in time" in {
       val requester = createTestProbe[RespondAllTemperatures]()
 
-      val device1 = createTestProbe[DeviceMessage]()
-      val device2 = createTestProbe[DeviceMessage]()
+      val device1 = createTestProbe[Command]()
+      val device2 = createTestProbe[Command]()
 
       val deviceIdToActor = Map("device1" -> device1.ref, "device2" -> device2.ref)
 

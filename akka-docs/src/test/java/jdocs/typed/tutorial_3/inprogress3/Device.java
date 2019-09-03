@@ -4,18 +4,12 @@
 
 package jdocs.typed.tutorial_3.inprogress3;
 
-import akka.actor.typed.ActorRef;
+public class Device {
 
-import java.util.Optional;
-
-abstract class DeviceProtocol {
-  // no instances of DeviceProtocol class
-  private DeviceProtocol() {}
-
-  interface DeviceMessage {}
+  public interface Command {}
 
   // #write-protocol-1
-  public static final class RecordTemperature implements DeviceMessage {
+  public static final class RecordTemperature implements Command {
     final double value;
 
     public RecordTemperature(double value) {

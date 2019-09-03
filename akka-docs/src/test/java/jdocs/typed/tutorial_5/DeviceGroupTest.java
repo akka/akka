@@ -16,10 +16,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
-import static jdocs.typed.tutorial_5.DeviceProtocol.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
+import static jdocs.typed.tutorial_5.DeviceManager.RespondAllTemperatures;
+import static jdocs.typed.tutorial_5.DeviceManager.TemperatureReading;
+import static jdocs.typed.tutorial_5.DeviceManager.Temperature;
+import static jdocs.typed.tutorial_5.DeviceManager.TemperatureNotAvailable;
+import static jdocs.typed.tutorial_5.DeviceManager.DeviceRegistered;
+import static jdocs.typed.tutorial_5.DeviceManager.RequestTrackDevice;
+import static jdocs.typed.tutorial_5.DeviceManager.ReplyDeviceList;
+import static jdocs.typed.tutorial_5.DeviceManager.RequestDeviceList;
+import static jdocs.typed.tutorial_5.DeviceManager.RequestAllTemperatures;
 
 public class DeviceGroupTest extends JUnitSuite {
 
@@ -28,7 +36,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testReplyToRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupMessage> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroup.Command> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device", probe.getRef()));
     DeviceRegistered registered1 = probe.receiveMessage();
@@ -39,17 +47,18 @@ public class DeviceGroupTest extends JUnitSuite {
     assertNotEquals(registered1.device, registered2.device);
 
     // Check that the device actors are working
-    TestProbe<TemperatureRecorded> recordProbe = testKit.createTestProbe(TemperatureRecorded.class);
-    registered1.device.tell(new RecordTemperature(0L, 1.0, recordProbe.getRef()));
+    TestProbe<Device.TemperatureRecorded> recordProbe =
+        testKit.createTestProbe(Device.TemperatureRecorded.class);
+    registered1.device.tell(new Device.RecordTemperature(0L, 1.0, recordProbe.getRef()));
     assertEquals(0L, recordProbe.receiveMessage().requestId);
-    registered2.device.tell(new RecordTemperature(1L, 2.0, recordProbe.getRef()));
+    registered2.device.tell(new Device.RecordTemperature(1L, 2.0, recordProbe.getRef()));
     assertEquals(1L, recordProbe.receiveMessage().requestId);
   }
 
   @Test
   public void testIgnoreWrongRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupMessage> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroup.Command> groupActor = testKit.spawn(DeviceGroup.create("group"));
     groupActor.tell(new RequestTrackDevice("wrongGroup", "device1", probe.getRef()));
     probe.expectNoMessage();
   }
@@ -57,7 +66,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testReturnSameActorForSameDeviceId() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupMessage> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroup.Command> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device", probe.getRef()));
     DeviceRegistered registered1 = probe.receiveMessage();
@@ -71,7 +80,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testListActiveDevices() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupMessage> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroup.Command> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device1", registeredProbe.getRef()));
     registeredProbe.receiveMessage();
@@ -90,7 +99,7 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testListActiveDevicesAfterOneShutsDown() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupMessage> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroup.Command> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device1", registeredProbe.getRef()));
     DeviceRegistered registered1 = registeredProbe.receiveMessage();
@@ -98,7 +107,7 @@ public class DeviceGroupTest extends JUnitSuite {
     groupActor.tell(new RequestTrackDevice("group", "device2", registeredProbe.getRef()));
     registeredProbe.receiveMessage();
 
-    ActorRef<DeviceMessage> toShutDown = registered1.device;
+    ActorRef<Device.Command> toShutDown = registered1.device;
 
     TestProbe<ReplyDeviceList> deviceListProbe = testKit.createTestProbe(ReplyDeviceList.class);
 
@@ -107,7 +116,7 @@ public class DeviceGroupTest extends JUnitSuite {
     assertEquals(0L, reply.requestId);
     assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
 
-    toShutDown.tell(Passivate.INSTANCE);
+    toShutDown.tell(Device.Passivate.INSTANCE);
     registeredProbe.expectTerminated(toShutDown, registeredProbe.getRemainingOrDefault());
 
     // using awaitAssert to retry because it might take longer for the groupActor
@@ -126,22 +135,23 @@ public class DeviceGroupTest extends JUnitSuite {
   @Test
   public void testCollectTemperaturesFromAllActiveDevices() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
-    ActorRef<DeviceGroupMessage> groupActor = testKit.spawn(DeviceGroup.createBehavior("group"));
+    ActorRef<DeviceGroup.Command> groupActor = testKit.spawn(DeviceGroup.create("group"));
 
     groupActor.tell(new RequestTrackDevice("group", "device1", registeredProbe.getRef()));
-    ActorRef<DeviceMessage> deviceActor1 = registeredProbe.receiveMessage().device;
+    ActorRef<Device.Command> deviceActor1 = registeredProbe.receiveMessage().device;
 
     groupActor.tell(new RequestTrackDevice("group", "device2", registeredProbe.getRef()));
-    ActorRef<DeviceMessage> deviceActor2 = registeredProbe.receiveMessage().device;
+    ActorRef<Device.Command> deviceActor2 = registeredProbe.receiveMessage().device;
 
     groupActor.tell(new RequestTrackDevice("group", "device3", registeredProbe.getRef()));
-    ActorRef<DeviceMessage> deviceActor3 = registeredProbe.receiveMessage().device;
+    ActorRef<Device.Command> deviceActor3 = registeredProbe.receiveMessage().device;
 
     // Check that the device actors are working
-    TestProbe<TemperatureRecorded> recordProbe = testKit.createTestProbe(TemperatureRecorded.class);
-    deviceActor1.tell(new RecordTemperature(0L, 1.0, recordProbe.getRef()));
+    TestProbe<Device.TemperatureRecorded> recordProbe =
+        testKit.createTestProbe(Device.TemperatureRecorded.class);
+    deviceActor1.tell(new Device.RecordTemperature(0L, 1.0, recordProbe.getRef()));
     assertEquals(0L, recordProbe.receiveMessage().requestId);
-    deviceActor2.tell(new RecordTemperature(1L, 2.0, recordProbe.getRef()));
+    deviceActor2.tell(new Device.RecordTemperature(1L, 2.0, recordProbe.getRef()));
     assertEquals(1L, recordProbe.receiveMessage().requestId);
     // No temperature for device 3
 
