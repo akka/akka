@@ -9,7 +9,10 @@ import java.time.Duration;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 
 // #import
 import akka.cluster.sharding.typed.ShardingEnvelope;
@@ -23,77 +26,136 @@ import akka.cluster.sharding.typed.javadsl.Entity;
 import jdocs.akka.persistence.typed.BlogPostExample.BlogCommand;
 import jdocs.akka.persistence.typed.BlogPostExample.BlogBehavior;
 
-public class ShardingCompileOnlyTest {
-
-  // #counter-messages
-  interface CounterCommand {}
-
-  public static class Increment implements CounterCommand {}
-
-  public static class GetValue implements CounterCommand {
-    private final ActorRef<Integer> replyTo;
-
-    public GetValue(ActorRef<Integer> replyTo) {
-      this.replyTo = replyTo;
-    }
-  }
-  // #counter-messages
+interface ShardingCompileOnlyTest {
 
   // #counter
+  public class Counter extends AbstractBehavior<Counter.Command> {
 
-  public static Behavior<CounterCommand> counter(String entityId, Integer value) {
-    return Behaviors.receive(CounterCommand.class)
-        .onMessage(Increment.class, msg -> counter(entityId, value + 1))
-        .onMessage(
-            GetValue.class,
-            msg -> {
-              msg.replyTo.tell(value);
-              return Behaviors.same();
-            })
-        .build();
+    public interface Command {}
+
+    public enum Increment implements Command {
+      INSTANCE
+    }
+
+    public static class GetValue implements Command {
+      private final ActorRef<Integer> replyTo;
+
+      public GetValue(ActorRef<Integer> replyTo) {
+        this.replyTo = replyTo;
+      }
+    }
+
+    public static Behavior<Command> create(String entityId) {
+      return Behaviors.setup(context -> new Counter(context, entityId));
+    }
+
+    private final ActorContext<Command> context;
+    private final String entityId;
+    private int value = 0;
+
+    private Counter(ActorContext<Command> context, String entityId) {
+      this.context = context;
+      this.entityId = entityId;
+    }
+
+    @Override
+    public Receive<Command> createReceive() {
+      return newReceiveBuilder()
+          .onMessage(Increment.class, msg -> onIncrement())
+          .onMessage(GetValue.class, this::onGetValue)
+          .build();
+    }
+
+    private Behavior<Command> onIncrement() {
+      value++;
+      return this;
+    }
+
+    private Behavior<Command> onGetValue(GetValue msg) {
+      msg.replyTo.tell(value);
+      return this;
+    }
   }
   // #counter
 
   // #counter-passivate
-  public static class Idle implements CounterCommand {}
+  public class Counter2 extends AbstractBehavior<Counter2.Command> {
 
-  public static class GoodByeCounter implements CounterCommand {}
+    public interface Command {}
 
-  public static Behavior<CounterCommand> counter2(
-      ActorRef<ClusterSharding.ShardCommand> shard, String entityId) {
-    return Behaviors.setup(
-        ctx -> {
-          ctx.setReceiveTimeout(Duration.ofSeconds(30), new Idle());
-          return counter2(shard, entityId, 0);
-        });
-  }
+    private enum Idle implements Command {
+      INSTANCE
+    }
 
-  private static Behavior<CounterCommand> counter2(
-      ActorRef<ClusterSharding.ShardCommand> shard, String entityId, Integer value) {
-    return Behaviors.setup(
-        context ->
-            Behaviors.receive(CounterCommand.class)
-                .onMessage(Increment.class, msg -> counter(entityId, value + 1))
-                .onMessage(
-                    GetValue.class,
-                    msg -> {
-                      msg.replyTo.tell(value);
-                      return Behaviors.same();
-                    })
-                .onMessage(
-                    Idle.class,
-                    msg -> {
-                      // after receive timeout
-                      shard.tell(new ClusterSharding.Passivate<>(context.getSelf()));
-                      return Behaviors.same();
-                    })
-                .onMessage(
-                    GoodByeCounter.class,
-                    msg -> {
-                      // the stopMessage, used for rebalance and passivate
-                      return Behaviors.stopped();
-                    })
-                .build());
+    public enum GoodByeCounter implements Command {
+      INSTANCE
+    }
+
+    public enum Increment implements Command {
+      INSTANCE
+    }
+
+    public static class GetValue implements Command {
+      private final ActorRef<Integer> replyTo;
+
+      public GetValue(ActorRef<Integer> replyTo) {
+        this.replyTo = replyTo;
+      }
+    }
+
+    public static Behavior<Command> create(
+        ActorRef<ClusterSharding.ShardCommand> shard, String entityId) {
+      return Behaviors.setup(
+          ctx -> {
+            ctx.setReceiveTimeout(Duration.ofSeconds(30), Idle.INSTANCE);
+            return new Counter2(ctx, shard, entityId);
+          });
+    }
+
+    private final ActorContext<Command> context;
+    private final ActorRef<ClusterSharding.ShardCommand> shard;
+    private final String entityId;
+    private int value = 0;
+
+    private Counter2(
+        ActorContext<Command> context,
+        ActorRef<ClusterSharding.ShardCommand> shard,
+        String entityId) {
+      this.context = context;
+      this.shard = shard;
+      this.entityId = entityId;
+    }
+
+    @Override
+    public Receive<Command> createReceive() {
+      return newReceiveBuilder()
+          .onMessage(Increment.class, msg -> onIncrement())
+          .onMessage(GetValue.class, this::onGetValue)
+          .onMessage(Idle.class, msg -> onIdle())
+          .onMessage(GoodByeCounter.class, msg -> onGoodByeCounter())
+          .build();
+    }
+
+    private Behavior<Command> onIncrement() {
+      value++;
+      return this;
+    }
+
+    private Behavior<Command> onGetValue(GetValue msg) {
+      msg.replyTo.tell(value);
+      return this;
+    }
+
+    private Behavior<Command> onIdle() {
+      // after receive timeout
+      shard.tell(new ClusterSharding.Passivate<>(context.getSelf()));
+      return this;
+    }
+
+    private Behavior<Command> onGoodByeCounter() {
+      // the stopMessage, used for rebalance and passivate
+      return Behaviors.stopped();
+    }
   }
   // #counter-passivate
 
@@ -103,11 +165,12 @@ public class ShardingCompileOnlyTest {
 
     // #counter-passivate-init
 
-    EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
+    EntityTypeKey<Counter2.Command> typeKey =
+        EntityTypeKey.create(Counter2.Command.class, "Counter");
 
     sharding.init(
-        Entity.of(typeKey, ctx -> counter2(ctx.getShard(), ctx.getEntityId()))
-            .withStopMessage(new GoodByeCounter()));
+        Entity.of(typeKey, ctx -> Counter2.create(ctx.getShard(), ctx.getEntityId()))
+            .withStopMessage(Counter2.GoodByeCounter.INSTANCE));
     // #counter-passivate-init
   }
 
@@ -120,17 +183,17 @@ public class ShardingCompileOnlyTest {
     // #sharding-extension
 
     // #init
-    EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
+    EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
 
-    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion =
-        sharding.init(Entity.of(typeKey, ctx -> counter(ctx.getEntityId(), 0)));
+    ActorRef<ShardingEnvelope<Counter.Command>> shardRegion =
+        sharding.init(Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId())));
     // #init
 
     // #send
-    EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-1");
-    counterOne.tell(new Increment());
+    EntityRef<Counter.Command> counterOne = sharding.entityRefFor(typeKey, "counter-1");
+    counterOne.tell(Counter.Increment.INSTANCE);
 
-    shardRegion.tell(new ShardingEnvelope<>("counter-1", new Increment()));
+    shardRegion.tell(new ShardingEnvelope<>("counter-1", Counter.Increment.INSTANCE));
     // #send
   }
 

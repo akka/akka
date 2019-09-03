@@ -67,7 +67,7 @@ public class HelloWorldPersistentEntityExample {
       extends EventSourcedEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
 
     // Command
-    interface Command extends CborSerializable {}
+    public interface Command extends CborSerializable {}
 
     public static final class Greet implements Command {
       public final String whom;
