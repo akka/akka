@@ -79,7 +79,7 @@ Cluster `subscriptions` can be used to receive messages when cluster state chang
 for all `MemberEvent`s, then using the `manager` to have a node leave the cluster will result in events
 for the node going through the lifecycle described in @ref:[Cluster Specification](../common/cluster.md).
 
-This example subscribes with a `TestProbe` but in a real application it would be an Actor:
+This example subscribes with a @scala[`subscriber: ActorRef[MemberEvent]`]@java[`ActorRef<MemberEvent> subscriber`]:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-subscribe }
