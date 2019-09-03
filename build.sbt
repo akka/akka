@@ -239,7 +239,12 @@ lazy val docs = akkaModule("akka-docs")
       // Page that recommends Alpakka:
       "camel.html",
       // TODO seems like an orphan?
-      "fault-tolerance-sample.html"
+      "fault-tolerance-sample.html",
+      // FIXME https://github.com/lightbend/paradox/issues/350
+      // for subdirs you can add an /includes/page.html to add snippets
+      // but from a root page.md it can't resolve a typed/page.html from /subdir/page
+      // other include options are however possible from an /includes
+      "includes.html"
     ),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
