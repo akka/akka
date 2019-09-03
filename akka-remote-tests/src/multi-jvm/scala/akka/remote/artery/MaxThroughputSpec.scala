@@ -115,7 +115,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     private var c = 0L
     private var endMessagesMissing = numSenders
     private var correspondingSender
-      : ActorRef = null // the Actor which send the Start message will also receive the report
+        : ActorRef = null // the Actor which send the Start message will also receive the report
 
     def receive = {
       case msg: Array[Byte] =>
@@ -175,8 +175,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
     var pendingFlowControl = Map.empty[Int, Int]
 
     val compressionEnabled =
-    RARP(context.system).provider.transport.isInstanceOf[ArteryTransport] &&
-    RARP(context.system).provider.remoteSettings.Artery.Enabled
+      RARP(context.system).provider.transport.isInstanceOf[ArteryTransport] &&
+      RARP(context.system).provider.remoteSettings.Artery.Enabled
 
     def receive = {
       case Run =>
