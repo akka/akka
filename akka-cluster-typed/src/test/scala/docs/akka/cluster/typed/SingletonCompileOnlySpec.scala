@@ -6,7 +6,6 @@ package docs.akka.cluster.typed
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.typed.SingletonActor
 
 import scala.concurrent.duration._
 
@@ -15,45 +14,53 @@ object SingletonCompileOnlySpec {
   val system = ActorSystem(Behaviors.empty, "Singleton")
 
   //#counter
-  trait CounterCommand
-  case object Increment extends CounterCommand
-  final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
-  case object GoodByeCounter extends CounterCommand
+  object Counter {
+    trait Command
+    case object Increment extends Command
+    final case class GetValue(replyTo: ActorRef[Int]) extends Command
+    case object GoodByeCounter extends Command
 
-  def counter(value: Int): Behavior[CounterCommand] =
-    Behaviors.receiveMessage[CounterCommand] {
-      case Increment =>
-        counter(value + 1)
-      case GetValue(replyTo) =>
-        replyTo ! value
-        Behaviors.same
-      case GoodByeCounter =>
-        // Do async action then stop
-        Behaviors.stopped
+    def apply(): Behavior[Command] = {
+      def updated(value: Int): Behavior[Command] = {
+        Behaviors.receiveMessage[Command] {
+          case Increment =>
+            updated(value + 1)
+          case GetValue(replyTo) =>
+            replyTo ! value
+            Behaviors.same
+          case GoodByeCounter =>
+            // Possible async action then stop
+            Behaviors.stopped
+        }
+      }
+
+      updated(0)
     }
+  }
   //#counter
 
   //#singleton
   import akka.cluster.typed.ClusterSingleton
+  import akka.cluster.typed.SingletonActor
 
   val singletonManager = ClusterSingleton(system)
   // Start if needed and provide a proxy to a named singleton
-  val proxy: ActorRef[CounterCommand] = singletonManager.init(
-    SingletonActor(Behaviors.supervise(counter(0)).onFailure[Exception](SupervisorStrategy.restart), "GlobalCounter"))
+  val proxy: ActorRef[Counter.Command] = singletonManager.init(
+    SingletonActor(Behaviors.supervise(Counter()).onFailure[Exception](SupervisorStrategy.restart), "GlobalCounter"))
 
-  proxy ! Increment
+  proxy ! Counter.Increment
   //#singleton
 
   //#stop-message
-  val singletonActor = SingletonActor(counter(0), "GlobalCounter").withStopMessage(GoodByeCounter)
+  val singletonActor = SingletonActor(Counter(), "GlobalCounter").withStopMessage(Counter.GoodByeCounter)
   singletonManager.init(singletonActor)
   //#stop-message
 
   //#backoff
-  val proxyBackOff: ActorRef[CounterCommand] = singletonManager.init(
+  val proxyBackOff: ActorRef[Counter.Command] = singletonManager.init(
     SingletonActor(
       Behaviors
-        .supervise(counter(0))
+        .supervise(Counter())
         .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)),
       "GlobalCounter"))
   //#backoff
