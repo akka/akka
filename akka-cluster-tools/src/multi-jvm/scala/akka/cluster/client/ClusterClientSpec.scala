@@ -6,6 +6,7 @@ package akka.cluster.client
 
 import language.postfixOps
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.{
   Actor,
@@ -29,8 +30,9 @@ import akka.cluster.pubsub._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.util.Timeout
 import akka.util.unused
-
 import scala.concurrent.Await
+
+import com.github.ghik.silencer.silent
 
 object ClusterClientSpec extends MultiNodeConfig {
   val client = role("client")
@@ -160,6 +162,7 @@ class ClusterClientMultiJvmNode3 extends ClusterClientSpec
 class ClusterClientMultiJvmNode4 extends ClusterClientSpec
 class ClusterClientMultiJvmNode5 extends ClusterClientSpec
 
+@silent("deprecated")
 class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNodeSpec with ImplicitSender {
   import ClusterClientSpec._
 
