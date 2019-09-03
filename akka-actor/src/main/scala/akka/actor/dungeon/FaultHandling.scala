@@ -19,6 +19,13 @@ import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
 
+import scala.collection.immutable
+import scala.concurrent.duration.Duration
+import scala.util.control.Exception._
+import scala.util.control.NonFatal
+import akka.actor.ActorRefScope
+import com.github.ghik.silencer.silent
+
 private[akka] trait FaultHandling { this: ActorCell =>
 
   /* =================
@@ -49,6 +56,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
   private def setFailed(perpetrator: ActorRef): Unit = _failed = perpetrator
   private def clearFailed(): Unit = _failed = null
   private def perpetrator: ActorRef = _failed
+  var _failedFatally: Boolean = false
 
   /**
    * Do re-create the actor in response to a failure.
@@ -65,7 +73,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
         val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
         try {
           // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
-          if (failedActor.context ne null) failedActor.aroundPreRestart(cause, optionalMessage)
+          if (!_failedFatally) failedActor.aroundPreRestart(cause, optionalMessage)
         } catch handleNonFatalOrInterruptedException { e =>
           val ex = PreRestartException(self, e, cause, optionalMessage)
           publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
@@ -101,7 +109,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
       system.eventStream.publish(
         Error(self.path.toString, clazz(actor), "changing Resume into Create after " + causedByFailure))
       faultCreate()
-    } else if (actor.context == null && causedByFailure != null) {
+    } else if (_failedFatally && causedByFailure != null) {
       system.eventStream.publish(
         Error(self.path.toString, clazz(actor), "changing Resume into Restart after " + causedByFailure))
       faultRecreate(causedByFailure)
@@ -226,11 +234,11 @@ private[akka] trait FaultHandling { this: ActorCell =>
         publish(Debug(self.path.toString, clazz(a), "stopped"))
 
       clearActorFields(a, recreate = false)
-      clearActorCellFields(this)
-      actor = null
+      clearFieldsForTermination()
     }
   }
 
+  @silent
   private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = {
     // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
@@ -241,7 +249,6 @@ private[akka] trait FaultHandling { this: ActorCell =>
 
       val freshActor = newActor()
       actor = freshActor // this must happen before postRestart has a chance to fail
-      if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
       freshActor.aroundPostRestart(cause)
       checkReceiveTimeout(reschedule = true) // user may have set a receive timeout in preStart which is called from postRestart
@@ -255,6 +262,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
             publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
           })
     } catch handleNonFatalOrInterruptedException { e =>
+      _failedFatally = true
       clearActorFields(actor, recreate = false) // in order to prevent preRestart() from happening again
       handleInvokeFailure(survivors, PostRestartException(self, e, cause))
     }

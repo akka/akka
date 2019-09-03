@@ -21,7 +21,7 @@ import akka.dispatch.{ Envelope, MessageDispatcher }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
-import akka.util.{ unused, Reflect }
+import akka.util.unused
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -410,7 +410,7 @@ private[akka] object ActorCell {
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,
-    final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
+    _initialProps: Props,
     val dispatcher: MessageDispatcher,
     val parent: InternalActorRef)
     extends AbstractActor.ActorContext
@@ -420,6 +420,9 @@ private[akka] class ActorCell(
     with dungeon.Dispatch
     with dungeon.DeathWatch
     with dungeon.FaultHandling {
+
+  var _props = _initialProps
+  def props = _props
 
   import ActorCell._
 
@@ -627,6 +630,7 @@ private[akka] class ActorCell(
     def clearOutActorIfNonNull(): Unit = {
       if (actor != null) {
         clearActorFields(actor, recreate = false)
+        _failedFatally = true
         actor = null // ensure that we know that we failed during creation
       }
     }
@@ -684,25 +688,16 @@ private[akka] class ActorCell(
     case _                               =>
   }
 
-  final protected def clearActorCellFields(cell: ActorCell): Unit = {
-    cell.unstashAll()
-    if (!Reflect.lookupAndSetField(classOf[ActorCell], cell, "props", ActorCell.terminatedProps))
-      throw new IllegalArgumentException("ActorCell has no props field")
-  }
-
+  @silent
   final protected def clearActorFields(actorInstance: Actor, recreate: Boolean): Unit = {
-    setActorFields(actorInstance, context = null, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
-
-  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
-    if (actorInstance ne null) {
-      if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
-          || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
-        throw IllegalActorStateException(
-          s"${actorInstance.getClass} is not an Actor class. It doesn't extend the 'Actor' trait")
-    }
+  protected def clearFieldsForTermination(): Unit = {
+    unstashAll()
+    _props = ActorCell.terminatedProps
+    actor = null
+  }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
   protected final def publish(e: LogEvent): Unit =
