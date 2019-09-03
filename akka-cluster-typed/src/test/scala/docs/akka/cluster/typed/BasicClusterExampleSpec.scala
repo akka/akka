@@ -118,17 +118,17 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
 
       try {
         //#cluster-create
-        val cluster1 = Cluster(system)
+        val cluster = Cluster(system)
         //#cluster-create
         val cluster2 = Cluster(system2)
 
         //#cluster-join
-        cluster1.manager ! Join(cluster1.selfMember.address)
+        cluster.manager ! Join(cluster.selfMember.address)
         //#cluster-join
-        cluster2.manager ! Join(cluster1.selfMember.address)
+        cluster2.manager ! Join(cluster.selfMember.address)
 
         eventually {
-          cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
+          cluster.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
           cluster2.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
         }
 
@@ -137,7 +137,7 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         //#cluster-leave
 
         eventually {
-          cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up)
+          cluster.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up)
           cluster2.isTerminated shouldEqual true
         }
       } finally {
@@ -157,10 +157,12 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         val cluster1 = Cluster(system1)
         val cluster2 = Cluster(system2)
         val cluster3 = Cluster(system3)
+        def cluster = cluster1
 
-        //#cluster-subscribe
         val probe1 = TestProbe[MemberEvent]()(system1)
-        cluster1.subscriptions ! Subscribe(probe1.ref, classOf[MemberEvent])
+        val subscriber = probe1.ref
+        //#cluster-subscribe
+        cluster.subscriptions ! Subscribe(subscriber, classOf[MemberEvent])
         //#cluster-subscribe
 
         cluster1.manager ! Join(cluster1.selfMember.address)
@@ -193,14 +195,16 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
             .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
         }
 
+        val anotherMemberAddress = cluster2.selfMember.address
         //#cluster-leave-example
-        cluster1.manager ! Leave(cluster2.selfMember.address)
+        cluster.manager ! Leave(anotherMemberAddress)
+        // subscriber will receive events MemberLeft, MemberExited and MemberRemoved
+        //#cluster-leave-example
         probe1.within(10.seconds) {
           probe1.expectMessageType[MemberLeft].member.address shouldEqual cluster2.selfMember.address
           probe1.expectMessageType[MemberExited].member.address shouldEqual cluster2.selfMember.address
           probe1.expectMessageType[MemberRemoved].member.address shouldEqual cluster2.selfMember.address
         }
-        //#cluster-leave-example
 
         eventually {
           cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up)
