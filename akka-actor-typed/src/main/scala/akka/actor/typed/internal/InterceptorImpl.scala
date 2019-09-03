@@ -172,12 +172,13 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
 
   private def log(template: String, messageOrSignal: Any, context: TypedActorContext[Any]): Unit = {
     if (opts.enabled) {
+      val selfPath = context.asScala.self.path
       opts.level match {
-        case Level.ERROR => logger.error(template, context.asScala.self.path, messageOrSignal)
-        case Level.WARN  => logger.warn(template, context.asScala.self.path, messageOrSignal)
-        case Level.INFO  => logger.info(template, context.asScala.self.path, messageOrSignal)
-        case Level.DEBUG => logger.debug(template, context.asScala.self.path, messageOrSignal)
-        case Level.TRACE => logger.trace(template, context.asScala.self.path, messageOrSignal)
+        case Level.ERROR => logger.error(template, selfPath, messageOrSignal)
+        case Level.WARN  => logger.warn(template, selfPath, messageOrSignal)
+        case Level.INFO  => logger.info(template, selfPath, messageOrSignal)
+        case Level.DEBUG => logger.debug(template, selfPath, messageOrSignal)
+        case Level.TRACE => logger.trace(template, selfPath, messageOrSignal)
         case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
