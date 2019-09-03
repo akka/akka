@@ -54,7 +54,7 @@ class UntypedSupervisingTypedSpec
 
   implicit val typedActorSystem: ActorSystem[Nothing] = system.toTyped
 
-  "An untyped actor system that spawns typed actors" should {
+  "A classic actor system that spawns typed actors" should {
     "default to stop for supervision" in {
       val probe = TestProbe()
       val underTest = system.spawn(ProbedBehavior.behavior(probe.ref), "a1")
@@ -87,9 +87,9 @@ class UntypedSupervisingTypedSpec
     }
 
     "default to stop supervision (from context)" in {
-      val untyped = system.actorOf(u.Props(new UntypedToTyped()))
+      val classic = system.actorOf(u.Props(new UntypedToTyped()))
       val probe = TestProbe()
-      untyped ! SpawnFromUntyped(ProbedBehavior.behavior(probe.ref), "a3")
+      classic ! SpawnFromUntyped(ProbedBehavior.behavior(probe.ref), "a3")
       val underTest = expectMsgType[TypedSpawnedFromUntypedConext].actorRef
       watch(underTest.toUntyped)
       underTest ! "throw"
@@ -99,10 +99,10 @@ class UntypedSupervisingTypedSpec
     }
 
     "allow overriding the default (from context)" in {
-      val untyped = system.actorOf(u.Props(new UntypedToTyped()))
+      val classic = system.actorOf(u.Props(new UntypedToTyped()))
       val probe = TestProbe()
       val behavior = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
-      untyped ! SpawnFromUntyped(behavior, "a4")
+      classic ! SpawnFromUntyped(behavior, "a4")
       val underTest = expectMsgType[TypedSpawnedFromUntypedConext].actorRef
       watch(underTest.toUntyped)
       underTest ! "throw"
@@ -112,9 +112,9 @@ class UntypedSupervisingTypedSpec
     }
 
     "default to stop supervision for spawn anonymous (from context)" in {
-      val untyped = system.actorOf(u.Props(new UntypedToTyped()))
+      val classic = system.actorOf(u.Props(new UntypedToTyped()))
       val probe = TestProbe()
-      untyped ! SpawnAnonFromUntyped(ProbedBehavior.behavior(probe.ref))
+      classic ! SpawnAnonFromUntyped(ProbedBehavior.behavior(probe.ref))
       val underTest = expectMsgType[TypedSpawnedFromUntypedConext].actorRef
       watch(underTest.toUntyped)
       underTest ! "throw"

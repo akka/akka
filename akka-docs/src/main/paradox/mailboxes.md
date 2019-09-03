@@ -33,7 +33,7 @@ Scala
 :   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #required-mailbox-class }
 
 Java
-:   @@snip [MyBoundedActor.java](/akka-docs/src/test/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-untyped-actor }
+:   @@snip [MyBoundedActor.java](/akka-docs/src/test/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-classic-actor }
 
 The type parameter to the `RequiresMessageQueue` @scala[trait]@java[interface] needs to be mapped to a mailbox in
 configuration like this:

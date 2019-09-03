@@ -51,9 +51,9 @@ Classic remoting over UDP has been deprecated since `2.5.0` and now has been rem
 To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
 A full cluster restart is required to change to Artery.
 
-### Untyped actor removed
+### Classic actor removed
 
-`UntypedActor` has been depcated since `2.5.0`. Use `AbstractActor` instead.
+`UntypedActor` has been deprecated since `2.5.0`. Use `AbstractActor` instead.
 
 ### UntypedPersistentActor removed
 
@@ -65,7 +65,7 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 
 ### Various removed methods
 
-* `Logging.getLogger(UntypedActor)` Untyped actor has been removed, use AbstractActor instead.
+* `Logging.getLogger(UntypedActor)` classic actor has been removed, use AbstractActor instead.
 * `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
 * `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
 * `AbstractActor.getChild` use `findChild` instead.
@@ -467,7 +467,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
-* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
+* `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
   Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`

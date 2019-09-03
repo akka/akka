@@ -16,27 +16,27 @@ import akka.actor.typed.Terminated
 import akka.testkit._
 import akka.Done
 import akka.NotUsed
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 
 object AdapterSpec {
-  val untyped1: untyped.Props = untyped.Props(new Untyped1)
+  val classic1: classic.Props = classic.Props(new Classic1)
 
-  class Untyped1 extends untyped.Actor {
+  class Classic1 extends classic.Actor {
     def receive = {
       case "ping"     => sender() ! "pong"
       case t: ThrowIt => throw t
     }
   }
 
-  def untypedForwarder(ref: untyped.ActorRef): untyped.Props = untyped.Props(new UntypedForwarder(ref))
+  def classicForwarder(ref: classic.ActorRef): classic.Props = classic.Props(new ClassicForwarder(ref))
 
-  class UntypedForwarder(ref: untyped.ActorRef) extends untyped.Actor {
+  class ClassicForwarder(ref: classic.ActorRef) extends classic.Actor {
     def receive = {
       case a: String => ref ! a
     }
   }
 
-  def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
+  def typed1(ref: classic.ActorRef, probe: ActorRef[String]): Behavior[String] =
     Behaviors
       .receive[String] { (context, message) =>
         message match {
@@ -48,7 +48,7 @@ object AdapterSpec {
             probe ! "ok"
             Behaviors.same
           case "actorOf" =>
-            val child = context.actorOf(untyped1)
+            val child = context.actorOf(classic1)
             child.tell("ping", context.self.toUntyped)
             Behaviors.same
           case "watch" =>
@@ -56,13 +56,13 @@ object AdapterSpec {
             Behaviors.same
           case "supervise-restart" =>
             // restart is the default
-            val child = context.actorOf(untyped1)
+            val child = context.actorOf(classic1)
             context.watch(child)
             child ! ThrowIt3
             child.tell("ping", context.self.toUntyped)
             Behaviors.same
           case "stop-child" =>
-            val child = context.actorOf(untyped1)
+            val child = context.actorOf(classic1)
             context.watch(child)
             context.stop(child)
             Behaviors.same
@@ -90,24 +90,24 @@ object AdapterSpec {
   case object ThrowIt2 extends ThrowIt
   case object ThrowIt3 extends ThrowIt
 
-  def untyped2(ref: ActorRef[Ping], probe: ActorRef[String]): untyped.Props =
-    untyped.Props(new Untyped2(ref, probe))
+  def classic2(ref: ActorRef[Ping], probe: ActorRef[String]): classic.Props =
+    classic.Props(new Classic2(ref, probe))
 
-  class Untyped2(ref: ActorRef[Ping], probe: ActorRef[String]) extends untyped.Actor {
+  class Classic2(ref: ActorRef[Ping], probe: ActorRef[String]) extends classic.Actor {
 
-    override val supervisorStrategy = untyped.OneForOneStrategy() {
+    override val supervisorStrategy = classic.OneForOneStrategy() {
       ({
         case ThrowIt1 =>
           probe ! "thrown-stop"
-          untyped.SupervisorStrategy.Stop
+          classic.SupervisorStrategy.Stop
         case ThrowIt2 =>
           probe ! "thrown-resume"
-          untyped.SupervisorStrategy.Resume
+          classic.SupervisorStrategy.Resume
         case ThrowIt3 =>
           probe ! "thrown-restart"
           // TODO Restart will not really restart the behavior
-          untyped.SupervisorStrategy.Restart
-      }: untyped.SupervisorStrategy.Decider).orElse(untyped.SupervisorStrategy.defaultDecider)
+          classic.SupervisorStrategy.Restart
+      }: classic.SupervisorStrategy.Decider).orElse(classic.SupervisorStrategy.defaultDecider)
     }
 
     def receive = {
@@ -122,7 +122,7 @@ object AdapterSpec {
         child ! Ping(self)
       case "watch" =>
         context.watch(ref)
-      case untyped.Terminated(_) =>
+      case classic.Terminated(_) =>
         probe ! "terminated"
       case "supervise-stop" =>
         testSupervice(ThrowIt1)
@@ -157,7 +157,7 @@ object AdapterSpec {
       }
     }
 
-  def typed2Props: untyped.Props = PropsAdapter(typed2)
+  def typed2Props: classic.Props = PropsAdapter(typed2)
 
 }
 
@@ -204,77 +204,77 @@ class AdapterSpec extends AkkaSpec("""
 
   "Adapted actors" must {
 
-    "send message from typed to untyped" in {
+    "send message from typed to classic" in {
       val probe = TestProbe()
-      val untypedRef = system.actorOf(untyped1)
-      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      val classicRef = system.actorOf(classic1)
+      val typedRef = system.spawnAnonymous(typed1(classicRef, probe.ref))
       typedRef ! "send"
       probe.expectMsg("ok")
     }
 
-    "not send null message from typed to untyped" in {
+    "not send null message from typed to classic" in {
       val probe = TestProbe()
-      val untypedRef = system.actorOf(untyped1)
-      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      val classicRef = system.actorOf(classic1)
+      val typedRef = system.spawnAnonymous(typed1(classicRef, probe.ref))
       intercept[InvalidMessageException] {
         typedRef ! null
       }
     }
 
-    "send message from untyped to typed" in {
+    "send message from classic to typed" in {
       val probe = TestProbe()
       val typedRef = system.spawnAnonymous(typed2)
-      val untypedRef = system.actorOf(untyped2(typedRef, probe.ref))
-      untypedRef ! "send"
+      val classicRef = system.actorOf(classic2(typedRef, probe.ref))
+      classicRef ! "send"
       probe.expectMsg("ok")
     }
 
-    "spawn typed child from untyped parent" in {
+    "spawn typed child from classic parent" in {
       val probe = TestProbe()
       val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ign, probe.ref))
-      untypedRef ! "spawn"
+      val classicRef = system.actorOf(classic2(ign, probe.ref))
+      classicRef ! "spawn"
       probe.expectMsg("ok")
     }
 
-    "actorOf typed child via Props from untyped parent" in {
+    "actorOf typed child via Props from classic parent" in {
       val probe = TestProbe()
       val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ign, probe.ref))
-      untypedRef ! "actorOf-props"
+      val classicRef = system.actorOf(classic2(ign, probe.ref))
+      classicRef ! "actorOf-props"
       probe.expectMsg("ok")
     }
 
-    "actorOf untyped child from typed parent" in {
+    "actorOf classic child from typed parent" in {
       val probe = TestProbe()
-      val ignore = system.actorOf(untyped.Props.empty)
+      val ignore = system.actorOf(classic.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
       typedRef ! "actorOf"
       probe.expectMsg("ok")
     }
 
-    "watch typed from untyped" in {
+    "watch typed from classic" in {
       val probe = TestProbe()
       val typedRef = system.spawnAnonymous(typed2)
-      val untypedRef = system.actorOf(untyped2(typedRef, probe.ref))
-      untypedRef ! "watch"
+      val classicRef = system.actorOf(classic2(typedRef, probe.ref))
+      classicRef ! "watch"
       typedRef ! StopIt
       probe.expectMsg("terminated")
     }
 
-    "watch untyped from typed" in {
+    "watch classic from typed" in {
       val probe = TestProbe()
-      val untypedRef = system.actorOf(untyped1)
-      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      val classicRef = system.actorOf(classic1)
+      val typedRef = system.spawnAnonymous(typed1(classicRef, probe.ref))
       typedRef ! "watch"
-      untypedRef ! untyped.PoisonPill
+      classicRef ! classic.PoisonPill
       probe.expectMsg("terminated")
     }
 
-    "supervise untyped child from typed parent" in {
-      // FIXME there's a warning with null logged from the untyped empty child here, where does that come from?
+    "supervise classic child from typed parent" in {
+      // FIXME there's a warning with null logged from the classic empty child here, where does that come from?
       val probe = TestProbe()
-      val ignore = system.actorOf(untyped.Props.empty)
+      val ignore = system.actorOf(classic.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
 
       // only stop supervisorStrategy
@@ -284,17 +284,17 @@ class AdapterSpec extends AkkaSpec("""
       }
     }
 
-    "stop typed child from untyped parent" in {
+    "stop typed child from classic parent" in {
       val probe = TestProbe()
       val ignore = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ignore, probe.ref))
-      untypedRef ! "stop-child"
+      val classicRef = system.actorOf(classic2(ignore, probe.ref))
+      classicRef ! "stop-child"
       probe.expectMsg("terminated")
     }
 
-    "stop untyped child from typed parent" in {
+    "stop a classic child from typed parent" in {
       val probe = TestProbe()
-      val ignore = system.actorOf(untyped.Props.empty)
+      val ignore = system.actorOf(classic.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
       typedRef ! "stop-child"
       probe.expectMsg("terminated")

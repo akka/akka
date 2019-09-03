@@ -10,7 +10,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 // #adapter-import
-// In java use the static methods on Adapter to convert from typed to untyped
+// In java use the static methods on Adapter to convert from typed to classic
 import akka.actor.typed.javadsl.Adapter;
 // #adapter-import
 import akka.testkit.TestProbe;
@@ -21,12 +21,12 @@ import scala.concurrent.duration.Duration;
 
 import static akka.actor.typed.javadsl.Behaviors.same;
 
-public class UntypedWatchingTypedTest extends JUnitSuite {
+public class ClassicWatchingTypedTest extends JUnitSuite {
 
-  // #untyped-watch
-  public static class Untyped extends AbstractActor {
+  // #classic-watch
+  public static class Classic extends AbstractActor {
     public static akka.actor.Props props() {
-      return akka.actor.Props.create(Untyped.class);
+      return akka.actor.Props.create(Classic.class);
     }
 
     private final akka.actor.typed.ActorRef<Typed.Command> second =
@@ -54,7 +54,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
           .build();
     }
   }
-  // #untyped-watch
+  // #classic-watch
 
   // #typed
   public abstract static class Typed {
@@ -85,22 +85,22 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
 
   @Test
   public void testItWorks() {
-    // #create-untyped
+    // #create-classic
     akka.actor.ActorSystem as = akka.actor.ActorSystem.create();
-    akka.actor.ActorRef untyped = as.actorOf(Untyped.props());
-    // #create-untyped
+    akka.actor.ActorRef classic = as.actorOf(Classic.props());
+    // #create-classic
     TestProbe probe = new TestProbe(as);
-    probe.watch(untyped);
-    probe.expectTerminated(untyped, Duration.create(1, "second"));
+    probe.watch(classic);
+    probe.expectTerminated(classic, Duration.create(1, "second"));
     TestKit.shutdownActorSystem(as);
   }
 
   @Test
-  public void testConversionFromUnTypedSystemToTyped() {
-    // #convert-untyped
-    akka.actor.ActorSystem untypedActorSystem = akka.actor.ActorSystem.create();
-    ActorSystem<Void> typedActorSystem = Adapter.toTyped(untypedActorSystem);
-    // #convert-untyped
-    TestKit.shutdownActorSystem(untypedActorSystem);
+  public void testConversionFromClassicSystemToTyped() {
+    // #convert-classic
+    akka.actor.ActorSystem classicActorSystem = akka.actor.ActorSystem.create();
+    ActorSystem<Void> typedActorSystem = Adapter.toTyped(classicActorSystem);
+    // #convert-classic
+    TestKit.shutdownActorSystem(classicActorSystem);
   }
 }

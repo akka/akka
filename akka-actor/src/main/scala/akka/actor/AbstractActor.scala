@@ -321,7 +321,7 @@ abstract class AbstractActor extends Actor {
  * of `AbstractActor`. The partial functions created by the `ReceiveBuilder` consist of multiple lambda
  * expressions for every match statement, where each lambda is referencing the code to be run. This is something
  * that the JVM can have problems optimizing and the resulting code might not be as performant as the
- * untyped version. When extending `UntypedAbstractActor` each message is received as an untyped
+ * classic version. When extending `UntypedAbstractActor` each message is received as a classic
  * `Object` and you have to inspect and cast it to the actual message type in other ways (instanceof checks).
  */
 abstract class UntypedAbstractActor extends AbstractActor {

@@ -32,7 +32,7 @@ import akka.dispatch.Mailboxes
     val p2 = deploy.firstOrElse[MailboxSelector](MailboxSelector.default()) match {
       case _: DefaultMailboxSelector           => p1
       case BoundedMailboxSelector(capacity, _) =>
-        // specific support in untyped Mailboxes
+        // specific support in classic Mailboxes
         p1.withMailbox(s"${Mailboxes.BoundedCapacityPrefix}$capacity")
       case MailboxFromConfigSelector(path, _) =>
         props.withMailbox(path)

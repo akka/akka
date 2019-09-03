@@ -64,7 +64,7 @@ Java
 
 @@@ Note
 
-In the untyped counter part, the @apidoc[akka.actor.ActorSystem], the root actor was provided out of the box and you
+In the classic counter part, the @apidoc[akka.actor.ActorSystem], the root actor was provided out of the box and you
 could spawn top-level actors from the outside of the `ActorSystem` using `actorOf`. @ref:[SpawnProtocol](#spawnprotocol)
 is a tool that mimics the old style of starting up actors.
 
@@ -105,7 +105,7 @@ That is not difficult to implement in your behavior, but since this is a common 
 message protocol and implementation of a behavior for this. It can be used as the guardian actor of the `ActorSystem`,
 possibly combined with `Behaviors.setup` to start some initial tasks or actors. Child actors can then be started from
 the outside by telling or asking `SpawnProtocol.Spawn` to the actor reference of the system. When using `ask` this is
-similar to how `ActorSystem.actorOf` can be used in untyped actors with the difference that a
+similar to how `ActorSystem.actorOf` can be used in classic actors with the difference that a
 @scala[`Future`]@java[`CompletionStage`] of the `ActorRef` is returned.
 
 The guardian behavior can be defined as:

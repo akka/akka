@@ -17,7 +17,7 @@ class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
 
-  // Serializers are initialized early on. `toTyped` might then try to initialize the untyped ActorSystemAdapter extension.
+  // Serializers are initialized early on. `toTyped` might then try to initialize the classic ActorSystemAdapter extension.
   private lazy val resolver = ActorRefResolver(system.toTyped)
   private val ActorRefManifest = "a"
 

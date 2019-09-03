@@ -41,7 +41,7 @@ object ManualTime {
         }
       case s =>
         throw new IllegalArgumentException(
-          s"ActorSystem.scheduler is not an untyped SchedulerAdapter but a ${s.getClass.getName}, this is not supported")
+          s"ActorSystem.scheduler is not a classic SchedulerAdapter but a ${s.getClass.getName}, this is not supported.")
     }
 
 }

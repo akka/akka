@@ -14,23 +14,23 @@ import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.japi.Creator
 
 /**
- * Java API: Adapters between typed and untyped actors and actor systems.
- * The underlying `ActorSystem` is the untyped [[akka.actor.ActorSystem]]
+ * Java API: Adapters between typed and classic actors and actor systems.
+ * The underlying `ActorSystem` is the classic [[akka.actor.ActorSystem]]
  * which runs Akka Typed [[akka.actor.typed.Behavior]] on an emulation layer. In this
- * system typed and untyped actors can coexist.
+ * system typed and classic actors can coexist.
  *
- * These methods make it possible to create typed child actor from untyped
- * parent actor, and the opposite untyped child from typed parent.
+ * These methods make it possible to create typed child actor from classic
+ * parent actor, and the opposite classic child from typed parent.
  * `watch` is also supported in both directions.
  *
- * There are also converters (`toTyped`, `toUntyped`) between untyped
- * [[akka.actor.ActorRef]] and typed [[akka.actor.typed.ActorRef]], and between untyped
+ * There are also converters (`toTyped`, `toUntyped`) between classic
+ * [[akka.actor.ActorRef]] and typed [[akka.actor.typed.ActorRef]], and between classic
  * [[akka.actor.ActorSystem]] and typed [[akka.actor.typed.ActorSystem]].
  */
 object Adapter {
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorSystem.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -38,7 +38,7 @@ object Adapter {
     spawnAnonymous(sys, behavior, Props.empty)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorSystem.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -46,7 +46,7 @@ object Adapter {
     sys.spawnAnonymous(behavior, props)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorSystem.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -54,7 +54,7 @@ object Adapter {
     spawn(sys, behavior, name, Props.empty)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorSystem.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -62,7 +62,7 @@ object Adapter {
     sys.spawn(behavior, name, props)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorContext.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -70,7 +70,7 @@ object Adapter {
     spawnAnonymous(ctx, behavior, Props.empty)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorContext.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -78,7 +78,7 @@ object Adapter {
     ctx.spawnAnonymous(behavior, props)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorContext.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -86,7 +86,7 @@ object Adapter {
     spawn(ctx, behavior, name, Props.empty)
 
   /**
-   *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+   *  Spawn the given behavior as a child of the user actor in a classic ActorContext.
    *  Typed actors default supervision strategy is to stop. Can be overridden with
    *  `Behaviors.supervise`.
    */
@@ -133,24 +133,24 @@ object Adapter {
     ref
 
   /**
-   * Wrap [[akka.actor.typed.Behavior]] in an untyped [[akka.actor.Props]], i.e. when
-   * spawning a typed child actor from an untyped parent actor.
+   * Wrap [[akka.actor.typed.Behavior]] in a classic [[akka.actor.Props]], i.e. when
+   * spawning a typed child actor from a classic parent actor.
    * This is normally not needed because you can use the extension methods
-   * `spawn` and `spawnAnonymous` with an untyped `ActorContext`, but it's needed
+   * `spawn` and `spawnAnonymous` with a classic `ActorContext`, but it's needed
    * when using typed actors with an existing library/tool that provides an API that
-   * takes an untyped [[akka.actor.Props]] parameter. Cluster Sharding is an
+   * takes a classic [[akka.actor.Props]] parameter. Cluster Sharding is an
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]], deploy: Props): akka.actor.Props =
     akka.actor.typed.internal.adapter.PropsAdapter(() => behavior.create(), deploy)
 
   /**
-   * Wrap [[akka.actor.typed.Behavior]] in an untyped [[akka.actor.Props]], i.e. when
-   * spawning a typed child actor from an untyped parent actor.
+   * Wrap [[akka.actor.typed.Behavior]] in a classic [[akka.actor.Props]], i.e. when
+   * spawning a typed child actor from a classic parent actor.
    * This is normally not needed because you can use the extension methods
-   * `spawn` and `spawnAnonymous` with an untyped `ActorContext`, but it's needed
+   * `spawn` and `spawnAnonymous` with a classic `ActorContext`, but it's needed
    * when using typed actors with an existing library/tool that provides an API that
-   * takes an untyped [[akka.actor.Props]] parameter. Cluster Sharding is an
+   * takes a classic [[akka.actor.Props]] parameter. Cluster Sharding is an
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]]): akka.actor.Props =

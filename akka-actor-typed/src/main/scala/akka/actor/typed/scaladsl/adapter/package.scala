@@ -10,23 +10,23 @@ import akka.actor.typed.internal.adapter.{ PropsAdapter => _, _ }
 import akka.annotation.InternalApi
 
 /**
- * Scala API: Adapters between typed and untyped actors and actor systems.
- * The underlying `ActorSystem` is the untyped [[akka.actor.ActorSystem]]
+ * Scala API: Adapters between typed and classic actors and actor systems.
+ * The underlying `ActorSystem` is the classic [[akka.actor.ActorSystem]]
  * which runs Akka Typed [[akka.actor.typed.Behavior]] on an emulation layer. In this
- * system typed and untyped actors can coexist.
+ * system typed and classic actors can coexist.
  *
  * Use these adapters with `import akka.actor.typed.scaladsl.adapter._`.
  *
- * Implicit extension methods are added to untyped and typed `ActorSystem`,
+ * Implicit extension methods are added to classic and typed `ActorSystem`,
  * `ActorContext`. Such methods make it possible to create typed child actor
- * from untyped parent actor, and the opposite untyped child from typed parent.
+ * from classic parent actor, and the opposite classic child from typed parent.
  * `watch` is also supported in both directions.
  *
- * There is an implicit conversion from untyped [[akka.actor.ActorRef]] to
+ * There is an implicit conversion from classic [[akka.actor.ActorRef]] to
  * typed [[akka.actor.typed.ActorRef]].
  *
  * There are also converters (`toTyped`, `toUntyped`) from typed
- * [[akka.actor.typed.ActorRef]] to untyped [[akka.actor.ActorRef]], and between untyped
+ * [[akka.actor.typed.ActorRef]] to classic [[akka.actor.ActorRef]], and between classic
  * [[akka.actor.ActorSystem]] and typed [[akka.actor.typed.ActorSystem]].
  */
 package object adapter {
@@ -39,7 +39,7 @@ package object adapter {
   implicit class UntypedActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
 
     /**
-     *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+     *  Spawn the given behavior as a child of the user actor in a classic ActorSystem.
      *
      *  Typed actors default supervision strategy is to stop. Can be overridden with
      *  `Behaviors.supervise`.
@@ -53,7 +53,7 @@ package object adapter {
     }
 
     /**
-     *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+     *  Spawn the given behavior as a child of the user actor in a classic ActorSystem.
      *
      *  Typed actors default supervision strategy is to stop. Can be overridden with
      *  `Behaviors.supervise`.
@@ -93,7 +93,7 @@ package object adapter {
   implicit class UntypedActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
 
     /**
-     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+     *  Spawn the given behavior as a child of the user actor in a classic ActorContext.
      *
      *  Typed actors default supervision strategy is to stop. Can be overridden with
      *  `Behaviors.supervise`.
@@ -106,7 +106,7 @@ package object adapter {
         rethrowTypedFailure = false)
 
     /**
-     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+     *  Spawn the given behavior as a child of the user actor in a classic ActorContext.
      *
      *  Typed actors default supervision strategy is to stop. Can be overridden with
      *  `Behaviors.supervise`.
@@ -154,7 +154,7 @@ package object adapter {
   implicit class UntypedActorRefOps(val ref: akka.actor.ActorRef) extends AnyVal {
 
     /**
-     * Adapt the untyped `ActorRef` to typed `ActorRef[T]`. There is also an
+     * Adapt the classic `ActorRef` to typed `ActorRef[T]`. There is also an
      * automatic implicit conversion for this, but this more explicit variant might
      * sometimes be preferred.
      */
@@ -162,7 +162,7 @@ package object adapter {
   }
 
   /**
-   * Implicit conversion from untyped [[akka.actor.ActorRef]] to typed [[akka.actor.typed.ActorRef]].
+   * Implicit conversion from classic [[akka.actor.ActorRef]] to typed [[akka.actor.typed.ActorRef]].
    */
   implicit def actorRefAdapter[T](ref: akka.actor.ActorRef): ActorRef[T] = ActorRefAdapter(ref)
 

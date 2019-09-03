@@ -5,14 +5,11 @@
 package akka.actor.typed.javadsl;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import scala.concurrent.duration.FiniteDuration;
-
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
@@ -26,11 +23,11 @@ import static akka.actor.typed.javadsl.Behaviors.*;
 
 public class AdapterTest extends JUnitSuite {
 
-  static akka.actor.Props untyped1() {
-    return akka.actor.Props.create(Untyped1.class, () -> new Untyped1());
+  static akka.actor.Props classic1() {
+    return akka.actor.Props.create(Classic1.class, () -> new Classic1());
   }
 
-  static class Untyped1 extends akka.actor.AbstractActor {
+  static class Classic1 extends akka.actor.AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -67,7 +64,7 @@ public class AdapterTest extends JUnitSuite {
         probe.tell("ok", akka.actor.ActorRef.noSender());
         return same();
       } else if (message.equals("actorOf")) {
-        akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
+        akka.actor.ActorRef child = Adapter.actorOf(context, classic1());
         child.tell("ping", Adapter.toUntyped(context.getSelf()));
         return same();
       } else if (message.equals("watch")) {
@@ -75,13 +72,13 @@ public class AdapterTest extends JUnitSuite {
         return same();
       } else if (message.equals("supervise-restart")) {
         // restart is the default, otherwise an intermediate is required
-        akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
+        akka.actor.ActorRef child = Adapter.actorOf(context, classic1());
         Adapter.watch(context, child);
         child.tell(new ThrowIt3(), Adapter.toUntyped(context.getSelf()));
         child.tell("ping", Adapter.toUntyped(context.getSelf()));
         return same();
       } else if (message.equals("stop-child")) {
-        akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
+        akka.actor.ActorRef child = Adapter.actorOf(context, classic1());
         Adapter.watch(context, child);
         Adapter.stop(context, child);
         return same();
@@ -127,16 +124,16 @@ public class AdapterTest extends JUnitSuite {
 
   static class ThrowIt3 extends ThrowIt {}
 
-  static akka.actor.Props untyped2(ActorRef<Ping> ref, akka.actor.ActorRef probe) {
-    return akka.actor.Props.create(Untyped2.class, () -> new Untyped2(ref, probe));
+  static akka.actor.Props classic2(ActorRef<Ping> ref, akka.actor.ActorRef probe) {
+    return akka.actor.Props.create(Classic2.class, () -> new Classic2(ref, probe));
   }
 
-  static class Untyped2 extends akka.actor.AbstractActor {
+  static class Classic2 extends akka.actor.AbstractActor {
     private final ActorRef<Ping> ref;
     private final akka.actor.ActorRef probe;
     private final SupervisorStrategy strategy;
 
-    Untyped2(ActorRef<Ping> ref, akka.actor.ActorRef probe) {
+    Classic2(ActorRef<Ping> ref, akka.actor.ActorRef probe) {
       this.ref = ref;
       this.probe = probe;
       this.strategy = strategy();
@@ -246,44 +243,44 @@ public class AdapterTest extends JUnitSuite {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
-  public void shouldSendMessageFromTypedToUntyped() {
+  public void shouldSendMessageFromTypedToClassic() {
     TestKit probe = new TestKit(system);
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped1());
+    akka.actor.ActorRef classicRef = system.actorOf(classic1());
     ActorRef<String> typedRef =
-        Adapter.spawnAnonymous(system, Typed1.create(untypedRef, probe.getRef()));
+        Adapter.spawnAnonymous(system, Typed1.create(classicRef, probe.getRef()));
     typedRef.tell("send");
     probe.expectMsg("ok");
   }
 
   @Test
-  public void shouldSendMessageFromUntypedToTyped() {
+  public void shouldSendMessageFromClassicToTyped() {
     TestKit probe = new TestKit(system);
     ActorRef<Ping> typedRef = Adapter.spawnAnonymous(system, typed2()).narrow();
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped2(typedRef, probe.getRef()));
-    untypedRef.tell("send", akka.actor.ActorRef.noSender());
+    akka.actor.ActorRef classicRef = system.actorOf(classic2(typedRef, probe.getRef()));
+    classicRef.tell("send", akka.actor.ActorRef.noSender());
     probe.expectMsg("ok");
   }
 
   @Test
-  public void shouldSpawnTypedChildFromUntypedParent() {
+  public void shouldSpawnTypedChildFromClassicParent() {
     TestKit probe = new TestKit(system);
     ActorRef<Ping> ignore = Adapter.spawnAnonymous(system, ignore());
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped2(ignore, probe.getRef()));
-    untypedRef.tell("spawn", akka.actor.ActorRef.noSender());
+    akka.actor.ActorRef classicRef = system.actorOf(classic2(ignore, probe.getRef()));
+    classicRef.tell("spawn", akka.actor.ActorRef.noSender());
     probe.expectMsg("ok");
   }
 
   @Test
-  public void shouldActorOfTypedChildViaPropsFromUntypedParent() {
+  public void shouldActorOfTypedChildViaPropsFromClassicParent() {
     TestKit probe = new TestKit(system);
     ActorRef<Ping> ignore = Adapter.spawnAnonymous(system, ignore());
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped2(ignore, probe.getRef()));
-    untypedRef.tell("actorOf-props", akka.actor.ActorRef.noSender());
+    akka.actor.ActorRef classicRef = system.actorOf(classic2(ignore, probe.getRef()));
+    classicRef.tell("actorOf-props", akka.actor.ActorRef.noSender());
     probe.expectMsg("ok");
   }
 
   @Test
-  public void shouldActorOfUntypedChildFromTypedParent() {
+  public void shouldActorOfClassicChildFromTypedParent() {
     TestKit probe = new TestKit(system);
     akka.actor.ActorRef ignore = system.actorOf(akka.actor.Props.empty());
     ActorRef<String> typedRef =
@@ -293,29 +290,29 @@ public class AdapterTest extends JUnitSuite {
   }
 
   @Test
-  public void shouldWatchTypedFromUntyped() {
+  public void shouldWatchTypedFromClassic() {
     TestKit probe = new TestKit(system);
     ActorRef<Typed2Msg> typedRef = Adapter.spawnAnonymous(system, typed2());
     ActorRef<Ping> typedRef2 = typedRef.narrow();
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped2(typedRef2, probe.getRef()));
-    untypedRef.tell("watch", akka.actor.ActorRef.noSender());
+    akka.actor.ActorRef classicRef = system.actorOf(classic2(typedRef2, probe.getRef()));
+    classicRef.tell("watch", akka.actor.ActorRef.noSender());
     typedRef.tell(new StopIt());
     probe.expectMsg("terminated");
   }
 
   @Test
-  public void shouldWatchUntypedFromTyped() {
+  public void shouldWatchClassicFromTyped() {
     TestKit probe = new TestKit(system);
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped1());
+    akka.actor.ActorRef classicRef = system.actorOf(classic1());
     ActorRef<String> typedRef =
-        Adapter.spawnAnonymous(system, Typed1.create(untypedRef, probe.getRef()));
+        Adapter.spawnAnonymous(system, Typed1.create(classicRef, probe.getRef()));
     typedRef.tell("watch");
-    untypedRef.tell(akka.actor.PoisonPill.getInstance(), akka.actor.ActorRef.noSender());
+    classicRef.tell(akka.actor.PoisonPill.getInstance(), akka.actor.ActorRef.noSender());
     probe.expectMsg("terminated");
   }
 
   @Test
-  public void shouldSuperviseUntypedChildAsRestartFromTypedParent() {
+  public void shouldSuperviseClassicChildAsRestartFromTypedParent() {
     TestKit probe = new TestKit(system);
     akka.actor.ActorRef ignore = system.actorOf(akka.actor.Props.empty());
     ActorRef<String> typedRef =
@@ -335,16 +332,16 @@ public class AdapterTest extends JUnitSuite {
   }
 
   @Test
-  public void shouldStopTypedChildFromUntypedParent() {
+  public void shouldStopTypedChildFromClassicParent() {
     TestKit probe = new TestKit(system);
     ActorRef<Ping> ignore = Adapter.spawnAnonymous(system, ignore());
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped2(ignore, probe.getRef()));
-    untypedRef.tell("stop-child", akka.actor.ActorRef.noSender());
+    akka.actor.ActorRef classicRef = system.actorOf(classic2(ignore, probe.getRef()));
+    classicRef.tell("stop-child", akka.actor.ActorRef.noSender());
     probe.expectMsg("terminated");
   }
 
   @Test
-  public void shouldStopUntypedChildFromTypedParent() {
+  public void shouldStopClassicChildFromTypedParent() {
     TestKit probe = new TestKit(system);
     akka.actor.ActorRef ignore = system.actorOf(akka.actor.Props.empty());
     ActorRef<String> typedRef =

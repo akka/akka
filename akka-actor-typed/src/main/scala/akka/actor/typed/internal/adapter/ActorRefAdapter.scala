@@ -51,7 +51,7 @@ private[akka] object ActorRefAdapter {
       case system: ActorSystemAdapter[_] => system.untypedSystem.guardian
       case _ =>
         throw new UnsupportedOperationException(
-          "only adapted untyped ActorRefs permissible " +
+          "only adapted classic ActorRefs permissible " +
           s"($ref of class ${ref.getClass.getName})")
     }
 

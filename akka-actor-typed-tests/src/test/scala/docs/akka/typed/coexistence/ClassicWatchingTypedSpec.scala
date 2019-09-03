@@ -9,24 +9,24 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.TestKit
 //#adapter-import
-// adds support for typed actors to an untyped actor system and context
+// adds support for typed actors to a classic actor system and context
 import akka.actor.typed.scaladsl.adapter._
 //#adapter-import
 import akka.testkit.TestProbe
 //#import-alias
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 //#import-alias
 import org.scalatest.WordSpec
 
 import scala.concurrent.duration._
 
-object UntypedWatchingTypedSpec {
-  object Untyped {
-    def props() = untyped.Props(new Untyped)
+object ClassicWatchingTypedSpec {
+  object Classic {
+    def props() = classic.Props(new Classic)
   }
 
-  //#untyped-watch
-  class Untyped extends untyped.Actor with ActorLogging {
+  //#classic-watch
+  class Classic extends classic.Actor with ActorLogging {
     // context.spawn is an implicit extension method
     val second: ActorRef[Typed.Command] =
       context.spawn(Typed(), "second")
@@ -44,12 +44,12 @@ object UntypedWatchingTypedSpec {
         log.info(s"$self got Pong from ${sender()}")
         // context.stop is an implicit extension method
         context.stop(second)
-      case untyped.Terminated(ref) =>
+      case classic.Terminated(ref) =>
         log.info(s"$self observed termination of $ref")
         context.stop(self)
     }
   }
-  //#untyped-watch
+  //#classic-watch
 
   //#typed
   object Typed {
@@ -62,7 +62,7 @@ object UntypedWatchingTypedSpec {
         message match {
           case Ping(replyTo) =>
             context.log.info(s"${context.self} got Ping from $replyTo")
-            // replyTo is an untyped actor that has been converted for coexistence
+            // replyTo is a classic actor that has been converted for coexistence
             replyTo ! Pong
             Behaviors.same
         }
@@ -71,28 +71,28 @@ object UntypedWatchingTypedSpec {
   //#typed
 }
 
-class UntypedWatchingTypedSpec extends WordSpec {
+class ClassicWatchingTypedSpec extends WordSpec {
 
-  import UntypedWatchingTypedSpec._
+  import ClassicWatchingTypedSpec._
 
-  "Untyped -> Typed" must {
+  "Classic -> Typed" must {
     "support creating, watching and messaging" in {
-      val system = untyped.ActorSystem("Coexistence")
-      //#create-untyped
-      val untypedActor = system.actorOf(Untyped.props())
-      //#create-untyped
+      val system = classic.ActorSystem("Coexistence")
+      //#create-classic
+      val classicActor = system.actorOf(Classic.props())
+      //#create-classic
       val probe = TestProbe()(system)
-      probe.watch(untypedActor)
-      probe.expectTerminated(untypedActor, 200.millis)
+      probe.watch(classicActor)
+      probe.expectTerminated(classicActor, 200.millis)
       TestKit.shutdownActorSystem(system)
     }
 
-    "support converting an untyped actor system to a typed actor system" in {
-      //#convert-untyped
+    "support converting a classic actor system to a typed actor system" in {
+      //#convert-classic
 
-      val system = akka.actor.ActorSystem("UntypedToTypedSystem")
+      val system = akka.actor.ActorSystem("ClassicToTypedSystem")
       val typedSystem: ActorSystem[Nothing] = system.toTyped
-      //#convert-untyped
+      //#convert-classic
       typedSystem.scheduler // remove compile warning
       TestKit.shutdownActorSystem(system)
     }
