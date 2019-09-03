@@ -210,8 +210,9 @@ private[akka] object ActorMaterializerHelper {
  */
 abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
-  // FIXME deprecate and recommend using attributes (for stages)?
-  @deprecated("Use attributes to access settings from stages", "2.6.0")
+  @deprecated(
+    "Use attributes to access settings from stages, see https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
+    "2.6.0")
   def settings: ActorMaterializerSettings
 
   /**
@@ -279,7 +280,7 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from individual settings (Scala).
    *
    * Prefer using either config for defaults or attributes for per-stream config.
-   * See migration guide for details https://doc.akka.io/docs/akka/current/project/migration-guide-2.5.x-2.6.x.html"
+   * See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html"
    */
   @deprecated(
     "Use config or attributes to configure the materializer. See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
@@ -318,7 +319,7 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from the settings of an [[akka.actor.ActorSystem]] (Scala).
    *
    * Prefer using either config for defaults or attributes for per-stream config.
-   * See migration guide for details https://doc.akka.io/docs/akka/current/project/migration-guide-2.5.x-2.6.x.html"
+   * See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html"
    */
   @deprecated(
     "Use config or attributes to configure the materializer. See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
@@ -330,7 +331,7 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from a Config subsection (Scala).
    *
    * Prefer using either config for defaults or attributes for per-stream config.
-   * See migration guide for details https://doc.akka.io/docs/akka/current/project/migration-guide-2.5.x-2.6.x.html"
+   * See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html"
    */
   @deprecated(
     "Use config or attributes to configure the materializer. See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
@@ -356,7 +357,7 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
    *
    * Prefer using either config for defaults or attributes for per-stream config.
-   * See migration guide for details https://doc.akka.io/docs/akka/current/project/migration-guide-2.5.x-2.6.x.html"
+   * See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html"
    */
   @deprecated(
     "Use config or attributes to configure the materializer. See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",
@@ -404,7 +405,7 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from a Config subsection (Java).
    *
    * Prefer using either config for defaults or attributes for per-stream config.
-   * See migration guide for details https://doc.akka.io/docs/akka/current/project/migration-guide-2.5.x-2.6.x.html"
+   * See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html"
    */
   @deprecated(
     "Use config or attributes to configure the materializer. See migration guide for details https://doc.akka.io/docs/akka/2.6/project/migration-guide-2.5.x-2.6.x.html",

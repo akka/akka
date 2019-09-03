@@ -21,6 +21,7 @@ import akka.stream.impl.io.OutgoingConnectionStage
 import akka.stream.impl.io.TcpIdleTimeout
 import akka.util.ByteString
 import akka.util.unused
+import akka.util.JavaDurationConverters._
 import akka.Done
 import akka.NotUsed
 import com.github.ghik.silencer.silent
@@ -98,7 +99,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   // TODO maybe this should be a new setting, like `akka.stream.tcp.bind.timeout` / `shutdown-timeout` instead?
   val bindShutdownTimeout =
-    system.settings.config.getDuration("akka.stream.materializer.subscription-timeout.timeout").toMillis.millis
+    system.settings.config.getDuration("akka.stream.materializer.subscription-timeout.timeout").asScala
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.

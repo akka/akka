@@ -491,14 +491,17 @@ Details about the stream materializer can be found in [Actor Materializer Lifecy
 
 ### Materializer settings deprecated
 
-All materializer settings are available as configuration to change the system default or through attributes that can be set on individual streams.
+The `ActorMaterializerSettings` class has been deprecated.
+
+All materializer settings are available as configuration to change the system default or through attributes that can be 
+used for individual streams when they are materialized.
 
 | Materializer setting   | Corresponding attribute | Setting |
 -------------------------|-------------------------|---------|
 | `initialInputBufferSize`                     | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.initial-input-buffer-size` |
 | `maxInputBufferSize`                         | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.max-input-buffer-size` |
 | `dispatcher`                                 | `ActorAttributes.dispatcher(name)`              | `akka.stream.materializer.dispatcher` |
-| `supervisionDecider`                         | `ActorAttributes.supervisionStrategy(strategy)` | FIXME: add |
+| `supervisionDecider`                         | `ActorAttributes.supervisionStrategy(strategy)` | na |
 | `debugLogging`                               | `ActorAttributes.debugLogging`                  | `akka.stream.materializer.debug-logging` |
 | `outputBurstLimit`                           | `ActorAttributes.outputBurstLimit`              | `akka.stream.materializer.output-burst-limit` |
 | `fuzzingMode`                                | `ActorAttributes.fuzzingMode`                   | `akka.stream.materializer.debug.fuzzing-mode` |
