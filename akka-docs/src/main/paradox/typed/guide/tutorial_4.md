@@ -34,7 +34,7 @@ Considering the principles outlined in the previous section, We will model the d
 * At the next level, group actors each supervise the device actors for one group id (e.g. one home). They also provide services, such as querying temperature readings from all of the available devices in their group.
 * Device actors manage all the interactions with the actual device sensors, such as storing temperature readings.
 
-![device manager tree](../../guide/diagrams/device_manager_tree.png)
+![device manager tree](diagrams/device_manager_tree.png)
 
 We chose this three-layered architecture for these reasons:
 
