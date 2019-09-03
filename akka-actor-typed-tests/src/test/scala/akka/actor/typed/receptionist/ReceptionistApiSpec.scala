@@ -50,7 +50,7 @@ object ReceptionistApiSpec {
 
     Behaviors.setup[Any] { context =>
       // oneoff ask inside of actor, this should be a rare use case
-      context.ask(system.receptionist)(Receptionist.Find(key)) {
+      context.ask(system.receptionist, Receptionist.Find(key)) {
         case Success(key.Listing(services)) => services // Set[ActorRef[String]] !!
         case _                              => "unexpected"
       }

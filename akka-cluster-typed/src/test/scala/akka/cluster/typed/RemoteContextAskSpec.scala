@@ -111,7 +111,7 @@ class RemoteContextAskSpec extends ScalaTestWithActorTestKit(RemoteContextAskSpe
       spawn(Behaviors.setup[AnyRef] { ctx =>
         implicit val timeout: Timeout = 3.seconds
 
-        ctx.ask(remoteRef)(Ping) {
+        ctx.ask(remoteRef, Ping) {
           case Success(pong) => pong
           case Failure(ex)   => ex
         }

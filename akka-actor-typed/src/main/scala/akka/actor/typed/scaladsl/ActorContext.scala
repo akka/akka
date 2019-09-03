@@ -286,7 +286,7 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] => Req)(
+  def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
   /**
