@@ -126,7 +126,7 @@ class FlowGroupBySpec extends StreamSpec("""
       }
     }
 
-    "work in normal user scenario" in {
+    "work in normal user scenario" in assertAllStagesStopped {
       Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, _.substring(0, 1))
         .grouped(10)
@@ -137,7 +137,7 @@ class FlowGroupBySpec extends StreamSpec("""
         .sortBy(_.head) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
     }
 
-    "fail when key function return null" in {
+    "fail when key function return null" in assertAllStagesStopped {
       val down = Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, e => if (e.startsWith("A")) null else e.substring(0, 1))
         .grouped(10)
@@ -266,7 +266,7 @@ class FlowGroupBySpec extends StreamSpec("""
       upstreamSubscription.expectCancellation()
     }
 
-    "resume stream when groupBy function throws" in {
+    "resume stream when groupBy function throws" in assertAllStagesStopped {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source
@@ -342,7 +342,7 @@ class FlowGroupBySpec extends StreamSpec("""
       s1.expectError(ex)
     }
 
-    "resume when exceeding maxSubstreams" in {
+    "resume when exceeding maxSubstreams" in assertAllStagesStopped {
       val (up, down) = Flow[Int]
         .groupBy(0, identity)
         .mergeSubstreams
@@ -602,12 +602,12 @@ class FlowGroupBySpec extends StreamSpec("""
       }
 
       val publisherProbe = TestPublisher.manualProbe[ByteString]()
-      Source
+      val runnable = Source
         .fromPublisher[ByteString](publisherProbe)
         .groupBy(100, elem => Math.abs(elem.head % 100))
         .to(Sink.fromGraph(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in")))))
-        .withAttributes(Attributes.inputBuffer(1, 1))
-        .run()
+
+      runnable.withAttributes(Attributes.inputBuffer(1, 1)).run()
 
       val upstreamSubscription = publisherProbe.expectSubscription()
 
