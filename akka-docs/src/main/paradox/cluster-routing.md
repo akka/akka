@@ -1,15 +1,7 @@
 # Classic Cluster Aware Routers
 
-@@@ note
-
-Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
-known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
-the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
-ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
-
+@@include[includes.md](includes.md) { #actor-api }
 For the new API see @ref[routers](typed/routers.md).
-
-@@@
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.

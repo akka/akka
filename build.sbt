@@ -239,7 +239,11 @@ lazy val docs = akkaModule("akka-docs")
       // Page that recommends Alpakka:
       "camel.html",
       // TODO seems like an orphan?
-      "fault-tolerance-sample.html"
+      "fault-tolerance-sample.html",
+      // FIXME https://github.com/lightbend/paradox/issues/350
+      // Links in a snippet are interpreted relative to the page the snippet is included in,
+      // instead of relative to the place where the snippet is declared.
+      "includes.html"
     ),
     resolvers += Resolver.jcenterRepo,
     apidocRootPackage := "akka",
