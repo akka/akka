@@ -1,7 +1,7 @@
 # Classic Mailboxes
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see (FIXME https://github.com/akka/akka/issues/27124).
+For the new API see @ref:[mailboxes](typed/mailboxes.md).
 
 ## Dependency
 
