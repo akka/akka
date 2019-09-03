@@ -392,12 +392,22 @@ abstract class MultiNodeSpec(
 
   /**
    * Enter the named barriers in the order given. Use the remaining duration from
-   * the innermost enclosing `within` block or the default `BarrierTimeout`
+   * the innermost enclosing `within` block or the default `BarrierTimeout`.
    */
   def enterBarrier(name: String*): Unit =
     testConductor.enter(
       Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)),
       name.to(immutable.Seq))
+
+  /**
+   * Enter the named barriers in the order given. Use the remaining duration from
+   * the innermost enclosing `within` block or the passed `max` timeout.
+   *
+   * Note that the `max` timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def enterBarrier(max: FiniteDuration, name: String*): Unit =
+    testConductor.enter(Timeout.durationToTimeout(remainingOr(max.dilated)), name.to(immutable.Seq))
 
   /**
    * Query the controller for the transport address of the given node (by role name) and
