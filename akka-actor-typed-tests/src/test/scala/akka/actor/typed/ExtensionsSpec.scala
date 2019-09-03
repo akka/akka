@@ -188,7 +188,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       (instance1 should be).theSameInstanceAs(instance2)
     }
 
-    "load registered typed extensions eagerly even for untyped system" in {
+    "load registered typed extensions eagerly even for classic system" in {
       import akka.actor.typed.scaladsl.adapter._
       val beforeCreation = InstanceCountingExtension.createCount.get()
       val untypedSystem = akka.actor.ActorSystem("as", ExtensionsSpec.config)

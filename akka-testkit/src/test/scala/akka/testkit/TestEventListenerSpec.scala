@@ -10,7 +10,7 @@ import akka.event.Logging.Warning
 
 class TestEventListenerSpec extends AkkaSpec with ImplicitSender {
 
-  "The untyped EventFilter.error" must {
+  "The classic EventFilter.error" must {
     "filter errors without cause" in {
       val filter = EventFilter.error()
       filter(errorNoCause) should ===(true)
@@ -53,7 +53,7 @@ class TestEventListenerSpec extends AkkaSpec with ImplicitSender {
     }
   }
 
-  "The untyped EventFilter.warning" must {
+  "The classic EventFilter.warning" must {
     "filter warnings without cause" in {
       val filter = EventFilter.warning()
       filter(warningNoCause) should ===(true)

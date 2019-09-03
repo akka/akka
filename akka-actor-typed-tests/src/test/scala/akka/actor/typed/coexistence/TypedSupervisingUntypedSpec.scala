@@ -45,7 +45,7 @@ class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit("""
   """.stripMargin) with WordSpecLike {
   import TypedSupervisingUntypedSpec._
 
-  "Typed supervising untyped" should {
+  "Typed supervising classic" should {
     "default to restart" in {
       val ref: ActorRef[Protocol] = spawn(untypedActorOf())
       val lifecycleProbe = TestProbe[String]
@@ -55,7 +55,7 @@ class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit("""
       lifecycleProbe.expectMessage("preStart")
       spawnedUntyped ! "throw"
       lifecycleProbe.expectMessage("postStop")
-      // should be restarted because it is an untyped actor
+      // should be restarted because it is a classic actor
       lifecycleProbe.expectMessage("preStart")
     }
   }

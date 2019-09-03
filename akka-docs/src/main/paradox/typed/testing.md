@@ -117,7 +117,7 @@ run the other actors it depends on. Instead, you might want to create mock behav
 messages in the same way the other actor would do but without executing any actual logic.
 In addition to this it can also be useful to observe those interactions to assert that the component under test did send
 the expected messages.
-This allows the same kinds of tests as untyped `TestActor`/`Autopilot`.
+This allows the same kinds of tests as classic `TestActor`/`Autopilot`.
 
 As an example, let's assume we'd like to test the following component:
 

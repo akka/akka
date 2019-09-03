@@ -227,9 +227,9 @@ object ActorSystem {
     create(guardianBehavior, name, ActorSystemSetup.create(bootstrapSetup))
 
   /**
-   * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
+   * Create an ActorSystem based on the classic [[akka.actor.ActorSystem]]
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
-   * system typed and untyped actors can coexist.
+   * system typed and classic actors can coexist.
    */
   private def createInternal[T](
       name: String,
@@ -259,7 +259,7 @@ object ActorSystem {
   }
 
   /**
-   * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from
+   * Wrap a classic [[akka.actor.ActorSystem]] such that it can be used from
    * Akka Typed [[Behavior]].
    */
   def wrap(system: untyped.ActorSystem): ActorSystem[Nothing] =

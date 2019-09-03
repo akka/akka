@@ -23,7 +23,7 @@ private[akka] object ActorContextAdapter {
       case adapter: ActorContextAdapter[_] => adapter.untypedContext
       case _ =>
         throw new UnsupportedOperationException(
-          "only adapted untyped ActorContext permissible " +
+          "only adapted classic ActorContext permissible " +
           s"($context of class ${context.getClass.getName})")
     }
 

@@ -1,10 +1,10 @@
 # Behaviors as Finite state machines
 
-With untyped actors there is explicit support for building @ref[Finite State Machines](../fsm.md). No support
+With classic actors there is explicit support for building @ref[Finite State Machines](../fsm.md). No support
 is needed in Akka Typed as it is straightforward to represent FSMs with behaviors. 
 
 To see how the Akka Typed API can be used to model FSMs here's the Buncher example ported from
-the @ref[untyped actor FSM docs](../fsm.md). It demonstrates how to:
+the @ref[classic actor FSM docs](../fsm.md). It demonstrates how to:
 
 * Model states using different behaviors
 * Model storing data at each state by representing the behavior as a method 
@@ -22,7 +22,7 @@ Java
 `Batches` to be passed on; `Queue` will add to the internal queue while
 `Flush` will mark the end of a burst.
 
-Untyped `FSM`s also have a `D` (data) type parameter. Akka Typed doesn't need to be aware of this and it can be stored
+Classic `FSM`s also have a `D` (data) type parameter. Akka Typed doesn't need to be aware of this and it can be stored
 via defining your behaviors as methods.
 
 Scala

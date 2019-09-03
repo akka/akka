@@ -64,7 +64,7 @@ import akka.util.OptionVal
   }
 
   /**
-   * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
+   * Failures from failed children, that were stopped through classic supervision, this is what allows us to pass
    * child exception in Terminated for direct children.
    */
   private var failures: Map[untyped.ActorRef, Throwable] = Map.empty
@@ -73,7 +73,7 @@ import akka.util.OptionVal
 
   override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
     // as we know we never become in "normal" typed actors, it is just the current behavior that
-    // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
+    // changes, we can avoid some overhead with the partial function/behavior stack of classic entirely
     // we also know that the receive is total, so we can avoid the orElse part as well.
     msg match {
       case untyped.Terminated(ref) =>
@@ -146,7 +146,7 @@ import akka.util.OptionVal
         unhandled(msg)
       case BehaviorTags.FailedBehavior =>
         val f = b.asInstanceOf[BehaviorImpl.FailedBehavior]
-        // For the parent untyped supervisor to pick up the exception
+        // For the parent classic supervisor to pick up the exception
         if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
         else context.stop(self)
       case BehaviorTags.StoppedBehavior =>

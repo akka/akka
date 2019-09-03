@@ -8,12 +8,12 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 
 /**
- * Wrap [[akka.actor.typed.Behavior]] in an untyped [[akka.actor.Props]], i.e. when
- * spawning a typed child actor from an untyped parent actor.
+ * Wrap [[akka.actor.typed.Behavior]] in a classic [[akka.actor.Props]], i.e. when
+ * spawning a typed child actor from a classic parent actor.
  * This is normally not needed because you can use the extension methods
- * `spawn` and `spawnAnonymous` on an untyped `ActorContext`, but it's needed
+ * `spawn` and `spawnAnonymous` on a classic `ActorContext`, but it's needed
  * when using typed actors with an existing library/tool that provides an API that
- * takes an untyped [[akka.actor.Props]] parameter. Cluster Sharding is an
+ * takes a classic [[akka.actor.Props]] parameter. Cluster Sharding is an
  * example of that.
  */
 object PropsAdapter {
