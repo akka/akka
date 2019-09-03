@@ -5,7 +5,6 @@
 package akka.actor.testkit.typed.internal
 
 import akka.actor.testkit.typed.LoggingEvent
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.annotation.InternalApi
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.spi.ThrowableProxy
@@ -16,7 +15,7 @@ import org.slf4j.event.Level
 /**
  * INTERNAL API
  *
- * The `TestAppender` emits the logging events to the registered [[LoggingEventFilter]], which
+ * The `TestAppender` emits the logging events to the registered [[LoggingEventFilterImpl]], which
  * are added and removed to the appender dynamically from tests.
  *
  * `TestAppender` is currently requiring Logback as SLF4J implementation.
@@ -45,10 +44,10 @@ import org.slf4j.event.Level
     }
   }
 
-  def addFilter(loggerName: String, filter: LoggingEventFilter): Unit =
+  def addFilter(loggerName: String, filter: LoggingEventFilterImpl): Unit =
     getTestAppender(loggerName).addTestFilter(filter)
 
-  def removeFilter(loggerName: String, filter: LoggingEventFilter): Unit =
+  def removeFilter(loggerName: String, filter: LoggingEventFilterImpl): Unit =
     getTestAppender(loggerName).removeTestFilter(filter)
 
   private def loggerNameOrRoot(loggerName: String): String =
@@ -84,7 +83,7 @@ import org.slf4j.event.Level
  */
 @InternalApi private[akka] class TestAppender extends AppenderBase[ILoggingEvent] {
 
-  private var filters: List[LoggingEventFilter] = Nil
+  private var filters: List[LoggingEventFilterImpl] = Nil
 
   // invocations are synchronized via doAppend in AppenderBase
   override def append(event: ILoggingEvent): Unit = {
@@ -130,13 +129,15 @@ import org.slf4j.event.Level
       })
   }
 
-  def addTestFilter(filter: LoggingEventFilter): Unit = synchronized {
+  def addTestFilter(filter: LoggingEventFilterImpl): Unit = synchronized {
     filters ::= filter
   }
 
-  def removeTestFilter(filter: LoggingEventFilter): Unit = synchronized {
+  def removeTestFilter(filter: LoggingEventFilterImpl): Unit = synchronized {
     @scala.annotation.tailrec
-    def removeFirst(list: List[LoggingEventFilter], zipped: List[LoggingEventFilter] = Nil): List[LoggingEventFilter] =
+    def removeFirst(
+        list: List[LoggingEventFilterImpl],
+        zipped: List[LoggingEventFilterImpl] = Nil): List[LoggingEventFilterImpl] =
       list match {
         case head :: tail if head == filter => tail.reverse_:::(zipped)
         case head :: tail                   => removeFirst(tail, head :: zipped)
