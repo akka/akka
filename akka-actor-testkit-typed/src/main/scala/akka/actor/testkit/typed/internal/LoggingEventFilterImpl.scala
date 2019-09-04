@@ -4,12 +4,16 @@
 
 package akka.actor.testkit.typed.internal
 
+import java.util.function.{ Function => JFunction }
+import java.util.function.Supplier
+
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
 import akka.actor.testkit.typed.LoggingEvent
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.javadsl
+import akka.actor.testkit.typed.scaladsl
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.testkit.TestKit
@@ -40,9 +44,10 @@ import org.slf4j.event.Level
     source: Option[String],
     messageContains: Option[String],
     messageRegex: Option[Regex],
-    cause: Option[Class[Throwable]],
+    cause: Option[Class[_ <: Throwable]],
     custom: Option[PartialFunction[LoggingEvent, Boolean]])
-    extends LoggingEventFilter {
+    extends javadsl.LoggingEventFilter
+    with scaladsl.LoggingEventFilter {
 
   @volatile // JMM does not guarantee visibility for non-final fields
   private var todo = occurrences
@@ -120,27 +125,38 @@ import org.slf4j.event.Level
     }
   }
 
-  override def withOccurrences(newOccurrences: Int): LoggingEventFilter =
+  override def withOccurrences(newOccurrences: Int): LoggingEventFilterImpl =
     copy(occurrences = newOccurrences)
 
-  override def withLogLevel(newLogLevel: Level): LoggingEventFilter =
+  override def withLogLevel(newLogLevel: Level): LoggingEventFilterImpl =
     copy(logLevel = Option(newLogLevel))
 
-  override def withSource(newSource: String): LoggingEventFilter =
+  override def withSource(newSource: String): LoggingEventFilterImpl =
     copy(source = Option(newSource))
 
-  override def withMessageContains(newMessageContains: String): LoggingEventFilter =
+  override def withMessageContains(newMessageContains: String): LoggingEventFilterImpl =
     copy(messageContains = Option(newMessageContains))
 
-  def withMessageRegex(newMessageRegex: String): LoggingEventFilter =
+  def withMessageRegex(newMessageRegex: String): LoggingEventFilterImpl =
     copy(messageRegex = Option(new Regex(newMessageRegex)))
 
-  override def withCause[A <: Throwable: ClassTag]: LoggingEventFilter = {
+  override def withCause[A <: Throwable: ClassTag]: LoggingEventFilterImpl = {
     val causeClass = implicitly[ClassTag[A]].runtimeClass.asInstanceOf[Class[Throwable]]
     copy(cause = Option(causeClass))
   }
 
-  override def withCustom(newCustom: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilter =
+  override def withCustom(newCustom: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilterImpl =
     copy(custom = Option(newCustom))
 
+  override def withCause(newCause: Class[_ <: Throwable]): javadsl.LoggingEventFilter =
+    copy(cause = Option(newCause))
+
+  override def withCustom(newCustom: JFunction[LoggingEvent, Boolean]): javadsl.LoggingEventFilter =
+    withCustom({ case event => newCustom(event) }: PartialFunction[LoggingEvent, Boolean])
+
+  override def intercept[T](system: ActorSystem[_], code: Supplier[T]): T =
+    intercept(code.get())(system)
+
+  override def interceptLogger[T](system: ActorSystem[_], loggerName: String, code: Supplier[T]): T =
+    interceptLogger(loggerName)(code.get())(system)
 }

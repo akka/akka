@@ -2,9 +2,10 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.scaladsl
+package akka.actor.testkit.typed.javadsl
 
-import scala.reflect.ClassTag
+import java.util.function.Supplier
+import java.util.function.{ Function => JFunction }
 
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.internal.LoggingEventFilterImpl
@@ -22,7 +23,7 @@ import org.slf4j.event.Level
  *
  * Not for user extension.
  */
-@DoNotInherit trait LoggingEventFilter {
+@DoNotInherit abstract class LoggingEventFilter {
 
   /**
    * Number of events the filter is supposed to match. By default 1.
@@ -52,15 +53,14 @@ import org.slf4j.event.Level
 
   /**
    * Matching events with an included `throwable` that is a class or subclass of the given
-   * `Throwable` `ClassTag`.
+   * `Throwable` class.
    */
-  def withCause[A <: Throwable: ClassTag]: LoggingEventFilter
+  def withCause(newCause: Class[_ <: Throwable]): LoggingEventFilter
 
   /**
-   * Matching eventsfor which the supplied partial function is defined and returns
-   * `true`.
+   * Matching events for which the supplied function returns `true`.
    */
-  def withCustom(newCustom: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilter
+  def withCustom(newCustom: JFunction[LoggingEvent, Boolean]): LoggingEventFilter
 
   /**
    * @return `true` if the event matches the conditions of the filter.
@@ -71,13 +71,13 @@ import org.slf4j.event.Level
    * Apply this filter while executing the given code block. Care is taken to
    * remove the filter when the block is finished or aborted.
    */
-  def intercept[T](code: => T)(implicit system: ActorSystem[_]): T
+  def intercept[T](system: ActorSystem[_], code: Supplier[T]): T
 
   /**
    * Apply this filter while executing the given code block. Care is taken to
    * remove the filter when the block is finished or aborted.
    */
-  def interceptLogger[T](loggerName: String)(code: => T)(implicit system: ActorSystem[_]): T
+  def interceptLogger[T](system: ActorSystem[_], loggerName: String, code: Supplier[T]): T
 }
 
 /**
@@ -142,12 +142,12 @@ object LoggingEventFilter {
   /**
    * Create a filter for WARN level events with a an included
    * `throwable` that is a class or subclass of the given
-   * `Throwable` `ClassTag`.
+   * * `Throwable` class.
    *
    * More conditions can be added to the returned [LoggingEventFilter].
    */
-  def warn[A <: Throwable: ClassTag]: LoggingEventFilter =
-    empty.withLogLevel(Level.WARN).withCause[A]
+  def warn(causeClass: Class[Throwable]): LoggingEventFilter =
+    empty.withLogLevel(Level.WARN).withCause(causeClass)
 
   /**
    * Create a filter for ERROR level events with a log message
@@ -161,19 +161,18 @@ object LoggingEventFilter {
   /**
    * Create a filter for WARN level events with a an included
    * `throwable` that is a class or subclass of the given
-   * `Throwable` `ClassTag`.
+   * * `Throwable` class.
    *
    * More conditions can be added to the returned [LoggingEventFilter].
    */
-  def error[A <: Throwable: ClassTag]: LoggingEventFilter =
-    empty.withLogLevel(Level.ERROR).withCause[A]
+  def error(causeClass: Class[_ <: Throwable]): LoggingEventFilter =
+    empty.withLogLevel(Level.ERROR).withCause(causeClass)
 
   /**
    * Create a custom event filter. The filter will match those events for
-   * which the supplied partial function is defined and returns
-   * `true`.
+   * which for which the supplied function returns `true`.
    */
-  def custom(test: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilter =
+  def custom(test: JFunction[LoggingEvent, Boolean]): LoggingEventFilter =
     empty.withCustom(test)
 
   /**
