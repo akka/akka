@@ -53,7 +53,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val config = "com.typesafe" % "config" % "1.3.4" // ApacheV2
+    val config = "com.typesafe" % "config" % "1.3.5-RC1" // ApacheV2
     val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
