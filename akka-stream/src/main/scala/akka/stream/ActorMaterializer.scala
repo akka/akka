@@ -756,11 +756,6 @@ final class ActorMaterializerSettings @InternalApi private (
       ActorAttributes.SyncProcessingLimit(syncProcessingLimit) ::
       ActorAttributes.BlockingIoDispatcher(blockingIoDispatcher) :: Nil)
 
-  /*
-    val ioSettings: IOSettings, only has the TCP write buffer size which is special perhaps?
-    val streamRefSettings: StreamRefSettings, // argh, these also needs to come from here to keep back compat,
-        or else they cannot be trumped by programmatic setting :/
-   */
   override def toString: String =
     s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +
     s"$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit," +
