@@ -21,9 +21,7 @@ class TcpFramingSpec extends AkkaSpec("""
   """) with ImplicitSender {
   import TcpFraming.encodeFrameHeader
 
-  private val afr = IgnoreEventSink
-
-  private val framingFlow = Flow[ByteString].via(new TcpFraming(() => afr))
+  private val framingFlow = Flow[ByteString].via(new TcpFraming)
 
   private val payload5 = ByteString((1 to 5).map(_.toByte).toArray)
 
