@@ -7,6 +7,7 @@ package docs.akka.typed
 //#fiddle_code
 //#imports
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 //#imports
 //#fiddle_code
@@ -54,7 +55,7 @@ object IntroSpec {
       Behaviors.receive { (context, message) =>
         val n = greetingCounter + 1
         //#fiddle_code
-        context.log.info("Greeting {} for {}", n, message.whom)
+        context.log.info2("Greeting {} for {}", n, message.whom)
         //#fiddle_code
         //#hello-world-bot
         println(s"Greeting $n for ${message.whom}")
@@ -190,7 +191,7 @@ object IntroSpec {
             handle ! PostMessage("Hello World!")
             Behaviors.same
           case MessagePosted(screenName, message) =>
-            context.log.info("message has been posted by '{}': {}", screenName, message: Any)
+            context.log.info2("message has been posted by '{}': {}", screenName, message)
             Behaviors.stopped
         }
       }

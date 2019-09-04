@@ -12,6 +12,7 @@ import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 
 object DeviceGroup {
   def apply(groupId: String): Behavior[Command] =
@@ -59,7 +60,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
         this
 
       case RequestTrackDevice(gId, _, _) =>
-        context.log.warn("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId: Any)
+        context.log.warn2("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId)
         this
 
       case RequestDeviceList(requestId, gId, replyTo) =>

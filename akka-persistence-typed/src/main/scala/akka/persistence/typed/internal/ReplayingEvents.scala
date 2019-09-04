@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
@@ -199,10 +199,10 @@ private[akka] final class ReplayingEvents[C, E, S](
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
     if (setup.log.isDebugEnabled) {
-      setup.log.debug(
+      setup.log.debug2(
         "Recovery failure for persistenceId [{}] after {}",
         setup.persistenceId,
-        (System.nanoTime() - state.recoveryStartTime).nanos.pretty: Any)
+        (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
     }
     val sequenceNr = state.seqNr
 
@@ -223,10 +223,10 @@ private[akka] final class ReplayingEvents[C, E, S](
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
       if (setup.log.isDebugEnabled) {
-        setup.log.debug(
+        setup.log.debug2(
           "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
-          (System.nanoTime() - state.recoveryStartTime).nanos.pretty: Any)
+          (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
       }
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 
