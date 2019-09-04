@@ -255,9 +255,7 @@ abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpec
 
 }
 
-class UnstashingSpec extends ScalaTestWithActorTestKit("""
-  akka.loggers = [akka.event.slf4j.Slf4jLogger]
-  """) with WordSpecLike {
+class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   private def slowStoppingChild(latch: CountDownLatch): Behavior[String] =
     Behaviors.receiveSignal {

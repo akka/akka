@@ -30,9 +30,7 @@ object DeferredSpec {
       })
 }
 
-class DeferredSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
-    """) with WordSpecLike {
+class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)

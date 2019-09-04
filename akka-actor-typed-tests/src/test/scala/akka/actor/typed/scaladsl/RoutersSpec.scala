@@ -21,7 +21,6 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     akka.loglevel=debug
   """) with WordSpecLike with Matchers {
 

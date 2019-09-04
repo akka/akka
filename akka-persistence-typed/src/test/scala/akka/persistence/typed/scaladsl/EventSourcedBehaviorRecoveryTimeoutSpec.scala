@@ -33,7 +33,6 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
         """))
       .withFallback(ConfigFactory.parseString(s"""
         akka.loglevel = INFO
-        akka.loggers = [akka.event.slf4j.Slf4jLogger]
         """))
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[AnyRef]): Behavior[String] =

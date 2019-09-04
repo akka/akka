@@ -78,7 +78,6 @@ object EventSourcedBehaviorSpec {
   // also used from PersistentActorTest
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -561,11 +560,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "fail fast if default journal plugin is not defined" in {
       // new ActorSystem without persistence config
-      val testkit2 = ActorTestKit(
-        ActorTestKitBase.testNameFromCallStack(),
-        ConfigFactory.parseString("""
-          akka.loggers = [akka.event.slf4j.Slf4jLogger]
-          """))
+      val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
         LoggingEventFilter[ActorInitializationException](
           start = "Default journal plugin is not configured",
@@ -581,11 +576,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "fail fast if given journal plugin is not defined" in {
       // new ActorSystem without persistence config
-      val testkit2 = ActorTestKit(
-        ActorTestKitBase.testNameFromCallStack(),
-        ConfigFactory.parseString("""
-          akka.loggers = [akka.event.slf4j.Slf4jLogger]
-          """))
+      val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
         LoggingEventFilter[ActorInitializationException](
           start = "Journal plugin [missing] configuration doesn't exist",
@@ -604,7 +595,6 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
         ConfigFactory.parseString(s"""
-          akka.loggers = [akka.event.slf4j.Slf4jLogger]
           akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))
@@ -628,7 +618,6 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
         ConfigFactory.parseString(s"""
-          akka.loggers = [akka.event.slf4j.Slf4jLogger]
           akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))

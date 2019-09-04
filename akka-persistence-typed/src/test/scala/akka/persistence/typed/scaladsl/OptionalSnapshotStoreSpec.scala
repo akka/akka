@@ -41,7 +41,6 @@ object OptionalSnapshotStoreSpec {
 }
 
 class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.inmem.test-serialization = on

@@ -18,7 +18,6 @@ import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString("""
-      akka.loggers = [akka.event.slf4j.Slf4jLogger]
       ping-pong-dispatcher {
         executor = thread-pool-executor
         type = PinnedDispatcher

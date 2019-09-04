@@ -74,9 +74,7 @@ object InterceptSpec {
   }
 }
 
-class InterceptSpec extends ScalaTestWithActorTestKit("""
-      akka.loggers = [akka.event.slf4j.Slf4jLogger]
-    """) with WordSpecLike {
+class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import BehaviorInterceptor._
   import InterceptSpec._
 
