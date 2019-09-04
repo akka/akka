@@ -40,7 +40,7 @@ Scala
 Java
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #import }
 
-First we create a @scala[`pingService`]@java[`PingService`] actor and register it with the `Receptionist` against a
+First we create a `PingService` actor and register it with the `Receptionist` against a
 `ServiceKey` that will later be used to lookup the reference:
 
 Scala
@@ -49,7 +49,7 @@ Scala
 Java
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #ping-service }
 
-Then we have another actor that requires a @scala[`pingService`]@java[`PingService`] to be constructed:
+Then we have another actor that requires a `PingService` to be constructed:
 
 Scala
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #pinger }
@@ -67,8 +67,8 @@ Scala
 Java
 :  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #pinger-guardian }
 
-Each time a new (which is just a single time in this example) @scala[`pingService`]@java[`PingService`] is registered the
-guardian actor spawns a @scala[`pinger`]@java[`Pinger`] for each currently known `PingService`. The @scala[`pinger`]@java[`Pinger`]
+Each time a new (which is just a single time in this example) `PingService` is registered the
+guardian actor spawns a `Pinger` for each currently known `PingService`. The `Pinger`
 sends a `Ping` message and when receiving the `Pong` reply it stops.
 
 ## Cluster Receptionist
