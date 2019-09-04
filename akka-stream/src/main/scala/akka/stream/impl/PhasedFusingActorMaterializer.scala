@@ -379,7 +379,7 @@ private final case class SavedIslandData(
      * In addition to that this also guarantees that the attributes `InputBuffer`, `SupervisionStrategy`,
      * and `Dispatcher` is _always_ present in the attributes and can be accessed through `Attributes.mandatoryAttribute`
      *
-     * When these attributes are needed later in the materialization process it is important that the
+     * When these attributes are needed later in the materialization process it is important that
      * they are gotten through the attributes and not through the [[ActorMaterializerSettings]]
      */
     defaultAttributes: Attributes,
