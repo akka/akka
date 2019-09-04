@@ -7,8 +7,6 @@ package internal
 package adapter
 
 import akka.annotation.InternalApi
-import akka.util.OptionVal
-import org.slf4j.{ Logger, LoggerFactory }
 
 import akka.{ actor => classic }
 import scala.concurrent.ExecutionContextExecutor
@@ -56,9 +54,6 @@ private[akka] object ActorContextAdapter {
   import ActorRefAdapter.toClassic
 
   private[akka] override def currentBehavior: Behavior[T] = adapter.currentBehavior
-
-  // lazily initialized
-  private var actorLogger: OptionVal[Logger] = OptionVal.None
 
   final override val self = ActorRefAdapter(classicContext.self)
   final override val system = ActorSystemAdapter(classicContext.system)
@@ -118,26 +113,6 @@ private[akka] object ActorContextAdapter {
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
     val ref = cell.addFunctionRef((_, msg) => classicContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
-  }
-
-  private def initLoggerWithClass(logClass: Class[_]): Logger = {
-    // FIXME #26537 logSource should be included in MDC (but not here)
-    val logger = LoggerFactory.getLogger(logClass)
-    actorLogger = OptionVal.Some(logger)
-    logger
-  }
-
-  override def log: Logger = {
-    actorLogger match {
-      case OptionVal.Some(logger) => logger
-      case OptionVal.None =>
-        val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
-        initLoggerWithClass(logClass)
-    }
-  }
-
-  override def setLoggerClass(clazz: Class[_]): Unit = {
-    initLoggerWithClass(clazz)
   }
 
   /**

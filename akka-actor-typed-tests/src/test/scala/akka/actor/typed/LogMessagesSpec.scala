@@ -25,9 +25,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref: ActorRef[String] = spawn(behavior)
 
-      // FIXME #26537 not testing `source = ref.path.toString`
-
-      LoggingEventFilter.debug(s"actor [${ref.path}] received message: Hello", occurrences = 1).intercept {
+      LoggingEventFilter.debug(s"actor [${ref.path.toString}] received message: Hello", occurrences = 1).intercept {
         ref ! "Hello"
       }
 

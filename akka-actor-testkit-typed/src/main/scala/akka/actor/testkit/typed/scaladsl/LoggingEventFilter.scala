@@ -97,9 +97,6 @@ abstract class LoggingEventFilter(occurrences: Int) {
   protected val message: Either[String, Regex] = Left("")
   protected val complete: Boolean = false
 
-  // FIXME #26537 source not implemented (yet)
-  protected val SourceTodo = "SourceTodo"
-
   /**
    * internal implementation helper, no guaranteed API
    */
@@ -111,6 +108,7 @@ abstract class LoggingEventFilter(occurrences: Int) {
       case Right(p) => p.findFirstIn(msgstr).isDefined
     })
   }
+
 }
 
 /**
@@ -294,8 +292,8 @@ final case class ErrorFilter(
     ((event.message == null && event.throwable
       .map(_.getMessage)
       .isEmpty && event.throwable.map(_.getStackTrace.length).getOrElse(0) == 0) ||
-    doMatch(SourceTodo, event.message) || (event.throwable.nonEmpty && doMatch(
-      SourceTodo,
+    doMatch(event.mdc.getOrElse("akkaSource", ""), event.message) || (event.throwable.nonEmpty && doMatch(
+      event.mdc.getOrElse("akkaSource", ""),
       event.throwable.get.getMessage)))
   }
 
@@ -351,7 +349,7 @@ final case class WarningFilter(
     extends LoggingEventFilter(occurrences) {
 
   def matches(event: LoggingEvent) = {
-    event.level == Level.WARN && doMatch(SourceTodo, event.message)
+    event.level == Level.WARN && doMatch(event.mdc.getOrElse("akkaSource", ""), event.message)
   }
 
   /**
@@ -393,7 +391,7 @@ final case class InfoFilter(
     extends LoggingEventFilter(occurrences) {
 
   def matches(event: LoggingEvent) = {
-    event.level == Level.INFO && doMatch(SourceTodo, event.message)
+    event.level == Level.INFO && doMatch(event.mdc.getOrElse("akkaSource", ""), event.message)
   }
 
   /**
@@ -435,7 +433,7 @@ final case class DebugFilter(
     extends LoggingEventFilter(occurrences) {
 
   def matches(event: LoggingEvent) = {
-    event.level == Level.DEBUG && doMatch(SourceTodo, event.message)
+    event.level == Level.DEBUG && doMatch(event.mdc.getOrElse("akkaSource", ""), event.message)
   }
 
   /**

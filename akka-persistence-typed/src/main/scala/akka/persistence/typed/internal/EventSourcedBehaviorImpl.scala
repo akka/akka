@@ -141,34 +141,26 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
                 ctx: typed.TypedActorContext[Any],
                 msg: Any,
                 target: ReceiveTarget[InternalProtocol]): Behavior[InternalProtocol] = {
-              try {
-                val innerMsg = msg match {
-                  case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
-                  case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
-                  case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
-                  case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-                  case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
-                }
-                target(ctx, innerMsg)
-              } finally {
-                eventSourcedSetup.clearMdc()
+              val innerMsg = msg match {
+                case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
+                case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
+                case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
+                case internal: InternalProtocol              => internal // such as RecoveryTickEvent
+                case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
               }
+              target(ctx, innerMsg)
             }
 
             override def aroundSignal(
                 ctx: typed.TypedActorContext[Any],
                 signal: Signal,
                 target: SignalTarget[InternalProtocol]): Behavior[InternalProtocol] = {
-              try {
-                if (signal == PostStop) {
-                  eventSourcedSetup.cancelRecoveryTimer()
-                  // clear stash to be GC friendly
-                  stashState.clearStashBuffers()
-                }
-                target(ctx, signal)
-              } finally {
-                eventSourcedSetup.clearMdc()
+              if (signal == PostStop) {
+                eventSourcedSetup.cancelRecoveryTimer()
+                // clear stash to be GC friendly
+                stashState.clearStashBuffers()
               }
+              target(ctx, signal)
             }
 
             override def toString: String = "EventSourcedBehaviorInterceptor"
