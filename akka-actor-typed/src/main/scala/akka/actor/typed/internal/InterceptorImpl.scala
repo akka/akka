@@ -143,8 +143,8 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
     new LogMessagesInterceptor(opts).asInstanceOf[BehaviorInterceptor[T, T]]
   }
 
-  private val logMessageTemplate = s"actor [{}] received message: {}"
-  private val logSignalTemplate = s"actor [{}] received signal: {}"
+  private val LogMessageTemplate = "actor [{}] received message: {}"
+  private val LogSignalTemplate = "actor [{}] received signal: {}"
 }
 
 /**
@@ -161,12 +161,12 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
   private val logger = opts.getLogger.orElse(LoggerFactory.getLogger(getClass))
 
   override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
-    log(logMessageTemplate, msg, ctx)
+    log(LogMessageTemplate, msg, ctx)
     target(ctx, msg)
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
-    log(logSignalTemplate, signal, ctx)
+    log(LogSignalTemplate, signal, ctx)
     target(ctx, signal)
   }
 
@@ -178,7 +178,7 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
         case Level.INFO  => logger.info(template, context.asScala.self.path, messageOrSignal)
         case Level.DEBUG => logger.debug(template, context.asScala.self.path, messageOrSignal)
         case Level.TRACE => logger.trace(template, context.asScala.self.path, messageOrSignal)
-        case _           => logger.debug(template, context.asScala.self.path, messageOrSignal)
+        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }

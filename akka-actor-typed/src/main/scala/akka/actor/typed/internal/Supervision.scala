@@ -88,7 +88,7 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
         case Level.INFO  => logger.info(logMessage, unwrapped)
         case Level.DEBUG => logger.debug(logMessage, unwrapped)
         case Level.TRACE => logger.trace(logMessage, unwrapped)
-        case _           => logger.error(logMessage, unwrapped)
+        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }
