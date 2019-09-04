@@ -24,7 +24,6 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
       mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
       mailbox-capacity = 4 
     }
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
 
   case class WhatsYourMailbox(replyTo: ActorRef[MessageQueue])

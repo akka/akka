@@ -48,7 +48,6 @@ object ManyRecoveriesSpec {
 }
 
 class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"

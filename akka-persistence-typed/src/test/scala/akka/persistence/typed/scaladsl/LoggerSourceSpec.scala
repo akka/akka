@@ -13,17 +13,11 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 // Note that the spec name here is important since there are heuristics in place to avoid names
 // starting with EventSourcedBehavior
-class LoggerSourceSpec
-    extends ScalaTestWithActorTestKit(
-      ConfigFactory
-        .parseString("akka.loggers = [akka.event.slf4j.Slf4jLogger]")
-        .withFallback(EventSourcedBehaviorSpec.conf))
-    with WordSpecLike {
+class LoggerSourceSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
 
   private val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")

@@ -271,12 +271,6 @@ object ActorSystem {
  * This class is immutable.
  */
 final class Settings(val config: Config, val untypedSettings: untyped.ActorSystem.Settings, val name: String) {
-  def this(classLoader: ClassLoader, config: Config, name: String) =
-    this({
-      val cfg = config.withFallback(ConfigFactory.defaultReference(classLoader))
-      cfg.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
-      cfg
-    }, new untyped.ActorSystem.Settings(classLoader, config, name), name)
 
   def this(settings: untyped.ActorSystem.Settings) = this(settings.config, settings, settings.name)
 

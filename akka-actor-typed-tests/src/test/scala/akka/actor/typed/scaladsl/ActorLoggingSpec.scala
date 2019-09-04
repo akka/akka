@@ -7,10 +7,16 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.adapter._
+import akka.event.DefaultLoggingFilter
+import akka.event.Logging.DefaultLogger
+import akka.event.slf4j.Slf4jLogger
+import akka.event.slf4j.Slf4jLoggingFilter
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
@@ -248,6 +254,53 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         })
     }
 
+    "use Slf4jLogger from akka-slf4j automatically" in {
+      LoggingEventFilter.info(message = "via Slf4jLogger", occurrences = 1).intercept {
+        // this will log via classic eventStream
+        system.toUntyped.log.info("via Slf4jLogger")
+      }
+    }
+
+  }
+
+  "SLF4J Settings" must {
+    import akka.actor.typed.scaladsl.adapter._
+    import akka.actor.ExtendedActorSystem
+    import akka.actor.{ ActorSystem => ClassicActorSystem }
+
+    "by default be amended to use Slf4jLogger" in {
+      system.settings.config.getStringList("akka.loggers").size() should ===(1)
+      system.settings.config.getStringList("akka.loggers").get(0) should ===(classOf[Slf4jLogger].getName)
+      system.settings.config.getString("akka.logging-filter") should ===(classOf[Slf4jLoggingFilter].getName)
+
+      system.toUntyped.settings.Loggers should ===(List(classOf[Slf4jLogger].getName))
+      system.toUntyped.settings.LoggingFilter should ===(classOf[Slf4jLoggingFilter].getName)
+    }
+
+    "by default be amended to use Slf4jLogger when starting classic ActorSystem" in {
+      val classicSys = akka.actor.ActorSystem(system.name)
+      try {
+        classicSys.settings.config.getStringList("akka.loggers").size() should ===(1)
+        classicSys.settings.config.getStringList("akka.loggers").get(0) should ===(classOf[Slf4jLogger].getName)
+        classicSys.settings.config.getString("akka.logging-filter") should ===(classOf[Slf4jLoggingFilter].getName)
+
+        classicSys.settings.Loggers should ===(List(classOf[Slf4jLogger].getName))
+        classicSys.settings.LoggingFilter should ===(classOf[Slf4jLoggingFilter].getName)
+
+      } finally {
+        ActorTestKit.shutdown(classicSys.toTyped)
+      }
+    }
+
+    "not be amended when use-slf4j=off" in {
+      val dynamicAccess = system.toUntyped.asInstanceOf[ExtendedActorSystem].dynamicAccess
+      val config = ClassicActorSystem.Settings.amendSlf4jConfig(
+        ConfigFactory.parseString("akka.use-slf4j = off").withFallback(ConfigFactory.defaultReference()),
+        dynamicAccess)
+      config.getStringList("akka.loggers").size() should ===(1)
+      config.getStringList("akka.loggers").get(0) should ===(classOf[DefaultLogger].getName)
+      config.getString("akka.logging-filter") should ===(classOf[DefaultLoggingFilter].getName)
+    }
   }
 
   trait Protocol {

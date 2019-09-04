@@ -34,7 +34,6 @@ import org.scalatest.WordSpecLike
 object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(s"""
     #akka.loglevel = DEBUG
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
     #akka.persistence.typed.log-stashing = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.plugin = "failure-journal"

@@ -23,7 +23,6 @@ object EventSourcedBehaviorInterceptorSpec {
 
   def config: Config = ConfigFactory.parseString(s"""
         akka.loglevel = INFO
-        akka.loggers = [akka.event.slf4j.Slf4jLogger]
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
         akka.persistence.journal.inmem.test-serialization = on
         """)

@@ -65,9 +65,7 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.event.slf4j.Slf4jLogger]
-  """) with WordSpecLike {
+abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import ActorSpecMessages._
 

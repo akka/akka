@@ -31,7 +31,6 @@ object AskSpec {
 
 class AskSpec extends ScalaTestWithActorTestKit("""
   akka.loglevel=warning
-  akka.loggers = [akka.event.slf4j.Slf4jLogger]
   """) with WordSpecLike {
 
   import AskSpec._
