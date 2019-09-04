@@ -45,13 +45,11 @@ private[akka] trait StashManagement[C, E, S] {
       case e: StashOverflowException =>
         setup.settings.stashOverflowStrategy match {
           case StashOverflowStrategy.Drop =>
-            if (context.log.isWarnEnabled) {
-              val dropName = msg match {
-                case InternalProtocol.IncomingCommand(actual) => actual.getClass.getName
-                case other                                    => other.getClass.getName
-              }
-              context.log.warn("Stash buffer is full, dropping message [{}]", dropName)
+            val dropName = msg match {
+              case InternalProtocol.IncomingCommand(actual) => actual.getClass.getName
+              case other                                    => other.getClass.getName
             }
+            context.log.warn("Stash buffer is full, dropping message [{}]", dropName)
             context.system.toUntyped.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toUntyped))
           case StashOverflowStrategy.Fail =>
             throw e

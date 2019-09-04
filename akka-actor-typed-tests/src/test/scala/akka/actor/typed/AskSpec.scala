@@ -18,6 +18,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 import scala.concurrent.Future
 
+import akka.actor.DeadLetter
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.typed.eventstream.EventStream
@@ -88,7 +89,6 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       result.getMessage should startWith("Ask timed out on")
     }
 
-    /** See issue #19947 (MatchError with adapted ActorRef) */
     "fail the future if the actor doesn't exist" in {
       val noSuchActor: ActorRef[Msg] = system match {
         case adaptedSys: ActorSystemAdapter[_] =>
@@ -98,10 +98,19 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
+      val deadLetterProbe = createTestProbe[DeadLetter]()
+      system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
+
       val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated")
+
+      val deadLetter = deadLetterProbe.receiveMessage()
+      deadLetter.message match {
+        case Foo(s, _) => s should ===("bar")
+        case _         => fail(s"unexpected DeadLetter: $deadLetter")
+      }
     }
 
     "transform a replied akka.actor.Status.Failure to a failed future" in {
