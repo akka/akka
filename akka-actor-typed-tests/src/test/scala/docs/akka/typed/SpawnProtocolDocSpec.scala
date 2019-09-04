@@ -17,6 +17,7 @@ import com.github.ghik.silencer.silent
 import akka.actor.typed.Behavior
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 
 //#imports1
 
@@ -67,7 +68,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty, _))
 
       val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
-        context.log.info("Greeting for {} from {}", message.whom, message.from: Any)
+        context.log.info2("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
 
