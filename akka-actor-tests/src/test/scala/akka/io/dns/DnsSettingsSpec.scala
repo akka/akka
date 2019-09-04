@@ -28,19 +28,15 @@ class DnsSettingsSpec extends AkkaSpec {
   "DNS settings" must {
 
     "use host servers if set to default" in {
-      val dnsSettings = new DnsSettings(
-        eas,
-        defaultConfig
-      )
+      val dnsSettings = new DnsSettings(eas, defaultConfig)
 
       // Will differ based on name OS DNS servers so just validating it does not throw
       dnsSettings.NameServers
     }
 
     "parse a single name server" in {
-      val dnsSettings = new DnsSettings(
-        eas,
-        defaultConfig.withFallback(ConfigFactory.parseString("nameservers = \"127.0.0.1\"")))
+      val dnsSettings =
+        new DnsSettings(eas, defaultConfig.withFallback(ConfigFactory.parseString("nameservers = \"127.0.0.1\"")))
 
       dnsSettings.NameServers.map(_.getAddress) shouldEqual List(InetAddress.getByName("127.0.0.1"))
     }
@@ -98,7 +94,6 @@ class DnsSettingsSpec extends AkkaSpec {
           ndots = "default"
         """)))
 
-
       // Will differ based on name OS DNS servers so just validating it does not throw
       dnsSettings.NDots
     }
@@ -116,12 +111,10 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "parse ttl" in {
-      val dnsSettingsNeverForever = new DnsSettings(
-        eas,
-        defaultConfig)
+      val dnsSettingsNeverForever = new DnsSettings(eas, defaultConfig)
 
-      dnsSettingsNeverForever.positiveCachePolicy shouldEqual CachePolicy.Forever
-      dnsSettingsNeverForever.negativeCachePolicy shouldEqual CachePolicy.Never
+      dnsSettingsNeverForever.PositiveCachePolicy shouldEqual CachePolicy.Forever
+      dnsSettingsNeverForever.NegativeCachePolicy shouldEqual CachePolicy.Never
 
       val dnsSettingsDuration = new DnsSettings(
         eas,
@@ -130,8 +123,8 @@ class DnsSettingsSpec extends AkkaSpec {
           negative-ttl = 10 d
         """)))
 
-      dnsSettingsDuration.positiveCachePolicy shouldEqual CachePolicy.Ttl.fromPositive(10.seconds)
-      dnsSettingsDuration.negativeCachePolicy shouldEqual CachePolicy.Ttl.fromPositive(10.days)
+      dnsSettingsDuration.PositiveCachePolicy shouldEqual CachePolicy.Ttl.fromPositive(10.seconds)
+      dnsSettingsDuration.NegativeCachePolicy shouldEqual CachePolicy.Ttl.fromPositive(10.days)
     }
   }
 

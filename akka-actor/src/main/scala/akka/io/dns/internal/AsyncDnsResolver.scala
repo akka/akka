@@ -40,8 +40,8 @@ private[io] final class AsyncDnsResolver(
 
   val nameServers = settings.NameServers
 
-  val positiveCachePolicy = settings.positiveCachePolicy
-  val negativeCachePolicy = settings.negativeCachePolicy
+  val positiveCachePolicy = settings.PositiveCachePolicy
+  val negativeCachePolicy = settings.NegativeCachePolicy
   log.debug(
     "Using name servers [{}] and search domains [{}] with ndots={}",
     nameServers,

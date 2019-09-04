@@ -7,7 +7,6 @@ package akka.io.dns
 import java.io.File
 import java.net.{ InetSocketAddress, URI }
 import java.util
-import java.util.concurrent.TimeUnit
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
@@ -53,8 +52,8 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   val ResolveTimeout: FiniteDuration = c.getDuration("resolve-timeout").asScala
 
-  val positiveCachePolicy: CachePolicy = getTtl("positive-ttl")
-  val negativeCachePolicy: CachePolicy = getTtl("negative-ttl")
+  val PositiveCachePolicy: CachePolicy = getTtl("positive-ttl")
+  val NegativeCachePolicy: CachePolicy = getTtl("negative-ttl")
 
   private def getTtl(path: String): CachePolicy =
     c.getString(path) match {
@@ -62,9 +61,9 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
       case "never"   => Never
       case _ =>
         val finiteTtl = c
-          .getDuration(path, TimeUnit.SECONDS)
-          .requiring(_ > 0, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
-        Ttl.fromPositive(finiteTtl.seconds)
+          .getDuration(path)
+          .requiring(!_.isNegative, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
+        Ttl.fromPositive(finiteTtl)
     }
 
   private lazy val resolvConf: Option[ResolvConf] = {
