@@ -35,22 +35,26 @@ object SupervisionCompileOnly {
   //#multiple
 
   //#wrap
-  sealed trait Command
-  case class Increment(nr: Int) extends Command
-  case class GetCount(replyTo: ActorRef[Int]) extends Command
+  object Counter {
+    sealed trait Command
+    case class Increment(nr: Int) extends Command
+    case class GetCount(replyTo: ActorRef[Int]) extends Command
 
-  def counter(count: Int): Behavior[Command] = Behaviors.receiveMessage[Command] {
-    case Increment(nr: Int) =>
-      counter(count + nr)
-    case GetCount(replyTo) =>
-      replyTo ! count
-      Behaviors.same
+    //#top-level
+    def apply(): Behavior[Command] =
+      Behaviors.supervise(counter(1)).onFailure(SupervisorStrategy.restart)
+    //#top-level
+
+    private def counter(count: Int): Behavior[Command] =
+      Behaviors.receiveMessage[Command] {
+        case Increment(nr: Int) =>
+          counter(count + nr)
+        case GetCount(replyTo) =>
+          replyTo ! count
+          Behaviors.same
+      }
   }
   //#wrap
-
-  //#top-level
-  Behaviors.supervise(counter(1))
-  //#top-level
 
   //#restart-stop-children
   def child(size: Long): Behavior[String] =

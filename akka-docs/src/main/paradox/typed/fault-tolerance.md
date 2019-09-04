@@ -61,11 +61,22 @@ Scala
 Java
 :  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #multiple }
 
-For a full list of strategies see the public methods on `SupervisorStrategy`
+For a full list of strategies see the public methods on @apidoc[akka.actor.typed.SupervisorStrategy].
+
+@@@ note
+
+When the behavior is restarted the original `Behavior` that was given to `Behaviors.supervise` is re-installed,
+which means that if it contains mutable state it must be a factory via `Behaviors.setup`. When using the
+object-oriented style with a class extending `AbstractBehavior` it's always recommended to create it via
+`Behaviors.setup` as described in @ref:[Behavior factory method](style-guide.md#behavior-factory-method).
+For the function style there is typically no need for the factory if the state is captured in immutable
+parameters.
+@@@
 
 ### Wrapping behaviors
 
-It is very common to store state by changing behavior e.g.
+With the @ref:[functional style](style-guide.md#functional-versus-object-oriented-style) it is very common
+to store state by changing behavior e.g.
 
 Scala
 :  @@snip [SupervisionCompileOnly.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/supervision/SupervisionCompileOnly.scala) { #wrap }
