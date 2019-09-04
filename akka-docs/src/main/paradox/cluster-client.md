@@ -236,14 +236,14 @@ a more decoupled, and therefore better, solution would be to use Akka gRPC and d
 application specific protocol buffer messages and gRPC service calls. The benefits would be:
 
 * Easier to update clients and servers independent of each other.
-* More well defined protocol between client and server.
-* More secure solution by using TLS for gRPC (HTTP/2) instead of exposing Akka Remoting outside the Akka Cluster.
-* The clients don't even have to be using Akka.
-* See also [gRPC vs Akka Remoting](https://doc.akka.io/docs/akka-grpc/current/whygrpc.html#grpc-vs-akka-remoting)
+* Improved protocol definition between client and server
+* Improved security by using TLS for gRPC (HTTP/2) versus exposing Akka Remoting outside the Akka Cluster
+* Clients do not need to use Akka
+* See also [gRPC versus Akka Remoting](https://doc.akka.io/docs/akka-grpc/current/whygrpc.html#grpc-vs-akka-remoting)
 
-Existing users of Cluster Client may migrate directly to plain Akka gRPC, or via a migration
-step that requires less re-write of the application. That migration step is described here but we recommend
-against using the approach for new applications. New applications should use plain Akka gRPC.
+Existing users of Cluster Client may migrate directly to Akka gRPC, or via a migration
+step that requires less re-write of the application. That migration step is described below, but we recommend
+new applications use Akka gRPC.
 
 An example is provided to illustrate an approach to migrate from the deprecated Cluster Client to Akka gRPC,
 with minimal changes to your existing code. The example is intended to be copied and adjusted to your needs.
@@ -253,19 +253,19 @@ It will not be provided as a published artifact.
 * [akka-samples/akka-sample-cluster-cluster-client-grpc-java](https://github.com/akka/akka-samples/tree/2.6/akka-sample-cluster-cluster-client-grpc-java) implemented in Java
 
 The example is still using an actor on the client side to have an API that is very close
-to the original Cluster Client. The messages this actor can handle corresponds to the
+to the original Cluster Client. The messages this actor can handle correspond to the
 @ref:[Distributed Pub Sub](distributed-pub-sub.md) messages on the server side, such as
 `ClusterClient.Send` and `ClusterClient.Publish`.
 
-The `ClusterClient` actor delegates those messages to the gRPC client and on the
+The `ClusterClient` actor delegates those messages to the gRPC client, and on the
 server side those are translated and delegated to the destination actors that
 are registered via the `ClusterClientReceptionist` in the same way as in the original.
 
-The application specific messages are wrapped and serialized with Akka serialization.
+The application specific messages are wrapped and serialized with Akka Serialization.
 
 ### Differences
 
-Apart from that the underlying implementation is using gRPC instead of Actor messages
+Aside from the underlying implementation using gRPC instead of Actor messages
 and Akka Remoting it's worth pointing out the following differences.
 
 #### Single request-reply
