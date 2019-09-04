@@ -20,7 +20,7 @@ import akka.util.ccompat._
 import com.typesafe.config.{ Config, ConfigValueType }
 
 import scala.collection.immutable
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API */
