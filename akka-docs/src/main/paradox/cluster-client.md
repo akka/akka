@@ -233,11 +233,12 @@ We recommend using [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.
 
 Cluster Client is convenient to use if you have Akka actors on both client and server side, but
 a more decoupled, and therefore better, solution would be to use Akka gRPC and define
-application specific protocol buffer messages and gRPC service calls. The benefits would be:
+application specific protocol buffer messages and gRPC service calls. The benefits are:
 
-* Easier to update clients and servers independent of each other.
-* Improved protocol definition between client and server
 * Improved security by using TLS for gRPC (HTTP/2) versus exposing Akka Remoting outside the Akka Cluster
+* Easier to update clients and servers independent of each other
+* Improved protocol definition between client and server
+* Usage of [Akka gRPC Service Discovery](https://doc.akka.io/docs/akka-grpc/current/client/configuration.html#using-akka-discovery-for-endpoint-discovery)
 * Clients do not need to use Akka
 * See also [gRPC versus Akka Remoting](https://doc.akka.io/docs/akka-grpc/current/whygrpc.html#grpc-vs-akka-remoting)
 
@@ -261,19 +262,26 @@ The `ClusterClient` actor delegates those messages to the gRPC client, and on th
 server side those are translated and delegated to the destination actors that
 are registered via the `ClusterClientReceptionist` in the same way as in the original.
 
-The application specific messages are wrapped and serialized with Akka Serialization.
+Akka gRPC is used as the transport for the messages between client and server, instead of Akka Remoting.
+
+The application specific messages are wrapped and serialized with Akka Serialization,
+which means that care must be taken to keep wire compatibility when changing any messages used
+between the client and server. The Akka configuration of Akka serializers must be the same (or
+being compatible) on client and server.
 
 ### Differences
 
 Aside from the underlying implementation using gRPC instead of Actor messages
-and Akka Remoting it's worth pointing out the following differences.
+and Akka Remoting it's worth pointing out the following differences between
+the Cluster Client and the example emulating Cluster Client with Akka gRPC as
+transport.
 
 #### Single request-reply
 
 For request-reply interactions when there is only one reply message for each request
 it is more efficient to use the `ClusterClient.AskSend` message instead of
 `ClusterClient.Send` as illustrated in the example. Then it doesn't have to
-setup a full bidirectional gRPC stream for each request but can use the `Future`
+setup a full bidirectional gRPC stream for each request but can use the @scala[`Future`]@java[`CompletionStage`]
 based API.
 
 #### Initial contact points
