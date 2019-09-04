@@ -10,7 +10,7 @@ import akka.Done
 import akka.testkit.AkkaSpec
 import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.{ ExtendedActorSystem, ActorSystem => UntypedActorSystem }
+import akka.actor.{ ExtendedActorSystem, ActorSystem => ClassicActorSystem }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Promise
@@ -80,7 +80,7 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
       // typed actor on system1
       val pingPongActor = system.spawn(ponger, "pingpong")
 
-      val system2 = UntypedActorSystem(system.name + "-system2", RemoteMessageSpec.config)
+      val system2 = ClassicActorSystem(system.name + "-system2", RemoteMessageSpec.config)
       val typedSystem2 = system2.toTyped
       try {
 

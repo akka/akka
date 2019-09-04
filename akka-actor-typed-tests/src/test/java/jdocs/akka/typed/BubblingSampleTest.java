@@ -26,7 +26,7 @@ public class BubblingSampleTest extends JUnitSuite {
                 "akka.loggers = [ akka.testkit.TestEventListener ]\n" + "akka.loglevel=warning"));
 
     // actual exception and then the deathpacts
-    new EventFilter(Exception.class, ActorSystemAdapter.toUntyped(system))
+    new EventFilter(Exception.class, ActorSystemAdapter.toClassic(system))
         .occurrences(4)
         .intercept(
             () -> {

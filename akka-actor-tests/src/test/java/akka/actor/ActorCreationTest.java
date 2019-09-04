@@ -10,12 +10,9 @@ import static java.util.stream.Collectors.toCollection;
 import java.util.ArrayList;
 import java.util.stream.IntStream;
 
-import akka.testkit.TestActors;
-import org.junit.Assert;
 import org.junit.Test;
 
 import akka.japi.Creator;
-import akka.japi.pf.ReceiveBuilder;
 
 import org.scalatest.junit.JUnitSuite;
 
@@ -98,7 +95,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  public static class TestActor2 extends UntypedAbstractActor {
+  public static class TestActor2 extends ClassicAbstractActor {
 
     public static Props propsUsingCreator(final int magicNumber) {
       // You need to specify the actual type of the returned actor
@@ -152,7 +149,7 @@ public class ActorCreationTest extends JUnitSuite {
     public void onReceive(Object msg) {}
   }
 
-  public static class Issue20537Reproducer extends UntypedAbstractActor {
+  public static class Issue20537Reproducer extends ClassicAbstractActor {
 
     static final class ReproducerCreator implements Creator<Issue20537Reproducer> {
 
@@ -226,9 +223,9 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testRightTopLevelNonStaticCreator() {
-    final Creator<UntypedAbstractActor> nonStatic = new NonStaticCreator();
+    final Creator<ClassicAbstractActor> nonStatic = new NonStaticCreator();
     final Props p = Props.create(nonStatic);
-    assertEquals(UntypedAbstractActor.class, p.actorClass());
+    assertEquals(ClassicAbstractActor.class, p.actorClass());
   }
 
   @Test

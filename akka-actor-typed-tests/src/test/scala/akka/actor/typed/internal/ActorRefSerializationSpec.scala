@@ -29,7 +29,7 @@ object ActorRefSerializationSpec {
 
 class ActorRefSerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config) with WordSpecLike {
 
-  val serialization = SerializationExtension(system.toUntyped)
+  val serialization = SerializationExtension(system.toClassic)
 
   "ActorRef[T]" must {
     "be serialized and deserialized by MiscMessageSerializer" in {

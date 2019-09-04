@@ -5,7 +5,7 @@
 package akka.actor.typed
 
 import akka.annotation.DoNotInherit
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 import scala.annotation.unchecked.uncheckedVariance
 
 import akka.actor.typed.internal.InternalRecipientRef
@@ -50,7 +50,7 @@ trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]
    * and more than one Actor instance can exist with the same path at different
    * points in time, but not concurrently.
    */
-  def path: untyped.ActorPath
+  def path: classic.ActorPath
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef[T](this)

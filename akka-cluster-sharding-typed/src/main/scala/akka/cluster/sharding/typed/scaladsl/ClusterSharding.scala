@@ -23,7 +23,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ StartEntity => UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
@@ -303,7 +303,7 @@ object StartEntity {
    */
   def apply[M](entityId: String): ShardingEnvelope[M] = {
     // StartEntity isn't really of type M, but erased and StartEntity is only handled internally, not delivered to the entity
-    new ShardingEnvelope[M](entityId, UntypedStartEntity(entityId).asInstanceOf[M])
+    new ShardingEnvelope[M](entityId, ClassicStartEntity(entityId).asInstanceOf[M])
   }
 }
 

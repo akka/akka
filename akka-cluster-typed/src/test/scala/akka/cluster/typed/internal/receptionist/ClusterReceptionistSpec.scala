@@ -240,7 +240,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
 
-        akka.cluster.Cluster(system1.toUntyped).shutdown()
+        akka.cluster.Cluster(system1.toClassic).shutdown()
 
         regProbe2.expectNoMessage(3.seconds)
 

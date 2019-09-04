@@ -4,10 +4,10 @@
 
 package jdocs.actor;
 
-// #my-bounded-untyped-actor
+// #my-bounded-classic-actor
 import akka.dispatch.BoundedMessageQueueSemantics;
 import akka.dispatch.RequiresMessageQueue;
 
 public class MyBoundedActor extends MyActor
     implements RequiresMessageQueue<BoundedMessageQueueSemantics> {}
-// #my-bounded-untyped-actor
+// #my-bounded-classic-actor

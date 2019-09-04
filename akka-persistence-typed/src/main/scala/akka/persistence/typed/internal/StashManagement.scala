@@ -52,7 +52,7 @@ private[akka] trait StashManagement[C, E, S] {
               }
               context.log.warning("Stash buffer is full, dropping message [{}]", dropName)
             }
-            context.system.toUntyped.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toUntyped))
+            context.system.toClassic.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toClassic))
           case StashOverflowStrategy.Fail =>
             throw e
         }

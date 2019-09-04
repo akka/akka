@@ -5,8 +5,8 @@ will by default be stopped.
 
 @@@ note
 
-An important difference between Typed and Untyped actors is that Typed actors are by default stopped if
-an exception is thrown and no supervision strategy is defined while in Untyped they are restarted.
+An important difference between Typed and Classic actors is that Typed actors are by default stopped if
+an exception is thrown and no supervision strategy is defined while in Classic they are restarted.
 
 @@@
 
@@ -26,7 +26,7 @@ with a fresh state that we know is valid.
 
 ## Supervision
 
-In Akka Typed this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when a certain type of exceptions are thrown inside an actor. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`, for example to restart on `IllegalStateExceptions`:
+In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when a certain type of exceptions are thrown inside an actor. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`, for example to restart on `IllegalStateExceptions`:
 
 
 Scala
@@ -114,7 +114,7 @@ restarted.
 ## Bubble failures up through the hierarchy
 
 In some scenarios it may be useful to push the decision about what to do on a failure upwards in the Actor hierarchy
- and let the parent actor handle what should happen on failures (in untyped Akka Actors this is how it works by default).
+ and let the parent actor handle what should happen on failures (in classic Akka Actors this is how it works by default).
 
 For a parent to be notified when a child is terminated it has to `watch` the child. If the child was stopped because of
 a failure the `ChildFailed` signal will be received which will contain the cause. `ChildFailed` extends `Terminated` so if

@@ -21,7 +21,7 @@ object ActorMaterializerFactory {
    * The actor names are built up of `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
   def create[T](actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer.create(actorSystem.toUntyped)
+    akka.stream.ActorMaterializer.create(actorSystem.toClassic)
 
   /**
    * Creates an `ActorMaterializer` which will execute every step of a transformation
@@ -29,7 +29,7 @@ object ActorMaterializerFactory {
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
   def create[T](settings: ActorMaterializerSettings, actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer.create(settings, actorSystem.toUntyped)
+    akka.stream.ActorMaterializer.create(settings, actorSystem.toClassic)
 
   /**
    * Creates an `ActorMaterializer` which will execute every step of a transformation
@@ -45,7 +45,7 @@ object ActorMaterializerFactory {
       settings: ActorMaterializerSettings,
       namePrefix: String,
       actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer.create(settings, actorSystem.toUntyped, namePrefix)
+    akka.stream.ActorMaterializer.create(settings, actorSystem.toClassic, namePrefix)
 
   /**
    * Creates an `ActorMaterializer` which will execute every step of a transformation
@@ -56,7 +56,7 @@ object ActorMaterializerFactory {
    * The actor names are built up of `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
   def create[T](ctx: ActorContext[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer.create(Adapter.toUntyped(ctx))
+    akka.stream.ActorMaterializer.create(Adapter.toClassic(ctx))
 
   /**
    * Creates an `ActorMaterializer` which will execute every step of a transformation
@@ -64,7 +64,7 @@ object ActorMaterializerFactory {
    * will be bound to the lifecycle of the provided [[akka.actor.typed.javadsl.ActorContext]]
    */
   def create[T](settings: ActorMaterializerSettings, ctx: ActorContext[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer.create(settings, Adapter.toUntyped(ctx))
+    akka.stream.ActorMaterializer.create(settings, Adapter.toClassic(ctx))
 
   /**
    * Creates an `ActorMaterializer` which will execute every step of a transformation
@@ -79,5 +79,5 @@ object ActorMaterializerFactory {
       settings: ActorMaterializerSettings,
       namePrefix: String,
       ctx: ActorContext[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer.create(settings, Adapter.toUntyped(ctx), namePrefix)
+    akka.stream.ActorMaterializer.create(settings, Adapter.toClassic(ctx), namePrefix)
 }

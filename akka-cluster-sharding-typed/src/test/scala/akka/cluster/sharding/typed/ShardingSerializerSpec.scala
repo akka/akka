@@ -14,7 +14,7 @@ class ShardingSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike
 
   "The typed ShardingSerializer" must {
 
-    val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(system))
+    val serialization = SerializationExtension(ActorSystemAdapter.toClassic(system))
 
     def checkSerialization(obj: AnyRef): Unit = {
       serialization.findSerializerFor(obj) match {

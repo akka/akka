@@ -13,7 +13,6 @@ import static jdocs.actor.Messages.Swap.Swap;
 import static jdocs.actor.Messages.*;
 import akka.actor.CoordinatedShutdown;
 
-import akka.util.Timeout;
 import akka.Done;
 
 import java.util.Optional;
@@ -134,7 +133,7 @@ public class ActorDocTest extends AbstractJavaTest {
 
   public
   // #optimized
-  static class OptimizedActor extends UntypedAbstractActor {
+  static class OptimizedActor extends ClassicAbstractActor {
 
     public static class Msg1 {}
 

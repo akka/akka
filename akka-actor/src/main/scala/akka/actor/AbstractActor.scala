@@ -317,22 +317,22 @@ abstract class AbstractActor extends Actor {
 
 /**
  * If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
- * actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead
+ * actors you can consider to implement it at lower level by extending `ClassicAbstractActor` instead
  * of `AbstractActor`. The partial functions created by the `ReceiveBuilder` consist of multiple lambda
  * expressions for every match statement, where each lambda is referencing the code to be run. This is something
  * that the JVM can have problems optimizing and the resulting code might not be as performant as the
- * untyped version. When extending `UntypedAbstractActor` each message is received as an untyped
+ * classic version. When extending `ClassicAbstractActor` each message is received as a classic
  * `Object` and you have to inspect and cast it to the actual message type in other ways (instanceof checks).
  */
-abstract class UntypedAbstractActor extends AbstractActor {
+abstract class ClassicAbstractActor extends AbstractActor {
 
   final override def createReceive(): AbstractActor.Receive =
-    throw new UnsupportedOperationException("createReceive should not be used by UntypedAbstractActor")
+    throw new UnsupportedOperationException("createReceive should not be used by ClassicAbstractActor")
 
   override def receive: PartialFunction[Any, Unit] = { case msg => onReceive(msg) }
 
   /**
-   * To be implemented by concrete UntypedAbstractActor, this defines the behavior of the
+   * To be implemented by concrete ClassicAbstractActor, this defines the behavior of the
    * actor.
    */
   @throws(classOf[Throwable])

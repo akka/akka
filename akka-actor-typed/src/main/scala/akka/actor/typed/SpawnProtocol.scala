@@ -16,7 +16,7 @@ import akka.annotation.DoNotInherit
  * The typical usage of this is to use it as the guardian actor of the [[ActorSystem]], possibly combined with
  * `Behaviors.setup` to starts some initial tasks or actors. Child actors can then be started from the outside
  * by telling or asking [[SpawnProtocol#Spawn]] to the actor reference of the system. When using `ask` this is
- * similar to how [[akka.actor.ActorSystem#actorOf]] can be used in untyped actors with the difference that
+ * similar to how [[akka.actor.ActorSystem#actorOf]] can be used in classic actors with the difference that
  * a `Future` / `CompletionStage` of the `ActorRef` is returned.
  *
  * Stopping children is done through specific support in the protocol of the children, or stopping the entire

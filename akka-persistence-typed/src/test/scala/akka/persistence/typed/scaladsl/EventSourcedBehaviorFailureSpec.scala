@@ -89,10 +89,10 @@ class EventSourcedBehaviorFailureSpec
 
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  // Needed for the untyped event filter
-  implicit val untyped = system.toUntyped
+  // Needed for the classic event filter
+  implicit val classic = system.toClassic
 
-  untyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  classic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   def failingPersistentActor(
       pid: PersistenceId,
@@ -303,7 +303,7 @@ class EventSourcedBehaviorFailureSpec
         })
         val c = spawn(behav)
         probe.expectMessage("starting")
-        c.toUntyped ! SomeSignal
+        c.toClassic ! SomeSignal
         probe.expectMessage("stopped")
       }
     }

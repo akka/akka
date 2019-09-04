@@ -9,7 +9,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{
   ClusterSingletonProxySettings,
-  ClusterSingletonManagerSettings => UntypedClusterSingletonManagerSettings
+  ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings
 }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
@@ -91,8 +91,8 @@ final class ClusterSingletonSettings(
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def toManagerSettings(singletonName: String): UntypedClusterSingletonManagerSettings =
-    new UntypedClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
+  private[akka] def toManagerSettings(singletonName: String): ClassicClusterSingletonManagerSettings =
+    new ClassicClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 
   /**
    * INTERNAL API:
@@ -213,7 +213,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem[_]): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      .withRemovalMargin(akka.cluster.Cluster(system.toUntyped).downingProvider.downRemovalMargin)
+      .withRemovalMargin(akka.cluster.Cluster(system.toClassic).downingProvider.downRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as
@@ -276,7 +276,7 @@ final class ClusterSingletonManagerSettings(
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
 
   def withRole(role: String): ClusterSingletonManagerSettings =
-    copy(role = UntypedClusterSingletonManagerSettings.roleOption(role))
+    copy(role = ClassicClusterSingletonManagerSettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterSingletonManagerSettings = copy(role = role)
 

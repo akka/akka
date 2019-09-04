@@ -44,9 +44,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
   val marker = LogMarker("marker")
   val cause = new TestException("böö")
 
-  implicit val untyped = system.toUntyped
+  implicit val classic = system.toClassic
 
-  "Logging in a typed actor" must {
+  "Logging in an actor" must {
 
     "be conveniently available from the context" in {
       val actor =

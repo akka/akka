@@ -55,12 +55,12 @@ private[akka] final class BehaviorSetup[C, E, S](
   import akka.actor.typed.scaladsl.adapter._
   import BehaviorSetup._
 
-  val persistence: Persistence = Persistence(context.system.toUntyped)
+  val persistence: Persistence = Persistence(context.system.toClassic)
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  def selfUntyped = context.self.toUntyped
+  def selfClassic: ActorRef = context.self.toClassic
 
   private var mdc: Map[String, Any] = Map.empty
   private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed

@@ -15,7 +15,7 @@ class ServiceKeySerializationSpec
     extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
     with WordSpecLike {
 
-  val serialization = SerializationExtension(system.toUntyped)
+  val serialization = SerializationExtension(system.toClassic)
 
   "ServiceKey[T]" must {
     "be serialized and deserialized by ServiceKeySerializer" in {

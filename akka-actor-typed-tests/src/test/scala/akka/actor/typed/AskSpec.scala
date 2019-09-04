@@ -36,7 +36,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
   implicit def executor: ExecutionContext =
     system.executionContext
@@ -95,7 +95,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val noSuchActor: ActorRef[Msg] = system match {
         case adaptedSys: ActorSystemAdapter[_] =>
           import akka.actor.typed.scaladsl.adapter._
-          adaptedSys.untypedSystem.provider.resolveActorRef("/foo/bar")
+          adaptedSys.system.provider.resolveActorRef("/foo/bar")
         case _ =>
           fail("this test must only run in an adapted actor system")
       }
@@ -113,7 +113,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       // It's unlikely but possible that this happens, since the receiving actor would
       // have to accept a message with an actoref that accepts AnyRef or be doing crazy casting
       // For completeness sake though
-      implicit val untypedSystem = akka.actor.ActorSystem("AskSpec-untyped-1")
+      implicit val classicSystem = akka.actor.ActorSystem("AskSpec-classic-1")
       try {
         case class Ping(respondTo: ActorRef[AnyRef])
         val ex = new RuntimeException("not good!")
@@ -124,15 +124,15 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           }
         }
 
-        val legacyActor = untypedSystem.actorOf(akka.actor.Props(new LegacyActor))
+        val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
         import scaladsl.AskPattern._
         implicit val timeout: Timeout = 3.seconds
-        implicit val scheduler = untypedSystem.toTyped.scheduler
+        implicit val scheduler = classicSystem.toTyped.scheduler
         val typedLegacy: ActorRef[AnyRef] = legacyActor
         (typedLegacy.ask(Ping)).failed.futureValue should ===(ex)
       } finally {
-        akka.testkit.TestKit.shutdownActorSystem(untypedSystem)
+        akka.testkit.TestKit.shutdownActorSystem(classicSystem)
       }
     }
 
@@ -175,7 +175,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       EventFilter[RuntimeException](message = "Exception thrown out of adapter. Stopping myself.", occurrences = 1)
         .intercept {
           replyRef2 ! 42L
-        }(system.toUntyped)
+        }(system.toClassic)
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }

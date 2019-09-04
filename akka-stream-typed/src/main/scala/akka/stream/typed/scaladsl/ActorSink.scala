@@ -31,7 +31,7 @@ object ActorSink {
    * limiting stage in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef[T], onCompleteMessage: T, onFailureMessage: Throwable => T): Sink[T, NotUsed] =
-    Sink.actorRef(ref.toUntyped, onCompleteMessage, onFailureMessage)
+    Sink.actorRef(ref.toClassic, onCompleteMessage, onFailureMessage)
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -54,7 +54,7 @@ object ActorSink {
       onCompleteMessage: M,
       onFailureMessage: Throwable => M): Sink[T, NotUsed] =
     Sink.actorRefWithAck(
-      ref.toUntyped,
+      ref.toClassic,
       messageAdapter.curried.compose(actorRefAdapter),
       onInitMessage.compose(actorRefAdapter),
       ackMessage,

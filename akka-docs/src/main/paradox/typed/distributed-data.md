@@ -39,7 +39,7 @@ actor provides the API for interacting with the data and is accessed through the
 
 The messages for the replicator, such as `Replicator.Update` are defined in @apidoc[typed.*.Replicator]
 but the actual CRDTs are the 
-same as in untyped, for example `akka.cluster.ddata.GCounter`. This will require a @scala[implicit] `akka.cluster.ddata.SelfUniqueAddress.SelfUniqueAddress`,
+same as in classic, for example `akka.cluster.ddata.GCounter`. This will require a @scala[implicit] `akka.cluster.ddata.SelfUniqueAddress.SelfUniqueAddress`,
 available from @scala[`implicit val node = DistributedData(system).selfUniqueAddress`]@java[SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();].
 
 The replicator can contain multiple entries each containing a replicated data type, we therefore need to create a 
@@ -79,7 +79,7 @@ the extra interaction with the replicator using the `GetCachedValue` command.
 The example also supports asking the replicator using the `GetValue` command. Note how the `replyTo` from the
 incoming message can be used when the `GetSuccess` response from the replicator is received.
 
-See the @ref[the untyped Distributed Data documentation](../distributed-data.md#using-the-replicator)
+See the @ref:[the classic Distributed Data documentation](../distributed-data.md#using-the-replicator)
 for more details about `Get`, `Update` and `Delete` interactions with the replicator.
 
 @@@ div { .group-scala }
@@ -98,15 +98,15 @@ Scala
 ### Replicated data types
 
 Akka contains a set of useful replicated data types and it is fully possible to implement custom replicated data types. 
-For more details, read @ref[the untyped Distributed Data documentation](../distributed-data.md#data-types)
+For more details, read @ref:[the classic Distributed Data documentation](../distributed-data.md#data-types)
 
 ### Running separate instances of the replicator
 
 For some use cases, for example when limiting the replicator to certain roles, or using different subsets on different roles,
 it makes sense to start separate replicators, this needs to be done on all nodes, or 
-the group of nodes tagged with a specific role. To do this with the Typed Distributed Data you will first
-have to start an untyped `Replicator` and pass it to the `Replicator.behavior` method that takes an untyped
-actor ref. All such `Replicator`s must run on the same path in the untyped actor hierarchy.
+the group of nodes tagged with a specific role. To do this with Distributed Data you will first
+have to start a classic `Replicator` and pass it to the `Replicator.behavior` method that takes a classic
+actor ref. All such `Replicator`s must run on the same path in the classic actor hierarchy.
 
 A standalone `ReplicatorMessageAdapter` can also be created for a given `Replicator` instead of creating
 one via the `DistributedData` extension.

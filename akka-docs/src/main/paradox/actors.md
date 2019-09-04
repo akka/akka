@@ -833,11 +833,11 @@ extending `AbstractPartialFunction`. For example, one could implement an adapter
 to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching). See the @extref[Akka Vavr sample project](samples:akka-sample-vavr) for more details.
 
 If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
-actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead
+actors you can consider to implement it at lower level by extending `ClassicAbstractActor` instead
 of `AbstractActor`. The partial functions created by the `ReceiveBuilder` consist of multiple lambda
 expressions for every match statement, where each lambda is referencing the code to be run. This is something
 that the JVM can have problems optimizing and the resulting code might not be as performant as the
-untyped version. When extending `UntypedAbstractActor` each message is received as an untyped
+classic version. When extending `ClassicAbstractActor` each message is received as a classic
 `Object` and you have to inspect and cast it to the actual message type in other ways, like this:
 
 @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #optimized }

@@ -9,8 +9,8 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.{ ClusterShardingSettings => UntypedShardingSettings }
-import akka.cluster.singleton.{ ClusterSingletonManagerSettings => UntypedClusterSingletonManagerSettings }
+import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSettings }
+import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
 import com.typesafe.config.Config
@@ -23,40 +23,40 @@ object ClusterShardingSettings {
     fromConfig(system.settings.config.getConfig("akka.cluster.sharding"))
 
   def fromConfig(config: Config): ClusterShardingSettings = {
-    val untypedSettings = UntypedShardingSettings(config)
+    val classicSettings = ClassicShardingSettings(config)
     val numberOfShards = config.getInt("number-of-shards")
-    fromUntypedSettings(numberOfShards, untypedSettings)
+    fromClassicSettings(numberOfShards, classicSettings)
   }
 
   /** Java API: Creates new cluster sharding settings object */
   def create(system: ActorSystem[_]): ClusterShardingSettings =
     apply(system)
 
-  /** INTERNAL API: Indended only for internal use, it is not recommended to keep converting between the setting types */
-  private[akka] def fromUntypedSettings(
+  /** INTERNAL API: Intended only for internal use, it is not recommended to keep converting between the setting types */
+  private[akka] def fromClassicSettings(
       numberOfShards: Int,
-      untypedSettings: UntypedShardingSettings): ClusterShardingSettings = {
+      classicSettings: ClassicShardingSettings): ClusterShardingSettings = {
     new ClusterShardingSettings(
       numberOfShards,
-      role = untypedSettings.role,
+      role = classicSettings.role,
       dataCenter = None,
-      rememberEntities = untypedSettings.rememberEntities,
-      journalPluginId = untypedSettings.journalPluginId,
-      snapshotPluginId = untypedSettings.snapshotPluginId,
-      passivateIdleEntityAfter = untypedSettings.passivateIdleEntityAfter,
-      shardRegionQueryTimeout = untypedSettings.shardRegionQueryTimeout,
-      stateStoreMode = StateStoreMode.byName(untypedSettings.stateStoreMode),
-      new TuningParameters(untypedSettings.tuningParameters),
+      rememberEntities = classicSettings.rememberEntities,
+      journalPluginId = classicSettings.journalPluginId,
+      snapshotPluginId = classicSettings.snapshotPluginId,
+      passivateIdleEntityAfter = classicSettings.passivateIdleEntityAfter,
+      shardRegionQueryTimeout = classicSettings.shardRegionQueryTimeout,
+      stateStoreMode = StateStoreMode.byName(classicSettings.stateStoreMode),
+      new TuningParameters(classicSettings.tuningParameters),
       new ClusterSingletonManagerSettings(
-        untypedSettings.coordinatorSingletonSettings.singletonName,
-        untypedSettings.coordinatorSingletonSettings.role,
-        untypedSettings.coordinatorSingletonSettings.removalMargin,
-        untypedSettings.coordinatorSingletonSettings.handOverRetryInterval))
+        classicSettings.coordinatorSingletonSettings.singletonName,
+        classicSettings.coordinatorSingletonSettings.role,
+        classicSettings.coordinatorSingletonSettings.removalMargin,
+        classicSettings.coordinatorSingletonSettings.handOverRetryInterval))
   }
 
-  /** INTERNAL API: Indended only for internal use, it is not recommended to keep converting between the setting types */
-  private[akka] def toUntypedSettings(settings: ClusterShardingSettings): UntypedShardingSettings = {
-    new UntypedShardingSettings(
+  /** INTERNAL API: Intended only for internal use, it is not recommended to keep converting between the setting types */
+  private[akka] def toClassicSettings(settings: ClusterShardingSettings): ClassicShardingSettings = {
+    new ClassicShardingSettings(
       role = settings.role,
       rememberEntities = settings.rememberEntities,
       journalPluginId = settings.journalPluginId,
@@ -64,7 +64,7 @@ object ClusterShardingSettings {
       stateStoreMode = settings.stateStoreMode.name,
       passivateIdleEntityAfter = settings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = settings.shardRegionQueryTimeout,
-      new UntypedShardingSettings.TuningParameters(
+      new ClassicShardingSettings.TuningParameters(
         bufferSize = settings.tuningParameters.bufferSize,
         coordinatorFailureBackoff = settings.tuningParameters.coordinatorFailureBackoff,
         retryInterval = settings.tuningParameters.retryInterval,
@@ -85,7 +85,7 @@ object ClusterShardingSettings {
           settings.tuningParameters.entityRecoveryConstantRateStrategyFrequency,
         entityRecoveryConstantRateStrategyNumberOfEntities =
           settings.tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities),
-      new UntypedClusterSingletonManagerSettings(
+      new ClassicClusterSingletonManagerSettings(
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
         settings.coordinatorSingletonSettings.removalMargin,
@@ -128,25 +128,25 @@ object ClusterShardingSettings {
       val updatingStateTimeout: FiniteDuration,
       val waitingForStateTimeout: FiniteDuration) {
 
-    def this(untyped: UntypedShardingSettings.TuningParameters) {
+    def this(classic: ClassicShardingSettings.TuningParameters) {
       this(
-        bufferSize = untyped.bufferSize,
-        coordinatorFailureBackoff = untyped.coordinatorFailureBackoff,
-        retryInterval = untyped.retryInterval,
-        handOffTimeout = untyped.handOffTimeout,
-        shardStartTimeout = untyped.shardStartTimeout,
-        shardFailureBackoff = untyped.shardFailureBackoff,
-        entityRestartBackoff = untyped.entityRestartBackoff,
-        rebalanceInterval = untyped.rebalanceInterval,
-        snapshotAfter = untyped.snapshotAfter,
-        keepNrOfBatches = untyped.keepNrOfBatches,
-        leastShardAllocationRebalanceThreshold = untyped.leastShardAllocationRebalanceThreshold, // TODO extract it a bit
-        leastShardAllocationMaxSimultaneousRebalance = untyped.leastShardAllocationMaxSimultaneousRebalance,
-        waitingForStateTimeout = untyped.waitingForStateTimeout,
-        updatingStateTimeout = untyped.updatingStateTimeout,
-        entityRecoveryStrategy = untyped.entityRecoveryStrategy,
-        entityRecoveryConstantRateStrategyFrequency = untyped.entityRecoveryConstantRateStrategyFrequency,
-        entityRecoveryConstantRateStrategyNumberOfEntities = untyped.entityRecoveryConstantRateStrategyNumberOfEntities)
+        bufferSize = classic.bufferSize,
+        coordinatorFailureBackoff = classic.coordinatorFailureBackoff,
+        retryInterval = classic.retryInterval,
+        handOffTimeout = classic.handOffTimeout,
+        shardStartTimeout = classic.shardStartTimeout,
+        shardFailureBackoff = classic.shardFailureBackoff,
+        entityRestartBackoff = classic.entityRestartBackoff,
+        rebalanceInterval = classic.rebalanceInterval,
+        snapshotAfter = classic.snapshotAfter,
+        keepNrOfBatches = classic.keepNrOfBatches,
+        leastShardAllocationRebalanceThreshold = classic.leastShardAllocationRebalanceThreshold, // TODO extract it a bit
+        leastShardAllocationMaxSimultaneousRebalance = classic.leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout = classic.waitingForStateTimeout,
+        updatingStateTimeout = classic.updatingStateTimeout,
+        entityRecoveryStrategy = classic.entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency = classic.entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities)
 
     }
 

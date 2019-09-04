@@ -32,104 +32,104 @@ import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.annotation.InternalApi
 import akka.event.LoggingFilterWithMarker
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 
 /**
- * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
+ * INTERNAL API. Lightweight wrapper for presenting a classic ActorSystem to a Behavior (via the context).
  * Therefore it does not have a lot of vals, only the whenTerminated Future is cached after
  * its transformation because redoing that every time will add extra objects that persist for
  * a longer time; in all other cases the wrapper will just be spawned for a single call in
  * most circumstances.
  */
-@InternalApi private[akka] class ActorSystemAdapter[-T](val untypedSystem: untyped.ActorSystemImpl)
+@InternalApi private[akka] class ActorSystemAdapter[-T](val system: classic.ActorSystemImpl)
     extends ActorSystem[T]
     with ActorRef[T]
     with ActorRefImpl[T]
     with InternalRecipientRef[T]
     with ExtensionsImpl {
 
-  // note that the untypedSystem may not be initialized yet here, and that is fine because
+  // note that the (classic) system may not be initialized yet here, and that is fine because
   // it is unlikely that anything gets a hold of the extension until the system is started
 
   import ActorRefAdapter.sendSystemMessage
 
-  override private[akka] def classicSystem: untyped.ActorSystem = untypedSystem
+  override private[akka] def classicSystem: classic.ActorSystem = system
 
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
     if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
-    untypedSystem.guardian ! msg
+    system.guardian ! msg
   }
 
   // impl ActorRefImpl
   override def isLocal: Boolean = true
   // impl ActorRefImpl
-  override def sendSystem(signal: SystemMessage): Unit = sendSystemMessage(untypedSystem.guardian, signal)
+  override def sendSystem(signal: SystemMessage): Unit = sendSystemMessage(system.guardian, signal)
 
   // impl InternalRecipientRef
-  override def provider: ActorRefProvider = untypedSystem.provider
+  override def provider: ActorRefProvider = system.provider
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
 
-  final override val path: untyped.ActorPath =
-    untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
+  final override val path: classic.ActorPath =
+    classic.RootActorPath(classic.Address("akka", system.name)) / "user"
 
-  override def toString: String = untypedSystem.toString
+  override def toString: String = system.toString
 
   // Members declared in akka.actor.typed.ActorSystem
-  override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(untypedSystem.deadLetters)
+  override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(system.deadLetters)
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
-        case DispatcherDefault(_)         => untypedSystem.dispatcher
-        case DispatcherFromConfig(str, _) => untypedSystem.dispatchers.lookup(str)
-        case DispatcherSameAsParent(_)    => untypedSystem.dispatcher
+        case DispatcherDefault(_)         => system.dispatcher
+        case DispatcherFromConfig(str, _) => system.dispatchers.lookup(str)
+        case DispatcherSameAsParent(_)    => system.dispatcher
       }
-    override def shutdown(): Unit = () // there was no shutdown in untyped Akka
+    override def shutdown(): Unit = () // there was no shutdown in classic Akka
   }
-  override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
-  implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
+  override def dynamicAccess: classic.DynamicAccess = system.dynamicAccess
+  implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = system.dispatcher
   override val log: Logger = new LoggerAdapterImpl(
-    untypedSystem.eventStream,
+    system.eventStream,
     classOf[ActorSystem[_]],
     name,
-    LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
-  override def logConfiguration(): Unit = untypedSystem.logConfiguration()
-  override def name: String = untypedSystem.name
-  override val scheduler: Scheduler = new SchedulerAdapter(untypedSystem.scheduler)
-  override def settings: Settings = new Settings(untypedSystem.settings)
-  override def startTime: Long = untypedSystem.startTime
-  override def threadFactory: java.util.concurrent.ThreadFactory = untypedSystem.threadFactory
-  override def uptime: Long = untypedSystem.uptime
-  override def printTree: String = untypedSystem.printTree
+    LoggingFilterWithMarker.wrap(system.logFilter))
+  override def logConfiguration(): Unit = system.logConfiguration()
+  override def name: String = system.name
+  override val scheduler: Scheduler = new SchedulerAdapter(system.scheduler)
+  override def settings: Settings = new Settings(system.settings)
+  override def startTime: Long = system.startTime
+  override def threadFactory: java.util.concurrent.ThreadFactory = system.threadFactory
+  override def uptime: Long = system.uptime
+  override def printTree: String = system.printTree
 
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
-  override def terminate(): Unit = untypedSystem.terminate()
+  override def terminate(): Unit = system.terminate()
   override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
-    untypedSystem.whenTerminated.map(_ => Done)(sameThreadExecutionContext)
+    system.whenTerminated.map(_ => Done)(sameThreadExecutionContext)
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
   override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
-    val ref = untypedSystem.systemActorOf(PropsAdapter(() => behavior, props), name)
+    val ref = system.systemActorOf(PropsAdapter(() => behavior, props), name)
     ActorRefAdapter(ref)
   }
 
 }
 
 private[akka] object ActorSystemAdapter {
-  def apply(system: untyped.ActorSystem): ActorSystem[Nothing] = AdapterExtension(system).adapter
+  def apply(system: classic.ActorSystem): ActorSystem[Nothing] = AdapterExtension(system).adapter
 
   // to make sure we do never create more than one adapter for the same actor system
-  class AdapterExtension(system: untyped.ExtendedActorSystem) extends untyped.Extension {
-    val adapter = new ActorSystemAdapter(system.asInstanceOf[untyped.ActorSystemImpl])
+  class AdapterExtension(system: classic.ExtendedActorSystem) extends classic.Extension {
+    val adapter = new ActorSystemAdapter(system.asInstanceOf[classic.ActorSystemImpl])
   }
 
-  object AdapterExtension extends untyped.ExtensionId[AdapterExtension] with untyped.ExtensionIdProvider {
-    override def get(system: untyped.ActorSystem): AdapterExtension = super.get(system)
+  object AdapterExtension extends classic.ExtensionId[AdapterExtension] with classic.ExtensionIdProvider {
+    override def get(system: classic.ActorSystem): AdapterExtension = super.get(system)
     override def lookup() = AdapterExtension
-    override def createExtension(system: untyped.ExtendedActorSystem): AdapterExtension =
+    override def createExtension(system: classic.ExtendedActorSystem): AdapterExtension =
       new AdapterExtension(system)
   }
 
@@ -140,19 +140,19 @@ private[akka] object ActorSystemAdapter {
    *
    * When on the classpath typed extensions will be loaded for classic ActorSystems as well.
    */
-  class LoadTypedExtensions(system: untyped.ExtendedActorSystem) extends untyped.Extension {
+  class LoadTypedExtensions(system: classic.ExtendedActorSystem) extends classic.Extension {
     ActorSystemAdapter.AdapterExtension(system).adapter.loadExtensions()
   }
 
-  object LoadTypedExtensions extends untyped.ExtensionId[LoadTypedExtensions] with untyped.ExtensionIdProvider {
+  object LoadTypedExtensions extends classic.ExtensionId[LoadTypedExtensions] with classic.ExtensionIdProvider {
     override def lookup(): actor.ExtensionId[_ <: actor.Extension] = this
     override def createExtension(system: ExtendedActorSystem): LoadTypedExtensions =
       new LoadTypedExtensions(system)
   }
 
-  def toUntyped[U](sys: ActorSystem[_]): untyped.ActorSystem =
+  def toClassic[U](sys: ActorSystem[_]): classic.ActorSystem =
     sys match {
-      case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
+      case adapter: ActorSystemAdapter[_] => adapter.classicSystem
       case _ =>
         throw new UnsupportedOperationException(
           "Only adapted classic ActorSystem permissible " +

@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Akka TestKit Typed, add the module to your project:
+To use Akka TestKit add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -13,7 +13,7 @@ To use Akka TestKit Typed, add the module to your project:
 
 @@@div { .group-scala }
 
-We recommend using Akka TestKit Typed with ScalaTest:
+We recommend using Akka TestKit with ScalaTest:
 
 @@dependency[sbt,Maven,Gradle] {
   group=org.scalatest
@@ -77,8 +77,8 @@ Java
 
 The following demonstrates:
 
-* Creating a typed actor from the `TestKit`'s system using `spawn`
-* Creating a typed `TestProbe`
+* Creating an actor from the `TestKit`'s system using `spawn`
+* Creating a `TestProbe`
 * Verifying that the actor under test responds via the `TestProbe`
 
 Scala
@@ -117,7 +117,7 @@ run the other actors it depends on. Instead, you might want to create mock behav
 messages in the same way the other actor would do but without executing any actual logic.
 In addition to this it can also be useful to observe those interactions to assert that the component under test did send
 the expected messages.
-This allows the same kinds of tests as untyped `TestActor`/`Autopilot`.
+This allows the same kinds of tests as classic `TestActor`/`Autopilot`.
 
 As an example, let's assume we'd like to test the following component:
 

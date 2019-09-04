@@ -24,7 +24,7 @@ import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
 import akka.cluster.sharding.ShardRegion.GetShardRegionState
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding.Passivate
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding.ShardCommand
-import akka.cluster.sharding.{ ClusterSharding => UntypedClusterSharding }
+import akka.cluster.sharding.{ ClusterSharding => ClassicClusterSharding }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.ExpectingReply
@@ -164,9 +164,9 @@ class ClusterShardingPersistenceSpec
     // FIXME #24466: rewrite this with Typed API when region queries are supported
     import akka.actor.typed.scaladsl.adapter._
     val regionStateProbe = TestProbe[CurrentShardRegionState]()
-    val untypedRegion = UntypedClusterSharding(system.toUntyped)
+    val classicRegion = ClassicClusterSharding(system.toClassic)
     regionStateProbe.awaitAssert {
-      untypedRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toUntyped)
+      classicRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toClassic)
       regionStateProbe.receiveMessage().shards.foreach { shardState =>
         shardState.entityIds should not contain entityId
       }

@@ -25,7 +25,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -313,7 +313,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
         ref ! "stop"
       }
       probe.expectTerminated(ref)
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      system.toClassic.eventStream.subscribe(probe.ref.toClassic, classOf[DeadLetter])
       probe.expectNoMessage(1.second)
     }
   }

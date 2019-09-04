@@ -51,7 +51,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     val write = AtomicWrite(repr) :: Nil
     setup.journal
-      .tell(JournalProtocol.WriteMessages(write, setup.selfUntyped, setup.writerIdentity.instanceId), setup.selfUntyped)
+      .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
     newState
   }
@@ -86,8 +86,8 @@ private[akka] trait JournalInteractions[C, E, S] {
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
-        JournalProtocol.WriteMessages(write :: Nil, setup.selfUntyped, setup.writerIdentity.instanceId),
-        setup.selfUntyped)
+        JournalProtocol.WriteMessages(write :: Nil, setup.selfClassic, setup.writerIdentity.instanceId),
+        setup.selfClassic)
 
       newState
     } else state
@@ -106,11 +106,11 @@ private[akka] trait JournalInteractions[C, E, S] {
       toSeqNr,
       setup.recovery.replayMax,
       setup.persistenceId.id,
-      setup.selfUntyped)
+      setup.selfClassic)
   }
 
   protected def requestRecoveryPermit(): Unit = {
-    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfUntyped)
+    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfClassic)
   }
 
   /** Intended to be used in .onSignal(returnPermitOnStop) by behaviors */
@@ -128,7 +128,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   protected def tryReturnRecoveryPermit(reason: String): Unit = {
     if (setup.holdingRecoveryPermit) {
       setup.log.debug("Returning recovery permit, reason: {}", reason)
-      setup.persistence.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, setup.selfUntyped)
+      setup.persistence.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, setup.selfClassic)
       setup.holdingRecoveryPermit = false
     } // else, no need to return the permit
   }
@@ -140,7 +140,7 @@ private[akka] trait JournalInteractions[C, E, S] {
    */
   protected def internalDeleteEvents(lastSequenceNr: Long, toSequenceNr: Long): Unit =
     if (toSequenceNr > 0) {
-      val self = setup.selfUntyped
+      val self = setup.selfClassic
 
       if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
         setup.journal ! JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, self)
@@ -163,7 +163,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
    * to the running [[PersistentActor]].
    */
   protected def loadSnapshot(criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit = {
-    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfUntyped)
+    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfClassic)
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
@@ -175,7 +175,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
         SnapshotProtocol.SaveSnapshot(
           SnapshotMetadata(setup.persistenceId.id, state.seqNr),
           setup.snapshotAdapter.toJournal(state.state)),
-        setup.selfUntyped)
+        setup.selfClassic)
   }
 
   /** Deletes the snapshots up to and including the `sequenceNr`. */
@@ -184,7 +184,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
       val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
       setup.log.debug("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
       setup.snapshotStore
-        .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
+        .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfClassic)
     }
   }
 }

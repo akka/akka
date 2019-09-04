@@ -4,7 +4,7 @@
 
 package akka.actor;
 
-public class JavaAPITestActor extends UntypedAbstractActor {
+public class JavaAPITestActor extends ClassicAbstractActor {
   public static String ANSWER = "got it!";
 
   public void onReceive(Object msg) {

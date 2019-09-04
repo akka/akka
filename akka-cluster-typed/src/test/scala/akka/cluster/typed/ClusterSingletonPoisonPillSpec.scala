@@ -32,7 +32,7 @@ class ClusterSingletonPoisonPillSpec
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
   clusterNode1.manager ! Join(clusterNode1.selfMember.address)
-  val untypedSystem1 = system.toUntyped
+  val classicSystem1 = system.toClassic
   "A typed cluster singleton" must {
 
     "support using PoisonPill to stop" in {
