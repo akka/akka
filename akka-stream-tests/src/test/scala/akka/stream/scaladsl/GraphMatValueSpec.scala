@@ -6,11 +6,14 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.{ Done, NotUsed }
+import akka.Done
+import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit._
 
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 
 class GraphMatValueSpec extends StreamSpec {
@@ -20,9 +23,6 @@ class GraphMatValueSpec extends StreamSpec {
   val foldSink = Sink.fold[Int, Int](0)(_ + _)
 
   "A Graph with materialized value" must {
-
-    val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-    implicit val materializer = ActorMaterializer(settings)
 
     "expose the materialized value as source" in {
       val sub = TestSubscriber.manualProbe[Int]()
@@ -206,8 +206,6 @@ class GraphMatValueSpec extends StreamSpec {
     }
 
     "with Identity Flow optimization even if ports are wired in an arbitrary higher nesting level" in {
-      val mat2 = ActorMaterializer(ActorMaterializerSettings(system))
-
       val subflow = GraphDSL
         .create() { implicit b =>
           import GraphDSL.Implicits._
@@ -227,10 +225,9 @@ class GraphMatValueSpec extends StreamSpec {
       val nest4 = Flow[String].via(nest3)
 
       //fails
-      val matValue = Source(List("")).via(nest4).to(Sink.ignore).run()(mat2)
+      val matValue = Source(List("")).via(nest4).to(Sink.ignore).run()
 
       matValue should ===(NotUsed)
-
     }
 
     "not ignore materialized value of indentity flow which is optimized away" in {

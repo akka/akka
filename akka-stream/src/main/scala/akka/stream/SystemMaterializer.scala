@@ -9,6 +9,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
+import com.github.ghik.silencer.silent
 
 /**
  * The system materializer is a default materializer to use for most cases running streams, it is a single instance
@@ -26,6 +27,7 @@ object SystemMaterializer extends ExtensionId[SystemMaterializer] with Extension
 }
 
 final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
+  @silent("deprecated")
   val materializer = {
     val settings = ActorMaterializerSettings(system)
     ActorMaterializer.systemMaterializer(settings, "default", system)

@@ -7,15 +7,13 @@ package akka.stream.scaladsl
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 import scala.util.control.NoStackTrace
 
-class FlowMapErrorSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowMapErrorSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 1
+    akka.stream.materializer.max-input-buffer-size = 1
+  """) {
 
   val ex = new RuntimeException("ex") with NoStackTrace
   val boom = new Exception("BOOM!") with NoStackTrace

@@ -39,8 +39,6 @@ class MapAsyncBenchmark {
   implicit val system = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
 
-  var materializer: ActorMaterializer = _
-
   var testSource: Source[java.lang.Integer, NotUsed] = _
 
   @Param(Array("1", "4"))
@@ -51,9 +49,8 @@ class MapAsyncBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)
-
+    // eager init of materializer
+    SystemMaterializer(system).materializer
     testSource = Source.fromGraph(new BenchTestSource(OperationsPerInvocation))
   }
 
@@ -69,7 +66,7 @@ class MapAsyncBenchmark {
 
     testSource
       .mapAsync(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+      .runWith(new LatchSink(OperationsPerInvocation, latch))
 
     awaitLatch(latch)
   }
@@ -81,14 +78,14 @@ class MapAsyncBenchmark {
 
     testSource
       .mapAsyncUnordered(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+      .runWith(new LatchSink(OperationsPerInvocation, latch))
 
     awaitLatch(latch)
   }
 
   private def awaitLatch(latch: CountDownLatch): Unit = {
     if (!latch.await(30, TimeUnit.SECONDS)) {
-      StreamTestKit.printDebugDump(materializer.supervisor)
+      StreamTestKit.printDebugDump(ActorMaterializerHelper.downcast(SystemMaterializer(system).materializer).supervisor)
       throw new RuntimeException("Latch didn't complete in time")
     }
   }

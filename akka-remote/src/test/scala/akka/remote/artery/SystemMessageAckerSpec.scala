@@ -7,8 +7,6 @@ package akka.remote.artery
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
@@ -19,10 +17,9 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
 
-class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
+class SystemMessageAckerSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)

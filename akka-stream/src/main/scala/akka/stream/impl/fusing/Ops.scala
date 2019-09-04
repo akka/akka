@@ -907,7 +907,7 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       override protected def logSource: Class[_] = classOf[Buffer[_]]
 
-      private var buffer: BufferImpl[T] = _
+      private val buffer: BufferImpl[T] = BufferImpl(size, inheritedAttributes)
 
       val enqueueAction: T => Unit =
         overflowStrategy match {
@@ -966,7 +966,6 @@ private[stream] object Collect {
         }
 
       override def preStart(): Unit = {
-        buffer = BufferImpl(size, materializer)
         pull(in)
       }
 
@@ -1253,7 +1252,7 @@ private[stream] object Collect {
             }
         })
 
-      override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
       override def onPull(): Unit = pushNextIfPossible()
 
@@ -1348,7 +1347,7 @@ private[stream] object Collect {
 
       private[this] def todo = inFlight + buffer.used
 
-      override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
       def futureCompleted(result: Try[Out]): Unit = {
         inFlight -= 1
@@ -1727,7 +1726,7 @@ private[stream] object Collect {
 
       var buffer: BufferImpl[(Long, T)] = _ // buffer has pairs timestamp with upstream element
 
-      override def preStart(): Unit = buffer = BufferImpl(size, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(size, inheritedAttributes)
 
       val onPushWhenBufferFull: () => Unit = strategy match {
         case EmitEarly =>

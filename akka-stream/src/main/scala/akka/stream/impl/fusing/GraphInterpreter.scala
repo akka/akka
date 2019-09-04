@@ -211,7 +211,6 @@ import akka.stream.snapshot._
     val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) => Unit) => Unit,
     val fuzzingMode: Boolean,
     val context: ActorRef) {
-
   import GraphInterpreter._
 
   private[this] val ChaseLimit = if (fuzzingMode) 0 else 16

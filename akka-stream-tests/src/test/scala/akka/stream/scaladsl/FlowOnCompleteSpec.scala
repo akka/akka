@@ -5,20 +5,19 @@
 package akka.stream.scaladsl
 
 import akka.Done
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
-import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 
-class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+import scala.util.Failure
+import scala.util.Success
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowOnCompleteSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
   "A Flow with onComplete" must {
 

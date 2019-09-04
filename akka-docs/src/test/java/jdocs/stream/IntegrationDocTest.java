@@ -663,10 +663,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
         final Executor blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorMaterializer mat =
-            ActorMaterializer.create(
-                ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
-
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
             .map(
                 elem -> {
@@ -674,7 +670,9 @@ public class IntegrationDocTest extends AbstractJavaTest {
                   return elem;
                 })
             .mapAsync(4, service::convert)
-            .runForeach(elem -> System.out.println("after: " + elem), system);
+            .to(Sink.foreach(elem -> System.out.println("after: " + elem)))
+            .withAttributes(Attributes.inputBuffer(4, 4))
+            .run(system);
         // #sometimes-slow-mapAsync
 
         probe.expectMsg("after: A");

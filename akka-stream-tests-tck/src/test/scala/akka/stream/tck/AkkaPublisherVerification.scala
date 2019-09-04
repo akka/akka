@@ -4,18 +4,26 @@
 
 package akka.stream.tck
 
-import scala.collection.immutable
-import akka.stream.ActorMaterializerSettings
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.TestPublisher
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.reactivestreams.Publisher
-import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment }
+import org.reactivestreams.tck.PublisherVerification
+import org.reactivestreams.tck.TestEnvironment
 import org.scalatestplus.testng.TestNGSuiteLike
+
+import scala.collection.immutable
 
 abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherShutdownTimeout: Long)
     extends PublisherVerification[T](env, publisherShutdownTimeout)
     with TestNGSuiteLike
     with ActorSystemLifecycle {
+
+  override def additionalConfig: Config =
+    ConfigFactory.parseString("""
+      akka.stream.materializer.initial-input-buffer-size = 512
+      akka.stream.materializer.max-input-buffer-size = 512
+    """)
 
   def this(printlnDebug: Boolean) =
     this(
@@ -23,9 +31,6 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
       Timeouts.publisherShutdownTimeoutMillis)
 
   def this() = this(false)
-
-  implicit lazy val materializer =
-    ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 512, maxSize = 512))(system)
 
   override def createFailedPublisher(): Publisher[T] =
     TestPublisher.error(new Exception("Unable to serve subscribers right now!"))

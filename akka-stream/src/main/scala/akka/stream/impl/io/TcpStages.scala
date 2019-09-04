@@ -19,9 +19,11 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
+import akka.stream.scaladsl.TcpAttributes
 import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.stage._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -37,8 +39,7 @@ import scala.concurrent.{ Future, Promise }
     val options: immutable.Iterable[SocketOption],
     val halfClose: Boolean,
     val idleTimeout: Duration,
-    val bindShutdownTimeout: FiniteDuration,
-    val ioSettings: IOSettings)
+    val bindShutdownTimeout: FiniteDuration)
     extends GraphStageWithMaterializedValue[SourceShape[StreamTcp.IncomingConnection], Future[StreamTcp.ServerBinding]] {
   import ConnectionSourceStage._
 
@@ -46,9 +47,12 @@ import scala.concurrent.{ Future, Promise }
   override def initialAttributes = Attributes.name("ConnectionSource")
   val shape: SourceShape[StreamTcp.IncomingConnection] = SourceShape(out)
 
-  // TODO: Timeout on bind
   override def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes): (GraphStageLogic, Future[ServerBinding]) = {
+      inheritedAttributes: Attributes): (GraphStageLogic, Future[ServerBinding]) =
+    throw new UnsupportedOperationException("Not used")
+
+  // TODO: Timeout on bind
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterialzer: Materializer) = {
     val bindingPromise = Promise[ServerBinding]
 
     val logic = new TimerGraphStageLogic(shape) {
@@ -130,7 +134,6 @@ import scala.concurrent.{ Future, Promise }
                 connection,
                 connected.remoteAddress,
                 halfClose,
-                ioSettings,
                 () => connectionFlowsAwaitingInitialization.decrementAndGet()))
             .via(detacher[ByteString]) // must read ahead for proper completions
 
@@ -189,18 +192,15 @@ private[stream] object ConnectionSourceStage {
 
   trait TcpRole {
     def halfClose: Boolean
-    def ioSettings: IOSettings
   }
   case class Outbound(
       manager: ActorRef,
       connectCmd: Connect,
       localAddressPromise: Promise[InetSocketAddress],
-      halfClose: Boolean,
-      ioSettings: IOSettings)
+      halfClose: Boolean)
       extends TcpRole
 
-  case class Inbound(connection: ActorRef, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () => Unit)
-      extends TcpRole
+  case class Inbound(connection: ActorRef, halfClose: Boolean, registerCallback: () => Unit) extends TcpRole
 
   /*
    * This is a *non-detached* design, i.e. this does not prefetch itself any of the inputs. It relies on downstream
@@ -212,7 +212,9 @@ private[stream] object ConnectionSourceStage {
   class TcpStreamLogic(
       val shape: FlowShape[ByteString, ByteString],
       val role: TcpRole,
-      remoteAddress: InetSocketAddress)
+      inheritedAttributes: Attributes,
+      remoteAddress: InetSocketAddress,
+      eagerMaterializer: Materializer)
       extends GraphStageLogic(shape) {
     implicit def self: ActorRef = stageActor.ref
 
@@ -220,7 +222,13 @@ private[stream] object ConnectionSourceStage {
     private def bytesOut = shape.out
     private var connection: ActorRef = _
 
-    private val writeBufferSize = role.ioSettings.tcpWriteBufferSize
+    @silent("deprecated")
+    private val writeBufferSize = inheritedAttributes
+      .get[TcpAttributes.TcpWriteBufferSize](
+        TcpAttributes.TcpWriteBufferSize(
+          ActorMaterializerHelper.downcast(eagerMaterializer).settings.ioSettings.tcpWriteBufferSize))
+      .size
+
     private var writeBuffer = ByteString.empty
     private var writeInProgress = false
     private var connectionClosePending = false
@@ -233,14 +241,14 @@ private[stream] object ConnectionSourceStage {
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
-        case Inbound(conn, _, _, registerCallback) =>
+        case Inbound(conn, _, registerCallback) =>
           setHandler(bytesOut, readHandler)
           connection = conn
           getStageActor(connected).watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
           registerCallback()
           pull(bytesIn)
-        case ob @ Outbound(manager, cmd, _, _, _) =>
+        case ob @ Outbound(manager, cmd, _, _) =>
           getStageActor(connecting(ob)).watch(manager)
           manager ! cmd
       }
@@ -376,7 +384,7 @@ private[stream] object ConnectionSourceStage {
     }
     private def reportExceptionToPromise(ex: Throwable): Unit =
       role match {
-        case Outbound(_, _, localAddressPromise, _, _) =>
+        case Outbound(_, _, localAddressPromise, _) =>
           // Fail if has not been completed with an address earlier
           localAddressPromise.tryFailure(ex)
         case _ => // do nothing...
@@ -395,7 +403,6 @@ private[stream] object ConnectionSourceStage {
     connection: ActorRef,
     remoteAddress: InetSocketAddress,
     halfClose: Boolean,
-    ioSettings: IOSettings,
     registerCallback: () => Unit)
     extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
@@ -407,11 +414,21 @@ private[stream] object ConnectionSourceStage {
   override def initialAttributes = Attributes.name("IncomingConnection")
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    throw new UnsupportedOperationException("Not used")
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterializer: Materializer) = {
     if (hasBeenCreated.get) throw new IllegalStateException("Cannot materialize an incoming connection Flow twice.")
     hasBeenCreated.set(true)
 
-    new TcpStreamLogic(shape, Inbound(connection, halfClose, ioSettings, registerCallback), remoteAddress)
+    (
+      new TcpStreamLogic(
+        shape,
+        Inbound(connection, halfClose, registerCallback),
+        inheritedAttributes,
+        remoteAddress,
+        eagerMaterializer),
+      NotUsed)
   }
 
   override def toString = s"TCP-from($remoteAddress)"
@@ -426,8 +443,7 @@ private[stream] object ConnectionSourceStage {
     localAddress: Option[InetSocketAddress] = None,
     options: immutable.Iterable[SocketOption] = Nil,
     halfClose: Boolean = true,
-    connectTimeout: Duration = Duration.Inf,
-    ioSettings: IOSettings)
+    connectTimeout: Duration = Duration.Inf)
     extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._
 
@@ -437,7 +453,12 @@ private[stream] object ConnectionSourceStage {
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 
   override def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes): (GraphStageLogic, Future[StreamTcp.OutgoingConnection]) = {
+      inheritedAttributes: Attributes): (GraphStageLogic, Future[OutgoingConnection]) =
+    throw new UnsupportedOperationException("Not used")
+
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      eagerMaterializer: Materializer): (GraphStageLogic, Future[StreamTcp.OutgoingConnection]) = {
     // FIXME: A method like this would make soo much sense on Duration (i.e. toOption)
     val connTimeout = connectTimeout match {
       case x: FiniteDuration => Some(x)
@@ -451,9 +472,10 @@ private[stream] object ConnectionSourceStage {
         manager,
         Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         localAddressPromise,
-        halfClose,
-        ioSettings),
-      remoteAddress)
+        halfClose),
+      inheritedAttributes,
+      remoteAddress,
+      eagerMaterializer)
 
     (
       logic,

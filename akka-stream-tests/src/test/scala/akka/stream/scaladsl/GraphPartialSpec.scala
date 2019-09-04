@@ -5,16 +5,15 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ClosedShape, FlowShape }
+import akka.stream.ClosedShape
+import akka.stream.FlowShape
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class GraphPartialSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class GraphPartialSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "GraphDSL.partial" must {
     import GraphDSL.Implicits._

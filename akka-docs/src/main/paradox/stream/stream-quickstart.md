@@ -237,10 +237,6 @@ Scala
 Java
 :   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #system-setup }
 
-The `ActorMaterializer` can optionally take `ActorMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)), the dispatcher to
-be used by the pipeline etc. These can be overridden with `withAttributes` on `Flow`, `Source`, `Sink` and `Graph`.
-
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a @scala[`Source[Out, M]`]@java[`Source<Out, M>`]:
 
 Scala

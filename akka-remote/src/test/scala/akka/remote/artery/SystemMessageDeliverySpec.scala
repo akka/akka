@@ -6,9 +6,6 @@ package akka.remote.artery
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
@@ -18,8 +15,6 @@ import akka.remote.AddressUidExtension
 import akka.remote.RARP
 import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
@@ -34,6 +29,9 @@ import akka.util.OptionVal
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 object SystemMessageDeliverySpec {
 
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
@@ -45,6 +43,7 @@ object SystemMessageDeliverySpec {
        akka.remote.watch-failure-detector.heartbeat-interval = 2 s
        akka.remote.artery.log-received-messages = on
        akka.remote.artery.log-sent-messages = on
+       akka.stream.materializer.debug.fuzzing-mode = on
     """).withFallback(ArterySpecSupport.defaultConfig)
 
   val config =
@@ -59,8 +58,6 @@ abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiN
   val systemB = newRemoteSystem(name = Some("systemB"))
   val addressB = UniqueAddress(address(systemB), AddressUidExtension(systemB).longAddressUid)
   val rootB = RootActorPath(addressB.address)
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
 
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
 

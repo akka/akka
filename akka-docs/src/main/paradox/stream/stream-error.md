@@ -198,7 +198,7 @@ Scala
 Java
 :   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #stop }
 
-The default supervision strategy for a stream can be defined on the settings of the materializer.
+The default supervision strategy for a stream can be defined on the complete `RunnableGraph`.
 
 Scala
 :   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #resume }

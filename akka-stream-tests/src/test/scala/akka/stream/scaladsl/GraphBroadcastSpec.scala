@@ -4,19 +4,19 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 
-class GraphBroadcastSpec extends StreamSpec {
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Future
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class GraphBroadcastSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "A broadcast" must {
     import GraphDSL.Implicits._

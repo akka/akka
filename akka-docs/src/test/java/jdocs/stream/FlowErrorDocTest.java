@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
 import akka.japi.pf.PFBuilder;
+import akka.stream.javadsl.*;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -22,10 +23,7 @@ import org.junit.Test;
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
 import akka.stream.Supervision;
-import akka.stream.javadsl.Flow;
 import akka.stream.ActorAttributes;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import akka.japi.function.Function;
 
 public class FlowErrorDocTest extends AbstractJavaTest {
@@ -71,7 +69,13 @@ public class FlowErrorDocTest extends AbstractJavaTest {
             .map(elem -> 100 / elem)
             .withAttributes(ActorAttributes.withSupervisionStrategy(decider));
     final Sink<Integer, CompletionStage<Integer>> fold = Sink.fold(0, (acc, elem) -> acc + elem);
-    final CompletionStage<Integer> result = source.runWith(fold, system);
+
+    final RunnableGraph<CompletionStage<Integer>> runnableGraph = source.toMat(fold, Keep.right());
+
+    final RunnableGraph<CompletionStage<Integer>> withCustomSupervision =
+        runnableGraph.withAttributes(ActorAttributes.withSupervisionStrategy(decider));
+
+    final CompletionStage<Integer> result = withCustomSupervision.run(system);
     // the element causing division by zero will be dropped
     // result here will be a CompletionStage completed with 228
     // #resume

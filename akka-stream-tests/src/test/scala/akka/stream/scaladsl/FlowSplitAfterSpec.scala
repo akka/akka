@@ -5,17 +5,19 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream._
+import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import akka.stream.Supervision.resumingDecider
+import akka.stream._
 import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import org.reactivestreams.Publisher
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.StreamSubscriptionTimeoutSettings
-import akka.stream.StreamSubscriptionTimeoutTerminationMode
 
 object FlowSplitAfterSpec {
 
@@ -25,15 +27,13 @@ object FlowSplitAfterSpec {
 
 }
 
-class FlowSplitAfterSpec extends StreamSpec {
+class FlowSplitAfterSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+    akka.stream.materializer.subscription-timeout.timeout = 1s
+    akka.stream.materializer.subscription-timeout.mode = cancel
+  """) {
   import FlowSplitAfterSpec._
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
-    .withSubscriptionTimeoutSettings(
-      StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 1.second))
-
-  implicit val materializer = ActorMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
     val probe = TestSubscriber.manualProbe[Int]()
@@ -286,17 +286,17 @@ class FlowSplitAfterSpec extends StreamSpec {
     }
 
     "fail stream if substream not materialized in time" in assertAllStagesStopped {
-      val tightTimeoutMaterializer =
-        ActorMaterializer(
-          ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
-            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
-
       val testSource = Source.single(1).concat(Source.maybe).splitAfter(_ => true)
+      val streamWithTightTimeout =
+        testSource.lift
+          .delay(1.second)
+          .flatMapConcat(identity)
+          .toMat(Sink.ignore)(Keep.right)
+          .withAttributes(ActorAttributes
+            .streamSubscriptionTimeout(500.milliseconds, StreamSubscriptionTimeoutTerminationMode.cancel))
 
       a[SubscriptionTimeoutException] mustBe thrownBy {
-        Await.result(
-          testSource.lift.delay(1.second).flatMapConcat(identity).runWith(Sink.ignore)(tightTimeoutMaterializer),
-          3.seconds)
+        Await.result(streamWithTightTimeout.run(), 3.seconds)
       }
     }
 

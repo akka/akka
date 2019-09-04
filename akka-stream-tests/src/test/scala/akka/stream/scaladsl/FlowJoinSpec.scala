@@ -4,20 +4,18 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
-import com.typesafe.config.ConfigFactory
+import akka.stream.FlowShape
+import akka.stream.OverflowStrategy
 import org.scalatest.time._
 
 import scala.collection.immutable
 
-class FlowJoinSpec extends StreamSpec(ConfigFactory.parseString("akka.loglevel=INFO")) {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowJoinSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   implicit val defaultPatience =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(200, Millis))

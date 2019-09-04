@@ -95,6 +95,8 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 }
 
 object ActorMaterializerSpec {
+
+  @silent("deprecated")
   class ActorWithMaterializer(p: TestProbe) extends Actor {
     private val settings: ActorMaterializerSettings =
       ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")

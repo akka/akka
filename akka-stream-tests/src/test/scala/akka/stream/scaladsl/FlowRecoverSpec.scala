@@ -5,18 +5,16 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
 
 import scala.util.control.NoStackTrace
 
-class FlowRecoverSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowRecoverSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 1
+    akka.stream.materializer.max-input-buffer-size = 1
+  """) {
 
   val ex = new RuntimeException("ex") with NoStackTrace
 

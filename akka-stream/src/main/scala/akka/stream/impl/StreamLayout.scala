@@ -499,11 +499,11 @@ import scala.util.control.NonFatal
 
   // this is when the subscription timeout hits, implemented like this to
   // avoid allocating a separate object for that
-  def onSubscriptionTimeout(am: ActorMaterializer): Unit = {
+  def onSubscriptionTimeout(am: ActorMaterializer, mode: StreamSubscriptionTimeoutTerminationMode): Unit = {
     import StreamSubscriptionTimeoutTerminationMode._
     get() match {
       case null | _: Publisher[_] =>
-        am.settings.subscriptionTimeoutSettings.mode match {
+        mode match {
           case CancelTermination => subscribe(new CancellingSubscriber[T])
           case WarnTermination =>
             am.logger.warning("Subscription timeout for {}", this)

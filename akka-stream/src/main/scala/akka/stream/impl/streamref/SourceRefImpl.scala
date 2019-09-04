@@ -14,6 +14,7 @@ import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
+import com.github.ghik.silencer.silent
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
@@ -61,10 +62,29 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       // settings ---
       import StreamRefAttributes._
+      @silent("deprecated") // can't remove this settings access without breaking compat
       private[this] val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
 
+      @silent("deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
         SubscriptionTimeout(settings.subscriptionTimeout))
+
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val bufferCapacity = inheritedAttributes
+        .get[StreamRefAttributes.BufferCapacity](StreamRefAttributes.BufferCapacity(settings.bufferCapacity))
+        .capacity
+
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val demandRedeliveryInterval = inheritedAttributes
+        .get[StreamRefAttributes.DemandRedeliveryInterval](DemandRedeliveryInterval(settings.demandRedeliveryInterval))
+        .timeout
+
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val finalTerminationSignalDeadline =
+        inheritedAttributes
+          .get[StreamRefAttributes.FinalTerminationSignalDeadline](
+            FinalTerminationSignalDeadline(settings.finalTerminationSignalDeadline))
+          .timeout
       // end of settings ---
 
       override protected val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
@@ -84,8 +104,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       private var localCumulativeDemand: Long = 0L
       private var localRemainingRequested: Int = 0
 
-      private var receiveBuffer
-          : FixedSizeBuffer.FixedSizeBuffer[Out] = _ // initialized in preStart since depends on settings
+      private val receiveBuffer = FixedSizeBuffer[Out](bufferCapacity)
 
       private var requestStrategy: RequestStrategy = _ // initialized in preStart since depends on receiveBuffer's size
       // end of demand management ---
@@ -96,7 +115,6 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       private def getPartnerRef = partnerRef.get
 
       override def preStart(): Unit = {
-        receiveBuffer = FixedSizeBuffer[Out](settings.bufferCapacity)
         requestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
 
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
@@ -135,7 +153,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       }
 
       def scheduleDemandRedelivery(): Unit =
-        scheduleOnce(DemandRedeliveryTimerKey, settings.demandRedeliveryInterval)
+        scheduleOnce(DemandRedeliveryTimerKey, demandRedeliveryInterval)
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case SubscriptionTimeoutTimerKey =>
@@ -195,7 +213,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
               // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
               // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
               // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
-              scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
+              scheduleOnce(TerminationDeadlineTimerKey, finalTerminationSignalDeadline)
 
             case _ =>
               // this should not have happened! It should be impossible that we watched some other actor

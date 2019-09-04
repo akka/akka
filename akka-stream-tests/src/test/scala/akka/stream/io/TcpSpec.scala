@@ -84,6 +84,8 @@ class TcpSpec extends StreamSpec("""
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = true
     akka.stream.materializer.subscription-timeout.timeout = 2s
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
   """) with TcpHelper with WithLogCapturing {
 
   "Outgoing TCP stream" must {
@@ -671,15 +673,11 @@ class TcpSpec extends StreamSpec("""
       val config = ConfigFactory.parseString("""
         akka.actor.serializer-messages = off
         akka.io.tcp.register-timeout = 42s
+        akka.stream.materializer.subscription-timeout.mode = cancel
+        akka.stream.materializer.subscription-timeout.timeout = 42s
       """)
       val serverSystem = ActorSystem("server", config)
       val clientSystem = ActorSystem("client", config)
-      val serverMaterializer = ActorMaterializer(
-        ActorMaterializerSettings(serverSystem).withSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(serverSystem)
-      val clientMaterializer = ActorMaterializer(
-        ActorMaterializerSettings(clientSystem).withSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(clientSystem)
 
       try {
 
@@ -716,7 +714,7 @@ class TcpSpec extends StreamSpec("""
               }
             }
             .to(Sink.ignore)
-            .run()(serverMaterializer)
+            .run()(SystemMaterializer(serverSystem).materializer)
 
         // make sure server is running first
         futureBinding.futureValue
@@ -724,7 +722,7 @@ class TcpSpec extends StreamSpec("""
         // then connect once, which should lead to the server cancelling
         val total = Source(immutable.Iterable.fill(100)(ByteString(0)))
           .via(Tcp(clientSystem).outgoingConnection(address))
-          .runFold(0)(_ + _.size)(clientMaterializer)
+          .runFold(0)(_ + _.size)(SystemMaterializer(clientSystem).materializer)
 
         serverGotRequest.future.futureValue
         // this can take a bit of time worst case but is often swift

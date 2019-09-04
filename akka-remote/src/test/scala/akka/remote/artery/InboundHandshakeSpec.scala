@@ -4,14 +4,10 @@
 
 package akka.remote.artery
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.OutboundHandshake.HandshakeRsp
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
@@ -22,16 +18,18 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 object InboundHandshakeSpec {
   case object Control1 extends ControlMessage
   case object Control2 extends ControlMessage
   case object Control3 extends ControlMessage
 }
 
-class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
+class InboundHandshakeSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)

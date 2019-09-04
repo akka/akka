@@ -4,7 +4,6 @@
 
 package akka.stream.impl.fusing
 
-import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ Balance, Broadcast, Merge, Zip }
 import akka.stream.testkit.StreamSpec
 
@@ -306,34 +305,6 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       interpreter.isSuspended should be(false)
     }
 
-    "implement buffer" in new TestSetup {
-      val source = new UpstreamProbe[String]("source")
-      val sink = new DownstreamProbe[String]("sink")
-      val buffer = Buffer[String](2, OverflowStrategy.backpressure)
-
-      builder(buffer).connect(source, buffer.in).connect(buffer.out, sink).init()
-
-      stepAll()
-      lastEvents() should ===(Set(RequestOne(source)))
-
-      sink.requestOne()
-      lastEvents() should ===(Set.empty)
-
-      source.onNext("A")
-      lastEvents() should ===(Set(RequestOne(source), OnNext(sink, "A")))
-
-      source.onNext("B")
-      lastEvents() should ===(Set(RequestOne(source)))
-
-      source.onNext("C", eventLimit = 0)
-      sink.requestOne()
-      lastEvents() should ===(Set(OnNext(sink, "B"), RequestOne(source)))
-
-      sink.requestOne(eventLimit = 0)
-      source.onComplete(eventLimit = 3)
-      // OnComplete arrives early due to push chasing
-      lastEvents() should ===(Set(OnNext(sink, "C"), OnComplete(sink)))
-    }
   }
 
 }

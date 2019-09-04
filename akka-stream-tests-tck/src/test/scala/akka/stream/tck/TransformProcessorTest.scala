@@ -4,20 +4,17 @@
 
 package akka.stream.tck
 
+import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Attributes }
 import akka.stream.scaladsl.Flow
-import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
 import org.reactivestreams.Processor
 
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
-    val settings =
-      ActorMaterializerSettings(system).withInputBuffer(initialSize = maxBufferSize / 2, maxSize = maxBufferSize)
-
-    implicit val materializer = ActorMaterializer(settings)(system)
-
     val stage =
       new SimpleLinearGraphStage[Int] {
         override def createLogic(inheritedAttributes: Attributes) =
@@ -28,7 +25,11 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
           }
       }
 
-    Flow[Int].via(stage).toProcessor.run()
+    Flow[Int]
+      .via(stage)
+      .toProcessor
+      .withAttributes(Attributes.inputBuffer(initial = maxBufferSize / 2, max = maxBufferSize))
+      .run()
   }
 
   override def createElement(element: Int): Int = element

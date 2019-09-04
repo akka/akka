@@ -9,24 +9,24 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
+import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.stage._
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.scaladsl._
-import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.stage._
 import akka.util.OptionVal
+import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
-
-import akka.stream.impl.{ Buffer => BufferImpl }
-import akka.util.ccompat.JavaConverters._
-
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages.SingleSource
 
 /**
  * INTERNAL API
@@ -48,7 +48,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     // SubSinkInlet[T] or SingleSource
     var queue: BufferImpl[AnyRef] = _
 
-    override def preStart(): Unit = queue = BufferImpl(breadth, materializer)
+    override def preStart(): Unit = queue = BufferImpl(breadth, enclosingAttributes)
 
     def pushOut(): Unit = {
       queue.dequeue() match {
@@ -144,7 +144,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   override def initialAttributes = DefaultAttributes.prefixAndTail
 
-  private final class PrefixAndTailLogic(_shape: Shape)
+  private final class PrefixAndTailLogic(_shape: Shape, inheritedAttributes: Attributes)
       extends TimerGraphStageLogic(_shape)
       with OutHandler
       with InHandler {
@@ -159,10 +159,10 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
     override protected def onTimer(timerKey: Any): Unit = {
       val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-      val timeoutSettings = materializer.settings.subscriptionTimeoutSettings
-      val timeout = timeoutSettings.timeout
+      val StreamSubscriptionTimeout(timeout, mode) =
+        inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout]
 
-      timeoutSettings.mode match {
+      mode match {
         case StreamSubscriptionTimeoutTerminationMode.CancelTermination =>
           tailSource.timeout(timeout)
           if (tailSource.isClosed) completeStage()
@@ -190,8 +190,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     }
 
     private def openSubstream(): Source[T, NotUsed] = {
-      val timeout =
-        ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+      val timeout = inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
       tailSource = new SubSourceOutlet[T]("TailSource")
       tailSource.setHandler(subHandler)
       setKeepGoing(true)
@@ -244,7 +243,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     setHandlers(in, out, this)
   }
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new PrefixAndTailLogic(shape)
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new PrefixAndTailLogic(shape, inheritedAttributes)
 
   override def toString: String = s"PrefixAndTail($n)"
 }
@@ -271,7 +271,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       private val closedSubstreams =
         if (allowClosedSubstreamRecreation) Collections.unmodifiableSet(Collections.emptySet[Any])
         else new java.util.HashSet[Any]()
-      private var timeout: FiniteDuration = _
+      private val timeout: FiniteDuration =
+        inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
       private var substreamWaitingToBePushed: Option[SubstreamSource] = None
       private var nextElementKey: K = null.asInstanceOf[K]
       private var nextElementValue: T = null.asInstanceOf[T]
@@ -311,10 +312,6 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
       private def needToPull: Boolean =
         !(hasBeenPulled(in) || isClosed(in) || hasNextElement || substreamWaitingToBePushed.nonEmpty)
-
-      override def preStart(): Unit =
-        timeout =
-          ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
 
       override def onPull(): Unit = {
         substreamWaitingToBePushed match {
@@ -491,14 +488,11 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
-    private var timeout: FiniteDuration = _
+    private val timeout: FiniteDuration =
+      inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
     private var substreamSource: SubSourceOutlet[T] = null
     private var substreamWaitingToBePushed = false
     private var substreamCancelled = false
-
-    override def preStart(): Unit = {
-      timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
-    }
 
     setHandler(
       out,

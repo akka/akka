@@ -5,11 +5,13 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
+
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Future
 
 object GraphOpsIntegrationSpec {
   import GraphDSL.Implicits._
@@ -37,13 +39,11 @@ object GraphOpsIntegrationSpec {
 
 }
 
-class GraphOpsIntegrationSpec extends StreamSpec {
-  import akka.stream.scaladsl.GraphOpsIntegrationSpec._
+class GraphOpsIntegrationSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
   import GraphDSL.Implicits._
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+  import akka.stream.scaladsl.GraphOpsIntegrationSpec._
 
   "GraphDSLs" must {
 
@@ -200,7 +200,7 @@ class GraphOpsIntegrationSpec extends StreamSpec {
     }
 
     "be possible to use with generated components" in {
-      implicit val ex = materializer.system.dispatcher
+      implicit val ex = system.dispatcher
 
       //#graph-from-list
       val sinks = immutable
@@ -229,7 +229,7 @@ class GraphOpsIntegrationSpec extends StreamSpec {
     }
 
     "be possible to use with generated components if list has no tail" in {
-      implicit val ex = materializer.system.dispatcher
+      implicit val ex = system.dispatcher
 
       val sinks = immutable.Seq(Sink.seq[Int])
 

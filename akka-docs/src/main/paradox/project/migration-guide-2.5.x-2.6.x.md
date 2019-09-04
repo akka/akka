@@ -506,3 +506,39 @@ Having a default materializer available means that most, if not all, usages of J
 and Scala `implicit val materializer = ActorMaterializer()` should be removed. 
 
 Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
+
+### Materializer settings deprecated
+
+The `ActorMaterializerSettings` class has been deprecated.
+
+All materializer settings are available as configuration to change the system default or through attributes that can be 
+used for individual streams when they are materialized.
+
+| Materializer setting   | Corresponding attribute | Setting |
+-------------------------|-------------------------|---------|
+| `initialInputBufferSize`                     | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.initial-input-buffer-size` |
+| `maxInputBufferSize`                         | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.max-input-buffer-size` |
+| `dispatcher`                                 | `ActorAttributes.dispatcher(name)`              | `akka.stream.materializer.dispatcher` |
+| `supervisionDecider`                         | `ActorAttributes.supervisionStrategy(strategy)` | na |
+| `debugLogging`                               | `ActorAttributes.debugLogging`                  | `akka.stream.materializer.debug-logging` |
+| `outputBurstLimit`                           | `ActorAttributes.outputBurstLimit`              | `akka.stream.materializer.output-burst-limit` |
+| `fuzzingMode`                                | `ActorAttributes.fuzzingMode`                   | `akka.stream.materializer.debug.fuzzing-mode` |
+| `autoFusing`                                 | no longer used (since 2.5.0)                    | na |
+| `maxFixedBufferSize`                         | `ActorAttributes.maxFixedBufferSize`            | `akka.stream.materializer.max-fixed-buffer-size` |
+| `syncProcessingLimit`                        | `ActorAttributes.syncProcessingLimit`           | `akka.stream.materializer.sync-processing-limit` |
+| `ioSettings.tcpWriteBufferSize`              | `Tcp.writeBufferSize`                           | `akka.stream.materializer.io.tcp.write-buffer-size` |
+| `streamRefSettings.bufferCapacity`           | `StreamRefAttributes.bufferCapacity`            | `akka.stream.materializer.stream-ref.buffer-capacity` |
+| `streamRefSettings.demandRedeliveryInterval` | `StreamRefAttributes.demandRedeliveryInterval`  | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
+| `streamRefSettings.subscriptionTimeout`      | `StreamRefAttributes.subscriptionTimeout`       | `akka.stream.materializer.stream-ref.subscription-timeout` |
+| `streamRefSettings.finalTerminationSignalDeadline` | `StreamRefAttributes.finalTerminationSignalDeadline` | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
+| `blockingIoDispatcher`                       | `ActorAttributes.blockingIoDispatcher`          | `akka.stream.materializer.blocking-io-dispatcher` |
+| `subscriptionTimeoutSettings.mode`           | `ActorAttributes.streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
+| `subscriptionTimeoutSettings.timeout`        | `ActorAttributes.streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
+
+Setting attributes on individual streams can be done like so:
+
+Scala
+:  @@snip [StreamAttributeDocSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/StreamAttributeDocSpec.scala) { #attributes-on-stream }
+
+Java
+:  @@snip [StreamAttributeDocTest.java](/akka-stream-tests/src/test/java/akka/stream/StreamAttributeDocTest.java) { #attributes-on-stream }

@@ -6,7 +6,9 @@ package akka.stream.impl
 
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
+import akka.stream.ActorAttributes
+import akka.stream.Attributes
+import akka.stream.AbruptTerminationException
 import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage }
 import akka.util.unused
 import org.reactivestreams.{ Subscriber, Subscription }
@@ -260,17 +262,21 @@ import org.reactivestreams.{ Subscriber, Subscription }
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] class FanIn(val settings: ActorMaterializerSettings, val inputCount: Int)
+@DoNotInherit private[akka] class FanIn(attributes: Attributes, val inputCount: Int)
     extends Actor
     with ActorLogging
     with Pump {
   import FanIn._
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
-  protected val inputBunch = new InputBunch(inputCount, settings.maxInputBufferSize, this) {
-    override def onError(input: Int, e: Throwable): Unit = fail(e)
-    override def onCompleteWhenNoInput(): Unit = pumpFinished()
+  protected val inputBunch = {
+    val maxInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].max
+    new InputBunch(inputCount, maxInputBufferSize, this) {
+      override def onError(input: Int, e: Throwable): Unit = fail(e)
+      override def onCompleteWhenNoInput(): Unit = pumpFinished()
+    }
   }
+  private val debugLoggingEnabled = attributes.mandatoryAttribute[ActorAttributes.DebugLogging].enabled
 
   override def pumpFinished(): Unit = {
     inputBunch.cancel()
@@ -281,7 +287,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    if (settings.debugLogging)
+    if (debugLoggingEnabled)
       log.debug("fail due to: {}", e.getMessage)
     nextPhase(completedPhase)
     primaryOutputs.error(e)

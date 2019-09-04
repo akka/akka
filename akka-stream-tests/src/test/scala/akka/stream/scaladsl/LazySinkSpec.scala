@@ -8,21 +8,25 @@ import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic }
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
 
 import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
 
-class LazySinkSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
-  implicit val materializer = ActorMaterializer(settings)
+class LazySinkSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 1
+    akka.stream.materializer.max-input-buffer-size = 1
+  """) {
 
   val ex = TE("")
 

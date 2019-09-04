@@ -75,16 +75,8 @@ can be set through configuration:
 akka.stream.materializer.max-input-buffer-size = 16
 ```
 
-Alternatively they can be set by passing a 
-@scala[@scaladoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)]@java[@javadoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)] to the materializer:
-
-Scala
-:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #materializer-buffer }
-
-Java
-:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
-
-If the buffer size needs to be set for segments of a @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] only, it is possible by defining a separate
+Alternatively they can be set per stream by adding an attribute to the complete `RunnableGraph` or on smaller segments
+of the stream it is possible by defining a separate
 @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] with these attributes:
 
 Scala

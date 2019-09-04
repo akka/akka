@@ -8,17 +8,16 @@ import java.util.stream.Collectors
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.util.ByteString
 
 class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
 
   "Java Stream Sink" must {
 
