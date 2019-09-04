@@ -19,5 +19,6 @@
 * [testing](testing.md)
 * [coexisting](coexisting.md)
 * [style-guide](style-guide.md)
+* [from-classic](from-classic.md)
 
 @@@

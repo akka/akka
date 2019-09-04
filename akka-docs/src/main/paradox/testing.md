@@ -819,6 +819,7 @@ adapted to work with Akka 2.x.
 
 @@@
 
+<a id="sync-testing"></a>
 ## Synchronous Testing: `TestActorRef`
 
 Testing the business logic inside `Actor` classes can be divided into

@@ -12,6 +12,9 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## First example
 
+If you are new to Akka you might want to start with reading the @ref:[Getting Started Guide](guide/introduction.md)
+and then come back here to learn more.
+
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that
 look like?
