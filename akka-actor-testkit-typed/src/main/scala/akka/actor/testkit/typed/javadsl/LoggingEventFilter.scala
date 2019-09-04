@@ -5,7 +5,6 @@
 package akka.actor.testkit.typed.javadsl
 
 import java.util.function.Supplier
-import java.util.function.{ Function => JFunction }
 
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.internal.LoggingEventFilterImpl
@@ -58,9 +57,16 @@ import org.slf4j.event.Level
   def withCause(newCause: Class[_ <: Throwable]): LoggingEventFilter
 
   /**
+   * Matching events with MDC containing all entries of the given `Map`.
+   * The event MDC may have more entries than the given `Map`.
+   */
+  def withMdc(newMdc: java.util.Map[String, String]): LoggingEventFilter
+
+  /**
    * Matching events for which the supplied function returns `true`.
    */
-  def withCustom(newCustom: JFunction[LoggingEvent, Boolean]): LoggingEventFilter
+  def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingEventFilter
+  // this is a Scala Function, ^ but that can be used with lambda from Java
 
   /**
    * @return `true` if the event matches the conditions of the filter.
@@ -172,8 +178,8 @@ object LoggingEventFilter {
    * Create a custom event filter. The filter will match those events for
    * which for which the supplied function returns `true`.
    */
-  def custom(test: JFunction[LoggingEvent, Boolean]): LoggingEventFilter =
-    empty.withCustom(test)
+  def custom(test: Function[LoggingEvent, Boolean]): LoggingEventFilter =
+    empty.withCustom(test) // this is a Scala Function, but that can be used with lambda from Java
 
   /**
    * Filter for the logging of dead letters.

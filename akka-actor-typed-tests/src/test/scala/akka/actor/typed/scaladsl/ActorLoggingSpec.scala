@@ -21,7 +21,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import org.slf4j.event.Level
 import org.slf4j.helpers.BasicMarkerFactory
 
 class SomeClass
@@ -69,9 +68,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
       }
 
-      val actor = LoggingEventFilter.info("Started", occurrences = 1).intercept(spawn(behavior, "the-actor"))
+      val actor = LoggingEventFilter.info("Started").intercept(spawn(behavior, "the-actor"))
 
-      LoggingEventFilter.info("got message Hello", occurrences = 1).intercept(actor ! "Hello")
+      LoggingEventFilter.info("got message Hello").intercept(actor ! "Hello")
 
     }
 
@@ -87,7 +86,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       }
 
       val actor =
-        LoggingEventFilter.info("Started", occurrences = 1).interceptLogger(classOf[AnotherLoggerClass].getName) {
+        LoggingEventFilter.info("Started").interceptLogger(classOf[AnotherLoggerClass].getName) {
           spawn(behavior, "the-other-actor")
         }
 
@@ -96,11 +95,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       // is used
       val count = new AtomicInteger
       LoggingEventFilter
-        .custom({
-          case logEvent =>
-            count.incrementAndGet()
-            logEvent.message == "got message Hello" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
-        }, occurrences = 2)
+        .custom { logEvent =>
+          count.incrementAndGet()
+          logEvent.message == "got message Hello" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
+        }
+        .withOccurrences(2)
         .interceptLogger(classOf[AnotherLoggerClass].getName) {
           actor ! "Hello"
           LoggerFactory.getLogger(classOf[ActorLoggingSpec]).debug("Hello from other logger")
@@ -117,7 +116,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         case event =>
           println(event.loggerName)
           false
-      }, occurrences = 1)
+      })
 
       eventFilter.intercept(spawn(Behaviors.setup[String] { context =>
         context.log.info("Started")
@@ -136,7 +135,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         case other =>
           println(other.loggerName)
           false
-      }, occurrences = 1)
+      })
 
       eventFilter.intercept(spawn(WhereTheBehaviorIsDefined.behavior, "the-actor-with-object"))
     }
@@ -147,7 +146,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         case other =>
           println(other.loggerName)
           false
-      }, occurrences = 1)
+      })
 
       eventFilter.intercept {
         spawn(Behaviors.setup[String](context => new BehaviorWhereTheLoggerIsUsed(context)), "the-actor-with-behavior")
@@ -156,9 +155,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "pass markers to the log" in {
       LoggingEventFilter
-        .custom({
-          case event if event.marker.map(_.getName) == Option(marker.getName) => true
-        }, occurrences = 5)
+        .custom { event =>
+          event.marker.map(_.getName) == Option(marker.getName)
+        }
+        .withOccurrences(5)
         .intercept(spawn(Behaviors.setup[Any] { context =>
           context.log.debug(marker, "whatever")
           context.log.info(marker, "whatever")
@@ -171,9 +171,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "pass cause with warn" in {
       LoggingEventFilter
-        .custom({
-          case event if event.throwable == Option(cause) => true
-        }, occurrences = 2)
+        .custom { event =>
+          event.throwable == Option(cause)
+        }
+        .withOccurrences(2)
         .intercept(spawn(Behaviors.setup[Any] { context =>
           context.log.warn("whatever", cause)
           context.log.warn(marker, "whatever", cause)
@@ -186,9 +187,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       // Not the best test but at least it exercises every log overload ;)
 
       LoggingEventFilter
-        .custom({
-          case _ => true // any is fine, we're just after the right count of statements reaching the listener
-        }, occurrences = 36)
+        .custom { _ =>
+          true // any is fine, we're just after the right count of statements reaching the listener
+        }
+        .withOccurrences(36)
         .intercept({
           spawn(Behaviors.setup[String] {
             context =>
@@ -240,7 +242,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "use Slf4jLogger from akka-slf4j automatically" in {
-      LoggingEventFilter.info(message = "via Slf4jLogger", occurrences = 1).intercept {
+      LoggingEventFilter.info("via Slf4jLogger").intercept {
         // this will log via classic eventStream
         system.toUntyped.log.info("via Slf4jLogger")
       }
@@ -314,46 +316,25 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
       // mdc on defer is empty
       val ref = LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("Starting")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) shouldBe empty
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
+        .info("Starting")
+        .withCustom(logEvent => logEvent.mdc.filterKeys(!_.startsWith("akka")).isEmpty)
         .intercept {
           spawn(behaviors)
         }
 
       // mdc on message
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("Got message!")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(
-                Map("static" -> "1", "txId" -> "1", "first" -> "true"))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
+        .info("Got message!")
+        .withMdc(Map("static" -> "1", "txId" -> "1", "first" -> "true"))
         .intercept {
           ref ! Message(1, "first")
         }
 
       // mdc does not leak between messages
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("Got message!")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("static" -> "1", "txId" -> "2"))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
+        .info("Got message!")
+        .withMdc(Map("static" -> "1", "txId" -> "2"))
+        .withCustom(event => !event.mdc.contains("first"))
         .intercept {
           ref ! Message(2, "second")
         }
@@ -373,15 +354,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
       val ref = spawn(behavior)
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("message")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("outermost" -> "true"))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
+        .info("message")
+        .withMdc(Map("outermost" -> "true"))
+        .withCustom(event => !event.mdc.contains("innermost"))
         .intercept {
           ref ! "message"
         }
@@ -400,33 +375,15 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       val ref = spawn(Behaviors.withMdc(Map("hasMdc" -> "true"))(behavior))
-      LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("message")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("hasMdc" -> "true"))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
-        .intercept {
-          ref ! "message"
-        }
+      LoggingEventFilter.info("message").withMdc(Map("hasMdc" -> "true")).intercept {
+        ref ! "message"
+      }
 
       ref ! "new-behavior"
 
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("message")
-              logEvent.mdc
-                .filterKeys(!_.startsWith("akka")) should ===(Map("hasMdc" -> "true")) // original mdc should stay
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
+        .info("message")
+        .withMdc(Map("hasMdc" -> "true")) // original mdc should stay
         .intercept {
           ref ! "message"
         }
@@ -450,30 +407,13 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       val ref = spawn(behavior)
-      LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("message")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("mdc-version" -> "1"))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
-        .intercept {
-          ref ! "message"
-        }
+      LoggingEventFilter.info("message").withMdc(Map("mdc-version" -> "1")).intercept {
+        ref ! "message"
+      }
       ref ! "new-mdc"
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("message")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("mdc-version" -> "2")) // mdc should have been replaced
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
+        .info("message")
+        .withMdc(Map("mdc-version" -> "2")) // mdc should have been replaced
         .intercept {
           ref ! "message"
         }
@@ -492,31 +432,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
       // mdc on message
       val ref = spawn(behavior)
-      LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("first")
-              logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("mdc" -> "outer"))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
-        .intercept {
-          LoggingEventFilter
-            .custom(
-              {
-                case logEvent if logEvent.level == Level.INFO =>
-                  logEvent.message should ===("second")
-                  logEvent.mdc.filterKeys(!_.startsWith("akka")) should ===(Map("mdc" -> "inner-outer"))
-                  true
-                case other => system.log.error(s"Unexpected log event: {}", other); false
-              },
-              occurrences = 1)
-            .intercept {
-              ref ! Message(1, "first")
-            }
+      LoggingEventFilter.info("first").withMdc(Map("mdc" -> "outer")).intercept {
+        LoggingEventFilter.info("second").withMdc(Map("mdc" -> "inner-outer")).intercept {
+          ref ! Message(1, "first")
         }
+      }
     }
 
     "always include some MDC values in the log" in {
@@ -535,31 +455,17 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       // log from setup
-      val ref = LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("Starting")
-              logEvent.mdc should ===(Map("akkaSource" -> actorPathStr.get))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 1)
-        .intercept {
+      // can't use LoggingEventFilter.withMdc here because the actorPathStr isn't know yet
+      val ref =
+        LoggingEventFilter.info("Starting").withCustom(event => event.mdc("akkaSource") == actorPathStr.get).intercept {
           spawn(behavior)
         }
 
       // on message
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent if logEvent.level == Level.INFO =>
-              logEvent.message should ===("Got message!")
-              logEvent.mdc should ===(Map("akkaSource" -> actorPathStr.get))
-              true
-            case other => system.log.error(s"Unexpected log event: {}", other); false
-          },
-          occurrences = 10)
+        .info("Got message!")
+        .withMdc(Map("akkaSource" -> actorPathStr.get))
+        .withOccurrences(10)
         .intercept {
           (1 to 10).foreach { n =>
             ref ! Message(n, s"msg-$n")

@@ -4,7 +4,6 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
 
 import scala.concurrent.duration.Duration
@@ -12,19 +11,19 @@ import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
 import akka.actor.testkit.typed.LoggingEvent
+import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl
 import akka.actor.testkit.typed.scaladsl
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.testkit.TestKit
-import akka.testkit.TestKitExtension
 import org.slf4j.event.Level
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object LoggingEventFilterImpl {
-  def empty: LoggingEventFilterImpl = new LoggingEventFilterImpl(1, None, None, None, None, None, None)
+  def empty: LoggingEventFilterImpl = new LoggingEventFilterImpl(1, None, None, None, None, None, Map.empty, None)
 }
 
 /**
@@ -45,7 +44,8 @@ import org.slf4j.event.Level
     messageContains: Option[String],
     messageRegex: Option[Regex],
     cause: Option[Class[_ <: Throwable]],
-    custom: Option[PartialFunction[LoggingEvent, Boolean]])
+    mdc: Map[String, String],
+    custom: Option[Function[LoggingEvent, Boolean]])
     extends javadsl.LoggingEventFilter
     with scaladsl.LoggingEventFilter {
 
@@ -62,7 +62,8 @@ import org.slf4j.event.Level
     messageContains.forall(messageOrEmpty(event).contains) &&
     messageRegex.forall(_.findFirstIn(messageOrEmpty(event)).isDefined) &&
     cause.forall(c => event.throwable.isDefined && c.isInstance(event.throwable.get)) &&
-    custom.forall(pf => pf.isDefinedAt(event) && pf(event))
+    mdc.forall { case (key, value) => event.mdc.contains(key) && event.mdc(key) == value } &&
+    custom.forall(f => f(event))
   }
 
   private def messageOrEmpty(event: LoggingEvent): String =
@@ -108,9 +109,7 @@ import org.slf4j.event.Level
   override def interceptLogger[T](loggerName: String)(code: => T)(implicit system: ActorSystem[_]): T = {
     TestAppender.setupTestAppender(loggerName)
     TestAppender.addFilter(loggerName, this)
-    // FIXME #26537 other setting for leeway
-    import akka.actor.typed.scaladsl.adapter._
-    val leeway = TestKitExtension(system.toUntyped).TestEventFilterLeeway
+    val leeway = TestKitSettings(system).FilterLeeway
     try {
       val result = code
       if (!awaitDone(leeway))
@@ -145,14 +144,19 @@ import org.slf4j.event.Level
     copy(cause = Option(causeClass))
   }
 
-  override def withCustom(newCustom: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilterImpl =
+  override def withMdc(newMdc: Map[String, String]): LoggingEventFilterImpl =
+    copy(mdc = newMdc)
+
+  override def withMdc(newMdc: java.util.Map[String, String]): javadsl.LoggingEventFilter = {
+    import akka.util.ccompat.JavaConverters._
+    withMdc(newMdc.asScala.toMap)
+  }
+
+  override def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingEventFilterImpl =
     copy(custom = Option(newCustom))
 
   override def withCause(newCause: Class[_ <: Throwable]): javadsl.LoggingEventFilter =
     copy(cause = Option(newCause))
-
-  override def withCustom(newCustom: JFunction[LoggingEvent, Boolean]): javadsl.LoggingEventFilter =
-    withCustom({ case event => newCustom(event) }: PartialFunction[LoggingEvent, Boolean])
 
   override def intercept[T](system: ActorSystem[_], code: Supplier[T]): T =
     intercept(code.get())(system)

@@ -176,11 +176,11 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       ref ! "start-ask"
       val Question(replyRef2) = probe.expectMessageType[Question]
 
-      LoggingEventFilter[RuntimeException](
-        message = "Exception thrown out of adapter. Stopping myself.",
-        occurrences = 1).intercept {
-        replyRef2 ! 42L
-      }(system)
+      LoggingEventFilter
+        .error("Exception thrown out of adapter. Stopping myself.")
+        .intercept {
+          replyRef2 ! 42L
+        }(system)
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }

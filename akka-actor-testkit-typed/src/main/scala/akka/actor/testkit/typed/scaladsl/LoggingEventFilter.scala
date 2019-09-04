@@ -57,10 +57,15 @@ import org.slf4j.event.Level
   def withCause[A <: Throwable: ClassTag]: LoggingEventFilter
 
   /**
-   * Matching eventsfor which the supplied partial function is defined and returns
-   * `true`.
+   * Matching events with MDC containing all entries of the given `Map`.
+   * The event MDC may have more entries than the given `Map`.
    */
-  def withCustom(newCustom: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilter
+  def withMdc(newMdc: Map[String, String]): LoggingEventFilter
+
+  /**
+   * Matching events for which the supplied function returns`true`.
+   */
+  def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingEventFilter
 
   /**
    * @return `true` if the event matches the conditions of the filter.
@@ -170,10 +175,9 @@ object LoggingEventFilter {
 
   /**
    * Create a custom event filter. The filter will match those events for
-   * which the supplied partial function is defined and returns
-   * `true`.
+   * which the supplied function returns `true`.
    */
-  def custom(test: PartialFunction[LoggingEvent, Boolean]): LoggingEventFilter =
+  def custom(test: Function[LoggingEvent, Boolean]): LoggingEventFilter =
     empty.withCustom(test)
 
   /**

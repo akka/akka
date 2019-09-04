@@ -56,6 +56,28 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       count.get should ===(2)
     }
 
+    "find unexpected events withOccurences(0)" in {
+      LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+        log.error("an error")
+        log.warn("another warning")
+      }
+
+      intercept[AssertionError] {
+        LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+          log.error("an error")
+          log.warn("a warning")
+          log.warn("another warning")
+        }
+      }.getMessage should include("received 1 excess messages")
+
+      intercept[AssertionError] {
+        LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+          log.warn("a warning")
+          log.warn("a warning")
+        }
+      }.getMessage should include("received 2 excess messages")
+    }
+
   }
 
 }

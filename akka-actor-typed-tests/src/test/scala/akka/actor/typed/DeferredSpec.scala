@@ -62,7 +62,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike {
             Behaviors.stopped
         }
       }
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         spawn(behv)
         probe.expectMessage(Started)
         probe.expectMessage(Pong)
@@ -138,7 +138,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           Behaviors.same
         }
       }
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         val ref = spawn(behv)
         probe.expectTerminated(ref, probe.remainingOrDefault)
       }

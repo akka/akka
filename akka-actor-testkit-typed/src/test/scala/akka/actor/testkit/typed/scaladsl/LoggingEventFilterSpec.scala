@@ -72,6 +72,21 @@ class LoggingEventFilterSpec extends ScalaTestWithActorTestKit with WordSpecLike
       LoggingEventFilter.error("an error").matches(errorNoCause) should ===(true)
       LoggingEventFilter.error("another error").matches(errorNoCause) should ===(false)
     }
+
+    "filter with matching MDC" in {
+      LoggingEventFilter.empty.withMdc(Map("a" -> "A")).matches(errorNoCause.copy(mdc = Map("a" -> "A"))) should ===(
+        true)
+      LoggingEventFilter.empty
+        .withMdc(Map("a" -> "A", "b" -> "B"))
+        .matches(errorNoCause.copy(mdc = Map("a" -> "A", "b" -> "B"))) should ===(true)
+      LoggingEventFilter.empty
+        .withMdc(Map("a" -> "A"))
+        .matches(errorNoCause.copy(mdc = Map("a" -> "A", "b" -> "B"))) should ===(true)
+      LoggingEventFilter.empty
+        .withMdc(Map("a" -> "A", "b" -> "B"))
+        .matches(errorNoCause.copy(mdc = Map("a" -> "A"))) should ===(false)
+      LoggingEventFilter.empty.withMdc(Map("a" -> "A", "b" -> "B")).matches(errorNoCause) should ===(false)
+    }
   }
 
   "The LoggingEventFilter with cause" must {

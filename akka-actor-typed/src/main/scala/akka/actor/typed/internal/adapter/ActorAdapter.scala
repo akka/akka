@@ -181,7 +181,7 @@ import akka.util.OptionVal
       case Success(a) =>
         body(a)
       case Failure(ex) =>
-        log.error(ex, "Exception thrown out of adapter. Stopping myself.")
+        log.error(ex, s"Exception thrown out of adapter. Stopping myself. ${ex.getMessage}")
         context.stop(self)
     }
   }
