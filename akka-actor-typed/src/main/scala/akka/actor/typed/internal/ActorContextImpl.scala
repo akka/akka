@@ -16,11 +16,13 @@ import java.util.function.BiFunction
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
+
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
 import akka.util.JavaDurationConverters._
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * INTERNAL API
@@ -29,6 +31,10 @@ import org.slf4j.Logger
     extends TypedActorContext[T]
     with javadsl.ActorContext[T]
     with scaladsl.ActorContext[T] {
+
+  // lazily initialized
+  private var logger: OptionVal[Logger] = OptionVal.None
+  private var mdcUsed: Boolean = false
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
@@ -77,7 +83,39 @@ import org.slf4j.Logger
   override def getSystem: akka.actor.typed.ActorSystem[Void] =
     system.asInstanceOf[ActorSystem[Void]]
 
+  override def log: Logger = {
+    val l = logger match {
+      case OptionVal.Some(l) => l
+      case OptionVal.None =>
+        val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
+        initLoggerWithClass(logClass)
+    }
+    // avoid access to MDC ThreadLocal if not needed
+    mdcUsed = true
+    ActorMdc.setMdc(self.path.toString)
+    l
+  }
+
   override def getLog: Logger = log
+
+  override def setLoggerClass(clazz: Class[_]): Unit = {
+    initLoggerWithClass(clazz)
+  }
+
+  // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
+  override private[akka] def clearMdc(): Unit = {
+    // avoid access to MDC ThreadLocal if not needed
+    if (mdcUsed) {
+      ActorMdc.clearMdc()
+      mdcUsed = false
+    }
+  }
+
+  private def initLoggerWithClass(logClass: Class[_]): Logger = {
+    val l = LoggerFactory.getLogger(logClass)
+    logger = OptionVal.Some(l)
+    l
+  }
 
   override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
     setReceiveTimeout(d.asScala, msg)

@@ -45,6 +45,16 @@ class LoggingEventFilterSpec extends ScalaTestWithActorTestKit with WordSpecLike
       marker = None,
       throwable = Option(cause),
       mdc = Map.empty)
+  private def warningWithSource(source: String) =
+    LoggingEvent(
+      level = Level.WARN,
+      loggerName = getClass.getName,
+      message = "this is a warning",
+      threadName = Thread.currentThread().getName,
+      timeStamp = System.currentTimeMillis(),
+      marker = None,
+      throwable = None,
+      mdc = Map("akkaSource" -> source))
 
   "The LoggingEventFilter.error" must {
     "filter errors without cause" in {
@@ -99,6 +109,11 @@ class LoggingEventFilterSpec extends ScalaTestWithActorTestKit with WordSpecLike
       LoggingEventFilter.warning(message = "this is a warning").apply(warningWithCause(new AnError)) should ===(true)
       LoggingEventFilter.warning(message = "this is another warning").apply(warningWithCause(new AnError)) should ===(
         false)
+    }
+    "filter warning with matching source" in {
+      val source = "akka://Sys/user/foo"
+      LoggingEventFilter.warning(source = source).apply(warningWithSource(source)) should ===(true)
+      LoggingEventFilter.warning(source = "akka://Sys/user/bar").apply(warningWithSource(source)) should ===(false)
     }
 
   }

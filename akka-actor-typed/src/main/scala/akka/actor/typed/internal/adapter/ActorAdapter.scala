@@ -72,34 +72,36 @@ import akka.util.OptionVal
   def receive: Receive = ActorAdapter.DummyReceive
 
   override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
-    // as we know we never become in "normal" typed actors, it is just the current behavior that
-    // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
-    // we also know that the receive is total, so we can avoid the orElse part as well.
-    msg match {
-      case untyped.Terminated(ref) =>
-        val msg =
-          if (failures contains ref) {
-            val ex = failures(ref)
-            failures -= ref
-            ChildFailed(ActorRefAdapter(ref), ex)
-          } else Terminated(ActorRefAdapter(ref))
-        handleSignal(msg)
-      case untyped.ReceiveTimeout =>
-        handleMessage(ctx.receiveTimeoutMsg)
-      case wrapped: AdaptMessage[Any, T] @unchecked =>
-        withSafelyAdapted(() => wrapped.adapt()) {
-          case AdaptWithRegisteredMessageAdapter(msg) =>
-            adaptAndHandle(msg)
-          case msg: T @unchecked =>
-            handleMessage(msg)
-        }
-      case AdaptWithRegisteredMessageAdapter(msg) =>
-        adaptAndHandle(msg)
-      case signal: Signal =>
-        handleSignal(signal)
-      case msg: T @unchecked =>
-        handleMessage(msg)
-    }
+    try {
+      // as we know we never become in "normal" typed actors, it is just the current behavior that
+      // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
+      // we also know that the receive is total, so we can avoid the orElse part as well.
+      msg match {
+        case untyped.Terminated(ref) =>
+          val msg =
+            if (failures contains ref) {
+              val ex = failures(ref)
+              failures -= ref
+              ChildFailed(ActorRefAdapter(ref), ex)
+            } else Terminated(ActorRefAdapter(ref))
+          handleSignal(msg)
+        case untyped.ReceiveTimeout =>
+          handleMessage(ctx.receiveTimeoutMsg)
+        case wrapped: AdaptMessage[Any, T] @unchecked =>
+          withSafelyAdapted(() => wrapped.adapt()) {
+            case AdaptWithRegisteredMessageAdapter(msg) =>
+              adaptAndHandle(msg)
+            case msg: T @unchecked =>
+              handleMessage(msg)
+          }
+        case AdaptWithRegisteredMessageAdapter(msg) =>
+          adaptAndHandle(msg)
+        case signal: Signal =>
+          handleSignal(signal)
+        case msg: T @unchecked =>
+          handleMessage(msg)
+      }
+    } finally ctx.clearMdc()
   }
 
   private def handleMessage(msg: T): Unit = {
@@ -233,33 +235,41 @@ import akka.util.OptionVal
   }
 
   override def preStart(): Unit = {
-    if (Behavior.isAlive(behavior)) {
-      behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
-    }
-    // either was stopped initially or became stopped on start
-    if (!Behavior.isAlive(behavior)) context.stop(self)
+    try {
+      if (Behavior.isAlive(behavior)) {
+        behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+      }
+      // either was stopped initially or became stopped on start
+      if (!Behavior.isAlive(behavior)) context.stop(self)
+    } finally ctx.clearMdc()
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    ctx.cancelAllTimers()
-    Behavior.interpretSignal(behavior, ctx, PreRestart)
-    behavior = BehaviorImpl.stopped
+    try {
+      ctx.cancelAllTimers()
+      Behavior.interpretSignal(behavior, ctx, PreRestart)
+      behavior = BehaviorImpl.stopped
+    } finally ctx.clearMdc()
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    ctx.cancelAllTimers()
-    behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
-    if (!Behavior.isAlive(behavior)) context.stop(self)
+    try {
+      ctx.cancelAllTimers()
+      behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+      if (!Behavior.isAlive(behavior)) context.stop(self)
+    } finally ctx.clearMdc()
   }
 
   override def postStop(): Unit = {
-    ctx.cancelAllTimers()
-    behavior match {
-      case _: DeferredBehavior[_] =>
-      // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case b => Behavior.interpretSignal(b, ctx, PostStop)
-    }
-    behavior = BehaviorImpl.stopped
+    try {
+      ctx.cancelAllTimers()
+      behavior match {
+        case _: DeferredBehavior[_] =>
+        // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
+        case b => Behavior.interpretSignal(b, ctx, PostStop)
+      }
+      behavior = BehaviorImpl.stopped
+    } finally ctx.clearMdc()
   }
 
 }

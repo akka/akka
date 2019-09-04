@@ -323,4 +323,10 @@ trait ActorContext[T] extends TypedActorContext[T] {
   @InternalApi
   private[akka] def cancelAllTimers(): Unit
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def clearMdc(): Unit
+
 }
