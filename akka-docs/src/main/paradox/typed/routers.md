@@ -28,7 +28,7 @@ then forward messages to.
 If a child is stopped the pool router removes it from its set of routees. When the last child stops the router itself stops.
 To make a resilient router that deals with failures the routee `Behavior` must be supervised.
 
-Note that it is important that the factory returns a new behavior instance for every call to the factory or else
+Note that it is important that the `Routers.pool` factory returns a new behavior instance for every call to the factory or else
 routees may end up sharing mutable state and not work as expected.
 
 Scala

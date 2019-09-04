@@ -23,12 +23,12 @@ object RouterSpec {
     sealed trait Command
     case class DoLog(text: String) extends Command
 
-    def apply(): Behavior[Command] = Behaviors.setup { ctx =>
-      ctx.log.info("Starting worker")
+    def apply(): Behavior[Command] = Behaviors.setup { context =>
+      context.log.info("Starting worker")
 
       Behaviors.receiveMessage {
         case DoLog(text) =>
-          ctx.log.info("Got message {}", text)
+          context.log.info("Got message {}", text)
           Behaviors.same
       }
     }
@@ -102,7 +102,7 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         // note that since registration of workers goes through the receptionist there is no
         // guarantee the router has seen any workers yet if we hit it directly like this and
         // these messages may end up in dead letters - in a real application you would not use
-        // a group router like this - it is to keep the sample simple
+        // a group router immediately like this - it is to keep the sample simple
         (0 to 10).foreach { n =>
           router ! Worker.DoLog(s"msg $n")
         }
