@@ -599,7 +599,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               // and can result in forming two separate clusters (cluster split).
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
-              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress, from)
+              @silent("deprecated")
+              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
               system.eventStream.publish(lifecycleEvent)
 
             case _ => // not interesting
