@@ -2,23 +2,34 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.internal
+package akka.actor.testkit.typed.scaladsl
 
 import scala.util.control.NonFatal
 
-import akka.annotation.InternalApi
+import akka.actor.testkit.typed.internal.CapturingAppender
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Outcome
 import org.scalatest.TestSuite
 import org.slf4j.LoggerFactory
 
 /**
- * INTERNAL API
+ * Mixin this trait to a ScalaTest test to make log lines appear only when the test failed.
  *
- * Mixin this trait to a test to make log lines appear only when the test failed.
- * Requires Logback and configuration of [[CapturingAppender]] in logback-test.xml.
+ * Requires Logback and configuration like the following the logback-test.xml:
+ *
+ * {{{
+ *     <appender name="CapturingAppender" class="akka.actor.testkit.typed.internal.CapturingAppender" />
+ *
+ *     <logger name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
+ *       <appender-ref ref="STDOUT"/>
+ *     </logger>
+ *
+ *     <root level="DEBUG">
+ *         <appender-ref ref="CapturingAppender"/>
+ *     </root>
+ * }}}
  */
-@InternalApi private[akka] trait WithLogCapturing extends BeforeAndAfterAll { self: TestSuite =>
+trait WithLogCapturing extends BeforeAndAfterAll { self: TestSuite =>
 
   // eager access of CapturingAppender to fail fast if misconfigured
   private val capturingAppender = CapturingAppender.get("")
@@ -52,7 +63,4 @@ import org.slf4j.LoggerFactory
 
     res
   }
-  // FIXME #26537 silence stdout debug logging when ActorSystem is started and shutdown
-
-  // FIXME #26537 silence slf4j initialization output (must be some config?)
 }

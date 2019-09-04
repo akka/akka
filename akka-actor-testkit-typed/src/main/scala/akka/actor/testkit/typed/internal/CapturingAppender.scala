@@ -37,9 +37,10 @@ import ch.qos.logback.core.AppenderBase
  * the captured logging events are flushed to the appenders defined for the
  * akka.actor.testkit.typed.internal.CapturingAppenderDelegate logger.
  *
- * The flushing on test failure is handled by [[WithLogCapturing]] mixin.
+ * The flushing on test failure is handled by [[akka.actor.testkit.typed.scaladsl.WithLogCapturing]]
+ * for ScalaTest and [[akka.actor.testkit.typed.javadsl.LogCapturing]] for JUnit.
  *
- * Use something like the following in the logback-test.xml:
+ * Use configuration like the following the logback-test.xml:
  *
  * {{{
  *     <appender name="CapturingAppender" class="akka.actor.testkit.typed.internal.CapturingAppender" />

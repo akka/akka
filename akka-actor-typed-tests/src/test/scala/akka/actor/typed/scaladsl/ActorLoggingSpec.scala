@@ -8,10 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.internal.WithLogCapturing
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.DefaultLoggingFilter

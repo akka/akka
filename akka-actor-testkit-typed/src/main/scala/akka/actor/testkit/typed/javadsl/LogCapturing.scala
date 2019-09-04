@@ -2,28 +2,40 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.internal
+package akka.actor.testkit.typed.javadsl
 
 import scala.util.control.NonFatal
 
-import akka.annotation.InternalApi
+import akka.actor.testkit.typed.internal.CapturingAppender
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.slf4j.LoggerFactory
 
 /**
- * INTERNAL API
- *
  * JUnit `TestRule` to make log lines appear only when the test failed.
- * Requires Logback and configuration of [[CapturingAppender]] in logback-test.xml.
  *
  * Use this in test by adding a public field annotated with `@TestRule`:
  * {{{
  *   @Rule public final LogCapturing logCapturing = new LogCapturing();
  * }}}
+ *
+ * Requires Logback and configuration like the following the logback-test.xml:
+ *
+ * {{{
+ *     <appender name="CapturingAppender" class="akka.actor.testkit.typed.internal.CapturingAppender" />
+ *
+ *     <logger name="akka.actor.testkit.typed.internal.CapturingAppenderDelegate" >
+ *       <appender-ref ref="STDOUT"/>
+ *     </logger>
+ *
+ *     <root level="DEBUG">
+ *         <appender-ref ref="CapturingAppender"/>
+ *     </root>
+ * }}}
  */
-@InternalApi private[akka] class LogCapturing extends TestRule {
+final class LogCapturing extends TestRule {
   // eager access of CapturingAppender to fail fast if misconfigured
   private val capturingAppender = CapturingAppender.get("")
 

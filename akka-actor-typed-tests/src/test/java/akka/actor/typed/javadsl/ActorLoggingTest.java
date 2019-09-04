@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl;
 
-import akka.actor.testkit.typed.internal.LogCapturing;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
