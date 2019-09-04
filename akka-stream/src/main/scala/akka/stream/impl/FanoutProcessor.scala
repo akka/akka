@@ -9,7 +9,7 @@ import akka.actor.ActorRef
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.annotation.InternalApi
-import akka.stream.ActorAttributes
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
@@ -120,11 +120,13 @@ import org.reactivestreams.Subscriber
  */
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) {
 
-  val timeoutMode = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeoutMode].mode
-  if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
-    import context.dispatcher
-    val timeout = attributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
-    context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout)
+  val timeoutMode = {
+    val StreamSubscriptionTimeout(timeout, mode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
+    if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+      import context.dispatcher
+      context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout)
+    }
+    mode
   }
 
   override val primaryOutputs: FanoutOutputs = {

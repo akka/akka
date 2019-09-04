@@ -303,7 +303,7 @@ object Attributes {
    * that manages an input buffer for all inlets of its shape. This attribute configures
    * the initial and maximal input buffer in number of elements for each inlet.
    *
-   * Use factory method 'inputBuffer' to create instances.
+   * Use factory method [[Attributes#inputBuffer]] to create instances.
    */
   final case class InputBuffer(initial: Int, max: Int) extends MandatoryAttribute
 
@@ -427,7 +427,7 @@ object ActorAttributes {
   /**
    * Configures the dispatcher to be used by streams.
    *
-   * Use factory to create.
+   * Use factory method [[ActorAttributes#dispatcher]] to create instances.
    */
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
 
@@ -511,40 +511,24 @@ object ActorAttributes {
     Attributes(DebugLogging(enabled))
 
   /**
-   * Defines what should happen when stream subscriptions times out.
-   *
-   * Use factory method [[#streamSubscriptionTimeoutMode]] to create.
-   */
-  final case class StreamSubscriptionTimeoutMode(mode: StreamSubscriptionTimeoutTerminationMode)
-      extends MandatoryAttribute
-
-  /**
-   * Defines what should happen when stream subscriptions times out.
-   */
-  def streamSubscriptionTimeoutMode(mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
-    Attributes(StreamSubscriptionTimeoutMode(mode))
-
-  /**
-   * Defines a timeout for stream subscription after which action is taken (what action is controlled
-   * by the [[StreamSubscriptionTimeoutMode]])
+   * Defines a timeout for stream subscription and what action to take when that hits.
    *
    * Use factory method `streamSubscriptionTimeout` to create.
    */
-  final case class StreamSubscriptionTimeout(timeout: FiniteDuration) extends MandatoryAttribute
+  final case class StreamSubscriptionTimeout(timeout: FiniteDuration, mode: StreamSubscriptionTimeoutTerminationMode)
+      extends MandatoryAttribute
 
   /**
-   * Scala API: Defines a timeout for stream subscription after which action is taken (what action is controlled
-   * by the [[StreamSubscriptionTimeoutMode]])
+   * Scala API: Defines a timeout for stream subscription and what action to take when that hits.
    */
-  def streamSubscriptionTimeout(timeout: FiniteDuration): Attributes =
-    Attributes(StreamSubscriptionTimeout(timeout))
+  def streamSubscriptionTimeout(timeout: FiniteDuration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
+    Attributes(StreamSubscriptionTimeout(timeout, mode))
 
   /**
-   * Java API: Defines a timeout for stream subscription after which action is taken (what action is controlled
-   * by the [[StreamSubscriptionTimeoutMode]])
+   * Java API: Defines a timeout for stream subscription and what action to take when that hits.
    */
-  def streamSubscriptionTimeout(timeout: Duration): Attributes =
-    streamSubscriptionTimeout(timeout.asScala)
+  def streamSubscriptionTimeout(timeout: Duration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
+    streamSubscriptionTimeout(timeout.asScala, mode)
 
   /**
    * Maximum number of elements emitted in batch if downstream signals large demand.

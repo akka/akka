@@ -9,17 +9,17 @@ import java.util.concurrent.TimeoutException
 import akka.Done
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class TimeoutsSpec extends StreamSpec {
 
@@ -341,7 +341,8 @@ class TimeoutsSpec extends StreamSpec {
 
   "Subscription timeouts" must {
 
-    val subscriptionTimeout = ActorAttributes.streamSubscriptionTimeout(100.millis)
+    val subscriptionTimeout =
+      ActorAttributes.streamSubscriptionTimeout(100.millis, StreamSubscriptionTimeoutTerminationMode.cancel)
 
     "be effective for dangling downstream (no fanout)" in assertAllStagesStopped {
       val upstream = TestPublisher.probe()

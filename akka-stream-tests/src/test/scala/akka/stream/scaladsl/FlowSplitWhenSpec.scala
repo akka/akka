@@ -288,9 +288,8 @@ class FlowSplitWhenSpec extends StreamSpec("""
           .delay(1.second)
           .flatMapConcat(identity)
           .toMat(Sink.ignore)(Keep.right)
-          .withAttributes(
-            ActorAttributes.streamSubscriptionTimeoutMode(StreamSubscriptionTimeoutTerminationMode.cancel) and
-            ActorAttributes.streamSubscriptionTimeout(500.milliseconds))
+          .withAttributes(ActorAttributes
+            .streamSubscriptionTimeout(500.milliseconds, StreamSubscriptionTimeoutTerminationMode.cancel))
 
       a[SubscriptionTimeoutException] mustBe thrownBy {
         Await.result(testStreamWithTightTimeout.run(), 3.seconds)

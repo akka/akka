@@ -9,24 +9,24 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
+import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.stage._
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.scaladsl._
-import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.stage._
 import akka.util.OptionVal
+import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
-
-import akka.stream.impl.{ Buffer => BufferImpl }
-import akka.util.ccompat.JavaConverters._
-
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages.SingleSource
 
 /**
  * INTERNAL API
@@ -159,8 +159,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
     override protected def onTimer(timerKey: Any): Unit = {
       val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-      val mode = inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeoutMode].mode
-      val timeout = inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
+      val StreamSubscriptionTimeout(timeout, mode) =
+        inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout]
 
       mode match {
         case StreamSubscriptionTimeoutTerminationMode.CancelTermination =>

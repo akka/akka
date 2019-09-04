@@ -6,15 +6,6 @@ package akka.stream.impl
 
 import java.util.function.BinaryOperator
 
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.collection.mutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.NonFatal
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.Props
@@ -22,6 +13,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.QueueSink.Output
@@ -35,6 +27,16 @@ import akka.stream.stage._
 import akka.util.ccompat._
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -93,13 +95,11 @@ import org.reactivestreams.Subscriber
     val proc = new VirtualPublisher[In]
     context.materializer match {
       case am: ActorMaterializer =>
-        val timeoutMode =
-          context.effectiveAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeoutMode].mode
-        if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
-          val timeout =
-            context.effectiveAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
+        val StreamSubscriptionTimeout(timeout, mode) =
+          context.effectiveAttributes.mandatoryAttribute[StreamSubscriptionTimeout]
+        if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
           am.scheduleOnce(timeout, new Runnable {
-            def run(): Unit = proc.onSubscriptionTimeout(am, timeoutMode)
+            def run(): Unit = proc.onSubscriptionTimeout(am, mode)
           })
         }
       case _ => // not possible to setup timeout

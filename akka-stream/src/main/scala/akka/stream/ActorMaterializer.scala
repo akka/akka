@@ -748,8 +748,8 @@ final class ActorMaterializerSettings @InternalApi private (
       ActorAttributes.Dispatcher(dispatcher) ::
       ActorAttributes.SupervisionStrategy(supervisionDecider) ::
       ActorAttributes.DebugLogging(debugLogging) ::
-      ActorAttributes.StreamSubscriptionTimeoutMode(subscriptionTimeoutSettings.mode) ::
-      ActorAttributes.StreamSubscriptionTimeout(subscriptionTimeoutSettings.timeout) ::
+      ActorAttributes
+        .StreamSubscriptionTimeout(subscriptionTimeoutSettings.timeout, subscriptionTimeoutSettings.mode) ::
       ActorAttributes.OutputBurstLimit(outputBurstLimit) ::
       ActorAttributes.FuzzingMode(fuzzingMode) ::
       ActorAttributes.MaxFixedBufferSize(maxFixedBufferSize) ::
