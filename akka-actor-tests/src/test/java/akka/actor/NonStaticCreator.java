@@ -6,9 +6,9 @@ package akka.actor;
 
 import akka.japi.Creator;
 
-public class NonStaticCreator implements Creator<ClassicAbstractActor> {
+public class NonStaticCreator implements Creator<UntypedAbstractActor> {
   @Override
-  public ClassicAbstractActor create() throws Exception {
+  public UntypedAbstractActor create() throws Exception {
     return null;
   }
 }

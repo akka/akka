@@ -151,7 +151,7 @@ public class JavaAPI extends JUnitSuite {
     assertTrue(full.isDefined());
   }
 
-  public static class ActorWithConstructorParams extends ClassicAbstractActor {
+  public static class ActorWithConstructorParams extends UntypedAbstractActor {
 
     private final String a;
     private final String b;

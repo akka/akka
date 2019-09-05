@@ -63,7 +63,7 @@ public class ClusterClientTest extends JUnitSuite {
             ReceptionistListener.class, ClusterClientReceptionist.get(system).underlying()));
   }
 
-  public static class Service extends ClassicAbstractActor {
+  public static class Service extends UntypedAbstractActor {
     public void onReceive(Object msg) {}
   }
 
