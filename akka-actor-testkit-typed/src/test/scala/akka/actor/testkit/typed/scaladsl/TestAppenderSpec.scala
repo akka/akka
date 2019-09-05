@@ -39,7 +39,7 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
     }
 
-    "only filter events for logger given in interceptLogger" in {
+    "only filter events for given logger name" in {
       val count = new AtomicInteger
       LoggingEventFilter
         .custom({
@@ -48,7 +48,8 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
             logEvent.message == "Hello from right logger" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
         })
         .withOccurrences(2)
-        .interceptLogger(classOf[AnotherLoggerClass].getName) {
+        .withLoggerName(classOf[AnotherLoggerClass].getName)
+        .intercept {
           LoggerFactory.getLogger(classOf[AnotherLoggerClass]).info("Hello from right logger")
           log.info("Hello wrong logger")
           LoggerFactory.getLogger(classOf[AnotherLoggerClass]).info("Hello from right logger")

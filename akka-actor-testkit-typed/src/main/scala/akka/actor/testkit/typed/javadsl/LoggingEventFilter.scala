@@ -35,6 +35,13 @@ import org.slf4j.event.Level
   def withLogLevel(newLogLevel: Level): LoggingEventFilter
 
   /**
+   * Matching events with the given logger name or sub-names in the same way
+   * as configuration loggers are configured in logback.xml.
+   * By default the root logger is used.
+   */
+  def withLoggerName(newLoggerName: String): LoggingEventFilter
+
+  /**
    * Matching events that have "akkaSource" MDC value equal to the given value.
    * "akkaSource" is typically the actor path.
    */
@@ -74,16 +81,14 @@ import org.slf4j.event.Level
   def matches(event: LoggingEvent): Boolean
 
   /**
-   * Apply this filter while executing the given code block. Care is taken to
-   * remove the filter when the block is finished or aborted.
+   * Apply this filter while executing the given code block.
+   * Assert that this filter has matched within the configured `akka.actor.testkit.typed.filter-leeway`
+   * as often as requested by its `occurrences` parameter specifies.
+   *
+   * Care is taken to remove the filter when the block is finished or aborted.
    */
   def intercept[T](system: ActorSystem[_], code: Supplier[T]): T
 
-  /**
-   * Apply this filter while executing the given code block. Care is taken to
-   * remove the filter when the block is finished or aborted.
-   */
-  def interceptLogger[T](system: ActorSystem[_], loggerName: String, code: Supplier[T]): T
 }
 
 /**

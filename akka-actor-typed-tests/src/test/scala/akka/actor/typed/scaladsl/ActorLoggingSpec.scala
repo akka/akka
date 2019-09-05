@@ -86,7 +86,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       }
 
       val actor =
-        LoggingEventFilter.info("Started").interceptLogger(classOf[AnotherLoggerClass].getName) {
+        LoggingEventFilter.info("Started").withLoggerName(classOf[AnotherLoggerClass].getName).intercept {
           spawn(behavior, "the-other-actor")
         }
 
@@ -99,8 +99,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           count.incrementAndGet()
           logEvent.message == "got message Hello" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
         }
+        .withLoggerName(classOf[AnotherLoggerClass].getName)
         .withOccurrences(2)
-        .interceptLogger(classOf[AnotherLoggerClass].getName) {
+        .intercept {
           actor ! "Hello"
           LoggerFactory.getLogger(classOf[ActorLoggingSpec]).debug("Hello from other logger")
           actor ! "Hello"

@@ -23,23 +23,16 @@ import org.slf4j.event.Level
  * INTERNAL API
  */
 @InternalApi private[akka] object LoggingEventFilterImpl {
-  def empty: LoggingEventFilterImpl = new LoggingEventFilterImpl(1, None, None, None, None, None, Map.empty, None)
+  def empty: LoggingEventFilterImpl = new LoggingEventFilterImpl(1, None, None, None, None, None, None, Map.empty, None)
 }
 
 /**
  * INTERNAL API
- *
- * Facilities for selectively filtering out expected events from logging so
- * that you can keep your test run’s console output clean and do not miss real
- * error messages.
- *
- * See the companion object for convenient factory methods.
- *
- * If the `occurrences` is set to Int.MaxValue, no tracking is done.
  */
 @InternalApi private[akka] final case class LoggingEventFilterImpl(
     occurrences: Int,
     logLevel: Option[Level],
+    loggerName: Option[String],
     source: Option[String],
     messageContains: Option[String],
     messageRegex: Option[Regex],
@@ -52,10 +45,6 @@ import org.slf4j.event.Level
   @volatile // JMM does not guarantee visibility for non-final fields
   private var todo = occurrences
 
-  /**
-   * This method decides whether to filter the event (<code>true</code>) or not
-   * (<code>false</code>).
-   */
   def matches(event: LoggingEvent): Boolean = {
     logLevel.forall(_ == event.level) &&
     source.forall(_ == sourceOrEmpty(event)) &&
@@ -64,6 +53,8 @@ import org.slf4j.event.Level
     cause.forall(c => event.throwable.isDefined && c.isInstance(event.throwable.get)) &&
     mdc.forall { case (key, value) => event.mdc.contains(key) && event.mdc(key) == value } &&
     custom.forall(f => f(event))
+
+    // loggerName is handled when installing the filter, in `intercept`
   }
 
   private def messageOrEmpty(event: LoggingEvent): String =
@@ -79,36 +70,15 @@ import org.slf4j.event.Level
     } else false
   }
 
-  def awaitDone(max: Duration): Boolean = {
+  private def awaitDone(max: Duration): Boolean = {
     if (todo != Int.MaxValue && todo > 0) TestKit.awaitCond(todo <= 0, max, noThrow = true)
     todo == Int.MaxValue || todo == 0
   }
 
-  /**
-   * Assert that this filter has matched as often as requested by its
-   * `occurrences` parameter specifies.
-   */
-  def assertDone(max: Duration): Unit =
-    assert(
-      awaitDone(max),
-      if (todo > 0) s"$todo messages outstanding on $this"
-      else s"received ${-todo} excess messages on $this")
-
-  /**
-   * Apply this filter while executing the given code block. Care is taken to
-   * remove the filter when the block is finished or aborted.
-   */
   override def intercept[T](code: => T)(implicit system: ActorSystem[_]): T = {
-    interceptLogger("")(code)
-  }
-
-  /**
-   * Apply this filter while executing the given code block. Care is taken to
-   * remove the filter when the block is finished or aborted.
-   */
-  override def interceptLogger[T](loggerName: String)(code: => T)(implicit system: ActorSystem[_]): T = {
-    TestAppender.setupTestAppender(loggerName)
-    TestAppender.addFilter(loggerName, this)
+    val effectiveLoggerName = loggerName.getOrElse("")
+    TestAppender.setupTestAppender(effectiveLoggerName)
+    TestAppender.addFilter(effectiveLoggerName, this)
     val leeway = TestKitSettings(system).FilterLeeway
     try {
       val result = code
@@ -120,7 +90,7 @@ import org.slf4j.event.Level
       result
     } finally {
       todo = occurrences
-      TestAppender.removeFilter(loggerName, this)
+      TestAppender.removeFilter(effectiveLoggerName, this)
     }
   }
 
@@ -129,6 +99,9 @@ import org.slf4j.event.Level
 
   override def withLogLevel(newLogLevel: Level): LoggingEventFilterImpl =
     copy(logLevel = Option(newLogLevel))
+
+  def withLoggerName(newLoggerName: String): LoggingEventFilterImpl =
+    copy(loggerName = Some(newLoggerName))
 
   override def withSource(newSource: String): LoggingEventFilterImpl =
     copy(source = Option(newSource))
@@ -161,6 +134,4 @@ import org.slf4j.event.Level
   override def intercept[T](system: ActorSystem[_], code: Supplier[T]): T =
     intercept(code.get())(system)
 
-  override def interceptLogger[T](system: ActorSystem[_], loggerName: String, code: Supplier[T]): T =
-    interceptLogger(loggerName)(code.get())(system)
 }
