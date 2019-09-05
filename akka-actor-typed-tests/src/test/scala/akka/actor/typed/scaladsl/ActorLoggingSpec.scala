@@ -319,7 +319,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       // mdc on defer is empty
       val ref = LoggingEventFilter
         .info("Starting")
-        .withCustom(logEvent => logEvent.mdc.filterKeys(!_.startsWith("akka")).isEmpty)
+        // not counting for example "akkaSource", but it shouldn't have any other entries
+        .withCustom(logEvent => logEvent.mdc.keysIterator.forall(_.startsWith("akka")))
         .intercept {
           spawn(behaviors)
         }
