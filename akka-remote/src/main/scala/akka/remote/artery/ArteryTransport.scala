@@ -5,49 +5,35 @@
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong, AtomicReference }
 
-import akka.actor.Actor
-import akka.actor.Props
-import akka.actor._
+import akka.{ Done, NotUsed }
+import akka.actor.{ Actor, ActorRef, Address, CoordinatedShutdown, Dropped, ExtendedActorSystem, Props }
 import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
-import akka.event.Logging
-import akka.event.LoggingAdapter
-import akka.remote._
+import akka.event.{ Logging, LoggingAdapter }
+import akka.remote.AddressUidExtension
+import akka.remote.RemoteActorRef
+import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteTransport
+import akka.remote.UniqueAddress
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
-import akka.remote.artery.InboundControlJunction.ControlMessageObserver
-import akka.remote.artery.InboundControlJunction.ControlMessageSubject
+import akka.remote.artery.InboundControlJunction.{ ControlMessageObserver, ControlMessageSubject }
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
-import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
-import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
-import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
+import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, Unthrottled }
 import akka.stream._
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.util.OptionVal
-import akka.util.WildcardIndex
-import akka.util.unused
-import akka.Done
-import akka.NotUsed
+import akka.stream.scaladsl.{ Flow, Keep, Sink }
+import akka.util.{ unused, OptionVal, WildcardIndex }
 import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -361,8 +347,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   protected val inboundLanes = settings.Advanced.InboundLanes
 
   val largeMessageChannelEnabled: Boolean =
-    !settings.LargeMessageDestinations.wildcardTree.isEmpty ||
-    !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
+  !settings.LargeMessageDestinations.wildcardTree.isEmpty ||
+  !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
 
   private val priorityMessageDestinations =
     WildcardIndex[NotUsed]()
@@ -389,7 +375,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   // The outboundEnvelopePool is shared among all outbound associations
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(
     capacity =
-      settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
+    settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
   val topLevelFlightRecorder: EventSink = IgnoreEventSink
 
@@ -600,7 +586,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
               @silent("deprecated")
-              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
+              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress, from)
               system.eventStream.publish(lifecycleEvent)
 
             case _ => // not interesting
@@ -816,15 +802,14 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(
-        new OutboundHandshake(
-          system,
-          outboundContext,
-          outboundEnvelopePool,
-          settings.Advanced.HandshakeTimeout,
-          settings.Advanced.HandshakeRetryInterval,
-          settings.Advanced.InjectHandshakeInterval,
-          Duration.Undefined))
+      .via(new OutboundHandshake(
+        system,
+        outboundContext,
+        outboundEnvelopePool,
+        settings.Advanced.HandshakeTimeout,
+        settings.Advanced.HandshakeRetryInterval,
+        settings.Advanced.InjectHandshakeInterval,
+        Duration.Undefined))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
@@ -834,15 +819,14 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       (settings.Advanced.QuarantineIdleOutboundAfter / 10).max(settings.Advanced.HandshakeRetryInterval)
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(
-        new OutboundHandshake(
-          system,
-          outboundContext,
-          outboundEnvelopePool,
-          settings.Advanced.HandshakeTimeout,
-          settings.Advanced.HandshakeRetryInterval,
-          settings.Advanced.InjectHandshakeInterval,
-          livenessProbeInterval))
+      .via(new OutboundHandshake(
+        system,
+        outboundContext,
+        outboundEnvelopePool,
+        settings.Advanced.HandshakeTimeout,
+        settings.Advanced.HandshakeRetryInterval,
+        settings.Advanced.InjectHandshakeInterval,
+        livenessProbeInterval))
       .via(
         new SystemMessageDelivery(
           outboundContext,
