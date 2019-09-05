@@ -386,7 +386,7 @@ The use cases that may require a custom instance of `Materializer` are:
  * When wanting to change some specific default settings for a set of streams (FIXME we should phase this out)
  * When all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
 
-An important aspect of working with streams and actors is understanding an `Materializer`'s life-cycle.
+An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
 be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`). 
 
@@ -409,7 +409,7 @@ Java
 In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the stream's lifecycle to the surrounding actor's lifecycle*.
 This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents a user or other entity, that we continuously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
 
-You may also cause an `Materializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
+You may also cause a `Materializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
 
 Sometimes, however, you may want to explicitly create a stream that will out-last the actor's life.
 For example, you are using an Akka stream to push some large stream of data to an external service.
