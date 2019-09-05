@@ -5,30 +5,26 @@
 package akka.cluster
 
 import java.util.UUID
-
-import language.implicitConversions
-
-import org.scalatest.{ Canceled, Outcome, Suite }
-import org.scalatest.exceptions.TestCanceledException
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit._
-import akka.testkit.TestEvent._
-import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
-import akka.event.Logging.ErrorLevel
-import akka.util.ccompat._
-import scala.concurrent.duration._
-import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.remote.DefaultFailureDetectorRegistry
+import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
 import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
-import akka.util.ccompat._
-import scala.concurrent.Await
-
+import akka.event.Logging.ErrorLevel
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.TestEvent._
+import akka.testkit._
+import akka.util.ccompat._
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.exceptions.TestCanceledException
+import org.scalatest.{ Canceled, Outcome, Suite }
+
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 @ccompatUsedUntil213
 object MultiNodeClusterSpec {
@@ -99,7 +95,7 @@ object MultiNodeClusterSpec {
   }
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport {
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner {
   self: MultiNodeSpec =>
 
   override def initialParticipants = roles.size
@@ -115,10 +111,6 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   override protected def afterTermination(): Unit = {
     self.afterTermination()
     stopCoroner()
-    if (failed || sys.props.get("akka.remote.artery.always-dump-flight-recorder").isDefined) {
-      printFlightRecording()
-    }
-    deleteFlightRecorderFile()
   }
 
   override def expectedTestDuration = 60.seconds

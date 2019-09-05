@@ -4,12 +4,12 @@
 
 package akka.remote.artery
 
-import akka.testkit._
-import akka.actor._
-import akka.routing._
-import com.typesafe.config._
 import akka.ConfigurationException
+import akka.actor._
 import akka.remote.RemoteScope
+import akka.routing._
+import akka.testkit._
+import com.typesafe.config._
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -29,7 +29,7 @@ object RemoteDeployerSpec {
 
 }
 
-class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) with FlightRecorderSpecIntegration {
+class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
 
   "A RemoteDeployer" must {
 

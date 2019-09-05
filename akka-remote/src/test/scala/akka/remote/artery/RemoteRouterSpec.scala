@@ -4,14 +4,15 @@
 
 package akka.remote.artery
 
-import scala.collection.immutable
-import akka.testkit._
-import akka.routing._
 import akka.actor._
 import akka.remote.routing._
-import com.typesafe.config._
-import akka.testkit.TestActors.echoActorProps
 import akka.remote.{ RARP, RemoteScope }
+import akka.routing._
+import akka.testkit.TestActors.echoActorProps
+import akka.testkit._
+import com.typesafe.config._
+
+import scala.collection.immutable
 
 object RemoteRouterSpec {
   class Parent extends Actor {
@@ -38,8 +39,7 @@ class RemoteRouterSpec
         router = round-robin-pool
         nr-of-instances = 6
       }
-    }""").withFallback(ArterySpecSupport.defaultConfig))
-    with FlightRecorderSpecIntegration {
+    }""").withFallback(ArterySpecSupport.defaultConfig)) {
 
   import RemoteRouterSpec._
 
@@ -78,14 +78,12 @@ class RemoteRouterSpec
           target.nodes = ["akka://${sysName}@localhost:${port}"]
         }
       }
-    }""").withFallback(ArterySpecSupport.newFlightRecorderConfig).withFallback(system.settings.config)
+    }""").withFallback(system.settings.config)
 
   val masterSystem = ActorSystem("Master" + sysName, conf)
 
   override def afterTermination(): Unit = {
     shutdown(masterSystem)
-    handleFlightRecorderFile(system)
-    handleFlightRecorderFile(masterSystem)
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {

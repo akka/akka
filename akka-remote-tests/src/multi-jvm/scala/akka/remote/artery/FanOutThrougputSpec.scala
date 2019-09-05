@@ -127,9 +127,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
     runOn(targetNodes: _*) {
       val rep = reporter(testName)
-      val receiver = system.actorOf(
-        receiverProps(rep, payloadSize, printTaskRunnerMetrics = true, senderReceiverPairs),
-        receiverName)
+      val receiver = system.actorOf(receiverProps(rep, payloadSize, senderReceiverPairs), receiverName)
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
       receiver ! PoisonPill
@@ -143,13 +141,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
         val receiver = receivers(i)
         val plotProbe = TestProbe()
         val snd = system.actorOf(
-          senderProps(
-            receiver,
-            receivers,
-            testSettings,
-            plotProbe.ref,
-            printTaskRunnerMetrics = i == 0,
-            resultReporter),
+          senderProps(receiver, receivers, testSettings, plotProbe.ref, resultReporter),
           testName + "-snd" + (i + 1))
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)

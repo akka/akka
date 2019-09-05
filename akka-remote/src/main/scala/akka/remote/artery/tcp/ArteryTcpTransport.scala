@@ -115,7 +115,7 @@ private[remote] class ArteryTcpTransport(
       bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
     implicit val sys: ActorSystem = system
 
-    val afr = createFlightRecorderEventSink()
+    val afr = IgnoreEventSink
 
     val host = outboundContext.remoteAddress.host.get
     val port = outboundContext.remoteAddress.port.get
@@ -224,7 +224,7 @@ private[remote] class ArteryTcpTransport(
 
     val binding = serverBinding match {
       case None =>
-        val afr = createFlightRecorderEventSink()
+        val afr = IgnoreEventSink
         val binding = connectionSource
           .to(Sink.foreach { connection =>
             afr.loFreq(
@@ -315,7 +315,7 @@ private[remote] class ArteryTcpTransport(
       Flow[ByteString]
         .via(inboundKillSwitch.flow)
         // must create new FlightRecorder event sink for each connection because they can't be shared
-        .via(new TcpFraming(() => createFlightRecorderEventSink(false)))
+        .via(new TcpFraming)
         .alsoTo(inboundStream)
         .filter(_ => false) // don't send back anything in this TCP socket
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again

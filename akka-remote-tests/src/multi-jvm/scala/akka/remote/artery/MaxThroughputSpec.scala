@@ -8,19 +8,17 @@ import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-import scala.concurrent.duration._
-
 import akka.actor._
-import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
+import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.PerfFlamesSupport
-import akka.serialization.ByteBufferSerializer
-import akka.serialization.SerializerWithStringManifest
+import akka.remote.testkit.{ MultiNodeConfig, PerfFlamesSupport }
+import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
+import akka.serialization.jackson.CborSerializable
+import akka.serialization.{ ByteBufferSerializer, SerializerWithStringManifest }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
-import akka.serialization.jackson.CborSerializable
+
+import scala.concurrent.duration._
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -110,14 +108,11 @@ object MaxThroughputSpec extends MultiNodeConfig {
     override def tell(msg: Any, sender: ActorRef) = sel.tell(msg, sender)
   }
 
-  def receiverProps(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean, numSenders: Int): Props =
-    Props(new Receiver(reporter, payloadSize, printTaskRunnerMetrics, numSenders))
-      .withDispatcher("akka.remote.default-remote-dispatcher")
+  def receiverProps(reporter: RateReporter, payloadSize: Int, numSenders: Int): Props =
+    Props(new Receiver(reporter, payloadSize, numSenders)).withDispatcher("akka.remote.default-remote-dispatcher")
 
-  class Receiver(reporter: RateReporter, payloadSize: Int, printTaskRunnerMetrics: Boolean, numSenders: Int)
-      extends Actor {
+  class Receiver(reporter: RateReporter, payloadSize: Int, numSenders: Int) extends Actor {
     private var c = 0L
-    private val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
     private var endMessagesMissing = numSenders
     private var correspondingSender
         : ActorRef = null // the Actor which send the Start message will also receive the report
@@ -138,8 +133,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
         endMessagesMissing -= 1 // wait for End message from all senders
 
       case End =>
-        if (printTaskRunnerMetrics)
-          taskRunnerMetrics.printHistograms()
         correspondingSender ! EndResult(c)
         context.stop(self)
 
@@ -158,16 +151,14 @@ object MaxThroughputSpec extends MultiNodeConfig {
       targets: Array[Target],
       testSettings: TestSettings,
       plotRef: ActorRef,
-      printTaskRunnerMetrics: Boolean,
       reporter: BenchmarkFileReporter): Props =
-    Props(new Sender(mainTarget, targets, testSettings, plotRef, printTaskRunnerMetrics, reporter))
+    Props(new Sender(mainTarget, targets, testSettings, plotRef, reporter))
 
   class Sender(
       target: Target,
       targets: Array[Target],
       testSettings: TestSettings,
       plotRef: ActorRef,
-      printTaskRunnerMetrics: Boolean,
       reporter: BenchmarkFileReporter)
       extends Actor {
     val numTargets = targets.size
@@ -177,7 +168,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
     var startTime = 0L
     var remaining = totalMessages
     var maxRoundTripMillis = 0L
-    val taskRunnerMetrics = new TaskRunnerMetrics(context.system)
 
     context.system.eventStream.subscribe(self, classOf[ReceivedActorRefCompressionTable])
 
@@ -271,9 +261,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
         s"payload size $payloadSize, " +
         s"total size ${totalSize(context.system)}, " +
         s"$took ms to deliver $totalReceived messages.")
-
-        if (printTaskRunnerMetrics)
-          taskRunnerMetrics.printHistograms()
 
         plotRef ! PlotResult().add(testName, throughput * payloadSize * testSettings.senderReceiverPairs / 1024 / 1024)
         context.stop(self)
@@ -459,9 +446,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
     runOn(second) {
       val rep = reporter(testName)
       val receivers = (1 to senderReceiverPairs).map { n =>
-        system.actorOf(
-          receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
-          receiverName + n)
+        system.actorOf(receiverProps(rep, payloadSize, senderReceiverPairs), receiverName + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
@@ -475,15 +460,8 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       val senders = for (n <- 1 to senderReceiverPairs) yield {
         val receiver = receivers(n - 1)
         val plotProbe = TestProbe()
-        val snd = system.actorOf(
-          senderProps(
-            receiver,
-            receivers,
-            testSettings,
-            plotProbe.ref,
-            printTaskRunnerMetrics = n == 1,
-            resultReporter),
-          testName + "-snd" + n)
+        val snd = system
+          .actorOf(senderProps(receiver, receivers, testSettings, plotProbe.ref, resultReporter), testName + "-snd" + n)
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)
         snd ! Run

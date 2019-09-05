@@ -297,7 +297,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         taskRunner,
         bufferPool,
         giveUpAfter,
-        createFlightRecorderEventSink()))
+        IgnoreEventSink))
   }
 
   private def aeronSource(
@@ -305,14 +305,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       pool: EnvelopeBufferPool,
       inboundChannel: String): Source[EnvelopeBuffer, AeronSource.AeronLifecycle] =
     Source.fromGraph(
-      new AeronSource(
-        inboundChannel,
-        streamId,
-        aeron,
-        taskRunner,
-        pool,
-        createFlightRecorderEventSink(),
-        aeronSourceSpinningStrategy))
+      new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool, IgnoreEventSink, aeronSourceSpinningStrategy))
 
   private def aeronSourceSpinningStrategy: Int =
     if (settings.Advanced.InboundLanes > 1 || // spinning was identified to be the cause of massive slowdowns with multiple lanes, see #21365
