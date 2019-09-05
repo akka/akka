@@ -347,8 +347,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   protected val inboundLanes = settings.Advanced.InboundLanes
 
   val largeMessageChannelEnabled: Boolean =
-  !settings.LargeMessageDestinations.wildcardTree.isEmpty ||
-  !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
+    !settings.LargeMessageDestinations.wildcardTree.isEmpty ||
+    !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
 
   private val priorityMessageDestinations =
     WildcardIndex[NotUsed]()
@@ -375,7 +375,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   // The outboundEnvelopePool is shared among all outbound associations
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(
     capacity =
-    settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
+      settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
   val topLevelFlightRecorder: EventSink = IgnoreEventSink
 
@@ -802,14 +802,15 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(new OutboundHandshake(
-        system,
-        outboundContext,
-        outboundEnvelopePool,
-        settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval,
-        settings.Advanced.InjectHandshakeInterval,
-        Duration.Undefined))
+      .via(
+        new OutboundHandshake(
+          system,
+          outboundContext,
+          outboundEnvelopePool,
+          settings.Advanced.HandshakeTimeout,
+          settings.Advanced.HandshakeRetryInterval,
+          settings.Advanced.InjectHandshakeInterval,
+          Duration.Undefined))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
@@ -819,14 +820,15 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       (settings.Advanced.QuarantineIdleOutboundAfter / 10).max(settings.Advanced.HandshakeRetryInterval)
     Flow
       .fromGraph(killSwitch.flow[OutboundEnvelope])
-      .via(new OutboundHandshake(
-        system,
-        outboundContext,
-        outboundEnvelopePool,
-        settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval,
-        settings.Advanced.InjectHandshakeInterval,
-        livenessProbeInterval))
+      .via(
+        new OutboundHandshake(
+          system,
+          outboundContext,
+          outboundEnvelopePool,
+          settings.Advanced.HandshakeTimeout,
+          settings.Advanced.HandshakeRetryInterval,
+          settings.Advanced.InjectHandshakeInterval,
+          livenessProbeInterval))
       .via(
         new SystemMessageDelivery(
           outboundContext,
