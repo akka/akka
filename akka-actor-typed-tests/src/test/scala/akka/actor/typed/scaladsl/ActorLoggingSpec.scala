@@ -77,7 +77,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "log with custom Logger class" in {
       val behavior: Behavior[String] = Behaviors.setup[String] { context =>
-        context.setLoggerClass(classOf[AnotherLoggerClass])
+        context.setLoggerName(classOf[AnotherLoggerClass])
         context.log.info("Started")
 
         Behaviors.receive { (context, message) =>

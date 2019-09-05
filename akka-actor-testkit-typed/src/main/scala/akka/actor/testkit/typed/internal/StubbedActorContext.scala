@@ -187,7 +187,9 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
   override def log: Logger = logger
 
-  override def setLoggerClass(clazz: Class[_]): Unit = () // nop as we don't track logger class
+  override def setLoggerName(name: String): Unit = () // nop as we don't track logger
+
+  override def setLoggerName(clazz: Class[_]): Unit = () // nop as we don't track logger
 
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through

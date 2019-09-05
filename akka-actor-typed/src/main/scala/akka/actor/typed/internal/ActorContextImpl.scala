@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory
       case OptionVal.Some(l) => l
       case OptionVal.None =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
-        initLoggerWithClass(logClass)
+        initLoggerWithName(logClass.getName)
     }
     // avoid access to MDC ThreadLocal if not needed
     mdcUsed = true
@@ -98,9 +98,11 @@ import org.slf4j.LoggerFactory
 
   override def getLog: Logger = log
 
-  override def setLoggerClass(clazz: Class[_]): Unit = {
-    initLoggerWithClass(clazz)
-  }
+  override def setLoggerName(name: String): Unit =
+    initLoggerWithName(name)
+
+  override def setLoggerName(clazz: Class[_]): Unit =
+    setLoggerName(clazz.getName)
 
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
   override private[akka] def clearMdc(): Unit = {
@@ -111,8 +113,8 @@ import org.slf4j.LoggerFactory
     }
   }
 
-  private def initLoggerWithClass(logClass: Class[_]): Logger = {
-    val l = LoggerFactory.getLogger(logClass)
+  private def initLoggerWithName(name: String): Logger = {
+    val l = LoggerFactory.getLogger(name)
     logger = OptionVal.Some(l)
     l
   }

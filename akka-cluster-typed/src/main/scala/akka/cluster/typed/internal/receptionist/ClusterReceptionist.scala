@@ -92,7 +92,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   override def behavior: Behavior[Command] =
     Behaviors.setup { ctx =>
-      ctx.setLoggerClass(classOf[ClusterReceptionist])
+      ctx.setLoggerName(classOf[ClusterReceptionist])
       Behaviors.withTimers { timers =>
         val setup = new Setup(ctx)
         // include selfUniqueAddress so that it can be used locally before joining cluster

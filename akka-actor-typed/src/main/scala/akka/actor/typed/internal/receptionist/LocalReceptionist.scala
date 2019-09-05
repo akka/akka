@@ -48,7 +48,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       extends InternalCommand
 
   override def behavior: Behavior[Command] = Behaviors.setup { ctx =>
-    ctx.setLoggerClass(classOf[LocalReceptionist])
+    ctx.setLoggerName(classOf[LocalReceptionist])
     behavior(TypedMultiMap.empty[AbstractServiceKey, KV], TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
       .narrow[Command]
   }

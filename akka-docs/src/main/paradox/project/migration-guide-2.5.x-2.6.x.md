@@ -476,6 +476,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `toUntyped` has been renamed to `toClassic`.
 * Akka Typed is now using SLF4J as the logging API. @scala[`ActorContext.log`]@java[`ActorContext.getLog`] returns
   an `org.slf4j.Logger`. MDC has been changed to only support `String` values.
+* `setLoggerClass` in `ActorContext` has been renamed to `setLoggerName`.
 
 #### Akka Typed Stream API changes
 

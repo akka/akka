@@ -83,7 +83,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
-    ctx.setLoggerClass(loggerClass)
+    ctx.setLoggerName(loggerClass)
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
     // stashState outside supervise because StashState should survive restarts due to persist failures
