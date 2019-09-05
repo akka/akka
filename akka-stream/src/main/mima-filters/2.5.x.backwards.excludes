@@ -160,9 +160,6 @@ ProblemFilters.exclude[Problem]("akka.stream.StreamRefMessages*")
 # #27266 changes to streams internals
 ProblemFilters.exclude[Problem]("akka.stream.impl.*")
 
-# Deprecates status message based api #27503
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Sink.actorRefWithAck$default$5")
-
 # #25559 simplifying materialization
 # internals
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.settings")
