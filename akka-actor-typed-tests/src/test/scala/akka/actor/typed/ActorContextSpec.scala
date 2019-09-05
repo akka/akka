@@ -14,7 +14,7 @@ import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 import org.scalatest.WordSpecLike
 
@@ -66,7 +66,7 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import ActorSpecMessages._
 

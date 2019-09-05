@@ -8,7 +8,7 @@ import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success }
 
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.Props
 import com.typesafe.config.ConfigFactory
@@ -26,7 +26,7 @@ object ActorContextPipeToSelfSpec {
 final class ActorContextPipeToSelfSpec
     extends ScalaTestWithActorTestKit(ActorContextPipeToSelfSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   "The Scala DSL ActorContext pipeToSelf" must {
     "handle success" in { responseFrom(Future.successful("hi")) should ===("ok: hi") }

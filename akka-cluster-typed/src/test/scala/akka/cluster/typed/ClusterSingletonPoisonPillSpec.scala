@@ -14,7 +14,7 @@ import akka.cluster.typed.ClusterSingletonPoisonPillSpec.GetSelf
 import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object ClusterSingletonPoisonPillSpec {
 
@@ -29,7 +29,7 @@ object ClusterSingletonPoisonPillSpec {
 class ClusterSingletonPoisonPillSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonApiSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

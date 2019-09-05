@@ -5,7 +5,7 @@
 package akka.actor.typed.coexistence
 import akka.actor.Actor
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
@@ -43,7 +43,7 @@ object TypedSupervisingClassicSpec {
 
 class TypedSupervisingClassicSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = INFO
-  """.stripMargin) with WordSpecLike with WithLogCapturing {
+  """.stripMargin) with WordSpecLike with LogCapturing {
   import TypedSupervisingClassicSpec._
 
   "Typed supervising classic" should {

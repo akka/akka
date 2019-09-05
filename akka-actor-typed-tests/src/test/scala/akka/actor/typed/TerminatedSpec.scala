@@ -5,10 +5,10 @@
 package akka.actor.typed
 
 import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.{ Matchers, WordSpec }
 
-class TerminatedSpec extends WordSpec with Matchers with WithLogCapturing {
+class TerminatedSpec extends WordSpec with Matchers with LogCapturing {
 
   "Child Failed" must {
     "should be pattern matchable" in {

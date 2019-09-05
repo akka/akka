@@ -23,7 +23,7 @@ object PrimitiveStateSpec {
 class PrimitiveStateSpec
     extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
     EventSourcedBehavior[Int, Int, Int](

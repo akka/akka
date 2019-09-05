@@ -21,7 +21,7 @@ import scala.concurrent.Future
 import akka.actor.DeadLetter
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 
 object AskSpec {
@@ -30,7 +30,7 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import AskSpec._
 

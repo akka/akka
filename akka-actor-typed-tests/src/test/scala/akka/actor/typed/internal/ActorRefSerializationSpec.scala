@@ -9,7 +9,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
@@ -31,7 +31,7 @@ object ActorRefSerializationSpec {
 class ActorRefSerializationSpec
     extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   val serialization = SerializationExtension(system.toClassic)
 

@@ -13,7 +13,7 @@ import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -32,7 +32,7 @@ class ActorSystemSpec
     with BeforeAndAfterAll
     with ScalaFutures
     with Eventually
-    with WithLogCapturing {
+    with LogCapturing {
 
   implicit val patience: PatienceConfig = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
 

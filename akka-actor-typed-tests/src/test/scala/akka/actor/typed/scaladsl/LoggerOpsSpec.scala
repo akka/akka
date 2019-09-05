@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl
 
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
 
@@ -16,7 +16,7 @@ object LoggerOpsSpec {
   case class Value3(i: Int)
 }
 
-class LoggerOpsSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class LoggerOpsSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
   import LoggerOpsSpec._
 
   val log = LoggerFactory.getLogger(getClass)

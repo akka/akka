@@ -24,7 +24,7 @@ object NullEmptyStateSpec {
 class NullEmptyStateSpec
     extends ScalaTestWithActorTestKit(NullEmptyStateSpec.conf)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   implicit val testSettings = TestKitSettings(system)
 

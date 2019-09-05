@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
@@ -119,7 +119,7 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
       akka.test.single-expect-default = 10s
-      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike with WithLogCapturing {
+      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike with LogCapturing {
 
   import PerformanceSpec._
 

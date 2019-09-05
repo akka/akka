@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 class RemoteContextAskSpecSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -87,7 +87,7 @@ object RemoteContextAskSpec {
 class RemoteContextAskSpec
     extends ScalaTestWithActorTestKit(RemoteContextAskSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   import RemoteContextAskSpec._
 

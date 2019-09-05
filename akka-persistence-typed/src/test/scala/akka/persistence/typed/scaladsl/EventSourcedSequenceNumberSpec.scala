@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
@@ -25,7 +25,7 @@ object EventSourcedSequenceNumberSpec {
 class EventSourcedSequenceNumberSpec
     extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup(ctx =>

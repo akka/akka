@@ -5,7 +5,7 @@
 package docs.akka.cluster.sharding.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.Cluster
@@ -29,7 +29,7 @@ object HelloWorldEventSourcedEntityExampleSpec {
 class HelloWorldEventSourcedEntityExampleSpec
     extends ScalaTestWithActorTestKit(HelloWorldEventSourcedEntityExampleSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
   import HelloWorldPersistentEntityExample.HelloWorld
   import HelloWorldPersistentEntityExample.HelloWorld._
 

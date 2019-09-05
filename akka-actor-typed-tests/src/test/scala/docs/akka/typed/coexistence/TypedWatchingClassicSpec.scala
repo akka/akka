@@ -4,7 +4,7 @@
 
 package docs.akka.typed.coexistence
 
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.TestKit
@@ -68,7 +68,7 @@ object TypedWatchingClassicSpec {
   //#classic
 }
 
-class TypedWatchingClassicSpec extends WordSpec with WithLogCapturing {
+class TypedWatchingClassicSpec extends WordSpec with LogCapturing {
 
   import TypedWatchingClassicSpec._
 

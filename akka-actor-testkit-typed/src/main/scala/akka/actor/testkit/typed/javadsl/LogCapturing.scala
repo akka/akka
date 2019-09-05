@@ -7,7 +7,6 @@ package akka.actor.testkit.typed.javadsl
 import scala.util.control.NonFatal
 
 import akka.actor.testkit.typed.internal.CapturingAppender
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -39,7 +38,7 @@ final class LogCapturing extends TestRule {
   // eager access of CapturingAppender to fail fast if misconfigured
   private val capturingAppender = CapturingAppender.get("")
 
-  private val myLogger = LoggerFactory.getLogger(classOf[WithLogCapturing])
+  private val myLogger = LoggerFactory.getLogger(classOf[LogCapturing])
 
   override def apply(base: Statement, description: Description): Statement = {
     new Statement {

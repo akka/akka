@@ -8,14 +8,14 @@ import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.internal.InternalProtocol.IncomingCommand
 import akka.persistence.typed.internal.InternalProtocol.RecoveryPermitGranted
 import org.scalatest.WordSpecLike
 
-class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "StashState" should {
 

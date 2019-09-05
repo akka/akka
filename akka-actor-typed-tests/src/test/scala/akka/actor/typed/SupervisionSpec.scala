@@ -92,7 +92,7 @@ object SupervisionSpec {
   }
 }
 
-class StubbedSupervisionSpec extends WordSpec with Matchers with WithLogCapturing {
+class StubbedSupervisionSpec extends WordSpec with Matchers with LogCapturing {
 
   import SupervisionSpec._
 
@@ -253,7 +253,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers with WithLogCapturin
 
 class SupervisionSpec extends ScalaTestWithActorTestKit("""
     akka.log-dead-letters = off
-    """) with WordSpecLike with WithLogCapturing {
+    """) with WordSpecLike with LogCapturing {
 
   import BehaviorInterceptor._
   import SupervisionSpec._

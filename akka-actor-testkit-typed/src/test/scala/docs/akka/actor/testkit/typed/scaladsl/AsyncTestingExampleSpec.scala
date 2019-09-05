@@ -4,7 +4,7 @@
 
 package docs.akka.actor.testkit.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Scheduler
 //#test-header
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -59,7 +59,7 @@ object AsyncTestingExampleSpec {
 }
 
 //#test-header
-class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Matchers with WithLogCapturing {
+class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Matchers with LogCapturing {
   val testKit = ActorTestKit()
   //#test-header
 

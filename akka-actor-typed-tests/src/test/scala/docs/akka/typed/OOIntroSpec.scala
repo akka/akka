@@ -6,7 +6,7 @@ package docs.akka.typed
 
 //#imports
 import akka.Done
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 //#imports
@@ -136,7 +136,7 @@ object OOIntroSpec {
 
 }
 
-class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import OOIntroSpec._
 

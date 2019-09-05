@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
@@ -73,7 +73,7 @@ akka.actor.typed {
    """).resolve()
 }
 
-class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "The extensions subsystem" must {
     "return the same instance for the same id" in

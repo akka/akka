@@ -11,7 +11,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object FSMDocSpec {
@@ -68,7 +68,7 @@ object FSMDocSpec {
   //#test-code
 }
 
-class FSMDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class FSMDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import FSMDocSpec._
 

@@ -83,7 +83,7 @@ object EventSourcedBehaviorFailureSpec {
 class EventSourcedBehaviorFailureSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorFailureSpec.conf)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 

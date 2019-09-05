@@ -13,7 +13,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -35,7 +35,7 @@ object MessageAdapterSpec {
 class MessageAdapterSpec
     extends ScalaTestWithActorTestKit(MessageAdapterSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   "Message adapters" must {
 

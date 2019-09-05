@@ -145,7 +145,7 @@ object EventSourcedBehaviorRetentionSpec {
 class EventSourcedBehaviorRetentionSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorRetentionSpec.conf)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   import EventSourcedBehaviorRetentionSpec._
 

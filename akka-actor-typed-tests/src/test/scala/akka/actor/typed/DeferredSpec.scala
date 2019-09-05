@@ -30,7 +30,7 @@ object DeferredSpec {
       })
 }
 
-class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -146,7 +146,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with With
   }
 }
 
-class DeferredStubbedSpec extends WordSpec with Matchers with WithLogCapturing {
+class DeferredStubbedSpec extends WordSpec with Matchers with LogCapturing {
 
   import DeferredSpec._
 

@@ -14,7 +14,7 @@ import scala.util.{ Failure, Success }
 
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
@@ -33,7 +33,7 @@ object ActorContextAskSpec {
 class ActorContextAskSpec
     extends ScalaTestWithActorTestKit(ActorContextAskSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   "The Scala DSL ActorContext" must {
 

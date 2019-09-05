@@ -21,7 +21,7 @@ import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.cluster.typed.Down
 import akka.cluster.typed.JoinSeedNodes
 import akka.cluster.typed.Leave
@@ -100,7 +100,7 @@ object ClusterReceptionistSpec {
   val PingKey = ServiceKey[PingProtocol]("pingy")
 }
 
-class ClusterReceptionistSpec extends WordSpec with Matchers with WithLogCapturing {
+class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
 
   import ClusterReceptionistSpec._
   import Receptionist._

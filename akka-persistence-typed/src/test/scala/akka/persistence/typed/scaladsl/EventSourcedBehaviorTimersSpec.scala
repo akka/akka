@@ -75,7 +75,7 @@ object EventSourcedBehaviorTimersSpec {
 class EventSourcedBehaviorTimersSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorTimersSpec.config)
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   import EventSourcedBehaviorTimersSpec._
 

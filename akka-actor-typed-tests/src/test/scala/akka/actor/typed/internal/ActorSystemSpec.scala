@@ -14,7 +14,7 @@ import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import org.scalatest._
@@ -27,7 +27,7 @@ class ActorSystemSpec
     with BeforeAndAfterAll
     with ScalaFutures
     with Eventually
-    with WithLogCapturing {
+    with LogCapturing {
 
   override implicit val patienceConfig = PatienceConfig(1.second)
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)

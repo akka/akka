@@ -6,7 +6,7 @@ package docs.akka.typed
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.MailboxSelector
 import akka.actor.typed.scaladsl.Behaviors
@@ -16,7 +16,7 @@ import org.scalatest.WordSpecLike
 class MailboxDocSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("mailbox-config-sample.conf"))
     with WordSpecLike
-    with WithLogCapturing {
+    with LogCapturing {
 
   "Specifying mailbox through props" must {
     "work" in {

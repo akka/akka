@@ -29,12 +29,12 @@ import org.slf4j.LoggerFactory
  *     </root>
  * }}}
  */
-trait WithLogCapturing extends BeforeAndAfterAll { self: TestSuite =>
+trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
 
   // eager access of CapturingAppender to fail fast if misconfigured
   private val capturingAppender = CapturingAppender.get("")
 
-  private val myLogger = LoggerFactory.getLogger(classOf[WithLogCapturing])
+  private val myLogger = LoggerFactory.getLogger(classOf[LogCapturing])
 
   override protected def afterAll(): Unit = {
     try {

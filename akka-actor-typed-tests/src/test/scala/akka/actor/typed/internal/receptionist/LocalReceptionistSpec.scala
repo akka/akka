@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.Receptionist._
@@ -38,7 +38,7 @@ object LocalReceptionistSpec {
 
 }
 
-class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
+class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
   import LocalReceptionistSpec._
 
   abstract class TestSetup {
@@ -130,7 +130,7 @@ class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike 
   }
 }
 
-class LocalReceptionistBehaviorSpec extends WordSpec with Matchers with WithLogCapturing {
+class LocalReceptionistBehaviorSpec extends WordSpec with Matchers with LogCapturing {
   import LocalReceptionistSpec._
 
   def assertEmpty(inboxes: TestInbox[_]*): Unit = {

@@ -9,7 +9,7 @@ import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.WithLogCapturing
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
@@ -23,7 +23,7 @@ import org.scalatest.WordSpecLike
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel=debug
-  """) with WordSpecLike with Matchers with WithLogCapturing {
+  """) with WordSpecLike with Matchers with LogCapturing {
 
   // needed for the event filter
   implicit val classicSystem = system.toClassic
