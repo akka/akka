@@ -124,18 +124,20 @@ import scala.concurrent.{ Future, Promise }
           }
 
           override def onDownstreamFinish(cause: Throwable): Unit = {
-            cause match {
-              case _: SubscriptionWithCancelException.NonFailureCancellation =>
-                log.debug(
-                  "Unbinding from {}:{} because downstream cancelled stream",
-                  endpoint.getHostString,
-                  endpoint.getPort)
-              case ex =>
-                log.error(
-                  "Unbinding from {}:{} because of downstream failure: {}",
-                  endpoint.getHostString,
-                  endpoint.getPort,
-                  ex)
+            if (log.isDebugEnabled) {
+              cause match {
+                case _: SubscriptionWithCancelException.NonFailureCancellation =>
+                  log.debug(
+                    "Unbinding from {}:{} because downstream cancelled stream",
+                    endpoint.getHostString,
+                    endpoint.getPort)
+                case ex =>
+                  log.debug(
+                    "Unbinding from {}:{} because of downstream failure: {}",
+                    endpoint.getHostString,
+                    endpoint.getPort,
+                    ex)
+              }
             }
             tryUnbind()
           }
@@ -355,18 +357,20 @@ private[stream] object ConnectionSourceStage {
       override def onDownstreamFinish(cause: Throwable): Unit = {
         if (!isClosed(bytesIn)) connection ! ResumeReading
         else {
-          cause match {
-            case _: SubscriptionWithCancelException.NonFailureCancellation =>
-              log.debug(
-                "Aborting connection from {}:{} because downstream cancelled stream",
-                remoteAddress.getHostString,
-                remoteAddress.getPort)
-            case ex =>
-              log.error(
-                "Aborting connection from {}:{} because of downstream failure: {}",
-                remoteAddress.getHostString,
-                remoteAddress.getPort,
-                ex)
+          if (log.isDebugEnabled) {
+            cause match {
+              case _: SubscriptionWithCancelException.NonFailureCancellation =>
+                log.debug(
+                  "Aborting connection from {}:{} because downstream cancelled stream",
+                  remoteAddress.getHostString,
+                  remoteAddress.getPort)
+              case ex =>
+                log.debug(
+                  "Aborting connection from {}:{} because of downstream failure: {}",
+                  remoteAddress.getHostString,
+                  remoteAddress.getPort,
+                  ex)
+            }
           }
           connection ! Abort
           completeStage()

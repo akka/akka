@@ -551,7 +551,7 @@ The following operators have a slight change in behavior because of this:
   an `IOOperationIncompleteException` when downstream fails
 * `.watchTermination` will fail the materialized `Future` or `CompletionStage` rather than completing it when downstream fails
 
-This also means that custom `GraphStage` implementations should be changed to pass the
-cancellation cause on when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature 
+This also means that custom `GraphStage` implementations should be changed to pass on the
+cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature 
 taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause upstream. The old zero-argument 
 `onDownstreamFinish` method has been deprecated.   
