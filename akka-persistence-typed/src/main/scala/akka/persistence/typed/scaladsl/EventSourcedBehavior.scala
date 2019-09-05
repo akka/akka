@@ -190,8 +190,7 @@ object EventSourcedBehavior {
 
   /**
    * Transform the state to another type before giving to the journal. Can be used to transform older
-   * state types into the current state type e.g. when migrating from Persistent FSM to
-   * `akka.persistence.typed.Persistence`.
+   * state types into the current state type e.g. when migrating from Persistent FSM to Typed EventSourcedBehavior.
    */
   def snapshotAdapter(adapter: SnapshotAdapter[State]): EventSourcedBehavior[Command, Event, State]
 

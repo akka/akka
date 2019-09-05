@@ -321,13 +321,47 @@ abstract class AbstractActor extends Actor {
  * of `AbstractActor`. The partial functions created by the `ReceiveBuilder` consist of multiple lambda
  * expressions for every match statement, where each lambda is referencing the code to be run. This is something
  * that the JVM can have problems optimizing and the resulting code might not be as performant as the
+ * classic version. When extending `UntypedAbstractActor` each message is received as a classic
+ * `Object` and you have to inspect and cast it to the actual message type in other ways (instanceof checks).
+ */
+@deprecated("Use 'akka.actor.ClassicAbstractActor' instead.", since = "2.6.0")
+abstract class UntypedAbstractActor extends AbstractActor {
+
+  final override def createReceive(): AbstractActor.Receive =
+    throw new UnsupportedOperationException("createReceive should not be used by UntypedAbstractActor")
+
+  override def receive: PartialFunction[Any, Unit] = { case msg => onReceive(msg) }
+
+  /**
+   * To be implemented by concrete UntypedAbstractActor, this defines the behavior of the
+   * actor.
+   */
+  @throws(classOf[Throwable])
+  def onReceive(message: Any): Unit
+
+  /**
+   * Recommended convention is to call this method if the message
+   * isn't handled in [[#onReceive]] (e.g. unknown message type).
+   * By default it fails with either a [[akka.actor.DeathPactException]] (in
+   * case of an unhandled [[akka.actor.Terminated]] message) or publishes an [[akka.actor.UnhandledMessage]]
+   * to the actor's system's [[akka.event.EventStream]].
+   */
+  override def unhandled(message: Any): Unit = super.unhandled(message)
+}
+
+/**
+ * If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
+ * actors you can consider to implement it at lower level by extending `ClassicAbstractActor` instead
+ * of `AbstractActor`. The partial functions created by the `ReceiveBuilder` consist of multiple lambda
+ * expressions for every match statement, where each lambda is referencing the code to be run. This is something
+ * that the JVM can have problems optimizing and the resulting code might not be as performant as the
  * classic version. When extending `ClassicAbstractActor` each message is received as a classic
  * `Object` and you have to inspect and cast it to the actual message type in other ways (instanceof checks).
  */
 abstract class ClassicAbstractActor extends AbstractActor {
 
   final override def createReceive(): AbstractActor.Receive =
-    throw new UnsupportedOperationException("createReceive should not be used by ClassicAbstractActor")
+    throw new UnsupportedOperationException("createReceive should not be used by UntypedAbstractActor")
 
   override def receive: PartialFunction[Any, Unit] = { case msg => onReceive(msg) }
 

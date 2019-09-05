@@ -102,8 +102,8 @@ object ActorPublisherMessage {
  * requested elements.
  *
  * Create a [[org.reactivestreams.Publisher]] backed by this actor with Scala API [[ActorPublisher#apply]],
- * or Java API [[ClassicActorPublisher#create]] or Java API compatible with lambda expressions
- * [[ClassicActorPublisher#create]].
+ * or Java API [[UntypedActorPublisher#create]] or Java API compatible with lambda expressions
+ * [[AbstractActorPublisher#create]].
  *
  * It can be attached to a [[org.reactivestreams.Subscriber]] or be used as an input source for a
  * [[akka.stream.scaladsl.Flow]]. You can only attach one subscriber to this publisher.

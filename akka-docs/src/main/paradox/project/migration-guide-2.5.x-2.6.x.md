@@ -32,7 +32,7 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
     - Use `akka.testkit.javadsl.TestKit` instead.
 * `UntypedPersistentActor`
     - Use `AbstractPersistentActor` instead.
-*  `UntypedPersistentActorWithAtLeastOnceDelivery` 
+* `UntypedPersistentActorWithAtLeastOnceDelivery` 
     - Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 
 After being deprecated since 2.2, the following have been removed in Akka 2.6.
@@ -472,7 +472,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 #### Akka Typed Stream API changes
 
 * `ActorSource.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
-
+* `toUntyped` has been renamed to `toClassic`.
 
 ## Materializer changes
 
