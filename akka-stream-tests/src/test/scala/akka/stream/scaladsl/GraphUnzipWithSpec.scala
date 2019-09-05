@@ -196,7 +196,7 @@ class GraphUnzipWithSpec extends StreamSpec("""
       rightProbe.expectNoMessage(100.millis)
     }
 
-    "propagagate last downstream cancellation cause once all downstreams has cancelled" in {
+    "propagagate last downstream cancellation cause once all downstreams have cancelled" in {
       val probe = TestProbe()
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
