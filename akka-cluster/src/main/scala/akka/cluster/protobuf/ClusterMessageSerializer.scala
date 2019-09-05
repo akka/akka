@@ -400,7 +400,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       cm.Member.newBuilder
         .setAddressIndex(mapUniqueAddress(member.uniqueAddress))
         .setUpNumber(member.upNumber)
-        .setStatus(cm.MemberStatus.valueOf(memberStatusToInt(member.status)))
+        .setStatus(cm.MemberStatus.forNumber(memberStatusToInt(member.status)))
         .addAllRolesIndexes(member.roles.map(mapRole).asJava)
 
     def reachabilityToProto(reachability: Reachability): Iterable[cm.ObserverReachability.Builder] = {
@@ -413,7 +413,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
                 cm.SubjectReachability
                   .newBuilder()
                   .setAddressIndex(mapUniqueAddress(r.subject))
-                  .setStatus(cm.ReachabilityStatus.valueOf(reachabilityStatusToInt(r.status)))
+                  .setStatus(cm.ReachabilityStatus.forNumber(reachabilityStatusToInt(r.status)))
                   .setVersion(r.version))
           cm.ObserverReachability
             .newBuilder()
