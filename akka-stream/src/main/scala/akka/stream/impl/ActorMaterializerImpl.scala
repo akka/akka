@@ -57,11 +57,8 @@ import scala.concurrent.Future
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
+        // the caller said to use the default dispatcher, but that can been trumped by the dispatcher attribute
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      case ActorAttributes.IODispatcher.dispatcher =>
-        // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
-        val actual = context.effectiveAttributes.mandatoryAttribute[ActorAttributes.BlockingIoDispatcher].dispatcher
-        props.withDispatcher(actual)
       case _ => props
     }
 
