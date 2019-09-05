@@ -2,9 +2,9 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.scaladsl
+package akka.actor.testkit.typed.javadsl
 
-import scala.reflect.ClassTag
+import java.util.function.Supplier
 
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.internal.LoggingEventFilterImpl
@@ -18,11 +18,11 @@ import org.slf4j.event.Level
  *
  * Requires Logback.
  *
- * See the companion object for convenient factory methods.
+ * See the static factory methods as starting point for creating `LoggingEventFilter`.
  *
  * Not for user extension.
  */
-@DoNotInherit trait LoggingEventFilter {
+@DoNotInherit abstract class LoggingEventFilter {
 
   /**
    * Number of events the filter is supposed to match. By default 1.
@@ -59,20 +59,21 @@ import org.slf4j.event.Level
 
   /**
    * Matching events with an included `throwable` that is a class or subclass of the given
-   * `Throwable` `ClassTag`.
+   * `Throwable` class.
    */
-  def withCause[A <: Throwable: ClassTag]: LoggingEventFilter
+  def withCause(newCause: Class[_ <: Throwable]): LoggingEventFilter
 
   /**
    * Matching events with MDC containing all entries of the given `Map`.
    * The event MDC may have more entries than the given `Map`.
    */
-  def withMdc(newMdc: Map[String, String]): LoggingEventFilter
+  def withMdc(newMdc: java.util.Map[String, String]): LoggingEventFilter
 
   /**
-   * Matching events for which the supplied function returns`true`.
+   * Matching events for which the supplied function returns `true`.
    */
   def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingEventFilter
+  // this is a Scala Function, ^ but that can be used with lambda from Java
 
   /**
    * @return `true` if the event matches the conditions of the filter.
@@ -81,12 +82,12 @@ import org.slf4j.event.Level
 
   /**
    * Apply this filter while executing the given code block.
-   * Assert that this filter has matched as often as requested by its
-   * `occurrences` parameter specifies.
+   * Assert that this filter has matched within the configured `akka.actor.testkit.typed.filter-leeway`
+   * as often as requested by its `occurrences` parameter specifies.
    *
    * Care is taken to remove the filter when the block is finished or aborted.
    */
-  def intercept[T](code: => T)(implicit system: ActorSystem[_]): T
+  def intercept[T](system: ActorSystem[_], code: Supplier[T]): T
 
 }
 
@@ -152,12 +153,12 @@ object LoggingEventFilter {
   /**
    * Create a filter for WARN level events with a an included
    * `throwable` that is a class or subclass of the given
-   * `Throwable` `ClassTag`.
+   * * `Throwable` class.
    *
    * More conditions can be added to the returned [LoggingEventFilter].
    */
-  def warn[A <: Throwable: ClassTag]: LoggingEventFilter =
-    empty.withLogLevel(Level.WARN).withCause[A]
+  def warn(causeClass: Class[Throwable]): LoggingEventFilter =
+    empty.withLogLevel(Level.WARN).withCause(causeClass)
 
   /**
    * Create a filter for ERROR level events with a log message
@@ -171,19 +172,19 @@ object LoggingEventFilter {
   /**
    * Create a filter for WARN level events with a an included
    * `throwable` that is a class or subclass of the given
-   * `Throwable` `ClassTag`.
+   * * `Throwable` class.
    *
    * More conditions can be added to the returned [LoggingEventFilter].
    */
-  def error[A <: Throwable: ClassTag]: LoggingEventFilter =
-    empty.withLogLevel(Level.ERROR).withCause[A]
+  def error(causeClass: Class[_ <: Throwable]): LoggingEventFilter =
+    empty.withLogLevel(Level.ERROR).withCause(causeClass)
 
   /**
    * Create a custom event filter. The filter will match those events for
-   * which the supplied function returns `true`.
+   * which for which the supplied function returns `true`.
    */
   def custom(test: Function[LoggingEvent, Boolean]): LoggingEventFilter =
-    empty.withCustom(test)
+    empty.withCustom(test) // this is a Scala Function, but that can be used with lambda from Java
 
   /**
    * Filter for the logging of dead letters.

@@ -18,20 +18,20 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "TestAppender and LoggingEventFilter" must {
     "filter errors without cause" in {
-      LoggingEventFilter.error(message = "an error", occurrences = 2).intercept {
+      LoggingEventFilter.error("an error").withOccurrences(2).intercept {
         log.error("an error")
         log.error("an error")
       }
     }
 
     "filter errors with cause" in {
-      LoggingEventFilter[TestException](message = "err", occurrences = 1).intercept {
+      LoggingEventFilter.error("err").withCause[TestException].intercept {
         log.error("err", TestException("an error"))
       }
     }
 
     "filter warnings" in {
-      LoggingEventFilter.warning(message = "a warning", occurrences = 2).intercept {
+      LoggingEventFilter.warn("a warning").withOccurrences(2).intercept {
         log.error("an error")
         log.warn("a warning")
         log.error("an error")
@@ -39,22 +39,44 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
     }
 
-    "only filter events for logger given in interceptLogger" in {
+    "only filter events for given logger name" in {
       val count = new AtomicInteger
       LoggingEventFilter
-        .custom(
-          {
-            case logEvent =>
-              count.incrementAndGet()
-              logEvent.message == "Hello from right logger" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
-          },
-          occurrences = 2)
-        .interceptLogger(classOf[AnotherLoggerClass].getName) {
+        .custom({
+          case logEvent =>
+            count.incrementAndGet()
+            logEvent.message == "Hello from right logger" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
+        })
+        .withOccurrences(2)
+        .withLoggerName(classOf[AnotherLoggerClass].getName)
+        .intercept {
           LoggerFactory.getLogger(classOf[AnotherLoggerClass]).info("Hello from right logger")
           log.info("Hello wrong logger")
           LoggerFactory.getLogger(classOf[AnotherLoggerClass]).info("Hello from right logger")
         }
       count.get should ===(2)
+    }
+
+    "find unexpected events withOccurences(0)" in {
+      LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+        log.error("an error")
+        log.warn("another warning")
+      }
+
+      intercept[AssertionError] {
+        LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+          log.error("an error")
+          log.warn("a warning")
+          log.warn("another warning")
+        }
+      }.getMessage should include("Received 1 excess messages")
+
+      intercept[AssertionError] {
+        LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+          log.warn("a warning")
+          log.warn("a warning")
+        }
+      }.getMessage should include("Received 2 excess messages")
     }
 
   }

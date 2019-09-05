@@ -5,11 +5,13 @@
 package akka.actor.testkit.typed
 
 import com.typesafe.config.Config
-
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.Extension
+import akka.actor.typed.ExtensionId
 
 object TestKitSettings {
 
@@ -17,7 +19,7 @@ object TestKitSettings {
    * Reads configuration settings from `akka.actor.testkit.typed` section.
    */
   def apply(system: ActorSystem[_]): TestKitSettings =
-    apply(system.settings.config.getConfig("akka.actor.testkit.typed"))
+    Ext(system).settings
 
   /**
    * Reads configuration settings from given `Config` that
@@ -38,29 +40,41 @@ object TestKitSettings {
    */
   def create(config: Config): TestKitSettings =
     new TestKitSettings(config)
+
+  private object Ext extends ExtensionId[Ext] {
+    override def createExtension(system: ActorSystem[_]): Ext = new Ext(system)
+    def get(system: ActorSystem[_]): Ext = apply(system)
+  }
+
+  private class Ext(system: ActorSystem[_]) extends Extension {
+    val settings: TestKitSettings = TestKitSettings(system.settings.config.getConfig("akka.actor.testkit.typed"))
+  }
 }
 
 final class TestKitSettings(val config: Config) {
 
   import akka.util.Helpers._
 
-  val TestTimeFactor = config
+  val TestTimeFactor: Double = config
     .getDouble("timefactor")
     .requiring(tf => !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val SingleExpectDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("single-expect-default"))
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val ExpectNoMessageDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("expect-no-message-default"))
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val DefaultTimeout: Timeout = Timeout(dilated(config.getMillisDuration("default-timeout")))
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val DefaultActorSystemShutdownTimeout: FiniteDuration = dilated(config.getMillisDuration("system-shutdown-default"))
 
   val ThrowOnShutdownTimeout: Boolean = config.getBoolean("throw-on-shutdown-timeout")
+
+  /** Dilated with `TestTimeFactor`. */
+  val FilterLeeway: FiniteDuration = dilated(config.getMillisDuration("filter-leeway"))
 
   /**
    * Scala API: Scale the `duration` with the configured `TestTimeFactor`

@@ -58,62 +58,82 @@ class LoggingEventFilterSpec extends ScalaTestWithActorTestKit with WordSpecLike
 
   "The LoggingEventFilter.error" must {
     "filter errors without cause" in {
-      val filter = LoggingEventFilter.error()
-      filter(errorNoCause) should ===(true)
+      val filter = LoggingEventFilter.empty.withLogLevel(Level.ERROR)
+      filter.matches(errorNoCause) should ===(true)
     }
 
     "filter errors with cause" in {
-      val filter = LoggingEventFilter.error()
-      filter(errorWithCause(new AnError)) should ===(true)
+      val filter = LoggingEventFilter.empty.withLogLevel(Level.ERROR)
+      filter.matches(errorWithCause(new AnError)) should ===(true)
     }
 
     "filter error with matching message" in {
-      LoggingEventFilter.error(message = "this is an error").apply(errorWithCause(new AnError)) should ===(true)
-      LoggingEventFilter.error(message = "this is an error").apply(errorNoCause) should ===(true)
-      LoggingEventFilter.error(message = "this is another error").apply(errorNoCause) should ===(false)
+      LoggingEventFilter.error("an error").matches(errorWithCause(new AnError)) should ===(true)
+      LoggingEventFilter.error("an error").matches(errorNoCause) should ===(true)
+      LoggingEventFilter.error("another error").matches(errorNoCause) should ===(false)
+    }
+
+    "filter with matching MDC" in {
+      LoggingEventFilter.empty.withMdc(Map("a" -> "A")).matches(errorNoCause.copy(mdc = Map("a" -> "A"))) should ===(
+        true)
+      LoggingEventFilter.empty
+        .withMdc(Map("a" -> "A", "b" -> "B"))
+        .matches(errorNoCause.copy(mdc = Map("a" -> "A", "b" -> "B"))) should ===(true)
+      LoggingEventFilter.empty
+        .withMdc(Map("a" -> "A"))
+        .matches(errorNoCause.copy(mdc = Map("a" -> "A", "b" -> "B"))) should ===(true)
+      LoggingEventFilter.empty
+        .withMdc(Map("a" -> "A", "b" -> "B"))
+        .matches(errorNoCause.copy(mdc = Map("a" -> "A"))) should ===(false)
+      LoggingEventFilter.empty.withMdc(Map("a" -> "A", "b" -> "B")).matches(errorNoCause) should ===(false)
     }
   }
 
-  "The LoggingEventFilter[Exc]" must {
+  "The LoggingEventFilter with cause" must {
     "not filter errors without cause" in {
-      val filter = LoggingEventFilter[AnError]()
-      filter(errorNoCause) should ===(false)
+      val filter = LoggingEventFilter.error[AnError]
+      filter.matches(errorNoCause) should ===(false)
     }
 
     "not filter errors with an unrelated cause" in {
       object AnotherError extends Exception
-      val filter = LoggingEventFilter[AnError]()
-      filter(errorWithCause(AnotherError)) should ===(false)
+      val filter = LoggingEventFilter.error[AnError]
+      filter.matches(errorWithCause(AnotherError)) should ===(false)
     }
 
     "filter errors with a matching cause" in {
-      val filter = LoggingEventFilter[AnError]()
-      filter(errorWithCause(new AnError)) should ===(true)
+      val filter = LoggingEventFilter.error[AnError]
+      filter.matches(errorWithCause(new AnError)) should ===(true)
     }
     "filter errors with a matching cause and message" in {
-      val filter = LoggingEventFilter[AnError](message = "this is an error")
-      filter(errorWithCause(new AnError)) should ===(true)
+      val filter = LoggingEventFilter.error("this is an error").withCause[AnError]
+      filter.matches(errorWithCause(new AnError)) should ===(true)
     }
   }
 
-  "The LoggingEventFilter.warning" must {
+  "The LoggingEventFilter.warn" must {
     "filter warnings without cause" in {
-      val filter = LoggingEventFilter.warning()
-      filter(warningNoCause) should ===(true)
+      val filter = LoggingEventFilter.empty.withLogLevel(Level.WARN)
+      filter.matches(warningNoCause) should ===(true)
     }
     "filter warning with cause" in {
-      val filter = LoggingEventFilter.warning()
-      filter(warningWithCause(new AnError)) should ===(true)
+      val filter = LoggingEventFilter.empty.withLogLevel(Level.WARN)
+      filter.matches(warningWithCause(new AnError)) should ===(true)
     }
     "filter warning with matching message" in {
-      LoggingEventFilter.warning(message = "this is a warning").apply(warningWithCause(new AnError)) should ===(true)
-      LoggingEventFilter.warning(message = "this is another warning").apply(warningWithCause(new AnError)) should ===(
-        false)
+      LoggingEventFilter.warn("this is a warning").matches(warningWithCause(new AnError)) should ===(true)
+      LoggingEventFilter.warn("this is another warning").matches(warningWithCause(new AnError)) should ===(false)
     }
     "filter warning with matching source" in {
       val source = "akka://Sys/user/foo"
-      LoggingEventFilter.warning(source = source).apply(warningWithSource(source)) should ===(true)
-      LoggingEventFilter.warning(source = "akka://Sys/user/bar").apply(warningWithSource(source)) should ===(false)
+      LoggingEventFilter.empty
+        .withLogLevel(Level.WARN)
+        .withSource(source)
+        .matches(warningWithSource(source)) should ===(true)
+      LoggingEventFilter.empty
+        .withLogLevel(Level.WARN)
+        .withSource("akka://Sys/user/bar")
+        .matches(warningWithSource(source)) should ===(false)
     }
 
   }

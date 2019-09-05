@@ -100,7 +100,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
           }
       }
 
-      LoggingEventFilter[NotImplementedError](occurrences = 1, start = "Pong").intercept {
+      LoggingEventFilter.error[NotImplementedError].withMessageContains("Pong").intercept {
         spawn(snitch)
       }
 

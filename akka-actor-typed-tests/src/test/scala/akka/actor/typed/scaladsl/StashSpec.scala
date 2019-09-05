@@ -417,13 +417,16 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      LoggingEventFilter[TestException](start = "unstash-fail", occurrences = 1).intercept {
-        ref ! "unstash"
-        probe.expectMessage("unstashing-0")
-        probe.expectMessage("unstashing-1")
-        probe.expectMessage("stash-fail-2")
-        probe.expectMessage("post-stop-2")
-      }(system)
+      LoggingEventFilter
+        .error[TestException]
+        .withMessageContains("unstash-fail")
+        .intercept {
+          ref ! "unstash"
+          probe.expectMessage("unstashing-0")
+          probe.expectMessage("unstashing-1")
+          probe.expectMessage("stash-fail-2")
+          probe.expectMessage("post-stop-2")
+        }(system)
     }
 
     "signal PostStop to the latest unstashed behavior on failure" in {
@@ -444,25 +447,26 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      LoggingEventFilter[TestException](
-        start = "Supervisor RestartSupervisor saw failure: unstash-fail",
-        occurrences = 1).intercept {
-        ref ! "unstash"
-        // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
-        // because it's waiting for child to stop
-        ref ! "get-current"
+      LoggingEventFilter
+        .error[TestException]
+        .withMessageContains("Supervisor RestartSupervisor saw failure: unstash-fail")
+        .intercept {
+          ref ! "unstash"
+          // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
+          // because it's waiting for child to stop
+          ref ! "get-current"
 
-        probe.expectMessage("unstashing-0")
-        probe.expectMessage("unstashing-1")
-        probe.expectMessage("stash-fail-2")
-        probe.expectMessage("pre-restart-2")
+          probe.expectMessage("unstashing-0")
+          probe.expectMessage("unstashing-1")
+          probe.expectMessage("stash-fail-2")
+          probe.expectMessage("pre-restart-2")
 
-        childLatch.foreach(_.countDown())
-        probe.expectMessage("current-00")
+          childLatch.foreach(_.countDown())
+          probe.expectMessage("current-00")
 
-        ref ! "get-stash-size"
-        probe.expectMessage("stash-size-0")
-      }(system)
+          ref ! "get-stash-size"
+          probe.expectMessage("stash-size-0")
+        }(system)
     }
 
     "signal PreRestart to the latest unstashed behavior on failure with restart supervision" in {
@@ -526,19 +530,20 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      LoggingEventFilter[TestException](
-        start = "Supervisor ResumeSupervisor saw failure: unstash-fail",
-        occurrences = 1).intercept {
-        ref ! "unstash"
-        ref ! "get-current"
+      LoggingEventFilter
+        .error[TestException]
+        .withMessageContains("Supervisor ResumeSupervisor saw failure: unstash-fail")
+        .intercept {
+          ref ! "unstash"
+          ref ! "get-current"
 
-        probe.expectMessage("unstashing-0")
-        probe.expectMessage("unstashing-1")
-        probe.expectMessage("stash-fail-2")
-        probe.expectMessage("current-2")
-        ref ! "get-stash-size"
-        probe.expectMessage("stash-size-5")
-      }(system)
+          probe.expectMessage("unstashing-0")
+          probe.expectMessage("unstashing-1")
+          probe.expectMessage("stash-fail-2")
+          probe.expectMessage("current-2")
+          ref ! "get-stash-size"
+          probe.expectMessage("stash-size-5")
+        }(system)
 
       ref ! "unstash"
       ref ! "get-current"
@@ -644,10 +649,9 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
         Behaviors.receiveMessage {
           case "unstash" =>
-            stash.unstashAll(Behaviors.receiveMessage {
-              case unstashed =>
-                probe.ref ! unstashed
-                Behaviors.stopped
+            stash.unstashAll(Behaviors.receiveMessage { unstashed =>
+              probe.ref ! unstashed
+              Behaviors.stopped
             })
           case _ =>
             Behaviors.same

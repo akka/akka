@@ -23,52 +23,52 @@ class LoggerOpsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "LoggerOps" must {
 
     "provide extension method for 2 arguments" in {
-      LoggingEventFilter.info(message = "[template a b]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a b]").intercept {
         log.info2("[template {} {}]", "a", "b")
       }
-      LoggingEventFilter.info(message = "[template a 2]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a 2]").intercept {
         log.info2("[template {} {}]", "a", 2)
       }
-      LoggingEventFilter.info(message = "[template 1 2]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template 1 2]").intercept {
         log.info2("[template {} {}]", 1, 2)
       }
-      LoggingEventFilter.info(message = "[template 1 b]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template 1 b]").intercept {
         log.info2("[template {} {}]", 1, "b")
       }
-      LoggingEventFilter.info(message = "[template a Value2(2)]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a Value2(2)]").intercept {
         log.info2("[template {} {}]", "a", Value2(2))
       }
-      LoggingEventFilter.info(message = "[template Value1(1) Value1(1)]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template Value1(1) Value1(1)]").intercept {
         log.info2("[template {} {}]", Value1(1), Value1(1))
       }
-      LoggingEventFilter.info(message = "[template Value1(1) Value2(2)]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template Value1(1) Value2(2)]").intercept {
         log.info2("[template {} {}]", Value1(1), Value2(2))
       }
     }
 
     "provide extension method for vararg arguments" in {
-      LoggingEventFilter.info(message = "[template a b c]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a b c]").intercept {
         log.infoN("[template {} {} {}]", "a", "b", "c")
       }
-      LoggingEventFilter.info(message = "[template a b 3]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a b 3]").intercept {
         log.infoN("[template {} {} {}]", "a", "b", 3)
       }
-      LoggingEventFilter.info(message = "[template a 2 c]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a 2 c]").intercept {
         log.infoN("[template {} {} {}]", "a", 2, "c")
       }
-      LoggingEventFilter.info(message = "[template 1 2 3]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template 1 2 3]").intercept {
         log.infoN("[template {} {} {}]", 1, 2, 3)
       }
-      LoggingEventFilter.info(message = "[template 1 b c]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template 1 b c]").intercept {
         log.infoN("[template {} {} {}]", 1, "b", "c")
       }
-      LoggingEventFilter.info(message = "[template a Value2(2) Value3(3)]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template a Value2(2) Value3(3)]").intercept {
         log.infoN("[template {} {} {}]", "a", Value2(2), Value3(3))
       }
-      LoggingEventFilter.info(message = "[template Value1(1) Value1(1) Value1(1)]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template Value1(1) Value1(1) Value1(1)]").intercept {
         log.infoN("[template {} {} {}]", Value1(1), Value1(1), Value1(1))
       }
-      LoggingEventFilter.info(message = "[template Value1(1) Value2(2) Value3(3)]", occurrences = 1).intercept {
+      LoggingEventFilter.info("[template Value1(1) Value2(2) Value3(3)]").intercept {
         log.infoN("[template {} {} {}]", Value1(1), Value2(2), Value3(3))
       }
     }

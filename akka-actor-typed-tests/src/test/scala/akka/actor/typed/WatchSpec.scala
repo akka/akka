@@ -106,7 +106,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         },
         "supervised-child-parent")
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -141,7 +141,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
       val parent = spawn(behavior, "parent")
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -180,8 +180,8 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           },
           "grosso-bosso")
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
-        LoggingEventFilter[DeathPactException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
+        LoggingEventFilter.error[DeathPactException].intercept {
           grossoBosso ! "boom"
         }
       }
@@ -321,11 +321,12 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "fail when watch is used after watchWith on same subject" in new ErrorTestSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
 
-      LoggingEventFilter[IllegalStateException](
-        pattern = ".*termination message was not overwritten.*",
-        occurrences = 1).intercept {
-        watcher ! StartWatching(terminator)
-      }
+      LoggingEventFilter
+        .error[IllegalStateException]
+        .withMessageContains("termination message was not overwritten")
+        .intercept {
+          watcher ! StartWatching(terminator)
+        }
       // supervisor should have stopped the actor
       expectStopped()
     }
@@ -333,22 +334,24 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "fail when watchWitch is used after watchWith with different termination message" in new ErrorTestSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
 
-      LoggingEventFilter[IllegalStateException](
-        pattern = ".*termination message was not overwritten.*",
-        occurrences = 1).intercept {
-        watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
-      }
+      LoggingEventFilter
+        .error[IllegalStateException]
+        .withMessageContains("termination message was not overwritten")
+        .intercept {
+          watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
+        }
       // supervisor should have stopped the actor
       expectStopped()
     }
     "fail when watchWith is used after watch on same subject" in new ErrorTestSetup {
       watcher ! StartWatching(terminator)
 
-      LoggingEventFilter[IllegalStateException](
-        pattern = ".*termination message was not overwritten.*",
-        occurrences = 1).intercept {
-        watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
-      }
+      LoggingEventFilter
+        .error[IllegalStateException]
+        .withMessageContains("termination message was not overwritten")
+        .intercept {
+          watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
+        }
       // supervisor should have stopped the actor
       expectStopped()
     }

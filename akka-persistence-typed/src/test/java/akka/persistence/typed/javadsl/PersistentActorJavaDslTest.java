@@ -5,6 +5,7 @@
 package akka.persistence.typed.javadsl;
 
 import akka.Done;
+import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
@@ -34,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import org.slf4j.event.Level;
 
 import java.time.Duration;
 import java.util.*;
@@ -691,20 +693,21 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   @Test
-  @Ignore // FIXME #26537 use LoggingEventFilter when javadsl is ready
   public void failOnIncorrectExpectedStateForThenRun() {
     TestProbe<String> probe = testKit.createTestProbe();
     ActorRef<String> c =
         testKit.spawn(
             new IncorrectExpectedStateForThenRun(probe.getRef(), new PersistenceId("foiesftr")));
 
-    probe.expectMessage("started!"); // workaround for #26256
+    probe.expectMessage("started!");
 
-    new EventFilter(Logging.Error.class, Adapter.toClassic(testKit.system()))
-        .occurrences(1)
+    LoggingEventFilter.empty()
+        .withLogLevel(Level.ERROR)
         // the error messages slightly changed in later JDKs
-        .matches("(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
+        .withMessageRegex(
+            "(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
         .intercept(
+            testKit.system(),
             () -> {
               c.tell("expect wrong type");
               return null;

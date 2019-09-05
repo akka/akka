@@ -5,6 +5,7 @@
 package akka.actor.testkit.typed
 
 import scala.compat.java8.OptionConverters._
+import akka.util.ccompat.JavaConverters._
 
 import java.util.Optional
 
@@ -12,8 +13,32 @@ import org.slf4j.Marker
 import org.slf4j.event.Level
 
 object LoggingEvent {
+
+  /**
+   * Scala API
+   */
   def apply(level: Level, loggerName: String, threadName: String, message: String, timeStamp: Long): LoggingEvent =
     new LoggingEvent(level, loggerName, threadName, message, timeStamp, None, None, Map.empty)
+
+  /**
+   * Java API
+   */
+  def create(level: Level, loggerName: String, threadName: String, message: String, timeStamp: Long): LoggingEvent =
+    apply(level, loggerName, threadName, message, timeStamp)
+
+  /**
+   * Java API
+   */
+  def create(
+      level: Level,
+      loggerName: String,
+      threadName: String,
+      message: String,
+      timeStamp: Long,
+      marker: Optional[Marker],
+      throwable: Optional[Throwable],
+      mdc: java.util.Map[String, String]) =
+    apply(level, loggerName, threadName, message, timeStamp, marker.asScala, throwable.asScala, mdc.asScala.toMap)
 }
 
 /**

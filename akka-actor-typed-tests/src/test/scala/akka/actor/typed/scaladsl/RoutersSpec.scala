@@ -84,7 +84,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
         }))
 
-      LoggingEventFilter.debug(start = "Pool child stopped", occurrences = 2).intercept {
+      LoggingEventFilter.debug("Pool child stopped").withOccurrences(2).intercept {
         pool ! "stop"
         pool ! "stop"
       }
@@ -109,7 +109,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
           Behaviors.stopped
         }))
 
-      LoggingEventFilter.info(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
+      LoggingEventFilter.info("Last pool child stopped, stopping pool").intercept {
         (0 to 3).foreach { _ =>
           pool ! "stop"
         }

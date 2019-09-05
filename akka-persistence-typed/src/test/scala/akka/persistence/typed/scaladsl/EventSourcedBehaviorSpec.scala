@@ -496,7 +496,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     }
 
     "fail after recovery timeout" in {
-      LoggingEventFilter.error(start = "Persistence failure when replaying snapshot", occurrences = 1).intercept {
+      LoggingEventFilter.error("Persistence failure when replaying snapshot").intercept {
         val c = spawn(
           Behaviors.setup[Command](ctx =>
             counter(ctx, nextPid)
@@ -522,7 +522,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       c ! StopIt
       probe.expectTerminated(c)
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         val c2 = spawn(Behaviors.setup[Command](counter(_, pid)))
         c2 ! Fail
         probe.expectTerminated(c2) // should fail
@@ -534,12 +534,16 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         PersistenceId(null)
       }
       val probe = TestProbe[AnyRef]
-      LoggingEventFilter[ActorInitializationException](start = "persistenceId must not be null", occurrences = 1)
+      LoggingEventFilter
+        .error[ActorInitializationException]
+        .withMessageContains("persistenceId must not be null")
         .intercept {
           val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(null))))
           probe.expectTerminated(ref)
         }
-      LoggingEventFilter[ActorInitializationException](start = "persistenceId must not be null", occurrences = 1)
+      LoggingEventFilter
+        .error[ActorInitializationException]
+        .withMessageContains("persistenceId must not be null")
         .intercept {
           val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = null)))
           probe.expectTerminated(ref)
@@ -551,7 +555,9 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         PersistenceId("")
       }
       val probe = TestProbe[AnyRef]
-      LoggingEventFilter[ActorInitializationException](start = "persistenceId must not be empty", occurrences = 1)
+      LoggingEventFilter
+        .error[ActorInitializationException]
+        .withMessageContains("persistenceId must not be empty")
         .intercept {
           val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(""))))
           probe.expectTerminated(ref)
@@ -562,13 +568,14 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       // new ActorSystem without persistence config
       val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
-        LoggingEventFilter[ActorInitializationException](
-          start = "Default journal plugin is not configured",
-          occurrences = 1).intercept {
-          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
-          val probe = testkit2.createTestProbe()
-          probe.expectTerminated(ref)
-        }(testkit2.system)
+        LoggingEventFilter
+          .error[ActorInitializationException]
+          .withMessageContains("Default journal plugin is not configured")
+          .intercept {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
+            val probe = testkit2.createTestProbe()
+            probe.expectTerminated(ref)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -578,13 +585,14 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       // new ActorSystem without persistence config
       val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
-        LoggingEventFilter[ActorInitializationException](
-          start = "Journal plugin [missing] configuration doesn't exist",
-          occurrences = 1).intercept {
-          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
-          val probe = testkit2.createTestProbe()
-          probe.expectTerminated(ref)
-        }(testkit2.system)
+        LoggingEventFilter
+          .error[ActorInitializationException]
+          .withMessageContains("Journal plugin [missing] configuration doesn't exist")
+          .intercept {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
+            val probe = testkit2.createTestProbe()
+            probe.expectTerminated(ref)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -600,7 +608,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           """))
       try {
         LoggingEventFilter
-          .warning(start = "No default snapshot store configured", occurrences = 1)
+          .warn("No default snapshot store configured")
           .intercept {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe[State]()
@@ -622,13 +630,14 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))
       try {
-        LoggingEventFilter[ActorInitializationException](
-          start = "Snapshot store plugin [missing] configuration doesn't exist",
-          occurrences = 1).intercept {
-          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
-          val probe = testkit2.createTestProbe()
-          probe.expectTerminated(ref)
-        }(testkit2.system)
+        LoggingEventFilter
+          .error[ActorInitializationException]
+          .withMessageContains("Snapshot store plugin [missing] configuration doesn't exist")
+          .intercept {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
+            val probe = testkit2.createTestProbe()
+            probe.expectTerminated(ref)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }

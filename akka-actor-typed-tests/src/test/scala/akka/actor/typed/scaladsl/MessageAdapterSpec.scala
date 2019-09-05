@@ -246,7 +246,7 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
       }
 
       // Not expecting "Exception thrown out of adapter. Stopping myself"
-      LoggingEventFilter[TestException](message = "boom", occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].withMessageContains("boom").intercept {
         spawn(snitch)
       }
 

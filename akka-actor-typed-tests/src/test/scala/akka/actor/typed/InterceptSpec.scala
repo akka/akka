@@ -281,7 +281,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[String]()
       val interceptor = snitchingInterceptor(probe.ref)
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         val ref = spawn(Behaviors.intercept(() => interceptor)(Behaviors.setup[String] { _ =>
           Behaviors.same[String]
         }))

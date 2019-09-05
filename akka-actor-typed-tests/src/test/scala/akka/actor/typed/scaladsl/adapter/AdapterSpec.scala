@@ -277,10 +277,12 @@ class AdapterSpec extends AkkaSpec {
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
 
       // only stop supervisorStrategy
-      LoggingEventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
-        typedRef ! "supervise-restart"
-        probe.expectMsg("ok")
-      }(system.toTyped)
+      LoggingEventFilter
+        .error[AdapterSpec.ThrowIt3.type]
+        .intercept {
+          typedRef ! "supervise-restart"
+          probe.expectMsg("ok")
+        }(system.toTyped)
     }
 
     "stop typed child from classic parent" in {
@@ -302,7 +304,7 @@ class AdapterSpec extends AkkaSpec {
     "log exception if not by handled typed supervisor" in {
       val throwMsg = "sad panda"
       LoggingEventFilter
-        .warning(pattern = ".*sad panda.*")
+        .error("sad panda")
         .intercept {
           system.spawnAnonymous(unhappyTyped(throwMsg))
           Thread.sleep(1000)

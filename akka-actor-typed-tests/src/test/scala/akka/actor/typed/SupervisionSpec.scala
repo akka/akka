@@ -313,7 +313,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
-      LoggingEventFilter[Exc3](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc3].intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PostStop))
         probe.expectTerminated(ref)
@@ -323,7 +323,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Throwable](SupervisorStrategy.stop)
       val ref = spawn(behv)
-      LoggingEventFilter[Exc3](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc3].intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PostStop))
         probe.expectTerminated(ref)
@@ -337,7 +337,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         targetBehavior(probe.ref)
       })
       val behv = Behaviors.supervise(failedSetup).onFailure[Throwable](SupervisorStrategy.stop)
-      LoggingEventFilter[Exc3](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc3].intercept {
         spawn(behv)
       }
     }
@@ -350,12 +350,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
       val ref = spawn(behv)
 
-      LoggingEventFilter[IOException](occurrences = 1).intercept {
+      LoggingEventFilter.error[IOException].intercept {
         ref ! Throw(new IOException())
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
-      LoggingEventFilter[IllegalArgumentException](occurrences = 1).intercept {
+      LoggingEventFilter.error[IllegalArgumentException].intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
         probe.expectMessage(ReceivedSignal(PostStop))
       }
@@ -371,7 +371,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
       val ref = spawn(behv)
 
-      LoggingEventFilter[Exception](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exception].intercept {
         ref ! Throw(new IOException())
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -379,7 +379,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! Ping(1)
       probe.expectMessage(Pong(1))
 
-      LoggingEventFilter[IllegalArgumentException](occurrences = 1).intercept {
+      LoggingEventFilter.error[IllegalArgumentException].intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -397,7 +397,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
       val ref = spawn(behv)
 
-      LoggingEventFilter[Exception](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exception].intercept {
         ref ! Throw(new IOException())
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -405,7 +405,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! Ping(1)
       probe.expectMessage(Pong(1))
 
-      LoggingEventFilter[IllegalArgumentException](occurrences = 1).intercept {
+      LoggingEventFilter.error[IllegalArgumentException].intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -419,7 +419,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
-      LoggingEventFilter[Exc3](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc3].intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PostStop))
       }
@@ -429,7 +429,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
-      LoggingEventFilter[Exc3](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc3].intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PostStop))
       }
@@ -443,7 +443,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! GetState
       probe.expectMessage(State(1, Map.empty))
 
-      LoggingEventFilter[Exc2](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc2].intercept {
         ref ! Throw(new Exc2)
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -462,7 +462,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! GetState
       probe.expectMessage(State(1, Map.empty))
 
-      LoggingEventFilter[Exc2](occurrences = 3).intercept {
+      LoggingEventFilter.error[Exc2].withOccurrences(3).intercept {
         ref ! Throw(new Exc2)
         probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
@@ -485,7 +485,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! GetState
       probe.expectMessage(State(1, Map.empty))
 
-      LoggingEventFilter[Exc2](occurrences = 3).intercept {
+      LoggingEventFilter.error[Exc2].withOccurrences(3).intercept {
         ref ! Throw(new Exc2)
         probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
@@ -525,7 +525,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! GetState
       parentProbe.expectMessageType[State].children.keySet should ===(Set(child1Name, child2Name))
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! Throw(new Exc1)
         parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
@@ -563,7 +563,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! GetState
       parentProbe.expectMessageType[State].children.keySet should contain(childName)
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! Throw(new Exc1)
         parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
@@ -594,7 +594,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
       val child2Name = nextName()
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! Throw(new Exc1)
         parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
@@ -603,7 +603,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! Throw(new Exc1)
       }
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         slowStop.countDown()
         childProbe.expectMessage(ReceivedSignal(PostStop)) // child1
         parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
@@ -648,7 +648,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         }
         .onFailure[RuntimeException](strategy)
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         val ref = spawn(behv)
         slowStop1.countDown()
         child1Probe.expectMessage(ReceivedSignal(PostStop))
@@ -699,12 +699,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
       throwFromSetup.set(true)
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! Throw(new Exc1)
         parentProbe.expectMessage(ReceivedSignal(PreRestart))
       }
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         slowStop1.countDown()
         child1Probe.expectMessage(ReceivedSignal(PostStop))
         child1Probe.expectMessage(ReceivedSignal(PostStop))
@@ -725,7 +725,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! GetState
       probe.expectMessage(State(1, Map.empty))
 
-      LoggingEventFilter[Exc2](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc2].intercept {
         ref ! Throw(new Exc2)
         ref ! GetState
         probe.expectMessage(State(1, Map.empty))
@@ -743,7 +743,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(State(1, Map.empty))
 
       // resume
-      LoggingEventFilter[Exc2](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc2].intercept {
         ref ! Throw(new Exc2)
         probe.expectNoMessage()
         ref ! GetState
@@ -751,7 +751,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
 
       // restart
-      LoggingEventFilter[Exc3](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc3].intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
@@ -759,7 +759,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
 
       // stop
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PostStop))
       }
@@ -781,7 +781,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val droppedMessagesProbe = TestProbe[Dropped]()
       system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
       val ref = spawn(behv)
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         startedProbe.expectMessage(Started)
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
@@ -817,7 +817,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val droppedMessagesProbe = TestProbe[Dropped]()
       system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         startedProbe.expectMessage(Started)
         ref ! IncrementState
         ref ! Throw(new Exc1)
@@ -833,7 +833,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(State(0, Map.empty))
 
       // one more time
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! IncrementState
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
@@ -871,8 +871,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         .onFailure[Exception](strategy)
       val ref = spawn(behv)
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
-        LoggingEventFilter[TestException](occurrences = 2).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
+        LoggingEventFilter.error[TestException].withOccurrences(2).intercept {
           startedProbe.expectMessage(Started)
           ref ! Throw(new Exc1)
           probe.expectTerminated(ref, 3.seconds)
@@ -894,7 +894,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val droppedMessagesProbe = TestProbe[Dropped]()
       system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref ! IncrementState
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
@@ -907,7 +907,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(State(0, Map.empty))
 
       // one more time after the reset timeout
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         probe.expectNoMessage(strategy.resetBackoffAfter + 100.millis.dilated)
         ref ! IncrementState
         ref ! Throw(new Exc1)
@@ -938,7 +938,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       failCount = 1,
       strategy = SupervisorStrategy.restart) {
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         spawn(behv)
       }
     }
@@ -946,7 +946,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     "fail to restart when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
       strategy = SupervisorStrategy.restart) {
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         spawn(behv)
       }
     }
@@ -954,8 +954,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     "fail to resume when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 1,
       strategy = SupervisorStrategy.resume) {
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
-        LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
+        LoggingEventFilter.error[ActorInitializationException].intercept {
           spawn(behv)
         }
       }
@@ -965,7 +965,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       failCount = 1,
       strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis.dilated, maxBackoff = 1.second, 0)) {
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         spawn(behv)
 
         probe.expectMessage(StartFailed)
@@ -978,7 +978,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     "fail instead of restart with exponential backoff when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
       strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis.dilated, maxBackoff = 1.second, 0)) {
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         spawn(behv)
         probe.expectMessage(StartFailed)
       }
@@ -988,7 +988,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       failCount = 1,
       strategy = SupervisorStrategy.restart.withLimit(3, 1.second)) {
 
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         spawn(behv)
 
         probe.expectMessage(StartFailed)
@@ -1000,8 +1000,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       failCount = 20,
       strategy = SupervisorStrategy.restart.withLimit(2, 1.second)) {
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
-        LoggingEventFilter[TestException](occurrences = 2).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
+        LoggingEventFilter.error[TestException].withOccurrences(2).intercept {
           spawn(behv)
 
           // first one from initial setup
@@ -1017,7 +1017,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     "fail instead of restart with limit when deferred factory throws unhandled" in new FailingUnhandledTestSetup(
       strategy = SupervisorStrategy.restart.withLimit(3, 1.second)) {
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         spawn(behv)
         probe.expectMessage(StartFailed)
       }
@@ -1028,7 +1028,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       val behv = supervise(setup[Command](_ => new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         spawn(behv)
         probe.expectMessage(Started) // first one before failure
       }
@@ -1073,7 +1073,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       actor ! "ping"
       probe.expectMessage("pong")
 
-      LoggingEventFilter[RuntimeException](occurrences = 1).intercept {
+      LoggingEventFilter.error[RuntimeException].intercept {
         // Should be supervised as resume
         actor ! "boom"
       }
@@ -1121,7 +1121,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       actor ! "ping"
       probe.expectMessage("pong")
 
-      LoggingEventFilter[RuntimeException](occurrences = 1).intercept {
+      LoggingEventFilter.error[RuntimeException].intercept {
         // Should be supervised as resume
         actor ! "boom"
       }
@@ -1165,7 +1165,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("started 1")
       ref ! "ping"
       probe.expectMessage("pong 1")
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
+      LoggingEventFilter.error[TestException].intercept {
         ref ! "boom"
         probe.expectMessage("crashing 1")
         ref ! "ping"
@@ -1175,10 +1175,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("pong 2") // from "ping" that was stashed
       ref ! "ping"
       probe.expectMessage("pong 2")
-      LoggingEventFilter[TestException](occurrences = 1).intercept {
-        ref ! "boom" // now we should have replaced supervision with the resuming one
-        probe.expectMessage("crashing 2")
-      }(system)
+      LoggingEventFilter
+        .error[TestException]
+        .intercept {
+          ref ! "boom" // now we should have replaced supervision with the resuming one
+          probe.expectMessage("crashing 2")
+        }(system)
       ref ! "ping"
       probe.expectMessage("pong 2")
     }
@@ -1208,7 +1210,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
           })
           .onFailure[DeathPactException](SupervisorStrategy.restart))
 
-      LoggingEventFilter[DeathPactException](occurrences = 1).intercept {
+      LoggingEventFilter.error[DeathPactException].intercept {
         actor ! "boom"
         val child = probe.expectMessageType[ActorRef[_]]
         probe.expectTerminated(child, 3.seconds)
@@ -1223,7 +1225,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         .supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart.withLoggingEnabled(true).withLogLevel(Level.INFO))
       val ref = spawn(behv)
-      LoggingEventFilter.info(pattern = "exc-1", occurrences = 1).intercept {
+      LoggingEventFilter.info("exc-1").intercept {
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -1235,7 +1237,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         .supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart.withLoggingEnabled(true).withLogLevel(Level.DEBUG))
       val ref = spawn(behv)
-      LoggingEventFilter.info(pattern = "exc-1", source = ref.path.toString, occurrences = 0).intercept {
+      LoggingEventFilter.info("exc-1").withSource(ref.path.toString).withOccurrences(0).intercept {
         ref ! Throw(new Exc1)
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -1263,7 +1265,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! Ping(1)
       probe.expectMessage(Pong(1))
 
-      LoggingEventFilter[Exc1](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc1].intercept {
         ref.unsafeUpcast ! "boom"
         probe.expectMessage(ReceivedSignal(PreRestart))
       }
@@ -1311,7 +1313,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
               })
               .onFailure[TestException](strategy))
 
-          LoggingEventFilter[TestException](occurrences = 1).intercept {
+          LoggingEventFilter.error[TestException].intercept {
             actor ! "boom"
           }
           createTestProbe().expectTerminated(actor, 3.second)

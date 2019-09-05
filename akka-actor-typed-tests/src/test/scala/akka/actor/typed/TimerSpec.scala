@@ -175,7 +175,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       probe.expectMessage(Tock(1))
 
       val latch = new CountDownLatch(1)
-      LoggingEventFilter[Exc](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc].intercept {
         // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
 
@@ -205,7 +205,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       probe.expectMessage(Tock(2))
 
-      LoggingEventFilter[Exc](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc].intercept {
         val latch = new CountDownLatch(1)
         // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
@@ -226,7 +226,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
-      LoggingEventFilter[Exc](occurrences = 1).intercept {
+      LoggingEventFilter.error[Exc].intercept {
         ref ! Throw(new Exc)
         probe.expectMessage(GotPostStop(false))
       }
@@ -344,7 +344,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           Behaviors.unhandled
       }
 
-    LoggingEventFilter[TestException](occurrences = 1).intercept {
+    LoggingEventFilter.error[TestException].intercept {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))
@@ -379,7 +379,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.unhandled
     }
 
-    LoggingEventFilter[TestException](occurrences = 1).intercept {
+    LoggingEventFilter.error[TestException].intercept {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))

@@ -133,7 +133,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike 
           case s => s.toLowerCase
         }
 
-      LoggingEventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         val ref = spawn(transform(transform(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))
