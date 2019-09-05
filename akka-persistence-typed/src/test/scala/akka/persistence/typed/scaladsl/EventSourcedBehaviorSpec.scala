@@ -215,7 +215,7 @@ object EventSourcedBehaviorSpec {
               Behaviors.receive((_, msg) =>
                 msg match {
                   case Tick => Behaviors.stopped
-              })
+                })
             })
             ctx.watchWith(delay, DelayFinished)
             Effect.none
@@ -267,13 +267,13 @@ object EventSourcedBehaviorSpec {
           case StopIt =>
             Effect.none.thenStop()
 
-      },
+        },
       eventHandler = (state, evt) =>
         evt match {
           case Incremented(delta) =>
             probe ! ((state, evt))
             State(state.value + delta, state.history :+ state.value)
-      }).receiveSignal {
+        }).receiveSignal {
       case (_, RecoveryCompleted) => ()
       case (_, SnapshotCompleted(metadata)) =>
         snapshotProbe ! Success(metadata)
