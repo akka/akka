@@ -77,6 +77,7 @@ import org.slf4j.event.Level
 
   override def intercept[T](code: => T)(implicit system: ActorSystem[_]): T = {
     val effectiveLoggerName = loggerName.getOrElse("")
+    checkLogback(system)
     TestAppender.setupTestAppender(effectiveLoggerName)
     TestAppender.addFilter(effectiveLoggerName, this)
     val leeway = TestKitSettings(system).FilterLeeway
@@ -91,6 +92,12 @@ import org.slf4j.event.Level
     } finally {
       todo = occurrences
       TestAppender.removeFilter(effectiveLoggerName, this)
+    }
+  }
+
+  private def checkLogback(system: ActorSystem[_]): Unit = {
+    if (!system.dynamicAccess.classIsOnClasspath("ch.qos.logback.classic.spi.ILoggingEvent")) {
+      throw new IllegalStateException("LoggingEventFilter requires logback-classic dependency in classpath.")
     }
   }
 

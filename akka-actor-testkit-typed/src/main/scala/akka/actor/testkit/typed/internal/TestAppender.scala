@@ -24,9 +24,6 @@ import ch.qos.logback.core.AppenderBase
 
   private val TestAppenderName = "AkkaTestAppender"
 
-  // FIXME #26537 detect if logback is not in classpath and fail more friendly,
-  // also detect if other slf4j impl is used and fail friendly
-
   def setupTestAppender(loggerName: String): Unit = {
     val logbackLogger = getLogbackLogger(loggerName)
     logbackLogger.getAppender(TestAppenderName) match {
