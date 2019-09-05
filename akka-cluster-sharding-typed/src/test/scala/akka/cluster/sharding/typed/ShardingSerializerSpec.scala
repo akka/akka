@@ -8,9 +8,10 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
-class ShardingSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ShardingSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "The typed ShardingSerializer" must {
 

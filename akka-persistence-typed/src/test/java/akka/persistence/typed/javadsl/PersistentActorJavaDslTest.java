@@ -5,6 +5,7 @@
 package akka.persistence.typed.javadsl;
 
 import akka.Done;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
@@ -33,6 +34,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import org.slf4j.event.Level;
@@ -50,6 +52,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load());
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   private LeveldbReadJournal queries =
       PersistenceQuery.get(Adapter.toClassic(testKit.system()))

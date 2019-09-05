@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.PoisonPillInterceptor
 
@@ -74,7 +75,7 @@ object InterceptSpec {
   }
 }
 
-class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
   import BehaviorInterceptor._
   import InterceptSpec._
 

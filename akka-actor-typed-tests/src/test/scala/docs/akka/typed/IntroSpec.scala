@@ -6,6 +6,7 @@ package docs.akka.typed
 
 //#fiddle_code
 //#imports
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
@@ -222,7 +223,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import IntroSpec._
 

@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object ManyRecoveriesSpec {
@@ -57,7 +58,7 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
     }
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """) with WordSpecLike {
+    """) with WordSpecLike with LogCapturing {
 
   import ManyRecoveriesSpec._
 

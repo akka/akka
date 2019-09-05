@@ -185,7 +185,7 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) with WordSpecLike {
+class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) with WordSpecLike with LogCapturing {
 
   import ReplicatorSpec._
 

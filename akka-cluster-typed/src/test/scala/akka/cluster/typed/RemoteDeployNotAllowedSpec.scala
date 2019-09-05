@@ -8,10 +8,11 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object RemoteDeployNotAllowedSpec {
@@ -44,7 +45,8 @@ object RemoteDeployNotAllowedSpec {
 
 class RemoteDeployNotAllowedSpec
     extends ScalaTestWithActorTestKit(RemoteDeployNotAllowedSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   "Typed cluster" must {
 

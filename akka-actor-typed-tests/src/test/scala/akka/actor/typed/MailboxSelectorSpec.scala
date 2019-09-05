@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.ActorCell
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
@@ -24,7 +25,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
       mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
       mailbox-capacity = 4 
     }
-  """) with WordSpecLike {
+  """) with WordSpecLike with LogCapturing {
 
   case class WhatsYourMailbox(replyTo: ActorRef[MessageQueue])
   private def behavior: Behavior[WhatsYourMailbox] =

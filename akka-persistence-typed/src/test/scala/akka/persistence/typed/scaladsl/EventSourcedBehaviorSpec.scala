@@ -280,7 +280,10 @@ object EventSourcedBehaviorSpec {
   }
 }
 
-class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorSpec
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorSpec._
   import akka.actor.typed.scaladsl.adapter._

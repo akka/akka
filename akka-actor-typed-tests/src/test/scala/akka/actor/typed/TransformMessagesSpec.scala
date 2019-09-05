@@ -15,6 +15,7 @@ import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object TransformMessagesSpec {
 
@@ -32,7 +33,7 @@ object TransformMessagesSpec {
       }
 }
 
-class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   implicit val classicSystem = system.toClassic
 

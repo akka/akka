@@ -21,7 +21,7 @@ import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
 import org.scalatest.WordSpecLike
 
-class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   sealed trait Command
   case class Tick(n: Int) extends Command

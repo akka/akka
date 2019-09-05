@@ -16,6 +16,7 @@ import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 import org.scalatest.WordSpecLike
 
@@ -200,7 +201,7 @@ class MutableStashSpec extends AbstractStashSpec {
     }
 }
 
-abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
   import AbstractStashSpec._
 
   def testQualifier: String
@@ -255,7 +256,7 @@ abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpec
 
 }
 
-class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   private def slowStoppingChild(latch: CountDownLatch): Behavior[String] =
     Behaviors.receiveSignal {

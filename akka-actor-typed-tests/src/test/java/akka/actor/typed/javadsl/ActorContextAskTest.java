@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.testkit.AkkaSpec;
@@ -11,6 +12,7 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.util.Timeout;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -21,6 +23,8 @@ public class ActorContextAskTest extends JUnitSuite {
 
   @ClassRule
   public static final TestKitJunitResource testKit = new TestKitJunitResource(AkkaSpec.testConf());
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   static class Ping {
     final ActorRef<Pong> respondTo;

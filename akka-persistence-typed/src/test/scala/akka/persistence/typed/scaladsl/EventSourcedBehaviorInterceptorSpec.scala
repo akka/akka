@@ -44,7 +44,8 @@ object EventSourcedBehaviorInterceptorSpec {
 
 class EventSourcedBehaviorInterceptorSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorTimersSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorInterceptorSpec._
 

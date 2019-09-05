@@ -4,6 +4,7 @@
 
 package docs.akka.cluster.typed
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.testkit.SocketUtil
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
@@ -49,7 +50,7 @@ akka {
      """).withFallback(configSystem1)
 }
 
-class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers {
+class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
   import BasicClusterExampleSpec._
 
   implicit override val patienceConfig =
@@ -103,7 +104,7 @@ akka {
 
 }
 
-class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually with Matchers {
+class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
 
   import BasicClusterManualSpec._
 

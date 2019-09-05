@@ -20,7 +20,10 @@ object PrimitiveStateSpec {
     """)
 }
 
-class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf) with WordSpecLike {
+class PrimitiveStateSpec
+    extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf)
+    with WordSpecLike
+    with LogCapturing {
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
     EventSourcedBehavior[Int, Int, Int](

@@ -32,8 +32,9 @@ import akka.persistence.typed.SnapshotAdapter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
-
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object PersistentFsmToTypedMigrationSpec {
   val config = ConfigFactory.parseString(s"""
@@ -205,7 +206,7 @@ object ShoppingCartBehavior {
 
 }
 
-class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures {
+class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures with LogCapturing {
 
   import akka.persistence.fsm.PersistentFSMSpec._
 

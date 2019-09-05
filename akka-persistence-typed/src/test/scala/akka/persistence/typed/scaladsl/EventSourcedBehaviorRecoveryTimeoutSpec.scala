@@ -51,7 +51,8 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
 
 class EventSourcedBehaviorRecoveryTimeoutSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorRecoveryTimeoutSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorRecoveryTimeoutSpec._
 

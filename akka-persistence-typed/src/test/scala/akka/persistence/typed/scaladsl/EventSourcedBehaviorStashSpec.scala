@@ -167,7 +167,8 @@ object EventSourcedBehaviorStashSpec {
 
 class EventSourcedBehaviorStashSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorStashSpec.conf)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorStashSpec._
 
