@@ -91,8 +91,8 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
 
   def dropped(ctx: TypedActorContext[_], signalOrMessage: Any): Unit = {
     import akka.actor.typed.scaladsl.adapter._
-    ctx.asScala.system.toUntyped.eventStream
-      .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toUntyped))
+    ctx.asScala.system.toClassic.eventStream
+      .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toClassic))
   }
 
   protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Catcher[Behavior[I]]

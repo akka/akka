@@ -186,8 +186,8 @@ private[akka] object Running {
 
         case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
-          setup.context.system.toUntyped.eventStream
-            .publish(UnhandledMessage(msg, setup.context.system.toUntyped.deadLetters, setup.context.self.toUntyped))
+          setup.context.system.toClassic.eventStream
+            .publish(UnhandledMessage(msg, setup.context.system.toClassic.deadLetters, setup.context.self.toClassic))
           tryUnstashOne(applySideEffects(sideEffects, state))
 
         case _: Stash.type =>
@@ -368,11 +368,11 @@ private[akka] object Running {
             }
           }
 
-          Some(SnapshotCompleted(SnapshotMetadata.fromUntyped(meta)))
+          Some(SnapshotCompleted(SnapshotMetadata.fromClassic(meta)))
 
         case SaveSnapshotFailure(meta, error) =>
           setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]", meta, error.getMessage)
-          Some(SnapshotFailed(SnapshotMetadata.fromUntyped(meta), error))
+          Some(SnapshotFailed(SnapshotMetadata.fromClassic(meta), error))
 
         case _ =>
           None
@@ -490,13 +490,13 @@ private[akka] object Running {
   def onDeleteSnapshotResponse(response: SnapshotProtocol.Response, state: S): Behavior[InternalProtocol] = {
     val signal = response match {
       case DeleteSnapshotsSuccess(criteria) =>
-        Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromUntyped(criteria))))
+        Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromClassic(criteria))))
       case DeleteSnapshotsFailure(criteria, error) =>
-        Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromUntyped(criteria)), error))
+        Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromClassic(criteria)), error))
       case DeleteSnapshotSuccess(meta) =>
-        Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(SnapshotMetadata.fromUntyped(meta))))
+        Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(SnapshotMetadata.fromClassic(meta))))
       case DeleteSnapshotFailure(meta, error) =>
-        Some(DeleteSnapshotsFailed(DeletionTarget.Individual(SnapshotMetadata.fromUntyped(meta)), error))
+        Some(DeleteSnapshotsFailed(DeletionTarget.Individual(SnapshotMetadata.fromClassic(meta)), error))
       case _ =>
         None
     }

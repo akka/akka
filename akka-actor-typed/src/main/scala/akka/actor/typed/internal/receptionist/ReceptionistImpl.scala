@@ -18,7 +18,7 @@ import akka.annotation.InternalApi
 
   override val ref: ActorRef[Receptionist.Command] = {
     val provider: ReceptionistBehaviorProvider =
-      if (system.settings.untypedSettings.ProviderSelectionType.hasCluster) {
+      if (system.settings.classicSettings.ProviderSelectionType.hasCluster) {
         system.dynamicAccess
           .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
           .recover {

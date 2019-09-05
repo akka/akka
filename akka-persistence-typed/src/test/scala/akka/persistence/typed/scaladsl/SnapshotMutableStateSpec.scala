@@ -17,8 +17,8 @@ import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
-import akka.persistence.{ SnapshotMetadata => UntypedSnapshotMetadata }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
+import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -28,17 +28,17 @@ object SnapshotMutableStateSpec {
 
   class SlowInMemorySnapshotStore extends SnapshotStore {
 
-    private var state = Map.empty[String, (Any, UntypedSnapshotMetadata)]
+    private var state = Map.empty[String, (Any, ClassicSnapshotMetadata)]
 
     def loadAsync(
         persistenceId: String,
-        criteria: UntypedSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+        criteria: ClassicSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
       Future.successful(state.get(persistenceId).map {
         case (snap, meta) => SelectedSnapshot(meta, snap)
       })
     }
 
-    def saveAsync(metadata: UntypedSnapshotMetadata, snapshot: Any): Future[Unit] = {
+    def saveAsync(metadata: ClassicSnapshotMetadata, snapshot: Any): Future[Unit] = {
       val snapshotState = snapshot.asInstanceOf[MutableState]
       val value1 = snapshotState.value
       Thread.sleep(50)
@@ -53,14 +53,14 @@ object SnapshotMutableStateSpec {
       }
     }
 
-    override def deleteAsync(metadata: UntypedSnapshotMetadata): Future[Unit] = {
+    override def deleteAsync(metadata: ClassicSnapshotMetadata): Future[Unit] = {
       state = state.filterNot {
         case (pid, (_, meta)) => pid == metadata.persistenceId && meta.sequenceNr == metadata.sequenceNr
       }
       Future.successful(())
     }
 
-    override def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria): Future[Unit] = {
+    override def deleteAsync(persistenceId: String, criteria: ClassicSnapshotSelectionCriteria): Future[Unit] = {
       state = state.filterNot {
         case (pid, (_, meta)) => pid == persistenceId && criteria.matches(meta)
       }

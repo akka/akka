@@ -101,7 +101,7 @@ object AskPattern {
       // We do not currently use the implicit sched, but want to require it
       // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {
-        case a: InternalRecipientRef[_] => askUntyped(a, timeout, replyTo)
+        case a: InternalRecipientRef[_] => askClassic(a, timeout, replyTo)
         case a =>
           throw new IllegalStateException(
             "Only expect references to be RecipientRef, ActorRefAdapter or ActorSystemAdapter until " +
@@ -139,7 +139,7 @@ object AskPattern {
     val promiseRef: PromiseActorRef = _promiseRef
   }
 
-  private def askUntyped[T, U](target: InternalRecipientRef[T], timeout: Timeout, f: ActorRef[U] => T): Future[U] = {
+  private def askClassic[T, U](target: InternalRecipientRef[T], timeout: Timeout, f: ActorRef[U] => T): Future[U] = {
     val p = new PromiseRef[U](target, timeout)
     val m = f(p.ref)
     if (p.promiseRef ne null) p.promiseRef.messageClassName = m.getClass.getName

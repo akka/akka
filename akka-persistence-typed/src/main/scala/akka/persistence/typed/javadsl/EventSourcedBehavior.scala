@@ -157,7 +157,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
   /**
    * Transform the state into another type before giving it to and from the journal. Can be used
-   * to migrate from different state types e.g. when migration from PersistentFSM to Typed Persistence
+   * to migrate from different state types e.g. when migration from PersistentFSM to Typed EventSourcedBehavior.
    */
   def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
 

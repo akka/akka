@@ -7,7 +7,7 @@ package akka.actor.typed.internal.adapter
 import akka.actor.typed.{ LogMarker, Logger }
 import akka.annotation.InternalApi
 import akka.event.Logging._
-import akka.event.{ LoggingBus, LoggingFilterWithMarker, LogMarker => UntypedLM }
+import akka.event.{ LoggingBus, LoggingFilterWithMarker, LogMarker => ClassicLM }
 import akka.util.OptionVal
 
 import akka.util.ccompat.JavaConverters._
@@ -397,13 +397,13 @@ private[akka] final class LoggerAdapterImpl(
   override def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
 
   override def isErrorEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isErrorEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isErrorEnabled(logClass, logSource, marker.asInstanceOf[ClassicLM])
   override def isWarningEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isWarningEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isWarningEnabled(logClass, logSource, marker.asInstanceOf[ClassicLM])
   override def isInfoEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isInfoEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isInfoEnabled(logClass, logSource, marker.asInstanceOf[ClassicLM])
   override def isDebugEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isDebugEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isDebugEnabled(logClass, logSource, marker.asInstanceOf[ClassicLM])
 
   override def withMdc(mdc: Map[String, Any]): Logger = {
     val mdcAdapter = new LoggerAdapterImpl(bus, logClass, logSource, loggingFilter)
@@ -427,12 +427,12 @@ private[akka] final class LoggerAdapterImpl(
     val error = cause match {
       case OptionVal.Some(cause) =>
         marker match {
-          case OptionVal.Some(m) => Error(cause, logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+          case OptionVal.Some(m) => Error(cause, logSource, logClass, message, mdc, m.asInstanceOf[ClassicLM])
           case OptionVal.None    => Error(cause, logSource, logClass, message, mdc)
         }
       case OptionVal.None =>
         marker match {
-          case OptionVal.Some(m) => Error(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+          case OptionVal.Some(m) => Error(logSource, logClass, message, mdc, m.asInstanceOf[ClassicLM])
           case OptionVal.None    => Error(logSource, logClass, message, mdc)
         }
     }
@@ -441,10 +441,10 @@ private[akka] final class LoggerAdapterImpl(
 
   private[akka] def notifyWarning(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit = {
     val warning =
-      if (cause.isDefined) Warning(cause.get, logSource, logClass, message, mdc, marker.orNull.asInstanceOf[UntypedLM])
+      if (cause.isDefined) Warning(cause.get, logSource, logClass, message, mdc, marker.orNull.asInstanceOf[ClassicLM])
       else
         marker match {
-          case OptionVal.Some(m) => Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+          case OptionVal.Some(m) => Warning(logSource, logClass, message, mdc, m.asInstanceOf[ClassicLM])
           case OptionVal.None    => Warning(logSource, logClass, message, mdc)
         }
     bus.publish(warning)
@@ -452,7 +452,7 @@ private[akka] final class LoggerAdapterImpl(
 
   private[akka] def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit = {
     val info = marker match {
-      case OptionVal.Some(m) => Info(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+      case OptionVal.Some(m) => Info(logSource, logClass, message, mdc, m.asInstanceOf[ClassicLM])
       case OptionVal.None    => Info(logSource, logClass, message, mdc)
     }
     bus.publish(info)
@@ -460,7 +460,7 @@ private[akka] final class LoggerAdapterImpl(
 
   private[akka] def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit = {
     val debug = marker match {
-      case OptionVal.Some(m) => Debug(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+      case OptionVal.Some(m) => Debug(logSource, logClass, message, mdc, m.asInstanceOf[ClassicLM])
       case OptionVal.None    => Debug(logSource, logClass, message, mdc)
     }
     bus.publish(debug)

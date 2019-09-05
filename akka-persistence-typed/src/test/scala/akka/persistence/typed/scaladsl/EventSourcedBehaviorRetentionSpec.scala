@@ -152,8 +152,8 @@ class EventSourcedBehaviorRetentionSpec
   import EventSourcedBehaviorRetentionSpec._
   import akka.actor.typed.scaladsl.adapter._
 
-  // needed for the untyped event filter
-  implicit val actorSystem = system.toUntyped
+  // needed for the classic event filter
+  implicit val actorSystem = system.toClassic
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")

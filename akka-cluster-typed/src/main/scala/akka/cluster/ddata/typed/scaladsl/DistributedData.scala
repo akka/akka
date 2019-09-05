@@ -74,9 +74,9 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
       .getDuration("akka.cluster.ddata.typed.replicator-message-adapter-unexpected-ask-timeout")
       .asScala
 
-  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val classicSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
 
-  implicit val selfUniqueAddress: SelfUniqueAddress = dd.DistributedData(untypedSystem).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = dd.DistributedData(classicSystem).selfUniqueAddress
 
   /**
    * `ActorRef` of the [[Replicator]].
@@ -86,17 +86,17 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
   val replicator: ActorRef[Replicator.Command] =
     if (isTerminated) {
       val log = system.log.withLoggerClass(getClass)
-      if (Cluster(untypedSystem).isTerminated)
+      if (Cluster(classicSystem).isTerminated)
         log.warning("Replicator points to dead letters, because Cluster is terminated.")
       else
         log.warning(
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
           "Node has roles [], Distributed Data is configured for roles []",
-          Cluster(untypedSystem).selfRoles.mkString(","),
+          Cluster(classicSystem).selfRoles.mkString(","),
           settings.roles.mkString(","))
       system.deadLetters
     } else {
-      val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
+      val underlyingReplicator = dd.DistributedData(classicSystem).replicator
       val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
 
       system.internalSystemActorOf(
@@ -108,6 +108,6 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
   /**
    * Returns true if this member is not tagged with the role configured for the replicas.
    */
-  private def isTerminated: Boolean = dd.DistributedData(system.toUntyped).isTerminated
+  private def isTerminated: Boolean = dd.DistributedData(system.toClassic).isTerminated
 
 }

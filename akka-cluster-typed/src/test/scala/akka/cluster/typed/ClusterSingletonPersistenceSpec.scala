@@ -58,12 +58,12 @@ class ClusterSingletonPersistenceSpec
 
   implicit val s = system
 
-  implicit val untypedSystem = system.toUntyped
-  private val untypedCluster = akka.cluster.Cluster(untypedSystem)
+  implicit val classicSystem = system.toClassic
+  private val classicCluster = akka.cluster.Cluster(classicSystem)
 
   "A typed cluster singleton with persistent actor" must {
 
-    untypedCluster.join(untypedCluster.selfAddress)
+    classicCluster.join(classicCluster.selfAddress)
 
     "start persistent actor" in {
       val ref = ClusterSingleton(system).init(SingletonActor(persistentActor, "singleton").withStopMessage(StopPlz))

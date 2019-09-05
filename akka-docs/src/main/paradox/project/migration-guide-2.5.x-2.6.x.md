@@ -10,62 +10,39 @@ If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
 
 ## Removed features that were deprecated
 
-### akka-camel removed
+After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
 
-After being deprecated in 2.5.0, the akka-camel module has been removed in 2.6.
-As an alternative we recommend [Alpakka](https://doc.akka.io/docs/alpakka/current/).
+* akka-camel module
+    - As an alternative we recommend [Alpakka](https://doc.akka.io/docs/alpakka/current/).
+    - This is of course not a drop-in replacement. If there is community interest we are open to setting up akka-camel as a separate community-maintained repository.
+* akka-agent module
+    - If there is interest it may be moved to a separate, community-maintained repository.
+* akka-contrib module
+    - To migrate, take the components you are using from [Akka 2.5](https://github.com/akka/akka/tree/release-2.5/akka-contrib) and include them in your own project or library under your own package name.
+* Actor DSL
+    - Actor DSL is a rarely used feature. Use plain `system.actorOf` instead of the DSL to create Actors if you have been using it.
+* `akka.stream.extra.Timing` operator
+    - If you need it you can now find it in `akka.stream.contrib.Timed` from [Akka Stream Contrib](https://github.com/akka/akka-stream-contrib/blob/master/src/main/scala/akka/stream/contrib/Timed.scala).
+* Netty UDP (Classic remoting over UDP)
+    - To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
+    - A full cluster restart is required to change to Artery.
+* `UntypedActor`
+    - Use `AbstractActor` instead.
+* `JavaTestKit`
+    - Use `akka.testkit.javadsl.TestKit` instead.
+* `UntypedPersistentActor`
+    - Use `AbstractPersistentActor` instead.
+* `UntypedPersistentActorWithAtLeastOnceDelivery` 
+    - Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 
-This is of course not a drop-in replacement. If there is community interest we
-are open to setting up akka-camel as a separate community-maintained
-repository.
+After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
-### akka-agent removed
+* `actorFor` 
+    - Use `ActorSelection` instead.
+    
+### Removed methods
 
-After being deprecated in 2.5.0, the akka-agent module has been removed in 2.6.
-If there is interest it may be moved to a separate, community-maintained
-repository.
-
-### akka-contrib removed
-
-The akka-contrib module was deprecated in 2.5 and has been removed in 2.6.
-To migrate, take the components you are using from [Akka 2.5](https://github.com/akka/akka/tree/release-2.5/akka-contrib)
-and include them in your own project or library under your own package name.
-
-### Actor DSL removed
-
-Actor DSL is a rarely used feature and has been deprecated since `2.5.0`.
-Use plain `system.actorOf` instead of the DSL to create Actors if you have been using it.
-
-### Timing operator removed
-
-`akka.stream.extra.Timing` has been removed. If you need it you can now find it in `akka.stream.contrib.Timed` from
- [Akka Stream Contrib](https://github.com/akka/akka-stream-contrib/blob/master/src/main/scala/akka/stream/contrib/Timed.scala).
-
-### actorFor removed
-
-`actorFor` has been deprecated since `2.2`. Use `ActorSelection` instead.
-
-### Netty UDP removed
-
-Classic remoting over UDP has been deprecated since `2.5.0` and now has been removed.
-To continue to use UDP configure @ref[Artery UDP](../remoting-artery.md#configuring-ssl-tls-for-akka-remoting) or migrate to Artery TCP.
-A full cluster restart is required to change to Artery.
-
-### Untyped actor removed
-
-`UntypedActor` has been depcated since `2.5.0`. Use `AbstractActor` instead.
-
-### UntypedPersistentActor removed
-
-Use `AbstractPersistentActor` instead.
-
-### UntypedPersistentActorWithAtLeastOnceDelivery removed
-
-Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
-
-### Various removed methods
-
-* `Logging.getLogger(UntypedActor)` Untyped actor has been removed, use AbstractActor instead.
+* `Logging.getLogger(UntypedActor)` `UntypedActor` has been removed, use `AbstractActor` instead.
 * `LoggingReceive.create(Receive, ActorContext)` use `AbstractActor.Receive` instead.
 * `ActorMaterialzierSettings.withAutoFusing` disabling fusing is no longer possible.
 * `AbstractActor.getChild` use `findChild` instead.
@@ -76,9 +53,6 @@ Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
 * `Source.actorSubscriber`, use `Source.fromGraph` instead.
 * `Source.actorActorPublisher`, use `Source.fromGraph` instead.
 
-### JavaTestKit removed
-
-The `JavaTestKit` has been deprecated since `2.5.0`. Use `akka.testkit.javadsl.TestKit` instead.
 
 ## Deprecated features
 
@@ -444,6 +418,12 @@ The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no
 
 ## Akka Typed
 
+### Naming convention changed
+
+In needing a way to distinguish the new APIs in code and docs from the original, Akka used the naming
+convention `untyped`. All references of the original have now been changed to `classic`. The 
+reference of the new APIs as `typed` is going away as it becomes the primary APIs.
+
 ### Receptionist has moved
 
 The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
@@ -472,7 +452,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
 * New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
 * New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
-* `ActorSystem.scheduler` previously gave access to the untyped `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
+* `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
   Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
@@ -497,9 +477,9 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 #### Akka Typed Stream API changes
 
 * `ActorSource.actorRef` relying on `PartialFunction` has been replaced in the Java API with a variant more suitable to be called by Java.
+* `toUntyped` has been renamed to `toClassic`.
 
-
-## Additional changes
+## Materializer changes
 
 ### System global Materializer provided
 

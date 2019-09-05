@@ -186,9 +186,9 @@ import akka.util.{ unused, ConstantFun }
   private def unstashRestToDeadLetters(ctx: TypedActorContext[T], messages: Iterator[T]): Unit = {
     val scalaCtx = ctx.asScala
     import akka.actor.typed.scaladsl.adapter._
-    val untypedDeadLetters = scalaCtx.system.deadLetters.toUntyped
+    val classicDeadLetters = scalaCtx.system.deadLetters.toClassic
     messages.foreach(msg =>
-      scalaCtx.system.deadLetters ! DeadLetter(msg, untypedDeadLetters, ctx.asScala.self.toUntyped))
+      scalaCtx.system.deadLetters ! DeadLetter(msg, classicDeadLetters, ctx.asScala.self.toClassic))
   }
 
   override def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T] =

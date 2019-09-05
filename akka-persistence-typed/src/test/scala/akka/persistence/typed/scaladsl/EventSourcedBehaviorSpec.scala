@@ -38,8 +38,8 @@ import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
-import akka.persistence.{ SnapshotMetadata => UntypedSnapshotMetadata }
-import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
+import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.serialization.jackson.CborSerializable
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
@@ -53,25 +53,25 @@ object EventSourcedBehaviorSpec {
 
   class SlowInMemorySnapshotStore extends SnapshotStore {
 
-    private var state = Map.empty[String, (Any, UntypedSnapshotMetadata)]
+    private var state = Map.empty[String, (Any, ClassicSnapshotMetadata)]
 
     override def loadAsync(
         persistenceId: String,
-        criteria: UntypedSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+        criteria: ClassicSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
       Promise().future // never completed
     }
 
-    override def saveAsync(metadata: UntypedSnapshotMetadata, snapshot: Any): Future[Unit] = {
+    override def saveAsync(metadata: ClassicSnapshotMetadata, snapshot: Any): Future[Unit] = {
       state = state.updated(metadata.persistenceId, (snapshot, metadata))
       Future.successful(())
     }
 
-    override def deleteAsync(metadata: UntypedSnapshotMetadata): Future[Unit] = {
+    override def deleteAsync(metadata: ClassicSnapshotMetadata): Future[Unit] = {
       state = state.filterNot { case (k, (_, b)) => k == metadata.persistenceId && b.sequenceNr == metadata.sequenceNr }
       Future.successful(())
     }
 
-    override def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria): Future[Unit] = {
+    override def deleteAsync(persistenceId: String, criteria: ClassicSnapshotSelectionCriteria): Future[Unit] = {
       val range = criteria.minSequenceNr to criteria.maxSequenceNr
       state = state.filterNot { case (k, (_, b)) => k == persistenceId && range.contains(b.sequenceNr) }
       Future.successful(())
@@ -289,12 +289,12 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
   import EventSourcedBehaviorSpec._
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val materializer = ActorMaterializer()(system.toUntyped)
+  implicit val materializer = ActorMaterializer()(system.toClassic)
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
-  // needed for the untyped event filter
-  implicit val actorSystem = system.toUntyped
+  // needed for the classic event filter
+  implicit val actorSystem = system.toClassic
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
@@ -579,7 +579,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe()
             probe.expectTerminated(ref)
-          }(testkit2.system.toUntyped)
+          }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -599,7 +599,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
           val probe = testkit2.createTestProbe()
           probe.expectTerminated(ref)
-        }(testkit2.system.toUntyped)
+        }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -623,7 +623,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
             // verify that it's not terminated
             ref ! GetValue(probe.ref)
             probe.expectMessage(State(0, Vector.empty))
-          }(testkit2.system.toUntyped)
+          }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -645,7 +645,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
           val probe = testkit2.createTestProbe()
           probe.expectTerminated(ref)
-        }(testkit2.system.toUntyped)
+        }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }

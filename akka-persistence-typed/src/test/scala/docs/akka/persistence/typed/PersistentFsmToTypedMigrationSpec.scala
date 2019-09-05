@@ -211,30 +211,30 @@ class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures {
 
   "PersistentFSM migration to Persistence Typed" must {
     "work when snapshot is not current" in {
-      val untypedActorSystem = akka.actor.ActorSystem("UntypedSystem", PersistentFsmToTypedMigrationSpec.config)
+      val classicActorSystem = akka.actor.ActorSystem("ClassicSystem", PersistentFsmToTypedMigrationSpec.config)
       val shirt = Item("1", "Shirt", 59.99f)
       val shoes = Item("2", "Shoes", 89.99f)
       val coat = Item("3", "Coat", 119.99f)
       val pid = "no-snapshot"
       try {
         import akka.testkit.TestProbe
-        val reportActorProbe = TestProbe()(untypedActorSystem)
-        val untypedProbe = TestProbe()(untypedActorSystem)
-        implicit val untypedRef = untypedProbe.ref
-        val fsmRef = untypedActorSystem.actorOf(WebStoreCustomerFSM.props(pid, reportActorProbe.ref))
+        val reportActorProbe = TestProbe()(classicActorSystem)
+        val classicProbe = TestProbe()(classicActorSystem)
+        implicit val classicRef = classicProbe.ref
+        val fsmRef = classicActorSystem.actorOf(WebStoreCustomerFSM.props(pid, reportActorProbe.ref))
         fsmRef ! AddItem(shirt)
         fsmRef ! AddItem(shoes)
-        fsmRef.tell(GetCurrentCart, untypedProbe.ref)
-        untypedProbe.expectMsg(NonEmptyShoppingCart(List(shirt, shoes)))
+        fsmRef.tell(GetCurrentCart, classicProbe.ref)
+        classicProbe.expectMsg(NonEmptyShoppingCart(List(shirt, shoes)))
 
-        untypedProbe.watch(fsmRef)
+        classicProbe.watch(fsmRef)
         fsmRef ! PoisonPill
-        untypedProbe.expectTerminated(fsmRef)
+        classicProbe.expectTerminated(fsmRef)
       } finally {
-        untypedActorSystem.terminate().futureValue
+        classicActorSystem.terminate().futureValue
       }
 
-      val typedTestKit = ActorTestKit("TypedSystem", PersistentFsmToTypedMigrationSpec.config)
+      val typedTestKit = ActorTestKit("System", PersistentFsmToTypedMigrationSpec.config)
       try {
         import typedTestKit._
         val typedProbe = akka.actor.testkit.typed.scaladsl.TestProbe[ShoppingCart]()
@@ -252,24 +252,24 @@ class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures {
     }
 
     "work if snapshot is current" in {
-      val untypedActorSystem = akka.actor.ActorSystem("UntypedSystem", PersistentFsmToTypedMigrationSpec.config)
+      val classicActorSystem = akka.actor.ActorSystem("CLassicSystem", PersistentFsmToTypedMigrationSpec.config)
       val shirt = Item("1", "Shirt", 59.99f)
       val pid = "current-shapshot"
       try {
         import akka.testkit.TestProbe
-        val reportActorProbe = TestProbe()(untypedActorSystem)
-        val untypedProbe = TestProbe()(untypedActorSystem)
-        implicit val untypedRef = untypedProbe.ref
-        val fsmRef = untypedActorSystem.actorOf(WebStoreCustomerFSM.props(pid, reportActorProbe.ref))
-        untypedProbe.watch(fsmRef)
+        val reportActorProbe = TestProbe()(classicActorSystem)
+        val classicProbe = TestProbe()(classicActorSystem)
+        implicit val classicRef = classicProbe.ref
+        val fsmRef = classicActorSystem.actorOf(WebStoreCustomerFSM.props(pid, reportActorProbe.ref))
+        classicProbe.watch(fsmRef)
         fsmRef ! AddItem(shirt)
-        fsmRef.tell(GetCurrentCart, untypedProbe.ref)
-        untypedProbe.expectMsg(NonEmptyShoppingCart(Seq(shirt)))
+        fsmRef.tell(GetCurrentCart, classicProbe.ref)
+        classicProbe.expectMsg(NonEmptyShoppingCart(Seq(shirt)))
         fsmRef ! Buy
-        fsmRef.tell(GetCurrentCart, untypedProbe.ref)
-        untypedProbe.expectMsg(NonEmptyShoppingCart(Seq(shirt)))
+        fsmRef.tell(GetCurrentCart, classicProbe.ref)
+        classicProbe.expectMsg(NonEmptyShoppingCart(Seq(shirt)))
       } finally {
-        untypedActorSystem.terminate().futureValue
+        classicActorSystem.terminate().futureValue
       }
 
       val typedTestKit = ActorTestKit("TypedSystem", PersistentFsmToTypedMigrationSpec.config)

@@ -7,19 +7,19 @@ package docs.akka.typed.coexistence
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.TestKit
-import docs.akka.typed.coexistence.TypedWatchingUntypedSpec.Typed
+import docs.akka.typed.coexistence.TypedWatchingClassicSpec.Typed
 //#adapter-import
-// adds support for typed actors to an untyped actor system and context
+// adds support for typed actors to a classic actor system and context
 import akka.actor.typed.scaladsl.adapter._
 //#adapter-import
 import akka.testkit.TestProbe
 //#import-alias
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 //#import-alias
 import org.scalatest.WordSpec
 import scala.concurrent.duration._
 
-object TypedWatchingUntypedSpec {
+object TypedWatchingClassicSpec {
 
   //#typed
   object Typed {
@@ -30,20 +30,20 @@ object TypedWatchingUntypedSpec {
     val behavior: Behavior[Command] =
       Behaviors.setup { context =>
         // context.actorOf is an implicit extension method
-        val untyped = context.actorOf(Untyped.props(), "second")
+        val classic = context.actorOf(Classic.props(), "second")
 
         // context.watch is an implicit extension method
-        context.watch(untyped)
+        context.watch(classic)
 
-        // illustrating how to pass sender, toUntyped is an implicit extension method
-        untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
+        // illustrating how to pass sender, toClassic is an implicit extension method
+        classic.tell(Typed.Ping(context.self), context.self.toClassic)
 
         Behaviors
           .receivePartial[Command] {
             case (context, Pong) =>
               // it's not possible to get the sender, that must be sent in message
               // context.stop is an implicit extension method
-              context.stop(untyped)
+              context.stop(classic)
               Behaviors.same
           }
           .receiveSignal {
@@ -54,32 +54,32 @@ object TypedWatchingUntypedSpec {
   }
   //#typed
 
-  //#untyped
-  object Untyped {
-    def props(): untyped.Props = untyped.Props(new Untyped)
+  //#classic
+  object Classic {
+    def props(): classic.Props = classic.Props(new Classic)
   }
-  class Untyped extends untyped.Actor {
+  class Classic extends classic.Actor {
     override def receive = {
       case Typed.Ping(replyTo) =>
         replyTo ! Typed.Pong
     }
   }
-  //#untyped
+  //#classic
 }
 
-class TypedWatchingUntypedSpec extends WordSpec {
+class TypedWatchingClassicSpec extends WordSpec {
 
-  import TypedWatchingUntypedSpec._
+  import TypedWatchingClassicSpec._
 
-  "Typed -> Untyped" must {
+  "Typed -> Classic" must {
     "support creating, watching and messaging" in {
       //#create
-      val system = untyped.ActorSystem("TypedWatchingUntyped")
+      val system = classic.ActorSystem("TypedWatchingClassic")
       val typed = system.spawn(Typed.behavior, "Typed")
       //#create
       val probe = TestProbe()(system)
-      probe.watch(typed.toUntyped)
-      probe.expectTerminated(typed.toUntyped, 200.millis)
+      probe.watch(typed.toClassic)
+      probe.expectTerminated(typed.toClassic, 200.millis)
       TestKit.shutdownActorSystem(system)
     }
   }

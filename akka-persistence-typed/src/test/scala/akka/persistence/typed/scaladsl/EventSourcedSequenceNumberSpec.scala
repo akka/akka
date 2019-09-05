@@ -29,7 +29,7 @@ class EventSourcedSequenceNumberSpec
     with WordSpecLike {
 
   import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup(ctx =>

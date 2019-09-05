@@ -217,7 +217,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
     import akka.pattern.ask
     implicit val timeout: Timeout = Timeout(6.seconds)
     val statsBefore =
-      (shardingRefSystem1WithEnvelope.toUntyped ? akka.cluster.sharding.ShardRegion.GetClusterShardingStats(5.seconds))
+      (shardingRefSystem1WithEnvelope.toClassic ? akka.cluster.sharding.ShardRegion.GetClusterShardingStats(5.seconds))
         .mapTo[akka.cluster.sharding.ShardRegion.ClusterShardingStats]
     val totalCount = statsBefore.futureValue.regions.values.flatMap(_.stats.values).sum
     totalCount
@@ -402,8 +402,8 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val totalCountBefore = totalEntityCount1()
 
       val p = TestProbe[Any]()
-      shardingRefSystem1WithEnvelope.toUntyped
-        .tell(akka.cluster.sharding.ShardRegion.StartEntity("startEntity-1"), p.ref.toUntyped)
+      shardingRefSystem1WithEnvelope.toClassic
+        .tell(akka.cluster.sharding.ShardRegion.StartEntity("startEntity-1"), p.ref.toClassic)
       p.expectMessageType[akka.cluster.sharding.ShardRegion.StartEntityAck]
 
       eventually {

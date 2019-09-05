@@ -31,7 +31,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
   import akka.actor.typed.scaladsl.adapter._
 
   private lazy val cluster = Cluster(system)
-  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val classicSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
 
   private val proxies = new ConcurrentHashMap[(String, Option[DataCenter]), ActorRef[_]]()
 
@@ -50,11 +50,11 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     if (settings.shouldRunManager(cluster)) {
       val managerName = managerNameFor(singleton.name)
       // start singleton on this node
-      val untypedProps = PropsAdapter(poisonPillInterceptor(singleton.behavior), singleton.props)
+      val classicProps = PropsAdapter(poisonPillInterceptor(singleton.behavior), singleton.props)
       try {
-        untypedSystem.systemActorOf(
+        classicSystem.systemActorOf(
           OldSingletonManager.props(
-            untypedProps,
+            classicProps,
             singleton.stopMessage.getOrElse(PoisonPill),
             settings.toManagerSettings(singleton.name)),
           managerName)
@@ -72,7 +72,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
       def apply(singletonNameAndDc: (String, Option[DataCenter])): ActorRef[_] = {
         val (singletonName, _) = singletonNameAndDc
         val proxyName = s"singletonProxy$singletonName-${settings.dataCenter.getOrElse("no-dc")}"
-        untypedSystem.systemActorOf(
+        classicSystem.systemActorOf(
           ClusterSingletonProxy
             .props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
           proxyName)

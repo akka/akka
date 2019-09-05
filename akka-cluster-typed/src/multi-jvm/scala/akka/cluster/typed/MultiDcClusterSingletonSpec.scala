@@ -44,7 +44,7 @@ abstract class MultiDcClusterSingletonSpec
   import MultiDcClusterActors._
   import MultiDcClusterSingletonSpecConfig._
 
-  "A typed cluster with multiple data centers" must {
+  "A cluster with multiple data centers" must {
     "be able to form" in {
       runOn(first) {
         cluster.manager ! Join(cluster.selfMember.address)

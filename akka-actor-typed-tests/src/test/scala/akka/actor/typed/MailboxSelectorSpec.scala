@@ -30,7 +30,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
   case class WhatsYourMailbox(replyTo: ActorRef[MessageQueue])
   private def behavior: Behavior[WhatsYourMailbox] =
@@ -39,7 +39,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
         case WhatsYourMailbox(replyTo) =>
           val mailbox = context match {
             case adapter: ActorContextAdapter[_] =>
-              adapter.untypedContext match {
+              adapter.classicContext match {
                 case cell: ActorCell =>
                   cell.mailbox.messageQueue
               }

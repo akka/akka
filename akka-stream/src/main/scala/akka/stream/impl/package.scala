@@ -16,7 +16,7 @@ package akka.stream
  *    operators
  *  * The high level DSLs use the [[akka.stream.impl.TraversalBuilder]] classes to build instances of
  *    [[akka.stream.impl.Traversal]] which are the representation of a materializable stream description. These builders
- *    are immutable and safely shareable. Unlike the top-level DSLs, these are untyped, i.e. elements are treated as
+ *    are immutable and safely shareable. Unlike the top-level DSLs, these are classic, i.e. elements are treated as
  *    Any.
  *  * The [[akka.stream.impl.Traversal]] is the immutable, efficient representation of a stream processing graph that
  *    can be materialized. The builders exists solely for the purpose of producing a traversal in the end.

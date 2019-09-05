@@ -55,10 +55,10 @@ class EventSourcedBehaviorInterceptorSpec
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
 
   import akka.actor.typed.scaladsl.adapter._
-  // needed for the untyped event filter
-  private implicit val untypedSystem: akka.actor.ActorSystem = system.toUntyped
+  // needed for the classic event filter
+  private implicit val classicSystem: akka.actor.ActorSystem = system.toClassic
 
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  classicSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   "EventSourcedBehavior interceptor" must {
 

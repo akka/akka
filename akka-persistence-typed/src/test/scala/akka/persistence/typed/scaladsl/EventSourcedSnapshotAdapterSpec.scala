@@ -38,9 +38,9 @@ class EventSourcedSnapshotAdapterSpec
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-  implicit val materializer = ActorMaterializer()(system.toUntyped)
+  implicit val materializer = ActorMaterializer()(system.toClassic)
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   private def behavior(pid: PersistenceId, probe: ActorRef[State]): EventSourcedBehavior[Command, Event, State] =
     EventSourcedBehavior[Command, Event, State](

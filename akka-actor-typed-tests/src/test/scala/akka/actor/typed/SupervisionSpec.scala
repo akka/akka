@@ -261,7 +261,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
   // FIXME #24348: eventfilter support in typed testkit
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
   class FailingConstructorTestSetup(failCount: Int) {
     val failCounter = new AtomicInteger(0)
@@ -782,7 +782,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         .onFailure[Exception](strategy)
 
       val droppedMessagesProbe = TestProbe[Dropped]()
-      system.toUntyped.eventStream.subscribe(droppedMessagesProbe.ref.toUntyped, classOf[Dropped])
+      system.toClassic.eventStream.subscribe(droppedMessagesProbe.ref.toClassic, classOf[Dropped])
       val ref = spawn(behv)
       EventFilter[Exc1](occurrences = 1).intercept {
         startedProbe.expectMessage(Started)
@@ -796,8 +796,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         ref ! Ping(4)
         probe.expectMessage(Pong(1))
         probe.expectMessage(Pong(2))
-        droppedMessagesProbe.expectMessage(Dropped(Ping(3), "Stash is full in [RestartSupervisor]", ref.toUntyped))
-        droppedMessagesProbe.expectMessage(Dropped(Ping(4), "Stash is full in [RestartSupervisor]", ref.toUntyped))
+        droppedMessagesProbe.expectMessage(Dropped(Ping(3), "Stash is full in [RestartSupervisor]", ref.toClassic))
+        droppedMessagesProbe.expectMessage(Dropped(Ping(4), "Stash is full in [RestartSupervisor]", ref.toClassic))
       }
     }
 

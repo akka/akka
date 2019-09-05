@@ -257,9 +257,9 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
   """) with WordSpecLike {
 
   // needed for EventFilter
-  private implicit val untypedSys: akka.actor.ActorSystem = {
+  private implicit val classicSys: akka.actor.ActorSystem = {
     import akka.actor.typed.scaladsl.adapter._
-    system.toUntyped
+    system.toClassic
   }
 
   private def slowStoppingChild(latch: CountDownLatch): Behavior[String] =
@@ -638,7 +638,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     "deal with stop" in {
       val probe = TestProbe[Any]
       import akka.actor.typed.scaladsl.adapter._
-      untypedSys.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      classicSys.eventStream.subscribe(probe.ref.toClassic, classOf[DeadLetter])
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
         stash.stash("two")

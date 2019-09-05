@@ -19,7 +19,7 @@ import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.actor.typed.Settings
 import akka.annotation.InternalApi
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 import akka.Done
 import com.typesafe.config.ConfigFactory
 
@@ -39,7 +39,7 @@ import com.github.ghik.silencer.silent
     with ActorRefImpl[Nothing]
     with InternalRecipientRef[Nothing] {
 
-  override val path: untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", name)) / "user"
+  override val path: classic.ActorPath = classic.RootActorPath(classic.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
@@ -57,7 +57,7 @@ import com.github.ghik.silencer.silent
 
   // stream materialization etc. using stub not supported
   override private[akka] def classicSystem =
-    throw new UnsupportedOperationException("no untyped actor system available")
+    throw new UnsupportedOperationException("no classic actor system available")
 
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
@@ -72,7 +72,7 @@ import com.github.ghik.silencer.silent
     def shutdown(): Unit = ()
   }
 
-  override def dynamicAccess: untyped.DynamicAccess = new untyped.ReflectiveDynamicAccess(getClass.getClassLoader)
+  override def dynamicAccess: classic.DynamicAccess = new classic.ReflectiveDynamicAccess(getClass.getClassLoader)
 
   override def logConfiguration(): Unit = log.info(settings.toString)
 

@@ -57,7 +57,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
         }
         inbox.receiveAll() should ===("hello" :: Nil)
         sys.whenTerminated.futureValue
-        CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+        CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
           Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
     }
@@ -93,7 +93,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       // now we know that the guardian has started, and should receive PostStop
       sys.terminate()
       sys.whenTerminated.futureValue
-      CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+      CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
         Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
     }

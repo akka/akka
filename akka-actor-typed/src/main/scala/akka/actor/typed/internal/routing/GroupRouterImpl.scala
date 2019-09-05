@@ -64,7 +64,7 @@ private final class InitialGroupRouterImpl[T](
         ctx.system.eventStream ! EventStream.Publish(Dropped(
           msg,
           s"Stash is full in group router for [$serviceKey]",
-          ctx.self.toUntyped)) // don't fail on full stash
+          ctx.self.toClassic)) // don't fail on full stash
       this
   }
 }
@@ -99,7 +99,7 @@ private[akka] final class GroupRouterImpl[T](
       if (!routeesEmpty) routingLogic.selectRoutee() ! msg
       else
         ctx.system.eventStream ! EventStream.Publish(
-          Dropped(msg, s"No routees in group router for [$serviceKey]", ctx.self.toUntyped))
+          Dropped(msg, s"No routees in group router for [$serviceKey]", ctx.self.toClassic))
       this
   }
 }

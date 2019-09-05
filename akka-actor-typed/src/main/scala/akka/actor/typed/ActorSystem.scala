@@ -15,7 +15,7 @@ import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBe
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
-import akka.{ Done, actor => untyped }
+import akka.{ Done, actor => classic }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -79,7 +79,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * set on all threads created by the ActorSystem, if one was set during
    * creation.
    */
-  def dynamicAccess: untyped.DynamicAccess
+  def dynamicAccess: classic.DynamicAccess
 
   /**
    * A generic scheduler that can initiate the execution of tasks after some delay.
@@ -227,9 +227,9 @@ object ActorSystem {
     create(guardianBehavior, name, ActorSystemSetup.create(bootstrapSetup))
 
   /**
-   * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
+   * Create an ActorSystem based on the classic [[akka.actor.ActorSystem]]
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
-   * system typed and untyped actors can coexist.
+   * system typed and classic actors can coexist.
    */
   private def createInternal[T](
       name: String,
@@ -245,7 +245,7 @@ object ActorSystem {
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
 
-    val system = new untyped.ActorSystemImpl(
+    val system = new classic.ActorSystemImpl(
       name,
       appConfig,
       cl,
@@ -259,28 +259,28 @@ object ActorSystem {
   }
 
   /**
-   * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from
+   * Wrap a classic [[akka.actor.ActorSystem]] such that it can be used from
    * Akka Typed [[Behavior]].
    */
-  def wrap(system: untyped.ActorSystem): ActorSystem[Nothing] =
-    ActorSystemAdapter.AdapterExtension(system.asInstanceOf[untyped.ActorSystemImpl]).adapter
+  def wrap(system: classic.ActorSystem): ActorSystem[Nothing] =
+    ActorSystemAdapter.AdapterExtension(system.asInstanceOf[classic.ActorSystemImpl]).adapter
 }
 
 /**
  * The configuration settings that were parsed from the config by an [[ActorSystem]].
  * This class is immutable.
  */
-final class Settings(val config: Config, val untypedSettings: untyped.ActorSystem.Settings, val name: String) {
+final class Settings(val config: Config, val classicSettings: classic.ActorSystem.Settings, val name: String) {
   def this(classLoader: ClassLoader, config: Config, name: String) =
     this({
       val cfg = config.withFallback(ConfigFactory.defaultReference(classLoader))
       cfg.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
       cfg
-    }, new untyped.ActorSystem.Settings(classLoader, config, name), name)
+    }, new classic.ActorSystem.Settings(classLoader, config, name), name)
 
-  def this(settings: untyped.ActorSystem.Settings) = this(settings.config, settings, settings.name)
+  def this(settings: classic.ActorSystem.Settings) = this(settings.config, settings, settings.name)
 
-  def setup: ActorSystemSetup = untypedSettings.setup
+  def setup: ActorSystemSetup = classicSettings.setup
 
   /**
    * Returns the String representation of the Config that this Settings is backed by

@@ -148,8 +148,8 @@ abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
  * the same way as any actor.
  *
  * Attach the actor as a [[org.reactivestreams.Subscriber]] to the stream with
- * Scala API [[ActorSubscriber#apply]], or Java API [[UntypedActorSubscriber#create]] or
- * Java API compatible with lambda expressions [[AbstractActorSubscriber#create]].
+ * Scala API [[ActorSubscriber#apply]], or Java API [[ClassicActorSubscriber#create]] or
+ * Java API compatible with lambda expressions [[ClassicActorSubscriber#create]].
  *
  * Subclass must define the [[RequestStrategy]] to control stream back pressure.
  * After each incoming message the `ActorSubscriber` will automatically invoke

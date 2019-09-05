@@ -72,14 +72,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   // captures setup/dependencies so we can avoid doing it over and over again
   final class Setup(ctx: ActorContext[Command]) {
-    val untypedSystem = ctx.system.toUntyped
+    val classicSystem = ctx.system.toClassic
     val settings = ClusterReceptionistSettings(ctx.system)
-    val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
+    val selfSystemUid = AddressUidExtension(classicSystem).longAddressUid
     lazy val keepTombstonesFor = cluster.settings.PruneGossipTombstonesAfter match {
       case f: FiniteDuration => f
       case _                 => throw new IllegalStateException("Cannot actually happen")
     }
-    val cluster = Cluster(untypedSystem)
+    val cluster = Cluster(classicSystem)
     // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
     // isn't used otherwise by the ClusterReceptionist
     implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
@@ -108,7 +108,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           }
 
         registry.allDdataKeys.foreach(key =>
-          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toUntyped))
+          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toClassic))
 
         // keep track of cluster members
         // remove entries when members are removed
@@ -125,7 +125,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               throw new IllegalStateException(s"Unexpected ClusterDomainEvent $other. Please report bug.")
           }
         setup.cluster.subscribe(
-          clusterEventMessageAdapter.toUntyped,
+          clusterEventMessageAdapter.toClassic,
           ClusterEvent.InitialStateAsEvents,
           classOf[MemberJoined],
           classOf[MemberWeaklyUp],

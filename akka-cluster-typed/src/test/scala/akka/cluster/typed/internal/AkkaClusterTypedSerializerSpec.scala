@@ -15,15 +15,15 @@ import org.scalatest.WordSpecLike
 class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   val ref = spawn(Behaviors.empty[String])
-  val untypedSystem = system.toUntyped
-  val serializer = new AkkaClusterTypedSerializer(untypedSystem.asInstanceOf[ExtendedActorSystem])
+  val classicSystem = system.toClassic
+  val serializer = new AkkaClusterTypedSerializer(classicSystem.asInstanceOf[ExtendedActorSystem])
 
   "AkkaClusterTypedSerializer" must {
 
     Seq("ReceptionistEntry" -> ClusterReceptionist.Entry(ref, 666L)).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
-          val serializer = SerializationExtension(untypedSystem)
+          val serializer = SerializationExtension(classicSystem)
           serializer.serializerFor(item.getClass).getClass should be(classOf[AkkaClusterTypedSerializer])
         }
 

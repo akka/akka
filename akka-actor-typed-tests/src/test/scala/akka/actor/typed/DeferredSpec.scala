@@ -39,7 +39,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
   "Deferred behavior" must {
     "must create underlying" in {

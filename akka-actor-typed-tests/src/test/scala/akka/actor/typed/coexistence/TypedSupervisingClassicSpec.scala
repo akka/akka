@@ -10,21 +10,21 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
 import akka.actor.typed.scaladsl.adapter._
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 
-object TypedSupervisingUntypedSpec {
+object TypedSupervisingClassicSpec {
 
   sealed trait Protocol
-  final case class SpawnUntypedActor(props: untyped.Props, replyTo: ActorRef[SpawnedUntypedActor]) extends Protocol
-  final case class SpawnedUntypedActor(ref: untyped.ActorRef)
+  final case class SpawnClassicActor(props: classic.Props, replyTo: ActorRef[SpawnedClassicActor]) extends Protocol
+  final case class SpawnedClassicActor(ref: classic.ActorRef)
 
-  def untypedActorOf() = Behaviors.receive[Protocol] {
-    case (ctx, SpawnUntypedActor(props, replyTo)) =>
-      replyTo ! SpawnedUntypedActor(ctx.actorOf(props))
+  def classicActorOf() = Behaviors.receive[Protocol] {
+    case (ctx, SpawnClassicActor(props, replyTo)) =>
+      replyTo ! SpawnedClassicActor(ctx.actorOf(props))
       Behaviors.same
   }
 
-  class UntypedActor(lifecycleProbe: ActorRef[String]) extends Actor {
+  class CLassicActor(lifecycleProbe: ActorRef[String]) extends Actor {
     override def receive: Receive = {
       case "throw" => throw TestException("oh dear")
     }
@@ -40,22 +40,22 @@ object TypedSupervisingUntypedSpec {
 
 }
 
-class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit("""
+class TypedSupervisingClassicSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = INFO
   """.stripMargin) with WordSpecLike {
-  import TypedSupervisingUntypedSpec._
+  import TypedSupervisingClassicSpec._
 
-  "Typed supervising untyped" should {
+  "Typed supervising classic" should {
     "default to restart" in {
-      val ref: ActorRef[Protocol] = spawn(untypedActorOf())
+      val ref: ActorRef[Protocol] = spawn(classicActorOf())
       val lifecycleProbe = TestProbe[String]
-      val probe = TestProbe[SpawnedUntypedActor]
-      ref ! SpawnUntypedActor(untyped.Props(new UntypedActor(lifecycleProbe.ref)), probe.ref)
-      val spawnedUntyped = probe.expectMessageType[SpawnedUntypedActor].ref
+      val probe = TestProbe[SpawnedClassicActor]
+      ref ! SpawnClassicActor(classic.Props(new CLassicActor(lifecycleProbe.ref)), probe.ref)
+      val spawnedClassic = probe.expectMessageType[SpawnedClassicActor].ref
       lifecycleProbe.expectMessage("preStart")
-      spawnedUntyped ! "throw"
+      spawnedClassic ! "throw"
       lifecycleProbe.expectMessage("postStop")
-      // should be restarted because it is an untyped actor
+      // should be restarted because it is a classic actor
       lifecycleProbe.expectMessage("preStart")
     }
   }
