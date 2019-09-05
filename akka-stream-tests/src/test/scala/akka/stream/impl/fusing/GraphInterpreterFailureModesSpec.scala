@@ -19,7 +19,8 @@ class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterS
       failOnNextEvent()
       stepAll()
 
-      lastEvents() should be(Set(Cancel(upstream), OnError(downstream, testException), PostStop(insideOutStage)))
+      lastEvents() should be(
+        Set(Cancel(upstream, testException), OnError(downstream, testException), PostStop(insideOutStage)))
     }
 
     "handle failure on onPush" in new FailingStageSetup {
@@ -32,7 +33,8 @@ class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterS
       failOnNextEvent()
       stepAll()
 
-      lastEvents() should be(Set(Cancel(upstream), OnError(downstream, testException), PostStop(insideOutStage)))
+      lastEvents() should be(
+        Set(Cancel(upstream, testException), OnError(downstream, testException), PostStop(insideOutStage)))
     }
 
     "handle failure on onPull while cancel is pending" in new FailingStageSetup {
@@ -43,7 +45,7 @@ class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterS
       failOnNextEvent()
       stepAll()
 
-      lastEvents() should be(Set(Cancel(upstream), PostStop(insideOutStage)))
+      lastEvents() should be(Set(Cancel(upstream, testException), PostStop(insideOutStage)))
     }
 
     "handle failure on onPush while complete is pending" in new FailingStageSetup {
@@ -87,13 +89,14 @@ class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterS
       failOnNextEvent()
       stepAll()
 
-      lastEvents() should be(Set(Cancel(upstream), PostStop(insideOutStage)))
+      lastEvents() should be(Set(Cancel(upstream, testException), PostStop(insideOutStage)))
     }
 
     "handle failure in preStart" in new FailingStageSetup(initFailOnNextEvent = true) {
       stepAll()
 
-      lastEvents() should be(Set(Cancel(upstream), OnError(downstream, testException), PostStop(insideOutStage)))
+      lastEvents() should be(
+        Set(Cancel(upstream, testException), OnError(downstream, testException), PostStop(insideOutStage)))
     }
 
     "handle failure in postStop" in new FailingStageSetup {

@@ -67,7 +67,7 @@ object InterpreterBenchmark {
             completeStage()
           }
         }
-        override def onDownstreamFinish(): Unit = completeStage()
+        override def onDownstreamFinish(cause: Throwable): Unit = cancelStage(cause)
       })
   }
 

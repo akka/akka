@@ -4,6 +4,7 @@
 
 package akka.stream.impl.fusing
 
+import akka.stream.SubscriptionWithCancelException
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 
@@ -426,7 +427,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -487,7 +488,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -548,7 +549,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -611,7 +612,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -660,7 +661,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -692,7 +693,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
 
         stepAll()
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)

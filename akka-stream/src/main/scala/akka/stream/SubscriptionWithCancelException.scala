@@ -4,6 +4,7 @@
 
 package akka.stream
 
+import akka.annotation.DoNotInherit
 import org.reactivestreams.Subscription
 
 import scala.util.control.NoStackTrace
@@ -19,6 +20,12 @@ trait SubscriptionWithCancelException extends Subscription {
   def cancel(cause: Throwable): Unit
 }
 object SubscriptionWithCancelException {
-  case object NoMoreElementsNeeded extends RuntimeException with NoStackTrace
-  case object StageWasCompleted extends RuntimeException with NoStackTrace
+
+  /**
+   * Not for user extension
+   */
+  @DoNotInherit
+  sealed abstract class NonFailureCancellation extends RuntimeException with NoStackTrace
+  case object NoMoreElementsNeeded extends NonFailureCancellation
+  case object StageWasCompleted extends NonFailureCancellation
 }

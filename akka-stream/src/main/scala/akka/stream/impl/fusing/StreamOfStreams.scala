@@ -235,8 +235,8 @@ import scala.util.control.NonFatal
       } else failStage(ex)
     }
 
-    override def onDownstreamFinish(): Unit = {
-      if (!prefixComplete) completeStage()
+    override def onDownstreamFinish(cause: Throwable): Unit = {
+      if (!prefixComplete) cancelStage(cause)
       // Otherwise substream is open, ignore
     }
 
@@ -298,10 +298,10 @@ import scala.util.control.NonFatal
           true
         } else false
 
-      private def tryCancel(): Boolean =
+      private def tryCancel(cause: Throwable): Boolean =
         // if there's no active substreams or there's only one but it's not been pushed yet
         if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == 1 && substreamWaitingToBePushed.isDefined)) {
-          completeStage()
+          cancelStage(cause)
           true
         } else false
 
@@ -334,7 +334,7 @@ import scala.util.control.NonFatal
 
       override def onUpstreamFinish(): Unit = if (!tryCompleteAll()) setKeepGoing(true)
 
-      override def onDownstreamFinish(): Unit = if (!tryCancel()) setKeepGoing(true)
+      override def onDownstreamFinish(cause: Throwable): Unit = if (!tryCancel(cause)) setKeepGoing(true)
 
       override def onPush(): Unit =
         try {
@@ -427,11 +427,11 @@ import scala.util.control.NonFatal
           tryCompleteHandler()
         }
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           if (hasNextElement && nextElementKey == key) clearNextElement()
           if (firstPush()) firstPushCounter -= 1
           completeSubStream()
-          if (parent.isClosed(out)) tryCancel()
+          if (parent.isClosed(out)) tryCancel(cause)
           if (parent.isClosed(in)) tryCompleteAll() else if (needToPull) pull(in)
         }
 
@@ -504,9 +504,9 @@ import scala.util.control.NonFatal
           } else if (substreamWaitingToBePushed) pushSubstreamSource()
         }
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           // If the substream is already cancelled or it has not been handed out, we can go away
-          if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) completeStage()
+          if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) cancelStage(cause)
         }
       })
 
@@ -588,10 +588,10 @@ import scala.util.control.NonFatal
         } else pull(in)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         substreamCancelled = true
         if (isClosed(in) || propagateSubstreamCancel) {
-          completeStage()
+          cancelStage(cause)
         } else {
           // Start draining
           if (!hasBeenPulled(in)) pull(in)

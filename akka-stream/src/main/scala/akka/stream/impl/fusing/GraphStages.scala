@@ -137,9 +137,14 @@ import scala.concurrent.{ Future, Promise }
 
         def onPull(): Unit = pull(in)
 
-        override def onDownstreamFinish(): Unit = {
-          finishPromise.success(Done)
-          completeStage()
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          cause match {
+            case _: SubscriptionWithCancelException.NonFailureCancellation =>
+              finishPromise.success(Done)
+            case ex =>
+              finishPromise.failure(ex)
+          }
+          cancelStage(cause)
         }
 
         override def postStop(): Unit = {

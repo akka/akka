@@ -128,7 +128,8 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file to read from
    */
@@ -144,7 +145,8 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file path to read from
    */
@@ -159,7 +161,9 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   *  not give any guarantee that the bytes were seen by downstream stages.
+   *
    * @param f         the file to read from
    * @param chunkSize the size of each read operation
    */
@@ -176,7 +180,8 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file path to read from
    * @param chunkSize the size of each read operation
@@ -193,7 +198,8 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file path to read from
    * @param chunkSize the size of each read operation

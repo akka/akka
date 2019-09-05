@@ -3308,8 +3308,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   /**
    * Materializes to `Future[Done]` that completes on getting termination message.
    * The Future completes with success when received complete message from upstream or cancel
-   * from downstream. It fails with the same error when received error message from
-   * downstream.
+   * from downstream. It fails with the propagated error when received error message from
+   * upstream or downstream.
    *
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.

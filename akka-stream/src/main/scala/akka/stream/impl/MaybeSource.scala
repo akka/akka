@@ -6,9 +6,9 @@ package akka.stream.impl
 
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.stream.{ AbruptStageTerminationException, Attributes, Outlet, SourceShape }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
+import akka.stream._
 import akka.util.OptionVal
 
 import scala.concurrent.Promise
@@ -26,7 +26,7 @@ import scala.util.Try
 
   override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes): (GraphStageLogic, Promise[Option[AnyRef]]) = {
-    import scala.util.{ Success => ScalaSuccess, Failure => ScalaFailure }
+    import scala.util.{ Failure => ScalaFailure, Success => ScalaSuccess }
     val promise = Promise[Option[AnyRef]]()
     val logic = new GraphStageLogic(shape) with OutHandler {
 
@@ -67,7 +67,7 @@ import scala.util.Try
         }
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         promise.tryComplete(ScalaSuccess(None))
       }
 

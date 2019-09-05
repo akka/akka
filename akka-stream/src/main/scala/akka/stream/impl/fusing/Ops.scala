@@ -1996,7 +1996,7 @@ private[stream] object Collect {
       val outHandler = new OutHandler {
         override def onPull(): Unit = sinkIn.pull()
 
-        override def onDownstreamFinish(): Unit = sinkIn.cancel()
+        override def onDownstreamFinish(cause: Throwable): Unit = sinkIn.cancel(cause)
       }
 
       Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
@@ -2218,8 +2218,8 @@ private[stream] object Collect {
           override def onPull(): Unit = {
             subInlet.pull()
           }
-          override def onDownstreamFinish(): Unit = {
-            subInlet.cancel()
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            subInlet.cancel(cause)
             maybeCompleteStage()
           }
         })
@@ -2240,9 +2240,9 @@ private[stream] object Collect {
               }
             }
           }
-          override def onDownstreamFinish(): Unit = {
+          override def onDownstreamFinish(cause: Throwable): Unit = {
             if (!isClosed(in)) {
-              cancel(in)
+              cancel(in, cause)
             }
             maybeCompleteStage()
           }

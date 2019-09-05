@@ -644,11 +644,11 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
                 tryPull()
               }
 
-              override def onDownstreamFinish() = {
-                if (eagerCancel) completeStage()
+              override def onDownstreamFinish(cause: Throwable) = {
+                if (eagerCancel) cancelStage(cause)
                 else {
                   downstreamsRunning -= 1
-                  if (downstreamsRunning == 0) completeStage()
+                  if (downstreamsRunning == 0) cancelStage(cause)
                   else if (pending(i)) {
                     pending(i) = false
                     pendingCount -= 1
@@ -719,8 +719,8 @@ private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]]
         pull(in)
       }
 
-      override def onDownstreamFinish(): Unit = {
-        completeStage()
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        cancelStage(cause)
       }
     })
 
@@ -737,7 +737,7 @@ private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]]
           }
         }
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           setHandler(in, new InHandler {
             override def onPush() = {
               push(outMain, grab(in))
@@ -869,12 +869,12 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
                   pull(in)
               }
 
-              override def onDownstreamFinish(): Unit =
-                if (eagerCancel) completeStage()
+              override def onDownstreamFinish(cause: Throwable) =
+                if (eagerCancel) cancelStage(cause)
                 else {
                   downstreamRunning -= 1
                   if (downstreamRunning == 0)
-                    completeStage()
+                    cancelStage(cause)
                   else if (outPendingElem != null) {
                     if (idx == outPendingIdx) {
                       outPendingElem = null
@@ -987,11 +987,11 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean,
               } else pendingQueue.enqueue(o)
             }
 
-            override def onDownstreamFinish() = {
-              if (eagerCancel) completeStage()
+            override def onDownstreamFinish(cause: Throwable) = {
+              if (eagerCancel) cancelStage(cause)
               else {
                 downstreamsRunning -= 1
-                if (downstreamsRunning == 0) completeStage()
+                if (downstreamsRunning == 0) cancelStage(cause)
                 else if (!hasPulled && needDownstreamPulls > 0) {
                   needDownstreamPulls -= 1
                   if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)

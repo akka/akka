@@ -14,6 +14,8 @@ import scala.concurrent.duration._
 
 class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
+  val boom = TE("Boom!")
+
   "Interpreter" must {
 
     "call preStart in order on stages" in new OneBoundedSetup[String](
@@ -78,8 +80,8 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       expectNoMessage(300.millis)
     }
 
-    "onError when preStart fails" in new OneBoundedSetup[String](PreStartFailer(() => throw TE("Boom!"))) {
-      lastEvents() should ===(Set(Cancel, OnError(TE("Boom!"))))
+    "onError when preStart fails" in new OneBoundedSetup[String](PreStartFailer(() => throw boom)) {
+      lastEvents() should ===(Set(Cancel(boom), OnError(boom)))
     }
 
     "not blow up when postStop fails" in new OneBoundedSetup[String](PostStopFailer(() => throw TE("Boom!"))) {
@@ -89,9 +91,9 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "onError when preStart fails with stages after" in new OneBoundedSetup[String](
       Map((x: Int) => x),
-      PreStartFailer(() => throw TE("Boom!")),
+      PreStartFailer(() => throw boom),
       Map((x: Int) => x)) {
-      lastEvents() should ===(Set(Cancel, OnError(TE("Boom!"))))
+      lastEvents() should ===(Set(Cancel(boom), OnError(boom)))
     }
 
     "continue with stream shutdown when postStop fails" in new OneBoundedSetup[String](PostStopFailer(() =>

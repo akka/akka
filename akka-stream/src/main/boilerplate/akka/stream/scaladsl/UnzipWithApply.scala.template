@@ -75,9 +75,9 @@ class UnzipWith1[In, [#A1#]](val unzipper: In => ([#A1#])) extends GraphStage[Fa
         if (pendingCount == ##0) pull(in)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         downstreamRunning -= ##1
-        if (downstreamRunning == ##0) completeStage()
+        if (downstreamRunning == ##0) cancelStage(cause)
         else {
           if (pending0) pendingCount -= ##1
           if (pendingCount == ##0 && !hasBeenPulled(in)) pull(in)

@@ -33,7 +33,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(0) // boom
-      lastEvents() should be(Set(Cancel, OnError(TE)))
+      lastEvents() should be(Set(Cancel(TE), OnError(TE)))
     }
 
     "emit failure when op throws in middle of the chain" in new OneBoundedSetup[Int](
@@ -49,7 +49,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(-1) // boom
-      lastEvents() should be(Set(Cancel, OnError(TE)))
+      lastEvents() should be(Set(Cancel(TE), OnError(TE)))
     }
 
     "resume when Map throws" in new OneBoundedSetupWithDecider[Int](
@@ -158,7 +158,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(OnNext(-1)))
 
       upstream.onNext(2) // boom
-      lastEvents() should be(Set(OnError(TE), Cancel))
+      lastEvents() should be(Set(OnError(TE), Cancel(TE)))
     }
 
     "fail when Expand `expander` throws" in new OneBoundedSetup[Int](new Expand((in: Int) =>
@@ -179,7 +179,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
-      lastEvents() should be(Set(OnError(TE), Cancel))
+      lastEvents() should be(Set(OnError(TE), Cancel(TE)))
     }
   }
 

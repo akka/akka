@@ -69,12 +69,12 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in1)
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in2)
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
         }
 
@@ -115,13 +115,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
         }
 
@@ -164,13 +164,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
         }
 
@@ -216,13 +216,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
         }
 

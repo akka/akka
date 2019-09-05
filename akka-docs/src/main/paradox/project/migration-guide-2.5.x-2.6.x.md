@@ -379,6 +379,9 @@ down.
 It is no longer required to both check the materialized value and the `Try[Done]` inside the @apidoc[IOResult]. In case of an IO failure
 the exception will be @apidoc[IOOperationIncompleteException] instead of @apidoc[AbruptIOTerminationException].
 
+Additionally when downstream of the IO-sources cancels with a failure, the materialized value 
+is failed with that failure rather than completed successfully.
+
 ### Akka now uses Fork Join Pool from JDK
 
 Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
@@ -535,3 +538,20 @@ Scala
 
 Java
 :  @@snip [StreamAttributeDocTest.java](/akka-stream-tests/src/test/java/akka/stream/StreamAttributeDocTest.java) { #attributes-on-stream }
+
+### Stream cancellation available upstream
+
+Previously an Akka streams stage or operator failed it was impossible to discern this from 
+the stage just cancelling. This has been improved so that when a stream stage fails the cause
+will be propagated upstream.
+
+The following operators have a slight change in behavior because of this:
+
+* `FileIO.fromPath`, `FileIO.fromFile` and `StreamConverters.fromInputStream`  will fail the materialized future with 
+  an `IOOperationIncompleteException` when downstream fails
+* `.watchTermination` will fail the materialized `Future` or `CompletionStage` rather than completing it when downstream fails
+
+This also means that custom `GraphStage` implementations should be changed to pass on the
+cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature 
+taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause upstream. The old zero-argument 
+`onDownstreamFinish` method has been deprecated.   

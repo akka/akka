@@ -15,10 +15,8 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.Attributes
-import akka.stream.Outlet
-import akka.stream.SourceShape
-import akka.testkit.DefaultTimeout
+import akka.stream.{ Attributes, KillSwitches, Outlet, SourceShape }
+import akka.testkit.{ DefaultTimeout, TestProbe }
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Seq
@@ -86,6 +84,25 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       probe.cancel()
     }
 
+    "propagate downstream cancellation cause when inner source has been materialized" in {
+      val probe = TestProbe()
+      val (doneF, killswitch) =
+        Source
+          .lazily(() =>
+            Source.maybe[Int].watchTermination()(Keep.right).mapMaterializedValue { done =>
+              probe.ref ! Done
+              done
+            })
+          .mapMaterializedValue(_.flatten)
+          .viaMat(KillSwitches.single)(Keep.both)
+          .to(Sink.ignore)
+          .run()
+      val boom = TE("boom")
+      probe.expectMsg(Done)
+      killswitch.abort(boom)
+      doneF.failed.futureValue should ===(boom)
+    }
+
     "fail stage when upstream fails" in assertAllStagesStopped {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
@@ -115,6 +132,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       result.failed.futureValue should ===(matFail)
 
     }
+
   }
 
 }
