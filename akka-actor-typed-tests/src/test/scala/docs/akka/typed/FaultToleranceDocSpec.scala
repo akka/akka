@@ -4,68 +4,100 @@
 
 package docs.akka.typed
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ DeathPactException, SupervisorStrategy }
+import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 import com.github.ghik.silencer.silent
+import org.scalatest.WordSpecLike
+
+object FaultToleranceDocSpec {
+  // #bubbling-example
+  import akka.actor.typed.ActorRef
+  import akka.actor.typed.Behavior
+  import akka.actor.typed.DeathPactException
+  import akka.actor.typed.SupervisorStrategy
+  import akka.actor.typed.scaladsl.Behaviors
+
+  object Protocol {
+    sealed trait Command
+    case class Fail(text: String) extends Command
+    case class Hello(text: String, replyTo: ActorRef[String]) extends Command
+  }
+  import Protocol._
+
+  object Worker {
+    def apply(): Behavior[Command] =
+      Behaviors.receiveMessage {
+        case Fail(text) =>
+          throw new RuntimeException(text)
+        case Hello(text, replyTo) =>
+          replyTo ! text
+          Behaviors.same
+      }
+  }
+
+  object MiddleManagement {
+    def apply(): Behavior[Command] =
+      Behaviors.setup[Command] { context =>
+        context.log.info("Middle management starting up")
+        // default supervision of child, meaning that it will stop on failure
+        val child = context.spawn(Worker(), "child")
+        // we want to know when the child terminates, but since we do not handle
+        // the Terminated signal, we will in turn fail on child termination
+        context.watch(child)
+
+        // here we don't handle Terminated at all which means that
+        // when the child fails or stops gracefully this actor will
+        // fail with a DeathWatchException
+        Behaviors.receiveMessage { message =>
+          child ! message
+          Behaviors.same
+        }
+      }
+  }
+
+  object Boss {
+    def apply(): Behavior[Command] =
+      Behaviors
+        .supervise(Behaviors.setup[Command] { context =>
+          context.log.info("Boss starting up")
+          // default supervision of child, meaning that it will stop on failure
+          val middleManagement = context.spawn(MiddleManagement(), "middle-management")
+          context.watch(middleManagement)
+
+          // here we don't handle Terminated at all which means that
+          // when middle management fails with a DeathWatchException
+          // this actor will also fail
+          Behaviors.receiveMessage[Command] { message =>
+            middleManagement ! message
+            Behaviors.same
+          }
+        })
+        .onFailure[DeathPactException](SupervisorStrategy.restart)
+  }
+  // #bubbling-example
+}
 
 @silent("never used")
 class FaultToleranceDocSpec extends ScalaTestWithActorTestKit("""
       # silenced to not put noise in test logs
       akka.loglevel = off
     """) with WordSpecLike {
+  import FaultToleranceDocSpec._
 
   "Bubbling of failures" must {
 
     "have an example for the docs" in {
+      val boss = spawn(Boss(), "upper-management")
+      val replyProbe = createTestProbe[String]()
+      boss ! Protocol.Hello("hi 1", replyProbe.ref)
+      replyProbe.expectMessage("hi 1")
+      boss ! Protocol.Fail("ping")
 
-      // FIXME I think we could have much better examples of this but I'm stuck so this will have to do for now
-
-      // #bubbling-example
-      sealed trait Message
-      case class Fail(text: String) extends Message
-
-      val worker = Behaviors.receive[Message] { (context, message) =>
-        message match {
-          case Fail(text) => throw new RuntimeException(text)
-        }
+      // message may be lost when MiddleManagement is stopped, but eventually it will be functional again
+      eventually {
+        boss ! Protocol.Hello("hi 2", replyProbe.ref)
+        replyProbe.expectMessage(200.millis, "hi 2")
       }
-
-      val middleManagementBehavior = Behaviors.setup[Message] { context =>
-        context.log.info("Middle management starting up")
-        val child = context.spawn(worker, "child")
-        context.watch(child)
-
-        // here we don't handle Terminated at all which means that
-        // when the child fails or stops gracefully this actor will
-        // fail with a DeathWatchException
-        Behaviors.receive[Message] { (context, message) =>
-          child ! message
-          Behaviors.same
-        }
-      }
-
-      val bossBehavior = Behaviors
-        .supervise(Behaviors.setup[Message] { context =>
-          context.log.info("Boss starting up")
-          val middleManagement = context.spawn(middleManagementBehavior, "middle-management")
-          context.watch(middleManagement)
-
-          // here we don't handle Terminated at all which means that
-          // when middle management fails with a DeathWatchException
-          // this actor will also fail
-          Behaviors.receiveMessage[Message] { message =>
-            middleManagement ! message
-            Behaviors.same
-          }
-        })
-        .onFailure[DeathPactException](SupervisorStrategy.restart)
-
-      // (spawn comes from the testkit)
-      val boss = spawn(bossBehavior, "upper-management")
-      boss ! Fail("ping")
-      // #bubbling-example
 
     }
   }

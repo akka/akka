@@ -14,36 +14,48 @@ import java.util.concurrent.TimeUnit;
 
 public class SupervisionCompileOnlyTest {
   // #wrap
-  interface CounterMessage {}
+  public static class Counter {
+    public interface Command {}
 
-  public static final class Increase implements CounterMessage {}
+    public static final class Increase implements Command {}
 
-  public static final class Get implements CounterMessage {
-    final ActorRef<Got> sender;
+    public static final class Get implements Command {
+      public final ActorRef<Got> replyTo;
 
-    public Get(ActorRef<Got> sender) {
-      this.sender = sender;
+      public Get(ActorRef<Got> replyTo) {
+        this.replyTo = replyTo;
+      }
     }
-  }
 
-  public static final class Got {
-    final int n;
+    public static final class Got {
+      public final int n;
 
-    public Got(int n) {
-      this.n = n;
+      public Got(int n) {
+        this.n = n;
+      }
     }
-  }
 
-  public static Behavior<CounterMessage> counter(int currentValue) {
-    return Behaviors.receive(CounterMessage.class)
-        .onMessage(Increase.class, o -> counter(currentValue + 1))
-        .onMessage(
-            Get.class,
-            o -> {
-              o.sender.tell(new Got(currentValue));
-              return Behaviors.same();
-            })
-        .build();
+    // #top-level
+    public static Behavior<Command> create() {
+      return Behaviors.supervise(counter(1)).onFailure(SupervisorStrategy.restart());
+    }
+    // #top-level
+
+    private static Behavior<Command> counter(int currentValue) {
+      return Behaviors.receive(Command.class)
+          .onMessage(Increase.class, o -> onIncrease(currentValue))
+          .onMessage(Get.class, command -> onGet(currentValue, command))
+          .build();
+    }
+
+    private static Behavior<Command> onIncrease(int currentValue) {
+      return counter(currentValue + 1);
+    }
+
+    private static Behavior<Command> onGet(int currentValue, Get command) {
+      command.replyTo.tell(new Got(currentValue));
+      return Behaviors.same();
+    }
   }
   // #wrap
 
@@ -73,10 +85,6 @@ public class SupervisionCompileOnlyTest {
                 .onFailure(IllegalStateException.class, SupervisorStrategy.restart()))
         .onFailure(IllegalArgumentException.class, SupervisorStrategy.stop());
     // #multiple
-
-    // #top-level
-    Behaviors.supervise(counter(1));
-    // #top-level
 
   }
 
