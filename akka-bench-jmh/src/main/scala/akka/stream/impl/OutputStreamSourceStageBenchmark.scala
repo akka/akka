@@ -6,16 +6,15 @@ package akka.stream.impl
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.StreamConverters
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations._
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object OutputStreamSourceStageBenchmark {
   final val WritesPerBench = 10000
@@ -26,7 +25,6 @@ object OutputStreamSourceStageBenchmark {
 class OutputStreamSourceStageBenchmark {
   import OutputStreamSourceStageBenchmark.WritesPerBench
   implicit val system = ActorSystem("OutputStreamSourceStageBenchmark")
-  implicit val materializer = ActorMaterializer()
 
   private val bytes: Array[Byte] = Array.emptyByteArray
 

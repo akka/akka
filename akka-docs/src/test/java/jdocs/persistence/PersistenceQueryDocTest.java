@@ -18,7 +18,6 @@ import com.typesafe.config.Config;
 
 import akka.actor.*;
 import akka.persistence.query.*;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 

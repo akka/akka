@@ -29,7 +29,6 @@ public class ActorFlowCompileTest {
 
   {
     final ActorSystem<String> system = null;
-    final ActorMaterializer mat = ActorMaterializerFactory.create(system);
   }
 
   static

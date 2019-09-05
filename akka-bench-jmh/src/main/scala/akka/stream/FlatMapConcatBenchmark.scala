@@ -100,7 +100,7 @@ class FlatMapConcatBenchmark {
   private def awaitLatch(latch: CountDownLatch): Unit = {
     if (!latch.await(30, TimeUnit.SECONDS)) {
       implicit val ec = system.dispatcher
-      StreamTestKit.printDebugDump(ActorMaterializerHelper.downcast(SystemMaterializer(system).materializer).supervisor)
+      StreamTestKit.printDebugDump(SystemMaterializer(system).materializer.supervisor)
       throw new RuntimeException("Latch didn't complete in time")
     }
   }

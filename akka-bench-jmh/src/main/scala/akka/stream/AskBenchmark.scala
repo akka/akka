@@ -86,7 +86,7 @@ class AskBenchmark {
 
   private def awaitLatch(latch: CountDownLatch): Unit = {
     if (!latch.await(30, TimeUnit.SECONDS)) {
-      StreamTestKit.printDebugDump(ActorMaterializerHelper.downcast(SystemMaterializer(system).materializer).supervisor)
+      StreamTestKit.printDebugDump(SystemMaterializer(system).materializer.supervisor)
       throw new RuntimeException("Latch didn't complete in time")
     }
   }

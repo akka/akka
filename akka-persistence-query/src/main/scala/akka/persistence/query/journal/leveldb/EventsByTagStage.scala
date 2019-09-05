@@ -4,20 +4,27 @@
 
 package akka.persistence.query.journal.leveldb
 
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.persistence.JournalProtocol.{ RecoverySuccess, ReplayMessagesFailure }
+import akka.persistence.JournalProtocol.RecoverySuccess
+import akka.persistence.JournalProtocol.ReplayMessagesFailure
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.LeveldbJournal
-import akka.persistence.journal.leveldb.LeveldbJournal.{
-  ReplayTaggedMessages,
-  ReplayedTaggedMessage,
-  TaggedEventAppended
-}
+import akka.persistence.journal.leveldb.LeveldbJournal.ReplayTaggedMessages
+import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
+import akka.persistence.journal.leveldb.LeveldbJournal.TaggedEventAppended
 import akka.persistence.query.journal.leveldb.EventsByTagStage.Continue
-import akka.persistence.query.{ EventEnvelope, Sequence }
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogicWithLogging }
-import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
+import akka.persistence.query.EventEnvelope
+import akka.persistence.query.Sequence
+import akka.stream.Materializer
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
+import akka.stream.stage.TimerGraphStageLogicWithLogging
+import akka.stream.Attributes
+import akka.stream.Outlet
+import akka.stream.SourceShape
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -38,7 +45,6 @@ final private[leveldb] class EventsByTagStage(
     maxBufSize: Int,
     initialTooOffset: Long,
     writeJournalPluginId: String,
-    mat: ActorMaterializer,
     refreshInterval: Option[FiniteDuration])
     extends GraphStage[SourceShape[EventEnvelope]] {
 
@@ -46,9 +52,15 @@ final private[leveldb] class EventsByTagStage(
 
   override def shape: SourceShape[EventEnvelope] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    throw new UnsupportedOperationException("Not used")
+
+  override private[akka] def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      eagerMaterializer: Materializer): (GraphStageLogic, NotUsed) = {
+
     val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
-      val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
+      val journal: ActorRef = Persistence(eagerMaterializer.system).journalFor(writeJournalPluginId)
       var currOffset: Long = fromOffset
       var toOffset: Long = initialTooOffset
       var stageActorRef: ActorRef = null
@@ -144,7 +156,7 @@ final private[leveldb] class EventsByTagStage(
       setHandler(out, this)
     }
 
-    logic
+    (logic, NotUsed)
   }
 
 }

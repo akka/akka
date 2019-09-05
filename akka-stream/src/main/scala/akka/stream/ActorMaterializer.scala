@@ -7,18 +7,23 @@ package akka.stream
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
+import akka.actor.ActorContext
+import akka.actor.ActorRef
+import akka.actor.ActorRefFactory
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.Props
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.util.Helpers.toRootLowerCase
+import akka.japi.function
 import akka.stream.impl._
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.stream.stage.GraphStageLogic
+import akka.util.Helpers.toRootLowerCase
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
-import akka.japi.function
-import akka.stream.stage.GraphStageLogic
-import com.github.ghik.silencer.silent
-
 import scala.util.control.NoStackTrace
 
 object ActorMaterializer {
@@ -36,7 +41,9 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  @silent("deprecated")
+  @deprecated(
+    "Use the system wide materializer with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(
       implicit context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
@@ -57,6 +64,9 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(
       implicit context: ActorRefFactory): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
@@ -93,6 +103,9 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer or Materializer.apply(actorContext) with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def apply(materializerSettings: ActorMaterializerSettings)(implicit context: ActorRefFactory): ActorMaterializer =
     apply(Some(materializerSettings), None)
 
@@ -126,6 +139,9 @@ object ActorMaterializer {
    * Defaults the actor name prefix used to name actors running the processing steps to `"flow"`.
    * The actor names are built up of `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer or Materializer.create(actorContext) with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create(context: ActorRefFactory): ActorMaterializer =
     apply()(context)
 
@@ -141,7 +157,9 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  @silent("deprecated")
+  @deprecated(
+    "Use the system wide materializer or Materializer.create(actorContext) with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create(context: ActorRefFactory, namePrefix: String): ActorMaterializer = {
     val system = actorSystemOf(context)
     val settings = ActorMaterializerSettings(system)
@@ -155,6 +173,9 @@ object ActorMaterializer {
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
+  @deprecated(
+    "Use the system wide materializer or Materializer.create(actorContext) with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create(settings: ActorMaterializerSettings, context: ActorRefFactory): ActorMaterializer =
     apply(Option(settings), None)(context)
 
@@ -170,6 +191,9 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
+  @deprecated(
+    "Use the system wide materializer or Materializer.create(actorContext) with stream attributes or configuration settings to change defaults",
+    "2.6.0")
   def create(settings: ActorMaterializerSettings, context: ActorRefFactory, namePrefix: String): ActorMaterializer =
     apply(Option(settings), Option(namePrefix))(context)
 
@@ -195,8 +219,9 @@ private[akka] object ActorMaterializerHelper {
   /**
    * INTERNAL API
    */
+  @deprecated("The Materializer now has all methods the ActorMaterializer used to have", "2.6.0")
   private[akka] def downcast(materializer: Materializer): ActorMaterializer =
-    materializer match { //FIXME this method is going to cause trouble for other Materializer implementations
+    materializer match {
       case m: ActorMaterializer => m
       case _ =>
         throw new IllegalArgumentException(
@@ -208,6 +233,7 @@ private[akka] object ActorMaterializerHelper {
 /**
  * An ActorMaterializer takes a stream blueprint and turns it into a running stream.
  */
+@deprecated("The Materializer now has all methods the ActorMaterializer used to have", "2.6.0")
 abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
   @deprecated(

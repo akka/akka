@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.AbruptTerminationException
+import akka.stream.Materializer
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
-import akka.stream.AbruptTerminationException
-import akka.stream.ActorMaterializer
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -33,7 +33,7 @@ class SeqSinkSpec extends StreamSpec("""
     }
 
     "fail the future on abrupt termination" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val probe = TestPublisher.probe()
       val future: Future[immutable.Seq[Int]] =
         Source.fromPublisher(probe).runWith(Sink.seq)(mat)

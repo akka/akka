@@ -4,11 +4,6 @@
 
 package akka.cluster
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-
 import akka.Done
 import akka.actor.Actor
 import akka.actor.ActorIdentity
@@ -19,7 +14,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.RemoteStreamRefActorTerminatedException
 import akka.stream.SinkRef
 import akka.stream.SourceRef
@@ -31,6 +26,11 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 
 object StreamRefSpec extends MultiNodeConfig {
   val first = role("first")
@@ -54,7 +54,7 @@ object StreamRefSpec extends MultiNodeConfig {
 
   class DataSource(streamLifecycleProbe: ActorRef) extends Actor {
     import context.dispatcher
-    implicit val mat = ActorMaterializer()(context)
+    implicit val mat = Materializer(context)
 
     def receive = {
       case RequestLogs(streamId) =>
@@ -97,7 +97,7 @@ object StreamRefSpec extends MultiNodeConfig {
   class DataReceiver(streamLifecycleProbe: ActorRef) extends Actor {
 
     import context.dispatcher
-    implicit val mat = ActorMaterializer()(context)
+    implicit val mat = Materializer(context)
 
     def receive = {
       case PrepareUpload(nodeId) =>
@@ -135,8 +135,6 @@ class StreamRefMultiJvmNode3 extends StreamRefSpec
 
 abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNodeClusterSpec with ImplicitSender {
   import StreamRefSpec._
-
-  private implicit val mat: ActorMaterializer = ActorMaterializer()
 
   "A cluster with Stream Refs" must {
 

@@ -19,7 +19,6 @@ import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.EventSeq
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.testkit.EventFilter
 import akka.testkit.JavaSerializable
@@ -104,7 +103,6 @@ class EventSourcedEventAdapterSpec
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
 
-  implicit val materializer = ActorMaterializer()(system.toClassic)
   val queries: LeveldbReadJournal =
     PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 

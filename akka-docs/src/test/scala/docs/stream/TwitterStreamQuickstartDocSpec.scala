@@ -22,7 +22,6 @@ object TwitterStreamQuickstartDocSpec {
   //#fiddle_code
   import akka.NotUsed
   import akka.actor.ActorSystem
-  import akka.stream.ActorMaterializer
   import akka.stream.scaladsl._
 
   //#model

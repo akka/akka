@@ -193,30 +193,14 @@ object GraphStageLogic {
   /**
    * Minimal actor to work with other actors and watch them in a synchronous ways
    *
-   * @param name leave empty to use plain auto generated names
+   * Not for user instantiation, use [[#getStageActor]].
    */
-  final class StageActor(
-      materializer: ActorMaterializer,
+  final class StageActor @InternalApi() private[akka] (
+      materializer: Materializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
-      name: String,
-      poisonPillFallback: Boolean) { // internal fallback to support deprecated SourceActorRef implementation replacement
-
-    def this(
-        materializer: akka.stream.ActorMaterializer,
-        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
-        initialReceive: StageActorRef.Receive,
-        name: String) {
-      this(materializer, getAsyncCallback, initialReceive, name, false)
-    }
-
-    // not really needed, but let's keep MiMa happy
-    def this(
-        materializer: akka.stream.ActorMaterializer,
-        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
-        initialReceive: StageActorRef.Receive) {
-      this(materializer, getAsyncCallback, initialReceive, "", false)
-    }
+      poisonPillFallback: Boolean, // internal fallback to support deprecated SourceActorRef implementation replacement
+      name: String) {
 
     private val callback = getAsyncCallback(internalReceive)
 
@@ -392,7 +376,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private[akka] def interpreter: GraphInterpreter =
     if (_interpreter == null)
       throw new IllegalStateException(
-        "not yet initialized: only setHandler is allowed in GraphStageLogic constructor. To access materializer use Source/Flow/Sink.setup factory")
+        "not yet initialized: only setHandler is allowed in GraphStageLogic constructor. To access materializer use Source/Flow/Sink.fromMaterializer factory")
     else _interpreter
 
   /**
@@ -1280,9 +1264,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       receive: ((ActorRef, Any)) => Unit): StageActor =
     _stageActor match {
       case null =>
-        val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
         _stageActor =
-          new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
+          new StageActor(eagerMaterializer, getAsyncCallback _, receive, poisonPillCompatibility, stageActorName)
         _stageActor
       case existing =>
         existing.become(receive)

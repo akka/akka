@@ -5,15 +5,15 @@
 package akka.stream.scaladsl
 
 import akka.Done
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 import scala.util.Failure
 import scala.util.Success
+import scala.util.control.NoStackTrace
 
 class FlowOnCompleteSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -81,7 +81,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
     }
 
     "yield error on abrupt termination" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()(mat)

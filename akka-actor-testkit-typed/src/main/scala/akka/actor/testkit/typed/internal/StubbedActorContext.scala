@@ -182,6 +182,10 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   private val loggingAdapter = new StubbedLogger
   private var unhandled: List[T] = Nil
 
+  private[akka] def classicActorContext =
+    throw new UnsupportedOperationException(
+      "No classic ActorContext available with the stubbed actor context, to spawn materializers and run streams you will need a real actor")
+
   override def children: Iterable[ActorRef[Nothing]] = _children.values.map(_.context.self)
   def childrenNames: Iterable[String] = _children.keys
 

@@ -15,20 +15,20 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.TestLatch
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 class ActorGraphInterpreterSpec extends StreamSpec {
   "ActorGraphInterpreter" must {
@@ -403,7 +403,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
     }
 
     "trigger postStop in all stages when abruptly terminated (and no upstream boundaries)" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val gotStop = TestLatch(1)
 
       object PostStopSnitchFlow extends SimpleLinearGraphStage[String] {

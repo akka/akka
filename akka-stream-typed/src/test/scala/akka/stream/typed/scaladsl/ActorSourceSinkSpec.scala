@@ -25,8 +25,6 @@ object ActorSourceSinkSpec {
 class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import ActorSourceSinkSpec._
 
-  implicit val mat = ActorMaterializer()
-
   "ActorSink" should {
 
     "accept messages" in {

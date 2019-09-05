@@ -281,9 +281,18 @@ object Sink {
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
+   * exposes [[Materializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Sink]] returned by this method.
+   */
+  def fromMaterializer[T, M](factory: BiFunction[Materializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    scaladsl.Sink.fromMaterializer((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+
+  /**
+   * Defers the creation of a [[Sink]] until materialization. The `factory` function
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
+  @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
     scaladsl.Sink.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
@@ -386,6 +395,8 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
 
   /**
    * Connect this `Sink` to a `Source` and run it.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
   def runWith[M](source: Graph[SourceShape[In], M], systemProvider: ClassicActorSystemProvider): M =
     asScala.runWith(source)(SystemMaterializer(systemProvider.classicSystem).materializer)

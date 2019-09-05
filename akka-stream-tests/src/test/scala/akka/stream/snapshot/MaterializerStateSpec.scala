@@ -4,10 +4,17 @@
 
 package akka.stream.snapshot
 
-import akka.stream.{ ActorMaterializer, FlowShape }
-import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Source }
-import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.FlowShape
+import akka.stream.Materializer
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.GraphDSL
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Merge
+import akka.stream.scaladsl.Partition
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.TestSink
 
 import scala.concurrent.Promise
 
@@ -16,7 +23,7 @@ class MaterializerStateSpec extends StreamSpec {
   "The MaterializerSnapshotting" must {
 
     "snapshot a running stream" in {
-      implicit val mat = ActorMaterializer()
+      implicit val mat = Materializer(system)
       try {
         Source.maybe[Int].map(_.toString).zipWithIndex.runWith(Sink.seq)
 
@@ -47,7 +54,7 @@ class MaterializerStateSpec extends StreamSpec {
     }
 
     "snapshot a stream that has a stopped stage" in {
-      implicit val mat = ActorMaterializer()
+      implicit val mat = Materializer(system)
       try {
         val probe = TestSink.probe[String](system)
         val out = Source
@@ -68,7 +75,7 @@ class MaterializerStateSpec extends StreamSpec {
     }
 
     "snapshot a more complicated graph" in {
-      implicit val mat = ActorMaterializer()
+      implicit val mat = Materializer(system)
       try {
         // snapshot before anything is running
         MaterializerState.streamSnapshots(mat).futureValue

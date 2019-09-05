@@ -5,15 +5,22 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream._
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 /** Internal Api */
-@InternalApi private[stream] final class SetupSinkStage[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M])
+@InternalApi private[stream] final class SetupSinkStage[T, M](factory: (Materializer, Attributes) => Sink[T, M])
     extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
 
   private val in = Inlet[T]("SetupSinkStage.in")
@@ -33,7 +40,7 @@ import scala.util.control.NonFatal
 
     override def preStart(): Unit = {
       try {
-        val sink = factory(ActorMaterializerHelper.downcast(materializer), attributes)
+        val sink = factory(materializer, attributes)
 
         val mat = Source.fromGraph(subOutlet.source).runWith(sink.withAttributes(attributes))(subFusingMaterializer)
         matPromise.success(mat)
@@ -48,8 +55,7 @@ import scala.util.control.NonFatal
 }
 
 /** Internal Api */
-@InternalApi private[stream] final class SetupFlowStage[T, U, M](
-    factory: (ActorMaterializer, Attributes) => Flow[T, U, M])
+@InternalApi private[stream] final class SetupFlowStage[T, U, M](factory: (Materializer, Attributes) => Flow[T, U, M])
     extends GraphStageWithMaterializedValue[FlowShape[T, U], Future[M]] {
 
   private val in = Inlet[T]("SetupFlowStage.in")
@@ -75,7 +81,7 @@ import scala.util.control.NonFatal
 
     override def preStart(): Unit = {
       try {
-        val flow = factory(ActorMaterializerHelper.downcast(materializer), attributes)
+        val flow = factory(materializer, attributes)
 
         val mat = Source
           .fromGraph(subOutlet.source)
@@ -93,8 +99,7 @@ import scala.util.control.NonFatal
 }
 
 /** Internal Api */
-@InternalApi private[stream] final class SetupSourceStage[T, M](
-    factory: (ActorMaterializer, Attributes) => Source[T, M])
+@InternalApi private[stream] final class SetupSourceStage[T, M](factory: (Materializer, Attributes) => Source[T, M])
     extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
 
   private val out = Outlet[T]("SetupSourceStage.out")
@@ -114,7 +119,7 @@ import scala.util.control.NonFatal
 
     override def preStart(): Unit = {
       try {
-        val source = factory(ActorMaterializerHelper.downcast(materializer), attributes)
+        val source = factory(materializer, attributes)
 
         val mat = source.withAttributes(attributes).to(Sink.fromGraph(subInlet.sink)).run()(subFusingMaterializer)
         matPromise.success(mat)

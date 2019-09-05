@@ -60,13 +60,13 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with InHandler {
 
-      private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
+      private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 
       // settings ---
       @silent("deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = {
         import StreamRefAttributes._
-        val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
+        val settings = eagerMaterializer.settings.streamRefSettings
         inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
           SubscriptionTimeout(settings.subscriptionTimeout))
       }

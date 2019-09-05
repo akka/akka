@@ -4,6 +4,7 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
 import akka.annotation.DoNotInherit
 import akka.util.Timeout
@@ -35,7 +36,7 @@ import akka.annotation.InternalApi
  * Not for user extension.
  */
 @DoNotInherit
-trait ActorContext[T] extends TypedActorContext[T] {
+trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvider {
 
   /**
    * Get the `javadsl` of this `ActorContext`.

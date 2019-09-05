@@ -4,7 +4,7 @@
 
 package docs.stream
 
-import akka.stream.{ ActorMaterializer, ClosedShape, OverflowStrategy }
+import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 

@@ -44,7 +44,7 @@ import com.github.ghik.silencer.silent
  *
  * Where no name is given explicitly, one will be automatically generated.
  */
-trait ActorContext extends ActorRefFactory {
+trait ActorContext extends ActorRefFactory with ClassicActorContextProvider {
 
   /**
    * The ActorRef representing this actor
@@ -427,6 +427,8 @@ private[akka] class ActorCell(
   protected final def guardian = self
   protected final def lookupRoot = self
   final def provider = system.provider
+
+  override final def classicActorContext: ActorContext = this
 
   protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _

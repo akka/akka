@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.AbruptStageTerminationException
+import akka.stream.Materializer
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
-import akka.stream.AbruptStageTerminationException
-import akka.stream.ActorMaterializer
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.DefaultTimeout
 
 import scala.concurrent.duration._
@@ -86,7 +86,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "complete materialized future when materializer is shutdown" in assertAllStagesStopped {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.asPublisher[Int](false)
 

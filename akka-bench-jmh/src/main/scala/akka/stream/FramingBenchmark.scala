@@ -4,14 +4,18 @@
 
 package akka.stream
 
-import java.util.concurrent.{ Semaphore, TimeUnit }
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.remote.artery.BenchTestSourceSameElement
-import akka.stream.scaladsl.{ Framing, Sink, Source }
+import akka.stream.scaladsl.Framing
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
 import scala.concurrent.Await
@@ -49,8 +53,6 @@ class FramingBenchmark {
 
   implicit val system: ActorSystem = ActorSystem("test", config)
 
-  var materializer: ActorMaterializer = _
-
   // Safe to be benchmark scoped because the flows we construct in this bench are stateless
   var flow: Source[ByteString, NotUsed] = _
 
@@ -62,7 +64,7 @@ class FramingBenchmark {
 
   @Setup
   def setup(): Unit = {
-    materializer = ActorMaterializer()
+    SystemMaterializer(system).materializer
 
     val frame = List.range(0, messageSize, 1).map(_ => Random.nextPrintableChar()).mkString + "\n"
     val messageChunk = ByteString(List.range(0, framePerSeq, 1).map(_ => frame).mkString)
@@ -82,7 +84,7 @@ class FramingBenchmark {
   def framing(): Unit = {
     val lock = new Semaphore(1)
     lock.acquire()
-    flow.runWith(Sink.onComplete(_ => lock.release()))(materializer)
+    flow.runWith(Sink.onComplete(_ => lock.release()))
     lock.acquire()
   }
 

@@ -22,7 +22,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
@@ -105,8 +104,6 @@ abstract class AeronStreamLatencySpec
     r.start()
     r
   }
-
-  lazy implicit val mat = ActorMaterializer()(system)
 
   override def initialParticipants = roles.size
 

@@ -4,16 +4,19 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.duration._
-import akka.actor.{ Actor, ActorRef, Props, Status }
-import akka.stream.ActorMaterializer
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.Status
 import akka.stream.Attributes.inputBuffer
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.Materializer
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
 import akka.testkit.TestProbe
 
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 object ActorRefBackpressureSinkSpec {
   val initMessage = "start"
@@ -169,7 +172,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
     }
 
     "signal failure on abrupt termination" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val probe = TestProbe()
 
       val sink = Sink

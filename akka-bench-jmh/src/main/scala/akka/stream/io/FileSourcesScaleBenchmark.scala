@@ -4,17 +4,22 @@
 
 package akka.stream.io
 
-import java.nio.file.{ Files, Path }
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
+import akka.stream.IOResult
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, IOResult }
 import akka.util.ByteString
-import org.openjdk.jmh.annotations.{ BenchmarkMode, Scope, State, _ }
+import org.openjdk.jmh.annotations.BenchmarkMode
+import org.openjdk.jmh.annotations.Scope
+import org.openjdk.jmh.annotations.State
+import org.openjdk.jmh.annotations._
 
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -30,7 +35,7 @@ class FileSourcesScaleBenchmark {
    * FileSourcesScaleBenchmark.mapAsync           2048  avgt   10  0.899 ± 0.103   s/op
    */
   implicit val system = ActorSystem("file-sources-benchmark")
-  implicit val materializer = ActorMaterializer()
+
   val FILES_NUMBER = 40
   val files: Seq[Path] = {
     val line = ByteString("x" * 2048 + "\n")

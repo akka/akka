@@ -4,6 +4,12 @@ Defer the creation of a `Sink` until materialization and access `ActorMaterializ
 
 @ref[Sink operators](../index.md#sink-operators)
 
+@@@ warning
+
+The `setup` operator has been deprecated, use @ref:[fromMaterializer](./fromMaterializer.md) instead. 
+
+@@@
+
 @@@ div { .group-scala }
 
 ## Signature

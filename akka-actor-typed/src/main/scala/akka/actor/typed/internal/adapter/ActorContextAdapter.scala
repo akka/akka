@@ -63,6 +63,7 @@ private[akka] object ActorContextAdapter {
 
   final override val self = ActorRefAdapter(classicContext.self)
   final override val system = ActorSystemAdapter(classicContext.system)
+  private[akka] def classicActorContext = classicContext
   override def children: Iterable[ActorRef[Nothing]] = classicContext.children.map(ActorRefAdapter(_))
   override def child(name: String): Option[ActorRef[Nothing]] = classicContext.child(name).map(ActorRefAdapter(_))
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] =

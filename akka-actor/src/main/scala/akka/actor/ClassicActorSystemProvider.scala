@@ -19,3 +19,16 @@ trait ClassicActorSystemProvider {
   @InternalApi
   private[akka] def classicSystem: ActorSystem
 }
+
+/**
+ * Glue API introduced to allow minimal user effort integration between classic and typed for example for streams.
+ *
+ * Not for user extension.
+ */
+@DoNotInherit
+trait ClassicActorContextProvider {
+
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def classicActorContext: ActorContext
+}

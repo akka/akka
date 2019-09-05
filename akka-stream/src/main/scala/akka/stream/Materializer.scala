@@ -4,27 +4,28 @@
 
 package akka.stream
 
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Cancellable
+import akka.actor.ClassicActorContextProvider
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.Props
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import com.github.ghik.silencer.silent
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
 /**
- * Materializer SPI (Service Provider Interface)
+ * The Materializer is the component responsible for turning a stream blueprint into a running stream.
+ * In general the system wide materializer should be preferred over creating instances manually.
  *
- * Binary compatibility is NOT guaranteed on materializer internals.
- *
- * Custom materializer implementations should be aware that the materializer SPI
- * is not yet final and may change in patch releases of Akka. Please note that this
- * does not impact end-users of Akka streams, only implementors of custom materializers,
- * with whom the Akka team co-ordinates such changes.
- *
- * Once the SPI is final this notice will be removed.
+ * Not for user extension
  */
 @silent("deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
+@DoNotInherit
 abstract class Materializer {
 
   /**
@@ -144,6 +145,47 @@ abstract class Materializer {
     since = "2.6.0")
   def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
 
+  /**
+   * Shuts down this materializer and all the operators that have been materialized through this materializer. After
+   * having shut down, this materializer cannot be used again. Any attempt to materialize operators after having
+   * shut down will result in an IllegalStateException being thrown at materialization time.
+   */
+  def shutdown(): Unit
+
+  /**
+   * Indicates if the materializer has been shut down.
+   */
+  def isShutdown: Boolean
+
+  /**
+   * The classic actor system this materializer is backed by (and in which the streams materialized with the
+   * materializer will run)
+   */
+  def system: ActorSystem
+
+  /**
+   * INTERNAL API
+   *
+   * Custom [[GraphStage]]s that needs logging should use [[akka.stream.stage.StageLogging]] (Scala) or
+   * [[akka.stream.stage.GraphStageLogicWithLogging]] (Java) instead.
+   */
+  @InternalApi
+  private[akka] def logger: LoggingAdapter
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def supervisor: ActorRef
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
+
+  @deprecated("Use attributes to access settings from stages", "2.6.0")
+  def settings: ActorMaterializerSettings
 }
 
 object Materializer {
@@ -154,40 +196,48 @@ object Materializer {
   implicit def matFromSystem(implicit provider: ClassicActorSystemProvider): Materializer =
     SystemMaterializer(provider.classicSystem).materializer
 
-}
+  /**
+   * Scala API: Create a materializer whose lifecycle will be tied to the one of the passed actor context.
+   * When the actor stops the materializer will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   *
+   * You can pass either a classic actor context or a typed actor context.
+   */
+  @silent("deprecated")
+  def apply(contextProvider: ClassicActorContextProvider): Materializer =
+    ActorMaterializer(None, None)(contextProvider.classicActorContext)
 
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object NoMaterializer extends Materializer {
-  override def withNamePrefix(name: String): Materializer =
-    throw new UnsupportedOperationException("NoMaterializer cannot be named")
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
-    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
-    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+  /**
+   * Java API: Create a materializer whose lifecycle will be tied to the one of the passed actor context.
+   * When the actor stops the materializer will stop and all streams created with it will be failed with an [[AbruptTerminationExeption]]
+   *
+   * You can pass either a classic actor context or a typed actor context.
+   */
+  def create(contextProvider: ClassicActorContextProvider): Materializer = apply(contextProvider)
 
-  override def executionContext: ExecutionContextExecutor =
-    throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
+  /**
+   * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
+   *
+   * *Note* prefer using the default [[SystemMaterializer]] that is implicitly available if you have an implicit
+   * `ActorSystem` in scope. Only create new system level materializers if you have specific
+   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle
+   * of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
+   */
+  @silent("deprecated")
+  def apply(systemProvider: ClassicActorSystemProvider): Materializer =
+    ActorMaterializer(None, None)(systemProvider.classicSystem)
 
-  def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot schedule a single event")
+  /**
+   * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
+   *
+   * *Note* prefer using the default [[SystemMaterializer]] by passing the `ActorSystem` to the various `run`
+   * methods on the streams. Only create new system level materializers if you have specific
+   * needs or want to test abrupt termination of a custom graph stage. If you want to tie the
+   * lifecycle of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
+   */
+  @silent("deprecated")
+  def create(systemProvider: ClassicActorSystemProvider): Materializer =
+    apply(systemProvider)
 
-  def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot schedule a repeated event")
-
-  override def scheduleWithFixedDelay(
-      initialDelay: FiniteDuration,
-      delay: FiniteDuration,
-      task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot scheduleWithFixedDelay")
-
-  override def scheduleAtFixedRate(
-      initialDelay: FiniteDuration,
-      interval: FiniteDuration,
-      task: Runnable): Cancellable =
-    throw new UnsupportedOperationException("NoMaterializer cannot scheduleAtFixedRate")
 }
 
 /**

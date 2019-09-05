@@ -269,7 +269,7 @@ well-known sinks, such as @scala[`runForeach(el => ...)`]@java[`runForeach(el ->
 Materialization is performed synchronously on the materializing thread by an `ActorSystem` global `Materializer`.
 The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
-`MaterializationSettings` while constructing the `ActorMaterializer`.
+the `ActorSystem` config or provided as attributes on the stream that is getting materialized.
 
 @@@ note
 
@@ -386,9 +386,7 @@ The use cases that may require a custom instance of `Materializer` are:
  * When wanting to change some specific default settings for a set of streams (FIXME we should phase this out)
  * When all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
 
-Currently the `Materializer` has one concrete implementation, the `ActorMaterializer`. 
-
-An important aspect of working with streams and actors is understanding an `ActorMaterializer`'s life-cycle.
+An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
 be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`). 
 
@@ -400,7 +398,7 @@ usual way to terminate streams, which is by cancelling/completing them. The stre
 like this to prevent leaks, and in normal operations you should not rely on the mechanism and rather use `KillSwitch` or
 normal completion signals to manage the lifecycles of your streams.  
 
-If we look at the following example, where we create the `ActorMaterializer` within an `Actor`:
+If we look at the following example, where we create the `Materializer` within an `Actor`:
 
 Scala
 :   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-actor-context }
@@ -411,7 +409,7 @@ Java
 In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the stream's lifecycle to the surrounding actor's lifecycle*.
 This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents a user or other entity, that we continuously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
 
-You may also cause an `ActorMaterializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
+You may also cause a `Materializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
 
 Sometimes, however, you may want to explicitly create a stream that will out-last the actor's life.
 For example, you are using an Akka stream to push some large stream of data to an external service.
@@ -429,7 +427,7 @@ for example because of the materializer's settings etc.
 @@@ warning
 
 Do not create new actor materializers inside actors by passing the `context.system` to it. 
-This will cause a new `ActorMaterializer` to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
+This will cause a new `Materializer` to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
 It is instead recommended to either pass-in the Materializer or create one using the actor's `context`.
 
 @@@

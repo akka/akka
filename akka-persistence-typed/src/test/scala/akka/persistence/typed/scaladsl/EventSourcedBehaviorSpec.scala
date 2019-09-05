@@ -41,7 +41,6 @@ import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
 import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.testkit.EventFilter
 import akka.testkit.TestEvent.Mute
@@ -289,7 +288,6 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
   import EventSourcedBehaviorSpec._
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val materializer = ActorMaterializer()(system.toClassic)
   val queries: LeveldbReadJournal =
     PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 

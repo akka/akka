@@ -16,7 +16,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
@@ -103,7 +102,6 @@ abstract class AeronStreamMaxThroughputSpec
     r
   }
 
-  lazy implicit val mat = ActorMaterializer()(system)
   import system.dispatcher
 
   def adjustedTotalMessages(n: Long): Long = (n * totalMessagesFactor).toLong

@@ -158,7 +158,7 @@ import scala.util.control.NonFatal
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
     override protected def onTimer(timerKey: Any): Unit = {
-      val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
+      val materializer = interpreter.materializer
       val StreamSubscriptionTimeout(timeout, mode) =
         inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout]
 

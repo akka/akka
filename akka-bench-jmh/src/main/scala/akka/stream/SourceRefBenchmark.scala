@@ -4,7 +4,8 @@
 
 package akka.stream
 
-import java.util.concurrent.{ Semaphore, TimeUnit }
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.remote.artery.BenchTestSource
@@ -33,8 +34,6 @@ class SourceRefBenchmark {
       }""".stripMargin).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("test", config)
-
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   final val successMarker = Success(1)
   final val successFailure = Success(new Exception)
