@@ -4,10 +4,11 @@
 
 package akka.actor.typed
 
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-class PropsSpec extends WordSpec with Matchers {
+class PropsSpec extends WordSpec with Matchers with WithLogCapturing {
 
   val dispatcherFirst = Props.empty.withDispatcherFromConfig("pool").withDispatcherDefault
 

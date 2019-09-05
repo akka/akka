@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.TestException
 import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
 
-class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
 
   class AnotherLoggerClass
 

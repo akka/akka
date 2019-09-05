@@ -7,6 +7,7 @@ package akka.actor.testkit.typed.javadsl;
 import akka.actor.testkit.typed.LoggingEvent;
 import akka.actor.testkit.typed.TestException;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import org.slf4j.event.Level;
@@ -20,6 +21,8 @@ import static org.junit.Assert.assertTrue;
 public class LoggingEventFilterTest extends JUnitSuite {
 
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   private LoggingEvent errorNoCause() {
     return LoggingEvent.create(

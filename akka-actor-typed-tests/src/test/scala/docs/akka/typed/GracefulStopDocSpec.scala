@@ -5,6 +5,7 @@
 package docs.akka.typed
 
 //#imports
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorSystem, PostStop }
@@ -73,7 +74,7 @@ object GracefulStopDocSpec {
 
 }
 
-class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
 
   import GracefulStopDocSpec._
 

@@ -21,7 +21,10 @@ object NullEmptyStateSpec {
     """)
 }
 
-class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.conf) with WordSpecLike {
+class NullEmptyStateSpec
+    extends ScalaTestWithActorTestKit(NullEmptyStateSpec.conf)
+    with WordSpecLike
+    with WithLogCapturing {
 
   implicit val testSettings = TestKitSettings(system)
 

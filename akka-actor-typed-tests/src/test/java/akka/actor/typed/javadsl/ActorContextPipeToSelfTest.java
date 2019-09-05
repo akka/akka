@@ -4,12 +4,14 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -27,6 +29,8 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
           ConfigFactory.parseString(
               "pipe-to-self-spec-dispatcher.executor = thread-pool-executor\n"
                   + "pipe-to-self-spec-dispatcher.type = PinnedDispatcher\n"));
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   static final class Msg {
     final String response;

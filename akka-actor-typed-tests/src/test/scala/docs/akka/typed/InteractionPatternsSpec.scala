@@ -13,6 +13,7 @@ import scala.util.Success
 
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -21,7 +22,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import org.scalatest.WordSpecLike
 
-class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
 
   "The interaction patterns docs" must {
 

@@ -8,7 +8,7 @@ import akka.actor.testkit.typed.LoggingEvent
 import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
 
-class LoggingEventFilterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class LoggingEventFilterSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
 
   private class AnError extends Exception
   private def errorNoCause =

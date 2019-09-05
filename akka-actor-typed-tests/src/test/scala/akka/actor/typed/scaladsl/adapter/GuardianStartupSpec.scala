@@ -9,13 +9,14 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystemImpl
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
 
-class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
+class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures with WithLogCapturing {
 
   "The user guardian" must {
 

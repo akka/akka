@@ -9,11 +9,13 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import org.scalatest.WordSpecLike
 
 class ServiceKeySerializationSpec
     extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with WithLogCapturing {
 
   val serialization = SerializationExtension(system.toClassic)
 

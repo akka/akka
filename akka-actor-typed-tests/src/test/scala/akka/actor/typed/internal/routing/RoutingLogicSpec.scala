@@ -5,10 +5,11 @@
 package akka.actor.typed.internal.routing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
-class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with Matchers {
+class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with Matchers with WithLogCapturing {
 
   "The round robin routing logic" must {
 

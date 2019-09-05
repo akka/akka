@@ -121,7 +121,7 @@ object BehaviorTestKitSpec {
 
 }
 
-class BehaviorTestKitSpec extends WordSpec with Matchers {
+class BehaviorTestKitSpec extends WordSpec with Matchers with WithLogCapturing {
 
   private val props = Props.empty.withDispatcherFromConfig("cat")
 

@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.query.EventEnvelope
@@ -81,7 +82,8 @@ object EventSourcedEventAdapterSpec {
 
 class EventSourcedEventAdapterSpec
     extends ScalaTestWithActorTestKit(EventSourcedEventAdapterSpec.conf)
-    with WordSpecLike {
+    with WordSpecLike
+    with WithLogCapturing {
   import EventSourcedEventAdapterSpec._
   import EventSourcedBehaviorSpec.{
     counter,

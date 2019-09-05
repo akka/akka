@@ -183,7 +183,7 @@ object OrElseSpec {
 
 }
 
-class OrElseSpec extends WordSpec with Matchers {
+class OrElseSpec extends WordSpec with Matchers with WithLogCapturing {
 
   import OrElseSpec._
 

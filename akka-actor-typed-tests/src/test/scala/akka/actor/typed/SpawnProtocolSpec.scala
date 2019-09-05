@@ -26,7 +26,7 @@ object SpawnProtocolSpec {
     }
 }
 
-class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
 
   import SpawnProtocolSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -96,7 +96,7 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   }
 }
 
-class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
+class StubbedSpawnProtocolSpec extends WordSpec with Matchers with WithLogCapturing {
 
   import SpawnProtocolSpec._
 

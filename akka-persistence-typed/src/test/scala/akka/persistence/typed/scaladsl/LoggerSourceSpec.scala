@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
@@ -18,7 +19,10 @@ import org.slf4j.event.Level
 
 // Note that the spec name here is important since there are heuristics in place to avoid names
 // starting with EventSourcedBehavior
-class LoggerSourceSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
+class LoggerSourceSpec
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
+    with WordSpecLike
+    with WithLogCapturing {
 
   private val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")

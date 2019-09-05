@@ -7,6 +7,7 @@ package akka.actor.testkit.typed.javadsl;
 import akka.Done;
 import akka.actor.typed.javadsl.Behaviors;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -20,6 +21,8 @@ import static org.junit.Assert.assertEquals;
 public class ActorTestKitTest extends JUnitSuite {
 
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void systemNameShouldComeFromTestClassViaJunitResource() {

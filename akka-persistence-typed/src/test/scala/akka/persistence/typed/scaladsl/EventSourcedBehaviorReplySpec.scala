@@ -76,7 +76,8 @@ object EventSourcedBehaviorReplySpec {
 
 class EventSourcedBehaviorReplySpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorReplySpec.conf)
-    with WordSpecLike {
+    with WordSpecLike
+    with WithLogCapturing {
 
   import EventSourcedBehaviorReplySpec._
 

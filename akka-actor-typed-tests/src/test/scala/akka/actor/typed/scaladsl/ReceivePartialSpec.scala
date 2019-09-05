@@ -7,9 +7,10 @@ package scaladsl
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.WithLogCapturing
 import org.scalatest.WordSpecLike
 
-class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike with WithLogCapturing {
 
   implicit val ec = system.executionContext
 
