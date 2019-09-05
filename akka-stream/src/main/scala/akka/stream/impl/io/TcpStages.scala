@@ -55,7 +55,7 @@ import scala.concurrent.{ Future, Promise }
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterialzer: Materializer) = {
     val bindingPromise = Promise[ServerBinding]
 
-    val logic = new TimerGraphStageLogic(shape) {
+    val logic = new TimerGraphStageLogic(shape) with StageLogging {
       implicit def self: ActorRef = stageActor.ref
 
       val connectionFlowsAwaitingInitialization = new AtomicLong()
@@ -115,14 +115,31 @@ import scala.concurrent.{ Future, Promise }
         }
       }
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          // Ignore if still binding
-          if (listener ne null) listener ! ResumeAccepting(1)
-        }
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = {
+            // Ignore if still binding
+            if (listener ne null) listener ! ResumeAccepting(1)
+          }
 
-        override def onDownstreamFinish(cause: Throwable): Unit = tryUnbind()
-      })
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            cause match {
+              case _: SubscriptionWithCancelException.NonFailureCancellation =>
+                log.debug(
+                  "Unbinding from {}:{} because downstream cancelled stream",
+                  endpoint.getHostString,
+                  endpoint.getPort)
+              case ex =>
+                log.error(
+                  "Unbinding from {}:{} because of downstream failure: {}",
+                  endpoint.getHostString,
+                  endpoint.getPort,
+                  ex)
+            }
+            tryUnbind()
+          }
+        })
 
       private def connectionFor(connected: Connected, connection: ActorRef): StreamTcp.IncomingConnection = {
         connectionFlowsAwaitingInitialization.incrementAndGet()
@@ -215,7 +232,8 @@ private[stream] object ConnectionSourceStage {
       inheritedAttributes: Attributes,
       remoteAddress: InetSocketAddress,
       eagerMaterializer: Materializer)
-      extends GraphStageLogic(shape) {
+      extends GraphStageLogic(shape)
+      with StageLogging {
     implicit def self: ActorRef = stageActor.ref
 
     private def bytesIn = shape.in
@@ -337,6 +355,19 @@ private[stream] object ConnectionSourceStage {
       override def onDownstreamFinish(cause: Throwable): Unit = {
         if (!isClosed(bytesIn)) connection ! ResumeReading
         else {
+          cause match {
+            case _: SubscriptionWithCancelException.NonFailureCancellation =>
+              log.debug(
+                "Aborting connection from {}:{} because downstream cancelled stream",
+                remoteAddress.getHostString,
+                remoteAddress.getPort)
+            case ex =>
+              log.error(
+                "Aborting connection from {}:{} because of downstream failure: {}",
+                remoteAddress.getHostString,
+                remoteAddress.getPort,
+                ex)
+          }
           connection ! Abort
           completeStage()
         }

@@ -25,7 +25,7 @@ object SubscriptionWithCancelException {
    * Not for user extension
    */
   @DoNotInherit
-  sealed trait NonFailureCancellation
-  case object NoMoreElementsNeeded extends RuntimeException with NoStackTrace with NonFailureCancellation
-  case object StageWasCompleted extends RuntimeException with NoStackTrace with NonFailureCancellation
+  sealed abstract class NonFailureCancellation extends RuntimeException with NoStackTrace
+  case object NoMoreElementsNeeded extends NonFailureCancellation
+  case object StageWasCompleted extends NonFailureCancellation
 }

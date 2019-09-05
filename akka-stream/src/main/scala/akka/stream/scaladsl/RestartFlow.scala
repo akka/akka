@@ -403,7 +403,13 @@ object RestartWithBackoffFlow {
 
         override protected def onTimer(timerKey: Any): Unit = {
           log.debug(s"Stage was canceled after delay of $delay")
-          cancelStage(cause.get)
+          cause match {
+            case OptionVal.Some(ex) =>
+              cancelStage(ex)
+            case OptionVal.None =>
+              throw new IllegalStateException("Timer hitting without first getting a cancel cannot happen")
+          }
+
         }
       }
   }
