@@ -158,25 +158,30 @@ abstract class Materializer {
   def isShutdown: Boolean
 
   /**
-   * INTERNAL API
-   *
-   * FIXME this was documented as internal api but was public, can we make it internal?
+   * The classic actor system this materializer is backed by (and in which the streams materialized with the
+   * materializer will run)
    */
   def system: ActorSystem
 
   /**
    * INTERNAL API
+   *
+   * Custom [[GraphStage]]s that needs logging should use [[akka.stream.stage.StageLogging]] (Scala) or
+   * [[akka.stream.stage.GraphStageLogicWithLogging]] (Java) instead.
    */
+  @InternalApi
   private[akka] def logger: LoggingAdapter
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[akka] def supervisor: ActorRef
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef
 
   @deprecated("Use attributes to access settings from stages", "2.6.0")
