@@ -59,21 +59,21 @@ final class TestKitSettings(val config: Config) {
     .getDouble("timefactor")
     .requiring(tf => !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val SingleExpectDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("single-expect-default"))
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val ExpectNoMessageDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("expect-no-message-default"))
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val DefaultTimeout: Timeout = Timeout(dilated(config.getMillisDuration("default-timeout")))
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val DefaultActorSystemShutdownTimeout: FiniteDuration = dilated(config.getMillisDuration("system-shutdown-default"))
 
   val ThrowOnShutdownTimeout: Boolean = config.getBoolean("throw-on-shutdown-timeout")
 
-  /** dilated with `TestTimeFactor` */
+  /** Dilated with `TestTimeFactor`. */
   val FilterLeeway: FiniteDuration = dilated(config.getMillisDuration("filter-leeway"))
 
   /**

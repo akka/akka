@@ -18,7 +18,7 @@ import org.slf4j.event.Level
  *
  * Requires Logback.
  *
- * See the companion object for convenient factory methods.
+ * See the static factory methods as starting point for creating `LoggingEventFilter`.
  *
  * Not for user extension.
  */

@@ -84,9 +84,9 @@ import org.slf4j.event.Level
       val result = code
       if (!awaitDone(leeway))
         if (todo > 0)
-          throw new AssertionError(s"timeout ($leeway) waiting for $todo messages on $this")
+          throw new AssertionError(s"Timeout ($leeway) waiting for $todo messages on $this.")
         else
-          throw new AssertionError(s"received ${-todo} excess messages on $this")
+          throw new AssertionError(s"Received ${-todo} excess messages on $this.")
       result
     } finally {
       todo = occurrences

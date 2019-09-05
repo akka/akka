@@ -69,14 +69,14 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           log.warn("a warning")
           log.warn("another warning")
         }
-      }.getMessage should include("received 1 excess messages")
+      }.getMessage should include("Received 1 excess messages")
 
       intercept[AssertionError] {
         LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
           log.warn("a warning")
           log.warn("a warning")
         }
-      }.getMessage should include("received 2 excess messages")
+      }.getMessage should include("Received 2 excess messages")
     }
 
   }
