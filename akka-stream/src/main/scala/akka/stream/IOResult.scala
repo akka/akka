@@ -82,6 +82,7 @@ final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwab
 final class IOOperationIncompleteException(message: String, val count: Long, cause: Throwable)
     extends RuntimeException(message, cause) {
 
-  def this(count: Long, cause: Throwable) = this(null, count, cause)
+  def this(count: Long, cause: Throwable) =
+    this(s"IO operation was stopped unexpectedly after $count bytes because of $cause", count, cause)
 
 }

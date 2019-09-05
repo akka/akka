@@ -378,7 +378,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
                   override def onPull() = pull(in)
 
                   override def onDownstreamFinish(cause: Throwable) = {
-                    system.log.debug(s"me cancelled, cause {}: {}", cause.getClass.getName, cause.getMessage)
+                    system.log.debug(s"me cancelled, cause {}", cause)
                     completeStage()
                   }
                 }
